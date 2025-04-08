@@ -12,17 +12,8 @@ from typing import Dict, List, Optional, Tuple, Any
 import tempfile
 
 # Import from ElevenLabs Python SDK
-from elevenlabs import Voice, VoiceSettings
-from elevenlabs import (
-    clone,
-    generate,
-    save,
-    voices,
-    set_api_key,
-    Model,
-    VoiceClone,
-)
-from elevenlabs.api import History, User
+from elevenlabs.client import ElevenLabs
+from elevenlabs import Voice, VoiceSettings, Model, stream, play
 
 from artificial_u.models.core import Professor, Lecture
 
@@ -51,8 +42,8 @@ class AudioProcessor:
         )
         os.makedirs(self.audio_path, exist_ok=True)
 
-        # Set up ElevenLabs client
-        set_api_key(self.api_key)
+        # Initialize ElevenLabs client
+        self.client = ElevenLabs(api_key=self.api_key)
 
         # Cache for voices to avoid repeated API calls
         self.voice_cache = {}
@@ -136,43 +127,45 @@ class AudioProcessor:
     ) -> Voice:
         """
         Creates a custom voice for a professor based on their profile and sample texts.
-        Uses ElevenLabs voice cloning API to generate a unique voice.
+        Currently uses pre-made voices based on professor characteristics.
 
         Args:
             professor (Professor): Professor object containing demographic and characteristic data
-            sample_texts (List[str]): List of sample texts for voice training
+            sample_texts (List[str]): List of sample texts for voice training (not used in current implementation)
 
         Returns:
-            Voice: Created voice object from ElevenLabs
+            Voice: Selected voice object from ElevenLabs
         """
-        # Create a temporary directory for audio samples
-        with tempfile.TemporaryDirectory() as temp_dir:
-            # Generate initial voice settings based on professor characteristics
-            settings = VoiceSettings(
-                stability=0.7,  # Balanced between consistency and expressiveness
-                similarity_boost=0.75,  # Higher similarity to source samples
-                style=0.35,  # Moderate style transfer
-                use_speaker_boost=True,  # Enhanced speaker consistency
-            )
+        # Define voice mapping based on characteristics
+        VOICE_MAPPING = {
+            "British": "onwK4e9ZLuTAKqWW03F9",  # Daniel - authoritative British male
+            "American": "nPczCjzI2devNBz1zQrb",  # Brian - deep American male
+            "Elder": "pqHfZKP75CvOlQylNhV4",  # Bill - older American male
+        }
 
-            # Create voice name and description
-            voice_name = f"Prof. {professor.name}"
-            description = (
-                f"Professor voice for {professor.name}. "
-                f"Gender: {professor.gender}, Age: {professor.age}, "
-                f"Accent: {professor.accent if professor.accent else 'Neutral'}"
-            )
+        # Simple logic to select voice based on professor's background
+        background = professor.background.lower()
+        if "british" in background or "uk" in background or "england" in background:
+            voice_id = VOICE_MAPPING["British"]
+        elif (
+            "elder" in background or "senior" in background or "emeritus" in background
+        ):
+            voice_id = VOICE_MAPPING["Elder"]
+        else:
+            voice_id = VOICE_MAPPING["American"]  # Default to Brian's voice
 
-            # Clone voice using the new API
-            voice_clone = clone(
-                name=voice_name,
-                description=description,
-                files=[Path(text) for text in sample_texts],
-                model=Model.V2,
-                settings=settings,
-            )
+        # Get the voice from ElevenLabs
+        voice = voices().get(voice_id)
 
-            return voice_clone
+        # Store voice settings in professor model
+        professor.voice_settings = {
+            "voice_id": voice_id,
+            "stability": 0.75,  # Higher stability for more consistent professor voice
+            "similarity_boost": 0.75,  # Higher clarity for lecture delivery
+            "style": 0.5,  # Moderate expressiveness suitable for lectures
+        }
+
+        return voice
 
     def get_voice_for_professor(self, professor: Professor) -> Voice:
         """
@@ -194,10 +187,8 @@ class AudioProcessor:
 
             # Try to get voice from ElevenLabs
             try:
-                available_voices = voices()
-                matching_voices = [
-                    v for v in available_voices if v.voice_id == voice_id
-                ]
+                voices = self.client.voices.get_all()
+                matching_voices = [v for v in voices.voices if v.voice_id == voice_id]
 
                 if matching_voices:
                     voice = matching_voices[0]
@@ -206,14 +197,16 @@ class AudioProcessor:
                         "stability" in professor.voice_settings
                         or "similarity_boost" in professor.voice_settings
                     ):
-                        voice.settings = VoiceSettings(
-                            stability=professor.voice_settings.get("stability", 0.5),
-                            similarity_boost=professor.voice_settings.get(
-                                "similarity_boost", 0.75
-                            ),
-                            style=professor.voice_settings.get("style", 0.5),
-                            use_speaker_boost=True,
+                        settings = self.client.voices.get_settings(voice_id)
+                        settings.stability = professor.voice_settings.get(
+                            "stability", 0.5
                         )
+                        settings.similarity_boost = professor.voice_settings.get(
+                            "similarity_boost", 0.75
+                        )
+                        settings.style = professor.voice_settings.get("style", 0.5)
+                        settings.use_speaker_boost = True
+                        voice.settings = settings
 
                     # Cache for future use
                     if professor.id:
@@ -225,18 +218,7 @@ class AudioProcessor:
                 # Continue to fallback options
 
         # If no voice ID or voice not found, create a new voice or select appropriate default
-        voice_id = self.create_professor_voice(professor)
-
-        # Use the selected/created voice
-        voice = Voice(
-            voice_id=voice_id,
-            settings=VoiceSettings(
-                stability=professor.voice_settings.get("stability", 0.5),
-                similarity_boost=professor.voice_settings.get("similarity_boost", 0.75),
-                style=professor.voice_settings.get("style", 0.5),
-                use_speaker_boost=True,
-            ),
-        )
+        voice = self.create_professor_voice(professor, [])
 
         # Cache for future use
         if professor.id:
@@ -314,11 +296,10 @@ class AudioProcessor:
         audio_segments = []
         for chunk in chunks:
             # Generate audio with appropriate settings
-            audio_segment = generate(
+            audio_segment = self.client.text_to_speech.convert(
                 text=chunk,
-                voice=voice,
-                model="eleven_multilingual_v2",  # Use best available model
-                # Optional advanced settings for lecture-appropriate speech
+                voice_id=voice.voice_id,
+                model_id="eleven_multilingual_v2",  # Use best available model
                 voice_settings=voice.settings,
             )
             audio_segments.append(audio_segment)
@@ -342,7 +323,8 @@ class AudioProcessor:
         file_path = str(week_dir / file_name)
 
         # Save audio file
-        save(audio, file_path)
+        with open(file_path, "wb") as f:
+            f.write(audio)
 
         return file_path, audio
 
@@ -354,19 +336,19 @@ class AudioProcessor:
             List[Dict[str, Any]]: List of voice information dictionaries
         """
         try:
-            available_voices = voices()
+            response = self.client.voices.get_all()
             return [
                 {
                     "voice_id": voice.voice_id,
                     "name": voice.name,
                     "category": (
-                        "custom"
-                        if hasattr(voice, "category") and voice.category == "cloned"
-                        else "premade"
+                        voice.category if hasattr(voice, "category") else "premade"
                     ),
-                    "description": getattr(voice, "description", ""),
+                    "description": (
+                        voice.description if hasattr(voice, "description") else ""
+                    ),
                 }
-                for voice in available_voices
+                for voice in response.voices
             ]
         except Exception as e:
             print(f"Error retrieving voices: {e}")
@@ -380,7 +362,7 @@ class AudioProcessor:
             Dict[str, Any]: Subscription information
         """
         try:
-            user = User.from_api()
+            user = self.client.user.get()
             return {
                 "subscription": user.subscription,
                 "character_limit": user.subscription.character_limit,

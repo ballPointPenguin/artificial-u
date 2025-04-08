@@ -18,17 +18,27 @@ from sqlalchemy import (
     DateTime,
     ForeignKey,
 )
-from sqlalchemy.orm import declarative_base, relationship, Session
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import relationship, Session, DeclarativeBase
 
 from artificial_u.models.core import Professor, Course, Lecture, Department
 
 
 # SQLAlchemy Base
-Base = declarative_base()
+class Base(DeclarativeBase):
+    pass
 
 
 # SQLAlchemy Models
+class DepartmentModel(Base):
+    __tablename__ = "departments"
+
+    id = Column(String, primary_key=True)
+    name = Column(String, nullable=False, unique=True)
+    code = Column(String, nullable=False, unique=True)
+    faculty = Column(String, nullable=False)
+    description = Column(Text, nullable=False)
+
+
 class ProfessorModel(Base):
     __tablename__ = "professors"
 
@@ -80,16 +90,6 @@ class LectureModel(Base):
     generated_at = Column(DateTime, nullable=False, default=datetime.now)
 
     course = relationship("CourseModel", back_populates="lectures")
-
-
-class DepartmentModel(Base):
-    __tablename__ = "departments"
-
-    id = Column(String, primary_key=True)
-    name = Column(String, nullable=False, unique=True)
-    code = Column(String, nullable=False, unique=True)
-    faculty = Column(String, nullable=False)
-    description = Column(Text, nullable=False)
 
 
 class Repository:
