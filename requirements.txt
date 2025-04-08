@@ -4,3 +4,6 @@ python-dotenv>=1.0.0
 click>=8.1.7
 rich>=13.6.0
 sqlalchemy>=2.0.23
+pytest>=7.0.0
+pytest-cov>=4.0.0
+pytest-env>=1.0.0

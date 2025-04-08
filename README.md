@@ -99,9 +99,35 @@ python -m artificial_u show-syllabus -c "CS4511"
 python -m artificial_u play-lecture -c "CS4511" -w 1 -n 1
 ```
 
+## Testing
+
+The project uses pytest for testing. Tests are organized into several categories:
+
+```bash
+# Run all automated tests (excluding manual API tests)
+pytest
+
+# Run specific test categories
+pytest -m unit          # Unit tests only
+pytest -m integration   # Integration tests only
+pytest -m e2e          # End-to-end tests only
+
+# Run with coverage report
+pytest --cov=artificial_u
+
+# Run manual API integration tests (requires API keys)
+ELEVENLABS_API_KEY=<your_api_key> pytest tests/manual/test_api_integration.py -v
+```
+
+For manual API tests, make sure to:
+
+1. Pass any required API keys as environment variables to pytest
+2. Never commit API keys to version control
+3. Run manual tests separately from automated test suite
+
 ## Project Structure
 
-```
+```txt
 artificial_u/
 ├── __init__.py            # Package initialization
 ├── __main__.py            # Entry point for command-line execution

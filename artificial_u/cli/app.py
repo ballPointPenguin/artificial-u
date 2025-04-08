@@ -162,6 +162,82 @@ def list_professors():
 
 
 @cli.command()
+@click.option("--professor-id", "-p", required=True, help="Professor ID")
+@click.option("--list-voices", "-l", is_flag=True, help="List available voices")
+@click.option("--assign-voice", "-a", help="Assign a voice ID to the professor")
+def manage_voices(professor_id, list_voices, assign_voice):
+    """Manage voices for professors."""
+    # Initialize repository and audio processor
+    repository = Repository()
+    audio_processor = AudioProcessor()
+
+    # Get professor
+    professor = repository.get_professor(professor_id)
+    if not professor:
+        console.print(f"[red]Error:[/red] Professor with ID {professor_id} not found")
+        return
+
+    if list_voices:
+        # Get available voices
+        voices = audio_processor.get_available_voices()
+
+        # Display voices in a table
+        table = Table("Voice ID", "Name", "Category", "Description")
+        for voice in voices:
+            table.add_row(
+                voice["voice_id"],
+                voice["name"],
+                voice["category"],
+                voice["description"] or "",
+            )
+
+        console.print(Panel("Available Voices", subtitle="ElevenLabs Voices"))
+        console.print(table)
+
+        # Show current professor voice if set
+        if professor.voice_settings and "voice_id" in professor.voice_settings:
+            console.print(
+                f"\nCurrent voice for {professor.name}: {professor.voice_settings['voice_id']}"
+            )
+
+    elif assign_voice:
+        # Verify voice exists
+        voices = audio_processor.get_available_voices()
+        if not any(v["voice_id"] == assign_voice for v in voices):
+            console.print(f"[red]Error:[/red] Voice ID {assign_voice} not found")
+            return
+
+        # Update professor's voice settings
+        if not professor.voice_settings:
+            professor.voice_settings = {}
+        professor.voice_settings["voice_id"] = assign_voice
+
+        # Save to database
+        repository.update_professor(professor)
+        console.print(
+            f"[green]Successfully assigned voice {assign_voice} to {professor.name}[/green]"
+        )
+
+    else:
+        # Show current voice settings
+        if professor.voice_settings and "voice_id" in professor.voice_settings:
+            console.print(
+                f"Current voice for {professor.name}: {professor.voice_settings['voice_id']}"
+            )
+            if "description" in professor.voice_settings:
+                console.print(
+                    f"Voice description: {professor.voice_settings['description']}"
+                )
+        else:
+            console.print(f"No voice currently assigned to {professor.name}")
+
+        # Show usage help
+        console.print("\nUsage:")
+        console.print("1. List available voices with [bold]--list-voices[/bold]")
+        console.print("2. Assign a voice with [bold]--assign-voice VOICE_ID[/bold]")
+
+
+@cli.command()
 @click.option("--course-code", "-c", required=True, help="Course code")
 @click.option("--week", "-w", required=True, type=int, help="Week number")
 @click.option("--number", "-n", default=1, help="Lecture number within the week")

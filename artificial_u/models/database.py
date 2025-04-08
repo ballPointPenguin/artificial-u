@@ -186,6 +186,29 @@ class Repository:
                 for p in db_professors
             ]
 
+    def update_professor(self, professor: Professor) -> Professor:
+        """Update an existing professor."""
+        with Session(self.engine) as session:
+            db_professor = (
+                session.query(ProfessorModel).filter_by(id=professor.id).first()
+            )
+            if not db_professor:
+                raise ValueError(f"Professor with ID {professor.id} not found")
+
+            # Update fields
+            db_professor.name = professor.name
+            db_professor.title = professor.title
+            db_professor.department = professor.department
+            db_professor.specialization = professor.specialization
+            db_professor.background = professor.background
+            db_professor.personality = professor.personality
+            db_professor.teaching_style = professor.teaching_style
+            db_professor.voice_settings = json.dumps(professor.voice_settings)
+            db_professor.image_path = professor.image_path
+
+            session.commit()
+            return professor
+
     # Course operations
     def create_course(self, course: Course) -> Course:
         """Create a new course."""

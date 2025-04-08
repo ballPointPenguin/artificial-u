@@ -74,6 +74,12 @@ class UniversitySystem:
             age_range=age_range,
         )
 
+        # Create a voice for the professor
+        voice_id = self.audio_processor.create_professor_voice(professor)
+
+        # Update professor's voice settings
+        professor.voice_settings["voice_id"] = voice_id
+
         # Save to database
         return self.repository.create_professor(professor)
 

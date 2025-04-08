@@ -39,3 +39,10 @@ ENV/
 audio_files/
 *.mp3
 *.wav
+
+# Test files
+test_university.db
+test_audio_files/
+.coverage
+htmlcov/
+.pytest_cache/
