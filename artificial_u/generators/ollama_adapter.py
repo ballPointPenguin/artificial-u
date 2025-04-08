@@ -153,6 +153,13 @@ Standard academic policies apply
             topic_match = next((match for match in topic_matches if match), None)
             topic = topic_match.group(1).strip() if topic_match else "Untitled Lecture"
 
+            # Extract the actual generated content, skipping the prompt text
+            content_pattern = r"\[.*?\].*?\[.*?\](.*)"
+            content_match = re.search(content_pattern, raw_text, re.DOTALL)
+            lecture_content = (
+                content_match.group(1).strip() if content_match else raw_text
+            )
+
             text = f"""<lecture_preparation>
 Main Points:
 1. Introduction to {topic}
@@ -165,21 +172,7 @@ Main Points:
 <lecture>
 {topic}
 
-[Enters classroom with enthusiasm]
-
-Good morning, everyone! Today we're going to dive into {topic}. This is an exciting topic that forms the foundation of our course.
-
-[Writes topic on board]
-
-Let me start by explaining why this topic is so important...
-
-[Continues with engaging explanation]
-
-{raw_text}
-
-And that brings us to the end of today's lecture. Remember to review these concepts before next class.
-
-[Concluding remarks and assignment reminders]
+{lecture_content}
 </lecture>"""
         else:
             # Default case - just use the raw text
