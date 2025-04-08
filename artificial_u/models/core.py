@@ -3,7 +3,7 @@ Core data models for the ArtificialU system.
 """
 
 from datetime import datetime
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Any
 from pydantic import BaseModel, Field
 
 
@@ -18,7 +18,7 @@ class Professor(BaseModel):
     background: str
     personality: str
     teaching_style: str
-    voice_settings: Dict[str, any] = Field(default_factory=dict)
+    voice_settings: Dict[str, Any] = Field(default_factory=dict)
     image_path: Optional[str] = None
 
     class Config:

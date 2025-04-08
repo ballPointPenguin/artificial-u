@@ -12,8 +12,16 @@ from typing import Dict, List, Optional, Tuple, Any
 import tempfile
 
 # Import from ElevenLabs Python SDK
-from elevenlabs import Voice, VoiceSettings, VoiceDesign
-from elevenlabs import clone, generate, save, voices, set_api_key
+from elevenlabs import Voice, VoiceSettings
+from elevenlabs import (
+    clone,
+    generate,
+    save,
+    voices,
+    set_api_key,
+    Model,
+    VoiceClone,
+)
 from elevenlabs.api import History, User
 
 from artificial_u.models.core import Professor, Lecture
@@ -124,187 +132,47 @@ class AudioProcessor:
         return processed_text
 
     def create_professor_voice(
-        self,
-        professor: Professor,
-        sample_texts: Optional[List[str]] = None,
-        voice_name: Optional[str] = None,
-    ) -> str:
+        self, professor: Professor, sample_texts: List[str]
+    ) -> Voice:
         """
-        Create a custom voice for a professor based on their characteristics.
+        Creates a custom voice for a professor based on their profile and sample texts.
+        Uses ElevenLabs voice cloning API to generate a unique voice.
 
         Args:
-            professor: Professor profile to create voice for
-            sample_texts: Optional list of sample texts in the professor's style
-                          If provided, will be used to generate voice samples
-            voice_name: Optional name for the voice, defaults to professor name
+            professor (Professor): Professor object containing demographic and characteristic data
+            sample_texts (List[str]): List of sample texts for voice training
 
         Returns:
-            str: Voice ID of the created or selected voice
+            Voice: Created voice object from ElevenLabs
         """
-        # If professor already has a voice ID, use it
-        if professor.voice_settings and "voice_id" in professor.voice_settings:
-            voice_id = professor.voice_settings["voice_id"]
-
-            # Verify the voice still exists in ElevenLabs
-            available_voices = voices()
-            if any(v.voice_id == voice_id for v in available_voices):
-                return voice_id
-
-        # Set voice name
-        if not voice_name:
-            voice_name = f"Prof. {professor.name.split()[-1]}"
-
-        # If we have sample texts, we can create a custom voice
-        if sample_texts and len(sample_texts) > 0:
-            # For a real custom voice, we would need audio samples
-            # But for now, let's design a voice based on professor characteristics
-
-            # Select voice characteristics based on professor attributes
-            gender = self._determine_gender(professor)
-            age = self._determine_age(professor)
-            accent = self._determine_accent(professor)
-
-            voice_description = (
-                f"Academic professor with a {accent} accent. "
-                f"{gender}, {age}. {professor.personality}. "
-                f"Teaching style: {professor.teaching_style}"
+        # Create a temporary directory for audio samples
+        with tempfile.TemporaryDirectory() as temp_dir:
+            # Generate initial voice settings based on professor characteristics
+            settings = VoiceSettings(
+                stability=0.7,  # Balanced between consistency and expressiveness
+                similarity_boost=0.75,  # Higher similarity to source samples
+                style=0.35,  # Moderate style transfer
+                use_speaker_boost=True,  # Enhanced speaker consistency
             )
 
-            # In a real implementation, you would use the voice cloning API
-            # For now, we'll select a pre-made voice that best matches
-            voice_id = self._select_best_matching_voice(gender, age, accent)
+            # Create voice name and description
+            voice_name = f"Prof. {professor.name}"
+            description = (
+                f"Professor voice for {professor.name}. "
+                f"Gender: {professor.gender}, Age: {professor.age}, "
+                f"Accent: {professor.accent if professor.accent else 'Neutral'}"
+            )
 
-            # Store voice settings
-            professor.voice_settings = {
-                "voice_id": voice_id,
-                "stability": 0.75,  # Higher stability for more consistent professor voice
-                "similarity_boost": 0.75,  # Higher clarity for lecture delivery
-                "style": 0.5,  # Moderate expressiveness suitable for lectures
-                "description": voice_description,
-            }
+            # Clone voice using the new API
+            voice_clone = clone(
+                name=voice_name,
+                description=description,
+                files=[Path(text) for text in sample_texts],
+                model=Model.V2,
+                settings=settings,
+            )
 
-            return voice_id
-
-    def _determine_gender(self, professor: Professor) -> str:
-        """Determine gender from professor attributes for voice selection."""
-        background = professor.background.lower()
-        name = professor.name.lower()
-
-        if "she" in background or "her" in background:
-            return "Female"
-        elif "he" in background or "his" in background:
-            return "Male"
-        # Try to infer from name and title
-        elif "mrs" in name or "ms" in name or "miss" in name:
-            return "Female"
-        elif "mr" in name:
-            return "Male"
-        else:
-            # Default to male for traditional academic settings
-            # (This is a simplification - in a real app, you'd want a better default)
-            return "Male"
-
-    def _determine_age(self, professor: Professor) -> str:
-        """Determine approximate age range from professor attributes."""
-        background = professor.background.lower()
-
-        # Look for explicit age mentions
-        age_match = re.search(r"(\d+)[- ]year[s]?[- ]old", background)
-        if age_match:
-            age = int(age_match.group(1))
-            if age < 35:
-                return "Young adult"
-            elif age < 50:
-                return "Middle-aged"
-            else:
-                return "Senior"
-
-        # Look for keywords
-        if any(
-            word in background for word in ["young", "recent", "junior", "early career"]
-        ):
-            return "Young adult"
-        elif any(
-            word in background
-            for word in ["senior", "veteran", "emeritus", "distinguished"]
-        ):
-            return "Senior"
-        else:
-            return "Middle-aged"  # Default
-
-    def _determine_accent(self, professor: Professor) -> str:
-        """Determine accent from professor background."""
-        background = professor.background.lower()
-
-        # Check for nationality/region mentions
-        accent_mappings = {
-            "british": "British",
-            "uk": "British",
-            "england": "British",
-            "american": "American",
-            "united states": "American",
-            "usa": "American",
-            "australian": "Australian",
-            "indian": "Indian",
-            "south asia": "Indian",
-            "russian": "Eastern European",
-            "east europe": "Eastern European",
-            "french": "French",
-            "german": "German",
-            "spanish": "Spanish",
-            "italian": "Italian",
-            "japanese": "Japanese",
-            "chinese": "Chinese",
-        }
-
-        for keyword, accent in accent_mappings.items():
-            if keyword in background:
-                return accent
-
-        return "American"  # Default accent
-
-    def _select_best_matching_voice(self, gender: str, age: str, accent: str) -> str:
-        """
-        Select the best matching voice from available ElevenLabs voices.
-
-        In a production app, you would maintain a mapping of voice characteristics
-        to voice IDs, or use the ElevenLabs API to filter voices by labels.
-
-        This is a simplified implementation using a predefined mapping.
-        """
-        # Mapping of characteristics to ElevenLabs voice IDs
-        voice_mapping = {
-            # Male voices
-            ("Male", "Young adult", "American"): "pNInz6obpgDQGcFmaJgB",  # Adam
-            ("Male", "Middle-aged", "American"): "ErXwobaYiN019PkySvjV",  # Antoni
-            ("Male", "Senior", "American"): "VR6AewLTigWG4xSOukaG",  # Arnold
-            ("Male", "Middle-aged", "British"): "ODq5zmih8GrVes37Dizd",  # Daniel
-            ("Male", "Middle-aged", "Eastern European"): "TxGEqnHWrfWFTfGW9XjX",  # Josh
-            # Female voices
-            ("Female", "Young adult", "American"): "MF3mGyEYCl7XYWbV9V6O",  # Elli
-            ("Female", "Middle-aged", "American"): "EXAVITQu4vr4xnSDxMaL",  # Bella
-            ("Female", "Senior", "American"): "jsCqWAovK2LkecY7zXl4",  # Dorothy
-            ("Female", "Middle-aged", "British"): "XB0fDUnXU5powFXDhCwa",  # Grace
-            ("Female", "Young adult", "British"): "GB7d8Zw2ZQWeXV3xSzjG",  # Nicole
-            ("Female", "Middle-aged", "Indian"): "t0jbNlBVZ17f02VDIeMI",  # Domi
-        }
-
-        # Try to find exact match
-        if (gender, age, accent) in voice_mapping:
-            return voice_mapping[(gender, age, accent)]
-
-        # Try to find match with same gender and age
-        for (g, a, acc), voice_id in voice_mapping.items():
-            if g == gender and a == age:
-                return voice_id
-
-        # Fall back to gender match
-        for (g, a, acc), voice_id in voice_mapping.items():
-            if g == gender:
-                return voice_id
-
-        # Ultimate fallback - a default voice
-        return "ErXwobaYiN019PkySvjV"  # Antoni
+            return voice_clone
 
     def get_voice_for_professor(self, professor: Professor) -> Voice:
         """

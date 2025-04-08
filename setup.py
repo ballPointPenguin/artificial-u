@@ -12,6 +12,7 @@ setup(
         "click>=8.1.7",
         "rich>=13.6.0",
         "sqlalchemy>=2.0.23",
+        "anthropic>=0.18.1",
     ],
     entry_points={
         "console_scripts": [

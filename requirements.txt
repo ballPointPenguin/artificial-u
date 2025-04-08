@@ -1,9 +1,10 @@
+anthropic>=0.18.1
+click>=8.1.7
 elevenlabs>=0.2.24
 pydantic>=2.4.0
-python-dotenv>=1.0.0
-click>=8.1.7
-rich>=13.6.0
-sqlalchemy>=2.0.23
-pytest>=7.0.0
 pytest-cov>=4.0.0
 pytest-env>=1.0.0
+pytest>=7.0.0
+python-dotenv>=1.0.0
+rich>=13.6.0
+sqlalchemy>=2.0.23
