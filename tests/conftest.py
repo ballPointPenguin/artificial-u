@@ -6,9 +6,15 @@ import os
 import pytest
 from pathlib import Path
 from typing import Generator
+import sys
 
 from artificial_u.models.database import Repository
 from artificial_u.system import UniversitySystem
+
+# Add the project root to Python path
+project_root = str(Path(__file__).parent.parent)
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
 
 
 @pytest.fixture(scope="session")
