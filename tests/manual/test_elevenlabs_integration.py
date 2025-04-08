@@ -33,10 +33,25 @@ from artificial_u.models.core import Professor, Lecture
 
 console = Console()
 
-# Skip tests if no API key in environment
+# Check if we have a real API key, not a test one
+api_key = os.environ.get("ELEVENLABS_API_KEY")
+using_test_key = api_key == "test_elevenlabs_key"
+
+if api_key and not using_test_key:
+    console.print("[bold green]Using real ElevenLabs API key[/bold green]")
+    console.print(
+        "[bold yellow]Warning: These tests will use your API quota![/bold yellow]"
+    )
+else:
+    console.print("[bold red]No real ElevenLabs API key found[/bold red]")
+    console.print(
+        "These tests require a real API key set in your .env file or environment"
+    )
+
+# Skip tests if no real API key in environment
 pytestmark = pytest.mark.skipif(
-    "ELEVENLABS_API_KEY" not in os.environ,
-    reason="ELEVENLABS_API_KEY not found in environment",
+    not api_key or using_test_key,
+    reason="Real ELEVENLABS_API_KEY not found in environment (found test key instead)",
 )
 
 # Store generated audio path as a module-level variable

@@ -12,30 +12,34 @@ The ElevenLabs integration test script validates the connection and functionalit
 - Python 3.9+
 - All project dependencies installed
 
+### Important: API Key Usage
+
+**These tests use your real API keys from `.env`**, not the test keys from `.env.test`. This allows testing the actual API integration, but be aware that:
+
+1. These tests will use your API quota
+2. They will skip if no valid API key is found
+3. They're excluded from normal test runs for this reason
+
 ### Running the Tests
 
 You can run the tests with:
 
 ```bash
-# Using environment variable
-ELEVENLABS_API_KEY=your_api_key python tests/manual/test_elevenlabs_integration.py
-
-# Using command-line argument
-python tests/manual/test_elevenlabs_integration.py --api-key your_api_key
-
-# Using pytest
+# Using pytest with manual marker - WILL USE REAL API KEYS
 pytest -m manual
+
+# Using pytest directly - WILL USE REAL API KEYS
+pytest tests/manual/test_elevenlabs_integration.py
 ```
 
 ### Test Options
 
-- `--api-key`, `-k`: ElevenLabs API key
-- `--skip-audio`, `-s`: Skip the audio generation test (useful for quick validation without using too many API credits)
+- `--play`: Play the generated audio (optional)
 
 ### What the Tests Cover
 
 1. **API Connection Test**: Verifies basic connection to the ElevenLabs API and retrieves available voices.
-2. **Voice Creation and Mapping Test**: Verifies the creation and mapping of voices for different professor personas.
+2. **Voice Mapping Test**: Verifies mapping of professors to appropriate voice types.
 3. **Text Processing Test**: Tests the processing of stage directions in lecture text.
 4. **Speech Generation Test**: Verifies the generation of speech from a sample lecture.
 
@@ -45,28 +49,17 @@ A successful test run will output something like:
 
 ```txt
 === Starting ElevenLabs Integration Tests ===
-? Successfully connected to ElevenLabs API. Found 18 voices.
-? Subscription tier: pro
-? Character limit: 1000000
-? Characters used: 123456
-? Characters available: 876544
+Using REAL environment variables for manual tests
+✓ Successfully connected to ElevenLabs API. Found 18 voices.
+✓ Subscription tier: pro
+✓ Character limit: 1000000
+✓ Characters used: 123456
+✓ Characters available: 876544
 
-=== Testing Professor Voice Creation and Mapping ===
-
-Creating voice for Dr. Alan Turing in Computer Science...
-? Created voice 21m00Tcm4TlvDq8ikWAM for Dr. Alan Turing
-? Voice settings correctly stored: {'voice_id': '21m00Tcm4TlvDq8ikWAM', 'stability': 0.5, 'similarity_boost': 0.75, 'style': 0.5, 'use_speaker_boost': True}
-? Retrieved voice: 21m00Tcm4TlvDq8ikWAM
-
+=== Testing Text Processing ===
 ...
 
-=== Test Summary ===
-API Connection: ?
-Voice Creation: ?
-Text Processing: ?
-Speech Generation: ?
-
-? All tests passed!
+=== All tests passed! ===
 ```
 
 ## Adding More Manual Tests
