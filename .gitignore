@@ -39,6 +39,7 @@ ENV/
 audio_files/
 *.mp3
 *.wav
+lecture_texts/
 
 # Test files
 test_university.db

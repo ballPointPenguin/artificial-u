@@ -155,6 +155,8 @@ def test_generate_lecture_with_ollama(test_system):
         week=1,
         number=1,
         topic="Introduction to Cell Structure",
+        min_words=500,
+        max_words=800,
     )
 
     # Verify lecture was created

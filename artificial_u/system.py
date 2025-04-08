@@ -9,6 +9,7 @@ from typing import Dict, List, Optional, Tuple, Any
 from pathlib import Path
 import uuid
 import random
+from datetime import datetime
 
 from artificial_u.generators.content import ContentGenerator
 from artificial_u.generators.factory import create_generator
@@ -31,6 +32,7 @@ class UniversitySystem:
         audio_path: Optional[str] = None,
         content_backend: str = "anthropic",
         content_model: Optional[str] = None,
+        text_export_path: Optional[str] = None,
     ):
         """
         Initialize the university system.
@@ -42,6 +44,7 @@ class UniversitySystem:
             audio_path: Path to store audio files, uses AUDIO_PATH env var or 'audio_files' if not provided
             content_backend: Backend to use for content generation ('anthropic' or 'ollama')
             content_model: Model to use with the chosen backend (depends on backend)
+            text_export_path: Path to export lecture text files, uses TEXT_EXPORT_PATH env var or 'lecture_texts' if not provided
         """
         # Setup logging
         logging.basicConfig(level=logging.INFO)
@@ -67,6 +70,16 @@ class UniversitySystem:
         # Setup audio path
         self.audio_path = audio_path or os.environ.get("AUDIO_PATH", "audio_files")
         Path(self.audio_path).mkdir(parents=True, exist_ok=True)
+
+        # Setup text export path
+        self.text_export_path = text_export_path or os.environ.get(
+            "TEXT_EXPORT_PATH", "lecture_texts"
+        )
+        Path(self.text_export_path).mkdir(parents=True, exist_ok=True)
+
+        # Store content backend type for reference
+        self.content_backend = content_backend
+        self.content_model = content_model
 
     def create_professor(
         self,
@@ -261,7 +274,13 @@ class UniversitySystem:
         return course, professor
 
     def generate_lecture(
-        self, course_code: str, week: int, number: int = 1, topic: Optional[str] = None
+        self,
+        course_code: str,
+        week: int,
+        number: int = 1,
+        topic: Optional[str] = None,
+        min_words: int = 2000,
+        max_words: int = 3000,
     ) -> Tuple[Lecture, Course, Professor]:
         """
         Generate a lecture for a specific course and week.
@@ -271,6 +290,8 @@ class UniversitySystem:
             week: Week number
             number: Lecture number within the week
             topic: Lecture topic (if None, will be derived from syllabus)
+            min_words: Minimum word count for the lecture (default: 2000)
+            max_words: Maximum word count for the lecture (default: 3000)
 
         Returns:
             Tuple: (Lecture, Course, Professor) - The generated lecture with its course and professor
@@ -314,12 +335,62 @@ class UniversitySystem:
             previous_lecture_content=(
                 previous_lecture.content if previous_lecture else None
             ),
+            min_words=min_words,
+            max_words=max_words,
         )
 
         # Save to database
         lecture = self.repository.create_lecture(lecture)
 
+        # Export lecture text to file
+        self.export_lecture_text(lecture, course, professor)
+
         return lecture, course, professor
+
+    def export_lecture_text(
+        self, lecture: Lecture, course: Course, professor: Professor
+    ) -> str:
+        """
+        Export lecture content to a text file.
+
+        Args:
+            lecture: The lecture object
+            course: The course object
+            professor: The professor object
+
+        Returns:
+            str: Path to the exported text file
+        """
+        # Create a filename based on course code, week, and lecture number
+        filename = f"{course.code}_W{lecture.week_number}_L{lecture.order_in_week}.md"
+
+        # Create a folder for the course if it doesn't exist
+        course_folder = Path(self.text_export_path) / course.code
+        course_folder.mkdir(exist_ok=True)
+
+        # Full path to the text file
+        file_path = course_folder / filename
+
+        # Create header metadata
+        header = f"""# {lecture.title}
+        
+## Course: {course.title} ({course.code})
+## Professor: {professor.name}
+## Week: {lecture.week_number}, Lecture: {lecture.order_in_week}
+## Generated with: {self.content_backend}{f" ({self.content_model})" if self.content_model else ""}
+## Date: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+
+---
+
+"""
+
+        # Write the content to the file
+        with open(file_path, "w") as f:
+            f.write(header + lecture.content)
+
+        self.logger.info(f"Lecture text exported to {file_path}")
+
+        return str(file_path)
 
     def create_lecture_audio(
         self, course_code: str, week: int, number: int = 1
@@ -437,3 +508,101 @@ class UniversitySystem:
         
         *[The rest of the lecture would go here]*
         """
+
+    def get_lecture_preview(
+        self, course_code: str = None, model_filter: str = None, limit: int = 5
+    ) -> List[Dict[str, Any]]:
+        """
+        Get a preview of lectures with relevant metadata.
+
+        Args:
+            course_code: Optional course code to filter lectures
+            model_filter: Optional filter to only show lectures from a specific model (e.g., "tinyllama")
+            limit: Maximum number of lectures to return
+
+        Returns:
+            List of dictionaries containing lecture info
+        """
+        # Get all lectures
+        lectures = []
+        courses_info = self.repository.list_courses()
+
+        for course_info in courses_info:
+            # Handle either format - dict with "course" key or direct Course object
+            if isinstance(course_info, dict) and "course" in course_info:
+                course = course_info["course"]
+            else:
+                course = course_info  # Assume it's a Course object directly
+
+            # Skip if filtering by course code and this isn't the right course
+            if course_code and course.code != course_code:
+                continue
+
+            professor = self.repository.get_professor(course.professor_id)
+            course_lectures = self.repository.list_lectures_by_course(course.id)
+
+            for lecture in course_lectures:
+                # Try to determine the model used (if available)
+                lecture_path = self.get_lecture_export_path(
+                    course.code, lecture.week_number, lecture.order_in_week
+                )
+                model_used = None
+
+                if os.path.exists(lecture_path):
+                    with open(lecture_path, "r") as f:
+                        content = f.read()
+                        # Look for the model info in the header
+                        model_lines = [
+                            l for l in content.split("\n") if "Generated with:" in l
+                        ]
+                        if model_lines:
+                            model_used = (
+                                model_lines[0].replace("## Generated with:", "").strip()
+                            )
+
+                # Skip if filtering by model and this doesn't match
+                if model_filter and (
+                    not model_used or model_filter.lower() not in model_used.lower()
+                ):
+                    continue
+
+                lectures.append(
+                    {
+                        "id": lecture.id,
+                        "title": lecture.title,
+                        "course_code": course.code,
+                        "course_title": course.title,
+                        "professor": professor.name,
+                        "week": lecture.week_number,
+                        "lecture_number": lecture.order_in_week,
+                        "content_preview": (
+                            lecture.content[:200] + "..." if lecture.content else None
+                        ),
+                        "generated_at": lecture.generated_at,
+                        "model_used": model_used,
+                        "text_file": (
+                            lecture_path if os.path.exists(lecture_path) else None
+                        ),
+                    }
+                )
+
+        # Sort by most recent first
+        lectures.sort(key=lambda x: x.get("generated_at", ""), reverse=True)
+
+        # Limit the results
+        return lectures[:limit]
+
+    def get_lecture_export_path(self, course_code: str, week: int, number: int) -> str:
+        """
+        Get the path to the exported lecture file.
+
+        Args:
+            course_code: Course code
+            week: Week number
+            number: Lecture number
+
+        Returns:
+            str: Path to the exported text file
+        """
+        filename = f"{course_code}_W{week}_L{number}.md"
+        return str(Path(self.text_export_path) / course_code / filename)

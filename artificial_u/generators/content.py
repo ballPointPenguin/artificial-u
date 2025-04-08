@@ -141,6 +141,8 @@ class ContentGenerator:
         week_number: int,
         order_in_week: int,
         previous_lecture_content: Optional[str] = None,
+        min_words: int = 2000,
+        max_words: int = 3000,
     ) -> Lecture:
         """
         Generate a lecture for a specific course.
@@ -152,6 +154,8 @@ class ContentGenerator:
             week_number: Week number in the course
             order_in_week: Order of this lecture within the week
             previous_lecture_content: Optional content from previous lecture for continuity
+            min_words: Minimum word count for the lecture (default: 2000)
+            max_words: Maximum word count for the lecture (default: 3000)
 
         Returns:
             Lecture: Generated lecture
@@ -179,7 +183,7 @@ class ContentGenerator:
         {continuity_context}
         
         The lecture should:
-        1. Be approximately 2000-3000 words
+        1. Be approximately {min_words}-{max_words} words
         2. Include clear "stage directions" in [brackets] to indicate the professor's actions, gestures, etc.
         3. Have a conversational, engaging style appropriate for verbal delivery
         4. Include natural pauses, emphasis, and questions that would occur in a real lecture
