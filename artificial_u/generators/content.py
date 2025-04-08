@@ -120,7 +120,7 @@ Make this professor feel like a real person with depth. Include educational back
         Returns:
             str: Generated course syllabus
         """
-        prompt = f"""Create a detailed course syllabus for {course.code}: {course.name}
+        prompt = f"""Create a detailed course syllabus for {course.code}: {course.title}
 
 Course Information:
 - Department: {course.department}

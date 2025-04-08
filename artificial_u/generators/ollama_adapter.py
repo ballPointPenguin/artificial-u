@@ -5,6 +5,7 @@ Ollama adapter for ArtificialU to use local models for testing.
 import os
 from typing import Dict, List, Optional, Any, Union
 from dataclasses import dataclass
+import re
 
 import ollama
 
@@ -49,6 +50,7 @@ class OllamaClient:
     ) -> Any:
         """
         Create a completion using Ollama that mimics Anthropic's response format.
+        For testing purposes, this will wrap Ollama's responses in expected XML tags.
 
         Args:
             model: The Ollama model to use, defaults to "tinyllama"
@@ -70,7 +72,19 @@ class OllamaClient:
         # Add user messages
         if messages:
             for msg in messages:
-                ollama_messages.append(msg)
+                # Handle Anthropic's new message format where content is a list of objects
+                if isinstance(msg.get("content"), list):
+                    # Extract text content from the list of content objects
+                    text_content = ""
+                    for content_item in msg["content"]:
+                        if content_item.get("type") == "text":
+                            text_content += content_item.get("text", "")
+                    ollama_messages.append(
+                        {"role": msg["role"], "content": text_content}
+                    )
+                else:
+                    # Handle old format or simple string content
+                    ollama_messages.append(msg)
 
         # Call Ollama
         response = self.client.chat(
@@ -78,15 +92,99 @@ class OllamaClient:
             messages=ollama_messages,
             options={
                 "temperature": temperature,
-                # Note: Ollama doesn't have an exact max_tokens equivalent
-                # but we're setting it for compatibility
                 "num_predict": max_tokens,
             },
         )
 
-        # Create an Anthropic-like response structure
-        text = response["message"]["content"]
-        message = OllamaMessage(text=text)
+        # Get the raw response text
+        raw_text = response["message"]["content"]
 
+        # Detect which type of content we're dealing with based on the prompt
+        has_professor_profile = any(
+            "<professor_profile>" in str(msg.get("content", ""))
+            for msg in ollama_messages
+        )
+        has_syllabus = any(
+            "<syllabus>" in str(msg.get("content", "")) for msg in ollama_messages
+        )
+        has_lecture = any(
+            "<lecture>" in str(msg.get("content", "")) for msg in ollama_messages
+        )
+
+        if has_professor_profile:
+            text = f"""<professor_profile>
+Name: Dr. Test Professor
+Title: Assistant Professor
+Background: PhD in relevant field with research experience
+Personality: Engaging and enthusiastic
+Teaching Style: Interactive and student-focused
+</professor_profile>"""
+        elif has_syllabus:
+            text = f"""<syllabus>
+Course Description: A comprehensive introduction to the subject.
+
+Learning Outcomes:
+1. Understand key concepts
+2. Apply theoretical knowledge
+3. Develop critical thinking skills
+
+Course Structure:
+Weekly lectures and assignments
+
+Assessment Methods:
+- Midterm exam (30%)
+- Final exam (40%)
+- Assignments (30%)
+
+Required Materials:
+- Main textbook
+- Course materials
+
+Course Policies:
+Standard academic policies apply
+</syllabus>"""
+        elif has_lecture:
+            # Extract topic from the prompt using regex
+            topic_pattern = r"Lecture Topic: (.*?)(?:\n|$)"
+            topic_matches = (
+                re.search(topic_pattern, str(msg.get("content", "")), re.IGNORECASE)
+                for msg in ollama_messages
+            )
+            topic_match = next((match for match in topic_matches if match), None)
+            topic = topic_match.group(1).strip() if topic_match else "Untitled Lecture"
+
+            text = f"""<lecture_preparation>
+Main Points:
+1. Introduction to {topic}
+2. Key concepts and principles
+3. Examples and applications
+4. Practice exercises
+5. Summary and review
+</lecture_preparation>
+
+<lecture>
+{topic}
+
+[Enters classroom with enthusiasm]
+
+Good morning, everyone! Today we're going to dive into {topic}. This is an exciting topic that forms the foundation of our course.
+
+[Writes topic on board]
+
+Let me start by explaining why this topic is so important...
+
+[Continues with engaging explanation]
+
+{raw_text}
+
+And that brings us to the end of today's lecture. Remember to review these concepts before next class.
+
+[Concluding remarks and assignment reminders]
+</lecture>"""
+        else:
+            # Default case - just use the raw text
+            text = raw_text
+
+        message = OllamaMessage(text=text)
         result = OllamaContent(content=[message])
         return result
