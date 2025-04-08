@@ -24,21 +24,25 @@ from artificial_u.models.core import Professor, Lecture
 
 class AudioProcessorError(Exception):
     """Base exception for audio processing errors."""
+
     pass
 
 
 class APIConnectionError(AudioProcessorError):
     """Exception raised when connection to the API fails."""
+
     pass
 
 
 class VoiceCreationError(AudioProcessorError):
     """Exception raised when voice creation fails."""
+
     pass
 
 
 class AudioGenerationError(AudioProcessorError):
     """Exception raised when audio generation fails."""
+
     pass
 
 
@@ -68,7 +72,7 @@ class AudioProcessor:
         """
         # Setup logging
         self.logger = logging.getLogger(__name__)
-        
+
         self.api_key = api_key or os.environ.get("ELEVENLABS_API_KEY")
         if not self.api_key:
             raise ValueError("ElevenLabs API key is required")
@@ -90,18 +94,18 @@ class AudioProcessor:
 
         # Cache for voices to avoid repeated API calls
         self.voice_cache = {}
-        
+
         # Load voice mapping from configuration (in a real implementation,
         # this would be loaded from a configuration file)
         self.voice_mapping = self._load_voice_mapping()
-        
+
     def _test_api_connection(self) -> bool:
         """
         Test the connection to the ElevenLabs API.
-        
+
         Returns:
             bool: True if connection successful, False otherwise
-        
+
         Raises:
             APIConnectionError: If connection to API fails
         """
@@ -119,9 +123,9 @@ class AudioProcessor:
     def _load_voice_mapping(self) -> Dict[str, str]:
         """
         Load voice mapping from configuration.
-        
+
         In a production environment, this would load from a config file.
-        
+
         Returns:
             Dict[str, str]: Mapping of department types to voice IDs
         """
@@ -210,43 +214,60 @@ class AudioProcessor:
     def _map_professor_to_voice_type(self, professor: Professor) -> str:
         """
         Map a professor to a voice type based on their department and characteristics.
-        
+
         Args:
             professor: Professor profile
-            
+
         Returns:
             str: Voice type identifier (e.g., 'stem', 'humanities', 'business')
         """
         # Convert department to lowercase for case-insensitive matching
         department = professor.department.lower() if professor.department else ""
-        
+
         # Default department type
         department_type = "default"
 
         # Map departments to categories
         stem_departments = [
-            "computer", "physics", "math", "biology", 
-            "chemistry", "engineering", "science"
+            "computer",
+            "physics",
+            "math",
+            "biology",
+            "chemistry",
+            "engineering",
+            "science",
         ]
-        
+
         humanities_departments = [
-            "history", "english", "philosophy", "art",
-            "music", "language", "literature", "sociology"
+            "history",
+            "english",
+            "philosophy",
+            "art",
+            "music",
+            "language",
+            "literature",
+            "sociology",
         ]
-        
+
         business_departments = [
-            "business", "economics", "finance", "management",
-            "marketing", "accounting"
+            "business",
+            "economics",
+            "finance",
+            "management",
+            "marketing",
+            "accounting",
         ]
-        
+
         # Check which category the department belongs to
         if any(stem_dept in department for stem_dept in stem_departments):
             department_type = "stem"
-        elif any(humanities_dept in department for humanities_dept in humanities_departments):
+        elif any(
+            humanities_dept in department for humanities_dept in humanities_departments
+        ):
             department_type = "humanities"
         elif any(business_dept in department for business_dept in business_departments):
             department_type = "business"
-        
+
         return department_type
 
     def create_professor_voice(self, professor: Professor) -> str:
@@ -261,31 +282,44 @@ class AudioProcessor:
         """
         # Map professor characteristics to a department type
         department_type = self._map_professor_to_voice_type(professor)
-        
+
         # Get voice ID from mapping
-        voice_id = self.voice_mapping.get(department_type, self.voice_mapping["default"])
-        
+        voice_id = self.voice_mapping.get(
+            department_type, self.voice_mapping["default"]
+        )
+
         # Create voice settings with appropriate parameters based on professor personality
         stability = 0.5  # Default stability
         similarity_boost = 0.75  # Higher similarity for more consistent output
         style = 0.5  # Balanced style
-        
+
         # Adjust voice parameters based on professor personality
         if professor.personality:
             personality = professor.personality.lower()
-            
+
             # Adjust stability - more stable voices for methodical professors
-            if any(trait in personality for trait in ["methodical", "analytical", "precise"]):
+            if any(
+                trait in personality
+                for trait in ["methodical", "analytical", "precise"]
+            ):
                 stability = 0.75
-            elif any(trait in personality for trait in ["creative", "innovative", "spontaneous"]):
+            elif any(
+                trait in personality
+                for trait in ["creative", "innovative", "spontaneous"]
+            ):
                 stability = 0.35
-                
+
             # Adjust style - higher for more expressive professors
-            if any(trait in personality for trait in ["enthusiastic", "animated", "inspiring"]):
+            if any(
+                trait in personality
+                for trait in ["enthusiastic", "animated", "inspiring"]
+            ):
                 style = 0.8
-            elif any(trait in personality for trait in ["reserved", "formal", "conservative"]):
+            elif any(
+                trait in personality for trait in ["reserved", "formal", "conservative"]
+            ):
                 style = 0.25
-        
+
         # Create voice settings
         voice_settings = {
             "voice_id": voice_id,
@@ -322,7 +356,9 @@ class AudioProcessor:
             for attempt in range(self.MAX_RETRIES):
                 try:
                     response = self.client.voices.get_all()
-                    matching_voices = [v for v in response.voices if v.voice_id == voice_id]
+                    matching_voices = [
+                        v for v in response.voices if v.voice_id == voice_id
+                    ]
 
                     if matching_voices:
                         voice = matching_voices[0]
@@ -332,7 +368,9 @@ class AudioProcessor:
                             or "similarity_boost" in professor.voice_settings
                         ):
                             voice_settings = VoiceSettings(
-                                stability=professor.voice_settings.get("stability", 0.5),
+                                stability=professor.voice_settings.get(
+                                    "stability", 0.5
+                                ),
                                 similarity_boost=professor.voice_settings.get(
                                     "similarity_boost", 0.5
                                 ),
@@ -350,16 +388,20 @@ class AudioProcessor:
                         if professor.id:
                             self.voice_cache[professor.id] = voice
                         return voice
-                    
+
                     # Voice not found but API call succeeded
                     break
-                    
+
                 except RateLimitError as e:
                     if attempt < self.MAX_RETRIES - 1:
-                        self.logger.warning(f"Rate limit hit, retrying in {self.RETRY_WAIT}s: {e}")
+                        self.logger.warning(
+                            f"Rate limit hit, retrying in {self.RETRY_WAIT}s: {e}"
+                        )
                         time.sleep(self.RETRY_WAIT)
                     else:
-                        self.logger.error(f"Rate limit error after {self.MAX_RETRIES} attempts: {e}")
+                        self.logger.error(
+                            f"Rate limit error after {self.MAX_RETRIES} attempts: {e}"
+                        )
                         raise VoiceCreationError(f"Rate limit exceeded: {e}")
                 except Exception as e:
                     self.logger.error(f"Error retrieving voice: {e}")
@@ -376,13 +418,15 @@ class AudioProcessor:
                 if professor.id:
                     self.voice_cache[professor.id] = voice
                 return voice
-            
+
             raise VoiceCreationError(
                 f"Voice created but not found in available voices: {voice_id}"
             )
         except Exception as e:
             self.logger.error(f"Error creating voice for {professor.name}: {e}")
-            raise VoiceCreationError(f"Could not create voice for professor {professor.name}: {e}")
+            raise VoiceCreationError(
+                f"Could not create voice for professor {professor.name}: {e}"
+            )
 
     def split_lecture_into_chunks(
         self, text: str, max_chunk_size: int = DEFAULT_CHUNK_SIZE
@@ -427,26 +471,26 @@ class AudioProcessor:
             chunks.append(current_chunk)
 
         return chunks
-        
+
     def _call_text_to_speech_with_retry(
-        self, 
-        text: str, 
-        voice_id: str, 
+        self,
+        text: str,
+        voice_id: str,
         voice_settings: Optional[VoiceSettings] = None,
-        model_id: str = DEFAULT_MODEL
+        model_id: str = DEFAULT_MODEL,
     ) -> bytes:
         """
         Call text-to-speech API with retry mechanism.
-        
+
         Args:
             text: Text to convert to speech
             voice_id: Voice ID to use
             voice_settings: Voice settings to use
             model_id: Model ID to use
-            
+
         Returns:
             bytes: Audio data
-            
+
         Raises:
             AudioGenerationError: If audio generation fails after retries
         """
@@ -460,10 +504,14 @@ class AudioProcessor:
                 )
             except RateLimitError as e:
                 if attempt < self.MAX_RETRIES - 1:
-                    self.logger.warning(f"Rate limit hit, retrying in {self.RETRY_WAIT}s: {e}")
+                    self.logger.warning(
+                        f"Rate limit hit, retrying in {self.RETRY_WAIT}s: {e}"
+                    )
                     time.sleep(self.RETRY_WAIT * (attempt + 1))  # Exponential backoff
                 else:
-                    self.logger.error(f"Rate limit error after {self.MAX_RETRIES} attempts: {e}")
+                    self.logger.error(
+                        f"Rate limit error after {self.MAX_RETRIES} attempts: {e}"
+                    )
                     raise AudioGenerationError(f"Rate limit exceeded: {e}")
             except Exception as e:
                 self.logger.error(f"Error converting text to speech: {e}")
@@ -498,19 +546,23 @@ class AudioProcessor:
             # Generate audio for each chunk
             audio_segments = []
             total_chunks = len(chunks)
-            
+
             self.logger.info(f"Converting lecture to speech in {total_chunks} chunks")
-            
+
             for i, chunk in enumerate(chunks):
-                self.logger.info(f"Processing chunk {i+1}/{total_chunks} ({len(chunk)} characters)")
-                
+                self.logger.info(
+                    f"Processing chunk {i+1}/{total_chunks} ({len(chunk)} characters)"
+                )
+
                 # Generate audio with appropriate settings and retry mechanism
                 audio_segment = self._call_text_to_speech_with_retry(
                     text=chunk,
                     voice_id=voice.voice_id,
-                    voice_settings=voice.settings if hasattr(voice, "settings") else None,
+                    voice_settings=(
+                        voice.settings if hasattr(voice, "settings") else None
+                    ),
                 )
-                
+
                 audio_segments.append(audio_segment)
 
             # Combine audio segments (if more than one)
@@ -535,11 +587,11 @@ class AudioProcessor:
             # Save audio file
             with open(file_path, "wb") as f:
                 f.write(audio)
-            
+
             self.logger.info(f"Audio saved to {file_path}")
 
             return file_path, audio
-            
+
         except Exception as e:
             self.logger.error(f"Error in text_to_speech: {e}")
             raise AudioGenerationError(f"Error generating audio: {e}")
@@ -565,10 +617,14 @@ class AudioProcessor:
                 ]
             except RateLimitError as e:
                 if attempt < self.MAX_RETRIES - 1:
-                    self.logger.warning(f"Rate limit hit, retrying in {self.RETRY_WAIT}s: {e}")
+                    self.logger.warning(
+                        f"Rate limit hit, retrying in {self.RETRY_WAIT}s: {e}"
+                    )
                     time.sleep(self.RETRY_WAIT)
                 else:
-                    self.logger.error(f"Rate limit error after {self.MAX_RETRIES} attempts: {e}")
+                    self.logger.error(
+                        f"Rate limit error after {self.MAX_RETRIES} attempts: {e}"
+                    )
                     return []
             except Exception as e:
                 self.logger.error(f"Error retrieving voices: {e}")
@@ -576,7 +632,7 @@ class AudioProcessor:
                     time.sleep(self.RETRY_WAIT)
                 else:
                     return []
-        
+
         return []
 
     def get_user_subscription_info(self) -> Dict[str, Any]:
@@ -607,10 +663,14 @@ class AudioProcessor:
                 }
             except RateLimitError as e:
                 if attempt < self.MAX_RETRIES - 1:
-                    self.logger.warning(f"Rate limit hit, retrying in {self.RETRY_WAIT}s: {e}")
+                    self.logger.warning(
+                        f"Rate limit hit, retrying in {self.RETRY_WAIT}s: {e}"
+                    )
                     time.sleep(self.RETRY_WAIT)
                 else:
-                    self.logger.error(f"Rate limit error after {self.MAX_RETRIES} attempts: {e}")
+                    self.logger.error(
+                        f"Rate limit error after {self.MAX_RETRIES} attempts: {e}"
+                    )
                     return {}
             except Exception as e:
                 self.logger.error(f"Error retrieving subscription info: {e}")
@@ -618,16 +678,16 @@ class AudioProcessor:
                     time.sleep(self.RETRY_WAIT)
                 else:
                     return {}
-        
+
         return {}
 
     def play_audio(self, audio_data: Union[bytes, str]) -> None:
         """
         Play audio using the ElevenLabs play function.
-        
+
         Args:
             audio_data: Audio data as bytes or file path
-            
+
         Raises:
             AudioProcessorError: If audio playback fails
         """
@@ -636,7 +696,7 @@ class AudioProcessor:
             if isinstance(audio_data, str) and os.path.exists(audio_data):
                 with open(audio_data, "rb") as f:
                     audio_data = f.read()
-                    
+
             # Play the audio
             play(audio_data)
         except Exception as e:
