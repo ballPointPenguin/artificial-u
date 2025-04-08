@@ -1,9 +1,9 @@
 """
-Content generator for ArtificialU using the Anthropic Claude API.
+Content generator for ArtificialU using either Anthropic Claude API or alternative models.
 """
 
 import os
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Any
 import anthropic
 
 from artificial_u.models.core import Professor, Course, Lecture
@@ -11,21 +11,27 @@ from artificial_u.models.core import Professor, Course, Lecture
 
 class ContentGenerator:
     """
-    Generates academic content using the Anthropic Claude API.
+    Generates academic content using the Anthropic Claude API or alternative models.
     """
 
-    def __init__(self, api_key: Optional[str] = None):
+    def __init__(self, api_key: Optional[str] = None, client: Optional[Any] = None):
         """
         Initialize the content generator.
 
         Args:
             api_key: Anthropic API key. If not provided, will use ANTHROPIC_API_KEY environment variable.
+            client: Optional pre-configured client (for testing or alternative models)
         """
         self.api_key = api_key or os.environ.get("ANTHROPIC_API_KEY")
-        if not self.api_key:
-            raise ValueError("Anthropic API key is required")
 
-        self.client = anthropic.Client(api_key=self.api_key)
+        if client:
+            self.client = client
+        else:
+            if not self.api_key:
+                raise ValueError(
+                    "Anthropic API key is required when not providing a client"
+                )
+            self.client = anthropic.Client(api_key=self.api_key)
 
     def create_professor(
         self,

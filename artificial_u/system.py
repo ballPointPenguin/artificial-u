@@ -4,11 +4,14 @@ Main system class for ArtificialU.
 
 import os
 import json
+import logging
 from typing import Dict, List, Optional, Tuple, Any
 from pathlib import Path
 import uuid
+import random
 
 from artificial_u.generators.content import ContentGenerator
+from artificial_u.generators.factory import create_generator
 from artificial_u.audio.processor import AudioProcessor
 from artificial_u.models.database import Repository
 from artificial_u.models.core import Professor, Course, Lecture, Department
@@ -26,62 +29,177 @@ class UniversitySystem:
         elevenlabs_api_key: Optional[str] = None,
         db_path: Optional[str] = None,
         audio_path: Optional[str] = None,
+        content_backend: str = "anthropic",
+        content_model: Optional[str] = None,
     ):
         """
         Initialize the university system.
 
         Args:
-            anthropic_api_key: Anthropic API key for content generation
-            elevenlabs_api_key: ElevenLabs API key for audio generation
-            db_path: Path to SQLite database
-            audio_path: Path to store audio files
+            anthropic_api_key: API key for Anthropic, uses ANTHROPIC_API_KEY env var if not provided
+            elevenlabs_api_key: API key for ElevenLabs, uses ELEVENLABS_API_KEY env var if not provided
+            db_path: Path to SQLite database, uses DATABASE_PATH env var or 'university.db' if not provided
+            audio_path: Path to store audio files, uses AUDIO_PATH env var or 'audio_files' if not provided
+            content_backend: Backend to use for content generation ('anthropic' or 'ollama')
+            content_model: Model to use with the chosen backend (depends on backend)
         """
-        self.content_generator = ContentGenerator(api_key=anthropic_api_key)
-        self.audio_processor = AudioProcessor(
-            api_key=elevenlabs_api_key, audio_path=audio_path
+        # Setup logging
+        logging.basicConfig(level=logging.INFO)
+        self.logger = logging.getLogger(__name__)
+
+        # Setup content generator
+        backend_kwargs = {}
+        if content_backend == "anthropic":
+            backend_kwargs["api_key"] = anthropic_api_key
+        elif content_backend == "ollama":
+            backend_kwargs["model"] = content_model or "tinyllama"
+
+        self.content_generator = create_generator(
+            backend=content_backend, **backend_kwargs
         )
+
+        # Setup audio processor
+        self.audio_processor = AudioProcessor(api_key=elevenlabs_api_key)
+
+        # Setup database repository
         self.repository = Repository(db_path=db_path)
+
+        # Setup audio path
+        self.audio_path = audio_path or os.environ.get("AUDIO_PATH", "audio_files")
+        Path(self.audio_path).mkdir(parents=True, exist_ok=True)
 
     def create_professor(
         self,
         name: Optional[str] = None,
-        department: str = "Computer Science",
-        specialization: str = "Artificial Intelligence",
-        gender: Optional[str] = None,
-        nationality: Optional[str] = None,
-        age_range: Optional[str] = None,
+        title: Optional[str] = None,
+        department: Optional[str] = None,
+        specialization: Optional[str] = None,
+        background: Optional[str] = None,
+        teaching_style: Optional[str] = None,
+        personality: Optional[str] = None,
     ) -> Professor:
         """
-        Create a new professor with a consistent personality.
+        Create a new professor with the given attributes.
 
-        Args:
-            name: Professor name (if None, will be generated)
-            department: Academic department
-            specialization: Area of expertise
-            gender: Optional gender specification
-            nationality: Optional nationality specification
-            age_range: Optional age range
-
-        Returns:
-            Professor: The created professor profile
+        If parameters are not provided, default or AI-generated values will be used.
         """
-        # Generate professor profile using content generator
-        professor = self.content_generator.create_professor(
+        # Generate default name if not provided
+        if name is None:
+            # Use a simple default name rather than requiring the ContentGenerator to have generate_random_name
+            random_last_names = [
+                "Smith",
+                "Johnson",
+                "Williams",
+                "Brown",
+                "Jones",
+                "Miller",
+                "Davis",
+                "Wilson",
+                "Taylor",
+                "Clark",
+            ]
+            name = f"Dr. {random.choice(random_last_names)}"
+
+        # Generate default department if not provided
+        if department is None:
+            departments = [
+                "Computer Science",
+                "Physics",
+                "Biology",
+                "Mathematics",
+                "History",
+                "Psychology",
+            ]
+            department = random.choice(departments)
+
+        # Generate default specialization if not provided
+        if specialization is None:
+            specializations = {
+                "Computer Science": [
+                    "Machine Learning",
+                    "Software Engineering",
+                    "Cybersecurity",
+                ],
+                "Physics": ["Quantum Mechanics", "Astrophysics", "Particle Physics"],
+                "Biology": ["Molecular Biology", "Genetics", "Ecology"],
+                "Mathematics": [
+                    "Number Theory",
+                    "Applied Statistics",
+                    "Differential Equations",
+                ],
+                "History": [
+                    "Ancient Civilizations",
+                    "Modern History",
+                    "Political History",
+                ],
+                "Psychology": [
+                    "Cognitive Psychology",
+                    "Clinical Psychology",
+                    "Developmental Psychology",
+                ],
+            }
+            dept_specializations = specializations.get(department, ["General"])
+            specialization = random.choice(dept_specializations)
+
+        # Generate default title if not provided
+        if title is None:
+            # Randomly choose an academic title
+            academic_titles = [
+                "Professor",
+                "Associate Professor",
+                "Assistant Professor",
+                "Adjunct Professor",
+            ]
+            academic_rank = random.choice(academic_titles)
+            title = f"{academic_rank} of {department}"
+
+        # Generate default background if not provided
+        if background is None:
+            background = f"Experienced educator with expertise in {specialization}"
+
+        # Generate default teaching style if not provided
+        if teaching_style is None:
+            styles = [
+                "Interactive",
+                "Lecture-based",
+                "Discussion-oriented",
+                "Practical",
+                "Research-focused",
+            ]
+            teaching_style = random.choice(styles)
+
+        # Generate default personality if not provided
+        if personality is None:
+            personalities = [
+                "Enthusiastic",
+                "Methodical",
+                "Inspiring",
+                "Analytical",
+                "Patient",
+                "Innovative",
+            ]
+            personality = random.choice(personalities)
+
+        professor = Professor(
+            name=name,
+            title=title,
             department=department,
             specialization=specialization,
-            gender=gender,
-            nationality=nationality,
-            age_range=age_range,
+            background=background,
+            teaching_style=teaching_style,
+            personality=personality,
         )
 
-        # Create a voice for the professor
+        # Create voice for professor
         voice_id = self.audio_processor.create_professor_voice(professor)
 
-        # Update professor's voice settings
-        professor.voice_settings["voice_id"] = voice_id
+        # Don't set voice_id directly as it's not a field in the Professor model
+        # The voice_id is already stored in professor.voice_settings by create_professor_voice
 
-        # Save to database
-        return self.repository.create_professor(professor)
+        # Save professor to repository to get an ID
+        saved_professor = self.repository.create_professor(professor)
+
+        return saved_professor
 
     def create_course(
         self,
@@ -116,7 +234,7 @@ class UniversitySystem:
             if not professor:
                 raise ValueError(f"Professor with ID {professor_id} not found")
         else:
-            professor = self.create_professor(department=department)
+            professor = self.create_professor()
 
         # Create basic course
         if not description:

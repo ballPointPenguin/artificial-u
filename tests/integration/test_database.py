@@ -87,6 +87,7 @@ def sample_lecture(db_course):
     )
 
 
+@pytest.mark.integration
 def test_professor_crud(repository, sample_professor):
     """Test CRUD operations for professors."""
     # Create
@@ -114,6 +115,7 @@ def test_professor_crud(repository, sample_professor):
     assert verified_prof.title == "Updated Professor of Testing"
 
 
+@pytest.mark.integration
 def test_course_crud(repository, db_professor, sample_course):
     """Test CRUD operations for courses."""
     # Create course
@@ -141,6 +143,7 @@ def test_course_crud(repository, db_professor, sample_course):
     assert dept_courses[0].id == created_course.id
 
 
+@pytest.mark.integration
 def test_lecture_crud(repository, db_course, sample_lecture):
     """Test CRUD operations for lectures."""
     # Create lecture
@@ -172,6 +175,7 @@ def test_lecture_crud(repository, db_course, sample_lecture):
     assert updated_lecture.audio_path == "test_audio.mp3"
 
 
+@pytest.mark.integration
 def test_relationships(repository, db_professor, db_course, sample_lecture):
     """Test relationships between models."""
     # Create lecture

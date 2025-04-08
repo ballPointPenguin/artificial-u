@@ -14,6 +14,16 @@ setup(
         "sqlalchemy>=2.0.23",
         "anthropic>=0.18.1",
     ],
+    extras_require={
+        "dev": [
+            "pytest>=7.0.0",
+            "ollama>=0.4.0",
+        ],
+        "test": [
+            "pytest>=7.0.0",
+            "ollama>=0.4.0",
+        ],
+    },
     entry_points={
         "console_scripts": [
             "artificial-u=artificial_u.cli.app:cli",

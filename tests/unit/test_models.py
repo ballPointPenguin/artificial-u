@@ -7,6 +7,7 @@ import pytest
 from artificial_u.models.core import Department, Professor, Course, Lecture
 
 
+@pytest.mark.unit
 def test_department_creation():
     """Test Department model creation and validation."""
     dept = Department(
@@ -23,6 +24,7 @@ def test_department_creation():
     assert dept.id is None  # Optional field should be None by default
 
 
+@pytest.mark.unit
 def test_professor_creation():
     """Test Professor model creation and validation."""
     prof = Professor(
@@ -42,6 +44,7 @@ def test_professor_creation():
     assert prof.image_path is None
 
 
+@pytest.mark.unit
 def test_course_creation():
     """Test Course model creation and validation."""
     course = Course(
@@ -62,6 +65,7 @@ def test_course_creation():
     assert isinstance(course.generated_at, datetime)
 
 
+@pytest.mark.unit
 def test_lecture_creation():
     """Test Lecture model creation and validation."""
     lecture = Lecture(
@@ -80,6 +84,7 @@ def test_lecture_creation():
     assert isinstance(lecture.generated_at, datetime)
 
 
+@pytest.mark.unit
 def test_invalid_department():
     """Test Department model validation with missing required fields."""
     with pytest.raises(ValueError):
@@ -91,6 +96,7 @@ def test_invalid_department():
         )
 
 
+@pytest.mark.unit
 def test_invalid_professor():
     """Test Professor model validation with missing required fields."""
     with pytest.raises(ValueError):
@@ -102,6 +108,7 @@ def test_invalid_professor():
         )
 
 
+@pytest.mark.unit
 def test_invalid_course():
     """Test Course model validation with invalid field values."""
     with pytest.raises(ValueError):
@@ -117,6 +124,7 @@ def test_invalid_course():
         )
 
 
+@pytest.mark.unit
 def test_invalid_lecture():
     """Test Lecture model validation with invalid field values."""
     with pytest.raises(ValueError):
