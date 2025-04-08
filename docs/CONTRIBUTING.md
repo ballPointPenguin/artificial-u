@@ -13,23 +13,27 @@ Thank you for considering contributing to ArtificialU! This document provides gu
 ### Setting Up Your Environment
 
 1. Clone the repository:
+
 ```bash
 git clone https://github.com/ballPointPenguin/artificial-u.git
 cd artificial-u
 ```
 
 2. Create and activate a virtual environment:
+
 ```bash
 python -m venv venv
 source venv/bin/activate  # On Windows, use: venv\Scripts\activate
 ```
 
 3. Install dependencies:
+
 ```bash
 pip install -r requirements.txt
 ```
 
 4. Copy the example environment file and add your API keys:
+
 ```bash
 cp .env.example .env
 # Edit .env with your API keys
@@ -61,6 +65,7 @@ artificial_u/
 
 1. Check the [Issues](https://github.com/ballPointPenguin/artificial-u/issues) for tasks to work on
 2. Create a new branch for your feature or bugfix:
+
 ```bash
 git checkout -b feature/your-feature-name
 ```
@@ -68,16 +73,19 @@ git checkout -b feature/your-feature-name
 3. Make your changes
 4. Write or update tests if applicable
 5. Run tests before committing:
+
 ```bash
 # Tests will be added in the future
 ```
 
 6. Commit your changes with a descriptive message:
+
 ```bash
 git commit -m "Add feature: description of your feature"
 ```
 
 7. Push your branch to GitHub:
+
 ```bash
 git push origin feature/your-feature-name
 ```
@@ -121,6 +129,7 @@ git push origin feature/your-feature-name
 ## Questions?
 
 If you have any questions or need help, feel free to:
+
 - Open an issue
 - Comment on an existing issue
 - Contact the project maintainer
