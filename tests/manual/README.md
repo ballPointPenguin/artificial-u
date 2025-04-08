@@ -8,7 +8,7 @@ The ElevenLabs integration test script validates the connection and functionalit
 
 ### Prerequisites
 
-- ElevenLabs API key (sign up at https://elevenlabs.io/)
+- ElevenLabs API key (sign up at <https://elevenlabs.io/>)
 - Python 3.9+
 - All project dependencies installed
 
@@ -40,7 +40,7 @@ python tests/manual/test_elevenlabs_integration.py --api-key your_api_key
 
 A successful test run will output something like:
 
-```
+```txt
 === Starting ElevenLabs Integration Tests ===
 ? Successfully connected to ElevenLabs API. Found 18 voices.
 ? Subscription tier: pro

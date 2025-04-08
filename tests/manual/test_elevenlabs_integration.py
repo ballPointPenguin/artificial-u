@@ -1,314 +1,210 @@
-#!/usr/bin/env python3
 """
-Manual test script for validating the ElevenLabs API integration.
+Simplified test suite for ElevenLabs integration with ArtificialU.
 
-This script tests:
-1. Basic API connectivity
-2. Voice retrieval functionality
-3. Professor voice creation and mapping
-4. Text processing and speech generation
+This module provides a single, focused test for validating the ElevenLabs
+integration with the minimal API functionality needed for the MVP.
 
-Run with:
-    ELEVENLABS_API_KEY=your_api_key python tests/manual/test_elevenlabs_integration.py
+Prerequisites:
+1. Install dependencies: pip install -r requirements.txt
+2. Get an API key from ElevenLabs
+
+Usage:
+    # Run with API key:
+    ELEVENLABS_API_KEY=<your_key> python tests/manual/test_elevenlabs_simple.py
+
+    # Or run with pytest:
+    ELEVENLABS_API_KEY=<your_key> pytest tests/manual/test_elevenlabs_simple.py -v
 """
 
-import argparse
 import os
+import re
 import sys
 import time
+import pytest
 from pathlib import Path
-from typing import Dict, Any, List, Optional
+from rich.console import Console
 
-# Add the project root to the Python path
-sys.path.append(str(Path(__file__).parent.parent.parent))
+# Add the project root to the Python path if running directly
+if __name__ == "__main__":
+    sys.path.append(str(Path(__file__).parent.parent.parent))
 
-# Import project modules
 from artificial_u.audio.processor import AudioProcessor
 from artificial_u.models.core import Professor, Lecture
 
-# Constants
-TEST_AUDIO_PATH = Path("test_audio_output")
+console = Console()
+
+# Skip tests if no API key in environment
+pytestmark = pytest.mark.skipif(
+    "ELEVENLABS_API_KEY" not in os.environ,
+    reason="ELEVENLABS_API_KEY not found in environment",
+)
 
 
-def create_test_professors() -> List[Professor]:
-    """Create a diverse set of test professor profiles."""
-    professors = [
-        Professor(
-            id="test-cs-prof",
-            name="Dr. Alan Turing",
-            title="Professor of Computer Science",
-            department="Computer Science",
-            specialization="Artificial Intelligence",
-            background="Pioneering computer scientist with expertise in AI and computational theory",
-            teaching_style="Interactive",
-            personality="Enthusiastic"
-        ),
-        Professor(
-            id="test-history-prof",
-            name="Dr. Eleanor Roosevelt",
-            title="Professor of History",
-            department="History",
-            specialization="Modern Political History",
-            background="Distinguished historian specializing in 20th century political movements",
-            teaching_style="Lecture-based",
-            personality="Thoughtful"
-        ),
-        Professor(
-            id="test-physics-prof",
-            name="Dr. Marie Curie",
-            title="Professor of Physics",
-            department="Physics",
-            specialization="Quantum Mechanics",
-            background="Nobel Prize-winning physicist with groundbreaking research in radioactivity",
-            teaching_style="Research-focused",
-            personality="Analytical"
-        ),
-    ]
-    return professors
+@pytest.fixture(scope="module")
+def audio_processor():
+    """Initialize AudioProcessor with API key."""
+    api_key = os.environ.get("ELEVENLABS_API_KEY")
+    return AudioProcessor(api_key=api_key)
 
 
-def create_test_lecture() -> Lecture:
-    """Create a sample lecture for testing text-to-speech."""
-    return Lecture(
-        id="test-lecture-01",
-        course_id="CS101",
-        title="Introduction to Artificial Intelligence",
-        week_number=1,
-        order_in_week=1,
-        content="""
-# Introduction to Artificial Intelligence
-
-*[Professor enters the classroom and greets students]*
-
-Good morning, everyone! Welcome to our first lecture on Artificial Intelligence. I'm Dr. Alan Turing, and I'll be your guide through this fascinating field.
-
-*[Pauses and looks around the room]*
-
-Today, we'll be covering the fundamental concepts of AI, its history, and why it matters in our modern world. Let's begin by defining what we mean by "artificial intelligence."
-
-*[Professor speaks with enthusiasm]*
-
-AI refers to computer systems designed to perform tasks that typically require human intelligence. These include problem-solving, recognizing speech, visual perception, decision-making, and language translation.
-
-*[Writes key points on the board]*
-
-The history of AI is quite interesting. While many consider it a modern field, the concept dates back to ancient myths and stories about artificial beings endowed with intelligence or consciousness.
-
-*[Professor pauses dramatically]*
-
-However, the formal academic field of AI research only began in 1956, at a conference at Dartmouth College. This is where the term "artificial intelligence" was coined.
-
-*[Speaks softly]*
-
-Now, let's consider why AI is so important today...
-
-*[Resume normal tone]*
-
-Any questions so far?
-        """,
-        generated_at="2025-04-08T16:00:00",
+@pytest.fixture(scope="module")
+def test_professor():
+    """Create a test professor profile."""
+    return Professor(
+        id="test_professor",
+        name="Dr. Ada Lovelace",
+        title="Professor of Computer Science",
+        department="Computer Science",
+        specialization="Algorithmic Theory",
+        background="Pioneering computer scientist and mathematician",
+        personality="Analytical, thoughtful, and visionary",
+        teaching_style="Methodical with historical context",
     )
 
 
-def test_elevenlabs_api_connection(api_key: str) -> bool:
-    """
-    Test basic connection to ElevenLabs API.
-    
-    Args:
-        api_key: ElevenLabs API key
-        
-    Returns:
-        bool: True if connection successful, False otherwise
-    """
-    processor = AudioProcessor(api_key=api_key)
-    try:
-        voices = processor.get_available_voices()
-        voice_count = len(voices)
-        print(f"? Successfully connected to ElevenLabs API. Found {voice_count} voices.")
-        
-        # Display subscription info
-        subscription = processor.get_user_subscription_info()
-        if subscription:
-            print(f"? Subscription tier: {subscription.get('tier', 'Unknown')}")
-            print(f"? Character limit: {subscription.get('character_limit', 'Unknown')}")
-            print(f"? Characters used: {subscription.get('character_count', 'Unknown')}")
-            print(f"? Characters available: {subscription.get('available_characters', 'Unknown')}")
-            
-        return voice_count > 0
-    except Exception as e:
-        print(f"? Error connecting to ElevenLabs API: {e}")
-        return False
+@pytest.fixture(scope="module")
+def test_lecture():
+    """Create a sample lecture for testing."""
+    return Lecture(
+        id="test-lecture",
+        title="Introduction to Computing",
+        course_id="CS101",
+        week_number=1,
+        order_in_week=1,
+        description="Introductory lecture on computing concepts",
+        content="""
+# Introduction to Computing Concepts
+
+*[Professor enters the classroom]*
+
+Good morning, everyone! Welcome to CS101: Introduction to Computing Concepts. 
+I'm Dr. Ada Lovelace, and I'll be your guide through this fascinating field.
+
+*[Pauses and looks around the room]*
+
+Today, we'll be covering the fundamental concepts of computing, its history, 
+and why it matters in our modern world. Let's begin by defining what we mean 
+by "computing."
+
+*[Professor speaks with enthusiasm]*
+
+Computing refers to any goal-oriented activity requiring, benefiting from, 
+or creating computers. This includes designing and building hardware and software 
+systems, processing and managing information, and scientific investigations.
+
+*[Writes key points on the board]*
+
+The history of computing is quite interesting. While many consider it a modern field, 
+the concept dates back to ancient tools like the abacus and early calculating machines.
+
+*[Professor pauses dramatically]*
+
+However, the formal academic field of computer science began to take shape 
+in the mid-20th century, as programmable electronic computers were developed.
+
+*[Speaks softly]*
+
+Now, let's consider why computing is so important today...
+
+*[Resumes normal tone]*
+
+Any questions so far?
+        """,
+    )
 
 
-def test_voice_creation_mapping(api_key: str) -> bool:
-    """
-    Test the voice mapping for professor characteristics.
-    
-    Args:
-        api_key: ElevenLabs API key
-        
-    Returns:
-        bool: True if voices were successfully created, False otherwise
-    """
-    processor = AudioProcessor(api_key=api_key)
-    professors = create_test_professors()
-    
-    print("\n=== Testing Professor Voice Creation and Mapping ===")
-    success = True
-    
-    for professor in professors:
-        try:
-            print(f"\nCreating voice for {professor.name} in {professor.department}...")
-            voice_id = processor.create_professor_voice(professor)
-            print(f"? Created voice {voice_id} for {professor.name}")
-            
-            # Verify voice settings were properly set
-            if professor.voice_settings and "voice_id" in professor.voice_settings:
-                print(f"? Voice settings correctly stored: {professor.voice_settings}")
-            else:
-                print(f"? Voice settings not properly stored for {professor.name}")
-                success = False
-                
-            # Verify the voice can be retrieved
-            voice = processor.get_voice_for_professor(professor)
-            print(f"? Retrieved voice: {voice.voice_id}")
-            
-        except Exception as e:
-            print(f"? Error creating/retrieving voice for {professor.name}: {e}")
-            success = False
-    
-    return success
+@pytest.mark.manual
+def test_api_connection(audio_processor):
+    """Test basic connection to ElevenLabs API."""
+    # Request available voices as a way to test connection
+    voices = audio_processor.get_available_voices()
+
+    # Verify we got a valid response
+    assert isinstance(voices, list)
+    assert len(voices) > 0
+
+    # Display information about available voices
+    console.print(f"\n[bold]Available Voices:[/bold] Found {len(voices)} voices")
+
+    # Display subscription information if available
+    subscription = audio_processor.get_user_subscription_info()
+    if subscription:
+        console.print("\n[bold]Subscription Info:[/bold]")
+        console.print(
+            f"Available characters: {subscription.get('available_characters', 'Unknown')}"
+        )
 
 
-def test_text_processing(api_key: str) -> bool:
-    """
-    Test the text processing functionality.
-    
-    Args:
-        api_key: ElevenLabs API key
-        
-    Returns:
-        bool: True if text processing works correctly, False otherwise
-    """
-    processor = AudioProcessor(api_key=api_key)
-    
-    print("\n=== Testing Text Processing ===")
-    
-    test_texts = [
-        "[Professor enters the classroom]Good morning, everyone!",
-        "This is a [pauses] test of stage directions.",
-        "[speaks excitedly]This should have emotional markup![normal voice]",
-        "[whispers]This should be quiet.[speaks loudly]This should be loud."
-    ]
-    
-    success = True
-    for text in test_texts:
-        try:
-            processed = processor.process_stage_directions(text)
-            print(f"\nOriginal: {text}")
-            print(f"Processed: {processed}")
-            
-            if processed != text:
-                print("? Text was successfully processed")
-            else:
-                print("?? Text wasn't changed by processing")
-                
-        except Exception as e:
-            print(f"? Error processing text: {e}")
-            success = False
-    
-    return success
+@pytest.mark.manual
+def test_text_processing(audio_processor):
+    """Test text processing functionality for stage directions."""
+    test_text = "[Professor enters] Good morning, everyone! [pauses] Let's begin."
+
+    processed_text = audio_processor.process_stage_directions(test_text)
+
+    # The processed text should be different from the original
+    assert processed_text != test_text
+
+    # Stage directions should be removed or replaced
+    assert "[Professor enters]" not in processed_text
+    assert "[pauses]" not in processed_text
+
+    # A pause marker should have been added
+    assert '<break time="1s"/>' in processed_text
+
+    console.print("\n[bold]Text Processing:[/bold]")
+    console.print(f"Original: {test_text}")
+    console.print(f"Processed: {processed_text}")
 
 
-def test_speech_generation(api_key: str) -> bool:
-    """
-    Test the text-to-speech functionality.
-    
-    Args:
-        api_key: ElevenLabs API key
-        
-    Returns:
-        bool: True if speech generation works correctly, False otherwise
-    """
-    processor = AudioProcessor(api_key=api_key, audio_path=str(TEST_AUDIO_PATH))
-    TEST_AUDIO_PATH.mkdir(exist_ok=True)
-    
-    professors = create_test_professors()
-    lecture = create_test_lecture()
-    
-    print("\n=== Testing Speech Generation ===")
-    
-    success = True
-    try:
-        # Use the CS professor for our test
-        professor = professors[0]
-        
-        print(f"Generating audio for a sample lecture by {professor.name}...")
-        start_time = time.time()
-        
-        file_path, audio_data = processor.text_to_speech(lecture, professor)
-        
-        end_time = time.time()
-        duration = end_time - start_time
-        
-        print(f"? Generated audio in {duration:.2f} seconds")
-        print(f"? Audio saved to: {file_path}")
-        print(f"? Audio size: {len(audio_data) / 1024:.2f} KB")
-        
-    except Exception as e:
-        print(f"? Error generating speech: {e}")
-        success = False
-    
-    return success
+@pytest.mark.manual
+def test_text_to_speech(audio_processor, test_professor, test_lecture):
+    """Test the full text-to-speech functionality."""
+    console.print("\n[bold]Testing Text-to-Speech:[/bold]")
+    console.print(f"Converting lecture '{test_lecture.title}' to speech...")
+
+    start_time = time.time()
+
+    # Generate speech
+    audio_path, audio_data = audio_processor.text_to_speech(
+        test_lecture, test_professor
+    )
+
+    end_time = time.time()
+    duration = end_time - start_time
+
+    # Verify the results
+    assert audio_path is not None
+    assert audio_data is not None
+    assert os.path.exists(audio_path)
+
+    # Log results
+    console.print(f"Generated audio in {duration:.2f} seconds")
+    console.print(f"Audio saved to: {audio_path}")
+    console.print(f"Audio size: {len(audio_data) / 1024:.2f} KB")
+
+    return audio_path
 
 
-def main():
-    parser = argparse.ArgumentParser(description="Test ElevenLabs API integration")
-    parser.add_argument("--api-key", "-k", help="ElevenLabs API key")
-    parser.add_argument("--skip-audio", "-s", action="store_true", help="Skip audio generation test")
-    args = parser.parse_args()
-    
-    # Get API key from args or environment
-    api_key = args.api_key or os.environ.get("ELEVENLABS_API_KEY")
-    if not api_key:
-        print("? Error: ElevenLabs API key not provided. Use --api-key or set ELEVENLABS_API_KEY environment variable.")
-        sys.exit(1)
-    
-    # Run tests
-    print("=== Starting ElevenLabs Integration Tests ===")
-    
-    # Test 1: API Connection
-    if not test_elevenlabs_api_connection(api_key):
-        print("? API connection test failed. Stopping further tests.")
-        sys.exit(1)
-    
-    # Test 2: Voice Creation and Mapping
-    voice_test_result = test_voice_creation_mapping(api_key)
-    print(f"Voice creation and mapping test {'passed ?' if voice_test_result else 'failed ?'}")
-    
-    # Test 3: Text Processing
-    text_test_result = test_text_processing(api_key)
-    print(f"Text processing test {'passed ?' if text_test_result else 'failed ?'}")
-    
-    # Test 4: Speech Generation (optional)
-    if not args.skip_audio:
-        speech_test_result = test_speech_generation(api_key)
-        print(f"Speech generation test {'passed ?' if speech_test_result else 'failed ?'}")
-    
-    # Summary
-    print("\n=== Test Summary ===")
-    print(f"API Connection: {'?' if True else '?'}")
-    print(f"Voice Creation: {'?' if voice_test_result else '?'}")
-    print(f"Text Processing: {'?' if text_test_result else '?'}")
-    if not args.skip_audio:
-        print(f"Speech Generation: {'?' if speech_test_result else '?'}")
-    
-    if not all([voice_test_result, text_test_result]):
-        print("\n? Some tests failed!")
-        sys.exit(1)
-    else:
-        print("\n? All tests passed!")
+@pytest.mark.skipif("--play" not in sys.argv, reason="Use --play to hear the audio")
+@pytest.mark.manual
+def test_play_audio(audio_processor, test_text_to_speech):
+    """Optionally play the generated audio."""
+    audio_path = test_text_to_speech
+
+    console.print("\n[bold]Playing Audio:[/bold]")
+    console.print(f"Playing audio from {audio_path}...")
+
+    audio_processor.play_audio(audio_path)
 
 
 if __name__ == "__main__":
-    main()
+    # Setup pytest command line args
+    args = [__file__, "-v"]
+
+    # Add --play flag if requested
+    if "--play" in sys.argv:
+        args.append("--play")
+
+    # Run the tests
+    pytest.main(args)
