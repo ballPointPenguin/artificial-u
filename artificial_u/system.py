@@ -8,7 +8,6 @@ import logging
 from typing import Dict, List, Optional, Tuple, Any
 from pathlib import Path
 import uuid
-import random
 from datetime import datetime
 
 from artificial_u.generators.content import ContentGenerator
@@ -16,6 +15,28 @@ from artificial_u.generators.factory import create_generator
 from artificial_u.audio.processor import AudioProcessor
 from artificial_u.models.database import Repository
 from artificial_u.models.core import Professor, Course, Lecture, Department
+from artificial_u.utils.random_generators import RandomGenerators
+from artificial_u.utils.exceptions import (
+    ProfessorNotFoundError,
+    CourseNotFoundError,
+    LectureNotFoundError,
+    ContentGenerationError,
+    AudioProcessingError,
+    DatabaseError,
+    ConfigurationError,
+)
+from artificial_u.config.defaults import (
+    DEFAULT_DB_PATH,
+    DEFAULT_AUDIO_PATH,
+    DEFAULT_TEXT_EXPORT_PATH,
+    DEFAULT_CONTENT_BACKEND,
+    DEFAULT_OLLAMA_MODEL,
+    DEFAULT_COURSE_LEVEL,
+    DEFAULT_COURSE_WEEKS,
+    DEFAULT_LECTURES_PER_WEEK,
+    DEFAULT_LECTURE_WORD_COUNT,
+    DEFAULT_LOG_LEVEL,
+)
 
 
 class UniversitySystem:
@@ -30,9 +51,10 @@ class UniversitySystem:
         elevenlabs_api_key: Optional[str] = None,
         db_path: Optional[str] = None,
         audio_path: Optional[str] = None,
-        content_backend: str = "anthropic",
+        content_backend: str = DEFAULT_CONTENT_BACKEND,
         content_model: Optional[str] = None,
         text_export_path: Optional[str] = None,
+        log_level: str = DEFAULT_LOG_LEVEL,
     ):
         """
         Initialize the university system.
@@ -40,46 +62,135 @@ class UniversitySystem:
         Args:
             anthropic_api_key: API key for Anthropic, uses ANTHROPIC_API_KEY env var if not provided
             elevenlabs_api_key: API key for ElevenLabs, uses ELEVENLABS_API_KEY env var if not provided
-            db_path: Path to SQLite database, uses DATABASE_PATH env var or 'university.db' if not provided
-            audio_path: Path to store audio files, uses AUDIO_PATH env var or 'audio_files' if not provided
+            db_path: Path to SQLite database, uses DATABASE_PATH env var or default if not provided
+            audio_path: Path to store audio files, uses AUDIO_PATH env var or default if not provided
             content_backend: Backend to use for content generation ('anthropic' or 'ollama')
             content_model: Model to use with the chosen backend (depends on backend)
-            text_export_path: Path to export lecture text files, uses TEXT_EXPORT_PATH env var or 'lecture_texts' if not provided
+            text_export_path: Path to export lecture text files, uses TEXT_EXPORT_PATH env var or default if not provided
+            log_level: Logging level (INFO, DEBUG, etc.)
         """
         # Setup logging
-        logging.basicConfig(level=logging.INFO)
-        self.logger = logging.getLogger(__name__)
+        self._setup_logging(log_level)
 
-        # Setup content generator
-        backend_kwargs = {}
-        if content_backend == "anthropic":
-            backend_kwargs["api_key"] = anthropic_api_key
-        elif content_backend == "ollama":
-            backend_kwargs["model"] = content_model or "tinyllama"
-
-        self.content_generator = create_generator(
-            backend=content_backend, **backend_kwargs
+        # Setup system dependencies
+        self._setup_content_generator(
+            content_backend=content_backend,
+            anthropic_api_key=anthropic_api_key,
+            content_model=content_model,
         )
-
-        # Setup audio processor
-        self.audio_processor = AudioProcessor(api_key=elevenlabs_api_key)
-
-        # Setup database repository
-        self.repository = Repository(db_path=db_path)
-
-        # Setup audio path
-        self.audio_path = audio_path or os.environ.get("AUDIO_PATH", "audio_files")
-        Path(self.audio_path).mkdir(parents=True, exist_ok=True)
-
-        # Setup text export path
-        self.text_export_path = text_export_path or os.environ.get(
-            "TEXT_EXPORT_PATH", "lecture_texts"
-        )
-        Path(self.text_export_path).mkdir(parents=True, exist_ok=True)
+        self._setup_audio_processor(elevenlabs_api_key)
+        self._setup_repository(db_path)
+        self._setup_paths(audio_path, text_export_path)
 
         # Store content backend type for reference
         self.content_backend = content_backend
         self.content_model = content_model
+
+        self.logger.info(
+            f"University system initialized with {content_backend} backend"
+            f"{' and ' + content_model if content_model else ''}"
+        )
+
+    def _setup_logging(self, log_level: str) -> None:
+        """
+        Set up logging configuration.
+
+        Args:
+            log_level: Logging level string (INFO, DEBUG, etc.)
+        """
+        numeric_level = getattr(logging, log_level.upper(), logging.INFO)
+        logging.basicConfig(
+            level=numeric_level,
+            format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+        )
+        self.logger = logging.getLogger(__name__)
+        self.logger.debug("Logging configured")
+
+    def _setup_content_generator(
+        self,
+        content_backend: str,
+        anthropic_api_key: Optional[str] = None,
+        content_model: Optional[str] = None,
+    ) -> None:
+        """
+        Set up the content generator based on backend.
+
+        Args:
+            content_backend: Backend type ('anthropic' or 'ollama')
+            anthropic_api_key: API key for Anthropic (if applicable)
+            content_model: Model name for content generation
+        """
+        backend_kwargs = {}
+        if content_backend == "anthropic":
+            backend_kwargs["api_key"] = anthropic_api_key
+        elif content_backend == "ollama":
+            backend_kwargs["model"] = content_model or DEFAULT_OLLAMA_MODEL
+        else:
+            raise ConfigurationError(f"Unsupported content backend: {content_backend}")
+
+        try:
+            self.content_generator = create_generator(
+                backend=content_backend, **backend_kwargs
+            )
+            self.logger.debug(
+                f"Content generator set up with {content_backend} backend"
+            )
+        except Exception as e:
+            error_msg = f"Failed to initialize content generator: {str(e)}"
+            self.logger.error(error_msg)
+            raise ConfigurationError(error_msg) from e
+
+    def _setup_audio_processor(self, elevenlabs_api_key: Optional[str] = None) -> None:
+        """
+        Set up the audio processor.
+
+        Args:
+            elevenlabs_api_key: API key for ElevenLabs
+        """
+        try:
+            self.audio_processor = AudioProcessor(api_key=elevenlabs_api_key)
+            self.logger.debug("Audio processor set up")
+        except Exception as e:
+            error_msg = f"Failed to initialize audio processor: {str(e)}"
+            self.logger.error(error_msg)
+            raise ConfigurationError(error_msg) from e
+
+    def _setup_repository(self, db_path: Optional[str] = None) -> None:
+        """
+        Set up the database repository.
+
+        Args:
+            db_path: Path to the SQLite database
+        """
+        try:
+            self.repository = Repository(db_path=db_path or DEFAULT_DB_PATH)
+            self.logger.debug("Database repository set up")
+        except Exception as e:
+            error_msg = f"Failed to initialize repository: {str(e)}"
+            self.logger.error(error_msg)
+            raise DatabaseError(error_msg) from e
+
+    def _setup_paths(
+        self, audio_path: Optional[str] = None, text_export_path: Optional[str] = None
+    ) -> None:
+        """
+        Set up file system paths for audio and text exports.
+
+        Args:
+            audio_path: Path for audio files
+            text_export_path: Path for exported text files
+        """
+        # Setup audio path
+        self.audio_path = audio_path or os.environ.get("AUDIO_PATH", DEFAULT_AUDIO_PATH)
+        Path(self.audio_path).mkdir(parents=True, exist_ok=True)
+        self.logger.debug(f"Audio path set to {self.audio_path}")
+
+        # Setup text export path
+        self.text_export_path = text_export_path or os.environ.get(
+            "TEXT_EXPORT_PATH", DEFAULT_TEXT_EXPORT_PATH
+        )
+        Path(self.text_export_path).mkdir(parents=True, exist_ok=True)
+        self.logger.debug(f"Text export path set to {self.text_export_path}")
 
     def create_professor(
         self,
@@ -95,104 +206,46 @@ class UniversitySystem:
         Create a new professor with the given attributes.
 
         If parameters are not provided, default or AI-generated values will be used.
+
+        Args:
+            name: Professor's name
+            title: Academic title
+            department: Academic department
+            specialization: Research specialization
+            background: Professional background
+            teaching_style: Teaching methodology
+            personality: Personality traits
+
+        Returns:
+            Professor: The created professor object
         """
-        # Generate default name if not provided
-        if name is None:
-            # Use a simple default name rather than requiring the ContentGenerator to have generate_random_name
-            random_last_names = [
-                "Smith",
-                "Johnson",
-                "Williams",
-                "Brown",
-                "Jones",
-                "Miller",
-                "Davis",
-                "Wilson",
-                "Taylor",
-                "Clark",
-            ]
-            name = f"Dr. {random.choice(random_last_names)}"
+        self.logger.info("Creating new professor")
 
-        # Generate default department if not provided
-        if department is None:
-            departments = [
-                "Computer Science",
-                "Physics",
-                "Biology",
-                "Mathematics",
-                "History",
-                "Psychology",
-            ]
-            department = random.choice(departments)
+        # Generate default values for missing attributes
+        name = name or RandomGenerators.generate_professor_name()
+        self.logger.debug(f"Using professor name: {name}")
 
-        # Generate default specialization if not provided
-        if specialization is None:
-            specializations = {
-                "Computer Science": [
-                    "Machine Learning",
-                    "Software Engineering",
-                    "Cybersecurity",
-                ],
-                "Physics": ["Quantum Mechanics", "Astrophysics", "Particle Physics"],
-                "Biology": ["Molecular Biology", "Genetics", "Ecology"],
-                "Mathematics": [
-                    "Number Theory",
-                    "Applied Statistics",
-                    "Differential Equations",
-                ],
-                "History": [
-                    "Ancient Civilizations",
-                    "Modern History",
-                    "Political History",
-                ],
-                "Psychology": [
-                    "Cognitive Psychology",
-                    "Clinical Psychology",
-                    "Developmental Psychology",
-                ],
-            }
-            dept_specializations = specializations.get(department, ["General"])
-            specialization = random.choice(dept_specializations)
+        department = department or RandomGenerators.generate_department()
+        self.logger.debug(f"Using department: {department}")
 
-        # Generate default title if not provided
-        if title is None:
-            # Randomly choose an academic title
-            academic_titles = [
-                "Professor",
-                "Associate Professor",
-                "Assistant Professor",
-                "Adjunct Professor",
-            ]
-            academic_rank = random.choice(academic_titles)
-            title = f"{academic_rank} of {department}"
+        specialization = specialization or RandomGenerators.generate_specialization(
+            department
+        )
+        self.logger.debug(f"Using specialization: {specialization}")
 
-        # Generate default background if not provided
-        if background is None:
-            background = f"Experienced educator with expertise in {specialization}"
+        title = title or RandomGenerators.generate_professor_title(department)
+        self.logger.debug(f"Using title: {title}")
 
-        # Generate default teaching style if not provided
-        if teaching_style is None:
-            styles = [
-                "Interactive",
-                "Lecture-based",
-                "Discussion-oriented",
-                "Practical",
-                "Research-focused",
-            ]
-            teaching_style = random.choice(styles)
+        background = background or RandomGenerators.generate_background(specialization)
+        self.logger.debug(f"Using background: {background}")
 
-        # Generate default personality if not provided
-        if personality is None:
-            personalities = [
-                "Enthusiastic",
-                "Methodical",
-                "Inspiring",
-                "Analytical",
-                "Patient",
-                "Innovative",
-            ]
-            personality = random.choice(personalities)
+        teaching_style = teaching_style or RandomGenerators.generate_teaching_style()
+        self.logger.debug(f"Using teaching style: {teaching_style}")
 
+        personality = personality or RandomGenerators.generate_personality()
+        self.logger.debug(f"Using personality: {personality}")
+
+        # Create professor object
         professor = Professor(
             name=name,
             title=title,
@@ -203,29 +256,52 @@ class UniversitySystem:
             personality=personality,
         )
 
-        # Get voice ID for professor using the simplified method
-        voice_id = self.audio_processor.get_voice_id_for_professor(professor)
-
-        # Store the voice ID in the professor's voice settings
-        if not professor.voice_settings:
-            professor.voice_settings = {}
-        professor.voice_settings["voice_id"] = voice_id
+        # Assign a voice to the professor
+        self._assign_voice_to_professor(professor)
 
         # Save professor to repository to get an ID
-        saved_professor = self.repository.create_professor(professor)
+        try:
+            saved_professor = self.repository.create_professor(professor)
+            self.logger.info(f"Professor created with ID: {saved_professor.id}")
+            return saved_professor
+        except Exception as e:
+            error_msg = f"Failed to save professor: {str(e)}"
+            self.logger.error(error_msg)
+            raise DatabaseError(error_msg) from e
 
-        return saved_professor
+    def _assign_voice_to_professor(self, professor: Professor) -> None:
+        """
+        Assign a voice to a professor.
+
+        Args:
+            professor: Professor object to assign voice to
+        """
+        try:
+            voice_id = self.audio_processor.get_voice_id_for_professor(professor)
+
+            # Store the voice ID in the professor's voice settings
+            if not professor.voice_settings:
+                professor.voice_settings = {}
+            professor.voice_settings["voice_id"] = voice_id
+
+            self.logger.debug(
+                f"Voice ID {voice_id} assigned to professor {professor.name}"
+            )
+        except Exception as e:
+            error_msg = f"Failed to assign voice to professor: {str(e)}"
+            self.logger.warning(error_msg)
+            # Not raising an exception here as this is not critical
 
     def create_course(
         self,
         title: str,
         code: str,
         department: str,
-        level: str = "Undergraduate",
+        level: str = DEFAULT_COURSE_LEVEL,
         professor_id: Optional[str] = None,
         description: Optional[str] = None,
-        weeks: int = 14,
-        lectures_per_week: int = 2,
+        weeks: int = DEFAULT_COURSE_WEEKS,
+        lectures_per_week: int = DEFAULT_LECTURES_PER_WEEK,
     ) -> Tuple[Course, Professor]:
         """
         Create a new course with syllabus.
@@ -243,18 +319,17 @@ class UniversitySystem:
         Returns:
             Tuple: (Course, Professor) - The created course and its professor
         """
-        # Get or create professor
-        if professor_id:
-            professor = self.repository.get_professor(professor_id)
-            if not professor:
-                raise ValueError(f"Professor with ID {professor_id} not found")
-        else:
-            professor = self.create_professor()
+        self.logger.info(f"Creating new course: {code} - {title}")
 
-        # Create basic course
+        # Get or create professor
+        professor = self._get_or_create_professor(professor_id)
+
+        # Generate description if not provided
         if not description:
             description = f"A {level} course on {title} in the {department} department."
+            self.logger.debug(f"Generated description: {description}")
 
+        # Create basic course
         course = Course(
             code=code,
             title=title,
@@ -267,13 +342,60 @@ class UniversitySystem:
         )
 
         # Generate syllabus
-        syllabus = self.content_generator.create_course_syllabus(course, professor)
-        course.syllabus = syllabus
+        self._generate_course_syllabus(course, professor)
 
         # Save to database
-        course = self.repository.create_course(course)
+        try:
+            course = self.repository.create_course(course)
+            self.logger.info(f"Course created with ID: {course.id}")
+            return course, professor
+        except Exception as e:
+            error_msg = f"Failed to save course: {str(e)}"
+            self.logger.error(error_msg)
+            raise DatabaseError(error_msg) from e
 
-        return course, professor
+    def _get_or_create_professor(self, professor_id: Optional[str] = None) -> Professor:
+        """
+        Get an existing professor by ID or create a new one.
+
+        Args:
+            professor_id: ID of the professor to retrieve (optional)
+
+        Returns:
+            Professor: The retrieved or created professor
+
+        Raises:
+            ProfessorNotFoundError: If professor_id is provided but not found
+        """
+        if professor_id:
+            self.logger.debug(f"Retrieving professor with ID: {professor_id}")
+            professor = self.repository.get_professor(professor_id)
+            if not professor:
+                error_msg = f"Professor with ID {professor_id} not found"
+                self.logger.error(error_msg)
+                raise ProfessorNotFoundError(error_msg)
+            return professor
+        else:
+            self.logger.debug("No professor ID provided, creating new professor")
+            return self.create_professor()
+
+    def _generate_course_syllabus(self, course: Course, professor: Professor) -> None:
+        """
+        Generate a syllabus for a course.
+
+        Args:
+            course: Course object
+            professor: Professor object
+        """
+        try:
+            self.logger.debug(f"Generating syllabus for course {course.code}")
+            syllabus = self.content_generator.create_course_syllabus(course, professor)
+            course.syllabus = syllabus
+            self.logger.debug("Syllabus generation completed")
+        except Exception as e:
+            error_msg = f"Failed to generate syllabus: {str(e)}"
+            self.logger.error(error_msg)
+            raise ContentGenerationError(error_msg) from e
 
     def generate_lecture(
         self,
@@ -281,7 +403,7 @@ class UniversitySystem:
         week: int,
         number: int = 1,
         topic: Optional[str] = None,
-        word_count: int = 2500,
+        word_count: int = DEFAULT_LECTURE_WORD_COUNT,
     ) -> Tuple[Lecture, Course, Professor]:
         """
         Generate a lecture for a specific course and week.
@@ -291,60 +413,162 @@ class UniversitySystem:
             week: Week number
             number: Lecture number within the week
             topic: Lecture topic (if None, will be derived from syllabus)
-            word_count: Word count for the lecture (default: 2500)
+            word_count: Word count for the lecture
 
         Returns:
             Tuple: (Lecture, Course, Professor) - The generated lecture with its course and professor
         """
-        # Get course
-        course = self.repository.get_course_by_code(course_code)
-        if not course:
-            raise ValueError(f"Course with code {course_code} not found")
-
-        # Get professor
-        professor = self.repository.get_professor(course.professor_id)
-        if not professor:
-            raise ValueError(f"Professor with ID {course.professor_id} not found")
-
-        # Get previous lecture if available (for continuity)
-        previous_lecture = None
-        if week > 1 or (week == 1 and number > 1):
-            prev_week = week
-            prev_number = number - 1
-            if prev_number < 1:
-                prev_week -= 1
-                prev_number = course.lectures_per_week
-
-            previous_lecture = self.repository.get_lecture_by_course_week_order(
-                course_id=course.id, week_number=prev_week, order_in_week=prev_number
-            )
-
-        # Use topic from parameters or generate appropriate topic
-        if not topic:
-            # In a real implementation, would parse syllabus to extract topic
-            # For now, use a placeholder
-            topic = f"Topic for Week {week}, Lecture {number}"
-
-        # Generate lecture content
-        lecture = self.content_generator.create_lecture(
-            course=course,
-            professor=professor,
-            topic=topic,
-            week_number=week,
-            order_in_week=number,
-            previous_lecture_content=(
-                previous_lecture.content if previous_lecture else None
-            ),
-            word_count=word_count,
+        self.logger.info(
+            f"Generating lecture for course {course_code}, week {week}, number {number}"
         )
 
-        # Save to database
-        lecture = self.repository.create_lecture(lecture)
+        # Get course and professor
+        course, professor = self._get_course_and_professor(course_code)
+
+        # Get previous lecture for continuity if available
+        previous_lecture = self._get_previous_lecture(course, week, number)
+
+        # Determine topic
+        lecture_topic = topic or RandomGenerators.generate_lecture_topic(week, number)
+        self.logger.debug(f"Using topic: {lecture_topic}")
+
+        # Generate lecture content
+        lecture = self._create_lecture_content(
+            course, professor, lecture_topic, week, number, previous_lecture, word_count
+        )
+
+        # Save lecture to database
+        try:
+            lecture = self.repository.create_lecture(lecture)
+            self.logger.info(f"Lecture created with ID: {lecture.id}")
+        except Exception as e:
+            error_msg = f"Failed to save lecture: {str(e)}"
+            self.logger.error(error_msg)
+            raise DatabaseError(error_msg) from e
 
         # Export lecture text to file
         self.export_lecture_text(lecture, course, professor)
 
         return lecture, course, professor
+
+    def _get_course_and_professor(self, course_code: str) -> Tuple[Course, Professor]:
+        """
+        Get course and professor objects by course code.
+
+        Args:
+            course_code: The course code to look up
+
+        Returns:
+            Tuple[Course, Professor]: The course and professor objects
+
+        Raises:
+            CourseNotFoundError: If course not found
+            ProfessorNotFoundError: If professor not found
+        """
+        # Get course
+        course = self.repository.get_course_by_code(course_code)
+        if not course:
+            error_msg = f"Course with code {course_code} not found"
+            self.logger.error(error_msg)
+            raise CourseNotFoundError(error_msg)
+
+        # Get professor
+        professor = self.repository.get_professor(course.professor_id)
+        if not professor:
+            error_msg = f"Professor with ID {course.professor_id} not found"
+            self.logger.error(error_msg)
+            raise ProfessorNotFoundError(error_msg)
+
+        return course, professor
+
+    def _get_previous_lecture(
+        self, course: Course, week: int, number: int
+    ) -> Optional[Lecture]:
+        """
+        Get previous lecture for continuity if available.
+
+        Args:
+            course: Course object
+            week: Current week number
+            number: Current lecture number
+
+        Returns:
+            Optional[Lecture]: Previous lecture if available, None otherwise
+        """
+        if week <= 1 and number <= 1:
+            return None
+
+        prev_week = week
+        prev_number = number - 1
+
+        if prev_number < 1:
+            prev_week -= 1
+            prev_number = course.lectures_per_week
+
+        try:
+            previous_lecture = self.repository.get_lecture_by_course_week_order(
+                course_id=course.id, week_number=prev_week, order_in_week=prev_number
+            )
+            if previous_lecture:
+                self.logger.debug(
+                    f"Found previous lecture from week {prev_week}, number {prev_number}"
+                )
+            return previous_lecture
+        except Exception as e:
+            self.logger.warning(
+                f"Failed to retrieve previous lecture: {str(e)}. Continuing without previous content."
+            )
+            return None
+
+    def _create_lecture_content(
+        self,
+        course: Course,
+        professor: Professor,
+        topic: str,
+        week_number: int,
+        order_in_week: int,
+        previous_lecture: Optional[Lecture] = None,
+        word_count: int = DEFAULT_LECTURE_WORD_COUNT,
+    ) -> Lecture:
+        """
+        Generate the content for a lecture.
+
+        Args:
+            course: Course object
+            professor: Professor object
+            topic: Lecture topic
+            week_number: Week number
+            order_in_week: Lecture number within the week
+            previous_lecture: Previous lecture for continuity (optional)
+            word_count: Target word count
+
+        Returns:
+            Lecture: Generated lecture object
+
+        Raises:
+            ContentGenerationError: If lecture content generation fails
+        """
+        try:
+            self.logger.debug(f"Generating lecture content for topic: {topic}")
+
+            lecture = self.content_generator.create_lecture(
+                course=course,
+                professor=professor,
+                topic=topic,
+                week_number=week_number,
+                order_in_week=order_in_week,
+                previous_lecture_content=(
+                    previous_lecture.content if previous_lecture else None
+                ),
+                word_count=word_count,
+            )
+
+            self.logger.debug("Lecture content generation completed")
+            return lecture
+        except Exception as e:
+            error_msg = f"Failed to generate lecture content: {str(e)}"
+            self.logger.error(error_msg)
+            raise ContentGenerationError(error_msg) from e
 
     def export_lecture_text(
         self, lecture: Lecture, course: Course, professor: Professor
@@ -360,6 +584,10 @@ class UniversitySystem:
         Returns:
             str: Path to the exported text file
         """
+        self.logger.info(
+            f"Exporting lecture text for {course.code} W{lecture.week_number} L{lecture.order_in_week}"
+        )
+
         # Create a filename based on course code, week, and lecture number
         filename = f"{course.code}_W{lecture.week_number}_L{lecture.order_in_week}.md"
 
@@ -370,8 +598,37 @@ class UniversitySystem:
         # Full path to the text file
         file_path = course_folder / filename
 
-        # Create header metadata
-        header = f"""# {lecture.title}
+        try:
+            # Create header metadata
+            header = self._generate_lecture_file_header(lecture, course, professor)
+
+            # Write the content to the file
+            with open(file_path, "w") as f:
+                f.write(header + lecture.content)
+
+            self.logger.info(f"Lecture text exported to {file_path}")
+            return str(file_path)
+        except Exception as e:
+            error_msg = f"Failed to export lecture text: {str(e)}"
+            self.logger.error(error_msg)
+            # Continue despite error, just log it
+            return ""
+
+    def _generate_lecture_file_header(
+        self, lecture: Lecture, course: Course, professor: Professor
+    ) -> str:
+        """
+        Generate the header for the lecture file.
+
+        Args:
+            lecture: Lecture object
+            course: Course object
+            professor: Professor object
+
+        Returns:
+            str: Formatted header text
+        """
+        return f"""# {lecture.title}
         
 ## Course: {course.title} ({course.code})
 ## Professor: {professor.name}
@@ -382,14 +639,6 @@ class UniversitySystem:
 ---
 
 """
-
-        # Write the content to the file
-        with open(file_path, "w") as f:
-            f.write(header + lecture.content)
-
-        self.logger.info(f"Lecture text exported to {file_path}")
-
-        return str(file_path)
 
     def create_lecture_audio(
         self, course_code: str, week: int, number: int = 1
@@ -405,32 +654,78 @@ class UniversitySystem:
         Returns:
             Tuple: (audio_path, lecture) - Path to the audio file and the lecture
         """
+        self.logger.info(
+            f"Creating audio for course {course_code}, week {week}, number {number}"
+        )
+
+        # Get course, lecture, and professor
+        course, lecture, professor = self._get_course_lecture_professor(
+            course_code, week, number
+        )
+
+        # Generate audio
+        try:
+            audio_path, _ = self.audio_processor.text_to_speech(lecture, professor)
+            self.logger.info(f"Audio generated at {audio_path}")
+        except Exception as e:
+            error_msg = f"Failed to generate audio: {str(e)}"
+            self.logger.error(error_msg)
+            raise AudioProcessingError(error_msg) from e
+
+        # Update lecture with audio path
+        try:
+            lecture = self.repository.update_lecture_audio(lecture.id, audio_path)
+            self.logger.debug(f"Lecture updated with audio path: {audio_path}")
+        except Exception as e:
+            error_msg = f"Failed to update lecture with audio path: {str(e)}"
+            self.logger.error(error_msg)
+            raise DatabaseError(error_msg) from e
+
+        return audio_path, lecture
+
+    def _get_course_lecture_professor(
+        self, course_code: str, week: int, number: int
+    ) -> Tuple[Course, Lecture, Professor]:
+        """
+        Get course, lecture, and professor objects for audio generation.
+
+        Args:
+            course_code: Course code
+            week: Week number
+            number: Lecture number
+
+        Returns:
+            Tuple[Course, Lecture, Professor]: Course, lecture, and professor objects
+
+        Raises:
+            CourseNotFoundError: If course not found
+            LectureNotFoundError: If lecture not found
+            ProfessorNotFoundError: If professor not found
+        """
         # Get course
         course = self.repository.get_course_by_code(course_code)
         if not course:
-            raise ValueError(f"Course with code {course_code} not found")
+            error_msg = f"Course with code {course_code} not found"
+            self.logger.error(error_msg)
+            raise CourseNotFoundError(error_msg)
 
         # Get lecture
         lecture = self.repository.get_lecture_by_course_week_order(
             course_id=course.id, week_number=week, order_in_week=number
         )
         if not lecture:
-            raise ValueError(
-                f"Lecture for course {course_code}, week {week}, number {number} not found"
-            )
+            error_msg = f"Lecture for course {course_code}, week {week}, number {number} not found"
+            self.logger.error(error_msg)
+            raise LectureNotFoundError(error_msg)
 
         # Get professor
         professor = self.repository.get_professor(course.professor_id)
         if not professor:
-            raise ValueError(f"Professor with ID {course.professor_id} not found")
+            error_msg = f"Professor with ID {course.professor_id} not found"
+            self.logger.error(error_msg)
+            raise ProfessorNotFoundError(error_msg)
 
-        # Generate audio
-        audio_path, _ = self.audio_processor.text_to_speech(lecture, professor)
-
-        # Update lecture with audio path
-        lecture = self.repository.update_lecture_audio(lecture.id, audio_path)
-
-        return audio_path, lecture
+        return course, lecture, professor
 
     def list_departments(self) -> List[Department]:
         """
@@ -439,6 +734,8 @@ class UniversitySystem:
         Returns:
             List[Department]: List of departments
         """
+        self.logger.debug("Listing departments")
+
         # In a complete implementation, would retrieve from database
         # For now, return placeholder data
         return [
@@ -475,14 +772,24 @@ class UniversitySystem:
         Returns:
             List[Dict]: List of courses with professor information
         """
-        courses = self.repository.list_courses(department)
-        result = []
+        self.logger.info(
+            f"Listing courses{f' for department {department}' if department else ''}"
+        )
 
-        for course in courses:
-            professor = self.repository.get_professor(course.professor_id)
-            result.append({"course": course, "professor": professor})
+        try:
+            courses = self.repository.list_courses(department)
+            result = []
 
-        return result
+            for course in courses:
+                professor = self.repository.get_professor(course.professor_id)
+                result.append({"course": course, "professor": professor})
+
+            self.logger.debug(f"Found {len(result)} courses")
+            return result
+        except Exception as e:
+            error_msg = f"Failed to list courses: {str(e)}"
+            self.logger.error(error_msg)
+            raise DatabaseError(error_msg) from e
 
     def get_sample_lecture(self) -> str:
         """
@@ -491,13 +798,24 @@ class UniversitySystem:
         Returns:
             str: Sample lecture content
         """
+        self.logger.debug("Retrieving sample lecture content")
+
         # In a real implementation, this would load from a file or generate dynamically
         sample_path = Path(__file__).parent.parent / "samples" / "sample_lecture.md"
-        if sample_path.exists():
-            with open(sample_path, "r") as f:
-                return f.read()
 
-        # Placeholder if file doesn't exist
+        if sample_path.exists():
+            try:
+                with open(sample_path, "r") as f:
+                    content = f.read()
+                    self.logger.debug(f"Sample lecture loaded from {sample_path}")
+                    return content
+            except Exception as e:
+                self.logger.warning(f"Failed to load sample lecture: {str(e)}")
+                # Fall through to placeholder
+        else:
+            self.logger.warning(f"Sample lecture file not found at {sample_path}")
+
+        # Placeholder if file doesn't exist or can't be read
         return """
         # Introduction to Neural Networks
         
@@ -522,48 +840,78 @@ class UniversitySystem:
         Returns:
             List of dictionaries containing lecture info
         """
+        self.logger.info(
+            f"Getting lecture previews"
+            f"{f' for course {course_code}' if course_code else ''}"
+            f"{f' with model filter {model_filter}' if model_filter else ''}"
+        )
+
         # Get all lectures
         lectures = []
-        courses_info = self.repository.list_courses()
 
-        for course_info in courses_info:
-            # Handle either format - dict with "course" key or direct Course object
-            if isinstance(course_info, dict) and "course" in course_info:
-                course = course_info["course"]
-            else:
-                course = course_info  # Assume it's a Course object directly
+        try:
+            courses_info = self.repository.list_courses()
 
-            # Skip if filtering by course code and this isn't the right course
-            if course_code and course.code != course_code:
-                continue
+            for course_info in courses_info:
+                # Handle either format - dict with "course" key or direct Course object
+                if isinstance(course_info, dict) and "course" in course_info:
+                    course = course_info["course"]
+                else:
+                    course = course_info  # Assume it's a Course object directly
 
+                # Skip if filtering by course code and this isn't the right course
+                if course_code and course.code != course_code:
+                    continue
+
+                lectures.extend(self._get_lectures_for_course(course, model_filter))
+
+            # Sort by most recent first
+            lectures.sort(key=lambda x: x.get("generated_at", ""), reverse=True)
+
+            # Limit the results
+            return lectures[:limit]
+        except Exception as e:
+            error_msg = f"Failed to get lecture previews: {str(e)}"
+            self.logger.error(error_msg)
+            raise DatabaseError(error_msg) from e
+
+    def _get_lectures_for_course(
+        self, course: Course, model_filter: Optional[str] = None
+    ) -> List[Dict[str, Any]]:
+        """
+        Get lecture previews for a specific course.
+
+        Args:
+            course: Course object
+            model_filter: Optional model filter
+
+        Returns:
+            List[Dict[str, Any]]: List of lecture preview dictionaries
+        """
+        lectures = []
+
+        try:
             professor = self.repository.get_professor(course.professor_id)
+            if not professor:
+                self.logger.warning(
+                    f"Professor not found for course {course.code}, skipping"
+                )
+                return []
+
             course_lectures = self.repository.list_lectures_by_course(course.id)
 
             for lecture in course_lectures:
-                # Try to determine the model used (if available)
-                lecture_path = self.get_lecture_export_path(
-                    course.code, lecture.week_number, lecture.order_in_week
-                )
-                model_used = None
-
-                if os.path.exists(lecture_path):
-                    with open(lecture_path, "r") as f:
-                        content = f.read()
-                        # Look for the model info in the header
-                        model_lines = [
-                            l for l in content.split("\n") if "Generated with:" in l
-                        ]
-                        if model_lines:
-                            model_used = (
-                                model_lines[0].replace("## Generated with:", "").strip()
-                            )
-
-                # Skip if filtering by model and this doesn't match
+                # Get model information and skip if it doesn't match the filter
+                model_used = self._get_lecture_model_info(course.code, lecture)
                 if model_filter and (
                     not model_used or model_filter.lower() not in model_used.lower()
                 ):
                     continue
+
+                # Construct lecture preview
+                lecture_path = self.get_lecture_export_path(
+                    course.code, lecture.week_number, lecture.order_in_week
+                )
 
                 lectures.append(
                     {
@@ -585,11 +933,44 @@ class UniversitySystem:
                     }
                 )
 
-        # Sort by most recent first
-        lectures.sort(key=lambda x: x.get("generated_at", ""), reverse=True)
+            return lectures
+        except Exception as e:
+            self.logger.warning(
+                f"Error getting lectures for course {course.code}: {str(e)}"
+            )
+            return []
 
-        # Limit the results
-        return lectures[:limit]
+    def _get_lecture_model_info(
+        self, course_code: str, lecture: Lecture
+    ) -> Optional[str]:
+        """
+        Extract model information from a lecture file.
+
+        Args:
+            course_code: Course code
+            lecture: Lecture object
+
+        Returns:
+            Optional[str]: Model information if found, None otherwise
+        """
+        lecture_path = self.get_lecture_export_path(
+            course_code, lecture.week_number, lecture.order_in_week
+        )
+
+        if not os.path.exists(lecture_path):
+            return None
+
+        try:
+            with open(lecture_path, "r") as f:
+                content = f.read()
+                # Look for the model info in the header
+                model_lines = [l for l in content.split("\n") if "Generated with:" in l]
+                if model_lines:
+                    return model_lines[0].replace("## Generated with:", "").strip()
+        except Exception as e:
+            self.logger.warning(f"Failed to read lecture file {lecture_path}: {str(e)}")
+
+        return None
 
     def get_lecture_export_path(self, course_code: str, week: int, number: int) -> str:
         """
