@@ -66,19 +66,19 @@ The CLI interface provides commands for interacting with the system:
 ### Create a course
 
 ```bash
-python -m artificial_u create-course -d \"Computer Science\" -t \"Introduction to Artificial Intelligence\" -c \"CS4511\"
+python -m artificial_u create-course -d "Computer Science" -t "Introduction to Artificial Intelligence" -c "CS4511"
 ```
 
 ### Generate a lecture
 
 ```bash
-python -m artificial_u generate-lecture -c \"CS4511\" -w 1 -n 1 -t \"What is AI? History and Intelligent Agents\"
+python -m artificial_u generate-lecture -c "CS4511" -w 1 -n 1 -t "What is AI? History and Intelligent Agents"
 ```
 
 ### Create audio for a lecture
 
 ```bash
-python -m artificial_u create-audio -c \"CS4511\" -w 1 -n 1
+python -m artificial_u create-audio -c "CS4511" -w 1 -n 1
 ```
 
 ### List available courses
@@ -90,13 +90,13 @@ python -m artificial_u list-courses
 ### View course syllabus
 
 ```bash
-python -m artificial_u show-syllabus -c \"CS4511\"
+python -m artificial_u show-syllabus -c "CS4511"
 ```
 
 ### Play a lecture (if available)
 
 ```bash
-python -m artificial_u play-lecture -c \"CS4511\" -w 1 -n 1
+python -m artificial_u play-lecture -c "CS4511" -w 1 -n 1
 ```
 
 ## Project Structure
@@ -125,9 +125,9 @@ artificial_u/
 
 This repository includes a devcontainer configuration for easy development using GitHub Codespaces:
 
-1. Click the \"Code\" button on the repository
-2. Select the \"Codespaces\" tab
-3. Click \"Create codespace on main\"
+1. Click the "Code" button on the repository
+2. Select the "Codespaces" tab
+3. Click "Create codespace on main"
 4. Once the environment is ready, add your API keys to the `.env` file
 5. Start developing!
 
