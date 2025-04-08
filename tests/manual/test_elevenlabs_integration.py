@@ -39,6 +39,9 @@ pytestmark = pytest.mark.skipif(
     reason="ELEVENLABS_API_KEY not found in environment",
 )
 
+# Store generated audio path as a module-level variable
+_audio_path = None
+
 
 @pytest.fixture(scope="module")
 def audio_processor():
@@ -157,54 +160,51 @@ def test_text_processing(audio_processor):
     console.print(f"Processed: {processed_text}")
 
 
+@pytest.fixture(scope="module")
+def generate_audio(audio_processor, test_professor, test_lecture):
+    """Generate audio for testing and return the path."""
+    global _audio_path
+
+    if _audio_path is None:
+        console.print("\n[bold]Testing Text-to-Speech:[/bold]")
+        console.print(f"Converting lecture '{test_lecture.title}' to speech...")
+
+        start_time = time.time()
+
+        # Generate speech
+        audio_path, audio_data = audio_processor.text_to_speech(
+            test_lecture, test_professor
+        )
+
+        end_time = time.time()
+        duration = end_time - start_time
+
+        # Verify the results
+        assert audio_path is not None
+        assert audio_data is not None
+        assert os.path.exists(audio_path)
+
+        # Log results
+        console.print(f"Generated audio in {duration:.2f} seconds")
+        console.print(f"Audio saved to: {audio_path}")
+        console.print(f"Audio size: {len(audio_data) / 1024:.2f} KB")
+
+        _audio_path = audio_path
+
+    return _audio_path
+
+
 @pytest.mark.manual
-def test_text_to_speech(audio_processor, test_professor, test_lecture):
+def test_text_to_speech(generate_audio):
     """Test the full text-to-speech functionality."""
-    console.print("\n[bold]Testing Text-to-Speech:[/bold]")
-    console.print(f"Converting lecture '{test_lecture.title}' to speech...")
-
-    start_time = time.time()
-
-    # Generate speech
-    audio_path, audio_data = audio_processor.text_to_speech(
-        test_lecture, test_professor
-    )
-
-    end_time = time.time()
-    duration = end_time - start_time
-
-    # Verify the results
-    assert audio_path is not None
-    assert audio_data is not None
-    assert os.path.exists(audio_path)
-
-    # Log results
-    console.print(f"Generated audio in {duration:.2f} seconds")
-    console.print(f"Audio saved to: {audio_path}")
-    console.print(f"Audio size: {len(audio_data) / 1024:.2f} KB")
-
-    return audio_path
+    assert generate_audio is not None
+    assert os.path.exists(generate_audio)
 
 
-@pytest.mark.skipif("--play" not in sys.argv, reason="Use --play to hear the audio")
 @pytest.mark.manual
-def test_play_audio(audio_processor, test_text_to_speech):
-    """Optionally play the generated audio."""
-    audio_path = test_text_to_speech
-
+def test_play_audio(audio_processor, generate_audio):
+    """Play the generated audio."""
     console.print("\n[bold]Playing Audio:[/bold]")
-    console.print(f"Playing audio from {audio_path}...")
+    console.print(f"Playing audio from {generate_audio}...")
 
-    audio_processor.play_audio(audio_path)
-
-
-if __name__ == "__main__":
-    # Setup pytest command line args
-    args = [__file__, "-v"]
-
-    # Add --play flag if requested
-    if "--play" in sys.argv:
-        args.append("--play")
-
-    # Run the tests
-    pytest.main(args)
+    audio_processor.play_audio(generate_audio)

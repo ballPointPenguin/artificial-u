@@ -22,6 +22,9 @@ ELEVENLABS_API_KEY=your_api_key python tests/manual/test_elevenlabs_integration.
 
 # Using command-line argument
 python tests/manual/test_elevenlabs_integration.py --api-key your_api_key
+
+# Using pytest
+pytest -m manual
 ```
 
 ### Test Options
