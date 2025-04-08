@@ -1,0 +1,34 @@
+{
+  "name": "ArtificialU Development",
+  "image": "mcr.microsoft.com/devcontainers/python:3.10",
+  "features": {
+      "ghcr.io/devcontainers/features/python:1": {
+          "version": "3.10",
+          "installTools": true
+      },
+      "ghcr.io/devcontainers/features/git:1": {}
+  },
+  "postCreateCommand": "pip install -r requirements.txt",
+  "customizations": {
+      "vscode": {
+          "extensions": [
+              "ms-python.python",
+              "ms-python.vscode-pylance",
+              "ms-python.black-formatter",
+              "yzhang.markdown-all-in-one",
+              "eamodio.gitlens"
+          ],
+          "settings": {
+              "python.defaultInterpreterPath": "/usr/local/bin/python",
+              "python.linting.enabled": true,
+              "python.linting.pylintEnabled": true,
+              "python.formatting.provider": "black",
+              "editor.formatOnSave": true,
+              "editor.rulers": [88],
+              "terminal.integrated.defaultProfile.linux": "bash"
+          }
+      }
+  },
+  "forwardPorts": [],
+  "remoteUser": "vscode"
+}
