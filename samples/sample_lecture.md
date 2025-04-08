@@ -1,5 +1,7 @@
 # Introduction to Neural Networks
+
 ## CSCI-4512: Advanced Artificial Intelligence
+
 ### Dr. Mikhail Volkov, Week 3, Lecture 1
 
 *[Professor Volkov enters the lecture hall wearing his characteristic bow tie, today in a deep burgundy color that matches his pocket square. He adjusts his glasses and surveys the room with a slight smile beneath his salt-and-pepper mustache.]*

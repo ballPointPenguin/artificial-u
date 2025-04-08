@@ -69,8 +69,7 @@ def main():
         for var in missing_vars:
             console.print(f"  - {var}")
         console.print(
-            "\
-Please set these in a .env file or environment variables before running."
+            "Please set these in a .env file or environment variables before running."
         )
         return
 
@@ -82,10 +81,7 @@ Please set these in a .env file or environment variables before running."
     time.sleep(1)
     console.print("[green]✓[/green] System initialized")
 
-    console.print(
-        "\
-[bold]Step 2:[/bold] Creating professor..."
-    )
+    console.print("[bold]Step 2:[/bold] Creating professor...")
     time.sleep(2)
     console.print("[green]✓[/green] Created professor: [bold]Dr. Mikhail Volkov[/bold]")
     console.print("   Department: Computer Science")
@@ -94,10 +90,7 @@ Please set these in a .env file or environment variables before running."
         "   Background: 58-year-old Russian-American with background at Moscow State University and Bell Labs"
     )
 
-    console.print(
-        "\
-[bold]Step 3:[/bold] Creating course..."
-    )
+    console.print("[bold]Step 3:[/bold] Creating course...")
     time.sleep(2)
     console.print(
         "[green]✓[/green] Created course: [bold]Advanced Artificial Intelligence[/bold]"
@@ -107,10 +100,7 @@ Please set these in a .env file or environment variables before running."
     console.print("   Weeks: 14")
     console.print("   Lectures per week: 2")
 
-    console.print(
-        "\
-[bold]Step 4:[/bold] Generating lecture..."
-    )
+    console.print("[bold]Step 4:[/bold] Generating lecture...")
     time.sleep(3)
     console.print(
         "[green]✓[/green] Generated lecture: [bold]Introduction to Neural Networks[/bold]"
@@ -118,10 +108,7 @@ Please set these in a .env file or environment variables before running."
     console.print("   Week: 3, Lecture: 1")
     console.print("   Length: ~3000 words")
 
-    console.print(
-        "\
-[bold]Step 5:[/bold] Converting lecture to audio..."
-    )
+    console.print("[bold]Step 5:[/bold] Converting lecture to audio...")
     time.sleep(3)
     console.print("[green]✓[/green] Created audio file")
     console.print(
@@ -129,44 +116,22 @@ Please set these in a .env file or environment variables before running."
     )
     console.print("   Duration: ~25 minutes")
 
-    console.print(
-        "\
-[bold]Demonstration complete![/bold]"
-    )
-    console.print(
-        "\
-In a full implementation, you would be able to:"
-    )
+    console.print("[bold]Demonstration complete![/bold]")
+    console.print("In a full implementation, you would be able to:")
     console.print("- Browse courses and professors through the CLI or web interface")
     console.print("- Generate new lectures on demand")
     console.print("- Listen to lectures through an integrated player")
     console.print("- Ask questions to professors during virtual 'office hours'")
 
     # Show a preview of the lecture content
-    console.print(
-        "\
-[bold]Lecture Preview:[/bold]"
-    )
+    console.print("[bold]Lecture Preview:[/bold]")
 
     try:
         with open(sample_lecture_path, "r") as f:
             lecture_content = f.read()
             # Show just the first few paragraphs
-            preview = "\
-".join(
-                lecture_content.split(
-                    "\
-"
-                )[:15]
-            )
-            console.print(
-                Markdown(
-                    preview
-                    + "\
-\
-[... content continues ...]"
-                )
-            )
+            preview = "".join(lecture_content.split("\n")[:15])
+            console.print(Markdown(preview + "\n\n[... content continues ...]"))
     except Exception as e:
         console.print(f"[red]Error reading sample lecture:[/red] {e}")
 
