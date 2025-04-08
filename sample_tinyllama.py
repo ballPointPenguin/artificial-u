@@ -88,11 +88,7 @@ def main():
 
         print(f"Generating lecture for Week {week}, Lecture {lecture_num}...")
         lecture, course, professor = system.generate_lecture(
-            course_code=course.code,
-            week=week,
-            number=lecture_num,
-            min_words=500,  # Shorter for demo purposes
-            max_words=1000,
+            course_code=course.code, week=week, number=lecture_num, word_count=800
         )
 
         print(f"Generated lecture: {lecture.title}")

@@ -279,8 +279,7 @@ class UniversitySystem:
         week: int,
         number: int = 1,
         topic: Optional[str] = None,
-        min_words: int = 2000,
-        max_words: int = 3000,
+        word_count: int = 2500,
     ) -> Tuple[Lecture, Course, Professor]:
         """
         Generate a lecture for a specific course and week.
@@ -290,8 +289,7 @@ class UniversitySystem:
             week: Week number
             number: Lecture number within the week
             topic: Lecture topic (if None, will be derived from syllabus)
-            min_words: Minimum word count for the lecture (default: 2000)
-            max_words: Maximum word count for the lecture (default: 3000)
+            word_count: Word count for the lecture (default: 2500)
 
         Returns:
             Tuple: (Lecture, Course, Professor) - The generated lecture with its course and professor
@@ -335,8 +333,7 @@ class UniversitySystem:
             previous_lecture_content=(
                 previous_lecture.content if previous_lecture else None
             ),
-            min_words=min_words,
-            max_words=max_words,
+            word_count=word_count,
         )
 
         # Save to database

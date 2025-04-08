@@ -153,8 +153,7 @@ def test_create_lecture_with_ollama():
         topic="Unit Testing Fundamentals",
         week_number=1,
         order_in_week=1,
-        min_words=500,
-        max_words=800,
+        word_count=800,
     )
 
     # Validate the lecture
