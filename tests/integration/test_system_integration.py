@@ -61,10 +61,20 @@ def test_system():
             content_model="tinyllama",
             db_path=db_path,
             audio_path=audio_path,
-            # No need for API keys when using Ollama
-            anthropic_api_key="not_needed",
-            elevenlabs_api_key="not_needed",
+            # Use dummy API keys since we're skipping audio generation
+            anthropic_api_key="sk_not_needed_for_test",
+            elevenlabs_api_key="el_not_needed_for_test",
         )
+
+        # Monkey patch the audio_processor.text_to_speech method to skip actual API calls
+        def mock_text_to_speech(lecture, professor):
+            audio_path = os.path.join(audio_path, f"{lecture.id}.mp3")
+            # Create an empty file
+            with open(audio_path, "wb") as f:
+                f.write(b"mock audio data")
+            return audio_path, b"mock audio data"
+
+        system.audio_processor.text_to_speech = mock_text_to_speech
 
         yield system
 
@@ -83,6 +93,10 @@ def test_create_professor_with_ollama(test_system):
 
     # Verify professor was created and stored in database
     assert professor.id is not None
+
+    # Verify professor has voice settings
+    assert professor.voice_settings is not None
+    assert "voice_id" in professor.voice_settings
 
     # Retrieve from database to ensure it was saved
     retrieved = test_system.repository.get_professor(professor.id)

@@ -203,11 +203,13 @@ class UniversitySystem:
             personality=personality,
         )
 
-        # Create voice for professor
-        voice_id = self.audio_processor.create_professor_voice(professor)
+        # Get voice ID for professor using the simplified method
+        voice_id = self.audio_processor.get_voice_id_for_professor(professor)
 
-        # Don't set voice_id directly as it's not a field in the Professor model
-        # The voice_id is already stored in professor.voice_settings by create_professor_voice
+        # Store the voice ID in the professor's voice settings
+        if not professor.voice_settings:
+            professor.voice_settings = {}
+        professor.voice_settings["voice_id"] = voice_id
 
         # Save professor to repository to get an ID
         saved_professor = self.repository.create_professor(professor)
