@@ -9,6 +9,11 @@ import json
 import re
 
 from artificial_u.models.core import Professor, Course, Lecture
+from artificial_u.prompts.professors import get_professor_prompt
+from artificial_u.prompts.courses import get_syllabus_prompt
+from artificial_u.prompts.lectures import get_lecture_prompt
+from artificial_u.prompts.system import get_system_prompt
+from artificial_u.prompts.base import extract_xml_content
 
 
 class ContentGenerator:
@@ -56,41 +61,32 @@ class ContentGenerator:
         Returns:
             Professor: Generated professor profile
         """
-        prompt = f"""Create a detailed profile for a professor in the {department} department, specializing in {specialization}.
+        # Get the professor prompt using the prompt module
+        prompt = get_professor_prompt(
+            department=department,
+            specialization=specialization,
+            gender=gender,
+            nationality=nationality,
+            age_range=age_range,
+        )
 
-{f"Gender: {gender}" if gender else ""}
-{f"Nationality/cultural background: {nationality}" if nationality else ""}
-{f"Age range: {age_range}" if age_range else ""}
-
-Create a rich, realistic faculty profile with the following structure:
-
-<professor_profile>
-Name: [Full name with title]
-Title: [Academic title]
-Background: [Educational and professional background]
-Personality: [Personality traits evident in teaching]
-Teaching Style: [Distinctive teaching approach]
-</professor_profile>
-
-Make this professor feel like a real person with depth. Include educational background, personality traits that show in teaching, and a distinctive teaching style."""
+        # Get the system prompt
+        system_prompt = get_system_prompt("professor")
 
         response = self.client.messages.create(
             model="claude-3-7-sonnet-20250219",
             max_tokens=2000,
             temperature=1,
-            system="You are an expert at creating rich, realistic faculty profiles for an educational content system.",
+            system=system_prompt,
             messages=[{"role": "user", "content": [{"type": "text", "text": prompt}]}],
         )
 
         # Extract the profile content
         content = response.content[0].text
-        profile_match = re.search(
-            r"<professor_profile>\s*(.*?)\s*</professor_profile>", content, re.DOTALL
-        )
-        if not profile_match:
-            raise ValueError("No professor profile found in response")
+        profile_text = extract_xml_content(content, "professor_profile")
 
-        profile_text = profile_match.group(1).strip()
+        if not profile_text:
+            raise ValueError("No professor profile found in response")
 
         # Parse the profile text into a dictionary
         profile = {}
@@ -120,53 +116,34 @@ Make this professor feel like a real person with depth. Include educational back
         Returns:
             str: Generated course syllabus
         """
-        prompt = f"""Create a detailed course syllabus for {course.code}: {course.title}
+        # Get the syllabus prompt using the prompt module
+        prompt = get_syllabus_prompt(
+            course_code=course.code,
+            course_title=course.title,
+            department=course.department,
+            professor_name=professor.name,
+            professor_title=professor.title,
+            teaching_style=professor.teaching_style,
+        )
 
-Course Information:
-- Department: {course.department}
-- Professor: {professor.name} ({professor.title})
-- Teaching Style: {professor.teaching_style}
-
-Create a comprehensive syllabus with the following structure:
-
-<syllabus>
-Course Description: [Overview of the course and its objectives]
-
-Learning Outcomes:
-[List of 4-6 specific outcomes students will achieve]
-
-Course Structure:
-[Weekly breakdown of topics and activities]
-
-Assessment Methods:
-[Description of how students will be evaluated]
-
-Required Materials:
-[List of necessary textbooks, resources, or materials]
-
-Course Policies:
-[Key policies on attendance, participation, and academic integrity]
-</syllabus>
-
-Make this syllabus clear, professional, and aligned with the professor's teaching style."""
+        # Get the system prompt
+        system_prompt = get_system_prompt("course")
 
         response = self.client.messages.create(
             model="claude-3-7-sonnet-20250219",
             max_tokens=3000,
             temperature=0.7,
-            system="You are an expert at creating detailed, professional course syllabi that align with academic standards.",
+            system=system_prompt,
             messages=[{"role": "user", "content": [{"type": "text", "text": prompt}]}],
         )
 
         # Extract the syllabus content
         content = response.content[0].text
-        syllabus_match = re.search(
-            r"<syllabus>\s*(.*?)\s*</syllabus>", content, re.DOTALL
-        )
+        syllabus = extract_xml_content(content, "syllabus")
 
-        if syllabus_match:
+        if syllabus:
             # If we find the tags, use the content inside them
-            return syllabus_match.group(1).strip()
+            return syllabus
         elif content.strip():
             # If no tags but content exists, use the whole response
             return content.strip()
@@ -199,93 +176,89 @@ Make this syllabus clear, professional, and aligned with the professor's teachin
         Returns:
             Lecture: Generated lecture
         """
-        continuity_context = ""
-        if previous_lecture_content:
-            continuity_context = f"""Previous lecture summary:
-{previous_lecture_content[:500]}...
+        # Get the lecture prompt using the prompt module
+        prompt = get_lecture_prompt(
+            course_title=course.title,
+            course_code=course.code,
+            topic=topic,
+            week_number=week_number,
+            order_in_week=order_in_week,
+            professor_name=professor.name,
+            professor_background=professor.background,
+            teaching_style=professor.teaching_style,
+            professor_personality=professor.personality,
+            previous_lecture_content=previous_lecture_content,
+            word_count=word_count,
+        )
 
-Build on these concepts appropriately."""
-
-        prompt = f"""You are an AI assistant tasked with generating engaging university lecture texts for various courses. These lectures will be used in a text-to-speech engine, so it's crucial to create content that works well in spoken form. Your goal is to produce a lecture that is approximately {word_count} words long, narrative in style, and infused with the personality of the lecturer.
-
-Course: {course.title} ({course.code})
-Lecture Topic: {topic}
-Week: {week_number}, Lecture: {order_in_week}
-
-Professor Details:
-- Name: {professor.name}
-- Background: {professor.background}
-- Teaching Style: {professor.teaching_style}
-- Personality: {professor.personality}
-
-{continuity_context}
-
-Before writing the lecture, please plan your approach inside <lecture_preparation> tags. In your preparation:
-
-1. Consider how to structure the lecture for optimal audio delivery:
-   - Plan clear transitions between main points
-   - Note places where pauses or changes in tone might be effective
-   - Consider how to naturally incorporate student interactions
-
-2. Outline 5-7 main points for the lecture:
-   - For each point, note key information to cover
-   - Consider how each point builds on the previous one
-   - Break down technical concepts into simpler components
-   - Prepare analogies or real-world examples
-
-3. Plan the pacing of the lecture:
-   - Estimate how long to spend on each main point
-   - Note where to place breaks or moments of levity
-   - Consider places for student interaction
-
-After your preparation, write the lecture as a continuous text, following these guidelines:
-
-1. Begin with a vivid introduction that sets the scene and introduces the lecturer
-2. Write in a conversational, engaging style that reflects the lecturer's personality
-3. Avoid complex mathematical formulas - express them in spoken language
-4. Include stage directions in [brackets] to bring the scene to life
-5. Focus on creating a narrative flow rather than presenting dry facts
-6. Aim for approximately {word_count} words in length
-
-Your output should follow this structure:
-
-<lecture_preparation>
-[Your detailed lecture preparation goes here]
-</lecture_preparation>
-
-<lecture>
-[The full lecture text, including introduction and stage directions]
-</lecture>"""
+        # Get the system prompt
+        system_prompt = get_system_prompt("lecture")
 
         response = self.client.messages.create(
             model="claude-3-7-sonnet-20250219",
-            max_tokens=20000,
-            temperature=1,
-            system="You are an expert at creating engaging, realistic university lectures that capture the personality and teaching style of specific professors.",
+            max_tokens=8000,
+            temperature=0.7,
+            system=system_prompt,
             messages=[{"role": "user", "content": [{"type": "text", "text": prompt}]}],
         )
 
-        # Extract the lecture content from between the <lecture> tags
         content = response.content[0].text
-        lecture_match = re.search(r"<lecture>\s*(.*?)\s*</lecture>", content, re.DOTALL)
-        if not lecture_match:
-            raise ValueError("No lecture content found in response")
 
-        lecture_content = lecture_match.group(1).strip()
+        # Extract lecture text and preparation from XML tags
+        lecture_text = extract_xml_content(content, "lecture_text")
+        preparation = extract_xml_content(content, "lecture_preparation")
 
-        # Try to extract a title from the first line
+        # If no XML tags are found, use the whole text as lecture_text
+        if not lecture_text:
+            if "<lecture_text>" not in content and content.strip():
+                lecture_text = content.strip()
+            else:
+                # For Ollama or other models that might not structure the response with XML tags
+                # Extract anything that looks like the main content
+                # Look for patterns like paragraph breaks or headers
+                lines = content.split("\n")
+                if len(lines) > 5:  # If we have a reasonable amount of text
+                    lecture_text = content.strip()
+                else:
+                    raise ValueError("No lecture text found in response")
+
+        # Create a title from the topic, potentially trying to extract a title from the first line
         title = topic
-        first_line = lecture_content.split("\n")[0].strip("# []")
-        if (
-            first_line and len(first_line) < 100
-        ):  # Use first line if it looks like a title
-            title = first_line
+        if lecture_text:
+            first_lines = lecture_text.split("\n")[
+                :3
+            ]  # Check first 3 lines for a good title
 
+            for line in first_lines:
+                clean_line = line.strip().strip("# []").strip()
+                # Good title criteria: not too short, not too long, doesn't contain common instruction text
+                if (
+                    len(clean_line) > 5
+                    and len(clean_line) < 100
+                    and "lecture" not in clean_line.lower()
+                    and "text" not in clean_line.lower()
+                    and "preparation" not in clean_line.lower()
+                    and "plan" not in clean_line.lower()
+                ):
+                    title = clean_line
+                    break
+
+            # If we didn't find a good title in the first lines, use the topic
+            if title == topic and topic:
+                title = topic
+
+        # Create a description from the topic and course
+        description = f"Week {week_number}, Lecture {order_in_week}: {topic}"
+
+        # Create and return the lecture object
         return Lecture(
             title=title,
-            course_id=course.id or course.code,
+            course_id=course.id,
+            professor_id=professor.id,
+            topic=topic,
             week_number=week_number,
             order_in_week=order_in_week,
-            description=f"Week {week_number}, Lecture {order_in_week}: {topic}",
-            content=lecture_content,
+            description=description,
+            content=lecture_text,
+            preparation_notes=preparation or "",
         )
