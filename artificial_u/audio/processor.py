@@ -16,6 +16,12 @@ from elevenlabs.client import ElevenLabs
 
 from artificial_u.models.core import Professor, Lecture
 
+# Import the new voice selection system
+from artificial_u.integrations.elevenlabs import (
+    VoiceSelectionManager,
+    get_voice_for_professor,
+)
+
 
 class AudioProcessorError(Exception):
     """Base exception for audio processing errors."""
@@ -36,6 +42,50 @@ class AudioProcessor:
     MAX_RETRIES = 3
     # Wait time between retries (seconds)
     RETRY_WAIT = 2
+
+    # Technical term pronunciation dictionary
+    PRONUNCIATION_DICT = {
+        # Format: "term": "IPA pronunciation"
+        "Anthropic": "ænˈθrɒpɪk",
+        "Claude": "klɔːd",
+        "Python": "ˈpaɪθɑːn",
+        "LaTeX": "ˈleɪtɛk",
+        "NumPy": "nʌmˈpaɪ",
+        "GOFAI": "ɡoʊˈfaɪ",
+        "Tensorflow": "ˈtɛnsərˌfloʊ",
+        "PyTorch": "paɪˈtɔːrtʃ",
+        "SQL": "ˌɛs kjuː ˈɛl",
+        "NoSQL": "noʊ ˌɛs kjuː ˈɛl",
+    }
+
+    # Mathematical notation mapping
+    MATH_NOTATION = {
+        # Greek letters
+        "α": "alpha",
+        "β": "beta",
+        "γ": "gamma",
+        "δ": "delta",
+        "ε": "epsilon",
+        "θ": "theta",
+        "λ": "lambda",
+        "π": "pi",
+        "σ": "sigma",
+        "τ": "tau",
+        "φ": "phi",
+        "ω": "omega",
+        # Mathematical operators
+        "≈": "approximately equal to",
+        "≠": "not equal to",
+        "≤": "less than or equal to",
+        "≥": "greater than or equal to",
+        "∑": "sum",
+        "∫": "integral",
+        "∂": "partial derivative",
+        "∞": "infinity",
+        "∈": "element of",
+        "∩": "intersection",
+        "∪": "union",
+    }
 
     def __init__(self, api_key: Optional[str] = None, audio_path: Optional[str] = None):
         """
@@ -66,7 +116,10 @@ class AudioProcessor:
             self.logger.error(f"Failed to initialize ElevenLabs client: {e}")
             raise
 
-        # Simple voice mapping for different professor types
+        # Initialize voice selection manager
+        self.voice_manager = VoiceSelectionManager(api_key=self.api_key)
+
+        # Simple voice mapping for different professor types (used as fallback)
         self.voice_mapping = {
             "stem": "21m00Tcm4TlvDq8ikWAM",  # Rachel
             "humanities": "EXAVITQu4vr4xnSDxMaL",  # Bella
@@ -90,6 +143,15 @@ class AudioProcessor:
             (r"\[\s*pauses?\s*\]", '<break time="1s"/>'),
             (r"\[\s*long pause\s*\]", '<break time="2s"/>'),
             (r"\[\s*brief pause\s*\]", '<break time="0.5s"/>'),
+            # Emotional cues
+            (r"\[\s*enthusiastically\s*\]", '<prosody rate="fast" pitch="high">'),
+            (r"\[\s*excited(ly)?\s*\]", '<prosody rate="fast" pitch="high">'),
+            (r"\[\s*happily\s*\]", '<prosody pitch="high">'),
+            (r"\[\s*sadly\s*\]", '<prosody pitch="low" rate="slow">'),
+            (r"\[\s*seriously\s*\]", '<prosody pitch="low">'),
+            (r"\[\s*thoughtfully\s*\]", '<prosody rate="slow">'),
+            (r"\[\s*whispers\s*\]", '<prosody volume="soft">'),
+            (r"\[\s*end (of )?(emotion|prosody)\s*\]", "</prosody>"),
             # Remove other stage directions
             (r"\[\s*.*?\s*\]", ""),
         ]
@@ -101,6 +163,97 @@ class AudioProcessor:
             )
 
         return processed_text
+
+    def enhance_speech_markup(
+        self, text: str, professor: Optional[Professor] = None
+    ) -> str:
+        """
+        Enhance text with ElevenLabs-compatible speech markup for better pronunciation.
+
+        Args:
+            text: The lecture text to enhance
+            professor: Optional professor object to apply discipline-specific enhancements
+
+        Returns:
+            str: Text with enhanced speech markup
+        """
+        # First process stage directions
+        enhanced_text = self.process_stage_directions(text)
+
+        # Add natural sentence pauses
+        enhanced_text = re.sub(r"([.!?])\s+", r'\1<break time="0.5s"/> ', enhanced_text)
+
+        # Add smaller pauses for commas and semicolons
+        enhanced_text = re.sub(r"([,;])\s+", r'\1<break time="0.2s"/> ', enhanced_text)
+
+        # Add pronunciation guides for technical terms
+        for term, pronunciation in self.PRONUNCIATION_DICT.items():
+            # Only replace whole words (not substrings)
+            pattern = r"\b" + re.escape(term) + r"\b"
+            replacement = (
+                f'<phoneme alphabet="ipa" ph="{pronunciation}">{term}</phoneme>'
+            )
+            enhanced_text = re.sub(pattern, replacement, enhanced_text)
+
+        # Handle mathematical notation
+        for symbol, spoken_form in self.MATH_NOTATION.items():
+            enhanced_text = enhanced_text.replace(symbol, spoken_form)
+
+        # Handle discipline-specific processing if professor is provided
+        if professor and professor.department:
+            enhanced_text = self._apply_discipline_specific_markup(
+                enhanced_text, professor
+            )
+
+        return enhanced_text
+
+    def _apply_discipline_specific_markup(self, text: str, professor: Professor) -> str:
+        """
+        Apply discipline-specific speech markup based on professor's department.
+
+        Args:
+            text: The lecture text
+            professor: Professor object with department information
+
+        Returns:
+            str: Text with discipline-specific markup applied
+        """
+        department = professor.department.lower() if professor.department else ""
+
+        # Physics-related markup
+        if any(field in department for field in ["physics", "quantum"]):
+            # Handle quantum physics notation
+            quantum_replacements = [
+                (
+                    r"\|ψ⟩",
+                    'the quantum state <phoneme alphabet="ipa" ph="saɪ">psi</phoneme>',
+                ),
+                (r"\|0⟩", "the zero state"),
+                (r"\|1⟩", "the one state"),
+                (r"ℏ", "h-bar"),
+                # More specific quantum notation
+                (
+                    r"\|ψ⟩\s*=\s*α\|0⟩\s*\+\s*β\|1⟩",
+                    'the quantum state <phoneme alphabet="ipa" ph="saɪ">psi</phoneme> equals alpha times the zero state plus beta times the one state',
+                ),
+            ]
+
+            for pattern, replacement in quantum_replacements:
+                text = re.sub(pattern, replacement, text)
+
+        # Math-related markup
+        elif any(field in department for field in ["math", "statistic"]):
+            # Handle specific math notation
+            math_replacements = [
+                (r"f\(x\)", "f of x"),
+                (r"lim_{x→∞}", "the limit as x approaches infinity of"),
+                (r"\\frac\{([^}]+)\}\{([^}]+)\}", r"the fraction \1 over \2"),
+            ]
+
+            for pattern, replacement in math_replacements:
+                text = re.sub(pattern, replacement, text)
+
+        return text
 
     def _map_professor_to_voice_type(self, professor: Professor) -> str:
         """
@@ -171,13 +324,23 @@ class AudioProcessor:
         Returns:
             str: Voice ID to use
         """
-        # If professor has voice settings with a voice ID, use that
+        # If professor has voice settings with a voice ID, use that (manual override)
         if professor.voice_settings and "voice_id" in professor.voice_settings:
             return professor.voice_settings["voice_id"]
 
-        # Otherwise map professor to a voice type
-        department_type = self._map_professor_to_voice_type(professor)
-        return self.voice_mapping.get(department_type, self.voice_mapping["default"])
+        try:
+            # Use the smart voice selection system
+            voice_data = self.voice_manager.get_voice_for_professor(professor)
+            return voice_data["voice_id"]
+        except Exception as e:
+            self.logger.error(f"Error selecting voice using smart system: {e}")
+            self.logger.info("Falling back to simple mapping system")
+
+            # If smart selection fails, fall back to the simple mapping
+            department_type = self._map_professor_to_voice_type(professor)
+            return self.voice_mapping.get(
+                department_type, self.voice_mapping["default"]
+            )
 
     def split_lecture_into_chunks(
         self, text: str, max_chunk_size: int = DEFAULT_CHUNK_SIZE
@@ -234,8 +397,8 @@ class AudioProcessor:
             Tuple[str, bytes]: File path and audio data
         """
         try:
-            # Process text to enhance stage directions
-            processed_text = self.process_stage_directions(lecture.content)
+            # Enhance text with speech markup
+            processed_text = self.enhance_speech_markup(lecture.content, professor)
 
             # Get appropriate voice ID
             voice_id = self.get_voice_id_for_professor(professor)

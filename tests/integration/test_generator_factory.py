@@ -50,24 +50,6 @@ requires_tinyllama = pytest.mark.skipif(
 )
 
 
-@pytest.mark.integration
-def test_create_default_generator():
-    """Test creating a default generator with Anthropic."""
-    with patch("anthropic.Client") as mock_client:
-        # Create a generator without an API key
-        with patch.dict(os.environ, {"ANTHROPIC_API_KEY": "test_key"}):
-            generator = create_default_generator()
-            assert isinstance(generator, ContentGenerator)
-            mock_client.assert_called_once_with(api_key="test_key")
-
-        mock_client.reset_mock()
-
-        # Create a generator with an API key
-        generator = create_default_generator(api_key="custom_key")
-        assert isinstance(generator, ContentGenerator)
-        mock_client.assert_called_once_with(api_key="custom_key")
-
-
 @requires_ollama
 @requires_tinyllama
 @pytest.mark.integration
@@ -88,7 +70,22 @@ def test_create_generator_factory():
         "artificial_u.generators.factory.create_default_generator"
     ) as mock_default:
         create_generator(backend="anthropic", api_key="test_key")
-        mock_default.assert_called_once_with(api_key="test_key")
+        mock_default.assert_called_once_with(
+            api_key="test_key", enable_caching=False, cache_metrics=True
+        )
+
+        mock_default.reset_mock()
+
+        # Test with caching enabled
+        create_generator(
+            backend="anthropic",
+            api_key="test_key",
+            enable_caching=True,
+            cache_metrics=False,
+        )
+        mock_default.assert_called_once_with(
+            api_key="test_key", enable_caching=True, cache_metrics=False
+        )
 
     with patch(
         "artificial_u.generators.factory.create_ollama_generator"

@@ -1,0 +1,466 @@
+"""
+Manual test for the ElevenLabs voice selection integration.
+
+This script tests the smart voice selection system against the live ElevenLabs API,
+allowing manual validation of the voice matching algorithm with real data.
+
+Prerequisites:
+1. Install dependencies: pip install -r requirements.txt
+2. Get an API key from ElevenLabs
+
+Usage:
+    # Run with API key:
+    ELEVENLABS_API_KEY=<your_key> python tests/manual/test_voice_selection_live.py
+
+    # Or run with pytest:
+    ELEVENLABS_API_KEY=<your_key> pytest tests/manual/test_voice_selection_live.py -v
+"""
+
+import os
+import sys
+import random
+import pytest
+from pathlib import Path
+from rich.console import Console
+from rich.table import Table
+from rich.panel import Panel
+
+# Add the project root to the Python path if running directly
+if __name__ == "__main__":
+    sys.path.append(str(Path(__file__).parent.parent.parent))
+
+from artificial_u.integrations.elevenlabs import (
+    VoiceSelectionManager,
+    get_voice_for_professor,
+    sample_voices,
+    get_voice_filters,
+)
+from artificial_u.models.core import Professor
+
+console = Console()
+
+# Check if we have a real API key, not a test one
+api_key = os.environ.get("ELEVENLABS_API_KEY")
+using_test_key = api_key == "test_elevenlabs_key"
+
+if api_key and not using_test_key:
+    console.print("[bold green]Using real ElevenLabs API key[/bold green]")
+    console.print(
+        "[bold yellow]Warning: This will make real API calls to ElevenLabs![/bold yellow]"
+    )
+else:
+    console.print("[bold red]No real ElevenLabs API key found[/bold red]")
+    console.print(
+        "This test requires a real API key set in your .env file or environment"
+    )
+
+# Skip tests if no real API key in environment
+pytestmark = pytest.mark.skipif(
+    not api_key or using_test_key,
+    reason="Real ELEVENLABS_API_KEY not found in environment (found test key instead)",
+)
+
+
+@pytest.fixture(scope="module")
+def voice_manager():
+    """Initialize VoiceSelectionManager with API key."""
+    return VoiceSelectionManager(api_key=api_key)
+
+
+@pytest.fixture(scope="module")
+def test_professors():
+    """Create a diverse set of test professor profiles."""
+    return [
+        Professor(
+            id="prof_british_female",
+            name="Dr. Elizabeth Norton",
+            title="Professor of Literature",
+            department="English",
+            specialization="Victorian Literature",
+            background="British literature expert who studied at Oxford. She brings 20 years of experience having taught at Cambridge before joining the faculty.",
+            personality="Eloquent and thoughtful",
+            teaching_style="Discussion-based with historical context",
+        ),
+        Professor(
+            id="prof_american_male",
+            name="Dr. Michael Johnson",
+            title="Professor of Physics",
+            department="Physics",
+            specialization="Quantum Mechanics",
+            background="American physicist who completed his PhD at MIT. He worked at CERN for several years before entering academia.",
+            personality="Enthusiastic and detail-oriented",
+            teaching_style="Engaging with practical demonstrations",
+        ),
+        Professor(
+            id="prof_french_female",
+            name="Dr. Sophie Dupont",
+            title="Professor of Art History",
+            department="Fine Arts",
+            specialization="Renaissance Art",
+            background="French art historian who studied at the Sorbonne in Paris. She has curated exhibitions at the Louvre and specializes in Italian Renaissance paintings.",
+            personality="Passionate and expressive",
+            teaching_style="Visual and contextual",
+        ),
+        Professor(
+            id="prof_indian_male",
+            name="Dr. Raj Patel",
+            title="Professor of Computer Science",
+            department="Computer Science",
+            specialization="Artificial Intelligence",
+            background="Computer scientist from Mumbai, India. He earned his PhD from Stanford and previously worked at Google's AI research division.",
+            personality="Methodical and forward-thinking",
+            teaching_style="Structured with practical examples",
+        ),
+        Professor(
+            id="prof_neutral",
+            name="Dr. Alex Riley",
+            title="Professor of Philosophy",
+            department="Philosophy",
+            specialization="Ethics",
+            background="Leading researcher in ethical frameworks with publications in top journals. Joined the faculty after completing a post-doctoral fellowship.",
+            personality="Thoughtful and challenging",
+            teaching_style="Socratic method",
+        ),
+        Professor(
+            id="prof_senior",
+            name="Dr. Walter Simmons",
+            title="Distinguished Professor of Economics",
+            department="Economics",
+            specialization="Macroeconomics",
+            background="Emeritus faculty member with 40 years of experience. At 72, he has advised multiple governments and central banks throughout his career.",
+            personality="Wise and measured",
+            teaching_style="Traditional lectures with deep insights",
+        ),
+        Professor(
+            id="prof_junior",
+            name="Dr. Emma Chen",
+            title="Assistant Professor of Psychology",
+            department="Psychology",
+            specialization="Developmental Psychology",
+            background="Recently completed her PhD at 29 and joined the faculty as its youngest member. Her innovative research on early childhood development has already gained recognition.",
+            personality="Energetic and innovative",
+            teaching_style="Interactive and technology-focused",
+        ),
+    ]
+
+
+@pytest.mark.manual
+def test_voice_api_connection(voice_manager):
+    """Test basic connection to ElevenLabs API and retrieve available voices."""
+    voices = voice_manager.get_available_voices(refresh=True)
+
+    # Verify we got a valid response
+    assert isinstance(voices, list)
+    assert len(voices) > 0
+
+    # Display information about available voices
+    console.print(
+        f"\n[bold green]Available Voices:[/bold green] Found {len(voices)} voices"
+    )
+
+    # Display a sample of 5 random voices
+    sample = random.sample(voices, min(5, len(voices)))
+
+    table = Table(title="Sample Voice Information")
+    table.add_column("Voice ID", style="cyan")
+    table.add_column("Name", style="green")
+    table.add_column("Gender", style="magenta")
+    table.add_column("Accent", style="yellow")
+    table.add_column("Age", style="blue")
+    table.add_column("Category", style="red")
+
+    for voice in sample:
+        table.add_row(
+            voice["voice_id"][:8] + "...",
+            voice["name"],
+            voice["gender"],
+            voice["accent"],
+            voice["age"],
+            voice["category"],
+        )
+
+    console.print(table)
+
+    # Display available filters
+    filters = voice_manager.list_available_voice_filters()
+
+    console.print("\n[bold]Available Filter Values:[/bold]")
+    filter_table = Table()
+    filter_table.add_column("Filter", style="cyan")
+    filter_table.add_column("Values", style="yellow")
+
+    for filter_name, values in filters.items():
+        filter_table.add_row(filter_name, ", ".join(values))
+
+    console.print(filter_table)
+
+
+@pytest.mark.manual
+def test_extract_professor_characteristics(voice_manager, test_professors):
+    """Test extraction of gender, accent, and age from professor profiles."""
+    console.print("\n[bold green]Professor Characteristic Extraction:[/bold green]")
+
+    table = Table(title="Extracted Professor Characteristics")
+    table.add_column("Professor", style="cyan")
+    table.add_column("Gender", style="magenta")
+    table.add_column("Accent", style="yellow")
+    table.add_column("Age", style="blue")
+
+    for professor in test_professors:
+        gender = voice_manager._extract_gender_from_professor(professor)
+        accent = voice_manager._extract_accent_from_professor(professor)
+        age = voice_manager._extract_age_from_professor(professor)
+
+        table.add_row(professor.name, gender, accent or "Not detected", age)
+
+    console.print(table)
+
+
+@pytest.mark.manual
+def test_voice_matching(voice_manager, test_professors):
+    """Test matching professors to appropriate voices."""
+    console.print("\n[bold green]Voice Matching Results:[/bold green]")
+
+    table = Table(title="Professor-Voice Matches")
+    table.add_column("Professor", style="cyan")
+    table.add_column("Matched Voice", style="green")
+    table.add_column("Voice Gender", style="magenta")
+    table.add_column("Voice Accent", style="yellow")
+    table.add_column("Voice Age", style="blue")
+    table.add_column("Quality Score", style="red")
+
+    for professor in test_professors:
+        try:
+            # Get matching voice
+            voice = voice_manager.get_voice_for_professor(professor)
+
+            table.add_row(
+                professor.name,
+                voice["name"],
+                voice["gender"],
+                voice["accent"],
+                voice["age"],
+                f"{voice.get('quality_score', 0):.2f}",
+            )
+
+            # Store in mapping for consistency check
+            if professor.id:
+                voice_manager.voice_mapping_db[professor.id] = voice["voice_id"]
+
+        except Exception as e:
+            table.add_row(
+                professor.name, f"[bold red]Error: {str(e)}[/bold red]", "", "", "", ""
+            )
+
+    console.print(table)
+
+    # Test consistency
+    console.print("\n[bold]Testing Voice Selection Consistency:[/bold]")
+    consistent = True
+
+    for professor in test_professors:
+        if professor.id in voice_manager.voice_mapping_db:
+            # Get voice again
+            voice = voice_manager.get_voice_for_professor(professor)
+            if voice["voice_id"] != voice_manager.voice_mapping_db[professor.id]:
+                consistent = False
+                console.print(
+                    f"[bold red]Inconsistency detected for {professor.name}[/bold red]"
+                )
+
+    if consistent:
+        console.print(
+            "[bold green]✓ Voice selection is consistent for all professors[/bold green]"
+        )
+
+
+@pytest.mark.manual
+def test_filtering_and_sampling(voice_manager):
+    """Test filtering and sampling voices with various criteria."""
+    console.print("\n[bold green]Voice Filtering and Sampling:[/bold green]")
+
+    # Test different filter combinations
+    filter_tests = [
+        {"gender": "female", "accent": "british"},
+        {"gender": "male", "age": "old"},
+        {"gender": "female", "accent": "american", "age": "young"},
+        {"category": "premade"},
+    ]
+
+    for i, criteria in enumerate(filter_tests):
+        voices = voice_manager.filter_voices(**criteria)
+        criteria_str = ", ".join(f"{k}={v}" for k, v in criteria.items())
+
+        console.print(f"\n[bold]Filter Test {i+1}:[/bold] {criteria_str}")
+        console.print(f"Found {len(voices)} matching voices")
+
+        if voices:
+            sample_size = min(3, len(voices))
+            sampled = voice_manager.sample_voices_by_criteria(
+                count=sample_size, **criteria
+            )
+
+            table = Table(title=f"Sample of {sample_size} voices")
+            table.add_column("Name", style="green")
+            table.add_column("Gender", style="magenta")
+            table.add_column("Accent", style="yellow")
+            table.add_column("Age", style="blue")
+            table.add_column("Quality", style="red")
+
+            for voice in sampled:
+                table.add_row(
+                    voice["name"],
+                    voice["gender"],
+                    voice["accent"],
+                    voice["age"],
+                    f"{voice.get('quality_score', 0):.2f}",
+                )
+
+            console.print(table)
+        else:
+            console.print("[yellow]No voices found matching these criteria[/yellow]")
+
+
+@pytest.mark.manual
+def test_fallback_strategies(voice_manager):
+    """Test the system's fallback strategies for difficult matches."""
+    console.print("\n[bold green]Testing Fallback Strategies:[/bold green]")
+
+    # Create a professor with unusual characteristics
+    unusual_prof = Professor(
+        id="prof_unusual",
+        name="Dr. Zhang Wei",
+        title="Professor of Linguistics",
+        department="Linguistics",
+        specialization="East Asian Languages",
+        background="Chinese linguist specialized in comparative analysis of Mandarin and Japanese. Previously taught at Beijing University.",
+        personality="Precise and methodical",
+        teaching_style="Structured and analytical",
+    )
+
+    # Extract characteristics
+    gender = voice_manager._extract_gender_from_professor(unusual_prof)
+    accent = voice_manager._extract_accent_from_professor(unusual_prof)
+    age = voice_manager._extract_age_from_professor(unusual_prof)
+
+    console.print(
+        Panel(
+            f"[bold]Unusual Professor Profile:[/bold]\n"
+            f"Name: {unusual_prof.name}\n"
+            f"Background: {unusual_prof.background}\n\n"
+            f"[bold]Extracted Characteristics:[/bold]\n"
+            f"Gender: {gender}\n"
+            f"Accent: {accent}\n"
+            f"Age: {age}",
+            title="Test Case",
+        )
+    )
+
+    # Test each fallback level
+    console.print("\n[bold]Testing Fallback Levels:[/bold]")
+
+    # Level 1: All criteria
+    level1 = voice_manager.filter_voices(gender=gender, accent=accent, age=age)
+    console.print(f"Level 1 (All criteria): {len(level1)} voices found")
+
+    # Level 2: Gender + Accent
+    level2 = voice_manager.filter_voices(gender=gender, accent=accent)
+    console.print(f"Level 2 (Gender + Accent): {len(level2)} voices found")
+
+    # Level 3: Just Gender
+    level3 = voice_manager.filter_voices(gender=gender)
+    console.print(f"Level 3 (Gender only): {len(level3)} voices found")
+
+    # Level 4: Just Accent
+    level4 = voice_manager.filter_voices(accent=accent) if accent else []
+    console.print(f"Level 4 (Accent only): {len(level4)} voices found")
+
+    # Final result
+    voice = voice_manager.get_voice_for_professor(unusual_prof)
+
+    console.print("\n[bold]Final Selected Voice:[/bold]")
+    result_table = Table()
+    result_table.add_column("Attribute", style="cyan")
+    result_table.add_column("Value", style="yellow")
+
+    result_table.add_row("Voice Name", voice["name"])
+    result_table.add_row("Voice Gender", voice["gender"])
+    result_table.add_row("Voice Accent", voice["accent"])
+    result_table.add_row("Voice Age", voice["age"])
+    result_table.add_row("Quality Score", f"{voice.get('quality_score', 0):.2f}")
+    result_table.add_row("Category", voice["category"])
+
+    console.print(result_table)
+
+    # Determine which fallback level was used
+    if level1 and voice["voice_id"] in [v["voice_id"] for v in level1]:
+        level_used = "Level 1 (All criteria matched)"
+    elif level2 and voice["voice_id"] in [v["voice_id"] for v in level2]:
+        level_used = "Level 2 (Gender + Accent matched)"
+    elif level3 and voice["voice_id"] in [v["voice_id"] for v in level3]:
+        level_used = "Level 3 (Gender only matched)"
+    elif level4 and voice["voice_id"] in [v["voice_id"] for v in level4]:
+        level_used = "Level 4 (Accent only matched)"
+    else:
+        level_used = "Level 5 (Default fallback)"
+
+    console.print(f"[bold][green]Fallback level used:[/green][/bold] {level_used}")
+
+
+if __name__ == "__main__":
+    # Run tests manually
+    console.print("[bold]Running manual ElevenLabs Voice Selection tests[/bold]")
+
+    # Initialize manager
+    voice_manager = VoiceSelectionManager(api_key=api_key)
+
+    # Create test professors
+    test_professors = [
+        Professor(
+            id="prof_british_female",
+            name="Dr. Elizabeth Norton",
+            title="Professor of Literature",
+            department="English",
+            specialization="Victorian Literature",
+            background="British literature expert who studied at Oxford. She brings 20 years of experience having taught at Cambridge before joining the faculty.",
+            personality="Eloquent and thoughtful",
+            teaching_style="Discussion-based with historical context",
+        ),
+        Professor(
+            id="prof_american_male",
+            name="Dr. Michael Johnson",
+            title="Professor of Physics",
+            department="Physics",
+            specialization="Quantum Mechanics",
+            background="American physicist who completed his PhD at MIT. He worked at CERN for several years before entering academia.",
+            personality="Enthusiastic and detail-oriented",
+            teaching_style="Engaging with practical demonstrations",
+        ),
+        Professor(
+            id="prof_french_female",
+            name="Dr. Sophie Dupont",
+            title="Professor of Art History",
+            department="Fine Arts",
+            specialization="Renaissance Art",
+            background="French art historian who studied at the Sorbonne in Paris. She has curated exhibitions at the Louvre and specializes in Italian Renaissance paintings.",
+            personality="Passionate and expressive",
+            teaching_style="Visual and contextual",
+        ),
+        Professor(
+            id="prof_neutral",
+            name="Dr. Alex Riley",
+            title="Professor of Philosophy",
+            department="Philosophy",
+            specialization="Ethics",
+            background="Leading researcher in ethical frameworks with publications in top journals. Joined the faculty after completing a post-doctoral fellowship.",
+            personality="Thoughtful and challenging",
+            teaching_style="Socratic method",
+        ),
+    ]
+
+    # Run tests
+    test_voice_api_connection(voice_manager)
+    test_extract_professor_characteristics(voice_manager, test_professors)
+    test_voice_matching(voice_manager, test_professors)
+    test_filtering_and_sampling(voice_manager)
+    test_fallback_strategies(voice_manager)
