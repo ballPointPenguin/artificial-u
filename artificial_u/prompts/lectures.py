@@ -216,8 +216,9 @@ def get_lecture_prompt(
     # Format continuity context if provided
     continuity_context = ""
     if previous_lecture_content:
-        continuity_context = f"""Previous lecture summary:
+        continuity_context = f"""<previous_lecture>
 {previous_lecture_content[:500]}...
+</previous_lecture>
 
 Build on these concepts appropriately."""
 
@@ -234,3 +235,85 @@ Build on these concepts appropriately."""
         continuity_context=continuity_context,
         word_count=word_count,
     )
+
+
+def get_structured_xml_lecture_prompt(
+    course_title: str,
+    course_code: str,
+    topic: str,
+    week_number: int,
+    order_in_week: int,
+    professor_name: str,
+    professor_title: str,
+    professor_background: str,
+    teaching_style: str,
+    professor_personality: str,
+    previous_lecture_content: Optional[str] = None,
+    word_count: int = 2500,
+) -> str:
+    """Generate a lecture prompt with enhanced XML structure.
+
+    This version uses a clearer XML tag structure with distinct sections
+    for instructions, course info, professor profile, and output format.
+
+    Args:
+        course_title: Course title
+        course_code: Course code
+        topic: Lecture topic
+        week_number: Week number in the course
+        order_in_week: Order of this lecture within the week
+        professor_name: Name of the professor
+        professor_title: Academic title of the professor
+        professor_background: Background of the professor
+        teaching_style: Professor's teaching style
+        professor_personality: Professor's personality traits
+        previous_lecture_content: Optional content from previous lecture for continuity
+        word_count: Word count for the lecture
+
+    Returns:
+        str: Formatted lecture prompt with XML structure
+    """
+    # Format continuity context if provided
+    continuity_context = ""
+    if previous_lecture_content:
+        continuity_context = f"""<previous_lecture>
+{previous_lecture_content[:500]}...
+</previous_lecture>
+
+Build on these concepts appropriately."""
+
+    prompt = f"""<instructions>
+You are creating an engaging university lecture for a course.
+The lecture should be approximately {word_count} words long, narrative in style,
+and infused with the personality of the lecturer.
+</instructions>
+
+<course_info>
+Course: {course_title} ({course_code})
+Department: {course_title.split(':')[0] if ':' in course_title else course_code[:2]}
+Lecture Topic: {topic}
+Week: {week_number}, Lecture: {order_in_week}
+</course_info>
+
+<professor_profile>
+Name: {professor_name}
+Title: {professor_title}
+Background: {professor_background}
+Teaching Style: {teaching_style}
+Personality: {professor_personality}
+</professor_profile>
+
+{continuity_context}
+
+<output_instructions>
+1. First, develop a lecture preparation plan in <lecture_preparation></lecture_preparation> tags
+2. Then write the full lecture in <lecture_text></lecture_text> tags, following these guidelines:
+   - Begin with a vivid introduction that sets the scene
+   - Write in a conversational style reflecting the professor's personality
+   - Avoid complex mathematical formulas - express them in spoken language
+   - Include stage directions in [brackets] to bring the scene to life
+   - Focus on creating a narrative flow rather than presenting dry facts
+   - Aim for approximately {word_count} words in length
+</output_instructions>"""
+
+    return prompt

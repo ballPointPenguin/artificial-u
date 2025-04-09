@@ -1043,3 +1043,123 @@ class UniversitySystem:
         """
         filename = f"{course_code}_W{week}_L{number}.md"
         return str(Path(self.text_export_path) / course_code / filename)
+
+    def create_lecture_series(
+        self,
+        course_code: str,
+        topics: List[str],
+        starting_week: int = 1,
+        word_count: int = DEFAULT_LECTURE_WORD_COUNT,
+    ) -> List[Lecture]:
+        """
+        Generate a series of related lectures for a course using prompt caching.
+
+        This method creates multiple lectures in sequence, maintaining the professor's
+        voice and teaching style across all lectures, while building continuity
+        between the content. This is more efficient than creating lectures one-by-one
+        as it leverages prompt caching for reduced token usage.
+
+        Args:
+            course_code: Code for the course to create lectures for
+            topics: List of lecture topics in sequence
+            starting_week: Week number to start from (default: 1)
+            word_count: Target word count for each lecture (default: DEFAULT_LECTURE_WORD_COUNT)
+
+        Returns:
+            List of Lecture objects
+
+        Raises:
+            CourseNotFoundError: If the course is not found
+            ContentGenerationError: If lecture generation fails
+        """
+        # Find the course
+        course = self.repository.get_course_by_code(course_code)
+        if not course:
+            raise CourseNotFoundError(f"Course {course_code} not found")
+
+        # Find the professor assigned to the course
+        professor = self.repository.get_professor(course.professor_id)
+        if not professor:
+            raise ProfessorNotFoundError(
+                f"Professor for course {course_code} not found"
+            )
+
+        try:
+            # Check if we can use caching
+            if self.enable_caching and self.content_backend == "anthropic":
+                self.logger.info(
+                    f"Generating lecture series for {course.code} with {len(topics)} lectures using caching"
+                )
+
+                # Use the lecture series caching method
+                lecture_results = (
+                    self.content_generator.create_lecture_series_with_caching(
+                        course=course,
+                        professor=professor,
+                        topics=topics,
+                        starting_week=starting_week,
+                        word_count=word_count,
+                    )
+                )
+
+                # Store lectures in the database
+                lectures = []
+                total_tokens_saved = 0
+
+                for lecture_tuple in lecture_results:
+                    lecture, metrics = lecture_tuple
+
+                    # Save the lecture to the database
+                    lecture_id = self.repository.add_lecture(lecture)
+                    lecture.id = lecture_id
+                    lectures.append(lecture)
+
+                    # Track token savings
+                    total_tokens_saved += metrics.get("estimated_tokens_saved", 0)
+
+                # Log total savings
+                if total_tokens_saved > 0:
+                    self.logger.info(
+                        f"Total tokens saved across series: {total_tokens_saved}"
+                    )
+
+                return lectures
+
+            else:
+                # Use individual lecture creation if caching is not available
+                self.logger.info(
+                    f"Generating lecture series for {course.code} without caching (not using Anthropic or caching disabled)"
+                )
+
+                lectures = []
+                previous_lecture = None
+
+                for i, topic in enumerate(topics):
+                    week_number = starting_week + (i // course.lectures_per_week)
+                    order_in_week = (i % course.lectures_per_week) + 1
+
+                    # Create the lecture
+                    lecture = self._create_lecture_content(
+                        course=course,
+                        professor=professor,
+                        topic=topic,
+                        week_number=week_number,
+                        order_in_week=order_in_week,
+                        previous_lecture=previous_lecture,
+                        word_count=word_count,
+                    )
+
+                    # Save the lecture to the database
+                    lecture_id = self.repository.add_lecture(lecture)
+                    lecture.id = lecture_id
+                    lectures.append(lecture)
+
+                    # Update previous lecture for the next iteration
+                    previous_lecture = lecture
+
+                return lectures
+
+        except Exception as e:
+            error_msg = f"Failed to generate lecture series: {str(e)}"
+            self.logger.error(error_msg)
+            raise ContentGenerationError(error_msg) from e

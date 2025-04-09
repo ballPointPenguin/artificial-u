@@ -498,3 +498,265 @@ Please prepare your lecture and then write it in <lecture_text> tags.
             )
 
         return lecture, cache_info
+
+    def create_lecture_series_with_caching(
+        self,
+        course: Course,
+        professor: Professor,
+        topics: List[str],
+        starting_week: int = 1,
+        word_count: int = 2500,
+    ) -> List[Tuple[Lecture, Dict]]:
+        """
+        Generate a series of related lectures using prompt caching for consistency.
+        This method maintains professor voice and teaching style across multiple lectures
+        and reduces token usage for subsequent lectures in the series.
+
+        Args:
+            course: Course object with details
+            professor: Professor teaching the course
+            topics: List of lecture topics in sequence
+            starting_week: Week number to start from (default: 1)
+            word_count: Target word count for each lecture (default: 2500)
+
+        Returns:
+            List of tuples containing (Lecture, cache_metrics) for each lecture
+
+        Raises:
+            ValueError: If topics list is empty
+        """
+        if not topics:
+            raise ValueError("Topics list cannot be empty")
+
+        if not self.enable_caching:
+            self.logger.warning(
+                "Lecture series caching requested but caching is disabled"
+            )
+            results = []
+            for i, topic in enumerate(topics):
+                week_number = starting_week + (i // course.lectures_per_week)
+                order_in_week = (i % course.lectures_per_week) + 1
+
+                lecture = self.create_lecture(
+                    course=course,
+                    professor=professor,
+                    topic=topic,
+                    week_number=week_number,
+                    order_in_week=order_in_week,
+                    previous_lecture_content=(
+                        results[-1][0].content if results else None
+                    ),
+                    word_count=word_count,
+                )
+                results.append((lecture, {"cached": False, "tokens_saved": 0}))
+            return results
+
+        # Get the system prompt
+        system_prompt = get_system_prompt("lecture")
+
+        # Create cached professor and course context
+        professor_context = {
+            "type": "text",
+            "text": f"""<professor_profile>
+Name: {professor.name}
+Title: {professor.title}
+Background: {professor.background}
+Teaching Style: {professor.teaching_style}
+Personality: {professor.personality}
+</professor_profile>""",
+            "cache_control": {"type": "ephemeral"},
+        }
+
+        course_context = {
+            "type": "text",
+            "text": f"""<course_info>
+Course: {course.title} ({course.code})
+Department: {course.department}
+Level: {course.level}
+Description: {course.description}
+</course_info>""",
+            "cache_control": {"type": "ephemeral"},
+        }
+
+        # Create base system message array with cacheable elements
+        base_system = [
+            {"type": "text", "text": system_prompt},
+            professor_context,
+            course_context,
+        ]
+
+        # Results array
+        results = []
+
+        # Previous lecture summary for continuity
+        previous_lectures_summaries = []
+
+        # Track total tokens saved
+        total_tokens_saved = 0
+
+        for i, topic in enumerate(topics):
+            week_number = starting_week + (i // course.lectures_per_week)
+            order_in_week = (i % course.lectures_per_week) + 1
+
+            # Deep copy the base system messages
+            system = base_system.copy()
+
+            # Add previous lecture context if available
+            if previous_lectures_summaries:
+                previous_context = {
+                    "type": "text",
+                    "text": f"""<previous_lectures>
+{chr(10).join(previous_lectures_summaries[-3:])}
+</previous_lectures>
+
+Build on these concepts appropriately.""",
+                    "cache_control": {"type": "ephemeral"},
+                }
+                system.append(previous_context)
+
+            # Current lecture request - not cached
+            current_request = {
+                "type": "text",
+                "text": f"""<lecture_request>
+Topic: {topic}
+Week: {week_number}
+Lecture: {order_in_week}
+Word Count: {word_count}
+
+Please create a lecture following these guidelines:
+
+1. Begin with a vivid introduction that sets the scene and introduces the lecturer
+2. Write in a conversational, engaging style that reflects the professor's personality
+3. Avoid complex mathematical formulas - express them in spoken language
+4. Include stage directions in [brackets] to bring the scene to life
+5. Focus on creating a narrative flow rather than presenting dry facts
+6. Aim for approximately {word_count} words in length
+
+Please prepare your lecture and then write it in <lecture_text> tags.
+</lecture_request>""",
+            }
+
+            # Create user message
+            messages = [{"role": "user", "content": [current_request]}]
+
+            # Track start time for performance measurement
+            start_time = time.time()
+
+            # Make API call with caching
+            response = self.client.messages.create(
+                model="claude-3-7-sonnet-20250219",
+                max_tokens=8000,
+                temperature=0.7,
+                system=system,
+                messages=messages,
+            )
+
+            # Calculate performance metrics
+            elapsed = time.time() - start_time
+
+            # Process the response
+            content = response.content[0].text
+
+            # Extract lecture text and preparation from XML tags
+            lecture_text = extract_xml_content(content, "lecture_text")
+            preparation = extract_xml_content(content, "lecture_preparation")
+
+            # If no XML tags are found, use the whole text as lecture_text
+            if not lecture_text:
+                if "<lecture_text>" not in content and content.strip():
+                    lecture_text = content.strip()
+                else:
+                    # For Ollama or other models that might not structure the response with XML tags
+                    # Extract anything that looks like the main content
+                    # Look for patterns like paragraph breaks or headers
+                    lines = content.split("\n")
+                    if len(lines) > 5:  # If we have a reasonable amount of text
+                        lecture_text = content.strip()
+                    else:
+                        raise ValueError(
+                            f"No lecture text found in response for topic: {topic}"
+                        )
+
+            # Create a title from the topic, potentially trying to extract a title from the first line
+            title = topic
+            if lecture_text:
+                first_lines = lecture_text.split("\n")[
+                    :3
+                ]  # Check first 3 lines for a good title
+
+                for line in first_lines:
+                    clean_line = line.strip().strip("# []").strip()
+                    # Good title criteria: not too short, not too long, doesn't contain common instruction text
+                    if (
+                        len(clean_line) > 5
+                        and len(clean_line) < 100
+                        and "lecture" not in clean_line.lower()
+                        and "text" not in clean_line.lower()
+                        and "preparation" not in clean_line.lower()
+                        and "plan" not in clean_line.lower()
+                    ):
+                        title = clean_line
+                        break
+
+                # If we didn't find a good title in the first lines, use the topic
+                if title == topic and topic:
+                    title = topic
+
+            # Create a description from the topic and course
+            description = f"Week {week_number}, Lecture {order_in_week}: {topic}"
+
+            # Create and return the lecture object
+            lecture = Lecture(
+                title=title,
+                course_id=course.id,
+                professor_id=professor.id,
+                topic=topic,
+                week_number=week_number,
+                order_in_week=order_in_week,
+                description=description,
+                content=lecture_text,
+                preparation_notes=preparation or "",
+            )
+
+            # Create a summary for the next lecture
+            if lecture_text:
+                summary = f"""Lecture {i+1}: {title}
+Key points:
+- {lecture_text[:300].replace(chr(10), ' ')}...
+"""
+                previous_lectures_summaries.append(summary)
+
+            # Estimate token savings for this lecture
+            estimated_context_tokens = (
+                len(professor_context["text"] + course_context["text"]) // 4
+            )
+            if i > 0 and previous_lectures_summaries:
+                estimated_context_tokens += (
+                    sum(len(s) for s in previous_lectures_summaries[-3:]) // 4
+                )
+
+            # Only count token savings for lectures after the first one
+            if i > 0:
+                total_tokens_saved += estimated_context_tokens
+
+            # Track metrics for this lecture
+            cache_info = {
+                "cached": True,
+                "lecture_number": i + 1,
+                "response_time_seconds": elapsed,
+                "input_tokens": response.usage.input_tokens,
+                "output_tokens": response.usage.output_tokens,
+                "estimated_tokens_saved": estimated_context_tokens if i > 0 else 0,
+                "total_tokens_saved_series": total_tokens_saved,
+            }
+
+            if self.cache_metrics:
+                self.token_savings += cache_info["estimated_tokens_saved"]
+                self.logger.info(
+                    f"Generated lecture {i+1}/{len(topics)} with caching. "
+                    f"Estimated tokens saved: {cache_info['estimated_tokens_saved']}"
+                )
+
+            results.append((lecture, cache_info))
+
+        return results

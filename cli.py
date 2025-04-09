@@ -12,6 +12,7 @@ import platform
 import subprocess
 from pathlib import Path
 from dotenv import load_dotenv
+import traceback
 
 from artificial_u.system import UniversitySystem
 from artificial_u.config.defaults import DEPARTMENTS
@@ -26,6 +27,7 @@ from rich.progress import (
     TextColumn,
     BarColumn,
     TimeElapsedColumn,
+    MofNCompleteColumn,
 )
 
 # Load environment variables
@@ -537,6 +539,126 @@ def show_lecture(course_code, week, number):
 
     except Exception as e:
         console.print(f"[red]Error displaying lecture:[/red] {str(e)}")
+
+
+@cli.command()
+@click.argument("course-code")
+@click.argument("topics", nargs=-1, required=True)
+@click.option("--starting-week", "-w", default=1, type=int, help="Starting week number")
+@click.option(
+    "--word-count", default=2500, type=int, help="Target word count per lecture"
+)
+@click.option(
+    "--enable-caching/--no-caching",
+    default=True,
+    help="Enable prompt caching for consistency and reduced token usage (Anthropic only)",
+)
+def generate_lecture_series(
+    course_code, topics, starting_week, word_count, enable_caching
+):
+    """Generate a series of related lectures for a course.
+
+    This command creates multiple lectures in sequence, maintaining the professor's
+    voice and teaching style across all lectures. It's more efficient than creating
+    lectures one-by-one as it leverages prompt caching for reduced token usage.
+
+    Example:
+        ./cli.py generate-lecture-series CS101 "Introduction to Programming" "Variables and Data Types" "Control Flow"
+    """
+    try:
+        # Get the system
+        system = get_system()
+
+        # Update the system to use caching if requested
+        if enable_caching and system.content_backend != "anthropic":
+            console.print(
+                "[yellow]Warning:[/yellow] Prompt caching is only available with the Anthropic backend"
+            )
+            enable_caching = False
+
+        # Enable caching if requested and using Anthropic
+        system.enable_caching = enable_caching and system.content_backend == "anthropic"
+
+        # Check if course exists
+        course = system.repository.get_course_by_code(course_code)
+        if not course:
+            console.print(f"[red]Error:[/red] Course {course_code} not found")
+            return
+
+        # Convert topics tuple to list
+        topic_list = list(topics)
+
+        console.print(
+            Panel(
+                f"Generating lecture series for [bold]{course_code}[/bold] with {len(topic_list)} lectures",
+                title="Lecture Series Generation",
+                border_style="blue",
+            )
+        )
+
+        # Display course and professor info
+        professor = system.repository.get_professor(course.professor_id)
+        console.print(f"Course: [bold]{course.title}[/bold] ({course.code})")
+        console.print(f"Professor: [bold]{professor.name}[/bold]")
+        console.print(f"Starting week: [bold]{starting_week}[/bold]")
+        console.print(f"Topics: [bold]{', '.join(topic_list)}[/bold]")
+        console.print(
+            f"Caching enabled: [bold]{'Yes' if system.enable_caching else 'No'}[/bold]"
+        )
+
+        # Start progress display
+        with Progress(
+            SpinnerColumn(),
+            TextColumn("[bold blue]{task.description}"),
+            BarColumn(),
+            MofNCompleteColumn(),
+            TimeElapsedColumn(),
+        ) as progress:
+            task = progress.add_task("Generating lectures...", total=len(topic_list))
+
+            # Define a callback for progress updates
+            def update_progress():
+                progress.update(task, advance=1)
+
+            # Create lectures with progress tracking
+            lectures = system.create_lecture_series(
+                course_code=course_code,
+                topics=topic_list,
+                starting_week=starting_week,
+                word_count=word_count,
+            )
+
+            # Complete the progress bar
+            progress.update(task, completed=len(topic_list))
+
+        # Display success message
+        console.print(
+            f"\n[green]Successfully generated {len(lectures)} lectures![/green]"
+        )
+
+        # Display lecture info
+        table = Table(title=f"Lectures for {course.code}")
+        table.add_column("Week")
+        table.add_column("Number")
+        table.add_column("Title")
+        table.add_column("Word Count")
+
+        for lecture in lectures:
+            word_count = len(lecture.content.split())
+            table.add_row(
+                str(lecture.week_number),
+                str(lecture.order_in_week),
+                lecture.title,
+                str(word_count),
+            )
+
+        console.print(table)
+
+    except ContentGenerationError as e:
+        console.print(f"[red]Error generating lectures:[/red] {str(e)}")
+    except Exception as e:
+        console.print(f"[red]Unexpected error:[/red] {str(e)}")
+        console.print(traceback.format_exc())
 
 
 if __name__ == "__main__":
