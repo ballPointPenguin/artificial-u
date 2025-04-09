@@ -8,12 +8,16 @@ ArtificialU combines the Anthropic Claude API for generating educational content
 
 ## Key Features
 
+- **Course Generation**: Create full academic courses with syllabi and lecture content
+- **Professor Profiles**: Generate diverse, detailed professor personas
+- **Text-to-Speech**: Convert lecture content to audio using ElevenLabs voices
+- **Smart Voice Selection**: Automatically match professors to appropriate ElevenLabs voices based on gender, nationality, accent, and age
+- **CLI Interface**: Easy-to-use command line interface for generating content
 - Course and lecture generation with consistent professor personas
 - Text-to-speech conversion with appropriate voices for each professor
 - Prompt caching for more efficient API usage and consistent personalities
 - Direct access to audio file paths in lecture previews
 - Local storage of course materials and audio files
-- CLI interface for browsing and playing content
 - Faculty directory with professor information
 
 ## Prerequisites

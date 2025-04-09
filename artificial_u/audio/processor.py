@@ -16,6 +16,12 @@ from elevenlabs.client import ElevenLabs
 
 from artificial_u.models.core import Professor, Lecture
 
+# Import the new voice selection system
+from artificial_u.integrations.elevenlabs import (
+    VoiceSelectionManager,
+    get_voice_for_professor,
+)
+
 
 class AudioProcessorError(Exception):
     """Base exception for audio processing errors."""
@@ -110,7 +116,10 @@ class AudioProcessor:
             self.logger.error(f"Failed to initialize ElevenLabs client: {e}")
             raise
 
-        # Simple voice mapping for different professor types
+        # Initialize voice selection manager
+        self.voice_manager = VoiceSelectionManager(api_key=self.api_key)
+
+        # Simple voice mapping for different professor types (used as fallback)
         self.voice_mapping = {
             "stem": "21m00Tcm4TlvDq8ikWAM",  # Rachel
             "humanities": "EXAVITQu4vr4xnSDxMaL",  # Bella
@@ -315,13 +324,23 @@ class AudioProcessor:
         Returns:
             str: Voice ID to use
         """
-        # If professor has voice settings with a voice ID, use that
+        # If professor has voice settings with a voice ID, use that (manual override)
         if professor.voice_settings and "voice_id" in professor.voice_settings:
             return professor.voice_settings["voice_id"]
 
-        # Otherwise map professor to a voice type
-        department_type = self._map_professor_to_voice_type(professor)
-        return self.voice_mapping.get(department_type, self.voice_mapping["default"])
+        try:
+            # Use the smart voice selection system
+            voice_data = self.voice_manager.get_voice_for_professor(professor)
+            return voice_data["voice_id"]
+        except Exception as e:
+            self.logger.error(f"Error selecting voice using smart system: {e}")
+            self.logger.info("Falling back to simple mapping system")
+
+            # If smart selection fails, fall back to the simple mapping
+            department_type = self._map_professor_to_voice_type(professor)
+            return self.voice_mapping.get(
+                department_type, self.voice_mapping["default"]
+            )
 
     def split_lecture_into_chunks(
         self, text: str, max_chunk_size: int = DEFAULT_CHUNK_SIZE
