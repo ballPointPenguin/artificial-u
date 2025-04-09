@@ -26,7 +26,7 @@ setup(
     },
     entry_points={
         "console_scripts": [
-            "artificial-u=artificial_u.cli.app:cli",
+            "artificial-u=cli:cli",
         ],
     },
 )

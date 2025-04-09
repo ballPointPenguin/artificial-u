@@ -930,6 +930,7 @@ class UniversitySystem:
                         "text_file": (
                             lecture_path if os.path.exists(lecture_path) else None
                         ),
+                        "audio_path": lecture.audio_path,
                     }
                 )
 

@@ -10,6 +10,7 @@ ArtificialU combines the Anthropic Claude API for generating educational content
 
 - Course and lecture generation with consistent professor personas
 - Text-to-speech conversion with appropriate voices for each professor
+- Direct access to audio file paths in lecture previews
 - Local storage of course materials and audio files
 - CLI interface for browsing and playing content
 - Faculty directory with professor information
@@ -51,10 +52,16 @@ cp .env.example .env
 
 ## Quick Start
 
-Run the sample demonstration:
+Run the sample demonstration (no API keys required):
 
 ```bash
-python sample.py
+python sample_tinyllama.py
+```
+
+Or, using Anthropic API:
+
+```bash
+python sample_anthropic.py
 ```
 
 This will simulate the creation of a professor, course, lecture, and audio file to demonstrate the system's capabilities.
@@ -66,37 +73,50 @@ The CLI interface provides commands for interacting with the system:
 ### Create a course
 
 ```bash
-python -m artificial_u create-course -d "Computer Science" -t "Introduction to Artificial Intelligence" -c "CS4511"
+./cli.py create-course -d "Computer Science" -t "Introduction to Artificial Intelligence" -c "CS4511"
 ```
 
 ### Generate a lecture
 
 ```bash
-python -m artificial_u generate-lecture -c "CS4511" -w 1 -n 1 -t "What is AI? History and Intelligent Agents"
+./cli.py generate-lecture -c "CS4511" -w 1 -n 1 -t "What is AI? History and Intelligent Agents"
 ```
 
 ### Create audio for a lecture
 
 ```bash
-python -m artificial_u create-audio -c "CS4511" -w 1 -n 1
+./cli.py create-audio -c "CS4511" -w 1 -n 1
 ```
 
 ### List available courses
 
 ```bash
-python -m artificial_u list-courses
+./cli.py list-courses
 ```
 
 ### View course syllabus
 
 ```bash
-python -m artificial_u show-syllabus -c "CS4511"
+./cli.py show-syllabus -c "CS4511"
 ```
 
 ### Play a lecture (if available)
 
 ```bash
-python -m artificial_u play-lecture -c "CS4511" -w 1 -n 1
+./cli.py play-lecture -c "CS4511" -w 1 -n 1
+```
+
+You can also display a lecture's content:
+
+```bash
+./cli.py show-lecture -c "CS4511" -w 1 -n 1
+```
+
+For more details on any command, use the --help option:
+
+```bash
+./cli.py --help
+./cli.py create-course --help
 ```
 
 ## Testing
@@ -131,7 +151,8 @@ For manual API tests, make sure to:
 artificial_u/
 ├── __init__.py            # Package initialization
 ├── __main__.py            # Entry point for command-line execution
-├── system.py              # Main system integration class
+├── cli.py                 # CLI interface using Click
+├── system.py              # Main system integration class - includes lecture preview functionality
 ├── models/                # Data models and database
 │   ├── __init__.py
 │   ├── core.py            # Core data models using Pydantic
@@ -139,12 +160,9 @@ artificial_u/
 ├── generators/            # Content generation
 │   ├── __init__.py
 │   └── content.py         # Claude API integration for content
-├── audio/                 # Audio processing
-│   ├── __init__.py
-│   └── processor.py       # ElevenLabs API integration
-└── cli/                   # Command-line interface
+└── audio/                 # Audio processing
     ├── __init__.py
-    └── app.py             # CLI commands using Click
+    └── processor.py       # ElevenLabs API integration
 ```
 
 ## Development with GitHub Codespaces
@@ -156,6 +174,12 @@ This repository includes a devcontainer configuration for easy development using
 3. Click "Create codespace on main"
 4. Once the environment is ready, add your API keys to the `.env` file
 5. Start developing!
+
+## Recent Updates
+
+- Fixed lecture preview functionality to include `audio_path` references
+- Streamlined CLI interface for audio playback
+- Improved error handling for missing audio files
 
 ## Future Enhancements
 

@@ -163,10 +163,16 @@ Make this syllabus clear, professional, and aligned with the professor's teachin
         syllabus_match = re.search(
             r"<syllabus>\s*(.*?)\s*</syllabus>", content, re.DOTALL
         )
-        if not syllabus_match:
-            raise ValueError("No syllabus found in response")
 
-        return syllabus_match.group(1).strip()
+        if syllabus_match:
+            # If we find the tags, use the content inside them
+            return syllabus_match.group(1).strip()
+        elif content.strip():
+            # If no tags but content exists, use the whole response
+            return content.strip()
+        else:
+            # Only raise error if truly empty
+            raise ValueError("No syllabus found in response")
 
     def create_lecture(
         self,

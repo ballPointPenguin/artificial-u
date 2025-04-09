@@ -10,7 +10,12 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Import CLI
-from artificial_u.cli.app import cli
+import sys
+import os
+
+# Add the root directory to the Python path
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from cli import cli
 
 if __name__ == "__main__":
     # Check for required environment variables
