@@ -273,10 +273,35 @@ def create_professor(name, department, specialization):
     "--topic", "-t", help="Lecture topic (uses syllabus topic if not specified)"
 )
 @click.option("--word-count", default=2500, type=int, help="Target word count")
-def generate_lecture(course_code, week, number, topic, word_count):
-    """Generate a lecture for a specific course and week."""
+@click.option(
+    "--enable-caching/--no-caching",
+    default=False,
+    help="Enable prompt caching to reduce token usage and maintain consistent style (Anthropic only)",
+)
+def generate_lecture(course_code, week, number, topic, word_count, enable_caching):
+    """Generate a lecture for a course."""
     try:
+        # Get the system
         system = get_system()
+
+        # Update the system to use caching if requested
+        if enable_caching and system.content_backend != "anthropic":
+            console.print(
+                "[yellow]Warning:[/yellow] Prompt caching is only available with the Anthropic backend"
+            )
+
+        # Enable caching if requested and using Anthropic
+        if enable_caching and system.content_backend == "anthropic":
+            system.enable_caching = True
+            console.print(
+                "[blue]Info:[/blue] Prompt caching enabled for this lecture generation"
+            )
+
+        # Check if course exists
+        course = system.repository.get_course_by_code(course_code)
+        if not course:
+            console.print(f"[red]Error:[/red] Course {course_code} not found")
+            return
 
         console.print(
             Panel(

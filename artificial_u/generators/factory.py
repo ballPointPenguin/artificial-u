@@ -8,17 +8,25 @@ from typing import Optional
 from artificial_u.generators.content import ContentGenerator
 
 
-def create_default_generator(api_key: Optional[str] = None) -> ContentGenerator:
+def create_default_generator(
+    api_key: Optional[str] = None,
+    enable_caching: bool = False,
+    cache_metrics: bool = True,
+) -> ContentGenerator:
     """
     Create a default ContentGenerator using Anthropic.
 
     Args:
         api_key: Optional Anthropic API key, otherwise uses ANTHROPIC_API_KEY env var
+        enable_caching: Whether to enable prompt caching
+        cache_metrics: Whether to track cache metrics
 
     Returns:
         ContentGenerator: Generator instance using Anthropic
     """
-    return ContentGenerator(api_key=api_key)
+    return ContentGenerator(
+        api_key=api_key, enable_caching=enable_caching, cache_metrics=cache_metrics
+    )
 
 
 def create_ollama_generator(model: str = "tinyllama") -> ContentGenerator:
@@ -73,6 +81,8 @@ def create_generator(backend: str = "anthropic", **kwargs) -> ContentGenerator:
     Args:
         backend: Backend to use ('anthropic' or 'ollama')
         **kwargs: Backend-specific arguments
+            - For 'anthropic': api_key, enable_caching, cache_metrics
+            - For 'ollama': model
 
     Returns:
         ContentGenerator: Generator instance
@@ -81,7 +91,11 @@ def create_generator(backend: str = "anthropic", **kwargs) -> ContentGenerator:
         ValueError: If an invalid backend is specified
     """
     if backend == "anthropic":
-        return create_default_generator(api_key=kwargs.get("api_key"))
+        return create_default_generator(
+            api_key=kwargs.get("api_key"),
+            enable_caching=kwargs.get("enable_caching", False),
+            cache_metrics=kwargs.get("cache_metrics", True),
+        )
     elif backend == "ollama":
         return create_ollama_generator(model=kwargs.get("model", "tinyllama"))
     else:

@@ -10,6 +10,7 @@ ArtificialU combines the Anthropic Claude API for generating educational content
 
 - Course and lecture generation with consistent professor personas
 - Text-to-speech conversion with appropriate voices for each professor
+- Prompt caching for more efficient API usage and consistent personalities
 - Direct access to audio file paths in lecture previews
 - Local storage of course materials and audio files
 - CLI interface for browsing and playing content
@@ -69,6 +70,16 @@ This will simulate the creation of a professor, course, lecture, and audio file 
 ## Usage
 
 The CLI interface provides commands for interacting with the system:
+
+### Enable Prompt Caching
+
+You can enable Anthropic's prompt caching feature to reduce token usage and maintain consistent professor personalities across lectures:
+
+```bash
+./cli.py generate-lecture -c "CS4511" -w 1 -n 1 -t "What is AI?" --enable-caching
+```
+
+This feature caches professor profiles and course information, so subsequent lectures by the same professor will maintain a consistent voice and teaching style while potentially reducing API costs by 70-90% for large cached components.
 
 ### Create a course
 

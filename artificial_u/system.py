@@ -38,6 +38,10 @@ from artificial_u.config.defaults import (
     DEFAULT_LOG_LEVEL,
 )
 
+# Default caching settings
+DEFAULT_ENABLE_CACHING = False
+DEFAULT_CACHE_METRICS = True
+
 
 class UniversitySystem:
     """
@@ -55,6 +59,8 @@ class UniversitySystem:
         content_model: Optional[str] = None,
         text_export_path: Optional[str] = None,
         log_level: str = DEFAULT_LOG_LEVEL,
+        enable_caching: bool = DEFAULT_ENABLE_CACHING,
+        cache_metrics: bool = DEFAULT_CACHE_METRICS,
     ):
         """
         Initialize the university system.
@@ -68,6 +74,8 @@ class UniversitySystem:
             content_model: Model to use with the chosen backend (depends on backend)
             text_export_path: Path to export lecture text files, uses TEXT_EXPORT_PATH env var or default if not provided
             log_level: Logging level (INFO, DEBUG, etc.)
+            enable_caching: Whether to enable prompt caching for Anthropic API calls
+            cache_metrics: Whether to track cache metrics
         """
         # Setup logging
         self._setup_logging(log_level)
@@ -77,18 +85,27 @@ class UniversitySystem:
             content_backend=content_backend,
             anthropic_api_key=anthropic_api_key,
             content_model=content_model,
+            enable_caching=enable_caching,
+            cache_metrics=cache_metrics,
         )
         self._setup_audio_processor(elevenlabs_api_key)
         self._setup_repository(db_path)
         self._setup_paths(audio_path, text_export_path)
 
-        # Store content backend type for reference
+        # Store system settings
         self.content_backend = content_backend
         self.content_model = content_model
+        self.enable_caching = enable_caching
 
+        # Log initialization
+        caching_str = (
+            " with caching enabled"
+            if enable_caching and content_backend == "anthropic"
+            else ""
+        )
         self.logger.info(
             f"University system initialized with {content_backend} backend"
-            f"{' and ' + content_model if content_model else ''}"
+            f"{' and ' + content_model if content_model else ''}{caching_str}"
         )
 
     def _setup_logging(self, log_level: str) -> None:
@@ -111,6 +128,8 @@ class UniversitySystem:
         content_backend: str,
         anthropic_api_key: Optional[str] = None,
         content_model: Optional[str] = None,
+        enable_caching: bool = DEFAULT_ENABLE_CACHING,
+        cache_metrics: bool = DEFAULT_CACHE_METRICS,
     ) -> None:
         """
         Set up the content generator based on backend.
@@ -119,10 +138,14 @@ class UniversitySystem:
             content_backend: Backend type ('anthropic' or 'ollama')
             anthropic_api_key: API key for Anthropic (if applicable)
             content_model: Model name for content generation
+            enable_caching: Whether to enable prompt caching (Anthropic only)
+            cache_metrics: Whether to track cache metrics
         """
         backend_kwargs = {}
         if content_backend == "anthropic":
             backend_kwargs["api_key"] = anthropic_api_key
+            backend_kwargs["enable_caching"] = enable_caching
+            backend_kwargs["cache_metrics"] = cache_metrics
         elif content_backend == "ollama":
             backend_kwargs["model"] = content_model or DEFAULT_OLLAMA_MODEL
         else:
@@ -132,8 +155,13 @@ class UniversitySystem:
             self.content_generator = create_generator(
                 backend=content_backend, **backend_kwargs
             )
+            caching_str = (
+                " with caching"
+                if enable_caching and content_backend == "anthropic"
+                else ""
+            )
             self.logger.debug(
-                f"Content generator set up with {content_backend} backend"
+                f"Content generator set up with {content_backend} backend{caching_str}"
             )
         except Exception as e:
             error_msg = f"Failed to initialize content generator: {str(e)}"
@@ -531,40 +559,68 @@ class UniversitySystem:
         word_count: int = DEFAULT_LECTURE_WORD_COUNT,
     ) -> Lecture:
         """
-        Generate the content for a lecture.
+        Generate lecture content using the content generator.
 
         Args:
             course: Course object
             professor: Professor object
             topic: Lecture topic
-            week_number: Week number
-            order_in_week: Lecture number within the week
-            previous_lecture: Previous lecture for continuity (optional)
-            word_count: Target word count
+            week_number: Week number in the course
+            order_in_week: Order of this lecture within the week
+            previous_lecture: Optional previous lecture for continuity
+            word_count: Target word count for the lecture
 
         Returns:
             Lecture: Generated lecture object
 
         Raises:
-            ContentGenerationError: If lecture content generation fails
+            ContentGenerationError: If lecture generation fails
         """
+        previous_content = previous_lecture.content if previous_lecture else None
+
         try:
-            self.logger.debug(f"Generating lecture content for topic: {topic}")
+            # Use cached lecture generation if enabled for Anthropic
+            if self.enable_caching and self.content_backend == "anthropic":
+                self.logger.info(
+                    f"Generating lecture for {course.code} Week {week_number}, Lecture {order_in_week} with caching"
+                )
+                lecture, cache_metrics = (
+                    self.content_generator.create_lecture_with_caching(
+                        course=course,
+                        professor=professor,
+                        topic=topic,
+                        week_number=week_number,
+                        order_in_week=order_in_week,
+                        previous_lecture_content=previous_content,
+                        word_count=word_count,
+                    )
+                )
 
-            lecture = self.content_generator.create_lecture(
-                course=course,
-                professor=professor,
-                topic=topic,
-                week_number=week_number,
-                order_in_week=order_in_week,
-                previous_lecture_content=(
-                    previous_lecture.content if previous_lecture else None
-                ),
-                word_count=word_count,
-            )
+                # Log cache metrics
+                if cache_metrics.get("cached", False):
+                    self.logger.info(
+                        f"Cache metrics - Tokens saved: {cache_metrics.get('estimated_tokens_saved', 0)}, "
+                        f"Response time: {cache_metrics.get('response_time_seconds', 0):.2f}s"
+                    )
+            else:
+                # Use standard generation without caching
+                self.logger.info(
+                    f"Generating lecture for {course.code} Week {week_number}, Lecture {order_in_week}"
+                )
+                lecture = self.content_generator.create_lecture(
+                    course=course,
+                    professor=professor,
+                    topic=topic,
+                    week_number=week_number,
+                    order_in_week=order_in_week,
+                    previous_lecture_content=previous_content,
+                    word_count=word_count,
+                )
 
-            self.logger.debug("Lecture content generation completed")
+            # The lecture returned from create_lecture doesn't have an ID yet
+            # We'll store it in the database and get an ID
             return lecture
+
         except Exception as e:
             error_msg = f"Failed to generate lecture content: {str(e)}"
             self.logger.error(error_msg)
