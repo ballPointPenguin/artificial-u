@@ -17,5 +17,20 @@ services:
       timeout: 5s
       retries: 5
 
+  ollama:
+    image: ollama/ollama
+    container_name: artificial_u_ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    # Optional: Add healthcheck if needed, e.g., by curling the API
+    # healthcheck:
+    #   test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
+    #   interval: 10s
+    #   timeout: 5s
+    #   retries: 5
+
 volumes:
   postgres_data:
+  ollama_data:
