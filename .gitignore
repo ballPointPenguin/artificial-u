@@ -41,6 +41,7 @@ audio_files/
 *.mp3
 *.wav
 lecture_texts/
+*.log
 
 # Test files
 test_university.db

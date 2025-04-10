@@ -46,6 +46,10 @@ def main():
             background="PhD from Stanford, pioneering work in language models and cognitive architectures",
             teaching_style="Engaging and thought-provoking, emphasizing real-world applications",
             personality="Enthusiastic and inspiring, known for making complex concepts accessible",
+            gender="Female",
+            accent="Italian",
+            description="Dr. Rossi has shoulder-length dark hair with subtle gray streaks that she often wears loosely styled. She has an olive complexion and expressive brown eyes that light up when discussing complex language models. Standing at 5'6\", she carries herself with confidence and grace. In the classroom, she dresses in elegant but comfortable attire, typically pairing tailored blazers with silk blouses in vibrant colors. She gestures expressively while speaking, using her hands to illustrate abstract concepts, and wears minimal jewelry except for a distinctive silver pendant shaped like a neural network that students recognize as her signature accessory.",
+            age=45,
         )
 
         course, _ = system.create_course(

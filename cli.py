@@ -222,20 +222,27 @@ def list_professors():
 
 
 @cli.command()
-@click.option("--name", help="Professor name (generated if not provided)")
-@click.option("--department", "-d", help="Department (generated if not provided)")
+@click.option("--name", help="Professor name (AI-generated if not provided)")
+@click.option("--department", "-d", help="Department (AI-generated if not provided)")
 @click.option(
-    "--specialization", "-s", help="Specialization (generated if not provided)"
+    "--specialization", "-s", help="Specialization (AI-generated if not provided)"
 )
-def create_professor(name, department, specialization):
-    """Create a new professor with optional attributes."""
+@click.option("--gender", "-g", help="Gender (AI-generated if not provided)")
+@click.option("--accent", "-a", help="Accent (AI-generated if not provided)")
+@click.option("--age", type=int, help="Age (AI-generated if not provided)")
+@click.option("--title", "-t", help="Academic title (AI-generated if not provided)")
+@click.option("--background", "-b", help="Background (AI-generated if not provided)")
+def create_professor(
+    name, department, specialization, gender, accent, age, title, background
+):
+    """Create a new professor with AI-generated attributes."""
     try:
         system = get_system()
 
         console.print(
             Panel(
-                f"Creating new professor{f': [bold]{name}[/bold]' if name else ''}",
-                subtitle=f"{department or 'Random department'} - {specialization or 'Random specialization'}",
+                f"Creating professor with AI{f': [bold]{name}[/bold]' if name else ''}",
+                subtitle=f"{department or 'AI-generated department'} - {specialization or 'AI-generated specialization'}",
             )
         )
 
@@ -244,22 +251,36 @@ def create_professor(name, department, specialization):
             TextColumn("[bold blue]{task.description}"),
             console=console,
         ) as progress:
-            task = progress.add_task("Generating professor...", total=None)
+            task = progress.add_task("Generating professor with AI...", total=None)
 
-            # Create the professor
+            # Create the professor with all available parameters
             professor = system.create_professor(
-                name=name, department=department, specialization=specialization
+                name=name,
+                department=department,
+                specialization=specialization,
+                gender=gender,
+                accent=accent,
+                age=age,
+                title=title,
+                background=background,
             )
 
             progress.update(task, visible=False)
 
         # Show success message with details
-        console.print("[green]Professor created successfully![/green]")
+        console.print("[green]Professor created successfully with AI![/green]")
         console.print(f"ID: {professor.id}")
         console.print(f"Name: {professor.name}")
+        console.print(f"Gender: {professor.gender}")
+        console.print(f"Accent: {professor.accent}")
+        console.print(f"Age: {professor.age}")
         console.print(f"Title: {professor.title}")
         console.print(f"Department: {professor.department}")
         console.print(f"Specialization: {professor.specialization}")
+        console.print(f"Background: {professor.background}")
+        console.print(f"Personality: {professor.personality}")
+        console.print(f"Teaching Style: {professor.teaching_style}")
+        console.print(f"Description: {professor.description}")
 
     except Exception as e:
         console.print(f"[red]Error creating professor:[/red] {str(e)}")

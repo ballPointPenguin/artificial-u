@@ -229,11 +229,15 @@ class UniversitySystem:
         background: Optional[str] = None,
         teaching_style: Optional[str] = None,
         personality: Optional[str] = None,
+        gender: Optional[str] = None,
+        accent: Optional[str] = None,
+        description: Optional[str] = None,
+        age: Optional[int] = None,
     ) -> Professor:
         """
         Create a new professor with the given attributes.
 
-        If parameters are not provided, default or AI-generated values will be used.
+        If parameters are not provided, AI generation or defaults will be used.
 
         Args:
             name: Professor's name
@@ -243,16 +247,18 @@ class UniversitySystem:
             background: Professional background
             teaching_style: Teaching methodology
             personality: Personality traits
+            gender: Professor's gender (optional)
+            accent: Professor's accent (optional)
+            description: Physical description of the professor (optional)
+            age: Professor's age (optional)
 
         Returns:
             Professor: The created professor object
         """
         self.logger.info("Creating new professor")
 
-        # Generate default values for missing attributes
-        name = name or RandomGenerators.generate_professor_name()
-        self.logger.debug(f"Using professor name: {name}")
-
+        # First, ensure we have department and specialization as they're required
+        # by the content generator
         department = department or RandomGenerators.generate_department()
         self.logger.debug(f"Using department: {department}")
 
@@ -261,28 +267,100 @@ class UniversitySystem:
         )
         self.logger.debug(f"Using specialization: {specialization}")
 
-        title = title or RandomGenerators.generate_professor_title(department)
-        self.logger.debug(f"Using title: {title}")
+        # Try to use the content generator for AI-powered professor creation
+        try:
+            if self.content_generator:
+                self.logger.info("Using AI to generate professor profile")
 
-        background = background or RandomGenerators.generate_background(specialization)
-        self.logger.debug(f"Using background: {background}")
+                # Determine age range string if we have a specific age
+                age_range = None
+                if age:
+                    decade = (age // 10) * 10
+                    age_range = f"{decade}-{decade+10}"
 
-        teaching_style = teaching_style or RandomGenerators.generate_teaching_style()
-        self.logger.debug(f"Using teaching style: {teaching_style}")
+                # Generate professor using AI
+                professor = self.content_generator.create_professor(
+                    department=department,
+                    specialization=specialization,
+                    gender=gender,
+                    nationality=None,  # Not currently supported in system interface
+                    age_range=age_range,
+                    accent=accent,
+                )
 
-        personality = personality or RandomGenerators.generate_personality()
-        self.logger.debug(f"Using personality: {personality}")
+                # Override specific attributes if they were provided
+                if name:
+                    professor.name = name
+                if title:
+                    professor.title = title
+                if background:
+                    professor.background = background
+                if teaching_style:
+                    professor.teaching_style = teaching_style
+                if personality:
+                    professor.personality = personality
+                if description:
+                    professor.description = description
+                if age:
+                    professor.age = age
 
-        # Create professor object
-        professor = Professor(
-            name=name,
-            title=title,
-            department=department,
-            specialization=specialization,
-            background=background,
-            teaching_style=teaching_style,
-            personality=personality,
-        )
+                self.logger.info("Successfully created professor using AI")
+
+            else:
+                raise ValueError("Content generator not available")
+
+        except Exception as e:
+            # Log the exception
+            self.logger.warning(
+                f"AI generation failed, falling back to random generation: {e}"
+            )
+
+            # Fall back to random generation for all fields
+            name = name or RandomGenerators.generate_professor_name()
+            self.logger.debug(f"Using professor name: {name}")
+
+            title = title or RandomGenerators.generate_professor_title(department)
+            self.logger.debug(f"Using title: {title}")
+
+            background = background or RandomGenerators.generate_background(
+                specialization
+            )
+            self.logger.debug(f"Using background: {background}")
+
+            teaching_style = (
+                teaching_style or RandomGenerators.generate_teaching_style()
+            )
+            self.logger.debug(f"Using teaching style: {teaching_style}")
+
+            personality = personality or RandomGenerators.generate_personality()
+            self.logger.debug(f"Using personality: {personality}")
+
+            gender = gender or RandomGenerators.generate_gender()
+            self.logger.debug(f"Using gender: {gender}")
+
+            accent = accent or RandomGenerators.generate_accent()
+            self.logger.debug(f"Using accent: {accent}")
+
+            description = description or RandomGenerators.generate_description(gender)
+            self.logger.debug("Generated physical description")
+
+            age = age or RandomGenerators.generate_age()
+            self.logger.debug(f"Using age: {age}")
+
+            # Create professor object
+            professor = Professor(
+                name=name,
+                title=title,
+                department=department,
+                specialization=specialization,
+                background=background,
+                teaching_style=teaching_style,
+                personality=personality,
+                gender=gender,
+                accent=accent,
+                description=description,
+                age=age,
+            )
 
         # Assign a voice to the professor
         self._assign_voice_to_professor(professor)

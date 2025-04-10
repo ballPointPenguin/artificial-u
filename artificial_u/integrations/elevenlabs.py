@@ -497,7 +497,10 @@ class VoiceSelectionManager:
         return [voices[i] for i in selected_indices]
 
     def get_voice_for_professor(
-        self, professor: Professor, refresh_cache: bool = False
+        self,
+        professor: Professor,
+        refresh_cache: bool = False,
+        additional_context: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         """
         Get the best matching voice for a professor.
@@ -505,6 +508,7 @@ class VoiceSelectionManager:
         Args:
             professor: Professor profile
             refresh_cache: Whether to refresh the voice cache
+            additional_context: Optional additional context about the professor to help with voice selection
 
         Returns:
             Dict[str, Any]: Selected voice information
@@ -517,10 +521,49 @@ class VoiceSelectionManager:
             if voice:
                 return voice
 
-        # Extract professor characteristics
-        gender = self._extract_gender_from_professor(professor)
-        accent = self._extract_accent_from_professor(professor)
-        age = self._extract_age_from_professor(professor)
+        # First use the explicit fields from the professor model
+        # If additional_context is provided, use those values when available
+        gender = None
+        accent = None
+        age = None
+
+        # Use the additional context if provided, otherwise extract from professor
+        if additional_context:
+            gender = additional_context.get("gender")
+            accent = additional_context.get("accent")
+            age = additional_context.get("age")
+
+            # Log the provided additional context
+            logger.info(
+                f"Using additional context for voice selection: {additional_context}"
+            )
+
+        # If values weren't found in additional_context, extract them from the professor
+        if not gender:
+            gender = self._extract_gender_from_professor(professor)
+        if not accent:
+            accent = self._extract_accent_from_professor(professor)
+        if not age:
+            age = self._extract_age_from_professor(professor)
+
+        # Convert gender formats if needed
+        if gender:
+            gender = gender.lower()
+            if gender in ["male", "man", "m"]:
+                gender = "male"
+            elif gender in ["female", "woman", "f"]:
+                gender = "female"
+            else:
+                gender = "neutral"
+
+        # Convert age to API format if needed
+        if age and isinstance(age, int):
+            if age < 30:
+                age = "young"
+            elif age < 50:
+                age = "middle_aged"
+            else:
+                age = "old"
 
         # For educational content, prefer informative voices
         use_case = "informative_educational"
@@ -860,7 +903,9 @@ class VoiceSelectionManager:
 
 # Convenience functions
 def get_voice_for_professor(
-    professor: Professor, api_key: Optional[str] = None
+    professor: Professor,
+    api_key: Optional[str] = None,
+    additional_context: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
     """
     Convenience function to get a voice for a professor.
@@ -868,12 +913,19 @@ def get_voice_for_professor(
     Args:
         professor: Professor profile
         api_key: Optional ElevenLabs API key
+        additional_context: Optional additional context about the professor to help with voice selection
 
     Returns:
         Dict[str, Any]: Selected voice information
     """
     manager = VoiceSelectionManager(api_key=api_key)
-    return manager.get_voice_for_professor(professor)
+    # Call the method without additional_context if it's None, otherwise pass it
+    if additional_context is None:
+        return manager.get_voice_for_professor(professor)
+    else:
+        return manager.get_voice_for_professor(
+            professor, additional_context=additional_context
+        )
 
 
 def sample_voices(

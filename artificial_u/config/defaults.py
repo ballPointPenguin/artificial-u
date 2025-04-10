@@ -44,6 +44,47 @@ PROFESSOR_LAST_NAMES = [
     "Lewis",
 ]
 
+# Gender options
+PROFESSOR_GENDERS = [
+    "Male",
+    "Female",
+    "Non-binary",
+]
+
+# Accent options
+PROFESSOR_ACCENTS = [
+    "American (Neutral)",
+    "American (Southern)",
+    "American (Midwestern)",
+    "American (New York)",
+    "British (RP)",
+    "British (Cockney)",
+    "Scottish",
+    "Irish",
+    "Australian",
+    "Indian",
+    "French",
+    "German",
+    "Italian",
+    "Russian",
+    "Spanish",
+    "Japanese",
+    "Chinese",
+    "Korean",
+    "South African",
+    "Nigerian",
+    "Brazilian",
+]
+
+# Age range options
+PROFESSOR_AGE_RANGES = [
+    "30-40",
+    "40-50",
+    "50-60",
+    "60-70",
+    "70-80",
+]
+
 # Department and specialization defaults
 DEPARTMENTS = [
     "Computer Science",
