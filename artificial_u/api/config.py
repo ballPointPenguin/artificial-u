@@ -26,9 +26,9 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
 
     # API Keys
-    ANTHROPIC_API_KEY: str
-    ELEVENLABS_API_KEY: str
-    OPENAPI_API_KEY: str
+    ANTHROPIC_API_KEY: Optional[str] = None
+    ELEVENLABS_API_KEY: Optional[str] = None
+    OPENAPI_API_KEY: Optional[str] = None
 
     # Storage paths
     AUDIO_STORAGE_PATH: str

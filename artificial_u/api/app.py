@@ -8,6 +8,7 @@ from artificial_u.api.utils.logging import setup_logging
 # Import routers
 from artificial_u.api.routers.health import router as health_router
 from artificial_u.api.routers.index import router as index_router
+from artificial_u.api.routers.professors import router as professors_router
 
 
 def create_application() -> FastAPI:
@@ -46,6 +47,7 @@ def create_application() -> FastAPI:
     # Include routers with proper prefixes
     app.include_router(index_router, prefix="/api")
     app.include_router(health_router, prefix="/api/v1")
+    app.include_router(professors_router, prefix="/api/v1")
 
     return app
 
