@@ -288,6 +288,19 @@ class AudioProcessor:
         elif any(business_dept in department for business_dept in business_departments):
             department_type = "business"
 
+        # If gender is specified, we can further refine voice selection
+        if professor.gender:
+            gender = professor.gender.lower()
+            if "female" in gender or "woman" in gender:
+                department_type += "_female"
+            elif "male" in gender or "man" in gender:
+                department_type += "_male"
+
+        # Consider accent if specified
+        if professor.accent:
+            self.logger.info(f"Professor has accent specified: {professor.accent}")
+            # This info will be passed to the voice selection manager
+
         return department_type
 
     def get_voice_id_for_professor(self, professor: Professor) -> str:
@@ -306,7 +319,18 @@ class AudioProcessor:
 
         try:
             # Use the smart voice selection system
-            voice_data = self.voice_manager.get_voice_for_professor(professor)
+            # Pass more detailed professor attributes to help with voice selection
+            voice_context = {
+                "gender": professor.gender,
+                "accent": professor.accent,
+                "age": professor.age,
+                "description": professor.description,
+            }
+
+            voice_data = self.voice_manager.get_voice_for_professor(
+                professor, additional_context=voice_context
+            )
+
             return voice_data["voice_id"]
         except Exception as e:
             self.logger.error(f"Error selecting voice using smart system: {e}")
@@ -314,8 +338,24 @@ class AudioProcessor:
 
             # If smart selection fails, fall back to the simple mapping
             department_type = self._map_professor_to_voice_type(professor)
-            return self.voice_mapping.get(
-                department_type, self.voice_mapping["default"]
+
+            # Extended voice mapping to include gender variants
+            extended_mapping = {
+                **self.voice_mapping,  # Include original mappings
+                "stem_female": "21m00Tcm4TlvDq8ikWAM",  # Rachel
+                "stem_male": "AZnzlk1XvdvUeBnXmlld",  # Adam
+                "humanities_female": "EXAVITQu4vr4xnSDxMaL",  # Bella
+                "humanities_male": "SOYHLrjzK2X1ezoPC6cr",  # Thomas
+                "business_female": "pFZP5JQG7L8NABrQBdQq",  # Nicole
+                "business_male": "AZnzlk1XvdvUeBnXmlld",  # Adam
+            }
+
+            # Get voice ID from extended mapping, fallback to department type, then default
+            return extended_mapping.get(
+                department_type,
+                self.voice_mapping.get(
+                    department_type.split("_")[0], self.voice_mapping["default"]
+                ),
             )
 
     def split_lecture_into_chunks(

@@ -50,6 +50,10 @@ class ProfessorModel(Base):
     background = Column(Text, nullable=False)
     personality = Column(Text, nullable=False)
     teaching_style = Column(Text, nullable=False)
+    gender = Column(String, nullable=True)
+    accent = Column(String, nullable=True)
+    description = Column(Text, nullable=True)
+    age = Column(Integer, nullable=True)
     voice_settings = Column(Text, nullable=True)  # Stored as JSON
     image_path = Column(String, nullable=True)
 
@@ -126,6 +130,10 @@ class Repository:
                 background=professor.background,
                 personality=professor.personality,
                 teaching_style=professor.teaching_style,
+                gender=professor.gender,
+                accent=professor.accent,
+                description=professor.description,
+                age=professor.age,
                 voice_settings=json.dumps(professor.voice_settings),
                 image_path=professor.image_path,
             )
@@ -155,6 +163,10 @@ class Repository:
                 background=db_professor.background,
                 personality=db_professor.personality,
                 teaching_style=db_professor.teaching_style,
+                gender=db_professor.gender,
+                accent=db_professor.accent,
+                description=db_professor.description,
+                age=db_professor.age,
                 voice_settings=(
                     json.loads(db_professor.voice_settings)
                     if db_professor.voice_settings
@@ -178,6 +190,10 @@ class Repository:
                     background=p.background,
                     personality=p.personality,
                     teaching_style=p.teaching_style,
+                    gender=p.gender,
+                    accent=p.accent,
+                    description=p.description,
+                    age=p.age,
                     voice_settings=(
                         json.loads(p.voice_settings) if p.voice_settings else {}
                     ),
@@ -203,6 +219,10 @@ class Repository:
             db_professor.background = professor.background
             db_professor.personality = professor.personality
             db_professor.teaching_style = professor.teaching_style
+            db_professor.gender = professor.gender
+            db_professor.accent = professor.accent
+            db_professor.description = professor.description
+            db_professor.age = professor.age
             db_professor.voice_settings = json.dumps(professor.voice_settings)
             db_professor.image_path = professor.image_path
 

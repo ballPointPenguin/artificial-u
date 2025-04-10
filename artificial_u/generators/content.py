@@ -65,6 +65,7 @@ class ContentGenerator:
         gender: Optional[str] = None,
         nationality: Optional[str] = None,
         age_range: Optional[str] = None,
+        accent: Optional[str] = None,
     ) -> Professor:
         """
         Generate a professor profile with a consistent personality and background.
@@ -75,6 +76,7 @@ class ContentGenerator:
             gender: Optional gender specification
             nationality: Optional nationality specification
             age_range: Optional age range (e.g., "30-40", "50-60")
+            accent: Optional accent specification
 
         Returns:
             Professor: Generated professor profile
@@ -86,6 +88,7 @@ class ContentGenerator:
             gender=gender,
             nationality=nationality,
             age_range=age_range,
+            accent=accent,
         )
 
         # Get the system prompt
@@ -113,6 +116,17 @@ class ContentGenerator:
                 key, value = line.split(":", 1)
                 profile[key.strip()] = value.strip()
 
+        # Convert age to integer if present
+        age = None
+        if "Age" in profile:
+            try:
+                age = int(profile["Age"])
+            except ValueError:
+                # If age can't be converted to int, leave it as None
+                self.logger.warning(
+                    f"Could not convert age value to integer: {profile.get('Age')}"
+                )
+
         return Professor(
             name=profile.get("Name", ""),
             title=profile.get("Title", ""),
@@ -121,6 +135,10 @@ class ContentGenerator:
             background=profile.get("Background", ""),
             personality=profile.get("Personality", ""),
             teaching_style=profile.get("Teaching Style", ""),
+            gender=profile.get("Gender"),
+            accent=profile.get("Accent"),
+            description=profile.get("Description"),
+            age=age,
         )
 
     def create_course_syllabus(self, course: Course, professor: Professor) -> str:
