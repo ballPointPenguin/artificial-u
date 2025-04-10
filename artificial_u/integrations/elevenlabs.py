@@ -9,9 +9,11 @@ import os
 import re
 import random
 import logging
-from typing import Dict, List, Optional, Any, Tuple
+import requests
+from typing import Dict, List, Optional, Any, Tuple, Union
 from pathlib import Path
 import json
+import time
 
 from elevenlabs.client import ElevenLabs
 from artificial_u.models.core import Professor
@@ -31,6 +33,66 @@ class VoiceSelectionManager:
     fallback strategies for when ideal matches aren't available.
     """
 
+    # Base URL for the shared voices API
+    SHARED_VOICES_URL = "https://api.elevenlabs.io/v1/shared-voices"
+
+    # Supported accents in ElevenLabs (for English-capable voices)
+    SUPPORTED_ACCENTS = [
+        "american",
+        "australian",
+        "british",
+        "canadian",
+        "indian",
+        "irish",
+        "jamaican",
+        "new_zealand",
+        "nigerian",
+        "scottish",
+        "south_african",
+        "african_american",
+        "singaporean",
+        "boston",
+        "chicago",
+        "new_york",
+        "us_southern",
+        "us_midwest",
+        "us_northeast",
+        "cockney",
+        "geordie",
+        "received_pronunciation",
+        "scouse",
+        "welsh",
+        "yorkshire",
+        "arabic",
+        "bulgarian",
+        "chinese",
+        "croatian",
+        "czech",
+        "danish",
+        "dutch",
+        "filipino",
+        "finnish",
+        "french",
+        "german",
+        "greek",
+        "hindi",
+        "indonesian",
+        "italian",
+        "japanese",
+        "korean",
+        "malay",
+        "polish",
+        "portuguese",
+        "romanian",
+        "russian",
+        "slovak",
+        "spanish",
+        "swedish",
+        "tamil",
+        "turkish",
+        "ukrainian",
+    ]
+
     def __init__(self, api_key: Optional[str] = None):
         """
         Initialize the voice selection manager.
@@ -45,16 +107,23 @@ class VoiceSelectionManager:
         # Initialize cache directory
         CACHE_DIR.mkdir(parents=True, exist_ok=True)
 
-        # Initialize client
+        # Initialize standard client for other operations
         self.client = ElevenLabs(api_key=self.api_key)
 
         # Voice mapping database for consistency
         self.voice_mapping_db = {}
         self._load_voice_mapping()
 
-        # Voice attributes cache
+        # Voice attributes cache (now contains full voice data)
         self.voice_cache = {}
         self._load_voice_cache()
+
+        # Headers for API requests
+        self.headers = {
+            "xi-api-key": self.api_key,
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+        }
 
     def _load_voice_mapping(self):
         """Load the professor-to-voice mapping database from file."""
@@ -92,218 +161,217 @@ class VoiceSelectionManager:
         except Exception as e:
             logger.error(f"Error saving voice cache: {e}")
 
-    def get_available_voices(self, refresh: bool = False) -> List[Dict[str, Any]]:
+    def _format_voice_data(self, voice_data: Dict[str, Any]) -> Dict[str, Any]:
         """
-        Get a list of available voices from ElevenLabs.
+        Format shared voice data into a standardized structure.
+
+        Args:
+            voice_data: Raw voice data from the API
+
+        Returns:
+            Dict[str, Any]: Formatted voice information
+        """
+        # Calculate quality score
+        quality_score = 0.5
+
+        # Adjust based on category
+        if voice_data.get("category") == "high_quality":
+            quality_score += 0.3
+        elif voice_data.get("category") == "professional":
+            quality_score += 0.25
+
+        # Usage stats indicate popularity and likely quality
+        if "cloned_by_count" in voice_data and voice_data["cloned_by_count"] > 1000:
+            quality_score += min(0.2, voice_data["cloned_by_count"] / 100000)
+
+        # Use data typically has better voices
+        if voice_data.get("use_case") == "informative_educational":
+            quality_score += 0.1
+
+        # Cap at 1.0
+        quality_score = min(1.0, quality_score)
+
+        return {
+            "voice_id": voice_data.get("voice_id", ""),
+            "name": voice_data.get("name", "Unknown"),
+            "gender": voice_data.get("gender", "neutral"),
+            "accent": voice_data.get("accent", "american"),
+            "age": voice_data.get("age", "middle_aged"),
+            "category": voice_data.get("category", ""),
+            "language": voice_data.get("language", "en"),
+            "description": voice_data.get("description", ""),
+            "preview_url": voice_data.get("preview_url", ""),
+            "quality_score": quality_score,
+            "cloned_by_count": voice_data.get("cloned_by_count", 0),
+            "usage_character_count": voice_data.get("usage_character_count_1y", 0),
+            "notice_period": voice_data.get("notice_period", None),
+        }
+
+    def get_available_voices(
+        self,
+        refresh: bool = False,
+        gender: Optional[str] = None,
+        accent: Optional[str] = None,
+        age: Optional[str] = None,
+        language: str = "en",
+        use_case: Optional[str] = None,
+        category: Optional[str] = None,
+        page_size: int = 100,
+    ) -> List[Dict[str, Any]]:
+        """
+        Get a list of available voices from ElevenLabs shared voices API.
 
         Args:
             refresh: Whether to refresh the cache
+            gender: Optional filter by gender ('male', 'female', 'neutral')
+            accent: Optional filter by accent
+            age: Optional filter by age ('young', 'middle_aged', 'old')
+            language: Language code (default 'en')
+            use_case: Optional filter by use case
+            category: Optional filter by category
+            page_size: Number of results per page
 
         Returns:
             List[Dict[str, Any]]: List of voice information dictionaries
         """
-        if not refresh and self.voice_cache:
-            return list(self.voice_cache.values())
+        # Generate cache key based on filters
+        cache_key = f"voices_{language}_{gender or 'any'}_{accent or 'any'}_{age or 'any'}_{category or 'any'}"
+
+        # Return cached results if available and not refreshing
+        if not refresh and cache_key in self.voice_cache:
+            return self.voice_cache[cache_key]
+
+        # Build query parameters
+        params = {"page_size": min(page_size, 100), "language": language}
+
+        # Add optional filters
+        if gender:
+            params["gender"] = gender
+        if accent:
+            params["accent"] = accent
+        if age:
+            params["age"] = age
+        if use_case:
+            params["use_cases"] = use_case
+        if category:
+            params["category"] = category
 
         try:
-            response = self.client.voices.get_all()
-            voices = []
+            # Make API request
+            all_voices = []
+            page = 0
+            has_more = True
 
-            for voice in response.voices:
-                voice_data = {
-                    "voice_id": voice.voice_id,
-                    "name": voice.name,
-                    "category": getattr(voice, "category", "premade"),
-                    "description": getattr(voice, "description", ""),
-                    "preview_url": getattr(voice, "preview_url", ""),
-                    # Parse additional metadata from description and labels
-                    "gender": self._extract_gender(voice),
-                    "accent": self._extract_accent(voice),
-                    "age": self._extract_age(voice),
-                    "is_cloned": getattr(voice, "category", "") == "cloned",
-                    "quality_score": self._calculate_quality_score(voice),
-                }
+            # Get all pages until no more results
+            while has_more and page < 10:  # Limit to 10 pages (1000 voices) for safety
+                params["page"] = page
 
-                voices.append(voice_data)
-                self.voice_cache[voice.voice_id] = voice_data
+                response = requests.get(
+                    self.SHARED_VOICES_URL, headers=self.headers, params=params
+                )
 
+                if response.status_code != 200:
+                    logger.error(f"API error: {response.status_code} - {response.text}")
+                    break
+
+                data = response.json()
+
+                # Process voices from this page
+                for voice in data.get("voices", []):
+                    formatted_voice = self._format_voice_data(voice)
+                    all_voices.append(formatted_voice)
+
+                    # Also store in individual voice cache
+                    self.voice_cache[voice.get("voice_id")] = formatted_voice
+
+                # Check if there are more pages
+                has_more = data.get("has_more", False)
+                page += 1
+
+            # Store results in cache
+            self.voice_cache[cache_key] = all_voices
             self._save_voice_cache()
-            return voices
+
+            return all_voices
 
         except Exception as e:
-            logger.error(f"Error retrieving voices: {e}")
-            return list(self.voice_cache.values()) if self.voice_cache else []
+            logger.error(f"Error retrieving shared voices: {e}")
+            # Return empty list if error occurs
+            return []
 
-    def _extract_gender(self, voice) -> str:
+    def get_voice_by_id(
+        self, voice_id: str, refresh: bool = False
+    ) -> Optional[Dict[str, Any]]:
         """
-        Extract gender information from voice metadata.
+        Get a specific voice by ID.
 
         Args:
-            voice: ElevenLabs voice object
+            voice_id: The ID of the voice to retrieve
+            refresh: Whether to refresh from the API
 
         Returns:
-            str: Gender ('male', 'female', or 'neutral')
+            Optional[Dict[str, Any]]: Voice information or None if not found
         """
-        # Look for gender information in labels
-        labels = getattr(voice, "labels", {})
-        if labels and "gender" in labels:
-            return labels["gender"].lower()
+        # Check cache first
+        if not refresh and voice_id in self.voice_cache:
+            return self.voice_cache[voice_id]
 
-        # Look for gender information in description
-        description = getattr(voice, "description", "").lower()
+        try:
+            # If using regular voices (not shared), use the client API
+            try:
+                response = self.client.voices.get(voice_id=voice_id)
+                voice_data = {
+                    "voice_id": response.voice_id,
+                    "name": response.name,
+                    "category": getattr(response, "category", "premade"),
+                    "gender": getattr(response, "labels", {}).get("gender", "neutral"),
+                    "accent": getattr(response, "labels", {}).get("accent", "american"),
+                    "age": getattr(response, "labels", {}).get("age", "middle_aged"),
+                    "description": getattr(response, "description", ""),
+                    "preview_url": getattr(response, "preview_url", ""),
+                    "quality_score": 0.8,  # Premade voices are usually high quality
+                }
 
-        # Check for female indicators first (to avoid 'female' matching 'male')
-        female_indicators = ["female", "woman", "girl", "feminine", "her ", "she "]
-        if any(indicator in description for indicator in female_indicators):
-            return "female"
+                self.voice_cache[voice_id] = voice_data
+                self._save_voice_cache()
+                return voice_data
+            except:
+                # If not found in regular voices, try shared voices
+                # We need to search for it as there's no direct endpoint
+                pass
 
-        # Check for male indicators
-        male_indicators = ["male", "man", "boy", "masculine", "his ", "him "]
-        if any(indicator in description for indicator in male_indicators):
-            return "male"
+            # Search in shared voices
+            params = {"page_size": 1, "voice_id": voice_id}
 
-        # Default based on name if available
-        name = getattr(voice, "name", "").lower()
-        # Use word boundaries to avoid partial matches like 'john' in 'johnson'
-        male_names = [
-            r"\bjames\b",
-            r"\bjohn\b",
-            r"\badam\b",
-            r"\bjosh\b",
-            r"\barnold\b",
-            r"\bsam\b",
-            r"\bthomas\b",
-            r"\bmichael\b",
-        ]
-        female_names = [
-            r"\brachel\b",
-            r"\bdomi\b",
-            r"\bbella\b",
-            r"\belli\b",
-            r"\bemily\b",
-            r"\bsarah\b",
-            r"\bgrace\b",
-            r"\bmary\b",
-        ]
+            response = requests.get(
+                self.SHARED_VOICES_URL, headers=self.headers, params=params
+            )
 
-        if any(re.search(pattern, name) for pattern in male_names):
-            return "male"
-        elif any(re.search(pattern, name) for pattern in female_names):
-            return "female"
+            if response.status_code != 200:
+                return None
 
-        # Default to neutral if we can't determine
-        return "neutral"
+            data = response.json()
+            voices = data.get("voices", [])
 
-    def _extract_accent(self, voice) -> str:
-        """
-        Extract accent information from voice metadata.
+            if not voices:
+                return None
 
-        Args:
-            voice: ElevenLabs voice object
+            voice_data = self._format_voice_data(voices[0])
 
-        Returns:
-            str: Accent (e.g., 'american', 'british', etc.)
-        """
-        # Look for accent in labels
-        labels = getattr(voice, "labels", {})
-        if labels and "accent" in labels:
-            return labels["accent"].lower()
+            # Cache for future use
+            self.voice_cache[voice_id] = voice_data
+            self._save_voice_cache()
 
-        # Look for accent info in description
-        description = getattr(voice, "description", "").lower()
+            return voice_data
 
-        # Common accent keywords
-        accent_keywords = {
-            "american": ["american", "us ", "united states", "californian"],
-            "british": ["british", "uk ", "england", "london"],
-            "australian": ["australian", "aussie", "australia"],
-            "indian": ["indian", "india"],
-            "german": ["german", "germany"],
-            "french": ["french", "france"],
-            "spanish": ["spanish", "spain"],
-            "italian": ["italian", "italy"],
-            "japanese": ["japanese", "japan"],
-            "chinese": ["chinese", "china", "mandarin"],
-            "russian": ["russian", "russia"],
-            "irish": ["irish", "ireland", "scottish", "scotland"],
-            "canadian": ["canadian", "canada"],
-            "swedish": ["swedish", "sweden"],
-        }
-
-        for accent, keywords in accent_keywords.items():
-            if any(keyword in description for keyword in keywords):
-                return accent
-
-        # Default to american if we can't determine (most common default)
-        return "american"
-
-    def _extract_age(self, voice) -> str:
-        """
-        Extract age information from voice metadata.
-
-        Args:
-            voice: ElevenLabs voice object
-
-        Returns:
-            str: Age category ('young', 'middle_aged', 'old')
-        """
-        # Look for age in labels
-        labels = getattr(voice, "labels", {})
-        if labels and "age" in labels:
-            return labels["age"].lower()
-
-        # Extract from description
-        description = getattr(voice, "description", "").lower()
-
-        # Age-related keywords
-        young_keywords = ["young", "youthful", "teen", "20s", "twenties"]
-        old_keywords = ["elderly", "old", "mature", "senior", "60s", "70s", "eighties"]
-
-        if any(keyword in description for keyword in young_keywords):
-            return "young"
-        elif any(keyword in description for keyword in old_keywords):
-            return "old"
-
-        # Default to middle-aged if we can't determine
-        return "middle_aged"
-
-    def _calculate_quality_score(self, voice) -> float:
-        """
-        Calculate a quality score for the voice, used for ranking.
-
-        Args:
-            voice: ElevenLabs voice object
-
-        Returns:
-            float: Quality score between 0-1
-        """
-        # Base quality score
-        quality = 0.5
-
-        # Default/premade voices typically have higher quality
-        if getattr(voice, "category", "") == "premade":
-            quality += 0.3
-
-        # Professional clones have better quality than community ones
-        labels = getattr(voice, "labels", {})
-        if labels and "professional" in labels:
-            quality += 0.2
-
-        # Additional metadata might indicate quality (likes, etc.)
-        if hasattr(voice, "likes") and voice.likes is not None:
-            if voice.likes > 100:
-                quality += min(0.2, voice.likes / 1000)  # Cap at 0.2
-
-        # Preview availability might indicate better testing
-        if hasattr(voice, "preview_url") and voice.preview_url:
-            quality += 0.1
-
-        # Cap at 1.0
-        return min(1.0, quality)
+        except Exception as e:
+            logger.error(f"Error retrieving voice {voice_id}: {e}")
+            return None
 
     def filter_voices(self, **criteria) -> List[Dict[str, Any]]:
         """
-        Filter available voices based on criteria.
+        Filter voices based on criteria.
+        This method now primarily uses the API's filtering capabilities.
 
         Args:
             **criteria: Filtering criteria (gender, accent, age, category, etc.)
@@ -311,25 +379,46 @@ class VoiceSelectionManager:
         Returns:
             List[Dict[str, Any]]: Filtered list of voices
         """
-        # Ensure we have voice data
-        voices = self.get_available_voices()
+        # Extract API filter parameters
+        api_filters = {}
 
-        # Apply filters
-        filtered_voices = voices
+        if "gender" in criteria:
+            api_filters["gender"] = criteria.pop("gender")
 
-        for key, value in criteria.items():
-            # Skip None values
-            if value is None:
-                continue
+        if "accent" in criteria:
+            api_filters["accent"] = criteria.pop("accent")
 
-            # Filter voices that match the criterion
-            filtered_voices = [
-                voice
-                for voice in filtered_voices
-                if (key in voice and voice[key] == value)
-            ]
+        if "age" in criteria:
+            api_filters["age"] = criteria.pop("age")
 
-        return filtered_voices
+        if "category" in criteria:
+            api_filters["category"] = criteria.pop("category")
+
+        if "language" in criteria:
+            api_filters["language"] = criteria.pop("language")
+        else:
+            api_filters["language"] = "en"  # Default to English
+
+        if "use_case" in criteria:
+            api_filters["use_case"] = criteria.pop("use_case")
+
+        # Get voices from API with filters
+        voices = self.get_available_voices(**api_filters)
+
+        # If there are additional criteria not handled by the API, apply them here
+        if criteria:
+            filtered_voices = []
+            for voice in voices:
+                matches = True
+                for key, value in criteria.items():
+                    if key not in voice or voice[key] != value:
+                        matches = False
+                        break
+                if matches:
+                    filtered_voices.append(voice)
+            return filtered_voices
+
+        return voices
 
     def sample_voices_by_criteria(
         self, count: int = 3, **criteria
@@ -382,12 +471,28 @@ class VoiceSelectionManager:
         if min_weight <= 0:
             weights = [w - min_weight + 0.1 for w in weights]
 
+        # Sample based on quality score
+        selected_indices = []
+        remaining_indices = list(range(len(voices)))
+
+        # Normalize weights
+        total_weight = sum(weights)
+        norm_weights = [w / total_weight for w in weights]
+
         # Sample without replacement
-        selected_indices = random.sample(
-            range(len(voices)),
-            k=min(count, len(voices)),
-            counts=[int(w * 100) for w in weights],  # Convert to integer counts
-        )
+        for _ in range(min(count, len(voices))):
+            if not remaining_indices:
+                break
+
+            # Get a weighted sample
+            idx = random.choices(
+                remaining_indices,
+                weights=[norm_weights[i] for i in remaining_indices],
+                k=1,
+            )[0]
+
+            selected_indices.append(idx)
+            remaining_indices.remove(idx)
 
         return [voices[i] for i in selected_indices]
 
@@ -408,34 +513,56 @@ class VoiceSelectionManager:
         if professor.id and professor.id in self.voice_mapping_db:
             voice_id = self.voice_mapping_db[professor.id]
             # Verify the voice still exists
-            voices = self.get_available_voices(refresh=refresh_cache)
-            for voice in voices:
-                if voice["voice_id"] == voice_id:
-                    return voice
+            voice = self.get_voice_by_id(voice_id, refresh=refresh_cache)
+            if voice:
+                return voice
 
         # Extract professor characteristics
         gender = self._extract_gender_from_professor(professor)
         accent = self._extract_accent_from_professor(professor)
         age = self._extract_age_from_professor(professor)
 
+        # For educational content, prefer informative voices
+        use_case = "informative_educational"
+
+        # Prioritize high-quality voices for professors
+        category = None  # Try both high_quality and professional
+
         # Try to find matches with all criteria
-        voices = self.filter_voices(gender=gender, accent=accent, age=age)
+        criteria = {
+            "gender": gender,
+            "age": age,
+            "use_case": use_case,
+            "language": "en",
+        }
+
+        # Add accent if available and supported
+        if accent:
+            # Format accent to match API expectations
+            formatted_accent = accent.lower().replace(" ", "_")
+            if formatted_accent in self.SUPPORTED_ACCENTS:
+                criteria["accent"] = formatted_accent
+
+        voices = self.filter_voices(**criteria)
 
         # Fallback 1: Try just gender and accent
-        if not voices:
-            voices = self.filter_voices(gender=gender, accent=accent)
+        if not voices and accent:
+            criteria = {"gender": gender, "accent": formatted_accent, "language": "en"}
+            voices = self.filter_voices(**criteria)
 
         # Fallback 2: Try just gender
         if not voices:
-            voices = self.filter_voices(gender=gender)
+            criteria = {"gender": gender, "language": "en"}
+            voices = self.filter_voices(**criteria)
 
         # Fallback 3: Try just accent
         if not voices and accent:
-            voices = self.filter_voices(accent=accent)
+            criteria = {"accent": formatted_accent, "language": "en"}
+            voices = self.filter_voices(**criteria)
 
         # Fallback 4: Default to any voice
         if not voices:
-            voices = self.get_available_voices(refresh=refresh_cache)
+            voices = self.get_available_voices(language="en", refresh=refresh_cache)
 
         # Sort by quality and choose the best one (or random from top 3)
         if voices:
@@ -612,27 +739,21 @@ class VoiceSelectionManager:
         Returns:
             Dict[str, List[str]]: Filter categories and their possible values
         """
-        voices = self.get_available_voices()
-
-        filters = {
-            "genders": set(),
-            "accents": set(),
-            "ages": set(),
-            "categories": set(),
+        return {
+            "genders": ["male", "female", "neutral"],
+            "accents": self.SUPPORTED_ACCENTS,
+            "ages": ["young", "middle_aged", "old"],
+            "categories": ["famous", "high_quality", "professional"],
+            "use_cases": [
+                "narrative_story",
+                "conversational",
+                "characters_animation",
+                "social_media",
+                "entertainment_tv",
+                "advertisement",
+                "informative_educational",
+            ],
         }
-
-        for voice in voices:
-            if "gender" in voice and voice["gender"]:
-                filters["genders"].add(voice["gender"])
-            if "accent" in voice and voice["accent"]:
-                filters["accents"].add(voice["accent"])
-            if "age" in voice and voice["age"]:
-                filters["ages"].add(voice["age"])
-            if "category" in voice and voice["category"]:
-                filters["categories"].add(voice["category"])
-
-        # Convert sets to sorted lists
-        return {k: sorted(list(v)) for k, v in filters.items()}
 
     def manual_override(self, professor_id: str, voice_id: str) -> None:
         """
@@ -644,6 +765,97 @@ class VoiceSelectionManager:
         """
         self.voice_mapping_db[professor_id] = voice_id
         self._save_voice_mapping()
+
+    def rebuild_cache(self, clear_existing: bool = True) -> Dict[str, Any]:
+        """
+        Rebuild the voice cache by fetching fresh data from the API.
+
+        Args:
+            clear_existing: Whether to clear the existing cache before rebuilding
+
+        Returns:
+            Dict[str, Any]: Status information about the rebuild operation
+        """
+        start_time = time.time()
+        result = {
+            "status": "success",
+            "voices_cached": 0,
+            "errors": [],
+            "time_taken": 0,
+        }
+
+        try:
+            # Clear existing cache if requested
+            if clear_existing:
+                self.voice_cache = {}
+                if VOICE_CACHE_FILE.exists():
+                    VOICE_CACHE_FILE.unlink()
+                    logger.info("Cleared existing voice cache")
+
+            # Fetch all voices to rebuild the cache
+            languages = ["en"]  # Start with English
+
+            for language in languages:
+                # Get voices for each gender to ensure better coverage
+                for gender in ["male", "female", "neutral"]:
+                    try:
+                        voices = self.get_available_voices(
+                            refresh=True, language=language, gender=gender
+                        )
+                        result["voices_cached"] += len(voices)
+                        logger.info(
+                            f"Cached {len(voices)} {gender} voices for language {language}"
+                        )
+                    except Exception as e:
+                        error_msg = (
+                            f"Error caching {gender} voices for {language}: {str(e)}"
+                        )
+                        logger.error(error_msg)
+                        result["errors"].append(error_msg)
+
+            # Save the cache
+            self._save_voice_cache()
+
+            # Get some specific high-quality voices to ensure they're cached
+            featured_voices = [
+                "21m00Tcm4TlvDq8ikWAM",  # Rachel
+                "EXAVITQu4vr4xnSDxMaL",  # Bella
+                "AZnzlk1XvdvUeBnXmlld",  # Adam
+                "pNInz6obpgDQGcFmaJgB",  # Adam
+                "ErXwobaYiN019PkySvjV",  # Antoni
+                "MF3mGyEYCl7XYWbV9V6O",  # Elli
+                "TxGEqnHWrfWFTfGW9XjX",  # Josh
+                "VR6AewLTigWG4xSOukaG",  # Arnold
+            ]
+
+            for voice_id in featured_voices:
+                try:
+                    voice = self.get_voice_by_id(voice_id, refresh=True)
+                    if voice:
+                        logger.info(
+                            f"Cached featured voice: {voice.get('name', 'Unknown')} ({voice_id})"
+                        )
+                except Exception as e:
+                    error_msg = f"Error caching featured voice {voice_id}: {str(e)}"
+                    logger.error(error_msg)
+                    result["errors"].append(error_msg)
+
+            # Final save
+            self._save_voice_cache()
+
+            result["status"] = "success" if not result["errors"] else "partial_success"
+            result["cache_file"] = str(VOICE_CACHE_FILE)
+
+        except Exception as e:
+            error_msg = f"Error during cache rebuild: {str(e)}"
+            logger.error(error_msg)
+            result["errors"].append(error_msg)
+            result["status"] = "error"
+
+        # Calculate time taken
+        result["time_taken"] = time.time() - start_time
+
+        return result
 
 
 # Convenience functions
@@ -708,3 +920,58 @@ def get_voice_filters(api_key: Optional[str] = None) -> Dict[str, List[str]]:
     """
     manager = VoiceSelectionManager(api_key=api_key)
     return manager.list_available_voice_filters()
+
+
+def rebuild_voice_cache(
+    api_key: Optional[str] = None, clear_existing: bool = True
+) -> Dict[str, Any]:
+    """
+    Convenience function to rebuild the voice cache.
+
+    Args:
+        api_key: ElevenLabs API key
+        clear_existing: Whether to clear the existing cache
+
+    Returns:
+        Dict[str, Any]: Status of the rebuild operation
+    """
+    manager = VoiceSelectionManager(api_key=api_key)
+    return manager.rebuild_cache(clear_existing=clear_existing)
+
+
+# Command-line interface for cache rebuilding
+if __name__ == "__main__":
+    import argparse
+
+    parser = argparse.ArgumentParser(description="ElevenLabs voice cache management")
+    parser.add_argument(
+        "--rebuild", action="store_true", help="Rebuild the voice cache"
+    )
+    parser.add_argument(
+        "--keep", action="store_true", help="Keep existing cache entries (don't clear)"
+    )
+    parser.add_argument(
+        "--api-key", help="ElevenLabs API key (optional, uses env var if not provided)"
+    )
+
+    args = parser.parse_args()
+
+    if args.rebuild:
+        print("Rebuilding voice cache...")
+        result = rebuild_voice_cache(api_key=args.api_key, clear_existing=not args.keep)
+
+        print(f"Status: {result['status']}")
+        print(f"Cached {result['voices_cached']} voices")
+        print(f"Time taken: {result['time_taken']:.2f} seconds")
+
+        if result["errors"]:
+            print(f"Encountered {len(result['errors'])} errors:")
+            for i, error in enumerate(result["errors"][:5]):  # Show only first 5 errors
+                print(f"  {i+1}. {error}")
+
+            if len(result["errors"]) > 5:
+                print(f"  ... and {len(result['errors']) - 5} more errors")
+
+        print(f"Cache file: {result.get('cache_file', 'unknown')}")
+    else:
+        parser.print_help()

@@ -32,6 +32,18 @@ class TestVoiceSelectionManager(unittest.TestCase):
         self.mock_voices.voices = []
         self.mock_client_instance.voices.get_all.return_value = self.mock_voices
 
+        # Mock the requests.get for shared voices API
+        self.requests_patcher = patch(
+            "artificial_u.integrations.elevenlabs.requests.get"
+        )
+        self.mock_requests_get = self.requests_patcher.start()
+
+        # Setup default mock response for shared voices API
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {"voices": [], "has_more": False}
+        self.mock_requests_get.return_value = mock_response
+
         # Create temp directory for cache files
         self.temp_cache_dir = Path("./.test_cache")
         self.temp_cache_dir.mkdir(exist_ok=True)
@@ -41,6 +53,13 @@ class TestVoiceSelectionManager(unittest.TestCase):
             "artificial_u.integrations.elevenlabs.CACHE_DIR", self.temp_cache_dir
         )
         self.cache_patcher.start()
+
+        # Patch the VOICE_CACHE_FILE
+        self.voice_cache_patcher = patch(
+            "artificial_u.integrations.elevenlabs.VOICE_CACHE_FILE",
+            self.temp_cache_dir / "voice_data.json",
+        )
+        self.voice_cache_patcher.start()
 
         # Mock environment variable
         os.environ["ELEVENLABS_API_KEY"] = "test_api_key"
@@ -61,6 +80,8 @@ class TestVoiceSelectionManager(unittest.TestCase):
         """Tear down test fixtures."""
         self.patcher.stop()
         self.cache_patcher.stop()
+        self.voice_cache_patcher.stop()
+        self.requests_patcher.stop()
 
         # Clean up test cache files
         for file in self.temp_cache_dir.glob("*"):
@@ -75,21 +96,37 @@ class TestVoiceSelectionManager(unittest.TestCase):
 
     def test_get_available_voices(self):
         """Test retrieving available voices."""
-        # Setup mock voices
-        Voice = type("Voice", (object,), {})
-        voice1 = Voice()
-        voice1.voice_id = "voice1"
-        voice1.name = "Voice One"
-        voice1.description = "Female British voice"
-        voice1.category = "premade"
-
-        voice2 = Voice()
-        voice2.voice_id = "voice2"
-        voice2.name = "Voice Two"
-        voice2.description = "Male American voice"
-        voice2.category = "cloned"
-
-        self.mock_voices.voices = [voice1, voice2]
+        # Setup mock response for shared voices API
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {
+            "voices": [
+                {
+                    "voice_id": "voice1",
+                    "name": "Voice One",
+                    "description": "Female British voice",
+                    "category": "premade",
+                    "gender": "female",
+                    "accent": "british",
+                    "age": "middle_aged",
+                    "use_case": "informative_educational",
+                    "cloned_by_count": 2000,
+                },
+                {
+                    "voice_id": "voice2",
+                    "name": "Voice Two",
+                    "description": "Male American voice",
+                    "category": "cloned",
+                    "gender": "male",
+                    "accent": "american",
+                    "age": "young",
+                    "use_case": "conversational",
+                    "cloned_by_count": 1000,
+                },
+            ],
+            "has_more": False,
+        }
+        self.mock_requests_get.return_value = mock_response
 
         # Test getting voices
         manager = VoiceSelectionManager()
@@ -98,17 +135,16 @@ class TestVoiceSelectionManager(unittest.TestCase):
         # Verify results
         self.assertEqual(len(voices), 2)
         self.assertEqual(voices[0]["voice_id"], "voice1")
-        self.assertEqual(
-            voices[0]["gender"], "female"
-        )  # Should extract from description
-        self.assertEqual(
-            voices[0]["accent"], "british"
-        )  # Should extract from description
+        self.assertEqual(voices[0]["gender"], "female")
+        self.assertEqual(voices[0]["accent"], "british")
         self.assertEqual(voices[1]["voice_id"], "voice2")
-        self.assertEqual(voices[1]["gender"], "male")  # Should extract from description
-        self.assertEqual(
-            voices[1]["accent"], "american"
-        )  # Should extract from description
+        self.assertEqual(voices[1]["gender"], "male")
+        self.assertEqual(voices[1]["accent"], "american")
+
+        # Verify API was called with correct parameters
+        self.mock_requests_get.assert_called_once()
+        call_args = self.mock_requests_get.call_args
+        self.assertEqual(call_args[0][0], "https://api.elevenlabs.io/v1/shared-voices")
 
     def test_extract_gender_from_professor(self):
         """Test gender extraction from professor profile."""
@@ -238,15 +274,25 @@ class TestVoiceSelectionManager(unittest.TestCase):
 
     def test_voice_for_professor(self):
         """Test getting a voice for a professor."""
-        # Setup mock voice data
-        Voice = type("Voice", (object,), {})
-        voice1 = Voice()
-        voice1.voice_id = "voice1"
-        voice1.name = "Voice One"
-        voice1.description = "Female British voice"
-        voice1.category = "premade"
-
-        self.mock_voices.voices = [voice1]
+        # Setup mock response for shared voices API with voices matching the professor
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {
+            "voices": [
+                {
+                    "voice_id": "voice1",
+                    "name": "Voice One",
+                    "description": "Female British voice",
+                    "category": "high_quality",
+                    "gender": "female",
+                    "accent": "british",
+                    "age": "middle_aged",
+                    "quality_score": 0.8,
+                }
+            ],
+            "has_more": False,
+        }
+        self.mock_requests_get.return_value = mock_response
 
         # Create manager
         manager = VoiceSelectionManager()

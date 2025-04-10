@@ -20,6 +20,7 @@ import os
 import sys
 import random
 import pytest
+import time
 from pathlib import Path
 from rich.console import Console
 from rich.table import Table
@@ -147,7 +148,12 @@ def test_professors():
 @pytest.mark.manual
 def test_voice_api_connection(voice_manager):
     """Test basic connection to ElevenLabs API and retrieve available voices."""
-    voices = voice_manager.get_available_voices(refresh=True)
+    console.print("\n[bold green]Testing API Connection[/bold green]")
+
+    # Get a small sample to test connection
+    start_time = time.time()
+    voices = voice_manager.get_available_voices(page_size=10, refresh=True)
+    duration = time.time() - start_time
 
     # Verify we got a valid response
     assert isinstance(voices, list)
@@ -155,31 +161,8 @@ def test_voice_api_connection(voice_manager):
 
     # Display information about available voices
     console.print(
-        f"\n[bold green]Available Voices:[/bold green] Found {len(voices)} voices"
+        f"✓ Connection successful - Retrieved {len(voices)} voices in {duration:.2f} seconds"
     )
-
-    # Display a sample of 5 random voices
-    sample = random.sample(voices, min(5, len(voices)))
-
-    table = Table(title="Sample Voice Information")
-    table.add_column("Voice ID", style="cyan")
-    table.add_column("Name", style="green")
-    table.add_column("Gender", style="magenta")
-    table.add_column("Accent", style="yellow")
-    table.add_column("Age", style="blue")
-    table.add_column("Category", style="red")
-
-    for voice in sample:
-        table.add_row(
-            voice["voice_id"][:8] + "...",
-            voice["name"],
-            voice["gender"],
-            voice["accent"],
-            voice["age"],
-            voice["category"],
-        )
-
-    console.print(table)
 
     # Display available filters
     filters = voice_manager.list_available_voice_filters()
@@ -190,9 +173,100 @@ def test_voice_api_connection(voice_manager):
     filter_table.add_column("Values", style="yellow")
 
     for filter_name, values in filters.items():
-        filter_table.add_row(filter_name, ", ".join(values))
+        if len(values) > 10:
+            # Show a sample for large lists
+            value_str = ", ".join(values[:5]) + f"... and {len(values)-5} more"
+        else:
+            value_str = ", ".join(values)
+        filter_table.add_row(filter_name, value_str)
 
     console.print(filter_table)
+
+
+@pytest.mark.manual
+def test_shared_vs_default_voices(voice_manager):
+    """Compare the shared voice library with the default voices."""
+    console.print("\n[bold green]Comparing Voice Sources[/bold green]")
+
+    # Test with the new shared voices API
+    start_time = time.time()
+    shared_voices = voice_manager.get_available_voices(refresh=True)
+    shared_duration = time.time() - start_time
+
+    # Test with direct API client for regular voices
+    start_time = time.time()
+    try:
+        regular_voices_response = voice_manager.client.voices.get_all()
+        regular_voices = [
+            {"voice_id": v.voice_id, "name": v.name}
+            for v in regular_voices_response.voices
+        ]
+        regular_duration = time.time() - start_time
+    except Exception as e:
+        console.print(f"[bold red]Error getting regular voices: {e}[/bold red]")
+        regular_voices = []
+        regular_duration = 0
+
+    console.print(
+        f"Shared Voices API: [bold green]{len(shared_voices)} voices[/bold green] retrieved in {shared_duration:.2f} seconds"
+    )
+    console.print(
+        f"Default Voices API: [bold green]{len(regular_voices)} voices[/bold green] retrieved in {regular_duration:.2f} seconds"
+    )
+
+    # Display comparison table
+    console.print("\n[bold]Voice Source Comparison:[/bold]")
+
+    table = Table(title="Comparing Voice Sources")
+    table.add_column("Metric", style="cyan")
+    table.add_column("Shared Voices API", style="green")
+    table.add_column("Default Voices API", style="yellow")
+
+    table.add_row("Total Voices", str(len(shared_voices)), str(len(regular_voices)))
+
+    # Count by gender
+    shared_males = len([v for v in shared_voices if v.get("gender") == "male"])
+    shared_females = len([v for v in shared_voices if v.get("gender") == "female"])
+    shared_neutral = len([v for v in shared_voices if v.get("gender") == "neutral"])
+
+    # For regular voices, we'd need to extract gender but we'll show as N/A
+    table.add_row("Male Voices", str(shared_males), "N/A")
+    table.add_row("Female Voices", str(shared_females), "N/A")
+    table.add_row("Neutral Voices", str(shared_neutral), "N/A")
+
+    # Count by accent (top 5)
+    accent_counts = {}
+    for voice in shared_voices:
+        accent = voice.get("accent", "unknown")
+        accent_counts[accent] = accent_counts.get(accent, 0) + 1
+
+    top_accents = sorted(accent_counts.items(), key=lambda x: x[1], reverse=True)[:5]
+    for accent, count in top_accents:
+        table.add_row(f"{accent.title()} accent", str(count), "N/A")
+
+    console.print(table)
+
+    # Show sample from each
+    console.print("\n[bold]Sample of Shared Voices:[/bold]")
+    sample_shared = random.sample(shared_voices, min(5, len(shared_voices)))
+
+    shared_table = Table()
+    shared_table.add_column("Name", style="green")
+    shared_table.add_column("Gender", style="magenta")
+    shared_table.add_column("Accent", style="yellow")
+    shared_table.add_column("Age", style="blue")
+    shared_table.add_column("Category", style="red")
+
+    for voice in sample_shared:
+        shared_table.add_row(
+            voice["name"],
+            voice.get("gender", "N/A"),
+            voice.get("accent", "N/A"),
+            voice.get("age", "N/A"),
+            voice.get("category", "N/A"),
+        )
+
+    console.print(shared_table)
 
 
 @pytest.mark.manual
@@ -284,15 +358,20 @@ def test_filtering_and_sampling(voice_manager):
         {"gender": "female", "accent": "british"},
         {"gender": "male", "age": "old"},
         {"gender": "female", "accent": "american", "age": "young"},
-        {"category": "premade"},
+        {"category": "high_quality"},
+        {"gender": "male", "accent": "indian"},
+        {"gender": "female", "accent": "spanish"},
     ]
 
     for i, criteria in enumerate(filter_tests):
+        start_time = time.time()
         voices = voice_manager.filter_voices(**criteria)
+        duration = time.time() - start_time
+
         criteria_str = ", ".join(f"{k}={v}" for k, v in criteria.items())
 
         console.print(f"\n[bold]Filter Test {i+1}:[/bold] {criteria_str}")
-        console.print(f"Found {len(voices)} matching voices")
+        console.print(f"Found {len(voices)} matching voices in {duration:.2f} seconds")
 
         if voices:
             sample_size = min(3, len(voices))
@@ -356,15 +435,28 @@ def test_fallback_strategies(voice_manager):
         )
     )
 
+    # Format accent to match API expectations
+    formatted_accent = accent.lower().replace(" ", "_") if accent else None
+
     # Test each fallback level
     console.print("\n[bold]Testing Fallback Levels:[/bold]")
 
     # Level 1: All criteria
-    level1 = voice_manager.filter_voices(gender=gender, accent=accent, age=age)
+    criteria1 = (
+        {"gender": gender, "accent": formatted_accent, "age": age}
+        if formatted_accent
+        else {"gender": gender, "age": age}
+    )
+    level1 = voice_manager.filter_voices(**criteria1)
     console.print(f"Level 1 (All criteria): {len(level1)} voices found")
 
     # Level 2: Gender + Accent
-    level2 = voice_manager.filter_voices(gender=gender, accent=accent)
+    criteria2 = (
+        {"gender": gender, "accent": formatted_accent}
+        if formatted_accent
+        else {"gender": gender}
+    )
+    level2 = voice_manager.filter_voices(**criteria2)
     console.print(f"Level 2 (Gender + Accent): {len(level2)} voices found")
 
     # Level 3: Just Gender
@@ -372,13 +464,19 @@ def test_fallback_strategies(voice_manager):
     console.print(f"Level 3 (Gender only): {len(level3)} voices found")
 
     # Level 4: Just Accent
-    level4 = voice_manager.filter_voices(accent=accent) if accent else []
+    level4 = (
+        voice_manager.filter_voices(accent=formatted_accent) if formatted_accent else []
+    )
     console.print(f"Level 4 (Accent only): {len(level4)} voices found")
 
     # Final result
+    start_time = time.time()
     voice = voice_manager.get_voice_for_professor(unusual_prof)
+    duration = time.time() - start_time
 
-    console.print("\n[bold]Final Selected Voice:[/bold]")
+    console.print(
+        f"\n[bold]Final Selected Voice:[/bold] (selected in {duration:.2f} seconds)"
+    )
     result_table = Table()
     result_table.add_column("Attribute", style="cyan")
     result_table.add_column("Value", style="yellow")
@@ -404,7 +502,44 @@ def test_fallback_strategies(voice_manager):
     else:
         level_used = "Level 5 (Default fallback)"
 
-    console.print(f"[bold][green]Fallback level used:[/green][/bold] {level_used}")
+    console.print(f"[bold green]Fallback level used:[/bold green] {level_used}")
+
+
+@pytest.mark.manual
+def test_accent_variety(voice_manager):
+    """Test the variety of accents available in the system."""
+    console.print("\n[bold green]Testing Accent Variety:[/bold green]")
+
+    # Sample a few accents to test
+    test_accents = [
+        "american",
+        "british",
+        "indian",
+        "french",
+        "german",
+        "spanish",
+        "australian",
+        "japanese",
+    ]
+
+    results_table = Table(title="Voice Results by Accent")
+    results_table.add_column("Accent", style="cyan")
+    results_table.add_column("Count", style="green")
+    results_table.add_column("Sample Voice", style="yellow")
+    results_table.add_column("Gender", style="magenta")
+
+    for accent in test_accents:
+        voices = voice_manager.filter_voices(accent=accent)
+
+        if voices:
+            sample = random.choice(voices)
+            results_table.add_row(
+                accent.title(), str(len(voices)), sample["name"], sample["gender"]
+            )
+        else:
+            results_table.add_row(accent.title(), "0", "None found", "")
+
+    console.print(results_table)
 
 
 if __name__ == "__main__":
@@ -447,20 +582,22 @@ if __name__ == "__main__":
             teaching_style="Visual and contextual",
         ),
         Professor(
-            id="prof_neutral",
-            name="Dr. Alex Riley",
-            title="Professor of Philosophy",
-            department="Philosophy",
-            specialization="Ethics",
-            background="Leading researcher in ethical frameworks with publications in top journals. Joined the faculty after completing a post-doctoral fellowship.",
-            personality="Thoughtful and challenging",
-            teaching_style="Socratic method",
+            id="prof_indian_male",
+            name="Dr. Raj Patel",
+            title="Professor of Computer Science",
+            department="Computer Science",
+            specialization="Artificial Intelligence",
+            background="Computer scientist from Mumbai, India. He earned his PhD from Stanford and previously worked at Google's AI research division.",
+            personality="Methodical and forward-thinking",
+            teaching_style="Structured with practical examples",
         ),
     ]
 
     # Run tests
     test_voice_api_connection(voice_manager)
+    test_shared_vs_default_voices(voice_manager)
     test_extract_professor_characteristics(voice_manager, test_professors)
     test_voice_matching(voice_manager, test_professors)
     test_filtering_and_sampling(voice_manager)
     test_fallback_strategies(voice_manager)
+    test_accent_variety(voice_manager)
