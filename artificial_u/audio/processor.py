@@ -127,20 +127,6 @@ class AudioProcessor:
             "default": "21m00Tcm4TlvDq8ikWAM",  # Rachel as default
         }
 
-    def process_stage_directions(self, text: str) -> str:
-        """
-        Process stage directions in the lecture text to enhance the audio output.
-        For now, we're keeping stage directions as is.
-
-        Args:
-            text: Lecture text with stage directions in [brackets]
-
-        Returns:
-            str: Text preserved with stage directions
-        """
-        # For now, leave stage directions intact
-        return text
-
     def enhance_speech_markup(
         self, text: str, professor: Optional[Professor] = None
     ) -> str:
@@ -175,133 +161,7 @@ class AudioProcessor:
         for symbol, spoken_form in self.MATH_NOTATION.items():
             enhanced_text = enhanced_text.replace(symbol, spoken_form)
 
-        # Handle discipline-specific processing if professor is provided
-        if professor and professor.department:
-            enhanced_text = self._apply_discipline_specific_markup(
-                enhanced_text, professor
-            )
-
         return enhanced_text
-
-    def _apply_discipline_specific_markup(self, text: str, professor: Professor) -> str:
-        """
-        Apply discipline-specific speech markup based on professor's department.
-
-        Args:
-            text: The lecture text
-            professor: Professor object with department information
-
-        Returns:
-            str: Text with discipline-specific markup applied
-        """
-        department = professor.department.lower() if professor.department else ""
-
-        # Physics-related markup
-        if any(field in department for field in ["physics", "quantum"]):
-            # Handle quantum physics notation
-            quantum_replacements = [
-                (
-                    r"\|ψ⟩",
-                    'the quantum state <phoneme alphabet="ipa" ph="saɪ">psi</phoneme>',
-                ),
-                (r"\|0⟩", "the zero state"),
-                (r"\|1⟩", "the one state"),
-                (r"ℏ", "h-bar"),
-                # More specific quantum notation
-                (
-                    r"\|ψ⟩\s*=\s*α\|0⟩\s*\+\s*β\|1⟩",
-                    'the quantum state <phoneme alphabet="ipa" ph="saɪ">psi</phoneme> equals alpha times the zero state plus beta times the one state',
-                ),
-            ]
-
-            for pattern, replacement in quantum_replacements:
-                text = re.sub(pattern, replacement, text)
-
-        # Math-related markup
-        elif any(field in department for field in ["math", "statistic"]):
-            # Handle specific math notation
-            math_replacements = [
-                (r"f\(x\)", "f of x"),
-                (r"lim_{x→∞}", "the limit as x approaches infinity of"),
-                (r"\\frac\{([^}]+)\}\{([^}]+)\}", r"the fraction \1 over \2"),
-            ]
-
-            for pattern, replacement in math_replacements:
-                text = re.sub(pattern, replacement, text)
-
-        return text
-
-    def _map_professor_to_voice_type(self, professor: Professor) -> str:
-        """
-        Map a professor to a voice type based on their department.
-
-        Args:
-            professor: Professor profile
-
-        Returns:
-            str: Voice type identifier (e.g., 'stem', 'humanities', 'business')
-        """
-        # Convert department to lowercase for case-insensitive matching
-        department = professor.department.lower() if professor.department else ""
-
-        # Default department type
-        department_type = "default"
-
-        # Map departments to categories
-        stem_departments = [
-            "computer",
-            "physics",
-            "math",
-            "biology",
-            "chemistry",
-            "engineering",
-            "science",
-        ]
-
-        humanities_departments = [
-            "history",
-            "english",
-            "philosophy",
-            "art",
-            "music",
-            "language",
-            "literature",
-            "sociology",
-        ]
-
-        business_departments = [
-            "business",
-            "economics",
-            "finance",
-            "management",
-            "marketing",
-            "accounting",
-        ]
-
-        # Check which category the department belongs to
-        if any(stem_dept in department for stem_dept in stem_departments):
-            department_type = "stem"
-        elif any(
-            humanities_dept in department for humanities_dept in humanities_departments
-        ):
-            department_type = "humanities"
-        elif any(business_dept in department for business_dept in business_departments):
-            department_type = "business"
-
-        # If gender is specified, we can further refine voice selection
-        if professor.gender:
-            gender = professor.gender.lower()
-            if "female" in gender or "woman" in gender:
-                department_type += "_female"
-            elif "male" in gender or "man" in gender:
-                department_type += "_male"
-
-        # Consider accent if specified
-        if professor.accent:
-            self.logger.info(f"Professor has accent specified: {professor.accent}")
-            # This info will be passed to the voice selection manager
-
-        return department_type
 
     def get_voice_id_for_professor(self, professor: Professor) -> str:
         """
@@ -335,9 +195,6 @@ class AudioProcessor:
         except Exception as e:
             self.logger.error(f"Error selecting voice using smart system: {e}")
             self.logger.info("Falling back to simple mapping system")
-
-            # If smart selection fails, fall back to the simple mapping
-            department_type = self._map_professor_to_voice_type(professor)
 
             # Extended voice mapping to include gender variants
             extended_mapping = {
@@ -535,40 +392,6 @@ class AudioProcessor:
             self.logger.warning("Continuing despite validation error")
             return True
 
-    def save_debug_chunks(self, chunks: List[str], lecture_id: str) -> None:
-        """
-        Saves processed text chunks to files for debugging.
-
-        Args:
-            chunks: List of processed text chunks
-            lecture_id: Identifier for the lecture
-        """
-        try:
-            debug_dir = Path(self.audio_path) / "debug" / lecture_id
-            debug_dir.mkdir(parents=True, exist_ok=True)
-
-            # Clear existing debug files for this lecture
-            for existing_file in debug_dir.glob("chunk_*.txt"):
-                existing_file.unlink()
-
-            # Save each chunk to a separate file
-            for i, chunk in enumerate(chunks):
-                chunk_file = debug_dir / f"chunk_{i+1:03d}.txt"
-                chunk_file.write_text(chunk)
-
-            self.logger.info(f"Saved {len(chunks)} debug chunks to {debug_dir}")
-
-            # Save a summary file with chunk sizes and character counts
-            summary_lines = [
-                f"Chunk {i+1}: {len(chunk)} chars, {len(chunk.split())} words"
-                for i, chunk in enumerate(chunks)
-            ]
-            summary_file = debug_dir / "chunks_summary.txt"
-            summary_file.write_text("\n".join(summary_lines))
-
-        except Exception as e:
-            self.logger.error(f"Error saving debug chunks: {str(e)}")
-
     def test_connection(self) -> Dict[str, Any]:
         """
         Tests the connection to ElevenLabs API and verifies authentication.
@@ -623,70 +446,6 @@ class AudioProcessor:
 
         return True
 
-    def _normalize_voice_settings_for_consistency(
-        self, chunks: List[str]
-    ) -> Dict[str, float]:
-        """
-        Analyzes text chunks and adjusts voice settings for more consistent output.
-
-        Args:
-            chunks: The text chunks to analyze
-
-        Returns:
-            Dict[str, float]: Optimized voice settings
-        """
-        # Default settings
-        settings = {
-            "stability": 0.5,  # Higher stability = more consistent voice
-            "clarity": 0.75,  # Balance clarity and naturalness
-            "style": 0.0,  # Lower style = more consistent output
-        }
-
-        # Check for potential volume inconsistency indicators
-        all_caps_counts = [
-            sum(1 for c in chunk if c.isupper()) / len(chunk) if chunk else 0
-            for chunk in chunks
-        ]
-        exclamation_counts = [chunk.count("!") for chunk in chunks]
-        question_counts = [chunk.count("?") for chunk in chunks]
-
-        # Detect if there's high variance in emphasized text
-        if (
-            max(all_caps_counts) > 0.1
-            and (max(all_caps_counts) - min(all_caps_counts)) > 0.05
-        ):
-            # High variance in caps - increase stability for consistency
-            settings["stability"] = 0.7
-            self.logger.info(
-                "Detected high variance in capitalized text, increasing stability"
-            )
-
-        # Check for high punctuation variance
-        if (
-            max(exclamation_counts) > 3
-            and max(exclamation_counts) > 3 * min(exclamation_counts)
-        ) or (
-            max(question_counts) > 3 and max(question_counts) > 3 * min(question_counts)
-        ):
-            # High variance in emphasis punctuation - increase stability
-            settings["stability"] = min(0.8, settings["stability"] + 0.1)
-            # Reduce style to minimize dramatic shifts
-            settings["style"] = 0.0
-            self.logger.info(
-                "Detected high variance in emphasis punctuation, adjusting settings for consistency"
-            )
-
-        # Look for explicit SSML volume markers that could cause inconsistency
-        volume_markers = sum(chunk.count('<prosody volume="') for chunk in chunks)
-        if volume_markers > 0:
-            self.logger.info(
-                f"Detected {volume_markers} explicit volume markers in SSML"
-            )
-            # With explicit volume control, we need higher stability
-            settings["stability"] = min(0.85, settings["stability"] + 0.15)
-
-        return settings
-
     def text_to_speech(
         self, lecture: Lecture, professor: Professor
     ) -> Tuple[str, bytes]:
@@ -712,10 +471,6 @@ class AudioProcessor:
             # Enhance text with minimal speech markup
             processed_text = self.enhance_speech_markup(lecture.content, professor)
 
-            # Log original vs processed text size for debugging
-            self.logger.info(f"Original text size: {len(lecture.content)} chars")
-            self.logger.info(f"Processed text size: {len(processed_text)} chars")
-
             # Get appropriate voice ID
             voice_id = self.get_voice_id_for_professor(professor)
             self.logger.info(f"Using voice_id: {voice_id}")
@@ -734,23 +489,14 @@ class AudioProcessor:
                     if key in professor.voice_settings:
                         voice_settings[key] = professor.voice_settings[key]
 
-            self.logger.info(f"Using voice settings: {voice_settings}")
-
             # Use default chunk size - ElevenLabs can handle larger chunks
             # with the minimal processing we're now doing
             chunk_size = self.DEFAULT_CHUNK_SIZE
-            self.logger.info(f"Using chunk size: {chunk_size}")
 
             # Split into manageable chunks
             chunks = self.split_lecture_into_chunks(
                 processed_text, max_chunk_size=chunk_size
             )
-
-            # Save chunks for debugging
-            lecture_id = (
-                f"{lecture.course_id}_w{lecture.week_number}_l{lecture.order_in_week}"
-            )
-            self.save_debug_chunks(chunks, lecture_id)
 
             # Generate audio for each chunk
             audio_segments = []
