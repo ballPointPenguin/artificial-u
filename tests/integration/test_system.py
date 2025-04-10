@@ -43,6 +43,19 @@ def mock_system():
             description="Mock lecture description",
             content="Mock lecture content",
         )
+        mock_content_generator.create_professor.return_value = Professor(
+            name="AI Generated Professor",
+            title="Professor of Mock Studies",
+            department="Computer Science",
+            specialization="Artificial Intelligence",
+            background="Generated background",
+            teaching_style="Interactive",
+            personality="Enthusiastic",
+            gender="Male",
+            accent="American",
+            description="An AI-generated professor",
+            age=45,
+        )
         mock_create_generator.return_value = mock_content_generator
 
         # Set up mock audio processor

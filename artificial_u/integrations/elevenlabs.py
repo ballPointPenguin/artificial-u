@@ -919,9 +919,13 @@ def get_voice_for_professor(
         Dict[str, Any]: Selected voice information
     """
     manager = VoiceSelectionManager(api_key=api_key)
-    return manager.get_voice_for_professor(
-        professor, additional_context=additional_context
-    )
+    # Call the method without additional_context if it's None, otherwise pass it
+    if additional_context is None:
+        return manager.get_voice_for_professor(professor)
+    else:
+        return manager.get_voice_for_professor(
+            professor, additional_context=additional_context
+        )
 
 
 def sample_voices(
