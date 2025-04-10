@@ -62,6 +62,10 @@ def mock_system():
             teaching_style=p.teaching_style,
             personality=p.personality,
             voice_settings=p.voice_settings,
+            gender=p.gender,
+            accent=p.accent,
+            description=p.description,
+            age=p.age,
         )
         mock_repository.create_course.side_effect = lambda c: Course(
             id="course123",
@@ -85,6 +89,10 @@ def mock_system():
             teaching_style="Interactive",
             personality="Enthusiastic",
             voice_settings={"voice_id": "voice123"},
+            gender="Male",
+            accent="British",
+            description="A distinguished professor with a professorial appearance",
+            age=52,
         )
         mock_repository.get_course_by_code.return_value = Course(
             id="course123",

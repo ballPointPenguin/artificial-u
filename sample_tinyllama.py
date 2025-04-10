@@ -64,6 +64,10 @@ def main():
             background="PhD in AI from MIT, 10 years experience in NLP and machine learning",
             teaching_style="Interactive and engaging, with practical examples",
             personality="Passionate and knowledgeable with a sense of humor",
+            gender="Female",
+            accent="American (Southwestern)",
+            description="Dr. Martinez has curly black hair cut in a modern bob that frames her round face and bright smile. She has warm amber eyes behind stylish rectangular glasses and typically dresses in business casual attire with colorful scarves or statement jewelry. At 5'4\", she moves energetically around the classroom rather than staying behind the podium. She often uses animated hand gestures when explaining concepts and has a habit of pushing her glasses up when deep in thought. Students note her approachable demeanor and the way she makes eye contact with everyone in the room to ensure understanding.",
+            age=38,
         )
 
         course, _ = system.create_course(

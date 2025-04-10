@@ -229,6 +229,10 @@ class UniversitySystem:
         background: Optional[str] = None,
         teaching_style: Optional[str] = None,
         personality: Optional[str] = None,
+        gender: Optional[str] = None,
+        accent: Optional[str] = None,
+        description: Optional[str] = None,
+        age: Optional[int] = None,
     ) -> Professor:
         """
         Create a new professor with the given attributes.
@@ -243,6 +247,10 @@ class UniversitySystem:
             background: Professional background
             teaching_style: Teaching methodology
             personality: Personality traits
+            gender: Professor's gender (optional)
+            accent: Professor's accent (optional)
+            description: Physical description of the professor (optional)
+            age: Professor's age (optional)
 
         Returns:
             Professor: The created professor object
@@ -273,6 +281,18 @@ class UniversitySystem:
         personality = personality or RandomGenerators.generate_personality()
         self.logger.debug(f"Using personality: {personality}")
 
+        gender = gender or RandomGenerators.generate_gender()
+        self.logger.debug(f"Using gender: {gender}")
+
+        accent = accent or RandomGenerators.generate_accent()
+        self.logger.debug(f"Using accent: {accent}")
+
+        description = description or RandomGenerators.generate_description(gender)
+        self.logger.debug("Generated physical description")
+
+        age = age or RandomGenerators.generate_age()
+        self.logger.debug(f"Using age: {age}")
+
         # Create professor object
         professor = Professor(
             name=name,
@@ -282,6 +302,10 @@ class UniversitySystem:
             background=background,
             teaching_style=teaching_style,
             personality=personality,
+            gender=gender,
+            accent=accent,
+            description=description,
+            age=age,
         )
 
         # Assign a voice to the professor
