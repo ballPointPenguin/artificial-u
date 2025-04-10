@@ -6,7 +6,6 @@ import logging
 from typing import Dict, List, Optional, Tuple, Any
 
 from artificial_u.generators.factory import create_generator
-from artificial_u.audio.processor import AudioProcessor
 from artificial_u.models.database import Repository
 from artificial_u.models.core import Professor, Course, Lecture, Department
 from artificial_u.config.config_manager import ConfigManager
@@ -14,6 +13,11 @@ from artificial_u.services.professor_service import ProfessorService
 from artificial_u.services.course_service import CourseService
 from artificial_u.services.lecture_service import LectureService
 from artificial_u.services.audio_service import AudioService
+from artificial_u.services.voice_service import VoiceService
+from artificial_u.services.tts_service import TTSService
+from artificial_u.integrations.elevenlabs.client import ElevenLabsClient
+from artificial_u.audio.speech_processor import SpeechProcessor
+from artificial_u.audio.audio_utils import AudioUtils
 from artificial_u.utils.exceptions import ConfigurationError
 
 
@@ -96,11 +100,15 @@ class UniversitySystem:
                 backend=config["content_backend"], **backend_kwargs
             )
 
-            # Initialize audio processor
-            self.audio_processor = AudioProcessor(api_key=config["elevenlabs_api_key"])
-
             # Initialize repository
             self.repository = Repository(db_url=config["db_url"])
+
+            # Initialize audio components
+            self.elevenlabs_client = ElevenLabsClient(
+                api_key=config["elevenlabs_api_key"]
+            )
+            self.speech_processor = SpeechProcessor()
+            self.audio_utils = AudioUtils(base_audio_path=config["audio_path"])
 
         except Exception as e:
             self.logger.error(f"Failed to initialize core components: {str(e)}")
@@ -110,11 +118,28 @@ class UniversitySystem:
         """Initialize service layer components."""
         config = self.config.get_config_dict()
 
+        # Initialize voice service
+        self.voice_service = VoiceService(
+            api_key=config["elevenlabs_api_key"],
+            client=self.elevenlabs_client,
+            logger=logging.getLogger("artificial_u.services.voice_service"),
+        )
+
+        # Initialize TTS service
+        self.tts_service = TTSService(
+            api_key=config["elevenlabs_api_key"],
+            audio_path=config["audio_path"],
+            client=self.elevenlabs_client,
+            speech_processor=self.speech_processor,
+            audio_utils=self.audio_utils,
+            logger=logging.getLogger("artificial_u.services.tts_service"),
+        )
+
         # Initialize professor service
         self.professor_service = ProfessorService(
             repository=self.repository,
             content_generator=self.content_generator,
-            audio_processor=self.audio_processor,
+            audio_processor=None,  # No longer used
             logger=logging.getLogger("artificial_u.services.professor_service"),
         )
 
@@ -132,7 +157,7 @@ class UniversitySystem:
             content_generator=self.content_generator,
             professor_service=self.professor_service,
             course_service=self.course_service,
-            audio_processor=self.audio_processor,
+            audio_processor=None,  # No longer used
             text_export_path=config["text_export_path"],
             content_backend=config["content_backend"],
             content_model=config["content_model"],
@@ -142,8 +167,11 @@ class UniversitySystem:
 
         # Initialize audio service
         self.audio_service = AudioService(
-            audio_processor=self.audio_processor,
             repository=self.repository,
+            api_key=config["elevenlabs_api_key"],
+            audio_path=config["audio_path"],
+            voice_service=self.voice_service,
+            tts_service=self.tts_service,
             logger=logging.getLogger("artificial_u.services.audio_service"),
         )
 
@@ -196,6 +224,18 @@ class UniversitySystem:
     def create_lecture_audio(self, **kwargs) -> Tuple[str, Lecture]:
         """Create audio for a lecture."""
         return self.audio_service.create_lecture_audio(**kwargs)
+
+    def list_available_voices(self, **kwargs) -> List[Dict[str, Any]]:
+        """List available voices with optional filtering."""
+        return self.audio_service.list_available_voices(**kwargs)
+
+    def test_audio_connection(self) -> Dict[str, Any]:
+        """Test connection to the TTS service."""
+        return self.audio_service.test_tts_connection()
+
+    def play_audio(self, audio_data_or_path):
+        """Play audio from data or file path."""
+        self.audio_service.play_audio(audio_data_or_path)
 
     # === Other Methods ===
 

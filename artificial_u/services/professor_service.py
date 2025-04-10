@@ -3,30 +3,50 @@ Professor management service for ArtificialU.
 """
 
 import logging
-from typing import Optional
+from typing import Optional, Dict, Any
 
 from artificial_u.models.core import Professor
 from artificial_u.utils.random_generators import RandomGenerators
 from artificial_u.utils.exceptions import DatabaseError, ProfessorNotFoundError
+from artificial_u.services.voice_service import VoiceService
 
 
 class ProfessorService:
     """Service for managing professor entities."""
 
-    def __init__(self, repository, content_generator, audio_processor, logger=None):
+    def __init__(
+        self,
+        repository,
+        content_generator,
+        audio_processor=None,  # Kept for backward compatibility
+        voice_service=None,
+        elevenlabs_api_key=None,
+        logger=None,
+    ):
         """
         Initialize the professor service.
 
         Args:
             repository: Data repository
             content_generator: Content generation service
-            audio_processor: Audio processing service
+            audio_processor: Deprecated, use voice_service instead
+            voice_service: Voice service for voice assignment
+            elevenlabs_api_key: API key for ElevenLabs if voice_service not provided
             logger: Optional logger instance
         """
         self.repository = repository
         self.content_generator = content_generator
-        self.audio_processor = audio_processor
         self.logger = logger or logging.getLogger(__name__)
+
+        # Set up voice service
+        self.voice_service = voice_service
+        if not self.voice_service and elevenlabs_api_key:
+            self.voice_service = VoiceService(
+                api_key=elevenlabs_api_key, logger=self.logger
+            )
+
+        # Keep reference to audio_processor for backward compatibility
+        self.audio_processor = audio_processor
 
     def create_professor(
         self,
@@ -190,16 +210,56 @@ class ProfessorService:
             professor: Professor object to assign voice to
         """
         try:
-            voice_id = self.audio_processor.get_voice_id_for_professor(professor)
-
-            # Store the voice ID in the professor's voice settings
+            # Make sure professor has a voice_settings dict
             if not professor.voice_settings:
                 professor.voice_settings = {}
-            professor.voice_settings["voice_id"] = voice_id
 
-            self.logger.debug(
-                f"Voice ID {voice_id} assigned to professor {professor.name}"
-            )
+            # If we already have a voice_id, don't override it
+            if professor.voice_settings.get("voice_id"):
+                self.logger.debug(
+                    f"Professor {professor.name} already has voice ID {professor.voice_settings['voice_id']}"
+                )
+                return
+
+            # Try using the voice service first
+            if self.voice_service:
+                # Gather additional context for voice selection
+                additional_context = {
+                    "gender": professor.gender,
+                    "accent": professor.accent,
+                    "age": professor.age,
+                    "description": professor.description,
+                }
+
+                # Get voice data
+                voice_data = self.voice_service.select_voice_for_professor(
+                    professor, additional_context=additional_context
+                )
+
+                # Store the voice ID
+                professor.voice_settings["voice_id"] = voice_data["voice_id"]
+
+                # Store other voice properties if available
+                for key in ["stability", "clarity", "style"]:
+                    if key in voice_data:
+                        professor.voice_settings[key] = voice_data[key]
+
+                self.logger.debug(
+                    f"Voice ID {voice_data['voice_id']} assigned to professor {professor.name}"
+                )
+
+            # Fall back to audio_processor for backward compatibility
+            elif self.audio_processor:
+                voice_id = self.audio_processor.get_voice_id_for_professor(professor)
+                professor.voice_settings["voice_id"] = voice_id
+                self.logger.debug(
+                    f"Voice ID {voice_id} assigned to professor {professor.name} using audio_processor"
+                )
+            else:
+                self.logger.warning(
+                    f"No voice service or audio processor available to assign voice to professor {professor.name}"
+                )
+
         except Exception as e:
             error_msg = f"Failed to assign voice to professor: {str(e)}"
             self.logger.warning(error_msg)
