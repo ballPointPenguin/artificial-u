@@ -5,6 +5,7 @@ Database models and repository for ArtificialU.
 import os
 import json
 import uuid
+import logging
 from pathlib import Path
 from typing import Dict, List, Optional, Union, Any
 from datetime import datetime
@@ -101,16 +102,26 @@ class Repository:
     Repository for database operations.
     """
 
-    def __init__(self, db_path: Optional[str] = None):
+    def __init__(self, db_url: Optional[str] = None):
         """
         Initialize the repository.
 
         Args:
-            db_path: Path to SQLite database file. If not provided, will use DATABASE_PATH
-                     environment variable or default to 'university.db'.
+            db_url: SQLAlchemy database URL for PostgreSQL connection.
+                   If not provided, uses DATABASE_URL environment variable.
         """
-        self.db_path = db_path or os.environ.get("DATABASE_PATH", "university.db")
-        self.engine = create_engine(f"sqlite:///{self.db_path}")
+        # Setup logging
+        self.logger = logging.getLogger(__name__)
+
+        self.db_url = db_url or os.environ.get("DATABASE_URL")
+
+        if not self.db_url:
+            raise ValueError(
+                "PostgreSQL connection URL not provided. Set DATABASE_URL environment variable."
+            )
+
+        self.engine = create_engine(self.db_url)
+        self.logger.info(f"Using database URL: {self.db_url}")
 
         # Create tables if they don't exist
         Base.metadata.create_all(self.engine)

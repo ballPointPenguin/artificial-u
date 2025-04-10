@@ -48,7 +48,6 @@ def main():
     system = UniversitySystem(
         content_backend="ollama",
         content_model="tinyllama",
-        db_path="tinyllama_test.db",  # Use a specific database for this test
         text_export_path="lecture_texts",  # Export lecture text files to this directory
     )
 

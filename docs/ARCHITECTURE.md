@@ -37,7 +37,7 @@ The `AudioProcessor` manages text-to-speech conversion using the ElevenLabs API.
 
 ### Repository
 
-The `Repository` implements data persistence using SQLAlchemy with a SQLite backend. It:
+The `Repository` implements data persistence using SQLAlchemy with PostgreSQL as the database backend. It:
 
 - Provides CRUD operations for all domain entities
 - Manages relationships between entities

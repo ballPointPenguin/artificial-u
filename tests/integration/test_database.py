@@ -6,26 +6,33 @@ import os
 import tempfile
 from datetime import datetime
 from pathlib import Path
-
 import pytest
+from dotenv import load_dotenv
 
 from artificial_u.models.core import Professor, Course, Lecture, Department
 from artificial_u.models.database import Repository
 
 
-@pytest.fixture
-def temp_db_path():
-    """Create a temporary database file for testing."""
-    fd, path = tempfile.mkstemp(suffix=".db")
-    os.close(fd)
-    yield path
-    os.unlink(path)
+@pytest.fixture(scope="session", autouse=True)
+def load_env():
+    """Load environment variables from .env.test file."""
+    load_dotenv(".env.test")
+    yield
 
 
 @pytest.fixture
-def repository(temp_db_path):
-    """Create a repository instance with a temporary database."""
-    return Repository(db_path=temp_db_path)
+def test_db_url():
+    """Get the test database URL from environment."""
+    return os.environ.get(
+        "DATABASE_URL",
+        "postgresql://postgres:postgres@localhost:5432/artificial_u_test",
+    )
+
+
+@pytest.fixture
+def repository(test_db_url):
+    """Create a repository instance with the test database."""
+    return Repository(db_url=test_db_url)
 
 
 @pytest.fixture
@@ -85,6 +92,25 @@ def sample_lecture(db_course):
         description="Introduction to unit testing concepts",
         content="In this lecture, we will explore the fundamentals of unit testing...",
     )
+
+
+@pytest.fixture(scope="function", autouse=True)
+def setup_database(test_db_url):
+    """Set up a clean database for each test function."""
+    # Create a new engine and recreate all tables
+    from sqlalchemy import create_engine
+    from artificial_u.models.database import Base
+
+    engine = create_engine(test_db_url)
+
+    # Drop all tables and recreate them
+    Base.metadata.drop_all(engine)
+    Base.metadata.create_all(engine)
+
+    yield
+
+    # Clean up after test
+    Base.metadata.drop_all(engine)
 
 
 @pytest.mark.integration

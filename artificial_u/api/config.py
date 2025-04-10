@@ -19,19 +19,20 @@ class Settings(BaseSettings):
     )
 
     # Database settings
-    db_url: Optional[str] = None
-    DATABASE_PATH: str
+    DATABASE_URL: str
 
     # Logging settings
-    log_level: str = "INFO"
+    LOG_LEVEL: str = "INFO"
 
     # API Keys
     ANTHROPIC_API_KEY: Optional[str] = None
     ELEVENLABS_API_KEY: Optional[str] = None
-    OPENAPI_API_KEY: Optional[str] = None
+    OPENAI_API_KEY: Optional[str] = None
 
     # Storage paths
     AUDIO_STORAGE_PATH: str
+    AUDIO_PATH: str = "audio"
+    TEXT_EXPORT_PATH: str = "exports"
 
     model_config = ConfigDict(
         env_file=".env", env_file_encoding="utf-8", case_sensitive=True

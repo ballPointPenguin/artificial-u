@@ -3,49 +3,50 @@
 
 # Python
 __pycache__/
-*.py[cod]
-*$py.class
-*.so
+.eggs/
+.installed.cfg
 .Python
+*.egg
+*.egg-info/
+*.py[cod]
+*.so
+*$py.class
 build/
 develop-eggs/
 dist/
 downloads/
 eggs/
-.eggs/
 lib/
 lib64/
 parts/
 sdist/
 var/
 wheels/
-*.egg-info/
-.installed.cfg
-*.egg
 
 # Virtual Environment
-venv/
 env/
 ENV/
+venv/
 
 # IDE
 .idea/
 .vscode/
-*.swp
 *.swo
+*.swp
 
 # Project specific
 .cache/
 *.db
-audio_files/
+*.log
 *.mp3
 *.wav
+audio_files/
 lecture_texts/
-*.log
 
 # Test files
-test_university.db
-test_audio_files/
 .coverage
-htmlcov/
 .pytest_cache/
+htmlcov/
+test_audio_files/
+test_exports/
+test_university.db

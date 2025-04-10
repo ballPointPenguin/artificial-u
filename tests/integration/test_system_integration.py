@@ -6,6 +6,7 @@ import os
 import pytest
 import tempfile
 from pathlib import Path
+from dotenv import load_dotenv
 
 from artificial_u.system import UniversitySystem
 from artificial_u.models.core import Professor, Course, Lecture
@@ -47,19 +48,30 @@ requires_tinyllama = pytest.mark.skipif(
 )
 
 
+@pytest.fixture(scope="session", autouse=True)
+def load_env():
+    """Load environment variables from .env.test file."""
+    load_dotenv(".env.test")
+    yield
+
+
 @pytest.fixture
 def test_system():
     """Create a test system using Ollama for content generation."""
-    # Create temporary directories for database and audio
+    # Create temporary directory for audio
     with tempfile.TemporaryDirectory() as temp_dir:
-        db_path = os.path.join(temp_dir, "test_db.db")
         audio_path = os.path.join(temp_dir, "audio")
+
+        # Get PostgreSQL URL from environment
+        db_url = os.environ.get(
+            "DATABASE_URL",
+            "postgresql://postgres:postgres@localhost:5432/artificial_u_test",
+        )
 
         # Create the system
         system = UniversitySystem(
             content_backend="ollama",
             content_model="tinyllama",
-            db_path=db_path,
             audio_path=audio_path,
             # Use dummy API keys since we're skipping audio generation
             anthropic_api_key="sk_not_needed_for_test",

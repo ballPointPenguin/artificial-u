@@ -11,7 +11,7 @@ def setup_logging(settings: Settings) -> None:
     Args:
         settings: Application settings with log configuration
     """
-    log_level = getattr(logging, settings.log_level.upper(), logging.INFO)
+    log_level = getattr(logging, settings.LOG_LEVEL.upper(), logging.INFO)
 
     # Configure root logger
     root_logger = logging.getLogger()

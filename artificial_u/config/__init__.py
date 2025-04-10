@@ -3,7 +3,7 @@ Configuration modules for the ArtificialU system.
 """
 
 from artificial_u.config.defaults import (
-    DEFAULT_DB_PATH,
+    DEFAULT_DB_URL,
     DEFAULT_AUDIO_PATH,
     DEFAULT_TEXT_EXPORT_PATH,
     DEFAULT_CONTENT_BACKEND,
@@ -22,7 +22,7 @@ from artificial_u.config.defaults import (
 )
 
 __all__ = [
-    "DEFAULT_DB_PATH",
+    "DEFAULT_DB_URL",
     "DEFAULT_AUDIO_PATH",
     "DEFAULT_TEXT_EXPORT_PATH",
     "DEFAULT_CONTENT_BACKEND",

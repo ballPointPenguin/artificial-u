@@ -6,7 +6,7 @@ import os
 from typing import Dict, List
 
 # Database defaults
-DEFAULT_DB_PATH = "university.db"
+DEFAULT_DB_URL = "postgresql://postgres:postgres@localhost:5432/artificial_u_dev"
 
 # Audio defaults
 DEFAULT_AUDIO_PATH = "audio_files"

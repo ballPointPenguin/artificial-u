@@ -7,8 +7,12 @@ import pytest
 from pathlib import Path
 from typing import Generator
 import sys
+import logging
+from dotenv import load_dotenv
 
-from artificial_u.models.database import Repository
+from sqlalchemy import create_engine
+from sqlalchemy.exc import OperationalError
+from artificial_u.models.database import Repository, Base
 from artificial_u.system import UniversitySystem
 
 # Add the project root to Python path
@@ -17,10 +21,47 @@ if project_root not in sys.path:
     sys.path.insert(0, project_root)
 
 
+def check_database_exists(db_url: str) -> bool:
+    """Check if the test database exists and print helpful message if not."""
+    try:
+        # Try connecting to the database
+        engine = create_engine(db_url)
+        conn = engine.connect()
+        conn.close()
+        return True
+    except OperationalError as e:
+        if "database" in str(e) and "does not exist" in str(e):
+            db_name = db_url.split("/")[-1]
+            print("\n\033[91mERROR: Test database not found!\033[0m")
+            print(f"The database '{db_name}' does not exist.")
+            print("\nTo create the test database, run:")
+            print("    python scripts/setup_test_db.py")
+            return False
+        else:
+            print(f"Error connecting to database: {e}")
+            return False
+
+
+@pytest.fixture(scope="session", autouse=True)
+def load_env():
+    """Load environment variables from .env.test file."""
+    load_dotenv(".env.test")
+    yield
+
+
 @pytest.fixture(scope="session")
-def test_db_path() -> str:
-    """Provide path to test database."""
-    return "test_university.db"
+def test_db_url() -> str:
+    """Provide PostgreSQL URL for tests."""
+    db_url = os.environ.get(
+        "DATABASE_URL",
+        "postgresql://postgres:postgres@localhost:5432/artificial_u_test",
+    )
+
+    # Check if database exists
+    if not check_database_exists(db_url):
+        pytest.skip("Test database does not exist")
+
+    return db_url
 
 
 @pytest.fixture(scope="session")
@@ -30,13 +71,20 @@ def test_audio_path(tmp_path_factory) -> Path:
 
 
 @pytest.fixture
-def repository(test_db_path: str) -> Generator[Repository, None, None]:
+def repository(test_db_url: str) -> Generator[Repository, None, None]:
     """Provide a test repository instance with a clean database."""
-    repo = Repository(db_path=test_db_path)
+    # Create a new engine and recreate all tables
+    engine = create_engine(test_db_url)
+
+    # Drop all tables and recreate them
+    Base.metadata.drop_all(engine)
+    Base.metadata.create_all(engine)
+
+    repo = Repository(db_url=test_db_url)
     yield repo
-    # Cleanup
-    if os.path.exists(test_db_path):
-        os.remove(test_db_path)
+
+    # Cleanup by dropping tables
+    Base.metadata.drop_all(engine)
 
 
 @pytest.fixture
@@ -45,6 +93,5 @@ def mock_system(repository: Repository, test_audio_path: Path) -> UniversitySyst
     return UniversitySystem(
         anthropic_api_key="mock_anthropic_key",
         elevenlabs_api_key="mock_elevenlabs_key",
-        db_path=repository.db_path,
         audio_path=str(test_audio_path),
     )

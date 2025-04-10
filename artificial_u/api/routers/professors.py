@@ -8,6 +8,7 @@ from fastapi.responses import JSONResponse
 
 from artificial_u.models.database import Repository
 from artificial_u.api.services.professor_service import ProfessorService
+from artificial_u.api.config import get_settings, Settings
 from artificial_u.api.models.professors import (
     ProfessorCreate,
     ProfessorUpdate,
@@ -25,9 +26,9 @@ router = APIRouter(
 )
 
 
-def get_repository() -> Repository:
+def get_repository(settings: Settings = Depends(get_settings)) -> Repository:
     """Dependency for getting repository instance."""
-    return Repository()
+    return Repository(db_url=settings.DATABASE_URL)
 
 
 def get_professor_service(

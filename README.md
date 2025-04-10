@@ -154,6 +154,21 @@ pytest --cov=artificial_u
 ELEVENLABS_API_KEY=<your_api_key> pytest tests/manual/test_api_integration.py -v
 ```
 
+### Setting Up the Test Database
+
+Before running integration tests, you need to set up the PostgreSQL test database:
+
+1. Make sure PostgreSQL is running
+2. Run the setup script:
+
+```bash
+# Create the test database
+python scripts/setup_test_db.py
+
+# Run integration tests
+pytest tests/integration -v
+```
+
 For manual API tests, make sure to:
 
 1. Pass any required API keys as environment variables to pytest
@@ -211,3 +226,21 @@ This project is in early development as a personal learning tool.
 ## License
 
 [AGPL-3.0 License](LICENSE)
+
+## Database Setup
+
+ArtificialU uses PostgreSQL for data storage:
+
+1. Start the PostgreSQL container:
+
+   ```bash
+   docker-compose up -d
+   ```
+
+2. Initialize the database schema:
+
+   ```bash
+   python initialize_db.py
+   ```
+
+3. For detailed database information, see [PostgreSQL Setup Guide](docs/POSTGRES.md).

@@ -26,7 +26,7 @@ from artificial_u.utils.exceptions import (
     ConfigurationError,
 )
 from artificial_u.config.defaults import (
-    DEFAULT_DB_PATH,
+    DEFAULT_DB_URL,
     DEFAULT_AUDIO_PATH,
     DEFAULT_TEXT_EXPORT_PATH,
     DEFAULT_CONTENT_BACKEND,
@@ -188,10 +188,14 @@ class UniversitySystem:
         Set up the database repository.
 
         Args:
-            db_path: Path to the SQLite database
+            db_path: Deprecated parameter, kept for backward compatibility
         """
         try:
-            self.repository = Repository(db_path=db_path or DEFAULT_DB_PATH)
+            # Get PostgreSQL database URL
+            db_url = os.environ.get("DATABASE_URL", DEFAULT_DB_URL)
+
+            self.repository = Repository(db_url=db_url)
+            self.logger.info("Using PostgreSQL database")
             self.logger.debug("Database repository set up")
         except Exception as e:
             error_msg = f"Failed to initialize repository: {str(e)}"

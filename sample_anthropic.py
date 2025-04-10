@@ -30,7 +30,6 @@ def main():
         anthropic_api_key=api_key,
         content_backend="anthropic",  # Use Anthropic's Claude by default
         content_model="claude-3-7-sonnet-20250219",  # Use Claude 3.7 Sonnet
-        db_path="anthropic_test.db",  # Use a specific database for this test
         text_export_path="lecture_texts",  # Export lecture text files to this directory
     )
 
