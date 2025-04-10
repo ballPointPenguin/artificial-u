@@ -766,6 +766,97 @@ class VoiceSelectionManager:
         self.voice_mapping_db[professor_id] = voice_id
         self._save_voice_mapping()
 
+    def rebuild_cache(self, clear_existing: bool = True) -> Dict[str, Any]:
+        """
+        Rebuild the voice cache by fetching fresh data from the API.
+
+        Args:
+            clear_existing: Whether to clear the existing cache before rebuilding
+
+        Returns:
+            Dict[str, Any]: Status information about the rebuild operation
+        """
+        start_time = time.time()
+        result = {
+            "status": "success",
+            "voices_cached": 0,
+            "errors": [],
+            "time_taken": 0,
+        }
+
+        try:
+            # Clear existing cache if requested
+            if clear_existing:
+                self.voice_cache = {}
+                if VOICE_CACHE_FILE.exists():
+                    VOICE_CACHE_FILE.unlink()
+                    logger.info("Cleared existing voice cache")
+
+            # Fetch all voices to rebuild the cache
+            languages = ["en"]  # Start with English
+
+            for language in languages:
+                # Get voices for each gender to ensure better coverage
+                for gender in ["male", "female", "neutral"]:
+                    try:
+                        voices = self.get_available_voices(
+                            refresh=True, language=language, gender=gender
+                        )
+                        result["voices_cached"] += len(voices)
+                        logger.info(
+                            f"Cached {len(voices)} {gender} voices for language {language}"
+                        )
+                    except Exception as e:
+                        error_msg = (
+                            f"Error caching {gender} voices for {language}: {str(e)}"
+                        )
+                        logger.error(error_msg)
+                        result["errors"].append(error_msg)
+
+            # Save the cache
+            self._save_voice_cache()
+
+            # Get some specific high-quality voices to ensure they're cached
+            featured_voices = [
+                "21m00Tcm4TlvDq8ikWAM",  # Rachel
+                "EXAVITQu4vr4xnSDxMaL",  # Bella
+                "AZnzlk1XvdvUeBnXmlld",  # Adam
+                "pNInz6obpgDQGcFmaJgB",  # Adam
+                "ErXwobaYiN019PkySvjV",  # Antoni
+                "MF3mGyEYCl7XYWbV9V6O",  # Elli
+                "TxGEqnHWrfWFTfGW9XjX",  # Josh
+                "VR6AewLTigWG4xSOukaG",  # Arnold
+            ]
+
+            for voice_id in featured_voices:
+                try:
+                    voice = self.get_voice_by_id(voice_id, refresh=True)
+                    if voice:
+                        logger.info(
+                            f"Cached featured voice: {voice.get('name', 'Unknown')} ({voice_id})"
+                        )
+                except Exception as e:
+                    error_msg = f"Error caching featured voice {voice_id}: {str(e)}"
+                    logger.error(error_msg)
+                    result["errors"].append(error_msg)
+
+            # Final save
+            self._save_voice_cache()
+
+            result["status"] = "success" if not result["errors"] else "partial_success"
+            result["cache_file"] = str(VOICE_CACHE_FILE)
+
+        except Exception as e:
+            error_msg = f"Error during cache rebuild: {str(e)}"
+            logger.error(error_msg)
+            result["errors"].append(error_msg)
+            result["status"] = "error"
+
+        # Calculate time taken
+        result["time_taken"] = time.time() - start_time
+
+        return result
+
 
 # Convenience functions
 def get_voice_for_professor(
@@ -829,3 +920,58 @@ def get_voice_filters(api_key: Optional[str] = None) -> Dict[str, List[str]]:
     """
     manager = VoiceSelectionManager(api_key=api_key)
     return manager.list_available_voice_filters()
+
+
+def rebuild_voice_cache(
+    api_key: Optional[str] = None, clear_existing: bool = True
+) -> Dict[str, Any]:
+    """
+    Convenience function to rebuild the voice cache.
+
+    Args:
+        api_key: ElevenLabs API key
+        clear_existing: Whether to clear the existing cache
+
+    Returns:
+        Dict[str, Any]: Status of the rebuild operation
+    """
+    manager = VoiceSelectionManager(api_key=api_key)
+    return manager.rebuild_cache(clear_existing=clear_existing)
+
+
+# Command-line interface for cache rebuilding
+if __name__ == "__main__":
+    import argparse
+
+    parser = argparse.ArgumentParser(description="ElevenLabs voice cache management")
+    parser.add_argument(
+        "--rebuild", action="store_true", help="Rebuild the voice cache"
+    )
+    parser.add_argument(
+        "--keep", action="store_true", help="Keep existing cache entries (don't clear)"
+    )
+    parser.add_argument(
+        "--api-key", help="ElevenLabs API key (optional, uses env var if not provided)"
+    )
+
+    args = parser.parse_args()
+
+    if args.rebuild:
+        print("Rebuilding voice cache...")
+        result = rebuild_voice_cache(api_key=args.api_key, clear_existing=not args.keep)
+
+        print(f"Status: {result['status']}")
+        print(f"Cached {result['voices_cached']} voices")
+        print(f"Time taken: {result['time_taken']:.2f} seconds")
+
+        if result["errors"]:
+            print(f"Encountered {len(result['errors'])} errors:")
+            for i, error in enumerate(result["errors"][:5]):  # Show only first 5 errors
+                print(f"  {i+1}. {error}")
+
+            if len(result["errors"]) > 5:
+                print(f"  ... and {len(result['errors']) - 5} more errors")
+
+        print(f"Cache file: {result.get('cache_file', 'unknown')}")
+    else:
+        parser.print_help()

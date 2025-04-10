@@ -35,7 +35,7 @@ class AudioProcessor:
     """
 
     # Default voice model
-    DEFAULT_MODEL = "eleven_multilingual_v2"
+    DEFAULT_MODEL = "eleven_flash_v2_5"
     # Default max chunk size for text-to-speech
     DEFAULT_CHUNK_SIZE = 4000
     # Maximum retries for API calls
@@ -130,61 +130,37 @@ class AudioProcessor:
     def process_stage_directions(self, text: str) -> str:
         """
         Process stage directions in the lecture text to enhance the audio output.
+        For now, we're keeping stage directions as is.
 
         Args:
             text: Lecture text with stage directions in [brackets]
 
         Returns:
-            str: Text prepared for text-to-speech conversion with enhanced markup
+            str: Text preserved with stage directions
         """
-        # Replace common stage directions with pauses and tone adjustments
-        replacements = [
-            # Pauses for various actions
-            (r"\[\s*pauses?\s*\]", '<break time="1s"/>'),
-            (r"\[\s*long pause\s*\]", '<break time="2s"/>'),
-            (r"\[\s*brief pause\s*\]", '<break time="0.5s"/>'),
-            # Emotional cues
-            (r"\[\s*enthusiastically\s*\]", '<prosody rate="fast" pitch="high">'),
-            (r"\[\s*excited(ly)?\s*\]", '<prosody rate="fast" pitch="high">'),
-            (r"\[\s*happily\s*\]", '<prosody pitch="high">'),
-            (r"\[\s*sadly\s*\]", '<prosody pitch="low" rate="slow">'),
-            (r"\[\s*seriously\s*\]", '<prosody pitch="low">'),
-            (r"\[\s*thoughtfully\s*\]", '<prosody rate="slow">'),
-            (r"\[\s*whispers\s*\]", '<prosody volume="soft">'),
-            (r"\[\s*end (of )?(emotion|prosody)\s*\]", "</prosody>"),
-            # Remove other stage directions
-            (r"\[\s*.*?\s*\]", ""),
-        ]
-
-        processed_text = text
-        for pattern, replacement in replacements:
-            processed_text = re.sub(
-                pattern, replacement, processed_text, flags=re.IGNORECASE
-            )
-
-        return processed_text
+        # For now, leave stage directions intact
+        return text
 
     def enhance_speech_markup(
         self, text: str, professor: Optional[Professor] = None
     ) -> str:
         """
         Enhance text with ElevenLabs-compatible speech markup for better pronunciation.
+        Currently focused on minimal processing that preserves the original text structure.
 
         Args:
             text: The lecture text to enhance
             professor: Optional professor object to apply discipline-specific enhancements
 
         Returns:
-            str: Text with enhanced speech markup
+            str: Text with minimal enhancements
         """
-        # First process stage directions
-        enhanced_text = self.process_stage_directions(text)
+        # Keep the stage directions intact
+        enhanced_text = text
 
-        # Add natural sentence pauses
-        enhanced_text = re.sub(r"([.!?])\s+", r'\1<break time="0.5s"/> ', enhanced_text)
-
-        # Add smaller pauses for commas and semicolons
-        enhanced_text = re.sub(r"([,;])\s+", r'\1<break time="0.2s"/> ', enhanced_text)
+        # Remove markdown title prefix if present
+        # This helps with better TTS rendering (doesn't try to speak "hashtag")
+        enhanced_text = re.sub(r"^#\s+", "", enhanced_text)
 
         # Add pronunciation guides for technical terms
         for term, pronunciation in self.PRONUNCIATION_DICT.items():
@@ -347,6 +323,7 @@ class AudioProcessor:
     ) -> List[str]:
         """
         Split a long lecture into smaller chunks for processing.
+        Preserves stage directions and ensures proper paragraph breaks.
 
         Args:
             text: The lecture text to split
@@ -360,28 +337,315 @@ class AudioProcessor:
             return [text]
 
         chunks = []
+
+        # First split text into paragraphs
+        # Preserve markdown formatting (at least two newlines)
+        paragraphs = re.split(r"(\n\s*\n)", text)
+
+        # Handle the case where the split results in separator parts that need to be reattached
+        # Every odd index element is a separator that we need to reattach to the previous content
+        combined_paragraphs = []
+        current = ""
+
+        for i, part in enumerate(paragraphs):
+            if i % 2 == 0:  # Content
+                current = part
+            else:  # Separator
+                current += part
+                combined_paragraphs.append(current)
+                current = ""
+
+        # If we have a remaining part, add it
+        if current:
+            combined_paragraphs.append(current)
+
+        # If combined_paragraphs is empty, use the original split
+        if not combined_paragraphs and paragraphs:
+            combined_paragraphs = paragraphs
+
+        # Now process the paragraphs
         current_chunk = ""
 
-        # Split text into paragraphs
-        paragraphs = re.split(r"\n\s*\n", text)
-
-        for paragraph in paragraphs:
+        for paragraph in combined_paragraphs:
             # If adding this paragraph would exceed the chunk size and we already have content,
             # save the current chunk and start a new one
             if len(current_chunk) + len(paragraph) > max_chunk_size and current_chunk:
                 chunks.append(current_chunk)
                 current_chunk = paragraph
             else:
-                # Add a line break if this isn't the first content in the chunk
-                if current_chunk:
-                    current_chunk += "\n\n"
-                current_chunk += paragraph
+                # For first paragraph in chunk, don't add extra newlines
+                if not current_chunk:
+                    current_chunk = paragraph
+                else:
+                    # Preserve paragraph breaks
+                    current_chunk += paragraph
+
+        # Add the last chunk if it has content
+        if current_chunk:
+            chunks.append(current_chunk)
+
+        # Check if any chunk is still too large (e.g., a single paragraph > max_chunk_size)
+        final_chunks = []
+        for chunk in chunks:
+            if len(chunk) > max_chunk_size:
+                self.logger.info(
+                    f"Chunk of size {len(chunk)} exceeds max size, splitting by sentences"
+                )
+                # Split by sentences
+                final_chunks.extend(self._split_by_sentences(chunk, max_chunk_size))
+            else:
+                final_chunks.append(chunk)
+
+        return final_chunks
+
+    def _split_by_sentences(self, text: str, max_chunk_size: int) -> List[str]:
+        """
+        Split text by sentences for more precise chunk sizing.
+        Preserves stage directions and avoids breaking in the middle of them.
+
+        Args:
+            text: The text to split
+            max_chunk_size: Maximum characters per chunk
+
+        Returns:
+            List[str]: List of text chunks
+        """
+        # Simple sentence splitter using regex that preserves stage directions
+        # Look for sentence endings but not within square brackets
+        sentence_pattern = r"(?<=[.!?])\s+(?![^\[]*\])"
+        sentences = re.split(sentence_pattern, text)
+
+        chunks = []
+        current_chunk = ""
+
+        for sentence in sentences:
+            # If this sentence would push us over the limit
+            if len(current_chunk) + len(sentence) > max_chunk_size and current_chunk:
+                chunks.append(current_chunk)
+                current_chunk = ""
+
+            # Add a space if this isn't the first content in the chunk
+            if current_chunk and not current_chunk.endswith(" "):
+                current_chunk += " "
+
+            current_chunk += sentence
 
         # Add the last chunk if it has content
         if current_chunk:
             chunks.append(current_chunk)
 
         return chunks
+
+    def validate_voice_and_model(self, voice_id: str, model_id: str) -> bool:
+        """
+        Validates that the voice ID exists and is compatible with the specified model.
+
+        Args:
+            voice_id: The voice ID to validate
+            model_id: The model ID to validate
+
+        Returns:
+            bool: True if valid, False otherwise
+        """
+        try:
+            # Simplified validation that just checks if we can access voices
+            # This avoids potential API response structure mismatches
+            voices = self.get_available_voices()
+
+            if not voices:
+                self.logger.error("Could not retrieve available voices")
+                return False
+
+            voice_ids = [
+                voice.get("voice_id") for voice in voices if voice.get("voice_id")
+            ]
+            voice_exists = voice_id in voice_ids
+
+            if not voice_exists:
+                self.logger.error(f"Voice ID {voice_id} not found in available voices")
+                self.logger.info(f"Available voice IDs: {voice_ids[:5]}...")
+                return False
+
+            # For model validation, we'll just use a known model list
+            # This avoids potential API mismatches with the models endpoint
+            known_models = [
+                "eleven_multilingual_v2",
+                "eleven_flash_v2_5",
+                "eleven_turbo_v2_5",
+                "eleven_turbo_v2",
+                "eleven_flash_v2",
+                "eleven_monolingual_v1",
+                "eleven_english_sts_v2",
+                "eleven_multilingual_v1",
+            ]
+
+            if model_id not in known_models:
+                self.logger.warning(
+                    f"Model ID {model_id} not in known models list: {known_models}"
+                )
+                # We'll return True anyway since ElevenLabs may introduce new models
+
+            self.logger.info(f"Validated voice ID {voice_id} and model ID {model_id}")
+            return True
+
+        except Exception as e:
+            self.logger.error(f"Error validating voice and model: {str(e)}")
+            # Return True to continue despite validation error
+            # This is a fallback approach since validation itself shouldn't block TTS
+            self.logger.warning("Continuing despite validation error")
+            return True
+
+    def save_debug_chunks(self, chunks: List[str], lecture_id: str) -> None:
+        """
+        Saves processed text chunks to files for debugging.
+
+        Args:
+            chunks: List of processed text chunks
+            lecture_id: Identifier for the lecture
+        """
+        try:
+            debug_dir = Path(self.audio_path) / "debug" / lecture_id
+            debug_dir.mkdir(parents=True, exist_ok=True)
+
+            # Clear existing debug files for this lecture
+            for existing_file in debug_dir.glob("chunk_*.txt"):
+                existing_file.unlink()
+
+            # Save each chunk to a separate file
+            for i, chunk in enumerate(chunks):
+                chunk_file = debug_dir / f"chunk_{i+1:03d}.txt"
+                chunk_file.write_text(chunk)
+
+            self.logger.info(f"Saved {len(chunks)} debug chunks to {debug_dir}")
+
+            # Save a summary file with chunk sizes and character counts
+            summary_lines = [
+                f"Chunk {i+1}: {len(chunk)} chars, {len(chunk.split())} words"
+                for i, chunk in enumerate(chunks)
+            ]
+            summary_file = debug_dir / "chunks_summary.txt"
+            summary_file.write_text("\n".join(summary_lines))
+
+        except Exception as e:
+            self.logger.error(f"Error saving debug chunks: {str(e)}")
+
+    def test_connection(self) -> Dict[str, Any]:
+        """
+        Tests the connection to ElevenLabs API and verifies authentication.
+
+        Returns:
+            Dict[str, Any]: Connection status and API information
+        """
+        try:
+            # Try to get user info as a connectivity test
+            user_info = self.client.user.get()
+
+            # Try to get available voices
+            voices = self.client.voices.get_all()
+            voice_count = len(voices.voices) if hasattr(voices, "voices") else 0
+
+            return {
+                "status": "connected",
+                "subscription_tier": (
+                    user_info.subscription.tier
+                    if hasattr(user_info, "subscription")
+                    else "unknown"
+                ),
+                "available_voices": voice_count,
+                "api_version": getattr(self.client, "version", "unknown"),
+            }
+        except Exception as e:
+            self.logger.error(f"Connection test failed: {str(e)}")
+            return {"status": "error", "error": str(e)}
+
+    def is_valid_chunk(self, chunk: str) -> bool:
+        """
+        Validates if a text chunk is suitable for text-to-speech conversion.
+
+        Args:
+            chunk: The text chunk to validate
+
+        Returns:
+            bool: True if valid, False otherwise
+        """
+        # Check if chunk is empty or only whitespace
+        if not chunk or chunk.isspace():
+            return False
+
+        # Check if chunk is too short (less than 3 words)
+        words = chunk.split()
+        if len(words) < 3:
+            return False
+
+        # Check if chunk contains any alphanumeric characters
+        if not any(c.isalnum() for c in chunk):
+            return False
+
+        return True
+
+    def _normalize_voice_settings_for_consistency(
+        self, chunks: List[str]
+    ) -> Dict[str, float]:
+        """
+        Analyzes text chunks and adjusts voice settings for more consistent output.
+
+        Args:
+            chunks: The text chunks to analyze
+
+        Returns:
+            Dict[str, float]: Optimized voice settings
+        """
+        # Default settings
+        settings = {
+            "stability": 0.5,  # Higher stability = more consistent voice
+            "clarity": 0.75,  # Balance clarity and naturalness
+            "style": 0.0,  # Lower style = more consistent output
+        }
+
+        # Check for potential volume inconsistency indicators
+        all_caps_counts = [
+            sum(1 for c in chunk if c.isupper()) / len(chunk) if chunk else 0
+            for chunk in chunks
+        ]
+        exclamation_counts = [chunk.count("!") for chunk in chunks]
+        question_counts = [chunk.count("?") for chunk in chunks]
+
+        # Detect if there's high variance in emphasized text
+        if (
+            max(all_caps_counts) > 0.1
+            and (max(all_caps_counts) - min(all_caps_counts)) > 0.05
+        ):
+            # High variance in caps - increase stability for consistency
+            settings["stability"] = 0.7
+            self.logger.info(
+                "Detected high variance in capitalized text, increasing stability"
+            )
+
+        # Check for high punctuation variance
+        if (
+            max(exclamation_counts) > 3
+            and max(exclamation_counts) > 3 * min(exclamation_counts)
+        ) or (
+            max(question_counts) > 3 and max(question_counts) > 3 * min(question_counts)
+        ):
+            # High variance in emphasis punctuation - increase stability
+            settings["stability"] = min(0.8, settings["stability"] + 0.1)
+            # Reduce style to minimize dramatic shifts
+            settings["style"] = 0.0
+            self.logger.info(
+                "Detected high variance in emphasis punctuation, adjusting settings for consistency"
+            )
+
+        # Look for explicit SSML volume markers that could cause inconsistency
+        volume_markers = sum(chunk.count('<prosody volume="') for chunk in chunks)
+        if volume_markers > 0:
+            self.logger.info(
+                f"Detected {volume_markers} explicit volume markers in SSML"
+            )
+            # With explicit volume control, we need higher stability
+            settings["stability"] = min(0.85, settings["stability"] + 0.15)
+
+        return settings
 
     def text_to_speech(
         self, lecture: Lecture, professor: Professor
@@ -397,40 +661,98 @@ class AudioProcessor:
             Tuple[str, bytes]: File path and audio data
         """
         try:
-            # Enhance text with speech markup
+            # Test API connection first
+            connection_status = self.test_connection()
+            if connection_status.get("status") != "connected":
+                self.logger.error(
+                    f"ElevenLabs API connection error: {connection_status.get('error', 'Unknown error')}"
+                )
+                raise AudioProcessorError("Failed to connect to ElevenLabs API")
+
+            # Enhance text with minimal speech markup
             processed_text = self.enhance_speech_markup(lecture.content, professor)
+
+            # Log original vs processed text size for debugging
+            self.logger.info(f"Original text size: {len(lecture.content)} chars")
+            self.logger.info(f"Processed text size: {len(processed_text)} chars")
 
             # Get appropriate voice ID
             voice_id = self.get_voice_id_for_professor(professor)
+            self.logger.info(f"Using voice_id: {voice_id}")
 
-            # Split into manageable chunks if needed
-            chunks = self.split_lecture_into_chunks(processed_text)
+            # Validate voice and model
+            if not self.validate_voice_and_model(voice_id, self.DEFAULT_MODEL):
+                self.logger.warning("Falling back to default voice")
+                voice_id = self.voice_mapping["default"]
+
+            # Set up voice settings, starting with reasonable defaults
+            voice_settings = {"stability": 0.5, "clarity": 0.8, "style": 0.0}
+
+            # Override with professor-specific settings if available
+            if professor.voice_settings and isinstance(professor.voice_settings, dict):
+                for key in voice_settings:
+                    if key in professor.voice_settings:
+                        voice_settings[key] = professor.voice_settings[key]
+
+            self.logger.info(f"Using voice settings: {voice_settings}")
+
+            # Use default chunk size - ElevenLabs can handle larger chunks
+            # with the minimal processing we're now doing
+            chunk_size = self.DEFAULT_CHUNK_SIZE
+            self.logger.info(f"Using chunk size: {chunk_size}")
+
+            # Split into manageable chunks
+            chunks = self.split_lecture_into_chunks(
+                processed_text, max_chunk_size=chunk_size
+            )
+
+            # Save chunks for debugging
+            lecture_id = (
+                f"{lecture.course_id}_w{lecture.week_number}_l{lecture.order_in_week}"
+            )
+            self.save_debug_chunks(chunks, lecture_id)
 
             # Generate audio for each chunk
             audio_segments = []
             total_chunks = len(chunks)
 
             self.logger.info(f"Converting lecture to speech in {total_chunks} chunks")
+            self.logger.info(f"Using model: {self.DEFAULT_MODEL}")
 
             for i, chunk in enumerate(chunks):
+                chunk_size = len(chunk)
+                word_count = len(chunk.split())
                 self.logger.info(
-                    f"Processing chunk {i+1}/{total_chunks} ({len(chunk)} characters)"
+                    f"Processing chunk {i+1}/{total_chunks} ({chunk_size} chars, {word_count} words)"
                 )
+
+                # Skip invalid chunks
+                if not self.is_valid_chunk(chunk):
+                    self.logger.warning(
+                        f"Skipping invalid chunk {i+1}: too short or empty"
+                    )
+                    continue
 
                 # Generate audio with retry mechanism
                 for attempt in range(self.MAX_RETRIES):
                     try:
+                        self.logger.debug(f"Attempt {attempt+1} for chunk {i+1}")
+
                         # Get audio stream from the API
                         audio_stream = self.client.text_to_speech.convert(
                             text=chunk,
                             voice_id=voice_id,
                             model_id=self.DEFAULT_MODEL,
+                            voice_settings=voice_settings,
                         )
 
                         # Consume the generator if it's a generator (new API behavior)
                         if hasattr(audio_stream, "__iter__") and not isinstance(
                             audio_stream, bytes
                         ):
+                            self.logger.debug(
+                                f"Chunk {i+1}: Audio stream is a generator, consuming it"
+                            )
                             audio_segment = b"".join(
                                 chunk
                                 for chunk in audio_stream
@@ -438,15 +760,27 @@ class AudioProcessor:
                             )
                         else:
                             # Handle the case where it's already bytes (old API behavior)
+                            self.logger.debug(
+                                f"Chunk {i+1}: Audio stream is bytes data"
+                            )
                             audio_segment = audio_stream
 
                         audio_segments.append(audio_segment)
+                        self.logger.info(f"Successfully processed chunk {i+1}")
                         break
                     except Exception as e:
-                        self.logger.error(f"Error converting text to speech: {e}")
+                        self.logger.error(
+                            f"Error converting chunk {i+1} to speech: {str(e)}"
+                        )
                         if attempt < self.MAX_RETRIES - 1:
+                            self.logger.info(
+                                f"Waiting {self.RETRY_WAIT}s before retry..."
+                            )
                             time.sleep(self.RETRY_WAIT)
                         else:
+                            self.logger.error(
+                                f"Failed to process chunk {i+1} after {self.MAX_RETRIES} attempts"
+                            )
                             raise
 
             # Combine audio segments (if more than one)
@@ -540,3 +874,51 @@ class AudioProcessor:
         except Exception as e:
             self.logger.error(f"Error playing audio: {e}")
             raise AudioProcessorError(f"Error playing audio: {e}")
+
+    def list_available_resources(self) -> Dict[str, Any]:
+        """
+        Lists available resources from ElevenLabs API for diagnostics.
+
+        Returns:
+            Dict[str, Any]: Dictionary containing available voices and models
+        """
+        result = {"voices": [], "models": [], "subscription": {}, "errors": []}
+
+        # Get available voices
+        try:
+            voices = self.client.voices.get_all()
+            result["voices"] = [
+                {
+                    "voice_id": voice.voice_id,
+                    "name": voice.name,
+                    "category": getattr(voice, "category", "unknown"),
+                }
+                for voice in voices.voices
+            ]
+        except Exception as e:
+            self.logger.error(f"Error retrieving voices: {str(e)}")
+            result["errors"].append(f"Voice retrieval error: {str(e)}")
+
+        # Get available models
+        try:
+            models = self.client.models.get_all()
+            result["models"] = [
+                {
+                    "model_id": model.model_id,
+                    "name": model.name,
+                    "description": getattr(model, "description", ""),
+                }
+                for model in models.models
+            ]
+        except Exception as e:
+            self.logger.error(f"Error retrieving models: {str(e)}")
+            result["errors"].append(f"Model retrieval error: {str(e)}")
+
+        # Get subscription info
+        try:
+            result["subscription"] = self.get_user_subscription_info()
+        except Exception as e:
+            self.logger.error(f"Error retrieving subscription info: {str(e)}")
+            result["errors"].append(f"Subscription info retrieval error: {str(e)}")
+
+        return result
