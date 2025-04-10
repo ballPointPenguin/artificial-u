@@ -41,6 +41,7 @@ venv/
 *.mp3
 *.wav
 audio_files/
+exports/
 lecture_texts/
 
 # Test files
