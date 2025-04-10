@@ -280,17 +280,7 @@ def create_professor(
         console.print(f"Background: {professor.background}")
         console.print(f"Personality: {professor.personality}")
         console.print(f"Teaching Style: {professor.teaching_style}")
-
-        # Show a preview of the description (it can be quite long)
-        description_preview = professor.description
-        if description_preview and len(description_preview) > 100:
-            description_preview = description_preview[:100] + "..."
-        console.print(f"Description: {description_preview}")
-
-        # Offer to show full description
-        if professor.description and len(professor.description) > 100:
-            if click.confirm("Show full description?", default=False):
-                console.print(Panel(professor.description, title="Full Description"))
+        console.print(f"Description: {professor.description}")
 
     except Exception as e:
         console.print(f"[red]Error creating professor:[/red] {str(e)}")
