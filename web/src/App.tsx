@@ -1,35 +1,53 @@
-import { createSignal } from 'solid-js'
-import solidLogo from './assets/solid.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import type { Component } from 'solid-js';
+import { Button } from '@kobalte/core';
 
-function App() {
-  const [count, setCount] = createSignal(0)
-
+const App: Component = () => {
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} class="logo" alt="Vite logo" />
-        </a>
-        <a href="https://solidjs.com" target="_blank">
-          <img src={solidLogo} class="logo solid" alt="Solid logo" />
-        </a>
-      </div>
-      <h1>Vite + Solid</h1>
-      <div class="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count()}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p class="read-the-docs">
-        Click on the Vite and Solid logos to learn more
-      </p>
-    </>
-  )
-}
+    <div class="flex flex-col items-center justify-center min-h-screen bg-gray-900 text-white p-4">
+      <h1 class="text-4xl font-bold mb-8">Kobalte + Tailwind CSS</h1>
 
-export default App
+      <Button.Root
+        class="px-6 py-3 
+               bg-blue-600 
+               hover:bg-blue-700 
+               text-white 
+               font-semibold 
+               rounded-md 
+               focus:outline-none 
+               focus:ring-2 
+               focus:ring-blue-500 
+               focus:ring-opacity-50 
+               transition-colors 
+               duration-150 
+               data-[pressed]:bg-blue-800
+               data-[disabled]:opacity-50
+               data-[disabled]:cursor-not-allowed"
+      >
+        Kobalte Button
+      </Button.Root>
+
+      <Button.Root
+        class="mt-4 px-6 py-3 
+               bg-gray-600 
+               text-white 
+               font-semibold 
+               rounded-md 
+               focus:outline-none 
+               focus:ring-2 
+               focus:ring-gray-500 
+               focus:ring-opacity-50 
+               transition-colors 
+               duration-150 
+               data-[pressed]:bg-gray-800
+               data-[disabled]:opacity-50
+               data-[disabled]:cursor-not-allowed"
+        disabled
+      >
+        Disabled Button
+      </Button.Root>
+
+    </div>
+  );
+};
+
+export default App;
