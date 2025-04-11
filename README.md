@@ -45,7 +45,14 @@ source venv/bin/activate  # On Windows, use: venv\\Scripts\\activate
 3. Install dependencies:
 
 ```bash
-pip install -r requirements.txt
+# Install the package and its dependencies
+pip install -e .
+
+# For development (includes testing and linting tools)
+pip install -e ".[dev]"
+
+# For just the testing tools
+pip install -e ".[test]"
 ```
 
 4. Create a `.env` file with your API keys:
@@ -54,6 +61,10 @@ pip install -r requirements.txt
 cp .env.example .env
 # Edit .env file to add your API keys
 ```
+
+## Project Configuration
+
+The project uses a modern `pyproject.toml` file for configuration, following PEP 518 and PEP 621 standards. This file centralizes build settings, project metadata, and tool configurations. See [docs/pyproject_usage.md](docs/pyproject_usage.md) for details.
 
 ## Quick Start
 
