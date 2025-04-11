@@ -69,7 +69,7 @@ def audio_processor():
 def test_professor():
     """Create a test professor profile."""
     return Professor(
-        id="test_professor",
+        id=1,
         name="Dr. Ada Lovelace",
         title="Professor of Computer Science",
         department="Computer Science",
@@ -84,9 +84,9 @@ def test_professor():
 def test_lecture():
     """Create a sample lecture for testing."""
     return Lecture(
-        id="test-lecture",
+        id=1,
         title="Introduction to Computing",
-        course_id="CS101",
+        course_id=1,
         week_number=1,
         order_in_week=1,
         description="Introductory lecture on computing concepts",

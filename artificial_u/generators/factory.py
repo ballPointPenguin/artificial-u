@@ -29,12 +29,15 @@ def create_default_generator(
     )
 
 
-def create_ollama_generator(model: str = "tinyllama") -> ContentGenerator:
+def create_ollama_generator(
+    model: str = "tinyllama", timeout: int = 60
+) -> ContentGenerator:
     """
     Create a ContentGenerator that uses Ollama for local inference.
 
     Args:
         model: Ollama model to use, defaults to 'tinyllama'
+        timeout: Timeout in seconds for Ollama requests, defaults to 60
 
     Returns:
         ContentGenerator: Generator instance using Ollama
@@ -58,6 +61,7 @@ def create_ollama_generator(model: str = "tinyllama") -> ContentGenerator:
     # Configure model to use with Ollama
     def create_with_model(*args, **kwargs):
         kwargs["model"] = model
+        kwargs["timeout"] = timeout
         return original_create(*args, **kwargs)
 
     # Override the create method to always use the specified model
@@ -82,7 +86,7 @@ def create_generator(backend: str = "anthropic", **kwargs) -> ContentGenerator:
         backend: Backend to use ('anthropic' or 'ollama')
         **kwargs: Backend-specific arguments
             - For 'anthropic': api_key, enable_caching, cache_metrics
-            - For 'ollama': model
+            - For 'ollama': model, timeout
 
     Returns:
         ContentGenerator: Generator instance
@@ -97,6 +101,8 @@ def create_generator(backend: str = "anthropic", **kwargs) -> ContentGenerator:
             cache_metrics=kwargs.get("cache_metrics", True),
         )
     elif backend == "ollama":
-        return create_ollama_generator(model=kwargs.get("model", "tinyllama"))
+        return create_ollama_generator(
+            model=kwargs.get("model", "tinyllama"), timeout=kwargs.get("timeout", 60)
+        )
     else:
         raise ValueError(f"Unknown backend: {backend}")

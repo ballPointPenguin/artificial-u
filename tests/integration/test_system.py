@@ -23,11 +23,13 @@ from artificial_u.config.defaults import DEFAULT_LOG_LEVEL
 def mock_system():
     """Create a system with mocked dependencies for testing."""
     with patch("artificial_u.system.create_generator") as mock_create_generator, patch(
-        "artificial_u.system.AudioProcessor"
-    ) as MockAudioProcessor, patch(
+        "artificial_u.system.VoiceService"
+    ) as MockVoiceService, patch(
+        "artificial_u.system.TTSService"
+    ) as MockTTSService, patch(
         "artificial_u.system.Repository"
     ) as MockRepository, patch(
-        "artificial_u.system.Path.mkdir"
+        "pathlib.Path.mkdir"
     ):
 
         # Set up mock content generator
@@ -37,7 +39,7 @@ def mock_system():
         )
         mock_content_generator.create_lecture.return_value = Lecture(
             title="Mock Lecture",
-            course_id="course123",
+            course_id=123,
             week_number=1,
             order_in_week=1,
             description="Mock lecture description",
@@ -58,15 +60,26 @@ def mock_system():
         )
         mock_create_generator.return_value = mock_content_generator
 
-        # Set up mock audio processor
-        mock_audio_processor = MockAudioProcessor.return_value
-        mock_audio_processor.get_voice_id_for_professor.return_value = "voice123"
-        mock_audio_processor.text_to_speech.return_value = ("mock_audio_path.mp3", 300)
+        # Set up mock voice service
+        mock_voice_service = MockVoiceService.return_value
+        mock_voice_service.select_voice_for_professor.return_value = {
+            "voice_id": "voice123",
+            "stability": 0.5,
+            "clarity": 0.8,
+        }
+
+        # Set up mock TTS service
+        mock_tts_service = MockTTSService.return_value
+        mock_tts_service.generate_lecture_audio.return_value = (
+            "mock_audio_path.mp3",
+            b"mock audio data",
+        )
+        mock_tts_service.generate_audio.return_value = b"mock audio data"
 
         # Set up mock repository
         mock_repository = MockRepository.return_value
         mock_repository.create_professor.side_effect = lambda p: Professor(
-            id="prof123",
+            id=123,
             name=p.name,
             title=p.title,
             department=p.department,
@@ -81,7 +94,7 @@ def mock_system():
             age=p.age,
         )
         mock_repository.create_course.side_effect = lambda c: Course(
-            id="course123",
+            id=123,
             code=c.code,
             title=c.title,
             department=c.department,
@@ -93,7 +106,7 @@ def mock_system():
             lectures_per_week=c.lectures_per_week,
         )
         mock_repository.get_professor.return_value = Professor(
-            id="prof123",
+            id=123,
             name="Dr. Mock",
             title="Professor of Computer Science",
             department="Computer Science",
@@ -108,14 +121,14 @@ def mock_system():
             age=52,
         )
         mock_repository.get_course_by_code.return_value = Course(
-            id="course123",
+            id=123,
             code="CS101",
             title="Introduction to Computer Science",
             department="Computer Science",
             level="Undergraduate",
             description="A basic course in CS",
             syllabus="Mock syllabus",
-            professor_id="prof123",
+            professor_id=123,
             total_weeks=14,
             lectures_per_week=2,
         )
@@ -123,7 +136,7 @@ def mock_system():
         # Create system with mocked dependencies
         system = UniversitySystem(
             anthropic_api_key="mock_key",
-            db_path=":memory:",
+            db_url=":memory:",
             audio_path="test_audio",
             text_export_path="test_lectures",
             log_level="ERROR",  # Reduce log noise in tests
@@ -139,9 +152,9 @@ def setup_common_repository_patterns(mock_repository):
     """Set up common repository mock patterns used across tests."""
     # Mock lecture retrieval
     mock_repository.get_lecture_by_course_week_order.return_value = Lecture(
-        id="lecture123",
+        id=123,
         title="Mock Lecture Title",
-        course_id="course123",
+        course_id=123,
         week_number=1,
         order_in_week=1,
         description="Mock lecture description",
@@ -150,7 +163,7 @@ def setup_common_repository_patterns(mock_repository):
 
     # Mock lecture creation
     mock_repository.create_lecture.side_effect = lambda l: Lecture(
-        id="lecture123",
+        id=123,
         title=l.title,
         course_id=l.course_id,
         week_number=l.week_number,
@@ -163,7 +176,7 @@ def setup_common_repository_patterns(mock_repository):
     mock_repository.update_lecture_audio.side_effect = lambda id, path: Lecture(
         id=id,
         title="Mock Lecture Title",
-        course_id="course123",
+        course_id=123,
         week_number=1,
         order_in_week=1,
         description="Mock lecture description",
@@ -174,14 +187,14 @@ def setup_common_repository_patterns(mock_repository):
     # Mock course listing
     mock_repository.list_courses.return_value = [
         Course(
-            id="course123",
+            id=123,
             code="CS101",
             title="Introduction to Computer Science",
             department="Computer Science",
             level="Undergraduate",
             description="A basic course in CS",
             syllabus="Mock syllabus",
-            professor_id="prof123",
+            professor_id=123,
             total_weeks=14,
             lectures_per_week=2,
         )
@@ -190,9 +203,9 @@ def setup_common_repository_patterns(mock_repository):
     # Mock lecture listing
     mock_repository.list_lectures_by_course.return_value = [
         Lecture(
-            id="lecture123",
+            id=123,
             title="Mock Lecture Title",
-            course_id="course123",
+            course_id=123,
             week_number=1,
             order_in_week=1,
             description="Mock lecture description",
@@ -212,11 +225,11 @@ def test_course_creation_flow(mock_system):
     )
 
     # Validate results
-    assert course.id == "course123"
+    assert course.id == 123
     assert course.title == "Test Course"
     assert course.code == "TEST101"
     assert course.syllabus == "Mock syllabus content"
-    assert professor.id == "prof123"
+    assert professor.id == 123
 
 
 @pytest.mark.integration
@@ -231,13 +244,13 @@ def test_lecture_generation_flow(mock_system):
     )
 
     # Validate results
-    assert lecture.id == "lecture123"
-    assert lecture.course_id == "course123"
+    assert lecture.id == 123
+    assert lecture.course_id == 123
     assert course.code == "CS101"
-    assert professor.id == "prof123"
+    assert professor.id == 123
 
     # Create audio for the lecture
-    audio_path, lecture = mock_system.create_lecture_audio(
+    audio_path, updated_lecture = mock_system.create_lecture_audio(
         course_code="CS101",
         week=1,
         number=1,
@@ -245,7 +258,7 @@ def test_lecture_generation_flow(mock_system):
 
     # Validate audio results
     assert audio_path == "mock_audio_path.mp3"
-    assert lecture.audio_path == "mock_audio_path.mp3"
+    assert updated_lecture.audio_path == "mock_audio_path.mp3"
 
 
 @pytest.mark.integration
@@ -270,7 +283,9 @@ def test_error_handling(mock_system):
     with patch.object(
         mock_system.repository, "get_lecture_by_course_week_order", return_value=None
     ):
-        with pytest.raises(LectureNotFoundError):
+        with pytest.raises(
+            ValueError, match="Lecture for course CS101, week 999, number 999 not found"
+        ):
             mock_system.create_lecture_audio(course_code="CS101", week=999, number=999)
 
     # Test content generation error

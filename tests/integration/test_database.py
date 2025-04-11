@@ -97,20 +97,39 @@ def sample_lecture(db_course):
 @pytest.fixture(scope="function", autouse=True)
 def setup_database(test_db_url):
     """Set up a clean database for each test function."""
-    # Create a new engine and recreate all tables
-    from sqlalchemy import create_engine
+    # Get the SQLAlchemy engine
+    from sqlalchemy import create_engine, text
     from artificial_u.models.database import Base
 
     engine = create_engine(test_db_url)
 
-    # Drop all tables and recreate them
-    Base.metadata.drop_all(engine)
-    Base.metadata.create_all(engine)
+    # Truncate all tables instead of dropping and recreating them
+    # This preserves the schema while clearing data
+    with engine.connect() as conn:
+        # Start a transaction
+        with conn.begin():
+            # Get a list of all tables
+            tables = Base.metadata.tables.keys()
+
+            # Disable foreign key constraints during truncation
+            conn.execute(text("SET CONSTRAINTS ALL DEFERRED"))
+
+            # Truncate each table
+            for table in tables:
+                conn.execute(text(f'TRUNCATE TABLE "{table}" CASCADE'))
+
+            # Re-enable constraints
+            conn.execute(text("SET CONSTRAINTS ALL IMMEDIATE"))
 
     yield
 
-    # Clean up after test
-    Base.metadata.drop_all(engine)
+    # Clean up after test (truncate again)
+    with engine.connect() as conn:
+        with conn.begin():
+            conn.execute(text("SET CONSTRAINTS ALL DEFERRED"))
+            for table in Base.metadata.tables.keys():
+                conn.execute(text(f'TRUNCATE TABLE "{table}" CASCADE'))
+            conn.execute(text("SET CONSTRAINTS ALL IMMEDIATE"))
 
 
 @pytest.mark.integration

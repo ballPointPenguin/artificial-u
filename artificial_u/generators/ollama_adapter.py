@@ -3,11 +3,26 @@ Ollama adapter for ArtificialU to use local models for testing.
 """
 
 import os
+import signal
+import time
 from typing import Dict, List, Optional, Any, Union
 from dataclasses import dataclass
 import re
 
 import ollama
+
+
+# Custom timeout exception
+class OllamaTimeoutError(Exception):
+    """Exception raised when Ollama request times out."""
+
+    pass
+
+
+# Timeout handler for Ollama requests
+def timeout_handler(signum, frame):
+    """Signal handler for timeout."""
+    raise OllamaTimeoutError("Ollama request timed out")
 
 
 @dataclass
@@ -47,6 +62,7 @@ class OllamaClient:
         temperature: float = 0.7,
         system: str = "",
         messages: List[Dict[str, str]] = None,
+        timeout: int = 60,  # Default timeout of 60 seconds
     ) -> Any:
         """
         Create a completion using Ollama that mimics Anthropic's response format.
@@ -58,6 +74,7 @@ class OllamaClient:
             temperature: Sampling temperature
             system: System prompt
             messages: List of message objects with role and content
+            timeout: Maximum time in seconds to wait for a response
 
         Returns:
             A response object that mimics Anthropic's response structure
@@ -86,15 +103,41 @@ class OllamaClient:
                     # Handle old format or simple string content
                     ollama_messages.append(msg)
 
-        # Call Ollama
-        response = self.client.chat(
-            model=model,
-            messages=ollama_messages,
-            options={
-                "temperature": temperature,
-                "num_predict": max_tokens,
-            },
-        )
+        # Set up timeout handler
+        signal.signal(signal.SIGALRM, timeout_handler)
+        signal.alarm(timeout)
+
+        try:
+            # Call Ollama with timeout
+            response = self.client.chat(
+                model=model,
+                messages=ollama_messages,
+                options={
+                    "temperature": temperature,
+                    "num_predict": max_tokens,
+                },
+            )
+
+            # Disable the alarm
+            signal.alarm(0)
+        except OllamaTimeoutError:
+            # Return a simplified response if timeout occurs
+            return OllamaContent(
+                content=[
+                    OllamaMessage(
+                        text="Request timed out. Please try again with a simpler query or smaller model."
+                    )
+                ]
+            )
+        except Exception as e:
+            # Disable the alarm for any other exception too
+            signal.alarm(0)
+            # Return a simplified error response
+            return OllamaContent(
+                content=[
+                    OllamaMessage(text=f"Error communicating with Ollama: {str(e)}")
+                ]
+            )
 
         # Get the raw response text
         raw_text = response["message"]["content"]

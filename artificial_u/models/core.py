@@ -21,7 +21,7 @@ class Department(BaseModel):
         }
     )
 
-    id: Optional[str] = None
+    id: Optional[int] = None
     name: str
     code: str
     faculty: str  # e.g., "Science and Engineering"
@@ -105,7 +105,7 @@ class Professor(BaseModel):
         }
     )
 
-    id: Optional[str] = None
+    id: Optional[int] = None
     name: str
     title: str
     department: str
@@ -132,7 +132,7 @@ class Course(BaseModel):
                 "department": "Computer Science",
                 "level": "Undergraduate",
                 "credits": 3,
-                "professor_id": "prof_volkov",
+                "professor_id": 1,
                 "description": "Foundational concepts and techniques in AI, including problem-solving, search, logic, and planning.",
                 "lectures_per_week": 2,
                 "total_weeks": 14,
@@ -140,13 +140,13 @@ class Course(BaseModel):
         }
     )
 
-    id: Optional[str] = None
+    id: Optional[int] = None
     code: str
     title: str
     department: str
     level: str  # Undergraduate, Graduate, etc.
     credits: int = Field(default=3, ge=0)
-    professor_id: str
+    professor_id: int
     description: str
     lectures_per_week: int = Field(default=2, gt=0)
     total_weeks: int = Field(default=14, gt=0)
@@ -161,7 +161,7 @@ class Lecture(BaseModel):
         json_schema_extra={
             "example": {
                 "title": "Introduction: What is AI?",
-                "course_id": "CS4511",
+                "course_id": 1,
                 "week_number": 1,
                 "order_in_week": 1,
                 "description": "Overview of AI definitions, history, and intelligent agents",
@@ -171,9 +171,9 @@ class Lecture(BaseModel):
         }
     )
 
-    id: Optional[str] = None
+    id: Optional[int] = None
     title: str
-    course_id: str
+    course_id: int
     week_number: int = Field(gt=0)
     order_in_week: int = Field(default=1, gt=0)
     description: str

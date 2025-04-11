@@ -134,13 +134,13 @@ def test_create_lecture_with_ollama():
     )
 
     course = Course(
-        id="TEST101",
+        id=101,
         code="TEST101",
         title="Introduction to Software Testing",
         department="Computer Science",
         level="Undergraduate",
         credits=3,
-        professor_id="test_prof",
+        professor_id=1,
         description="A comprehensive introduction to software testing principles",
         lectures_per_week=2,
         total_weeks=14,
