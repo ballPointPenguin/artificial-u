@@ -102,7 +102,7 @@ def test_course_creation():
         title="Introduction to Programming",
         department="Computer Science",
         level="Undergraduate",
-        professor_id="prof_123",
+        professor_id=1,
         description="Basic programming concepts",
         lectures_per_week=2,
         total_weeks=14,
@@ -120,7 +120,7 @@ def test_lecture_creation():
     """Test Lecture model creation and validation."""
     lecture = Lecture(
         title="Introduction to Python",
-        course_id="CS101",
+        course_id=101,
         week_number=1,
         order_in_week=1,
         description="Overview of Python basics",
@@ -183,7 +183,7 @@ def test_invalid_course():
             title="Introduction to Programming",
             department="Computer Science",
             level="Undergraduate",
-            professor_id="prof_123",
+            professor_id=1,
             description="Basic programming concepts",
             lectures_per_week=-1,  # Invalid negative value
             total_weeks=14,
@@ -196,7 +196,7 @@ def test_invalid_lecture():
     with pytest.raises(ValueError):
         Lecture(
             title="Introduction to Python",
-            course_id="CS101",
+            course_id=101,
             week_number=0,  # Invalid week number
             order_in_week=1,
             description="Overview of Python basics",

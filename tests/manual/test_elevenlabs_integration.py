@@ -28,6 +28,7 @@ from rich.console import Console
 if __name__ == "__main__":
     sys.path.append(str(Path(__file__).parent.parent.parent))
 
+# Import with the new module structure
 from artificial_u.audio.processor import AudioProcessor
 from artificial_u.models.core import Professor, Lecture
 

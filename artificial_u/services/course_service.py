@@ -198,21 +198,21 @@ class CourseService:
         # For now, return placeholder data
         return [
             Department(
-                id="cs",
+                id=1,
                 name="Computer Science",
                 code="CS",
                 faculty="Science and Engineering",
                 description="The Computer Science department focuses on the theory and practice of computation.",
             ),
             Department(
-                id="math",
+                id=2,
                 name="Mathematics",
                 code="MATH",
                 faculty="Science and Engineering",
                 description="The Mathematics department explores pure and applied mathematics.",
             ),
             Department(
-                id="stat",
+                id=3,
                 name="Statistics",
                 code="STAT",
                 faculty="Science and Engineering",

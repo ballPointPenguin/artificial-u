@@ -22,7 +22,7 @@ def mock_repository(monkeypatch):
     # Sample professor data
     sample_professors = [
         Professor(
-            id=f"prof_{i}",
+            id=i,
             name=f"Dr. Test Professor {i}",
             title=f"Professor of Test {i}",
             department="Test Department",
@@ -30,6 +30,12 @@ def mock_repository(monkeypatch):
             background="Test background",
             personality="Test personality",
             teaching_style="Test teaching style",
+            gender="Male",
+            accent="Standard",
+            description=f"Description for professor {i}",
+            age=45 + i,
+            voice_settings={"voice_id": f"test_voice_{i}", "stability": 0.5},
+            image_path=f"/path/to/image{i}.jpg",
         )
         for i in range(1, 4)
     ]
@@ -37,12 +43,13 @@ def mock_repository(monkeypatch):
     # Sample courses data
     sample_courses = [
         Course(
-            id=f"course_{i}",
+            id=i,
             code=f"TEST{i}01",
             title=f"Test Course {i}",
             department="Test Department",
             level="Undergraduate",
-            professor_id="prof_1",  # Associate courses with prof_1
+            credits=3,
+            professor_id=1,
             description=f"Test course description {i}",
             lectures_per_week=2,
             total_weeks=14,
@@ -53,9 +60,9 @@ def mock_repository(monkeypatch):
     # Sample lectures data
     sample_lectures = [
         Lecture(
-            id=f"lecture_{i}",
+            id=i,
             title=f"Test Lecture {i}",
-            course_id="course_1",  # Associate lectures with course_1
+            course_id=1,
             week_number=1,
             order_in_week=i,
             description=f"Test lecture description {i}",
@@ -75,7 +82,8 @@ def mock_repository(monkeypatch):
         return None
 
     def mock_create_professor(self, professor, *args, **kwargs):
-        professor.id = "new_prof_id"
+        # Set an integer ID instead of a string
+        professor.id = len(sample_professors) + 1
         return professor
 
     def mock_update_professor(self, professor, *args, **kwargs):
@@ -106,6 +114,7 @@ def mock_repository(monkeypatch):
     return sample_professors
 
 
+@pytest.mark.api
 def test_list_professors(client, mock_repository):
     """Test listing professors endpoint."""
     response = client.get("/api/v1/professors")
@@ -116,20 +125,22 @@ def test_list_professors(client, mock_repository):
     assert data["total"] == 3
 
 
+@pytest.mark.api
 def test_get_professor(client, mock_repository):
     """Test getting a single professor by ID."""
     # Test with valid ID
-    response = client.get("/api/v1/professors/prof_1")
+    response = client.get("/api/v1/professors/1")
     assert response.status_code == 200
     data = response.json()
-    assert data["id"] == "prof_1"
+    assert data["id"] == 1
     assert data["name"] == "Dr. Test Professor 1"
 
     # Test with invalid ID
-    response = client.get("/api/v1/professors/nonexistent_id")
+    response = client.get("/api/v1/professors/999")
     assert response.status_code == 404
 
 
+@pytest.mark.api
 def test_create_professor(client, mock_repository):
     """Test creating a new professor."""
     new_professor = {
@@ -140,14 +151,21 @@ def test_create_professor(client, mock_repository):
         "background": "New background",
         "personality": "New personality",
         "teaching_style": "New teaching style",
+        "gender": "Female",
+        "accent": "British",
+        "description": "A brilliant new professor",
+        "age": 42,
+        "voice_settings": {"voice_id": "new_voice", "stability": 0.7},
+        "image_path": "/path/to/new_image.jpg",
     }
     response = client.post("/api/v1/professors", json=new_professor)
     assert response.status_code == 201
     data = response.json()
-    assert data["id"] == "new_prof_id"
+    assert data["id"] == 4
     assert data["name"] == "Dr. New Professor"
 
 
+@pytest.mark.api
 def test_update_professor(client, mock_repository):
     """Test updating an existing professor."""
     updated_data = {
@@ -158,53 +176,62 @@ def test_update_professor(client, mock_repository):
         "background": "Updated background",
         "personality": "Updated personality",
         "teaching_style": "Updated teaching style",
+        "gender": "Non-binary",
+        "accent": "Australian",
+        "description": "An updated professor profile",
+        "age": 50,
+        "voice_settings": {"voice_id": "updated_voice", "stability": 0.8},
+        "image_path": "/path/to/updated_image.jpg",
     }
     # Test with valid ID
-    response = client.put("/api/v1/professors/prof_1", json=updated_data)
+    response = client.put("/api/v1/professors/1", json=updated_data)
     assert response.status_code == 200
     data = response.json()
-    assert data["id"] == "prof_1"
+    assert data["id"] == 1
     assert data["name"] == "Dr. Updated Professor"
 
     # Test with invalid ID
-    response = client.put("/api/v1/professors/nonexistent_id", json=updated_data)
+    response = client.put("/api/v1/professors/999", json=updated_data)
     assert response.status_code == 404
 
 
+@pytest.mark.api
 def test_delete_professor(client, mock_repository):
     """Test deleting a professor."""
     # Test with valid ID
-    response = client.delete("/api/v1/professors/prof_1")
+    response = client.delete("/api/v1/professors/1")
     assert response.status_code == 204
 
     # Test with invalid ID
-    response = client.delete("/api/v1/professors/nonexistent_id")
+    response = client.delete("/api/v1/professors/999")
     assert response.status_code == 404
 
 
+@pytest.mark.api
 def test_get_professor_courses(client, mock_repository):
     """Test getting courses for a professor."""
     # Test with valid ID
-    response = client.get("/api/v1/professors/prof_1/courses")
+    response = client.get("/api/v1/professors/1/courses")
     assert response.status_code == 200
     data = response.json()
-    assert data["professor_id"] == "prof_1"
+    assert data["professor_id"] == 1
     assert len(data["courses"]) == 2
 
     # Test with invalid ID
-    response = client.get("/api/v1/professors/nonexistent_id/courses")
+    response = client.get("/api/v1/professors/999/courses")
     assert response.status_code == 404
 
 
+@pytest.mark.api
 def test_get_professor_lectures(client, mock_repository):
     """Test getting lectures by a professor."""
     # Test with valid ID
-    response = client.get("/api/v1/professors/prof_1/lectures")
+    response = client.get("/api/v1/professors/1/lectures")
     assert response.status_code == 200
     data = response.json()
-    assert data["professor_id"] == "prof_1"
+    assert data["professor_id"] == 1
     assert len(data["lectures"]) == 3
 
     # Test with invalid ID
-    response = client.get("/api/v1/professors/nonexistent_id/lectures")
+    response = client.get("/api/v1/professors/999/lectures")
     assert response.status_code == 404

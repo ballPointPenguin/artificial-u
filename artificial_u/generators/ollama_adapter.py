@@ -55,11 +55,36 @@ class OllamaClient:
         self.client = ollama
         self.messages = self
 
+    def get_message_summary(self, messages, length=120):
+        """Extract a short summary of the first message for debugging."""
+        if not messages or not isinstance(messages, list) or not messages[0]:
+            return "No messages"
+
+        msg = messages[0]
+
+        # Handle Anthropic's message format with content as a list
+        if isinstance(msg.get("content"), list):
+            for content_item in msg["content"]:
+                if content_item.get("type") == "text" and content_item.get("text"):
+                    text = content_item.get("text", "")
+                    first_line = text.split("\n")[0]
+                    return first_line[:length] + (
+                        "..." if len(first_line) > length else ""
+                    )
+
+        # Handle simple string content
+        elif isinstance(msg.get("content"), str):
+            text = msg.get("content", "")
+            first_line = text.split("\n")[0]
+            return first_line[:length] + ("..." if len(first_line) > length else "")
+
+        return "Unknown message format"
+
     def create(
         self,
         model: str = "tinyllama",
         max_tokens: int = 1000,
-        temperature: float = 0.7,
+        temperature: float = 0.0,
         system: str = "",
         messages: List[Dict[str, str]] = None,
         timeout: int = 60,  # Default timeout of 60 seconds
@@ -79,6 +104,7 @@ class OllamaClient:
         Returns:
             A response object that mimics Anthropic's response structure
         """
+
         # Convert Anthropic-style messages to Ollama format
         ollama_messages = []
 
@@ -87,21 +113,9 @@ class OllamaClient:
             ollama_messages.append({"role": "system", "content": system})
 
         # Add user messages
-        if messages:
-            for msg in messages:
-                # Handle Anthropic's new message format where content is a list of objects
-                if isinstance(msg.get("content"), list):
-                    # Extract text content from the list of content objects
-                    text_content = ""
-                    for content_item in msg["content"]:
-                        if content_item.get("type") == "text":
-                            text_content += content_item.get("text", "")
-                    ollama_messages.append(
-                        {"role": msg["role"], "content": text_content}
-                    )
-                else:
-                    # Handle old format or simple string content
-                    ollama_messages.append(msg)
+
+        message_summary = self.get_message_summary(messages)
+        ollama_messages.append({"role": "user", "content": message_summary})
 
         # Set up timeout handler
         signal.signal(signal.SIGALRM, timeout_handler)
@@ -113,8 +127,10 @@ class OllamaClient:
                 model=model,
                 messages=ollama_messages,
                 options={
-                    "temperature": temperature,
-                    "num_predict": max_tokens,
+                    "temperature": 0.0,  # Zero temperature = more deterministic, faster
+                    "num_predict": min(200, max_tokens),  # Generate much less text
+                    "num_ctx": 512,  # Smaller context window
+                    "num_thread": 2,  # Use fewer threads
                 },
             )
 
@@ -141,86 +157,6 @@ class OllamaClient:
 
         # Get the raw response text
         raw_text = response["message"]["content"]
-
-        # Detect which type of content we're dealing with based on the prompt
-        has_professor_profile = any(
-            "<professor_profile>" in str(msg.get("content", ""))
-            for msg in ollama_messages
-        )
-        has_syllabus = any(
-            "<syllabus>" in str(msg.get("content", "")) for msg in ollama_messages
-        )
-        has_lecture = any(
-            "<lecture>" in str(msg.get("content", "")) for msg in ollama_messages
-        )
-
-        if has_professor_profile:
-            text = f"""<professor_profile>
-Name: Dr. Test Professor
-Title: Assistant Professor
-Background: PhD in relevant field with research experience
-Personality: Engaging and enthusiastic
-Teaching Style: Interactive and student-focused
-</professor_profile>"""
-        elif has_syllabus:
-            text = f"""<syllabus>
-Course Description: A comprehensive introduction to the subject.
-
-Learning Outcomes:
-1. Understand key concepts
-2. Apply theoretical knowledge
-3. Develop critical thinking skills
-
-Course Structure:
-Weekly lectures and assignments
-
-Assessment Methods:
-- Midterm exam (30%)
-- Final exam (40%)
-- Assignments (30%)
-
-Required Materials:
-- Main textbook
-- Course materials
-
-Course Policies:
-Standard academic policies apply
-</syllabus>"""
-        elif has_lecture:
-            # Extract topic from the prompt using regex
-            topic_pattern = r"Lecture Topic: (.*?)(?:\n|$)"
-            topic_matches = (
-                re.search(topic_pattern, str(msg.get("content", "")), re.IGNORECASE)
-                for msg in ollama_messages
-            )
-            topic_match = next((match for match in topic_matches if match), None)
-            topic = topic_match.group(1).strip() if topic_match else "Untitled Lecture"
-
-            # Extract the actual generated content, skipping the prompt text
-            content_pattern = r"\[.*?\].*?\[.*?\](.*)"
-            content_match = re.search(content_pattern, raw_text, re.DOTALL)
-            lecture_content = (
-                content_match.group(1).strip() if content_match else raw_text
-            )
-
-            text = f"""<lecture_preparation>
-Main Points:
-1. Introduction to {topic}
-2. Key concepts and principles
-3. Examples and applications
-4. Practice exercises
-5. Summary and review
-</lecture_preparation>
-
-<lecture>
-{topic}
-
-{lecture_content}
-</lecture>"""
-        else:
-            # Default case - just use the raw text
-            text = raw_text
-
-        message = OllamaMessage(text=text)
+        message = OllamaMessage(text=raw_text)
         result = OllamaContent(content=[message])
         return result

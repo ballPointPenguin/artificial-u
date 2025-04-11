@@ -8,6 +8,8 @@ from datetime import datetime
 from pathlib import Path
 import pytest
 from dotenv import load_dotenv
+from sqlalchemy import create_engine
+from sqlalchemy.exc import OperationalError
 
 from artificial_u.models.core import Professor, Course, Lecture, Department
 from artificial_u.models.database import Repository
@@ -20,7 +22,7 @@ def load_env():
     yield
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def test_db_url():
     """Get the test database URL from environment."""
     return os.environ.get(
@@ -94,9 +96,27 @@ def sample_lecture(db_course):
     )
 
 
+@pytest.fixture(scope="session")
+def db_available(test_db_url):
+    """Check if the database is available."""
+    try:
+        # Try to connect to the database
+        engine = create_engine(test_db_url)
+        with engine.connect():
+            return True
+    except OperationalError:
+        return False
+    except Exception:
+        return False
+
+
 @pytest.fixture(scope="function", autouse=True)
-def setup_database(test_db_url):
+def setup_database(test_db_url, db_available):
     """Set up a clean database for each test function."""
+    # Skip if the database is not available
+    if not db_available:
+        pytest.skip("Database not available")
+
     # Get the SQLAlchemy engine
     from sqlalchemy import create_engine, text
     from artificial_u.models.database import Base
@@ -133,6 +153,7 @@ def setup_database(test_db_url):
 
 
 @pytest.mark.integration
+@pytest.mark.requires_db
 def test_professor_crud(repository, sample_professor):
     """Test CRUD operations for professors."""
     # Create
@@ -161,6 +182,7 @@ def test_professor_crud(repository, sample_professor):
 
 
 @pytest.mark.integration
+@pytest.mark.requires_db
 def test_course_crud(repository, db_professor, sample_course):
     """Test CRUD operations for courses."""
     # Create course
@@ -189,6 +211,7 @@ def test_course_crud(repository, db_professor, sample_course):
 
 
 @pytest.mark.integration
+@pytest.mark.requires_db
 def test_lecture_crud(repository, db_course, sample_lecture):
     """Test CRUD operations for lectures."""
     # Create lecture
@@ -221,6 +244,7 @@ def test_lecture_crud(repository, db_course, sample_lecture):
 
 
 @pytest.mark.integration
+@pytest.mark.requires_db
 def test_relationships(repository, db_professor, db_course, sample_lecture):
     """Test relationships between models."""
     # Create lecture

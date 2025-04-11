@@ -80,7 +80,7 @@ async def list_professors(
     responses={404: {"description": "Professor not found"}},
 )
 async def get_professor(
-    professor_id: str = Path(..., description="The ID of the professor to retrieve"),
+    professor_id: int = Path(..., description="The ID of the professor to retrieve"),
     service: ProfessorService = Depends(get_professor_service),
 ):
     """
@@ -126,7 +126,7 @@ async def create_professor(
 )
 async def update_professor(
     professor_data: ProfessorUpdate,
-    professor_id: str = Path(..., description="The ID of the professor to update"),
+    professor_id: int = Path(..., description="The ID of the professor to update"),
     service: ProfessorService = Depends(get_professor_service),
 ):
     """
@@ -156,7 +156,7 @@ async def update_professor(
     },
 )
 async def delete_professor(
-    professor_id: str = Path(..., description="The ID of the professor to delete"),
+    professor_id: int = Path(..., description="The ID of the professor to delete"),
     service: ProfessorService = Depends(get_professor_service),
 ):
     """
@@ -184,7 +184,7 @@ async def delete_professor(
     responses={404: {"description": "Professor not found"}},
 )
 async def get_professor_courses(
-    professor_id: str = Path(..., description="The ID of the professor"),
+    professor_id: int = Path(..., description="The ID of the professor"),
     service: ProfessorService = Depends(get_professor_service),
 ):
     """
@@ -210,7 +210,7 @@ async def get_professor_courses(
     responses={404: {"description": "Professor not found"}},
 )
 async def get_professor_lectures(
-    professor_id: str = Path(..., description="The ID of the professor"),
+    professor_id: int = Path(..., description="The ID of the professor"),
     service: ProfessorService = Depends(get_professor_service),
 ):
     """

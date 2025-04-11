@@ -16,11 +16,8 @@ from elevenlabs.client import ElevenLabs
 
 from artificial_u.models.core import Professor, Lecture
 
-# Import the new voice selection system
-from artificial_u.integrations.elevenlabs import (
-    VoiceSelectionManager,
-    get_voice_for_professor,
-)
+# Import the refactored voice selection system
+from artificial_u.integrations.elevenlabs import VoiceSelectionManager
 
 
 class AudioProcessorError(Exception):

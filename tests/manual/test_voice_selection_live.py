@@ -30,11 +30,9 @@ from rich.panel import Panel
 if __name__ == "__main__":
     sys.path.append(str(Path(__file__).parent.parent.parent))
 
+# Import from the compatibility layer
 from artificial_u.integrations.elevenlabs import (
     VoiceSelectionManager,
-    get_voice_for_professor,
-    sample_voices,
-    get_voice_filters,
 )
 from artificial_u.models.core import Professor
 
@@ -73,7 +71,7 @@ def test_professors():
     """Create a diverse set of test professor profiles."""
     return [
         Professor(
-            id="prof_british_female",
+            id=1,
             name="Dr. Elizabeth Norton",
             title="Professor of Literature",
             department="English",
@@ -83,7 +81,7 @@ def test_professors():
             teaching_style="Discussion-based with historical context",
         ),
         Professor(
-            id="prof_american_male",
+            id=2,
             name="Dr. Michael Johnson",
             title="Professor of Physics",
             department="Physics",
@@ -93,7 +91,7 @@ def test_professors():
             teaching_style="Engaging with practical demonstrations",
         ),
         Professor(
-            id="prof_french_female",
+            id=3,
             name="Dr. Sophie Dupont",
             title="Professor of Art History",
             department="Fine Arts",
@@ -103,7 +101,7 @@ def test_professors():
             teaching_style="Visual and contextual",
         ),
         Professor(
-            id="prof_indian_male",
+            id=4,
             name="Dr. Raj Patel",
             title="Professor of Computer Science",
             department="Computer Science",
@@ -113,7 +111,7 @@ def test_professors():
             teaching_style="Structured with practical examples",
         ),
         Professor(
-            id="prof_neutral",
+            id=5,
             name="Dr. Alex Riley",
             title="Professor of Philosophy",
             department="Philosophy",
@@ -123,7 +121,7 @@ def test_professors():
             teaching_style="Socratic method",
         ),
         Professor(
-            id="prof_senior",
+            id=6,
             name="Dr. Walter Simmons",
             title="Distinguished Professor of Economics",
             department="Economics",
@@ -133,7 +131,7 @@ def test_professors():
             teaching_style="Traditional lectures with deep insights",
         ),
         Professor(
-            id="prof_junior",
+            id=7,
             name="Dr. Emma Chen",
             title="Assistant Professor of Psychology",
             department="Psychology",
@@ -407,7 +405,7 @@ def test_fallback_strategies(voice_manager):
 
     # Create a professor with unusual characteristics
     unusual_prof = Professor(
-        id="prof_unusual",
+        id=8,
         name="Dr. Zhang Wei",
         title="Professor of Linguistics",
         department="Linguistics",
@@ -552,7 +550,7 @@ if __name__ == "__main__":
     # Create test professors
     test_professors = [
         Professor(
-            id="prof_british_female",
+            id=1,
             name="Dr. Elizabeth Norton",
             title="Professor of Literature",
             department="English",
@@ -562,7 +560,7 @@ if __name__ == "__main__":
             teaching_style="Discussion-based with historical context",
         ),
         Professor(
-            id="prof_american_male",
+            id=2,
             name="Dr. Michael Johnson",
             title="Professor of Physics",
             department="Physics",
@@ -572,7 +570,7 @@ if __name__ == "__main__":
             teaching_style="Engaging with practical demonstrations",
         ),
         Professor(
-            id="prof_french_female",
+            id=3,
             name="Dr. Sophie Dupont",
             title="Professor of Art History",
             department="Fine Arts",
@@ -582,7 +580,7 @@ if __name__ == "__main__":
             teaching_style="Visual and contextual",
         ),
         Professor(
-            id="prof_indian_male",
+            id=4,
             name="Dr. Raj Patel",
             title="Professor of Computer Science",
             department="Computer Science",

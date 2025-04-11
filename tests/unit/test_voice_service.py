@@ -108,7 +108,7 @@ def mock_repository():
 def sample_professor():
     """Create a sample professor for testing."""
     return Professor(
-        id="prof123",
+        id=123,
         name="Dr. John Smith",
         title="Professor of Physics",
         department="Physics",

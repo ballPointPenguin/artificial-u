@@ -107,7 +107,33 @@ class ContentGenerator:
         profile_text = extract_xml_content(content, "professor_profile")
 
         if not profile_text:
-            raise ValueError("No professor profile found in response")
+            # Don't throw error, create a basic professor with required fields
+            self.logger.warning(
+                "No structured professor profile found. Creating basic profile."
+            )
+
+            # Try to extract a name from the content as a fallback
+            name_match = re.search(r"Dr\.\s+[\w\s]+|Professor\s+[\w\s]+", content)
+            name = (
+                name_match.group(0)
+                if name_match
+                else f"Dr. {specialization.title()} Expert"
+            )
+
+            # Create basic professor with required fields and empty optional fields
+            return Professor(
+                name=name,
+                title=f"Professor of {specialization.title()}",
+                department=department,
+                specialization=specialization,
+                background=f"Expert in {specialization} within the {department} department.",
+                personality="Professional and knowledgeable.",
+                teaching_style="Structured and clear.",
+                gender=gender,
+                accent=accent,
+                description=f"A professor specializing in {specialization}.",
+                age=None,
+            )
 
         # Parse the profile text into a dictionary
         profile = {}

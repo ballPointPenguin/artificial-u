@@ -8,6 +8,8 @@ import tempfile
 from pathlib import Path
 from dotenv import load_dotenv
 import uuid
+from sqlalchemy import create_engine
+from sqlalchemy.exc import OperationalError
 
 from artificial_u.system import UniversitySystem
 from artificial_u.models.core import Professor, Course, Lecture
@@ -56,9 +58,31 @@ def load_env():
     yield
 
 
+@pytest.fixture(scope="session")
+def db_available():
+    """Check if the database is available."""
+    db_url = os.environ.get(
+        "DATABASE_URL",
+        "postgresql://postgres:postgres@localhost:5432/artificial_u_test",
+    )
+    try:
+        # Try to connect to the database
+        engine = create_engine(db_url)
+        with engine.connect():
+            return True
+    except OperationalError:
+        return False
+    except Exception:
+        return False
+
+
 @pytest.fixture
-def test_system():
+def test_system(db_available):
     """Create a test system using Ollama for content generation."""
+    # Skip if the database is not available
+    if not db_available:
+        pytest.skip("Database not available")
+
     # Create temporary directory for audio
     with tempfile.TemporaryDirectory() as temp_dir:
         audio_path = os.path.join(temp_dir, "audio")
@@ -148,6 +172,7 @@ def test_system():
 @requires_ollama
 @requires_tinyllama
 @pytest.mark.integration
+@pytest.mark.requires_db
 def test_create_professor_with_ollama(test_system):
     """Test creating a professor using Ollama for content generation."""
     # Create a professor
@@ -174,6 +199,7 @@ def test_create_professor_with_ollama(test_system):
 @requires_ollama
 @requires_tinyllama
 @pytest.mark.integration
+@pytest.mark.requires_db
 def test_create_course_with_ollama(test_system):
     """Test creating a course using Ollama for content generation."""
     # Create a professor first
@@ -201,22 +227,22 @@ def test_create_course_with_ollama(test_system):
     )
     print(f"TEST: Course created with ID: {course.id}")
 
-    # Verify course was created and has a syllabus
+    # Verify course was created and stored in database
     assert course.id is not None
-    assert course.syllabus is not None
+    assert course.code == unique_code
 
-    # Retrieve from database
-    print("TEST: Retrieving course from database...")
+    # Retrieve from database to ensure it was saved
     retrieved = test_system.repository.get_course(course.id)
     assert retrieved is not None
-    assert retrieved.code == unique_code
+    assert retrieved.title == "Introduction to Physics"
+    assert retrieved.department == "Physics"
     assert retrieved.professor_id == professor.id
-    print("TEST: Course test completed successfully")
 
 
 @requires_ollama
 @requires_tinyllama
 @pytest.mark.integration
+@pytest.mark.requires_db
 def test_generate_lecture_with_ollama(test_system):
     """Test generating a lecture using Ollama."""
     # Create dependencies

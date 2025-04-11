@@ -276,7 +276,7 @@ def test_error_handling(mock_system):
                 title="Test Course",
                 code="TEST101",
                 department="Computer Science",
-                professor_id="nonexistent_id",
+                professor_id=999,  # Non-existent ID
             )
 
     # Test lecture not found error

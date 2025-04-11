@@ -87,7 +87,7 @@ class ProfessorService:
             pages=total_pages,
         )
 
-    def get_professor(self, professor_id: str) -> Optional[ProfessorResponse]:
+    def get_professor(self, professor_id: int) -> Optional[ProfessorResponse]:
         """
         Get a professor by ID.
 
@@ -122,7 +122,7 @@ class ProfessorService:
         return ProfessorResponse.model_validate(created_professor.model_dump())
 
     def update_professor(
-        self, professor_id: str, professor_data: ProfessorUpdate
+        self, professor_id: int, professor_data: ProfessorUpdate
     ) -> Optional[ProfessorResponse]:
         """
         Update an existing professor.
@@ -150,7 +150,7 @@ class ProfessorService:
         # Convert to response model
         return ProfessorResponse.model_validate(updated_professor.model_dump())
 
-    def delete_professor(self, professor_id: str) -> bool:
+    def delete_professor(self, professor_id: int) -> bool:
         """
         Delete a professor.
 
@@ -173,7 +173,7 @@ class ProfessorService:
         return True
 
     def get_professor_courses(
-        self, professor_id: str
+        self, professor_id: int
     ) -> Optional[ProfessorCoursesResponse]:
         """
         Get courses taught by a professor.
@@ -215,7 +215,7 @@ class ProfessorService:
         )
 
     def get_professor_lectures(
-        self, professor_id: str
+        self, professor_id: int
     ) -> Optional[ProfessorLecturesResponse]:
         """
         Get lectures by a professor.

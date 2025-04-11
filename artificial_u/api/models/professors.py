@@ -43,7 +43,7 @@ class ProfessorUpdate(ProfessorBase):
 class ProfessorResponse(ProfessorBase):
     """Model for professor responses."""
 
-    id: str
+    id: int
 
     class Config:
         from_attributes = True
@@ -64,7 +64,7 @@ class ProfessorsListResponse(BaseModel):
 class CourseBrief(BaseModel):
     """Brief course information for professor's courses endpoint."""
 
-    id: str
+    id: int
     code: str
     title: str
     department: str
@@ -76,9 +76,9 @@ class CourseBrief(BaseModel):
 class LectureBrief(BaseModel):
     """Brief lecture information for professor's lectures endpoint."""
 
-    id: str
+    id: int
     title: str
-    course_id: str
+    course_id: int
     week_number: int
     order_in_week: int
     description: str
@@ -88,7 +88,7 @@ class LectureBrief(BaseModel):
 class ProfessorCoursesResponse(BaseModel):
     """Model for professor's courses response."""
 
-    professor_id: str
+    professor_id: int
     courses: List[CourseBrief]
     total: int
 
@@ -97,6 +97,6 @@ class ProfessorCoursesResponse(BaseModel):
 class ProfessorLecturesResponse(BaseModel):
     """Model for professor's lectures response."""
 
-    professor_id: str
+    professor_id: int
     lectures: List[LectureBrief]
     total: int
