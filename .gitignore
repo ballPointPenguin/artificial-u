@@ -51,3 +51,6 @@ htmlcov/
 test_audio_files/
 test_exports/
 test_university.db
+
+# Pip-tools
+.pip-tools-cache/

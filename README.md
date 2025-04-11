@@ -45,14 +45,15 @@ source venv/bin/activate  # On Windows, use: venv\\Scripts\\activate
 3. Install dependencies:
 
 ```bash
-# Install the package and its dependencies
-pip install -e .
+# For production (with exact pinned versions)
+pip install -r requirements.lock
 
-# For development (includes testing and linting tools)
-pip install -e ".[dev]"
+# For development (with exact pinned versions)
+pip install -r requirements-dev.lock
 
-# For just the testing tools
-pip install -e ".[test]"
+# Or install using pyproject.toml (flexible versions)
+pip install -e .  # For production dependencies
+pip install -e ".[dev]"  # For development dependencies
 ```
 
 4. Create a `.env` file with your API keys:
@@ -65,6 +66,10 @@ cp .env.example .env
 ## Project Configuration
 
 The project uses a modern `pyproject.toml` file for configuration, following PEP 518 and PEP 621 standards. This file centralizes build settings, project metadata, and tool configurations. See [docs/pyproject_usage.md](docs/pyproject_usage.md) for details.
+
+## Dependency Management
+
+The project uses a hybrid approach for dependency management with `pyproject.toml` for defining dependencies and pip-tools for generating lockfiles. This ensures reproducible environments across different systems. See [docs/dependency_management.md](docs/dependency_management.md) for details on the approach and workflows.
 
 ## Quick Start
 
