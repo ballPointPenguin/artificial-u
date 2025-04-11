@@ -7,6 +7,7 @@ import os
 import sys
 import logging
 import argparse
+import subprocess
 from dotenv import load_dotenv
 import sqlalchemy
 from sqlalchemy import text
@@ -31,6 +32,69 @@ def parse_args():
         "--yes", "-y", action="store_true", help="Skip confirmation prompt"
     )
     return parser.parse_args()
+
+
+def create_database_if_not_exists(db_url, logger):
+    """Create the database if it doesn't exist."""
+    # Parse the connection string to get database name
+    if "postgresql://" in db_url:
+        # Get the database name from the URL
+        db_name = db_url.split("/")[-1]
+        # Create a connection URL without the database name
+        postgres_url = db_url.rsplit("/", 1)[0] + "/postgres"
+
+        try:
+            # Connect to postgres database
+            engine = sqlalchemy.create_engine(postgres_url)
+            with engine.connect() as conn:
+                # Don't automatically commit transactions
+                conn.execution_options(isolation_level="AUTOCOMMIT")
+
+                # Check if database exists
+                result = conn.execute(
+                    text(f"SELECT 1 FROM pg_database WHERE datname = '{db_name}'")
+                )
+                exists = result.scalar() == 1
+
+                if not exists:
+                    logger.info(f"Creating database {db_name}")
+                    conn.execute(text(f"CREATE DATABASE {db_name}"))
+                    logger.info(f"Database {db_name} created successfully")
+                else:
+                    logger.info(f"Database {db_name} already exists")
+
+            return True
+        except Exception as e:
+            logger.error(f"Error creating database: {str(e)}")
+            return False
+    else:
+        logger.error(f"Invalid database URL format: {db_url}")
+        return False
+
+
+def run_alembic_migrations(db_url, logger):
+    """Run Alembic migrations."""
+    try:
+        # Set database URL for Alembic
+        os.environ["DATABASE_URL"] = db_url
+
+        # Check if alembic directory exists
+        if not os.path.exists("alembic"):
+            logger.info("Initializing Alembic")
+            subprocess.run(["alembic", "init", "alembic"], check=True)
+            logger.info("Alembic initialized successfully")
+
+        # Run migrations
+        logger.info("Running Alembic migrations")
+        subprocess.run(["alembic", "upgrade", "head"], check=True)
+        logger.info("Migrations completed successfully")
+        return True
+    except subprocess.CalledProcessError as e:
+        logger.error(f"Error running migrations: {e}")
+        return False
+    except Exception as e:
+        logger.error(f"Unexpected error running migrations: {str(e)}")
+        return False
 
 
 def main():
@@ -63,33 +127,15 @@ def main():
             print("Initialization aborted.")
             sys.exit(0)
 
-    # Initialize database
-    try:
-        # Create engine
-        engine = sqlalchemy.create_engine(db_url)
-
-        # Read migration SQL file
-        migration_file = os.path.join("migrations", "00001_initial_schema.sql")
-
-        if not os.path.exists(migration_file):
-            logger.error(f"Migration file not found: {migration_file}")
-            sys.exit(1)
-
-        with open(migration_file, "r") as f:
-            sql_script = f.read()
-
-        # Execute SQL script
-        logger.info("Executing initial schema migration...")
-
-        with engine.connect() as conn:
-            conn.execute(text(sql_script))
-            conn.commit()
-
-        logger.info("Database initialized successfully!")
-
-    except Exception as e:
-        logger.error(f"Failed to initialize database: {str(e)}")
+    # Create database if it doesn't exist
+    if not create_database_if_not_exists(db_url, logger):
         sys.exit(1)
+
+    # Run migrations
+    if not run_alembic_migrations(db_url, logger):
+        sys.exit(1)
+
+    logger.info("Database initialized successfully!")
 
 
 if __name__ == "__main__":

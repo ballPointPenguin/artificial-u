@@ -4,7 +4,6 @@ Database models and repository for ArtificialU.
 
 import os
 import json
-import uuid
 import logging
 from pathlib import Path
 from typing import Dict, List, Optional, Union, Any
@@ -18,10 +17,13 @@ from sqlalchemy import (
     Text,
     DateTime,
     ForeignKey,
+    JSON,
+    Index,
+    func,
 )
 from sqlalchemy.orm import relationship, Session, DeclarativeBase
 
-from artificial_u.models.core import Professor, Course, Lecture, Department
+from artificial_u.models.core import Professor, Course, Lecture, Department, Voice
 
 
 # SQLAlchemy Base
@@ -33,17 +35,45 @@ class Base(DeclarativeBase):
 class DepartmentModel(Base):
     __tablename__ = "departments"
 
-    id = Column(String, primary_key=True)
+    id = Column(Integer, primary_key=True, autoincrement=True)
     name = Column(String, nullable=False, unique=True)
     code = Column(String, nullable=False, unique=True)
     faculty = Column(String, nullable=False)
     description = Column(Text, nullable=False)
 
 
+class VoiceModel(Base):
+    __tablename__ = "voices"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    voice_id = Column(String, nullable=False, unique=True)
+    name = Column(String, nullable=False)
+    accent = Column(String(100), nullable=True)
+    gender = Column(String(50), nullable=True)
+    age = Column(String(50), nullable=True)
+    descriptive = Column(String(100), nullable=True)
+    use_case = Column(String(100), nullable=True)
+    category = Column(String(100), nullable=True)
+    language = Column(String(10), nullable=True)
+    locale = Column(String(20), nullable=True)
+    description = Column(Text, nullable=True)
+    preview_url = Column(Text, nullable=True)
+    verified_languages = Column(JSON, nullable=True)
+    popularity_score = Column(Integer, nullable=True)
+    last_updated = Column(DateTime, nullable=False, default=datetime.now)
+
+    # Create indexes
+    __table_args__ = (
+        Index("idx_voices_language", "language"),
+        # We'll create the text search index manually after migrations
+        # to avoid Alembic issues with REGCONFIG type
+    )
+
+
 class ProfessorModel(Base):
     __tablename__ = "professors"
 
-    id = Column(String, primary_key=True)
+    id = Column(Integer, primary_key=True, autoincrement=True)
     name = Column(String, nullable=False)
     title = Column(String, nullable=False)
     department = Column(String, nullable=False)
@@ -64,13 +94,13 @@ class ProfessorModel(Base):
 class CourseModel(Base):
     __tablename__ = "courses"
 
-    id = Column(String, primary_key=True)
+    id = Column(Integer, primary_key=True, autoincrement=True)
     code = Column(String, nullable=False, unique=True)
     title = Column(String, nullable=False)
     department = Column(String, nullable=False)
     level = Column(String, nullable=False)
     credits = Column(Integer, nullable=False, default=3)
-    professor_id = Column(String, ForeignKey("professors.id"), nullable=False)
+    professor_id = Column(Integer, ForeignKey("professors.id"), nullable=False)
     description = Column(Text, nullable=False)
     lectures_per_week = Column(Integer, nullable=False, default=2)
     total_weeks = Column(Integer, nullable=False, default=14)
@@ -84,9 +114,9 @@ class CourseModel(Base):
 class LectureModel(Base):
     __tablename__ = "lectures"
 
-    id = Column(String, primary_key=True)
+    id = Column(Integer, primary_key=True, autoincrement=True)
     title = Column(String, nullable=False)
-    course_id = Column(String, ForeignKey("courses.id"), nullable=False)
+    course_id = Column(Integer, ForeignKey("courses.id"), nullable=False)
     week_number = Column(Integer, nullable=False)
     order_in_week = Column(Integer, nullable=False, default=1)
     description = Column(Text, nullable=False)
@@ -126,14 +156,190 @@ class Repository:
         # Create tables if they don't exist
         Base.metadata.create_all(self.engine)
 
+    # Voice operations
+    def create_voice(self, voice: Voice) -> Voice:
+        """Create a new voice record."""
+        with Session(self.engine) as session:
+            db_voice = VoiceModel(
+                voice_id=voice.voice_id,
+                name=voice.name,
+                accent=voice.accent,
+                gender=voice.gender,
+                age=voice.age,
+                descriptive=voice.descriptive,
+                use_case=voice.use_case,
+                category=voice.category,
+                language=voice.language,
+                locale=voice.locale,
+                description=voice.description,
+                preview_url=voice.preview_url,
+                verified_languages=voice.verified_languages,
+                popularity_score=voice.popularity_score,
+                last_updated=datetime.now(),
+            )
+
+            session.add(db_voice)
+            session.commit()
+            session.refresh(db_voice)
+
+            voice.id = db_voice.id
+            return voice
+
+    def get_voice(self, voice_id: int) -> Optional[Voice]:
+        """Get a voice by ID."""
+        with Session(self.engine) as session:
+            db_voice = session.query(VoiceModel).filter_by(id=voice_id).first()
+
+            if not db_voice:
+                return None
+
+            return Voice(
+                id=db_voice.id,
+                voice_id=db_voice.voice_id,
+                name=db_voice.name,
+                accent=db_voice.accent,
+                gender=db_voice.gender,
+                age=db_voice.age,
+                descriptive=db_voice.descriptive,
+                use_case=db_voice.use_case,
+                category=db_voice.category,
+                language=db_voice.language,
+                locale=db_voice.locale,
+                description=db_voice.description,
+                preview_url=db_voice.preview_url,
+                verified_languages=db_voice.verified_languages or {},
+                popularity_score=db_voice.popularity_score,
+                last_updated=db_voice.last_updated,
+            )
+
+    def get_voice_by_elevenlabs_id(self, elevenlabs_id: str) -> Optional[Voice]:
+        """Get a voice by ElevenLabs voice ID."""
+        with Session(self.engine) as session:
+            db_voice = (
+                session.query(VoiceModel).filter_by(voice_id=elevenlabs_id).first()
+            )
+
+            if not db_voice:
+                return None
+
+            return Voice(
+                id=db_voice.id,
+                voice_id=db_voice.voice_id,
+                name=db_voice.name,
+                accent=db_voice.accent,
+                gender=db_voice.gender,
+                age=db_voice.age,
+                descriptive=db_voice.descriptive,
+                use_case=db_voice.use_case,
+                category=db_voice.category,
+                language=db_voice.language,
+                locale=db_voice.locale,
+                description=db_voice.description,
+                preview_url=db_voice.preview_url,
+                verified_languages=db_voice.verified_languages or {},
+                popularity_score=db_voice.popularity_score,
+                last_updated=db_voice.last_updated,
+            )
+
+    def list_voices(
+        self,
+        gender: Optional[str] = None,
+        accent: Optional[str] = None,
+        age: Optional[str] = None,
+        language: Optional[str] = None,
+        use_case: Optional[str] = None,
+        category: Optional[str] = None,
+        limit: int = 100,
+        offset: int = 0,
+    ) -> List[Voice]:
+        """List voices with optional filters."""
+        with Session(self.engine) as session:
+            query = session.query(VoiceModel)
+
+            # Apply filters
+            if gender:
+                query = query.filter(VoiceModel.gender == gender)
+            if accent:
+                query = query.filter(VoiceModel.accent == accent)
+            if age:
+                query = query.filter(VoiceModel.age == age)
+            if language:
+                query = query.filter(VoiceModel.language == language)
+            if use_case:
+                query = query.filter(VoiceModel.use_case == use_case)
+            if category:
+                query = query.filter(VoiceModel.category == category)
+
+            # Apply pagination
+            voices = (
+                query.order_by(VoiceModel.popularity_score.desc())
+                .limit(limit)
+                .offset(offset)
+                .all()
+            )
+
+            return [
+                Voice(
+                    id=v.id,
+                    voice_id=v.voice_id,
+                    name=v.name,
+                    accent=v.accent,
+                    gender=v.gender,
+                    age=v.age,
+                    descriptive=v.descriptive,
+                    use_case=v.use_case,
+                    category=v.category,
+                    language=v.language,
+                    locale=v.locale,
+                    description=v.description,
+                    preview_url=v.preview_url,
+                    verified_languages=v.verified_languages or {},
+                    popularity_score=v.popularity_score,
+                    last_updated=v.last_updated,
+                )
+                for v in voices
+            ]
+
+    def update_voice(self, voice: Voice) -> Voice:
+        """Update an existing voice."""
+        with Session(self.engine) as session:
+            db_voice = session.query(VoiceModel).filter_by(id=voice.id).first()
+
+            if not db_voice:
+                raise ValueError(f"Voice with ID {voice.id} not found")
+
+            db_voice.voice_id = voice.voice_id
+            db_voice.name = voice.name
+            db_voice.accent = voice.accent
+            db_voice.gender = voice.gender
+            db_voice.age = voice.age
+            db_voice.descriptive = voice.descriptive
+            db_voice.use_case = voice.use_case
+            db_voice.category = voice.category
+            db_voice.language = voice.language
+            db_voice.locale = voice.locale
+            db_voice.description = voice.description
+            db_voice.preview_url = voice.preview_url
+            db_voice.verified_languages = voice.verified_languages
+            db_voice.popularity_score = voice.popularity_score
+            db_voice.last_updated = datetime.now()
+
+            session.commit()
+            return voice
+
+    def upsert_voice(self, voice: Voice) -> Voice:
+        """Create or update a voice based on ElevenLabs voice_id."""
+        existing_voice = self.get_voice_by_elevenlabs_id(voice.voice_id)
+        if existing_voice:
+            voice.id = existing_voice.id
+            return self.update_voice(voice)
+        return self.create_voice(voice)
+
     # Professor operations
     def create_professor(self, professor: Professor) -> Professor:
         """Create a new professor."""
-        professor_id = str(uuid.uuid4())
-
         with Session(self.engine) as session:
             db_professor = ProfessorModel(
-                id=professor_id,
                 name=professor.name,
                 title=professor.title,
                 department=professor.department,
@@ -152,10 +358,10 @@ class Repository:
             session.add(db_professor)
             session.commit()
 
-            professor.id = professor_id
+            professor.id = db_professor.id
             return professor
 
-    def get_professor(self, professor_id: str) -> Optional[Professor]:
+    def get_professor(self, professor_id: int) -> Optional[Professor]:
         """Get a professor by ID."""
         with Session(self.engine) as session:
             db_professor = (
@@ -219,6 +425,7 @@ class Repository:
             db_professor = (
                 session.query(ProfessorModel).filter_by(id=professor.id).first()
             )
+
             if not db_professor:
                 raise ValueError(f"Professor with ID {professor.id} not found")
 
@@ -243,11 +450,8 @@ class Repository:
     # Course operations
     def create_course(self, course: Course) -> Course:
         """Create a new course."""
-        course_id = str(uuid.uuid4())
-
         with Session(self.engine) as session:
             db_course = CourseModel(
-                id=course_id,
                 code=course.code,
                 title=course.title,
                 department=course.department,
@@ -264,10 +468,10 @@ class Repository:
             session.add(db_course)
             session.commit()
 
-            course.id = course_id
+            course.id = db_course.id
             return course
 
-    def get_course(self, course_id: str) -> Optional[Course]:
+    def get_course(self, course_id: int) -> Optional[Course]:
         """Get a course by ID."""
         with Session(self.engine) as session:
             db_course = session.query(CourseModel).filter_by(id=course_id).first()
@@ -314,7 +518,7 @@ class Repository:
             )
 
     def list_courses(self, department: Optional[str] = None) -> List[Course]:
-        """List all courses, optionally filtered by department."""
+        """List courses with optional department filter."""
         with Session(self.engine) as session:
             query = session.query(CourseModel)
 
@@ -344,11 +548,8 @@ class Repository:
     # Lecture operations
     def create_lecture(self, lecture: Lecture) -> Lecture:
         """Create a new lecture."""
-        lecture_id = str(uuid.uuid4())
-
         with Session(self.engine) as session:
             db_lecture = LectureModel(
-                id=lecture_id,
                 title=lecture.title,
                 course_id=lecture.course_id,
                 week_number=lecture.week_number,
@@ -362,10 +563,10 @@ class Repository:
             session.add(db_lecture)
             session.commit()
 
-            lecture.id = lecture_id
+            lecture.id = db_lecture.id
             return lecture
 
-    def get_lecture(self, lecture_id: str) -> Optional[Lecture]:
+    def get_lecture(self, lecture_id: int) -> Optional[Lecture]:
         """Get a lecture by ID."""
         with Session(self.engine) as session:
             db_lecture = session.query(LectureModel).filter_by(id=lecture_id).first()
@@ -418,7 +619,7 @@ class Repository:
     def update_lecture_audio(
         self, lecture_id: str, audio_path: str
     ) -> Optional[Lecture]:
-        """Update the audio path for a lecture."""
+        """Update a lecture's audio path."""
         with Session(self.engine) as session:
             db_lecture = session.query(LectureModel).filter_by(id=lecture_id).first()
 

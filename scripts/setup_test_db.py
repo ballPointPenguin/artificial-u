@@ -5,77 +5,39 @@ Script to create the test database for running integration tests.
 
 import os
 import sys
-import psycopg2
-from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
+import subprocess
 from dotenv import load_dotenv
 
 
-def create_test_database():
-    """Create the test database if it doesn't exist."""
+def setup_test_database():
+    """Create and set up the test database."""
     # Load test environment variables
     load_dotenv(".env.test")
 
-    # Get connection info but ensure we create the artificial_u_test database
+    # Get connection info
     db_url = os.environ.get(
         "DATABASE_URL",
         "postgresql://postgres:postgres@localhost:5432/artificial_u_test",
     )
-    print(f"Database URL from environment: {db_url}")
+    print(f"Using database URL: {db_url}")
 
-    # Parse the connection string but force the db_name to artificial_u_test
-    if "postgresql://" in db_url:
-        parts = db_url.replace("postgresql://", "").split("/")
-        credentials = parts[0].split("@")
-        user_pass = credentials[0].split(":")
-        host_port = credentials[1].split(":")
-
-        user = user_pass[0]
-        password = user_pass[1]
-        host = host_port[0]
-        port = int(host_port[1]) if len(host_port) > 1 else 5432
-
-        # Always use the test database name
-        db_name = "artificial_u_test"
-
-        print(f"Connection info: host={host}, port={port}, user={user}")
-        print(f"Will create database: {db_name}")
-    else:
-        print(f"Invalid database URL format: {db_url}")
-        sys.exit(1)
-
-    # Connect to default postgres database to create our test database
+    # Run initialize_db.py with the test database URL
     try:
-        print(f"Connecting to PostgreSQL server to create test database '{db_name}'...")
-        # Connect to the postgres database
-        conn = psycopg2.connect(
-            host=host,
-            port=port,
-            user=user,
-            password=password,
-            dbname="postgres",  # Connect to default database
+        script_path = os.path.join(
+            os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+            "initialize_db.py",
         )
-        conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
-        cursor = conn.cursor()
-
-        # Check if database exists
-        cursor.execute(f"SELECT 1 FROM pg_database WHERE datname = '{db_name}'")
-        exists = cursor.fetchone()
-
-        if not exists:
-            print(f"Creating test database '{db_name}'...")
-            cursor.execute(f"CREATE DATABASE {db_name}")
-            print(f"Test database '{db_name}' created successfully.")
-        else:
-            print(f"Test database '{db_name}' already exists.")
-
-        cursor.close()
-        conn.close()
+        subprocess.run(
+            [sys.executable, script_path, "--db-url", db_url, "--yes"],
+            check=True,
+        )
+        print("Test database initialized successfully")
         return True
-    except psycopg2.Error as e:
-        print(f"Error setting up test database: {e}")
+    except subprocess.CalledProcessError as e:
+        print(f"Error initializing test database: {e}")
         return False
 
 
 if __name__ == "__main__":
-    success = create_test_database()
+    success = setup_test_database()
     sys.exit(0 if success else 1)

@@ -28,6 +28,57 @@ class Department(BaseModel):
     description: str
 
 
+class Voice(BaseModel):
+    """Voice model representing an ElevenLabs voice."""
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "voice_id": "MF4J4IDTRo0AxOO4dpFR",
+                "name": "Devi - Clear Hindi pronunciation",
+                "accent": "standard",
+                "gender": "female",
+                "age": "young",
+                "descriptive": "professional",
+                "use_case": "informative_educational",
+                "category": "high_quality",
+                "language": "hi",
+                "locale": "hi-IN",
+                "description": "Devi is the pen name of a young Indian female artist with clear Hindi instructions.",
+                "preview_url": "https://storage.googleapis.com/eleven-public-prod/voices/example.mp3",
+                "verified_languages": {
+                    "languages": [
+                        {
+                            "language": "hi",
+                            "model_id": "eleven_turbo_v2_5",
+                            "accent": "standard",
+                            "locale": "hi-IN",
+                        }
+                    ]
+                },
+                "popularity_score": 138250,
+            }
+        }
+    )
+
+    id: Optional[int] = None
+    voice_id: str
+    name: str
+    accent: Optional[str] = None
+    gender: Optional[str] = None
+    age: Optional[str] = None
+    descriptive: Optional[str] = None
+    use_case: Optional[str] = None
+    category: Optional[str] = None
+    language: Optional[str] = None
+    locale: Optional[str] = None
+    description: Optional[str] = None
+    preview_url: Optional[str] = None
+    verified_languages: Dict[str, Any] = Field(default_factory=dict)
+    popularity_score: Optional[int] = None
+    last_updated: datetime = Field(default_factory=datetime.now)
+
+
 class Professor(BaseModel):
     """Professor model representing a virtual faculty member."""
 

@@ -124,6 +124,9 @@ class ElevenLabsClient:
         language: str = "en",
         use_case: Optional[str] = None,
         category: Optional[str] = None,
+        search: Optional[str] = None,
+        min_notice_period_days: Optional[int] = None,
+        featured: Optional[bool] = None,
     ) -> Tuple[List[Dict[str, Any]], bool]:
         """
         Get shared voices from the ElevenLabs API.
@@ -137,10 +140,75 @@ class ElevenLabsClient:
             language: Language code
             use_case: Optional filter by use case
             category: Optional filter by category
+            search: Optional search term
+            min_notice_period_days: Optional minimum notice period in days
+            featured: Optional filter for featured voices
 
         Returns:
             Tuple of (list of voice data, has_more flag)
         """
+        try:
+            # Try to use the new client method if available
+            if hasattr(self.client.voices, "get_shared"):
+                response = self.client.voices.get_shared(
+                    page_size=min(page_size, 100),
+                    page=page,
+                    gender=gender,
+                    accent=accent,
+                    age=age,
+                    language=language,
+                    use_cases=use_case,
+                    category=category,
+                    search=search,
+                    min_notice_period_days=min_notice_period_days,
+                    featured=featured,
+                )
+
+                # Response is a typed object, not a dictionary
+                # Extract the voices and has_more attributes
+                try:
+                    voices = response.voices
+                    has_more = getattr(response, "has_more", False)
+
+                    # Format the voice data
+                    formatted_voices = []
+                    for voice in voices:
+                        # Convert voice object to dictionary
+                        voice_dict = {
+                            "voice_id": voice.voice_id,
+                            "name": voice.name,
+                            "gender": getattr(voice, "gender", None),
+                            "accent": getattr(voice, "accent", None),
+                            "age": getattr(voice, "age", None),
+                            "descriptive": getattr(voice, "descriptive", None),
+                            "use_case": getattr(voice, "use_case", None),
+                            "category": getattr(voice, "category", None),
+                            "language": getattr(voice, "language", None),
+                            "locale": getattr(voice, "locale", None),
+                            "description": getattr(voice, "description", ""),
+                            "preview_url": getattr(voice, "preview_url", ""),
+                            "verified_languages": getattr(
+                                voice, "verified_languages", []
+                            ),
+                            "cloned_by_count": getattr(voice, "cloned_by_count", 0),
+                            "usage_character_count_1y": getattr(
+                                voice, "usage_character_count_1y", 0
+                            ),
+                        }
+                        formatted_voices.append(voice_dict)
+
+                    return formatted_voices, has_more
+                except Exception as e:
+                    self.logger.warning(
+                        f"Error parsing client.voices.get_shared response: {e}"
+                    )
+
+        except Exception as e:
+            self.logger.warning(
+                f"Error using client.voices.get_shared: {e}. Falling back to API call."
+            )
+
+        # Fall back to direct API call
         params = {
             "page_size": min(page_size, 100),
             "page": page,
@@ -158,6 +226,12 @@ class ElevenLabsClient:
             params["use_cases"] = use_case
         if category:
             params["category"] = category
+        if search:
+            params["search"] = search
+        if min_notice_period_days is not None:
+            params["min_notice_period_days"] = min_notice_period_days
+        if featured is not None:
+            params["featured"] = featured
 
         try:
             response = requests.get(
