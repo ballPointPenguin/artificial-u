@@ -16,6 +16,7 @@ from artificial_u.prompts.system import get_system_prompt
 class TestPromptBase:
     """Tests for the prompt base utilities."""
 
+    @pytest.mark.unit
     def test_prompt_template(self):
         """Test the PromptTemplate class."""
         template = PromptTemplate(template="Hello, {name}!", required_vars=["name"])
@@ -32,6 +33,7 @@ class TestPromptBase:
         with pytest.raises(ValueError):
             template.format()
 
+    @pytest.mark.unit
     def test_structured_prompt(self):
         """Test the StructuredPrompt class."""
         prompt = StructuredPrompt()
@@ -59,11 +61,13 @@ class TestPromptBase:
         prompt.add_section("c", "C")
         assert prompt.render() == "A\n\nB\n\nC"
 
+    @pytest.mark.unit
     def test_xml_tag(self):
         """Test the xml_tag function."""
         result = xml_tag("test", "content")
         assert result == "<test>\ncontent\n</test>"
 
+    @pytest.mark.unit
     def test_extract_xml_content(self):
         """Test the extract_xml_content function."""
         text = "<test>content</test>"
@@ -83,6 +87,7 @@ class TestPromptBase:
 class TestPromptModules:
     """Tests for the specific prompt modules."""
 
+    @pytest.mark.unit
     def test_professor_prompt(self):
         """Test the professor prompt generator."""
         prompt = get_professor_prompt(
@@ -101,6 +106,7 @@ class TestPromptModules:
         assert "Age range: 40-50" in prompt
         assert "<professor_profile>" in prompt
 
+    @pytest.mark.unit
     def test_syllabus_prompt(self):
         """Test the syllabus prompt generator."""
         prompt = get_syllabus_prompt(
@@ -119,6 +125,7 @@ class TestPromptModules:
         assert "Teaching Style: Interactive and hands-on" in prompt
         assert "<syllabus>" in prompt
 
+    @pytest.mark.unit
     def test_lecture_prompt(self):
         """Test the lecture prompt generator."""
         prompt = get_lecture_prompt(
@@ -146,6 +153,7 @@ class TestPromptModules:
         assert "<lecture_preparation>" in prompt
         assert "<lecture_text>" in prompt
 
+    @pytest.mark.unit
     def test_structured_lecture_prompt(self):
         """Test the StructuredLecturePrompt class."""
         prompt = StructuredLecturePrompt(word_count=1500)
@@ -189,6 +197,7 @@ class TestPromptModules:
             not in formatted
         )
 
+    @pytest.mark.unit
     def test_system_prompt(self):
         """Test the system prompt getter."""
         prompt = get_system_prompt("professor")

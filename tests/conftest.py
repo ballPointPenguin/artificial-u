@@ -3,17 +3,45 @@ Pytest configuration and shared fixtures.
 """
 
 import os
-import pytest
-from pathlib import Path
-from typing import Generator
 import sys
-import logging
+from pathlib import Path
 from dotenv import load_dotenv
 
-from sqlalchemy import create_engine
-from sqlalchemy.exc import OperationalError
-from artificial_u.models.database import Repository, Base
-from artificial_u.system import UniversitySystem
+
+# Define helper functions at the top
+def is_unit_test():
+    """Check if we're running unit tests"""
+    return any(arg in sys.argv for arg in ["-m unit", "unit"])
+
+
+# Custom collection logic to skip manual tests when running unit tests
+def pytest_ignore_collect(path, config):
+    """Skip collecting tests from manual directory when running unit tests"""
+    if is_unit_test() and "manual" in str(path):
+        return True
+    return False
+
+
+# Load test environment variables at the very beginning
+# This needs to happen before any imports that might need these values
+load_dotenv(".env.test", override=True)
+
+import pytest
+from typing import Generator
+import logging
+
+# Only import these if we're not running unit tests or if we're in the unit directory
+# This prevents import errors from other modules when running unit tests
+if not is_unit_test() or "tests/unit" in os.getcwd():
+    from sqlalchemy import create_engine
+    from sqlalchemy.exc import OperationalError
+    from artificial_u.models.database import Repository, Base
+    from artificial_u.system import UniversitySystem
+else:
+    # Create placeholder classes/variables to avoid import errors
+    Repository = object
+    Base = object
+    UniversitySystem = object
 
 # Add the project root to Python path
 project_root = str(Path(__file__).parent.parent)
@@ -23,6 +51,10 @@ if project_root not in sys.path:
 
 def check_database_exists(db_url: str) -> bool:
     """Check if the test database exists and print helpful message if not."""
+    # Skip this check for unit tests
+    if is_unit_test():
+        return True
+
     try:
         # Try connecting to the database
         engine = create_engine(db_url)
@@ -44,8 +76,11 @@ def check_database_exists(db_url: str) -> bool:
 
 @pytest.fixture(scope="session", autouse=True)
 def load_env():
-    """Load environment variables from .env.test file."""
-    load_dotenv(".env.test")
+    """
+    Load environment variables from .env.test file.
+    This is redundant with the load at the top, but kept for backward compatibility.
+    """
+    # Already loaded at the top
     yield
 
 

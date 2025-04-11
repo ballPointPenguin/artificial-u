@@ -4,7 +4,7 @@ Unit tests for data models.
 
 from datetime import datetime
 import pytest
-from artificial_u.models.core import Department, Professor, Course, Lecture
+from artificial_u.models.core import Department, Professor, Course, Lecture, Voice
 
 
 @pytest.mark.unit
@@ -22,6 +22,56 @@ def test_department_creation():
     assert dept.faculty == "Science and Engineering"
     assert dept.description == "Study of computation and information"
     assert dept.id is None  # Optional field should be None by default
+
+
+@pytest.mark.unit
+def test_voice_creation():
+    """Test Voice model creation and validation."""
+    voice = Voice(
+        voice_id="test_voice_123",
+        name="British Male Teacher",
+        accent="british",
+        gender="male",
+        age="middle_aged",
+        descriptive="professional",
+        use_case="informative_educational",
+        category="premade",
+        language="en",
+        locale="en-GB",
+        description="A professional British male voice suitable for educational content",
+        preview_url="https://example.com/preview.mp3",
+    )
+
+    assert voice.voice_id == "test_voice_123"
+    assert voice.name == "British Male Teacher"
+    assert voice.accent == "british"
+    assert voice.gender == "male"
+    assert voice.age == "middle_aged"
+    assert voice.language == "en"
+    assert voice.id is None  # Optional field should be None by default
+    assert isinstance(voice.verified_languages, dict)
+    assert voice.verified_languages == {}  # Should be empty by default
+    assert isinstance(voice.last_updated, datetime)
+
+
+@pytest.mark.unit
+def test_voice_minimal_creation():
+    """Test Voice model creation with only required fields."""
+    voice = Voice(
+        voice_id="minimal_voice_456",
+        name="Basic Voice",
+    )
+
+    assert voice.voice_id == "minimal_voice_456"
+    assert voice.name == "Basic Voice"
+    assert voice.accent is None
+    assert voice.gender is None
+    assert voice.age is None
+    assert voice.language is None
+    assert voice.id is None
+    assert isinstance(voice.verified_languages, dict)
+    assert voice.verified_languages == {}
+    assert isinstance(voice.last_updated, datetime)
 
 
 @pytest.mark.unit
@@ -93,6 +143,22 @@ def test_invalid_department():
             # Missing required code field
             faculty="Science and Engineering",
             description="Study of computation",
+        )
+
+
+@pytest.mark.unit
+def test_invalid_voice():
+    """Test Voice model validation with missing required fields."""
+    with pytest.raises(ValueError):
+        Voice(
+            # Missing required voice_id field
+            name="Invalid Voice",
+        )
+
+    with pytest.raises(ValueError):
+        Voice(
+            voice_id="missing_name_voice",
+            # Missing required name field
         )
 
 
