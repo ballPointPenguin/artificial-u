@@ -145,34 +145,26 @@ async def get_lecture_audio(
     - **lecture_id**: The unique identifier of the lecture
     - Returns a redirect to the storage URL where the audio file is stored
     """
-    audio_path = service.get_lecture_audio_path(lecture_id)
-    if not audio_path:
+    audio_url = service.get_lecture_audio_url(lecture_id)
+    if not audio_url:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Audio for lecture with ID {lecture_id} not found",
         )
 
     # If it's a storage URL (starting with http:// or https://), redirect to it
-    if audio_path.startswith("http://") or audio_path.startswith("https://"):
+    if audio_url.startswith("http://") or audio_url.startswith("https://"):
         return JSONResponse(
             status_code=status.HTTP_307_TEMPORARY_REDIRECT,
-            content={"url": audio_path},
-            headers={"Location": audio_path},
+            content={"url": audio_url},
+            headers={"Location": audio_url},
         )
 
-    # Otherwise treat it as a local file path - this is for backward compatibility
-    # This branch should be removed in the future as all audio should be in storage
-    if os.path.exists(audio_path):
-        return FileResponse(
-            audio_path,
-            media_type="audio/mpeg",
-            filename=f"lecture_{lecture_id}.mp3",
-        )
-
-    # If we get here, the path is invalid
+    # Audio URL exists but is not a valid URL - indicates an issue
+    # (We no longer support local file paths here)
     raise HTTPException(
         status_code=status.HTTP_404_NOT_FOUND,
-        detail=f"Audio file for lecture with ID {lecture_id} not found at path {audio_path}",
+        detail=f"Audio URL for lecture {lecture_id} is invalid or not found.",
     )
 
 

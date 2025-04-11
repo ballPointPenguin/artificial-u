@@ -103,7 +103,7 @@ def main():
             print(f"Week {preview['week']}, Lecture {preview['lecture_number']}")
             print(f"Generated with: {preview['model_used']}")
             print(f"Text file: {preview['text_file']}")
-            print(f"Audio file: {preview['audio_path'] or 'Not generated yet'}")
+            print(f"Audio URL: {preview['audio_url'] or 'Not generated yet'}")
             print(f"Preview: {preview['content_preview']}")
 
 

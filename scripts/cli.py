@@ -18,6 +18,7 @@ from typing import Optional, List, Dict
 
 from artificial_u.system import UniversitySystem
 from artificial_u.config.defaults import DEPARTMENTS
+from artificial_u.utils.exceptions import ContentGenerationError
 from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
@@ -49,15 +50,13 @@ def get_system():
         anthropic_key = os.environ.get("ANTHROPIC_API_KEY")
         elevenlabs_key = os.environ.get("ELEVENLABS_API_KEY")
 
-        # Initialize system
+        # Initialize system (Removed audio_path, text_export_path)
         university_system = UniversitySystem(
             anthropic_api_key=anthropic_key,
             elevenlabs_api_key=elevenlabs_key,
             db_url=os.environ.get("DATABASE_URL"),
-            audio_path=os.environ.get("AUDIO_PATH"),
             content_backend=os.environ.get("CONTENT_BACKEND"),
             content_model=os.environ.get("CONTENT_MODEL"),
-            text_export_path=os.environ.get("TEXT_EXPORT_PATH"),
             log_level=os.environ.get("LOG_LEVEL"),
         )
 
@@ -375,12 +374,12 @@ def generate_lecture(course_code, week, number, topic, word_count, enable_cachin
         # Ask if user wants to generate audio
         if Confirm.ask("Generate audio for this lecture?"):
             loop = asyncio.get_event_loop()
-            audio_path, _ = loop.run_until_complete(
+            audio_url, _ = loop.run_until_complete(
                 system.create_lecture_audio(
                     course_code=course_code, week=week, number=number
                 )
             )
-            console.print(f"[green]Audio created at:[/green] {audio_path}")
+            console.print(f"[green]Audio created at URL:[/green] {audio_url}")
 
     except Exception as e:
         console.print(f"[red]Error generating lecture:[/red] {str(e)}")
@@ -415,7 +414,7 @@ def create_audio(course_code, week, number):
 
             # Create the audio
             loop = asyncio.get_event_loop()
-            audio_path, lecture = loop.run_until_complete(
+            audio_url, lecture = loop.run_until_complete(
                 system.create_lecture_audio(
                     course_code=course_code, week=week, number=number
                 )
@@ -425,7 +424,7 @@ def create_audio(course_code, week, number):
 
         # Show success message
         console.print("[green]Audio created successfully![/green]")
-        console.print(f"Saved to: {audio_path}")
+        console.print(f"Saved to URL: {audio_url}")
 
     except Exception as e:
         console.print(f"[red]Error creating audio:[/red] {str(e)}")
@@ -451,7 +450,7 @@ def list_lectures(course_code, limit, model):
         table = Table("Course", "Week", "#", "Title", "Audio")
 
         for preview in previews:
-            has_audio = "✓" if preview.get("audio_path") else "✗"
+            has_audio = "✓" if preview.get("audio_url") else "✗"
 
             table.add_row(
                 preview.get("course_code", ""),
@@ -504,7 +503,7 @@ def play_lecture(course_code, week, number):
             )
             return
 
-        if not lecture.get("audio_path"):
+        if not lecture.get("audio_url"):
             console.print("[yellow]No audio available for this lecture.[/yellow]")
 
             # Ask if user wants to generate audio
@@ -520,7 +519,7 @@ def play_lecture(course_code, week, number):
 
                     # Create the audio using asyncio
                     loop = asyncio.get_event_loop()
-                    audio_path, _ = loop.run_until_complete(
+                    audio_url, _ = loop.run_until_complete(
                         system.create_lecture_audio(
                             course_code=course_code, week=week, number=number
                         )
@@ -528,14 +527,14 @@ def play_lecture(course_code, week, number):
 
                     progress.update(task, advance=1)
 
-                console.print(f"[green]Audio created at:[/green] {audio_path}")
+                console.print(f"[green]Audio created at URL:[/green] {audio_url}")
 
-                # Update the lecture info with the new audio path
-                lecture["audio_path"] = audio_path
+                # Update the lecture info with the new audio url
+                lecture["audio_url"] = audio_url
             else:
                 return
 
-        audio_path = lecture["audio_path"]
+        audio_url = lecture["audio_url"]
         console.print(
             Panel(
                 f"Playing audio for [bold]{lecture['title']}[/bold]",
@@ -547,7 +546,7 @@ def play_lecture(course_code, week, number):
         try:
             console.print("[green]Playing...[/green]")
             loop = asyncio.get_event_loop()
-            loop.run_until_complete(system.play_audio(audio_path))
+            loop.run_until_complete(system.play_audio(audio_url))
         except Exception as e:
             console.print(f"[red]Error playing audio:[/red] {str(e)}")
 
@@ -591,8 +590,10 @@ def show_lecture(course_code, week, number):
         console.print(Markdown(lecture.content))
 
         # Show audio status
-        if lecture.audio_path and os.path.exists(lecture.audio_path):
-            console.print(f"\n[green]Audio available:[/green] {lecture.audio_path}")
+        if lecture.audio_url:
+            console.print(
+                f"\n[green]Audio available at URL:[/green] {lecture.audio_url}"
+            )
         else:
             console.print(f"\n[yellow]No audio available.[/yellow]")
             console.print("Generate audio with [bold]create-audio[/bold] command")

@@ -134,5 +134,4 @@ def mock_system(repository: Repository, test_audio_path: Path) -> UniversitySyst
     return UniversitySystem(
         anthropic_api_key=settings.ANTHROPIC_API_KEY or "mock_anthropic_key",
         elevenlabs_api_key=settings.ELEVENLABS_API_KEY or "mock_elevenlabs_key",
-        audio_path=str(test_audio_path),
     )

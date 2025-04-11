@@ -123,33 +123,16 @@ def setup_database(test_db_url, db_available):
 
     engine = create_engine(test_db_url)
 
-    # Truncate all tables instead of dropping and recreating them
-    # This preserves the schema while clearing data
-    with engine.connect() as conn:
-        # Start a transaction
-        with conn.begin():
-            # Get a list of all tables
-            tables = Base.metadata.tables.keys()
+    # Drop all tables defined in Base metadata
+    Base.metadata.drop_all(engine)
 
-            # Disable foreign key constraints during truncation
-            conn.execute(text("SET CONSTRAINTS ALL DEFERRED"))
-
-            # Truncate each table
-            for table in tables:
-                conn.execute(text(f'TRUNCATE TABLE "{table}" CASCADE'))
-
-            # Re-enable constraints
-            conn.execute(text("SET CONSTRAINTS ALL IMMEDIATE"))
+    # Recreate all tables defined in Base metadata
+    Base.metadata.create_all(engine)
 
     yield
 
-    # Clean up after test (truncate again)
-    with engine.connect() as conn:
-        with conn.begin():
-            conn.execute(text("SET CONSTRAINTS ALL DEFERRED"))
-            for table in Base.metadata.tables.keys():
-                conn.execute(text(f'TRUNCATE TABLE "{table}" CASCADE'))
-            conn.execute(text("SET CONSTRAINTS ALL IMMEDIATE"))
+    # Clean up after test (drop tables again)
+    Base.metadata.drop_all(engine)
 
 
 @pytest.mark.integration
@@ -237,10 +220,10 @@ def test_lecture_crud(repository, db_course, sample_lecture):
 
     # Update audio path
     lecture_to_update = repository.get_lecture(created_lecture.id)
-    lecture_to_update.audio_path = "test_audio.mp3"
+    lecture_to_update.audio_url = "storage://test_audio.mp3"
     updated_lecture = repository.update_lecture(lecture_to_update)
     assert updated_lecture is not None
-    assert updated_lecture.audio_path == "test_audio.mp3"
+    assert updated_lecture.audio_url == "storage://test_audio.mp3"
 
 
 @pytest.mark.integration

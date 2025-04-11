@@ -166,7 +166,7 @@ class Lecture(BaseModel):
                 "order_in_week": 1,
                 "description": "Overview of AI definitions, history, and intelligent agents",
                 "content": "Good morning, students. Welcome to CSCI-4511...",
-                "audio_path": "audio_files/CS4511/week1/lecture1.mp3",
+                "audio_url": "https://storage.example.com/audio_files/CS4511/week1/lecture1.mp3",
             }
         }
     )
@@ -178,5 +178,5 @@ class Lecture(BaseModel):
     order_in_week: int = Field(default=1, gt=0)
     description: str
     content: str
-    audio_path: Optional[str] = None
+    audio_url: Optional[str] = None
     generated_at: datetime = Field(default_factory=datetime.now)

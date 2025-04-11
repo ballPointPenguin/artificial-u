@@ -59,7 +59,7 @@ my_settings = Settings(
     ANTHROPIC_API_KEY="my-api-key"
 )
 
-# Use helper methods
+# Use helper methods (e.g., create temporary directories)
 my_settings.create_directories()
 my_settings.log_configuration()
 ```
@@ -93,7 +93,7 @@ The `ConfigManager` now delegates to the new `Settings` system internally.
 
 ## Storage Configuration (MinIO/S3)
 
-ArtificialU supports two storage options:
+ArtificialU exclusively uses remote storage for generated assets:
 
 1. **Local MinIO**: For development environments (default)
 2. **AWS S3**: For production environments
@@ -165,9 +165,7 @@ url = storage.get_file_url(
 | `ANTHROPIC_API_KEY` | API key for Anthropic | None |
 | `ELEVENLABS_API_KEY` | API key for ElevenLabs | None |
 | `OPENAI_API_KEY` | API key for OpenAI | None |
-| `AUDIO_STORAGE_PATH` | Path to store audio files | `./audio_files` |
-| `AUDIO_PATH` | Path for audio resources | `audio` |
-| `TEXT_EXPORT_PATH` | Path for text exports | `exports` |
+| `TEMP_AUDIO_PATH` | Path for *temporary* audio file processing | `temp_audio` |
 | `LOG_LEVEL` | Logging level | `INFO` |
 | `content_backend` | Backend for content generation | `anthropic` |
 | `content_model` | Model for chosen backend | Depends on backend |

@@ -202,23 +202,30 @@ class TTSService:
 
         return file_path, audio_data
 
-    def play_audio(self, audio_data: Union[bytes, str]) -> None:
+    def play_audio(self, audio_source: Union[bytes, str]) -> None:
         """
-        Play audio data or file.
+        Play audio data or a *local* audio file.
 
         Args:
-            audio_data: Audio data as bytes or file path
+            audio_source: Audio data as bytes or path to a local audio file
         """
-        # If audio_data is a file path, read the file
-        if isinstance(audio_data, str):
+        audio_data_bytes: bytes
+        # If audio_source is a file path, read the file
+        if isinstance(audio_source, str):
             try:
-                audio_data = self.audio_utils.read_audio_file(audio_data)
+                audio_data_bytes = self.audio_utils.read_audio_file(audio_source)
             except Exception as e:
-                raise AudioProcessingError(f"Failed to read audio file: {e}")
+                raise AudioProcessingError(
+                    f"Failed to read audio file {audio_source}: {e}"
+                )
+        elif isinstance(audio_source, bytes):
+            audio_data_bytes = audio_source
+        else:
+            raise TypeError("audio_source must be bytes or a string path")
 
         # Play the audio
         try:
-            self.client.play_audio(audio_data)
+            self.client.play_audio(audio_data_bytes)
         except Exception as e:
             raise AudioProcessingError(f"Failed to play audio: {e}")
 

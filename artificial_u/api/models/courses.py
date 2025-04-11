@@ -79,7 +79,7 @@ class LectureBrief(BaseModel):
     week_number: int
     order_in_week: int
     description: str
-    audio_path: Optional[str] = None
+    audio_url: Optional[str] = None
 
 
 # Course's lectures response model

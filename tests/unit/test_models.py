@@ -130,7 +130,7 @@ def test_lecture_creation():
     assert lecture.title == "Introduction to Python"
     assert lecture.week_number == 1
     assert lecture.order_in_week == 1
-    assert lecture.audio_path is None
+    assert lecture.audio_url is None
     assert isinstance(lecture.generated_at, datetime)
 
 

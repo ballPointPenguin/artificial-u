@@ -8,8 +8,8 @@ from typing import Dict, List
 # Database defaults
 DEFAULT_DB_URL = "postgresql://postgres:postgres@localhost:5432/artificial_u_dev"
 
-# Audio defaults
-DEFAULT_AUDIO_PATH = "audio_files"
+# Audio defaults (temporary path for processing)
+DEFAULT_TEMP_AUDIO_PATH = "temp_audio"
 
 # Export defaults
 DEFAULT_TEXT_EXPORT_PATH = "lecture_texts"
@@ -18,7 +18,7 @@ DEFAULT_TEXT_EXPORT_PATH = "lecture_texts"
 DEFAULT_CONTENT_BACKEND = "anthropic"
 DEFAULT_OLLAMA_MODEL = "tinyllama"
 
-# Storage defaults
+# Storage defaults (MinIO/S3)
 DEFAULT_STORAGE_TYPE = "minio"  # "minio" or "s3"
 DEFAULT_STORAGE_ENDPOINT_URL = "http://minio:9000"  # For MinIO in Docker network
 DEFAULT_STORAGE_PUBLIC_URL = "http://localhost:9000"  # For public access URLs
@@ -214,7 +214,7 @@ PERSONALITIES = [
 DEFAULT_COURSE_LEVEL = "Undergraduate"
 DEFAULT_COURSE_WEEKS = 14
 DEFAULT_LECTURES_PER_WEEK = 2
-DEFAULT_LECTURE_WORD_COUNT = 2500
+DEFAULT_LECTURE_WORD_COUNT = 2000
 
 # Logging defaults
 DEFAULT_LOG_LEVEL = "INFO"

@@ -71,7 +71,7 @@ def mock_system():
         # Set up mock TTS service
         mock_tts_service = MockTTSService.return_value
         mock_tts_service.generate_lecture_audio.return_value = (
-            "mock_audio_path.mp3",
+            "mock_storage_url/audio.mp3",
             b"mock audio data",
         )
         mock_tts_service.generate_audio.return_value = b"mock audio data"
@@ -152,15 +152,13 @@ def mock_system():
                 if hasattr(lecture, "content")
                 else "Mock lecture content"
             ),
-            audio_path=lecture.audio_path if hasattr(lecture, "audio_path") else None,
+            audio_url=lecture.audio_url if hasattr(lecture, "audio_url") else None,
         )
 
         # Create system with mocked dependencies
         system = UniversitySystem(
             anthropic_api_key="mock_key",
             db_url=":memory:",
-            audio_path="test_audio",
-            text_export_path="test_lectures",
             log_level="ERROR",  # Reduce log noise in tests
         )
 
@@ -175,7 +173,7 @@ def mock_system():
                     f"Lecture for course {course_code}, week {week}, number {number} not found"
                 )
 
-            return "mock_audio_path.mp3", Lecture(
+            return "mock_storage_url/audio.mp3", Lecture(
                 id=123,
                 title="Mock Lecture Title",
                 course_id=123,
@@ -183,7 +181,7 @@ def mock_system():
                 order_in_week=number,
                 description="Mock lecture description",
                 content="Mock lecture content",
-                audio_path="mock_audio_path.mp3",
+                audio_url="mock_storage_url/audio.mp3",
             )
 
         # Replace the create_lecture_audio method
@@ -242,6 +240,7 @@ def setup_common_repository_patterns(mock_repository):
             order_in_week=1,
             description="Mock lecture description",
             content="Mock lecture content",
+            audio_url="mock_storage_url/audio.mp3",
         )
     ]
 
@@ -290,8 +289,8 @@ async def test_lecture_generation_flow(mock_system):
     )
 
     # Validate audio results
-    assert audio_path == "mock_audio_path.mp3"
-    assert updated_lecture.audio_path == "mock_audio_path.mp3"
+    assert audio_path == "mock_storage_url/audio.mp3"
+    assert updated_lecture.audio_url == "mock_storage_url/audio.mp3"
 
 
 @pytest.mark.integration

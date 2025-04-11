@@ -274,7 +274,7 @@ class CourseService:
                 week_number=lecture.week_number,
                 order_in_week=lecture.order_in_week,
                 description=lecture.description,
-                audio_path=lecture.audio_path,
+                audio_url=lecture.audio_url,
             )
             for lecture in lectures
         ]

@@ -5,6 +5,7 @@ Audio processing service for ArtificialU.
 import logging
 import os
 from typing import Optional, Tuple, Dict, Any, List
+import urllib.parse
 
 from artificial_u.models.core import Lecture, Professor
 from artificial_u.utils.exceptions import AudioProcessingError
@@ -20,7 +21,6 @@ class AudioService:
         self,
         repository,
         api_key: Optional[str] = None,
-        audio_path: Optional[str] = None,
         voice_service: Optional[VoiceService] = None,
         tts_service: Optional[TTSService] = None,
         storage_service: Optional[StorageService] = None,
@@ -32,7 +32,6 @@ class AudioService:
         Args:
             repository: Data repository
             api_key: Optional ElevenLabs API key
-            audio_path: Optional path for storing audio files
             voice_service: Optional voice service instance
             tts_service: Optional TTS service instance
             storage_service: Optional storage service instance
@@ -40,14 +39,17 @@ class AudioService:
         """
         self.logger = logger or logging.getLogger(__name__)
         self.repository = repository
-        self.audio_path = audio_path
 
-        # Initialize services
+        # Initialize services (TTS service still needs temp path)
+        # Get temp path from storage service's settings
+        storage_settings = (storage_service or StorageService()).settings
+        temp_audio_path = storage_settings.TEMP_AUDIO_PATH
+
         self.voice_service = voice_service or VoiceService(
             api_key=api_key, logger=self.logger
         )
         self.tts_service = tts_service or TTSService(
-            api_key=api_key, audio_path=audio_path, logger=self.logger
+            api_key=api_key, audio_path=temp_audio_path, logger=self.logger
         )
         self.storage_service = storage_service or StorageService(logger=self.logger)
 
@@ -63,7 +65,7 @@ class AudioService:
             number: Lecture number within the week
 
         Returns:
-            Tuple: (audio_path, lecture) - Path to the audio file and the lecture
+            Tuple: (audio_url, lecture) - URL to the audio file and the lecture
         """
         self.logger.info(
             f"Creating audio for course {course_code}, week {week}, number {number}"
@@ -116,11 +118,11 @@ class AudioService:
                 voice_id = professor.voice_settings["voice_id"]
 
             # Generate audio using TTS service
-            local_audio_path, audio_data = self.tts_service.generate_lecture_audio(
+            # The TTS service might still use a local temp file, but we get the bytes
+            _, audio_data = self.tts_service.generate_lecture_audio(
                 lecture=lecture,
                 professor=professor,
                 voice_id=voice_id,
-                save_to_file=False,  # Don't save to local file here - we'll use storage service
             )
 
             # Upload to storage service (MinIO/S3)
@@ -137,8 +139,8 @@ class AudioService:
                 self.logger.error(error_msg)
                 raise AudioProcessingError(error_msg)
 
-            # Set the audio path to the storage URL
-            audio_path = storage_url
+            # Set the audio url to the storage URL
+            audio_url = storage_url
 
             self.logger.info(f"Audio uploaded to storage at {storage_url}")
 
@@ -147,7 +149,7 @@ class AudioService:
             self.logger.error(error_msg)
             raise AudioProcessingError(error_msg) from e
 
-        # Update lecture with audio path
+        # Update lecture with audio url
         try:
             # Get the lecture first
             lecture_to_update = self.repository.get_lecture(lecture.id)
@@ -155,17 +157,17 @@ class AudioService:
                 raise ValueError(f"Lecture with ID {lecture.id} not found")
 
             # Update the audio path
-            lecture_to_update.audio_path = audio_path
+            lecture_to_update.audio_url = audio_url  # Renamed from audio_path
 
             # Use the general update_lecture method
             lecture = self.repository.update_lecture(lecture_to_update)
-            self.logger.debug(f"Lecture updated with audio path: {audio_path}")
+            self.logger.debug(f"Lecture updated with audio url: {audio_url}")
         except Exception as e:
-            error_msg = f"Failed to update lecture with audio path: {str(e)}"
+            error_msg = f"Failed to update lecture with audio url: {str(e)}"
             self.logger.error(error_msg)
             raise ValueError(error_msg) from e
 
-        return audio_path, lecture
+        return audio_url, lecture
 
     def get_voice_for_professor(self, professor: Professor) -> Dict[str, Any]:
         """
@@ -206,39 +208,53 @@ class AudioService:
         """
         return self.tts_service.test_connection()
 
-    async def play_audio(self, audio_data_or_path):
+    async def play_audio(self, audio_url: str):
         """
-        Play audio from data or file path, or fetch from storage if path is a URL.
+        Play audio from a storage URL.
 
         Args:
-            audio_data_or_path: Audio data, local file path, or storage URL
+            audio_url: Storage URL of the audio file
         """
         # Check if it's a storage URL
-        if isinstance(audio_data_or_path, str) and (
-            audio_data_or_path.startswith("http://")
-            or audio_data_or_path.startswith("https://")
-        ):
-            # Parse URL to extract bucket and object key
-            # This is a simplified example and may need adjustment based on URL format
-            parts = audio_data_or_path.split("/")
-            if len(parts) >= 4:  # Protocol + empty + host + bucket + key
-                bucket = parts[3]
-                object_name = "/".join(parts[4:])
+        if not (audio_url.startswith("http://") or audio_url.startswith("https://")):
+            # If it's not a URL, maybe it's a local path (for testing/debugging)
+            if os.path.exists(audio_url):
+                self.logger.info(f"Playing audio from local path: {audio_url}")
+                self.tts_service.play_audio(audio_url)
+                return
+            else:
+                error_msg = f"Invalid audio source: {audio_url}. Expected a URL or an existing local path."
+                self.logger.error(error_msg)
+                raise AudioProcessingError(error_msg)
 
+        try:
+            # Parse URL to attempt to extract bucket and object key
+            parsed_url = urllib.parse.urlparse(audio_url)
+            path_parts = parsed_url.path.strip("/").split("/", 1)
+
+            if len(path_parts) == 2:
+                bucket = path_parts[0]
+                object_name = path_parts[1]
+
+                self.logger.info(
+                    f"Attempting to download audio from storage: bucket='{bucket}', key='{object_name}'"
+                )
                 # Download from storage
                 audio_data, _ = await self.storage_service.download_file(
                     bucket, object_name
                 )
                 if audio_data:
+                    self.logger.info("Audio downloaded successfully, playing...")
                     self.tts_service.play_audio(audio_data)
                 else:
-                    raise AudioProcessingError(
-                        f"Failed to download audio from {audio_data_or_path}"
-                    )
+                    error_msg = f"Failed to download audio from storage: {audio_url}"
+                    self.logger.error(error_msg)
+                    raise AudioProcessingError(error_msg)
             else:
-                raise AudioProcessingError(
-                    f"Invalid storage URL format: {audio_data_or_path}"
-                )
-        else:
-            # Play local file or direct audio data
-            self.tts_service.play_audio(audio_data_or_path)
+                error_msg = f"Could not parse bucket/key from URL: {audio_url}"
+                self.logger.error(error_msg)
+                raise AudioProcessingError(error_msg)
+        except Exception as e:
+            error_msg = f"Error processing storage URL {audio_url}: {e}"
+            self.logger.error(error_msg)
+            raise AudioProcessingError(error_msg) from e

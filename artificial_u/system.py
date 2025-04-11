@@ -32,12 +32,9 @@ class UniversitySystem:
         self,
         anthropic_api_key: Optional[str] = None,
         elevenlabs_api_key: Optional[str] = None,
-        db_path: Optional[str] = None,  # Deprecated, kept for backward compatibility
         db_url: Optional[str] = None,
-        audio_path: Optional[str] = None,
         content_backend: Optional[str] = None,
         content_model: Optional[str] = None,
-        text_export_path: Optional[str] = None,
         log_level: Optional[str] = None,
         enable_caching: Optional[bool] = None,
         cache_metrics: Optional[bool] = None,
@@ -51,12 +48,9 @@ class UniversitySystem:
         Args:
             anthropic_api_key: API key for Anthropic
             elevenlabs_api_key: API key for ElevenLabs
-            db_path: Deprecated, use db_url instead
             db_url: PostgreSQL database URL
-            audio_path: Path to store audio files
             content_backend: Backend to use for content generation ('anthropic' or 'ollama')
             content_model: Model to use with the chosen backend
-            text_export_path: Path to export lecture text files
             log_level: Logging level
             enable_caching: Whether to enable prompt caching
             cache_metrics: Whether to track cache metrics
@@ -69,10 +63,8 @@ class UniversitySystem:
             anthropic_api_key=anthropic_api_key,
             elevenlabs_api_key=elevenlabs_api_key,
             db_url=db_url,
-            audio_path=audio_path,
             content_backend=content_backend,
             content_model=content_model,
-            text_export_path=text_export_path,
             log_level=log_level,
             enable_caching=enable_caching,
             cache_metrics=cache_metrics,
@@ -118,7 +110,7 @@ class UniversitySystem:
                 api_key=config["elevenlabs_api_key"]
             )
             self.speech_processor = SpeechProcessor()
-            self.audio_utils = AudioUtils(base_audio_path=config["audio_path"])
+            self.audio_utils = AudioUtils(base_audio_path=config["temp_audio_path"])
 
             # Initialize storage service
             self.storage_service = StorageService(
@@ -143,7 +135,7 @@ class UniversitySystem:
         # Initialize TTS service
         self.tts_service = TTSService(
             api_key=config["elevenlabs_api_key"],
-            audio_path=config["audio_path"],
+            audio_path=config["temp_audio_path"],
             client=self.elevenlabs_client,
             speech_processor=self.speech_processor,
             audio_utils=self.audio_utils,
@@ -173,7 +165,7 @@ class UniversitySystem:
             professor_service=self.professor_service,
             course_service=self.course_service,
             audio_processor=None,  # No longer used
-            text_export_path=config["text_export_path"],
+            text_export_path=None,  # No longer used for persistent export
             content_backend=config["content_backend"],
             content_model=config["content_model"],
             enable_caching=config["enable_caching"],
@@ -185,7 +177,6 @@ class UniversitySystem:
         self.audio_service = AudioService(
             repository=self.repository,
             api_key=config["elevenlabs_api_key"],
-            audio_path=config["audio_path"],
             voice_service=self.voice_service,
             tts_service=self.tts_service,
             storage_service=self.storage_service,
@@ -221,7 +212,7 @@ class UniversitySystem:
     async def export_lecture_text(
         self, lecture: Lecture, course: Course, professor: Professor
     ) -> str:
-        """Export lecture content to a text file."""
+        """Export lecture content to a text file in storage."""
         return await self.lecture_service.export_lecture_text(
             lecture, course, professor
         )
@@ -235,7 +226,7 @@ class UniversitySystem:
         return self.lecture_service.get_lecture_preview(**kwargs)
 
     def get_lecture_export_path(self, course_code: str, week: int, number: int) -> str:
-        """Get the path to the exported lecture file."""
+        """Get the storage URL for the exported lecture file."""
         return self.lecture_service.get_lecture_export_path(course_code, week, number)
 
     # === Audio Methods ===

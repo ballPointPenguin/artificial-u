@@ -5,7 +5,6 @@ Configuration modules for the ArtificialU system.
 # Re-export defaults for direct import from artificial_u.config
 from artificial_u.config.defaults import (
     DEFAULT_DB_URL,
-    DEFAULT_AUDIO_PATH,
     DEFAULT_TEXT_EXPORT_PATH,
     DEFAULT_CONTENT_BACKEND,
     DEFAULT_OLLAMA_MODEL,
@@ -49,7 +48,6 @@ __all__ = [
     "ConfigManager",
     # Default constants
     "DEFAULT_DB_URL",
-    "DEFAULT_AUDIO_PATH",
     "DEFAULT_TEXT_EXPORT_PATH",
     "DEFAULT_CONTENT_BACKEND",
     "DEFAULT_OLLAMA_MODEL",

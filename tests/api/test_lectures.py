@@ -53,8 +53,8 @@ def mock_repository(monkeypatch, temp_assets_dir):
             "order_in_week": (i % 2) + 1,  # Order 1-2
             "description": f"Description for lecture {i}",
             "content": f"Full content for lecture {i}. This is a test lecture content.",
-            "audio_path": (
-                f"audio_files/course_{i % 3 + 1}/lecture_{i}.mp3"
+            "audio_url": (
+                f"mock_storage://audio_files/course_{i % 3 + 1}/lecture_{i}.mp3"
                 if i % 2 == 0
                 else None
             ),
@@ -185,7 +185,14 @@ def mock_repository(monkeypatch, temp_assets_dir):
             filtered.append(Lecture(**entry))
         start_idx = (page - 1) * size
         end_idx = start_idx + size
-        return filtered[start_idx:end_idx]
+        page_data = filtered[start_idx:end_idx]
+
+        # Build response models
+        response_items = []
+        for lecture_core in page_data:
+            response_items.append(Lecture.model_validate(lecture_core))
+
+        return response_items
 
     def mock_get_lecture(self, lecture_id, *args, **kwargs):
         for lecture in sample_lectures:
@@ -216,10 +223,10 @@ def mock_repository(monkeypatch, temp_assets_dir):
                 }
         return None
 
-    def mock_get_lecture_audio_path(self, lecture_id, *args, **kwargs):
+    def mock_get_lecture_audio_url(self, lecture_id, *args, **kwargs):
         for lecture in sample_lectures:
             if lecture["id"] == lecture_id:
-                return lecture["audio_path"]
+                return lecture["audio_url"]
         return None
 
     def mock_create_lecture(self, lecture_data, *args, **kwargs):
@@ -235,7 +242,7 @@ def mock_repository(monkeypatch, temp_assets_dir):
             "order_in_week": lecture_data.order_in_week,
             "description": lecture_data.description,
             "content": lecture_data.content,
-            "audio_path": None,  # No audio initially
+            "audio_url": None,  # No audio initially
             "created_at": datetime.now(),
         }
 
@@ -260,9 +267,7 @@ def mock_repository(monkeypatch, temp_assets_dir):
                 lecture_copy["content"] = lecture_object.content
                 lecture_copy["week_number"] = lecture_object.week_number
                 lecture_copy["order_in_week"] = lecture_object.order_in_week
-                lecture_copy["audio_path"] = (
-                    lecture_object.audio_path
-                )  # Update audio path
+                lecture_copy["audio_url"] = lecture_object.audio_url  # Update audio url
 
                 # Ensure course_id is an integer (if needed, though it shouldn't change)
                 lecture_copy["course_id"] = (
@@ -316,12 +321,8 @@ def mock_repository(monkeypatch, temp_assets_dir):
             "week_number": lecture["week_number"],
             "order_in_week": lecture["order_in_week"],
             "description": lecture["description"],
-            "has_audio": bool(lecture.get("audio_path")),
-            "audio_url": (
-                f"/api/v1/lectures/{lecture['id']}/audio"
-                if lecture.get("audio_path")
-                else None
-            ),
+            "has_audio": bool(lecture.get("audio_url")),
+            "audio_url": lecture.get("audio_url"),
         }
 
     def mock_build_lecture_detail(self, lecture, courses, professors):
@@ -339,13 +340,8 @@ def mock_repository(monkeypatch, temp_assets_dir):
             "course_id": course_id,
             "week_number": lecture["week_number"],
             "order_in_week": lecture["order_in_week"],
-            "audio_path": lecture.get("audio_path"),
+            "audio_url": lecture.get("audio_url"),
             "generated_at": lecture.get("generated_at", lecture.get("created_at")),
-            "audio_url": (
-                f"/api/v1/lectures/{lecture['id']}/audio"
-                if lecture.get("audio_path")
-                else None
-            ),
         }
 
     def mock_count_lectures(
@@ -392,9 +388,7 @@ def mock_repository(monkeypatch, temp_assets_dir):
     monkeypatch.setattr(Repository, "get_course", mock_get_course)
     monkeypatch.setattr(Repository, "get_lecture", mock_get_lecture)
     monkeypatch.setattr(Repository, "get_lecture_content", mock_get_lecture_content)
-    monkeypatch.setattr(
-        Repository, "get_lecture_audio_path", mock_get_lecture_audio_path
-    )
+    monkeypatch.setattr(Repository, "get_lecture_audio_url", mock_get_lecture_audio_url)
     monkeypatch.setattr(Repository, "create_lecture", mock_create_lecture)
     monkeypatch.setattr(Repository, "update_lecture", mock_update_lecture)
     monkeypatch.setattr(Repository, "delete_lecture", mock_delete_lecture)
@@ -434,9 +428,7 @@ def mock_repository(monkeypatch, temp_assets_dir):
     def mock_path_exists(path):
         # For audio files
         if "audio_files" in path and path in [
-            lecture["audio_path"]
-            for lecture in sample_lectures
-            if lecture["audio_path"]
+            lecture["audio_url"] for lecture in sample_lectures if lecture["audio_url"]
         ]:
             return True
 
@@ -530,11 +522,11 @@ def test_get_lecture_audio(client, mock_repository):
     lecture_with_audio = next((l for l in mock_repository if l["id"] == 2), None)
     if lecture_with_audio:
         # Set the audio path to be a URL
-        lecture_with_audio["audio_path"] = "https://example.com/storage/lecture_2.mp3"
+        lecture_with_audio["audio_url"] = "https://example.com/storage/lecture_2.mp3"
     else:
         # If lecture 2 doesn't exist, find any lecture and set its audio path
         lecture_with_audio = next((l for l in mock_repository), None)
-        lecture_with_audio["audio_path"] = (
+        lecture_with_audio["audio_url"] = (
             "https://example.com/storage/lecture_audio.mp3"
         )
 
@@ -544,11 +536,11 @@ def test_get_lecture_audio(client, mock_repository):
     )
     assert response.status_code == 307  # Temporary redirect
     assert "Location" in response.headers
-    assert response.headers["Location"] == lecture_with_audio["audio_path"]
+    assert response.headers["Location"] == lecture_with_audio["audio_url"]
 
     # Test with lecture that has no audio
     lecture_without_audio = next(
-        (l for l in mock_repository if not l["audio_path"]), None
+        (l for l in mock_repository if not l["audio_url"]), None
     )
     assert lecture_without_audio is not None
 
@@ -566,6 +558,7 @@ def test_create_lecture(client, mock_repository):
         "order_in_week": 1,
         "description": "Description for the new test lecture",
         "content": "This is the content for the new test lecture.",
+        "audio_url": None,
     }
 
     response = client.post("/api/v1/lectures", json=new_lecture)
@@ -574,6 +567,7 @@ def test_create_lecture(client, mock_repository):
     assert data["id"] == 11  # Should be the 11th lecture
     assert data["title"] == "New Test Lecture"
     assert data["course_id"] == 1
+    assert data["audio_url"] is None
 
 
 @pytest.mark.api
@@ -595,6 +589,17 @@ def test_update_lecture(client, mock_repository):
     assert data["id"] == 1
     assert data["title"] == "Updated Lecture Title"
     assert data["description"] == "Updated lecture description"
+    assert data["audio_url"] is None
+
+    # Test updating audio_url
+    update_data_with_audio = {"audio_url": "https://new.storage.com/audio.mp3"}
+    response = client.patch("/api/v1/lectures/1", json=update_data_with_audio)
+    assert response.status_code == 200
+    data = response.json()
+    assert data["id"] == 1
+    assert data["title"] == "Updated Lecture Title"
+    assert data["description"] == "Updated lecture description"
+    assert data["audio_url"] == "https://new.storage.com/audio.mp3"
 
     # Test with invalid ID
     response = client.patch("/api/v1/lectures/999", json=update_data)

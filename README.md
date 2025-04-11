@@ -223,7 +223,6 @@ This repository includes a devcontainer configuration for easy development using
 
 ## Recent Updates
 
-- Fixed lecture preview functionality to include `audio_path` references
 - Streamlined CLI interface for audio playback
 - Improved error handling for missing audio files
 

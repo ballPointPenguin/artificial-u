@@ -98,7 +98,6 @@ def test_system(db_available):
         system = UniversitySystem(
             content_backend="ollama",
             content_model="tinyllama",
-            audio_path=audio_path,
             # Use dummy API keys since we're skipping audio generation
             anthropic_api_key="sk_not_needed_for_test",
             elevenlabs_api_key="el_not_needed_for_test",
@@ -107,11 +106,23 @@ def test_system(db_available):
         )
 
         # Set a low timeout for Ollama requests to prevent hangs
-        system.content_generator.client.create = (
-            lambda *args, **kwargs: system.content_generator.client.messages.create(
-                *args, **kwargs, timeout=15  # Use 15 second timeout for tests
+        # Note: Accessing client directly might change depending on generator implementation
+        if hasattr(system.content_generator, "client") and hasattr(
+            system.content_generator.client, "create"
+        ):
+            original_create = system.content_generator.client.create
+
+            def create_with_timeout(*args, **kwargs):
+                return original_create(
+                    *args, **kwargs, timeout=15  # Use 15 second timeout for tests
+                )
+
+            system.content_generator.client.create = create_with_timeout
+        else:
+            # Fallback if client structure changes
+            print(
+                "Warning: Could not set Ollama timeout for tests due to changed client structure."
             )
-        )
 
         # Add voice_service to professor_service
         # This is a workaround for the test since the UniversitySystem
@@ -152,17 +163,14 @@ def test_system(db_available):
                 )
 
             professor = system.repository.get_professor(lecture.professor_id)
-            audio_path = os.path.join(audio_path, f"{lecture.id}.mp3")
+            # Define audio_url, not audio_path
+            audio_url = f"mock_storage://{course_code}/week{week}/lecture{number}.mp3"
 
-            # Create an empty file
-            with open(audio_path, "wb") as f:
-                f.write(b"mock audio data")
-
-            # Update lecture with audio path
+            # Update lecture with audio url
             lecture_to_update = system.repository.get_lecture(lecture.id)
-            lecture_to_update.audio_path = audio_path
+            lecture_to_update.audio_url = audio_url  # Use audio_url
             updated_lecture = system.repository.update_lecture(lecture_to_update)
-            return audio_path, updated_lecture
+            return audio_url, updated_lecture
 
         system.audio_service.create_lecture_audio = mock_create_lecture_audio
 

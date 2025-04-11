@@ -20,9 +20,7 @@ class LectureCreate(BaseModel):
         ..., description="Brief description of the lecture content"
     )
     content: str = Field(..., description="Full lecture content text")
-    audio_path: Optional[str] = Field(
-        None, description="Path to audio file if available"
-    )
+    audio_url: Optional[str] = Field(None, description="URL to audio file if available")
 
 
 class LectureUpdate(BaseModel):
@@ -35,7 +33,7 @@ class LectureUpdate(BaseModel):
     order_in_week: Optional[int] = Field(
         None, ge=1, description="Updated order in week"
     )
-    audio_path: Optional[str] = Field(None, description="Updated audio path")
+    audio_url: Optional[str] = Field(None, description="Updated audio URL")
 
 
 class Lecture(BaseModel):
@@ -50,13 +48,8 @@ class Lecture(BaseModel):
         ..., description="Brief description of the lecture content"
     )
     content: str = Field(..., description="Full lecture content text")
-    audio_path: Optional[str] = Field(
-        None, description="Path to audio file if available"
-    )
+    audio_url: Optional[str] = Field(None, description="URL to audio file if available")
     generated_at: datetime = Field(..., description="Creation timestamp")
-
-    # Simple computed property for API convenience
-    audio_url: Optional[str] = None
 
 
 class LectureList(BaseModel):

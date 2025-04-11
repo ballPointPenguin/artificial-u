@@ -1,5 +1,6 @@
 """
 Centralized configuration management for ArtificialU.
+
 Uses Pydantic's BaseSettings for robust environment variable handling with validation.
 """
 
@@ -15,8 +16,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from artificial_u.config.defaults import (
     DEFAULT_DB_URL,
-    DEFAULT_AUDIO_PATH,
-    DEFAULT_TEXT_EXPORT_PATH,
+    DEFAULT_TEMP_AUDIO_PATH,
     DEFAULT_CONTENT_BACKEND,
     DEFAULT_OLLAMA_MODEL,
     DEFAULT_LOG_LEVEL,
@@ -72,10 +72,8 @@ class Settings(BaseSettings):
     ELEVENLABS_API_KEY: Optional[str] = None
     OPENAI_API_KEY: Optional[str] = None
 
-    # Storage paths
-    AUDIO_STORAGE_PATH: str = DEFAULT_AUDIO_PATH
-    AUDIO_PATH: str = "audio"
-    TEXT_EXPORT_PATH: str = DEFAULT_TEXT_EXPORT_PATH
+    # Temporary storage paths
+    TEMP_AUDIO_PATH: str = DEFAULT_TEMP_AUDIO_PATH
 
     # Storage settings for S3/MinIO
     STORAGE_TYPE: str = DEFAULT_STORAGE_TYPE  # "minio" or "s3"
@@ -135,9 +133,8 @@ class Settings(BaseSettings):
         )
 
     def create_directories(self) -> None:
-        """Create necessary directories for the application"""
-        Path(self.AUDIO_STORAGE_PATH).mkdir(parents=True, exist_ok=True)
-        Path(self.TEXT_EXPORT_PATH).mkdir(parents=True, exist_ok=True)
+        """Create necessary temporary directories for the application"""
+        Path(self.TEMP_AUDIO_PATH).mkdir(parents=True, exist_ok=True)
 
     def setup_logging(self) -> logging.Logger:
         """Set up logging based on configuration"""
@@ -157,9 +154,7 @@ class Settings(BaseSettings):
             "content_model": self.content_model,
             "enable_caching": self.enable_caching,
             "cache_metrics": self.cache_metrics,
-            "audio_path": self.AUDIO_PATH,
-            "audio_storage_path": self.AUDIO_STORAGE_PATH,
-            "text_export_path": self.TEXT_EXPORT_PATH,
+            "temp_audio_path": self.TEMP_AUDIO_PATH,
             "anthropic_api_key": self.ANTHROPIC_API_KEY,
             "elevenlabs_api_key": self.ELEVENLABS_API_KEY,
             "openai_api_key": self.OPENAI_API_KEY,
@@ -181,9 +176,7 @@ class Settings(BaseSettings):
         if self.content_model:
             logger.info(f"Content model: {self.content_model}")
         logger.info(f"Caching enabled: {self.enable_caching}")
-        logger.info(f"Audio storage path: {self.AUDIO_STORAGE_PATH}")
-        logger.info(f"Audio path: {self.AUDIO_PATH}")
-        logger.info(f"Text export path: {self.TEXT_EXPORT_PATH}")
+        logger.info(f"Temporary audio path: {self.TEMP_AUDIO_PATH}")
         logger.info(f"Storage type: {self.STORAGE_TYPE}")
         if self.STORAGE_TYPE == "minio":
             logger.info(f"MinIO endpoint: {self.STORAGE_ENDPOINT_URL}")

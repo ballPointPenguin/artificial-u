@@ -608,7 +608,7 @@ class LectureService:
                         "text_file": (
                             lecture_path if os.path.exists(lecture_path) else None
                         ),
-                        "audio_path": lecture.audio_path,
+                        "audio_url": lecture.audio_url,
                     }
                 )
 
@@ -640,7 +640,7 @@ class LectureService:
             return None
 
         try:
-            with open(lecture_path, "r") as f:
+            with open(lecture_path, "r", encoding="utf-8") as f:
                 content = f.read()
                 # Look for the model info in the header
                 model_lines = [l for l in content.split("\n") if "Generated with:" in l]

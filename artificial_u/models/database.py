@@ -23,6 +23,7 @@ from sqlalchemy import (
     Index,
 )
 from sqlalchemy.orm import relationship, Session, DeclarativeBase
+from sqlalchemy.exc import SQLAlchemyError
 
 from artificial_u.models.core import Professor, Course, Lecture, Department, Voice
 
@@ -122,7 +123,7 @@ class LectureModel(Base):
     order_in_week = Column(Integer, nullable=False, default=1)
     description = Column(Text, nullable=False)
     content = Column(Text, nullable=False)
-    audio_path = Column(String, nullable=True)
+    audio_url = Column(String, nullable=True)
     generated_at = Column(DateTime, nullable=False, default=datetime.now)
 
     course = relationship("CourseModel", back_populates="lectures")
@@ -142,7 +143,7 @@ def lecture_model_to_entity(lecture_model: LectureModel) -> Optional[Lecture]:
         order_in_week=lecture_model.order_in_week,
         description=lecture_model.description,
         content=lecture_model.content,
-        audio_path=lecture_model.audio_path,
+        audio_url=lecture_model.audio_url,
         generated_at=lecture_model.generated_at,
     )
 
@@ -211,10 +212,10 @@ class Repository:
             if hasattr(lecture, "description")
             else lecture.get("description")
         )
-        audio_path = (
-            lecture.audio_path
-            if hasattr(lecture, "audio_path")
-            else lecture.get("audio_path")
+        audio_url = (
+            lecture.audio_url
+            if hasattr(lecture, "audio_url")
+            else lecture.get("audio_url")
         )
 
         # Get course information if not provided
@@ -246,7 +247,7 @@ class Repository:
             "tags": getattr(lecture, "tags", []),
             "created_at": getattr(lecture, "created_at", datetime.now()),
             "duration_seconds": 1800,  # 30 minutes default
-            "has_audio": bool(audio_path),
+            "has_audio": bool(audio_url),
         }
 
     def _build_lecture_detail(self, lecture, courses=None, professors=None):
@@ -268,10 +269,10 @@ class Repository:
         content = (
             lecture.content if hasattr(lecture, "content") else lecture.get("content")
         )
-        audio_path = (
-            lecture.audio_path
-            if hasattr(lecture, "audio_path")
-            else lecture.get("audio_path")
+        audio_url = (
+            lecture.audio_url
+            if hasattr(lecture, "audio_url")
+            else lecture.get("audio_url")
         )
 
         # Get professor information
@@ -296,10 +297,7 @@ class Repository:
             **summary,
             "content": content,
             "sections": None,  # For a future implementation with section breakdown
-            "audio_path": audio_path,
-            "audio_url": (
-                f"/api/v1/lectures/{summary['id']}/audio" if audio_path else None
-            ),
+            "audio_url": audio_url,
             "professor_name": professor_name,
         }
 
@@ -703,7 +701,7 @@ class Repository:
                 order_in_week=lecture.order_in_week,
                 description=lecture.description,
                 content=lecture.content,
-                audio_path=lecture.audio_path,
+                audio_url=lecture.audio_url,
                 generated_at=lecture.generated_at,
             )
 
@@ -768,19 +766,11 @@ class Repository:
             lecture = session.query(LectureModel).filter_by(id=lecture_id).first()
             return lecture.content if lecture else None
 
-    def get_lecture_audio_path(self, lecture_id: str) -> Optional[str]:
-        """
-        Get the audio path of a lecture by ID.
-
-        Args:
-            lecture_id: The ID of the lecture to retrieve the audio path for
-
-        Returns:
-            Optional[str]: The lecture audio path if found, None otherwise
-        """
+    def get_lecture_audio_url(self, lecture_id: str) -> Optional[str]:
+        """Get the audio URL for a lecture."""
         with Session(self.engine) as session:
-            lecture = session.query(LectureModel).filter_by(id=lecture_id).first()
-            return lecture.audio_path if lecture else None
+            lecture = session.get(LectureModel, lecture_id)
+            return lecture.audio_url if lecture else None
 
     def get_lectures(self, course_id: Optional[str] = None) -> List[Lecture]:
         """List all lectures for a course."""
@@ -923,19 +913,20 @@ class Repository:
             Lecture: Updated lecture
         """
         with Session(self.engine) as session:
-            db_lecture = session.query(LectureModel).filter_by(id=lecture.id).first()
-
-            if not db_lecture:
-                return None
+            lecture_model = session.get(LectureModel, lecture.id)
+            if not lecture_model:
+                raise ValueError(f"Lecture with ID {lecture.id} not found")
 
             # Update fields
-            db_lecture.title = lecture.title
-            db_lecture.description = lecture.description
-            db_lecture.content = lecture.content
-            db_lecture.week_number = lecture.week_number
-            db_lecture.order_in_week = lecture.order_in_week
-            db_lecture.audio_path = lecture.audio_path
+            lecture_model.title = lecture.title
+            lecture_model.course_id = lecture.course_id
+            lecture_model.week_number = lecture.week_number
+            lecture_model.order_in_week = lecture.order_in_week
+            lecture_model.description = lecture.description
+            lecture_model.content = lecture.content
+            lecture_model.audio_url = lecture.audio_url
 
+            session.add(lecture_model)
             session.commit()
 
             return lecture

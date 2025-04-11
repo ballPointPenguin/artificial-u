@@ -84,7 +84,7 @@ class LectureApiService:
                         "course_id",
                         "week_number",
                         "order_in_week",
-                        "audio_path",
+                        "audio_url",
                         "generated_at",
                     ]
                 )
@@ -96,33 +96,25 @@ class LectureApiService:
                     and hasattr(lecture, "course_id")
                     and hasattr(lecture, "week_number")
                     and hasattr(lecture, "order_in_week")
-                    and hasattr(lecture, "audio_path")
+                    and hasattr(lecture, "audio_url")
                     and hasattr(lecture, "generated_at")
                 )
             ):
-                # Calculate audio URL if audio path exists
-                audio_url = None
-                if lecture.audio_path:
-                    audio_url = f"/api/v1/lectures/{lecture.id}/audio"
-                else:
-                    audio_url = None
+                lecture_items.append(
+                    Lecture(
+                        id=lecture.id,
+                        title=lecture.title,
+                        description=lecture.description,
+                        content=lecture.content,
+                        course_id=lecture.course_id,
+                        week_number=lecture.week_number,
+                        order_in_week=lecture.order_in_week,
+                        audio_url=lecture.audio_url,
+                        generated_at=lecture.generated_at,
+                    )
+                )
             else:
                 continue  # Skip invalid items
-
-            lecture_items.append(
-                Lecture(
-                    id=lecture.id,
-                    title=lecture.title,
-                    description=lecture.description,
-                    content=lecture.content,
-                    course_id=lecture.course_id,
-                    week_number=lecture.week_number,
-                    order_in_week=lecture.order_in_week,
-                    audio_path=lecture.audio_path,
-                    generated_at=lecture.generated_at,
-                    audio_url=audio_url,
-                )
-            )
 
         return LectureList(
             items=lecture_items,
@@ -145,11 +137,7 @@ class LectureApiService:
         if not lecture:
             return None
 
-        # Calculate audio URL if audio path exists
-        audio_url = None
-        if lecture.audio_path:
-            audio_url = f"/api/v1/lectures/{lecture.id}/audio"
-
+        # audio_url is now directly from the model
         return Lecture(
             id=lecture.id,
             title=lecture.title,
@@ -158,9 +146,8 @@ class LectureApiService:
             course_id=lecture.course_id,
             week_number=lecture.week_number,
             order_in_week=lecture.order_in_week,
-            audio_path=lecture.audio_path,
+            audio_url=lecture.audio_url,
             generated_at=lecture.generated_at,
-            audio_url=audio_url,
         )
 
     def get_lecture_content(self, lecture_id: int) -> Optional[Lecture]:
@@ -254,7 +241,7 @@ class LectureApiService:
         content_hash = hashlib.md5(lecture.content.encode("utf-8")).hexdigest()
         return content_hash
 
-    def get_lecture_audio_path(self, lecture_id: int) -> Optional[str]:
+    def get_lecture_audio_url(self, lecture_id: int) -> Optional[str]:
         """
         Get the audio file path or URL for a specific lecture.
 
@@ -268,20 +255,8 @@ class LectureApiService:
         Returns:
             Optional[str]: Path or URL to the audio file, or None if not found/no audio
         """
-        # Get the audio path from the repository
-        path = self.repository.get_lecture_audio_path(lecture_id)
-
-        # If no path exists, there's no audio
-        if not path:
-            return None
-
-        # If it's already a URL, return it directly
-        if path.startswith("http://") or path.startswith("https://"):
-            return path
-
-        # For backward compatibility: handle local file paths
-        # This should be replaced with storage URLs in the future
-        return path
+        # Get the audio url from the repository
+        return self.repository.get_lecture_audio_url(lecture_id)
 
     def create_lecture(self, lecture_data: LectureCreate) -> Lecture:
         """
@@ -312,7 +287,7 @@ class LectureApiService:
             order_in_week=lecture_data.order_in_week,
             description=lecture_data.description,
             content=lecture_data.content,
-            audio_path=lecture_data.audio_path,
+            audio_url=lecture_data.audio_url,
         )
 
         try:
@@ -371,8 +346,8 @@ class LectureApiService:
         if lecture_data.order_in_week is not None:
             lecture.order_in_week = lecture_data.order_in_week
 
-        if lecture_data.audio_path is not None:
-            lecture.audio_path = lecture_data.audio_path
+        if lecture_data.audio_url is not None:
+            lecture.audio_url = lecture_data.audio_url
 
         # Save updated lecture
         updated_lecture = self.repository.update_lecture(lecture)

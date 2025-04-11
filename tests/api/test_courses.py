@@ -4,6 +4,7 @@ Tests for the course API endpoints.
 
 import pytest
 from fastapi.testclient import TestClient
+from datetime import datetime
 
 from artificial_u.api.app import app
 from artificial_u.models.core import Course, Professor, Department, Lecture
@@ -83,7 +84,7 @@ def mock_repository(monkeypatch):
                         "order_in_week": order,
                         "description": f"Description for lecture {week}.{order} of course {course_id}",
                         "content": "Test content",
-                        "audio_path": None,
+                        "audio_url": None,
                     }
                 )
 
@@ -120,7 +121,17 @@ def mock_repository(monkeypatch):
 
     def mock_list_lectures_by_course(self, course_id, *args, **kwargs):
         return [
-            Lecture(**lecture)
+            Lecture(
+                id=lecture["id"],
+                title=lecture["title"],
+                course_id=lecture["course_id"],
+                week_number=lecture["week_number"],
+                order_in_week=lecture["order_in_week"],
+                description=lecture["description"],
+                content=lecture["content"],
+                audio_url=lecture["audio_url"],
+                generated_at=lecture.get("created_at", datetime.now()),
+            )
             for lecture in sample_lectures
             if lecture["course_id"] == course_id
         ]

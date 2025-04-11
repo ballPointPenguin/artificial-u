@@ -1,5 +1,6 @@
 """
 Configuration management for ArtificialU.
+
 This module maintains backwards compatibility with the existing ConfigManager
 interface while delegating to the new Pydantic-based settings.
 """
@@ -33,10 +34,8 @@ class ConfigManager:
         anthropic_api_key: Optional[str] = None,
         elevenlabs_api_key: Optional[str] = None,
         db_url: Optional[str] = None,
-        audio_path: Optional[str] = None,
         content_backend: str = DEFAULT_CONTENT_BACKEND,
         content_model: Optional[str] = None,
-        text_export_path: Optional[str] = None,
         log_level: str = DEFAULT_LOG_LEVEL,
         enable_caching: bool = DEFAULT_ENABLE_CACHING,
         cache_metrics: bool = DEFAULT_CACHE_METRICS,
@@ -51,9 +50,9 @@ class ConfigManager:
         Initialize configuration manager.
 
         This constructor now delegates to the new settings system while maintaining
-        the same interface for backwards compatibility.
+        the same interface for backwards compatibility (minus removed paths).
         """
-        # Show deprecation warning in development environments
+        # Show deprecation warning
         warnings.warn(
             "ConfigManager is deprecated. Use artificial_u.config.settings.get_settings() instead.",
             DeprecationWarning,
@@ -70,12 +69,8 @@ class ConfigManager:
             self._settings.ELEVENLABS_API_KEY = elevenlabs_api_key
         if db_url:
             self._settings.DATABASE_URL = db_url
-        if audio_path:
-            self._settings.AUDIO_PATH = audio_path
         if content_model:
             self._settings.content_model = content_model
-        if text_export_path:
-            self._settings.TEXT_EXPORT_PATH = text_export_path
 
         # Storage settings
         if storage_endpoint_url:
@@ -134,26 +129,6 @@ class ConfigManager:
     def db_url(self, value: str):
         """Set database URL"""
         self._settings.DATABASE_URL = value
-
-    @property
-    def audio_path(self) -> str:
-        """Get audio path"""
-        return self._settings.AUDIO_PATH
-
-    @audio_path.setter
-    def audio_path(self, value: str):
-        """Set audio path"""
-        self._settings.AUDIO_PATH = value
-
-    @property
-    def text_export_path(self) -> str:
-        """Get text export path"""
-        return self._settings.TEXT_EXPORT_PATH
-
-    @text_export_path.setter
-    def text_export_path(self, value: str):
-        """Set text export path"""
-        self._settings.TEXT_EXPORT_PATH = value
 
     @property
     def content_backend(self) -> str:
@@ -270,6 +245,11 @@ class ConfigManager:
         """Get storage images bucket"""
         return self._settings.STORAGE_IMAGES_BUCKET
 
+    @property
+    def temp_audio_path(self) -> str:
+        """Get temporary audio path"""
+        return self._settings.TEMP_AUDIO_PATH
+
     def _log_configuration(self) -> None:
         """Log the current configuration."""
         self.logger.info(f"Using database: {self.db_url}")
@@ -277,8 +257,7 @@ class ConfigManager:
         if self.content_model:
             self.logger.info(f"Content model: {self.content_model}")
         self.logger.info(f"Caching enabled: {self.enable_caching}")
-        self.logger.info(f"Audio path: {self.audio_path}")
-        self.logger.info(f"Text export path: {self.text_export_path}")
+        self.logger.info(f"Temporary audio path: {self.temp_audio_path}")
         self.logger.info(f"Storage type: {self.storage_type}")
         if self.storage_type == "minio":
             self.logger.info(f"MinIO endpoint: {self.storage_endpoint_url}")
@@ -297,8 +276,7 @@ class ConfigManager:
             "content_model": self.content_model,
             "enable_caching": self.enable_caching,
             "cache_metrics": self.cache_metrics,
-            "audio_path": self.audio_path,
-            "text_export_path": self.text_export_path,
+            "temp_audio_path": self.temp_audio_path,
             "anthropic_api_key": self.anthropic_api_key,
             "elevenlabs_api_key": self.elevenlabs_api_key,
             "storage_type": self.storage_type,
