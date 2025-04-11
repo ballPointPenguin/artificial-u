@@ -149,7 +149,16 @@ class AudioService:
 
         # Update lecture with audio path
         try:
-            lecture = self.repository.update_lecture_audio(lecture.id, audio_path)
+            # Get the lecture first
+            lecture_to_update = self.repository.get_lecture(lecture.id)
+            if not lecture_to_update:
+                raise ValueError(f"Lecture with ID {lecture.id} not found")
+
+            # Update the audio path
+            lecture_to_update.audio_path = audio_path
+
+            # Use the general update_lecture method
+            lecture = self.repository.update_lecture(lecture_to_update)
             self.logger.debug(f"Lecture updated with audio path: {audio_path}")
         except Exception as e:
             error_msg = f"Failed to update lecture with audio path: {str(e)}"

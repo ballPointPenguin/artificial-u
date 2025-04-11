@@ -133,6 +133,28 @@ def mock_system():
             lectures_per_week=2,
         )
 
+        # Mock lecture update
+        mock_repository.update_lecture.side_effect = lambda lecture: Lecture(
+            id=lecture.id,
+            title=lecture.title if hasattr(lecture, "title") else "Mock Lecture Title",
+            course_id=lecture.course_id if hasattr(lecture, "course_id") else 123,
+            week_number=lecture.week_number if hasattr(lecture, "week_number") else 1,
+            order_in_week=(
+                lecture.order_in_week if hasattr(lecture, "order_in_week") else 1
+            ),
+            description=(
+                lecture.description
+                if hasattr(lecture, "description")
+                else "Mock lecture description"
+            ),
+            content=(
+                lecture.content
+                if hasattr(lecture, "content")
+                else "Mock lecture content"
+            ),
+            audio_path=lecture.audio_path if hasattr(lecture, "audio_path") else None,
+        )
+
         # Create system with mocked dependencies
         system = UniversitySystem(
             anthropic_api_key="mock_key",
@@ -192,18 +214,6 @@ def setup_common_repository_patterns(mock_repository):
         order_in_week=l.order_in_week,
         description=l.description,
         content=l.content,
-    )
-
-    # Mock lecture audio update
-    mock_repository.update_lecture_audio.side_effect = lambda id, path: Lecture(
-        id=id,
-        title="Mock Lecture Title",
-        course_id=123,
-        week_number=1,
-        order_in_week=1,
-        description="Mock lecture description",
-        content="Mock lecture content",
-        audio_path=path,
     )
 
     # Mock course listing

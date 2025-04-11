@@ -8,3 +8,4 @@ disable=C0103,  # invalid-name - Test fixtures often have names that don't follo
        C0111,   # missing-docstring - Test functions are often self-describing
        R0913,   # too-many-arguments - Test fixtures often need many arguments
        R0914    # too-many-locals - Tests sometimes need many local variables
+

@@ -236,9 +236,9 @@ def test_lecture_crud(repository, db_course, sample_lecture):
     assert course_lectures[0].id == created_lecture.id
 
     # Update audio path
-    updated_lecture = repository.update_lecture_audio(
-        created_lecture.id, "test_audio.mp3"
-    )
+    lecture_to_update = repository.get_lecture(created_lecture.id)
+    lecture_to_update.audio_path = "test_audio.mp3"
+    updated_lecture = repository.update_lecture(lecture_to_update)
     assert updated_lecture is not None
     assert updated_lecture.audio_path == "test_audio.mp3"
 

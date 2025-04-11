@@ -8,18 +8,19 @@ import logging
 from pathlib import Path
 from typing import Dict, List, Optional, Union, Any
 from datetime import datetime
+from sqlalchemy import or_, func, case, desc
 
 from sqlalchemy import (
-    create_engine,
+    Boolean,
     Column,
-    String,
-    Integer,
-    Text,
     DateTime,
     ForeignKey,
+    Integer,
+    String,
+    Text,
+    create_engine,
     JSON,
     Index,
-    func,
 )
 from sqlalchemy.orm import relationship, Session, DeclarativeBase
 
@@ -127,6 +128,25 @@ class LectureModel(Base):
     course = relationship("CourseModel", back_populates="lectures")
 
 
+# Helper functions for converting between models and entities
+def lecture_model_to_entity(lecture_model: LectureModel) -> Optional[Lecture]:
+    """Convert a LectureModel to a Lecture entity."""
+    if not lecture_model:
+        return None
+
+    return Lecture(
+        id=lecture_model.id,
+        title=lecture_model.title,
+        course_id=lecture_model.course_id,
+        week_number=lecture_model.week_number,
+        order_in_week=lecture_model.order_in_week,
+        description=lecture_model.description,
+        content=lecture_model.content,
+        audio_path=lecture_model.audio_path,
+        generated_at=lecture_model.generated_at,
+    )
+
+
 class Repository:
     """
     Repository for database operations.
@@ -155,6 +175,133 @@ class Repository:
 
         # Create tables if they don't exist
         Base.metadata.create_all(self.engine)
+
+    def _build_lecture_summary(self, lecture, courses=None, professors=None):
+        """
+        Build a summary representation of a lecture.
+
+        Args:
+            lecture: Lecture object or dict
+            courses: Optional list of courses for lookup
+            professors: Optional list of professors for lookup
+
+        Returns:
+            dict: Summary representation of the lecture
+        """
+        # Handle both Lecture objects and dictionaries
+        lecture_id = lecture.id if hasattr(lecture, "id") else lecture.get("id")
+        title = lecture.title if hasattr(lecture, "title") else lecture.get("title")
+        course_id = (
+            lecture.course_id
+            if hasattr(lecture, "course_id")
+            else lecture.get("course_id")
+        )
+        week_number = (
+            lecture.week_number
+            if hasattr(lecture, "week_number")
+            else lecture.get("week_number")
+        )
+        order_in_week = (
+            lecture.order_in_week
+            if hasattr(lecture, "order_in_week")
+            else lecture.get("order_in_week")
+        )
+        description = (
+            lecture.description
+            if hasattr(lecture, "description")
+            else lecture.get("description")
+        )
+        audio_path = (
+            lecture.audio_path
+            if hasattr(lecture, "audio_path")
+            else lecture.get("audio_path")
+        )
+
+        # Get course information if not provided
+        course_title = "Unknown Course"
+        professor_id = None
+
+        if courses:
+            course = next((c for c in courses if c.id == course_id), None)
+            if course:
+                course_title = course.title
+                professor_id = course.professor_id
+        else:
+            with Session(self.engine) as session:
+                course = session.query(CourseModel).filter_by(id=course_id).first()
+                if course:
+                    course_title = course.title
+                    professor_id = course.professor_id
+
+        return {
+            "id": lecture_id,
+            "title": title,
+            "course_id": course_id,
+            "course_title": course_title,
+            "professor_id": professor_id,
+            "week_number": week_number,
+            "order_in_week": order_in_week,
+            "description": description,
+            "lecture_type": getattr(lecture, "lecture_type", "standard"),
+            "tags": getattr(lecture, "tags", []),
+            "created_at": getattr(lecture, "created_at", datetime.now()),
+            "duration_seconds": 1800,  # 30 minutes default
+            "has_audio": bool(audio_path),
+        }
+
+    def _build_lecture_detail(self, lecture, courses=None, professors=None):
+        """
+        Build a detailed representation of a lecture.
+
+        Args:
+            lecture: Lecture object or dict
+            courses: Optional list of courses for lookup
+            professors: Optional list of professors for lookup
+
+        Returns:
+            dict: Detailed representation of the lecture
+        """
+        # Get the summary as the base
+        summary = self._build_lecture_summary(lecture, courses, professors)
+
+        # Extract additional fields
+        content = (
+            lecture.content if hasattr(lecture, "content") else lecture.get("content")
+        )
+        audio_path = (
+            lecture.audio_path
+            if hasattr(lecture, "audio_path")
+            else lecture.get("audio_path")
+        )
+
+        # Get professor information
+        professor_name = "Unknown Professor"
+        course_id = summary.get("course_id")
+        professor_id = summary.get("professor_id")
+
+        if professors and professor_id:
+            professor = next((p for p in professors if p.id == professor_id), None)
+            if professor:
+                professor_name = professor.name
+        elif professor_id:
+            with Session(self.engine) as session:
+                professor = (
+                    session.query(ProfessorModel).filter_by(id=professor_id).first()
+                )
+                if professor:
+                    professor_name = professor.name
+
+        # Build the detailed response
+        return {
+            **summary,
+            "content": content,
+            "sections": None,  # For a future implementation with section breakdown
+            "audio_path": audio_path,
+            "audio_url": (
+                f"/api/v1/lectures/{summary['id']}/audio" if audio_path else None
+            ),
+            "professor_name": professor_name,
+        }
 
     # Voice operations
     def create_voice(self, voice: Voice) -> Voice:
@@ -566,32 +713,36 @@ class Repository:
             lecture.id = db_lecture.id
             return lecture
 
-    def get_lecture(self, lecture_id: int) -> Optional[Lecture]:
-        """Get a lecture by ID."""
+    def get_lecture(self, lecture_id: str) -> Optional[Lecture]:
+        """
+        Get a lecture by ID.
+
+        Args:
+            lecture_id: The ID of the lecture to retrieve
+
+        Returns:
+            Optional[Lecture]: The lecture if found, None otherwise
+        """
         with Session(self.engine) as session:
-            db_lecture = session.query(LectureModel).filter_by(id=lecture_id).first()
-
-            if not db_lecture:
-                return None
-
-            return Lecture(
-                id=db_lecture.id,
-                title=db_lecture.title,
-                course_id=db_lecture.course_id,
-                week_number=db_lecture.week_number,
-                order_in_week=db_lecture.order_in_week,
-                description=db_lecture.description,
-                content=db_lecture.content,
-                audio_path=db_lecture.audio_path,
-                generated_at=db_lecture.generated_at,
-            )
+            lecture = session.query(LectureModel).filter_by(id=lecture_id).first()
+            return lecture_model_to_entity(lecture) if lecture else None
 
     def get_lecture_by_course_week_order(
-        self, course_id: str, week_number: int, order_in_week: int
+        self, course_id: int, week_number: int, order_in_week: int
     ) -> Optional[Lecture]:
-        """Get a lecture by course ID, week number, and order in week."""
+        """
+        Get a lecture by course ID, week number, and order in week.
+
+        Args:
+            course_id: The course ID
+            week_number: The week number
+            order_in_week: The order in the week
+
+        Returns:
+            Optional[Lecture]: The lecture if found, None otherwise
+        """
         with Session(self.engine) as session:
-            db_lecture = (
+            lecture = (
                 session.query(LectureModel)
                 .filter_by(
                     course_id=course_id,
@@ -601,37 +752,37 @@ class Repository:
                 .first()
             )
 
-            if not db_lecture:
-                return None
+            return lecture_model_to_entity(lecture)
 
-            return Lecture(
-                id=db_lecture.id,
-                title=db_lecture.title,
-                course_id=db_lecture.course_id,
-                week_number=db_lecture.week_number,
-                order_in_week=db_lecture.order_in_week,
-                description=db_lecture.description,
-                content=db_lecture.content,
-                audio_path=db_lecture.audio_path,
-                generated_at=db_lecture.generated_at,
-            )
+    def get_lecture_content(self, lecture_id: str) -> Optional[str]:
+        """
+        Get the content of a lecture by ID.
 
-    def update_lecture_audio(
-        self, lecture_id: str, audio_path: str
-    ) -> Optional[Lecture]:
-        """Update a lecture's audio path."""
+        Args:
+            lecture_id: The ID of the lecture to retrieve content for
+
+        Returns:
+            Optional[str]: The lecture content if found, None otherwise
+        """
         with Session(self.engine) as session:
-            db_lecture = session.query(LectureModel).filter_by(id=lecture_id).first()
+            lecture = session.query(LectureModel).filter_by(id=lecture_id).first()
+            return lecture.content if lecture else None
 
-            if not db_lecture:
-                return None
+    def get_lecture_audio_path(self, lecture_id: str) -> Optional[str]:
+        """
+        Get the audio path of a lecture by ID.
 
-            db_lecture.audio_path = audio_path
-            session.commit()
+        Args:
+            lecture_id: The ID of the lecture to retrieve the audio path for
 
-            return self.get_lecture(lecture_id)
+        Returns:
+            Optional[str]: The lecture audio path if found, None otherwise
+        """
+        with Session(self.engine) as session:
+            lecture = session.query(LectureModel).filter_by(id=lecture_id).first()
+            return lecture.audio_path if lecture else None
 
-    def list_lectures_by_course(self, course_id: str) -> List[Lecture]:
+    def get_lectures(self, course_id: Optional[str] = None) -> List[Lecture]:
         """List all lectures for a course."""
         with Session(self.engine) as session:
             db_lectures = (
@@ -641,20 +792,174 @@ class Repository:
                 .all()
             )
 
-            return [
-                Lecture(
-                    id=l.id,
-                    title=l.title,
-                    course_id=l.course_id,
-                    week_number=l.week_number,
-                    order_in_week=l.order_in_week,
-                    description=l.description,
-                    content=l.content,
-                    audio_path=l.audio_path,
-                    generated_at=l.generated_at,
+            return [lecture_model_to_entity(l) for l in db_lectures]
+
+    def list_lectures_by_course(self, course_id: int) -> List[Lecture]:
+        """
+        List all lectures for a specific course.
+
+        Args:
+            course_id: ID of the course to get lectures for
+
+        Returns:
+            List[Lecture]: List of lectures for the specified course
+        """
+        with Session(self.engine) as session:
+            db_lectures = (
+                session.query(LectureModel)
+                .filter_by(course_id=course_id)
+                .order_by(LectureModel.week_number, LectureModel.order_in_week)
+                .all()
+            )
+
+            return [lecture_model_to_entity(l) for l in db_lectures]
+
+    def list_lectures(
+        self,
+        page: int = 1,
+        size: int = 10,
+        course_id: Optional[int] = None,
+        professor_id: Optional[int] = None,
+        tags: Optional[List[str]] = None,
+        search_query: Optional[str] = None,
+    ) -> List[Lecture]:
+        """
+        List lectures with filtering and pagination.
+
+        Args:
+            page: Page number (1-indexed)
+            size: Items per page
+            course_id: Filter by course ID
+            professor_id: Filter by professor ID
+            tags: Filter by tags
+            search_query: Search query for title/description
+
+        Returns:
+            List[Lecture]: List of lectures
+        """
+        with Session(self.engine) as session:
+            query = session.query(LectureModel)
+
+            # Apply filters
+            if course_id is not None:
+                query = query.filter(LectureModel.course_id == course_id)
+
+            if professor_id is not None:
+                # Join with CourseModel to filter by professor_id
+                query = query.join(CourseModel).filter(
+                    CourseModel.professor_id == professor_id
                 )
-                for l in db_lectures
-            ]
+
+            if search_query:
+                # Search in title and description
+                query = query.filter(
+                    or_(
+                        LectureModel.title.ilike(f"%{search_query}%"),
+                        LectureModel.description.ilike(f"%{search_query}%"),
+                    )
+                )
+
+            # Apply pagination
+            offset = (page - 1) * size
+            query = query.order_by(LectureModel.id).offset(offset).limit(size)
+
+            # Execute query
+            db_lectures = query.all()
+
+            return [lecture_model_to_entity(l) for l in db_lectures]
+
+    def count_lectures(
+        self,
+        course_id: Optional[int] = None,
+        professor_id: Optional[int] = None,
+        tags: Optional[List[str]] = None,
+        search_query: Optional[str] = None,
+    ) -> int:
+        """
+        Count lectures with filtering.
+
+        Args:
+            course_id: Filter by course ID
+            professor_id: Filter by professor ID
+            tags: Filter by tags
+            search_query: Search query for title/description
+
+        Returns:
+            int: Total count of matching lectures
+        """
+        with Session(self.engine) as session:
+            query = session.query(func.count(LectureModel.id))
+
+            # Apply filters
+            if course_id is not None:
+                query = query.filter(LectureModel.course_id == course_id)
+
+            if professor_id is not None:
+                # Join with CourseModel to filter by professor_id
+                query = query.join(CourseModel).filter(
+                    CourseModel.professor_id == professor_id
+                )
+
+            if search_query:
+                # Search in title and description
+                query = query.filter(
+                    or_(
+                        LectureModel.title.ilike(f"%{search_query}%"),
+                        LectureModel.description.ilike(f"%{search_query}%"),
+                    )
+                )
+
+            # Execute query
+            return query.scalar()
+
+    def update_lecture(self, lecture: Lecture) -> Lecture:
+        """
+        Update an existing lecture.
+
+        Args:
+            lecture: Lecture object with updated fields
+
+        Returns:
+            Lecture: Updated lecture
+        """
+        with Session(self.engine) as session:
+            db_lecture = session.query(LectureModel).filter_by(id=lecture.id).first()
+
+            if not db_lecture:
+                return None
+
+            # Update fields
+            db_lecture.title = lecture.title
+            db_lecture.description = lecture.description
+            db_lecture.content = lecture.content
+            db_lecture.week_number = lecture.week_number
+            db_lecture.order_in_week = lecture.order_in_week
+            db_lecture.audio_path = lecture.audio_path
+
+            session.commit()
+
+            return lecture
+
+    def delete_lecture(self, lecture_id: int) -> bool:
+        """
+        Delete a lecture.
+
+        Args:
+            lecture_id: ID of the lecture to delete
+
+        Returns:
+            bool: True if lecture was deleted, False if not found
+        """
+        with Session(self.engine) as session:
+            db_lecture = session.query(LectureModel).filter_by(id=lecture_id).first()
+
+            if not db_lecture:
+                return False
+
+            session.delete(db_lecture)
+            session.commit()
+
+            return True
 
     # Department operations
     def create_department(self, department: Department) -> Department:

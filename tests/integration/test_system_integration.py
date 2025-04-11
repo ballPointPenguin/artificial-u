@@ -159,9 +159,9 @@ def test_system(db_available):
                 f.write(b"mock audio data")
 
             # Update lecture with audio path
-            updated_lecture = system.repository.update_lecture_audio(
-                lecture.id, audio_path
-            )
+            lecture_to_update = system.repository.get_lecture(lecture.id)
+            lecture_to_update.audio_path = audio_path
+            updated_lecture = system.repository.update_lecture(lecture_to_update)
             return audio_path, updated_lecture
 
         system.audio_service.create_lecture_audio = mock_create_lecture_audio
