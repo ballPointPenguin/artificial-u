@@ -55,3 +55,6 @@ test_university.db
 
 # Pip-tools
 .pip-tools-cache/
+
+# OS
+.DS_Store

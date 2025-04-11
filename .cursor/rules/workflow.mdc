@@ -3,62 +3,38 @@ description:
 globs: 
 alwaysApply: true
 ---
-# Development Workflow Guidelines
+## Development Workflow Guidelines
 
-## Approach to New Features and Significant Changes
+Follow these streamlined steps for new features and significant changes:
 
-When building new features or making significant changes to existing code, follow these workflow guidelines to the extent practical:
+Research
+	•	Identify current best practices and idiomatic patterns
+	•	Prefer modern (recent) solutions over legacy
 
-### Research First
-- Identify existing best practices and common patterns idiomatic to the domain
-- Prefer modern patterns (within the last year) over legacy approaches when appropriate
-- Leverage web searches for current standards and implementations
+Balance
+	•	Find the middle ground between originality and proven patterns
+	•	Contextualize choices to the specific task
 
-### Balance Engineering Approaches
-- Seek the middle ground between over-engineering from scratch and blindly copying existing patterns
-- Aim for solutions that thoughtfully blend new engineering with established patterns based on the specific context
+Recognize Limits
+	•	Stop and revert if stuck on unsuccessful attempts
+	•	Seek clarification when needed
 
-### Recognize Diminishing Returns
-- If you find yourself "spinning your wheels" with multiple unsuccessful attempts, stop
-- Revert to a known stable state and clean up unfinished work
-- Pause to ask clarifying questions before proceeding further
+Iterative Development Cycle
+	1.	Ideate
+	•	Consider multiple solutions; select a promising one
+	•	Research existing implementations
+	2.	Proliferate
+	•	Implement chosen approach
+	3.	Validate
+	•	Test thoroughly
+	•	If unsuccessful, ideate again or seek input
+	4.	Simplify
+	•	Remove unnecessary code and duplication
+	•	Abstract common patterns
+	5.	Document
+	•	Maintain clear, concise documentation
+	•	Write informative commit messages
+	6.	Continue
+	•	Move forward, applying lessons learned
 
-### Development Cycle
-Follow this iterative cycle when practical:
-
-1. **Ideate**
-   - Consider multiple potential solutions
-   - Examine existing code, documentation, and external sources
-   - Select a promising approach to implement first
-   - Consult the user when lacking confidence or context
-
-2. **Proliferate**
-   - Implement your chosen approach
-   - Create necessary code, files, and documentation
-   - Run required commands or operations
-
-3. **Validate**
-   - Test the implementation with appropriate feedback mechanisms
-   - Run builds, endpoint tests, or other validation methods
-   - If validation fails, return to ideation
-   - If results are uncertain, consult the user
-
-4. **Simplify**
-   - Remove experimental code no longer needed
-   - Consolidate duplicate patterns
-   - Abstract common functionality
-   - Eliminate unnecessary elements, debug statements, and validation artifacts
-   - Question: "How could this be implemented more cleanly?"
-
-5. **Document**
-   - Update documentation throughout the process
-   - Review and refine documentation after implementation
-   - Remove temporary notes from earlier steps
-   - Consolidate documentation when appropriate
-   - Prepare clear commit messages if applicable
-
-6. **Continue**
-   - Move to the next feature or improvement
-   - Apply lessons learned to future work
-
-Remember that these are guidelines rather than rigid rules. Adapt them to the specific context and requirements of each development task.
+These guidelines are flexible; adapt as needed.
