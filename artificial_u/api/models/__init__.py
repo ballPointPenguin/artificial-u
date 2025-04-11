@@ -1,7 +1,9 @@
 """
-API models for input/output data formats.
+API data models for serialization and validation.
+These models define the structure of request and response data.
 """
 
+# Re-export models for easier imports
 from artificial_u.api.models.professors import (
     ProfessorBase,
     ProfessorCreate,
@@ -13,7 +15,6 @@ from artificial_u.api.models.professors import (
     ProfessorCoursesResponse,
     ProfessorLecturesResponse,
 )
-
 from artificial_u.api.models.departments import (
     DepartmentBase,
     DepartmentCreate,
@@ -25,7 +26,6 @@ from artificial_u.api.models.departments import (
     DepartmentProfessorsResponse,
     DepartmentCoursesResponse,
 )
-
 from artificial_u.api.models.courses import (
     CourseBase,
     CourseCreate,
@@ -37,7 +37,16 @@ from artificial_u.api.models.courses import (
     DepartmentBrief,
     CourseLecturesResponse,
 )
+from artificial_u.api.models.errors import (
+    ErrorDetail,
+    ErrorResponse,
+)
+from artificial_u.api.models.error_codes import (
+    ErrorCode,
+    get_error_description,
+)
 
+# All models that should be available for import
 __all__ = [
     # Professor models
     "ProfessorBase",
@@ -69,4 +78,9 @@ __all__ = [
     "LectureBrief",
     "DepartmentBrief",
     "CourseLecturesResponse",
+    # Errors
+    "ErrorDetail",
+    "ErrorResponse",
+    "ErrorCode",
+    "get_error_description",
 ]
