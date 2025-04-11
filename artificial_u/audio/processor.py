@@ -204,6 +204,13 @@ class AudioProcessor:
                 "business_male": "AZnzlk1XvdvUeBnXmlld",  # Adam
             }
 
+            # Derive department_type from professor's department and gender
+            department_category = self._get_department_category(professor.department)
+            gender = (
+                professor.gender.lower() if professor.gender else "male"
+            )  # Default to male if not specified
+            department_type = f"{department_category}_{gender}"
+
             # Get voice ID from extended mapping, fallback to department type, then default
             return extended_mapping.get(
                 department_type,
@@ -211,6 +218,58 @@ class AudioProcessor:
                     department_type.split("_")[0], self.voice_mapping["default"]
                 ),
             )
+
+    def _get_department_category(self, department: str) -> str:
+        """
+        Categorize department into broad categories for voice selection.
+
+        Args:
+            department: Department name
+
+        Returns:
+            str: Category (stem, humanities, business, or default)
+        """
+        department = department.lower()
+
+        # STEM departments
+        if any(
+            stem in department
+            for stem in [
+                "comput",
+                "math",
+                "physics",
+                "biolog",
+                "chem",
+                "engineer",
+                "statistic",
+            ]
+        ):
+            return "stem"
+
+        # Humanities departments
+        elif any(
+            hum in department
+            for hum in [
+                "histor",
+                "philosoph",
+                "english",
+                "art",
+                "language",
+                "literature",
+                "music",
+            ]
+        ):
+            return "humanities"
+
+        # Business departments
+        elif any(
+            bus in department
+            for bus in ["business", "econom", "financ", "account", "market"]
+        ):
+            return "business"
+
+        # Default case
+        return "default"
 
     def split_lecture_into_chunks(
         self, text: str, max_chunk_size: int = DEFAULT_CHUNK_SIZE

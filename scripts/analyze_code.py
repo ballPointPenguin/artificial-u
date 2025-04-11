@@ -1,6 +1,7 @@
+#!/usr/bin/env python3
+
 import os
 import ast
-from collections import defaultdict
 import re
 
 
