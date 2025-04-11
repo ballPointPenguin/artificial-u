@@ -4,8 +4,22 @@ Pytest configuration and shared fixtures.
 
 import os
 import sys
+import logging
 from pathlib import Path
-from dotenv import load_dotenv
+from typing import Generator
+
+import pytest
+
+# Add the project root to Python path (must happen before imports)
+project_root = str(Path(__file__).parent.parent)
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
+
+# Import the settings (this will auto-load .env.test in test environments)
+from artificial_u.config.settings import get_settings
+
+# Ensure environment is set up for testing
+os.environ["TESTING"] = "true"
 
 
 # Define helper functions at the top
@@ -22,14 +36,6 @@ def pytest_ignore_collect(path, config):
     return False
 
 
-# Load test environment variables at the very beginning
-# This needs to happen before any imports that might need these values
-load_dotenv(".env.test", override=True)
-
-import pytest
-from typing import Generator
-import logging
-
 # Only import these if we're not running unit tests or if we're in the unit directory
 # This prevents import errors from other modules when running unit tests
 if not is_unit_test() or "tests/unit" in os.getcwd():
@@ -39,14 +45,11 @@ if not is_unit_test() or "tests/unit" in os.getcwd():
     from artificial_u.system import UniversitySystem
 else:
     # Create placeholder classes/variables to avoid import errors
+    create_engine = lambda x: None
+    OperationalError = Exception
     Repository = object
     Base = object
     UniversitySystem = object
-
-# Add the project root to Python path
-project_root = str(Path(__file__).parent.parent)
-if project_root not in sys.path:
-    sys.path.insert(0, project_root)
 
 
 def check_database_exists(db_url: str) -> bool:
@@ -75,22 +78,23 @@ def check_database_exists(db_url: str) -> bool:
 
 
 @pytest.fixture(scope="session", autouse=True)
-def load_env():
+def verify_test_environment():
     """
-    Load environment variables from .env.test file.
-    This is redundant with the load at the top, but kept for backward compatibility.
+    Verify test environment settings
     """
-    # Already loaded at the top
+    settings = get_settings()
+    assert settings.testing is True, "Settings should be in test mode"
+    assert (
+        settings.environment.value == "testing"
+    ), "Environment should be set to testing"
     yield
 
 
 @pytest.fixture(scope="session")
 def test_db_url() -> str:
     """Provide PostgreSQL URL for tests."""
-    db_url = os.environ.get(
-        "DATABASE_URL",
-        "postgresql://postgres:postgres@localhost:5432/artificial_u_test",
-    )
+    settings = get_settings()
+    db_url = settings.DATABASE_URL
 
     # Check if database exists
     if not check_database_exists(db_url):
@@ -125,8 +129,10 @@ def repository(test_db_url: str) -> Generator[Repository, None, None]:
 @pytest.fixture
 def mock_system(repository: Repository, test_audio_path: Path) -> UniversitySystem:
     """Provide a UniversitySystem instance with mocked external dependencies."""
+    settings = get_settings()
+
     return UniversitySystem(
-        anthropic_api_key="mock_anthropic_key",
-        elevenlabs_api_key="mock_elevenlabs_key",
+        anthropic_api_key=settings.ANTHROPIC_API_KEY or "mock_anthropic_key",
+        elevenlabs_api_key=settings.ELEVENLABS_API_KEY or "mock_elevenlabs_key",
         audio_path=str(test_audio_path),
     )

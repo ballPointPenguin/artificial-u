@@ -7,38 +7,31 @@ import os
 import sys
 import subprocess
 from pathlib import Path
-from dotenv import load_dotenv
+
+# Add the project root to Python path
+project_root = Path(__file__).parent.parent
+sys.path.insert(0, str(project_root))
+
+# Set up test environment
+os.environ["TESTING"] = "true"
+os.environ["ENV_FILE"] = str(project_root / ".env.test")
+
+# Import settings (will automatically load .env.test)
+from artificial_u.config.settings import get_settings
 
 
 def setup_test_database():
     """Create and set up the test database."""
-    # Get the project root directory
-    project_root = Path(__file__).parent.parent
+    # Get settings for the test environment
+    settings = get_settings()
+    print(f"Environment: {settings.environment}")
 
-    # Load test environment variables from the correct path
-    env_path = project_root / ".env.test"
-    print(f"Loading environment from: {env_path.absolute()}")
-
-    # First reset any existing environment variables that might be interfering
-    if "DATABASE_URL" in os.environ:
-        print(f"Clearing existing DATABASE_URL: {os.environ['DATABASE_URL']}")
-        del os.environ["DATABASE_URL"]
-
-    # Load the test environment
-    load_dotenv(env_path, override=True)
-
-    # Debug: print all environment variables
-    print("\nEnvironment variables:")
-    for key, value in os.environ.items():
-        if key.startswith("DATABASE") or "TEST" in key:
-            print(f"{key}={value}")
-    print()
-
-    # Get connection info from .env.test
-    db_url = os.environ.get("DATABASE_URL")
+    # Get database URL from settings
+    db_url = settings.DATABASE_URL
+    print(f"Using database URL: {db_url}")
 
     if not db_url:
-        print("Error: DATABASE_URL not found in .env.test")
+        print("Error: DATABASE_URL not found in test settings")
         return False
 
     # Extract database name and connection details from URL
@@ -61,65 +54,23 @@ def setup_test_database():
     print(f"Setting up test database: {db_name}")
     print(f"Using connection string: {connection_string}")
 
-    # Drop the test database if it exists
-    drop_db_cmd = [
-        "psql",
-        "-U",
-        db_user,
-        "-h",
-        "localhost",
-        "-c",
-        f"DROP DATABASE IF EXISTS {db_name} WITH (FORCE);",
-    ]
-
     try:
-        print("Dropping existing database...")
-        result = subprocess.run(drop_db_cmd, check=True, capture_output=True, text=True)
-        print(f"Dropped existing database: {db_name}")
-        print(f"Output: {result.stdout}")
-    except subprocess.CalledProcessError as e:
-        print(f"Warning: Failed to drop database: {e}")
-        print(f"Error output: {e.stderr}")
+        # Drop the database if it exists
+        drop_cmd = f"dropdb --if-exists -h {db_url.split('@')[1].split('/')[0]} -U {db_user} {db_name}"
+        print(f"Dropping existing database: {drop_cmd}")
+        subprocess.run(drop_cmd, shell=True, check=True)
 
-    # Create the test database
-    create_db_cmd = [
-        "psql",
-        "-U",
-        db_user,
-        "-h",
-        "localhost",
-        "-c",
-        f"CREATE DATABASE {db_name};",
-    ]
-
-    try:
-        print("Creating database...")
-        result = subprocess.run(
-            create_db_cmd, check=True, capture_output=True, text=True
+        # Create the database
+        create_cmd = (
+            f"createdb -h {db_url.split('@')[1].split('/')[0]} -U {db_user} {db_name}"
         )
-        print(f"Created database: {db_name}")
-        print(f"Output: {result.stdout}")
-    except subprocess.CalledProcessError as e:
-        print(f"Error creating database: {e}")
-        print(f"Error output: {e.stderr}")
-        return False
+        print(f"Creating database: {create_cmd}")
+        subprocess.run(create_cmd, shell=True, check=True)
 
-    # Run initialize_db.py with the test database URL
-    try:
-        print("Running database initialization...")
-        script_path = os.path.join(project_root, "scripts", "initialize_db.py")
-        result = subprocess.run(
-            [sys.executable, script_path, "--db-url", db_url, "--yes"],
-            check=True,
-            capture_output=True,
-            text=True,
-        )
-        print("Test database initialized successfully")
-        print(f"Output: {result.stdout}")
+        print(f"Successfully created database '{db_name}'")
         return True
     except subprocess.CalledProcessError as e:
-        print(f"Error initializing test database: {e}")
-        print(f"Error output: {e.stderr}")
+        print(f"Error creating test database: {e}")
         return False
 
 

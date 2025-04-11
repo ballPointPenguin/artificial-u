@@ -1,12 +1,14 @@
 """
 Global pytest configuration file.
-Ensures all tests use the test environment variables from .env.test
-EXCEPT for manual tests which need real API credentials.
+Ensures tests use the proper environment settings.
 """
 
 import os
 import sys
-from dotenv import load_dotenv
+import pytest
+
+# Import the settings (this will auto-load .env.test in test environments)
+from artificial_u.config.settings import get_settings
 
 
 # Check if we're running manual tests
@@ -29,34 +31,46 @@ def pytest_ignore_collect(path, config):
     return False
 
 
-# Load environment variables at the very beginning
+# Ensure environment is correctly set up for tests
 if not is_manual_test():
-    # Normal tests - load the test environment variables
-    load_dotenv(".env.test", override=True)
+    # For automated tests, make sure TESTING flag is set
     os.environ["TESTING"] = "true"
     print("Using TEST environment variables for automated tests")
 else:
-    # Manual tests - load regular .env file if available
-    load_dotenv(".env")
+    # For manual tests, clear TESTING flag if set
+    if "TESTING" in os.environ:
+        del os.environ["TESTING"]
     print("Using REAL environment variables for manual tests")
-
-import pytest
 
 
 @pytest.fixture(scope="session", autouse=True)
-def load_env_vars():
+def verify_test_environment():
     """
-    Load environment variables appropriately for the test type:
-    - For regular automated tests: Use .env.test with test credentials
-    - For manual tests: Use real credentials from .env
+    Verify test environment configuration:
+    - For regular automated tests: Check we're using test values
+    - For manual tests: Check we're using real values
+    """
+    # Get settings (will load the correct configuration based on environment)
+    settings = get_settings()
 
-    This is redundant with the load at the top, but kept to verify credentials.
-    """
     if not is_manual_test():
-        # Verify we're using test credentials
-        assert os.environ.get("ELEVENLABS_API_KEY") == "test_elevenlabs_key"
-        assert os.environ.get("ANTHROPIC_API_KEY") == "test_anthropic_key"
+        # Verify we're using test credentials in automated tests
+        assert settings.testing is True, "Settings should be in test mode"
+        assert os.environ.get("TESTING") == "true", "TESTING flag should be set"
+        assert (
+            settings.environment.value == "testing"
+        ), "Environment should be 'testing'"
+
+        # Verify we have the expected test key values
+        if settings.ELEVENLABS_API_KEY:
+            assert (
+                settings.ELEVENLABS_API_KEY == "test_elevenlabs_key"
+            ), "Using incorrect ElevenLabs key"
+        if settings.ANTHROPIC_API_KEY:
+            assert (
+                settings.ANTHROPIC_API_KEY == "test_anthropic_key"
+            ), "Using incorrect Anthropic key"
 
     yield
 
-    # Clean up is not strictly necessary as environment variables persist only for the duration of the process
+    # No cleanup needed

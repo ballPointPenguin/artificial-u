@@ -50,6 +50,7 @@ lecture_texts/
 htmlcov/
 test_audio_files/
 test_exports/
+test_lectures/
 test_university.db
 
 # Pip-tools
