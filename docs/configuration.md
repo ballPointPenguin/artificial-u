@@ -91,6 +91,72 @@ db_url = config.db_url
 
 The `ConfigManager` now delegates to the new `Settings` system internally.
 
+## Storage Configuration (MinIO/S3)
+
+ArtificialU supports two storage options:
+
+1. **Local MinIO**: For development environments (default)
+2. **AWS S3**: For production environments
+
+### MinIO Configuration
+
+When using MinIO in development, the following settings are used:
+
+```python
+STORAGE_TYPE = "minio"
+STORAGE_ENDPOINT_URL = "http://minio:9000"  # For MinIO in Docker network
+STORAGE_PUBLIC_URL = "http://localhost:9000"  # For public access URLs
+STORAGE_ACCESS_KEY = "minioadmin"
+STORAGE_SECRET_KEY = "minioadmin"
+STORAGE_REGION = "us-east-1"
+STORAGE_AUDIO_BUCKET = "artificial-u-audio"
+STORAGE_LECTURES_BUCKET = "artificial-u-lectures"
+STORAGE_IMAGES_BUCKET = "artificial-u-images"
+```
+
+### AWS S3 Configuration
+
+For production environments, set these variables in your `.env` file:
+
+```
+STORAGE_TYPE=s3
+STORAGE_ACCESS_KEY=your-aws-access-key
+STORAGE_SECRET_KEY=your-aws-secret-key
+STORAGE_REGION=your-aws-region
+STORAGE_AUDIO_BUCKET=your-audio-bucket
+STORAGE_LECTURES_BUCKET=your-lectures-bucket
+STORAGE_IMAGES_BUCKET=your-images-bucket
+```
+
+### Storage Service Usage
+
+The `StorageService` provides a unified API for both MinIO and S3:
+
+```python
+from artificial_u.services import StorageService
+
+# Initialize the service (uses settings from config)
+storage = StorageService()
+
+# Upload a file
+success, url = await storage.upload_audio_file(
+    file_data=audio_bytes,
+    object_name="course123/week1/lecture1.mp3",
+    content_type="audio/mpeg"
+)
+
+# Download a file
+audio_data, content_type = await storage.download_audio_file(
+    object_name="course123/week1/lecture1.mp3"
+)
+
+# Get URL for a file
+url = storage.get_file_url(
+    bucket="artificial-u-audio",
+    object_name="course123/week1/lecture1.mp3"
+)
+```
+
 ## Available Configuration Options
 
 | Setting | Description | Default |
@@ -107,3 +173,12 @@ The `ConfigManager` now delegates to the new `Settings` system internally.
 | `content_model` | Model for chosen backend | Depends on backend |
 | `enable_caching` | Whether to enable caching | `False` |
 | `cache_metrics` | Whether to track cache metrics | `True` |
+| `STORAGE_TYPE` | Storage type ("minio" or "s3") | `minio` |
+| `STORAGE_ENDPOINT_URL` | MinIO endpoint URL | `http://minio:9000` |
+| `STORAGE_PUBLIC_URL` | Public URL for MinIO | `http://localhost:9000` |
+| `STORAGE_ACCESS_KEY` | Storage access key | `minioadmin` |
+| `STORAGE_SECRET_KEY` | Storage secret key | `minioadmin` |
+| `STORAGE_REGION` | Storage region | `us-east-1` |
+| `STORAGE_AUDIO_BUCKET` | Bucket for audio files | `artificial-u-audio` |
+| `STORAGE_LECTURES_BUCKET` | Bucket for lecture files | `artificial-u-lectures` |
+| `STORAGE_IMAGES_BUCKET` | Bucket for image files | `artificial-u-images` |

@@ -18,6 +18,17 @@ DEFAULT_TEXT_EXPORT_PATH = "lecture_texts"
 DEFAULT_CONTENT_BACKEND = "anthropic"
 DEFAULT_OLLAMA_MODEL = "tinyllama"
 
+# Storage defaults
+DEFAULT_STORAGE_TYPE = "minio"  # "minio" or "s3"
+DEFAULT_STORAGE_ENDPOINT_URL = "http://minio:9000"  # For MinIO in Docker network
+DEFAULT_STORAGE_PUBLIC_URL = "http://localhost:9000"  # For public access URLs
+DEFAULT_STORAGE_ACCESS_KEY = "minioadmin"
+DEFAULT_STORAGE_SECRET_KEY = "minioadmin"
+DEFAULT_STORAGE_REGION = "us-east-1"
+DEFAULT_STORAGE_AUDIO_BUCKET = "artificial-u-audio"
+DEFAULT_STORAGE_LECTURES_BUCKET = "artificial-u-lectures"
+DEFAULT_STORAGE_IMAGES_BUCKET = "artificial-u-images"
+
 # Professor defaults
 PROFESSOR_TITLES = [
     "Professor",

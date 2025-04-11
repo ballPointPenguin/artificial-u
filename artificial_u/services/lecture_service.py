@@ -2,6 +2,8 @@
 Lecture management service for ArtificialU.
 """
 
+# pylint: disable=too-many-arguments,too-many-instance-attributes
+
 import os
 import logging
 from typing import Dict, List, Optional, Tuple, Any
@@ -16,6 +18,10 @@ from artificial_u.utils.exceptions import (
     LectureNotFoundError,
 )
 from artificial_u.config.defaults import DEFAULT_LECTURE_WORD_COUNT
+from artificial_u.models.database import Repository
+from artificial_u.services.professor_service import ProfessorService
+from artificial_u.services.course_service import CourseService
+from artificial_u.services.storage_service import StorageService
 
 
 class LectureService:
@@ -32,6 +38,7 @@ class LectureService:
         content_backend=None,
         content_model=None,
         enable_caching=False,
+        storage_service=None,
         logger=None,
     ):
         """
@@ -47,6 +54,7 @@ class LectureService:
             content_backend: Name of content backend being used
             content_model: Name of content model being used
             enable_caching: Whether caching is enabled
+            storage_service: Optional storage service for file operations
             logger: Optional logger instance
         """
         self.repository = repository
@@ -58,6 +66,7 @@ class LectureService:
         self.content_backend = content_backend
         self.content_model = content_model
         self.enable_caching = enable_caching
+        self.storage_service = storage_service or StorageService(logger=logger)
         self.logger = logger or logging.getLogger(__name__)
 
         # Ensure text export directory exists
@@ -116,7 +125,33 @@ class LectureService:
 
         # Export lecture text to file if export path is configured
         if self.text_export_path:
-            self.export_lecture_text(lecture, course, professor)
+            # Handle exporting lecture text
+            import asyncio
+
+            try:
+                # Try to get the current event loop
+                loop = asyncio.get_event_loop()
+                # Check if we're in an async context
+                if loop.is_running():
+                    # We're in an async context (e.g., in a test with pytest-asyncio)
+                    # Schedule the task without waiting for it
+                    asyncio.create_task(
+                        self.export_lecture_text(lecture, course, professor)
+                    )
+                else:
+                    # We're not in an async context, run the coroutine to completion
+                    loop.run_until_complete(
+                        self.export_lecture_text(lecture, course, professor)
+                    )
+            except RuntimeError:
+                # No event loop in this thread, create a new one
+                loop = asyncio.new_event_loop()
+                try:
+                    loop.run_until_complete(
+                        self.export_lecture_text(lecture, course, professor)
+                    )
+                finally:
+                    loop.close()
 
         return lecture, course, professor
 
@@ -235,49 +270,61 @@ class LectureService:
             self.logger.error(error_msg)
             raise ContentGenerationError(error_msg) from e
 
-    def export_lecture_text(
+    async def export_lecture_text(
         self, lecture: Lecture, course: Course, professor: Professor
     ) -> str:
         """
-        Export lecture content to a text file.
+        Export lecture content to a text file and storage.
 
         Args:
-            lecture: The lecture object
-            course: The course object
-            professor: The professor object
+            lecture: Lecture to export
+            course: Course the lecture belongs to
+            professor: Professor teaching the lecture
 
         Returns:
-            str: Path to the exported text file
+            Path to the exported file
         """
-        self.logger.info(
-            f"Exporting lecture text for {course.code} W{lecture.week_number} L{lecture.order_in_week}"
+        # Generate header and content
+        header = self._generate_lecture_file_header(lecture, course, professor)
+        full_text = f"{header}\n\n{lecture.content}"
+
+        # Create local file path
+        local_file_path = ""
+        if self.text_export_path:
+            # Ensure export directory exists
+            course_dir = os.path.join(self.text_export_path, course.code)
+            os.makedirs(course_dir, exist_ok=True)
+
+            # Create local file path
+            filename = f"week{lecture.week_number}_lecture{lecture.order_in_week}.md"
+            local_file_path = os.path.join(course_dir, filename)
+
+            # Save to local file
+            with open(local_file_path, "w", encoding="utf-8") as f:
+                f.write(full_text)
+
+            self.logger.info(f"Lecture text exported to {local_file_path}")
+
+        # Upload to storage
+        storage_key = self.storage_service.generate_lecture_key(
+            course_id=course.code,
+            week_number=lecture.week_number,
+            lecture_order=lecture.order_in_week,
         )
 
-        # Create a filename based on course code, week, and lecture number
-        filename = f"{course.code}_W{lecture.week_number}_L{lecture.order_in_week}.md"
+        # Upload markdown file to storage
+        success, storage_url = await self.storage_service.upload_lecture_file(
+            file_data=full_text.encode("utf-8"),
+            object_name=storage_key,
+            content_type="text/markdown",
+        )
 
-        # Create a folder for the course if it doesn't exist
-        course_folder = Path(self.text_export_path) / course.code
-        course_folder.mkdir(exist_ok=True)
-
-        # Full path to the text file
-        file_path = course_folder / filename
-
-        try:
-            # Create header metadata
-            header = self._generate_lecture_file_header(lecture, course, professor)
-
-            # Write the content to the file
-            with open(file_path, "w") as f:
-                f.write(header + lecture.content)
-
-            self.logger.info(f"Lecture text exported to {file_path}")
-            return str(file_path)
-        except Exception as e:
-            error_msg = f"Failed to export lecture text: {str(e)}"
-            self.logger.error(error_msg)
-            # Continue despite error, just log it
-            return ""
+        if success:
+            self.logger.info(f"Lecture text uploaded to storage at {storage_url}")
+            return storage_url
+        else:
+            self.logger.warning("Failed to upload lecture text to storage")
+            return local_file_path
 
     def _generate_lecture_file_header(
         self, lecture: Lecture, course: Course, professor: Professor
@@ -338,16 +385,16 @@ class LectureService:
         Args:
             course_code: Course code
             week: Week number
-            number: Lecture number
+            number: Lecture number within the week
 
         Returns:
-            str: Path to the exported text file
+            Path to the exported file
         """
-        if not self.text_export_path:
-            return ""
-
-        filename = f"{course_code}_W{week}_L{number}.md"
-        return str(Path(self.text_export_path) / course_code / filename)
+        if self.text_export_path:
+            return os.path.join(
+                self.text_export_path, course_code, f"week{week}_lecture{number}.md"
+            )
+        return ""
 
     def create_lecture_series(
         self,

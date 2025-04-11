@@ -3,12 +3,14 @@ Audio processing service for ArtificialU.
 """
 
 import logging
+import os
 from typing import Optional, Tuple, Dict, Any, List
 
 from artificial_u.models.core import Lecture, Professor
 from artificial_u.utils.exceptions import AudioProcessingError
 from artificial_u.services.voice_service import VoiceService
 from artificial_u.services.tts_service import TTSService
+from artificial_u.services.storage_service import StorageService
 
 
 class AudioService:
@@ -21,6 +23,7 @@ class AudioService:
         audio_path: Optional[str] = None,
         voice_service: Optional[VoiceService] = None,
         tts_service: Optional[TTSService] = None,
+        storage_service: Optional[StorageService] = None,
         logger=None,
     ):
         """
@@ -32,10 +35,12 @@ class AudioService:
             audio_path: Optional path for storing audio files
             voice_service: Optional voice service instance
             tts_service: Optional TTS service instance
+            storage_service: Optional storage service instance
             logger: Optional logger instance
         """
         self.logger = logger or logging.getLogger(__name__)
         self.repository = repository
+        self.audio_path = audio_path
 
         # Initialize services
         self.voice_service = voice_service or VoiceService(
@@ -44,8 +49,9 @@ class AudioService:
         self.tts_service = tts_service or TTSService(
             api_key=api_key, audio_path=audio_path, logger=self.logger
         )
+        self.storage_service = storage_service or StorageService(logger=self.logger)
 
-    def create_lecture_audio(
+    async def create_lecture_audio(
         self, course_code: str, week: int, number: int = 1
     ) -> Tuple[str, Lecture]:
         """
@@ -110,14 +116,31 @@ class AudioService:
                 voice_id = professor.voice_settings["voice_id"]
 
             # Generate audio using TTS service
-            audio_path, _ = self.tts_service.generate_lecture_audio(
+            local_audio_path, audio_data = self.tts_service.generate_lecture_audio(
                 lecture=lecture,
                 professor=professor,
                 voice_id=voice_id,
-                save_to_file=True,
+                save_to_file=False,  # Don't save to local file here - we'll use storage service
             )
 
-            self.logger.info(f"Audio generated at {audio_path}")
+            # Upload to storage service (MinIO/S3)
+            storage_key = self.storage_service.generate_audio_key(
+                course_id=course_code, week_number=week, lecture_order=number
+            )
+
+            success, storage_url = await self.storage_service.upload_audio_file(
+                file_data=audio_data, object_name=storage_key, content_type="audio/mpeg"
+            )
+
+            if not success:
+                error_msg = f"Failed to upload audio to storage"
+                self.logger.error(error_msg)
+                raise AudioProcessingError(error_msg)
+
+            # Set the audio path to the storage URL
+            audio_path = storage_url
+
+            self.logger.info(f"Audio uploaded to storage at {storage_url}")
 
         except Exception as e:
             error_msg = f"Failed to generate audio: {str(e)}"
@@ -174,11 +197,39 @@ class AudioService:
         """
         return self.tts_service.test_connection()
 
-    def play_audio(self, audio_data_or_path):
+    async def play_audio(self, audio_data_or_path):
         """
-        Play audio from data or file path.
+        Play audio from data or file path, or fetch from storage if path is a URL.
 
         Args:
-            audio_data_or_path: Audio data or file path
+            audio_data_or_path: Audio data, local file path, or storage URL
         """
-        self.tts_service.play_audio(audio_data_or_path)
+        # Check if it's a storage URL
+        if isinstance(audio_data_or_path, str) and (
+            audio_data_or_path.startswith("http://")
+            or audio_data_or_path.startswith("https://")
+        ):
+            # Parse URL to extract bucket and object key
+            # This is a simplified example and may need adjustment based on URL format
+            parts = audio_data_or_path.split("/")
+            if len(parts) >= 4:  # Protocol + empty + host + bucket + key
+                bucket = parts[3]
+                object_name = "/".join(parts[4:])
+
+                # Download from storage
+                audio_data, _ = await self.storage_service.download_file(
+                    bucket, object_name
+                )
+                if audio_data:
+                    self.tts_service.play_audio(audio_data)
+                else:
+                    raise AudioProcessingError(
+                        f"Failed to download audio from {audio_data_or_path}"
+                    )
+            else:
+                raise AudioProcessingError(
+                    f"Invalid storage URL format: {audio_data_or_path}"
+                )
+        else:
+            # Play local file or direct audio data
+            self.tts_service.play_audio(audio_data_or_path)

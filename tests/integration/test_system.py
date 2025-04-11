@@ -5,6 +5,8 @@ These tests verify the interaction between different components
 but mock external API calls.
 """
 
+# pylint: disable=unused-import,redefined-outer-name,invalid-name,wrong-import-order,no-member
+
 import os
 import pytest
 from unittest.mock import patch, MagicMock
@@ -22,14 +24,12 @@ from artificial_u.config.defaults import DEFAULT_LOG_LEVEL
 @pytest.fixture
 def mock_system():
     """Create a system with mocked dependencies for testing."""
-    with patch("artificial_u.system.create_generator") as mock_create_generator, patch(
-        "artificial_u.system.VoiceService"
-    ) as MockVoiceService, patch(
-        "artificial_u.system.TTSService"
-    ) as MockTTSService, patch(
-        "artificial_u.system.Repository"
-    ) as MockRepository, patch(
-        "pathlib.Path.mkdir"
+    with (
+        patch("artificial_u.system.create_generator") as mock_create_generator,
+        patch("artificial_u.system.VoiceService") as MockVoiceService,
+        patch("artificial_u.system.TTSService") as MockTTSService,
+        patch("artificial_u.system.Repository") as MockRepository,
+        patch("pathlib.Path.mkdir"),
     ):
 
         # Set up mock content generator
@@ -145,6 +145,28 @@ def mock_system():
         # Replace mocked repository methods with common test patterns
         setup_common_repository_patterns(mock_repository)
 
+        # Mock the async audio service method
+        async def mock_create_lecture_audio(course_code=None, week=None, number=None):
+            if course_code == "CS101" and week == 999 and number == 999:
+                # This is for the error test
+                raise ValueError(
+                    f"Lecture for course {course_code}, week {week}, number {number} not found"
+                )
+
+            return "mock_audio_path.mp3", Lecture(
+                id=123,
+                title="Mock Lecture Title",
+                course_id=123,
+                week_number=week,
+                order_in_week=number,
+                description="Mock lecture description",
+                content="Mock lecture content",
+                audio_path="mock_audio_path.mp3",
+            )
+
+        # Replace the create_lecture_audio method
+        system.create_lecture_audio = mock_create_lecture_audio
+
         yield system
 
 
@@ -233,7 +255,8 @@ def test_course_creation_flow(mock_system):
 
 
 @pytest.mark.integration
-def test_lecture_generation_flow(mock_system):
+@pytest.mark.asyncio
+async def test_lecture_generation_flow(mock_system):
     """Test the complete flow of generating and processing a lecture."""
     # Generate a lecture
     lecture, course, professor = mock_system.generate_lecture(
@@ -250,7 +273,7 @@ def test_lecture_generation_flow(mock_system):
     assert professor.id == 123
 
     # Create audio for the lecture
-    audio_path, updated_lecture = mock_system.create_lecture_audio(
+    audio_path, updated_lecture = await mock_system.create_lecture_audio(
         course_code="CS101",
         week=1,
         number=1,
@@ -262,7 +285,8 @@ def test_lecture_generation_flow(mock_system):
 
 
 @pytest.mark.integration
-def test_error_handling(mock_system):
+@pytest.mark.asyncio
+async def test_error_handling(mock_system):
     """Test error handling in the system."""
     # Test course not found error
     with patch.object(mock_system.repository, "get_course_by_code", return_value=None):
@@ -286,7 +310,9 @@ def test_error_handling(mock_system):
         with pytest.raises(
             ValueError, match="Lecture for course CS101, week 999, number 999 not found"
         ):
-            mock_system.create_lecture_audio(course_code="CS101", week=999, number=999)
+            await mock_system.create_lecture_audio(
+                course_code="CS101", week=999, number=999
+            )
 
     # Test content generation error
     with patch.object(

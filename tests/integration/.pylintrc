@@ -1,0 +1,10 @@
+[MASTER]
+# Test files often have these issues, so we disable them:
+disable=C0103,  # invalid-name - Test fixtures often have names that don't follow the snake_case convention
+       W0621,   # redefined-outer-name - pytest fixtures cause this warning
+       C0411,   # wrong-import-order - Less important in test files
+       W0611,   # unused-import - Test files sometimes import for fixtures that don't appear as direct usage
+       E1101,   # no-member - Dynamic attributes in tests
+       C0111,   # missing-docstring - Test functions are often self-describing
+       R0913,   # too-many-arguments - Test fixtures often need many arguments
+       R0914    # too-many-locals - Tests sometimes need many local variables

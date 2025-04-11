@@ -10,9 +10,11 @@ import sys
 import click
 import platform
 import subprocess
+import asyncio
 from pathlib import Path
 from dotenv import load_dotenv
 import traceback
+from typing import Optional, List, Dict
 
 from artificial_u.system import UniversitySystem
 from artificial_u.config.defaults import DEPARTMENTS
@@ -20,7 +22,7 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
 from rich.markdown import Markdown
-from rich.prompt import Confirm
+from rich.prompt import Confirm, Prompt
 from rich.progress import (
     Progress,
     SpinnerColumn,
@@ -29,6 +31,7 @@ from rich.progress import (
     TimeElapsedColumn,
     MofNCompleteColumn,
 )
+from rich.syntax import Syntax
 
 # Load environment variables
 load_dotenv()
@@ -50,6 +53,12 @@ def get_system():
         university_system = UniversitySystem(
             anthropic_api_key=anthropic_key,
             elevenlabs_api_key=elevenlabs_key,
+            db_url=os.environ.get("DATABASE_URL"),
+            audio_path=os.environ.get("AUDIO_PATH"),
+            content_backend=os.environ.get("CONTENT_BACKEND"),
+            content_model=os.environ.get("CONTENT_MODEL"),
+            text_export_path=os.environ.get("TEXT_EXPORT_PATH"),
+            log_level=os.environ.get("LOG_LEVEL"),
         )
 
     return university_system
@@ -304,35 +313,18 @@ def create_professor(
 def generate_lecture(course_code, week, number, topic, word_count, enable_caching):
     """Generate a lecture for a course."""
     try:
-        # Get the system
         system = get_system()
-
-        # Update the system to use caching if requested
-        if enable_caching and system.content_backend != "anthropic":
-            console.print(
-                "[yellow]Warning:[/yellow] Prompt caching is only available with the Anthropic backend"
-            )
-
-        # Enable caching if requested and using Anthropic
-        if enable_caching and system.content_backend == "anthropic":
-            system.enable_caching = True
-            console.print(
-                "[blue]Info:[/blue] Prompt caching enabled for this lecture generation"
-            )
-
-        # Check if course exists
-        course = system.repository.get_course_by_code(course_code)
-        if not course:
-            console.print(f"[red]Error:[/red] Course {course_code} not found")
-            return
 
         console.print(
             Panel(
                 f"Generating lecture for [bold]{course_code}[/bold]",
-                subtitle=f"Week {week}, Lecture {number}"
-                + (f" - Topic: {topic}" if topic else ""),
+                subtitle=f"Week {week}, Lecture {number}",
             )
         )
+
+        # Modify system's caching setting if needed
+        if enable_caching:
+            system.config.enable_caching = True
 
         with Progress(
             SpinnerColumn(),
@@ -341,7 +333,7 @@ def generate_lecture(course_code, week, number, topic, word_count, enable_cachin
             TimeElapsedColumn(),
             console=console,
         ) as progress:
-            task = progress.add_task("Generating lecture content...", total=1)
+            task1 = progress.add_task("Generating lecture content...", total=1)
 
             # Generate the lecture
             lecture, course, professor = system.generate_lecture(
@@ -352,17 +344,43 @@ def generate_lecture(course_code, week, number, topic, word_count, enable_cachin
                 word_count=word_count,
             )
 
-            progress.update(task, advance=1)
+            progress.update(task1, advance=1)
+            task2 = progress.add_task("Exporting lecture text...", total=1)
+
+            # Export the lecture text
+            loop = asyncio.get_event_loop()
+            export_path = loop.run_until_complete(
+                system.export_lecture_text(lecture, course, professor)
+            )
+
+            progress.update(task2, advance=1)
 
         # Show success message
         console.print("[green]Lecture generated successfully![/green]")
         console.print(f"Title: {lecture.title}")
-        console.print(f"Word count: approximately {len(lecture.content.split())} words")
+        console.print(f"Word count: ~{len(lecture.content.split())} words")
+        console.print(f"Text exported to: {export_path}")
 
-        # Show file path
-        file_path = system.get_lecture_export_path(course_code, week, number)
-        if os.path.exists(file_path):
-            console.print(f"\nFull lecture saved to: {file_path}")
+        # Ask if user wants to view the lecture
+        if Confirm.ask("View lecture now?"):
+            console.print("\n")
+            console.print(
+                Panel(
+                    f"[bold]{lecture.title}[/bold]",
+                    subtitle=f"{course_code} - {professor.name}",
+                )
+            )
+            console.print(Markdown(lecture.content))
+
+        # Ask if user wants to generate audio
+        if Confirm.ask("Generate audio for this lecture?"):
+            loop = asyncio.get_event_loop()
+            audio_path, _ = loop.run_until_complete(
+                system.create_lecture_audio(
+                    course_code=course_code, week=week, number=number
+                )
+            )
+            console.print(f"[green]Audio created at:[/green] {audio_path}")
 
     except Exception as e:
         console.print(f"[red]Error generating lecture:[/red] {str(e)}")
@@ -396,8 +414,11 @@ def create_audio(course_code, week, number):
             task = progress.add_task("Generating audio...", total=1)
 
             # Create the audio
-            audio_path, lecture = system.create_lecture_audio(
-                course_code=course_code, week=week, number=number
+            loop = asyncio.get_event_loop()
+            audio_path, lecture = loop.run_until_complete(
+                system.create_lecture_audio(
+                    course_code=course_code, week=week, number=number
+                )
             )
 
             progress.update(task, advance=1)
@@ -460,63 +481,81 @@ def list_lectures(course_code, limit, model):
     "--number", "-n", default=1, type=int, help="Lecture number within the week"
 )
 def play_lecture(course_code, week, number):
-    """Play an audio lecture (if available)."""
+    """Play audio for an existing lecture."""
     try:
         system = get_system()
 
-        # Find the lecture to get the audio path
-        course = system.repository.get_course_by_code(course_code)
-        if not course:
-            console.print(f"[red]Error:[/red] Course {course_code} not found")
-            return
-
-        lecture = system.repository.get_lecture_by_course_week_order(
-            course_id=course.id, week_number=week, order_in_week=number
+        # Check if lecture exists
+        lectures = system.get_lecture_preview(course_code=course_code)
+        lecture = next(
+            (
+                l
+                for l in lectures
+                if l["course_code"] == course_code
+                and l["week"] == week
+                and l["number"] == number
+            ),
+            None,
         )
 
         if not lecture:
             console.print(
-                f"[red]Error:[/red] Lecture not found for {course_code}, Week {week}, Number {number}"
-            )
-            console.print(
-                "Try generating the lecture first with [bold]generate-lecture[/bold] command"
+                f"[red]Lecture for {course_code}, week {week}, number {number} not found.[/red]"
             )
             return
 
-        audio_path = lecture.audio_path
+        if not lecture.get("audio_path"):
+            console.print("[yellow]No audio available for this lecture.[/yellow]")
 
-        if not audio_path or not os.path.exists(audio_path):
-            console.print(f"[red]Error:[/red] Audio file not found")
-            console.print(
-                "Try generating the audio first with [bold]create-audio[/bold] command"
-            )
-            return
+            # Ask if user wants to generate audio
+            if Confirm.ask("Generate audio now?"):
+                with Progress(
+                    SpinnerColumn(),
+                    TextColumn("[bold blue]{task.description}"),
+                    BarColumn(),
+                    TimeElapsedColumn(),
+                    console=console,
+                ) as progress:
+                    task = progress.add_task("Generating audio...", total=1)
 
+                    # Create the audio using asyncio
+                    loop = asyncio.get_event_loop()
+                    audio_path, _ = loop.run_until_complete(
+                        system.create_lecture_audio(
+                            course_code=course_code, week=week, number=number
+                        )
+                    )
+
+                    progress.update(task, advance=1)
+
+                console.print(f"[green]Audio created at:[/green] {audio_path}")
+
+                # Update the lecture info with the new audio path
+                lecture["audio_path"] = audio_path
+            else:
+                return
+
+        audio_path = lecture["audio_path"]
         console.print(
-            f"Playing lecture for [bold]{course_code}[/bold] Week {week}, Lecture {number}"
+            Panel(
+                f"Playing audio for [bold]{lecture['title']}[/bold]",
+                subtitle=f"{course_code}, Week {week}, Lecture {number}",
+            )
         )
-        console.print(f"Audio file: {audio_path}")
 
-        if Confirm.ask("Would you like to try playing the audio?", default=True):
-            try:
-                system_name = platform.system()
-
-                if system_name == "Darwin":  # macOS
-                    subprocess.run(["open", audio_path])
-                elif system_name == "Windows":
-                    os.startfile(audio_path)
-                else:  # Linux or other
-                    subprocess.run(["xdg-open", audio_path])
-
-                console.print("[green]Audio playback initiated.[/green]")
-            except Exception as e:
-                console.print(f"[red]Could not play audio:[/red] {str(e)}")
-                console.print(
-                    f"Please open {audio_path} manually with your media player."
-                )
+        # Play the audio using asyncio
+        try:
+            console.print("[green]Playing...[/green]")
+            loop = asyncio.get_event_loop()
+            loop.run_until_complete(system.play_audio(audio_path))
+        except Exception as e:
+            console.print(f"[red]Error playing audio:[/red] {str(e)}")
 
     except Exception as e:
-        console.print(f"[red]Error playing lecture:[/red] {str(e)}")
+        console.print(f"[red]Error:[/red] {str(e)}")
+        import traceback
+
+        traceback.print_exc()
 
 
 @cli.command()
@@ -587,90 +626,67 @@ def generate_lecture_series(
         ./cli.py generate-lecture-series CS101 "Introduction to Programming" "Variables and Data Types" "Control Flow"
     """
     try:
-        # Get the system
         system = get_system()
 
-        # Update the system to use caching if requested
-        if enable_caching and system.content_backend != "anthropic":
-            console.print(
-                "[yellow]Warning:[/yellow] Prompt caching is only available with the Anthropic backend"
-            )
-            enable_caching = False
-
-        # Enable caching if requested and using Anthropic
-        system.enable_caching = enable_caching and system.content_backend == "anthropic"
-
         # Check if course exists
-        course = system.repository.get_course_by_code(course_code)
+        courses = system.list_courses()
+        course = next((c for c in courses if c["code"] == course_code), None)
         if not course:
-            console.print(f"[red]Error:[/red] Course {course_code} not found")
+            console.print(f"[red]Course with code {course_code} not found.[/red]")
             return
-
-        # Convert topics tuple to list
-        topic_list = list(topics)
 
         console.print(
             Panel(
-                f"Generating lecture series for [bold]{course_code}[/bold] with {len(topic_list)} lectures",
-                title="Lecture Series Generation",
-                border_style="blue",
+                f"Generating lecture series for [bold]{course['title']}[/bold] ({course_code})",
+                subtitle=f"Starting from week {starting_week}, {len(topics)} lectures",
             )
         )
 
-        # Display course and professor info
-        professor = system.repository.get_professor(course.professor_id)
-        console.print(f"Course: [bold]{course.title}[/bold] ({course.code})")
-        console.print(f"Professor: [bold]{professor.name}[/bold]")
-        console.print(f"Starting week: [bold]{starting_week}[/bold]")
-        console.print(f"Topics: [bold]{', '.join(topic_list)}[/bold]")
-        console.print(
-            f"Caching enabled: [bold]{'Yes' if system.enable_caching else 'No'}[/bold]"
-        )
+        # Modify system's caching setting if needed
+        if enable_caching:
+            system.config.enable_caching = True
 
-        # Start progress display
+        # Define function to update progress
+        def update_progress():
+            """Track progress for the lecture series generation."""
+            nonlocal task, progress
+            progress.update(task, advance=1)
+
         with Progress(
             SpinnerColumn(),
             TextColumn("[bold blue]{task.description}"),
             BarColumn(),
-            MofNCompleteColumn(),
             TimeElapsedColumn(),
+            console=console,
         ) as progress:
-            task = progress.add_task("Generating lectures...", total=len(topic_list))
+            task = progress.add_task("Generating lecture series...", total=len(topics))
 
-            # Define a callback for progress updates
-            def update_progress():
-                progress.update(task, advance=1)
-
-            # Create lectures with progress tracking
-            lectures = system.create_lecture_series(
+            # Generate the lecture series
+            lecture_series = system.create_lecture_series(
                 course_code=course_code,
-                topics=topic_list,
+                topics=topics,
                 starting_week=starting_week,
                 word_count=word_count,
+                progress_callback=update_progress,
             )
 
-            # Complete the progress bar
-            progress.update(task, completed=len(topic_list))
+        # Show success message
+        console.print("[green]Lecture series generated successfully![/green]")
 
-        # Display success message
-        console.print(
-            f"\n[green]Successfully generated {len(lectures)} lectures![/green]"
-        )
+        # Create table
+        table = Table(title=f"Generated Lectures for {course_code}")
+        table.add_column("Week", style="green")
+        table.add_column("Number", style="green")
+        table.add_column("Title", style="blue")
+        table.add_column("Word Count", style="yellow")
 
-        # Display lecture info
-        table = Table(title=f"Lectures for {course.code}")
-        table.add_column("Week")
-        table.add_column("Number")
-        table.add_column("Title")
-        table.add_column("Word Count")
-
-        for lecture in lectures:
-            word_count = len(lecture.content.split())
+        # Add lectures to table
+        for lecture in lecture_series:
             table.add_row(
                 str(lecture.week_number),
                 str(lecture.order_in_week),
                 lecture.title,
-                str(word_count),
+                str(len(lecture.content.split())),
             )
 
         console.print(table)

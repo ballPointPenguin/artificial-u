@@ -128,9 +128,9 @@ class OllamaClient:
                 messages=ollama_messages,
                 options={
                     "temperature": 0.0,  # Zero temperature = more deterministic, faster
-                    "num_predict": min(200, max_tokens),  # Generate much less text
-                    "num_ctx": 512,  # Smaller context window
-                    "num_thread": 2,  # Use fewer threads
+                    "num_predict": min(100, max_tokens),  # Generate much less text
+                    # "num_ctx": 256,  # Smaller context window
+                    # "num_thread": 2,  # Use fewer threads
                 },
             )
 

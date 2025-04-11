@@ -12,6 +12,7 @@ from artificial_u.config.settings import get_settings
 from artificial_u.config.defaults import (
     DEFAULT_CONTENT_BACKEND,
     DEFAULT_LOG_LEVEL,
+    DEFAULT_STORAGE_TYPE,
 )
 
 # Default caching settings
@@ -39,6 +40,12 @@ class ConfigManager:
         log_level: str = DEFAULT_LOG_LEVEL,
         enable_caching: bool = DEFAULT_ENABLE_CACHING,
         cache_metrics: bool = DEFAULT_CACHE_METRICS,
+        storage_type: str = DEFAULT_STORAGE_TYPE,
+        storage_endpoint_url: Optional[str] = None,
+        storage_public_url: Optional[str] = None,
+        storage_access_key: Optional[str] = None,
+        storage_secret_key: Optional[str] = None,
+        storage_region: Optional[str] = None,
     ):
         """
         Initialize configuration manager.
@@ -70,10 +77,23 @@ class ConfigManager:
         if text_export_path:
             self._settings.TEXT_EXPORT_PATH = text_export_path
 
+        # Storage settings
+        if storage_endpoint_url:
+            self._settings.STORAGE_ENDPOINT_URL = storage_endpoint_url
+        if storage_public_url:
+            self._settings.STORAGE_PUBLIC_URL = storage_public_url
+        if storage_access_key:
+            self._settings.STORAGE_ACCESS_KEY = storage_access_key
+        if storage_secret_key:
+            self._settings.STORAGE_SECRET_KEY = storage_secret_key
+        if storage_region:
+            self._settings.STORAGE_REGION = storage_region
+
         # Always override these settings with explicitly provided values
         self._settings.content_backend = content_backend
         self._settings.enable_caching = enable_caching
         self._settings.cache_metrics = cache_metrics
+        self._settings.STORAGE_TYPE = storage_type
 
         # Set up logging if a custom level was provided
         if log_level != DEFAULT_LOG_LEVEL:
@@ -175,6 +195,81 @@ class ConfigManager:
         """Set cache metrics status"""
         self._settings.cache_metrics = value
 
+    @property
+    def storage_type(self) -> str:
+        """Get storage type"""
+        return self._settings.STORAGE_TYPE
+
+    @storage_type.setter
+    def storage_type(self, value: str):
+        """Set storage type"""
+        self._settings.STORAGE_TYPE = value
+
+    @property
+    def storage_endpoint_url(self) -> str:
+        """Get storage endpoint URL"""
+        return self._settings.STORAGE_ENDPOINT_URL
+
+    @storage_endpoint_url.setter
+    def storage_endpoint_url(self, value: str):
+        """Set storage endpoint URL"""
+        self._settings.STORAGE_ENDPOINT_URL = value
+
+    @property
+    def storage_public_url(self) -> str:
+        """Get storage public URL"""
+        return self._settings.STORAGE_PUBLIC_URL
+
+    @storage_public_url.setter
+    def storage_public_url(self, value: str):
+        """Set storage public URL"""
+        self._settings.STORAGE_PUBLIC_URL = value
+
+    @property
+    def storage_access_key(self) -> str:
+        """Get storage access key"""
+        return self._settings.STORAGE_ACCESS_KEY
+
+    @storage_access_key.setter
+    def storage_access_key(self, value: str):
+        """Set storage access key"""
+        self._settings.STORAGE_ACCESS_KEY = value
+
+    @property
+    def storage_secret_key(self) -> str:
+        """Get storage secret key"""
+        return self._settings.STORAGE_SECRET_KEY
+
+    @storage_secret_key.setter
+    def storage_secret_key(self, value: str):
+        """Set storage secret key"""
+        self._settings.STORAGE_SECRET_KEY = value
+
+    @property
+    def storage_region(self) -> str:
+        """Get storage region"""
+        return self._settings.STORAGE_REGION
+
+    @storage_region.setter
+    def storage_region(self, value: str):
+        """Set storage region"""
+        self._settings.STORAGE_REGION = value
+
+    @property
+    def storage_audio_bucket(self) -> str:
+        """Get storage audio bucket"""
+        return self._settings.STORAGE_AUDIO_BUCKET
+
+    @property
+    def storage_lectures_bucket(self) -> str:
+        """Get storage lectures bucket"""
+        return self._settings.STORAGE_LECTURES_BUCKET
+
+    @property
+    def storage_images_bucket(self) -> str:
+        """Get storage images bucket"""
+        return self._settings.STORAGE_IMAGES_BUCKET
+
     def _log_configuration(self) -> None:
         """Log the current configuration."""
         self.logger.info(f"Using database: {self.db_url}")
@@ -184,6 +279,10 @@ class ConfigManager:
         self.logger.info(f"Caching enabled: {self.enable_caching}")
         self.logger.info(f"Audio path: {self.audio_path}")
         self.logger.info(f"Text export path: {self.text_export_path}")
+        self.logger.info(f"Storage type: {self.storage_type}")
+        if self.storage_type == "minio":
+            self.logger.info(f"MinIO endpoint: {self.storage_endpoint_url}")
+            self.logger.info(f"MinIO public URL: {self.storage_public_url}")
 
     def get_config_dict(self) -> Dict[str, Any]:
         """
@@ -202,4 +301,13 @@ class ConfigManager:
             "text_export_path": self.text_export_path,
             "anthropic_api_key": self.anthropic_api_key,
             "elevenlabs_api_key": self.elevenlabs_api_key,
+            "storage_type": self.storage_type,
+            "storage_endpoint_url": self.storage_endpoint_url,
+            "storage_public_url": self.storage_public_url,
+            "storage_access_key": self.storage_access_key,
+            "storage_secret_key": self.storage_secret_key,
+            "storage_region": self.storage_region,
+            "storage_audio_bucket": self.storage_audio_bucket,
+            "storage_lectures_bucket": self.storage_lectures_bucket,
+            "storage_images_bucket": self.storage_images_bucket,
         }

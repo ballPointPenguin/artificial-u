@@ -15,6 +15,7 @@ from artificial_u.services.lecture_service import LectureService
 from artificial_u.services.audio_service import AudioService
 from artificial_u.services.voice_service import VoiceService
 from artificial_u.services.tts_service import TTSService
+from artificial_u.services.storage_service import StorageService
 from artificial_u.integrations.elevenlabs.client import ElevenLabsClient
 from artificial_u.audio.speech_processor import SpeechProcessor
 from artificial_u.audio.audio_utils import AudioUtils
@@ -40,6 +41,9 @@ class UniversitySystem:
         log_level: Optional[str] = None,
         enable_caching: Optional[bool] = None,
         cache_metrics: Optional[bool] = None,
+        storage_type: Optional[str] = None,
+        storage_endpoint_url: Optional[str] = None,
+        storage_public_url: Optional[str] = None,
     ):
         """
         Initialize the university system.
@@ -56,6 +60,9 @@ class UniversitySystem:
             log_level: Logging level
             enable_caching: Whether to enable prompt caching
             cache_metrics: Whether to track cache metrics
+            storage_type: Storage type ('minio' or 's3')
+            storage_endpoint_url: URL for MinIO/S3 endpoint
+            storage_public_url: Public URL for MinIO
         """
         # Initialize configuration manager
         self.config = ConfigManager(
@@ -69,6 +76,9 @@ class UniversitySystem:
             log_level=log_level,
             enable_caching=enable_caching,
             cache_metrics=cache_metrics,
+            storage_type=storage_type,
+            storage_endpoint_url=storage_endpoint_url,
+            storage_public_url=storage_public_url,
         )
 
         # Get logger
@@ -109,6 +119,11 @@ class UniversitySystem:
             )
             self.speech_processor = SpeechProcessor()
             self.audio_utils = AudioUtils(base_audio_path=config["audio_path"])
+
+            # Initialize storage service
+            self.storage_service = StorageService(
+                logger=logging.getLogger("artificial_u.services.storage_service")
+            )
 
         except Exception as e:
             self.logger.error(f"Failed to initialize core components: {str(e)}")
@@ -162,6 +177,7 @@ class UniversitySystem:
             content_backend=config["content_backend"],
             content_model=config["content_model"],
             enable_caching=config["enable_caching"],
+            storage_service=self.storage_service,
             logger=logging.getLogger("artificial_u.services.lecture_service"),
         )
 
@@ -172,6 +188,7 @@ class UniversitySystem:
             audio_path=config["audio_path"],
             voice_service=self.voice_service,
             tts_service=self.tts_service,
+            storage_service=self.storage_service,
             logger=logging.getLogger("artificial_u.services.audio_service"),
         )
 
@@ -201,11 +218,13 @@ class UniversitySystem:
         """Generate a lecture for a specific course and week."""
         return self.lecture_service.generate_lecture(**kwargs)
 
-    def export_lecture_text(
+    async def export_lecture_text(
         self, lecture: Lecture, course: Course, professor: Professor
     ) -> str:
         """Export lecture content to a text file."""
-        return self.lecture_service.export_lecture_text(lecture, course, professor)
+        return await self.lecture_service.export_lecture_text(
+            lecture, course, professor
+        )
 
     def create_lecture_series(self, **kwargs) -> List[Lecture]:
         """Generate a series of related lectures for a course."""
@@ -221,9 +240,9 @@ class UniversitySystem:
 
     # === Audio Methods ===
 
-    def create_lecture_audio(self, **kwargs) -> Tuple[str, Lecture]:
+    async def create_lecture_audio(self, **kwargs) -> Tuple[str, Lecture]:
         """Create audio for a lecture."""
-        return self.audio_service.create_lecture_audio(**kwargs)
+        return await self.audio_service.create_lecture_audio(**kwargs)
 
     def list_available_voices(self, **kwargs) -> List[Dict[str, Any]]:
         """List available voices with optional filtering."""
@@ -233,9 +252,9 @@ class UniversitySystem:
         """Test connection to the TTS service."""
         return self.audio_service.test_tts_connection()
 
-    def play_audio(self, audio_data_or_path):
+    async def play_audio(self, audio_data_or_path):
         """Play audio from data or file path."""
-        self.audio_service.play_audio(audio_data_or_path)
+        await self.audio_service.play_audio(audio_data_or_path)
 
     # === Other Methods ===
 

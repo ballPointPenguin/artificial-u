@@ -20,6 +20,15 @@ from artificial_u.config.defaults import (
     DEFAULT_CONTENT_BACKEND,
     DEFAULT_OLLAMA_MODEL,
     DEFAULT_LOG_LEVEL,
+    DEFAULT_STORAGE_TYPE,
+    DEFAULT_STORAGE_ENDPOINT_URL,
+    DEFAULT_STORAGE_PUBLIC_URL,
+    DEFAULT_STORAGE_ACCESS_KEY,
+    DEFAULT_STORAGE_SECRET_KEY,
+    DEFAULT_STORAGE_REGION,
+    DEFAULT_STORAGE_AUDIO_BUCKET,
+    DEFAULT_STORAGE_LECTURES_BUCKET,
+    DEFAULT_STORAGE_IMAGES_BUCKET,
 )
 
 
@@ -67,6 +76,17 @@ class Settings(BaseSettings):
     AUDIO_STORAGE_PATH: str = DEFAULT_AUDIO_PATH
     AUDIO_PATH: str = "audio"
     TEXT_EXPORT_PATH: str = DEFAULT_TEXT_EXPORT_PATH
+
+    # Storage settings for S3/MinIO
+    STORAGE_TYPE: str = DEFAULT_STORAGE_TYPE  # "minio" or "s3"
+    STORAGE_ENDPOINT_URL: str = DEFAULT_STORAGE_ENDPOINT_URL
+    STORAGE_PUBLIC_URL: str = DEFAULT_STORAGE_PUBLIC_URL
+    STORAGE_ACCESS_KEY: str = DEFAULT_STORAGE_ACCESS_KEY
+    STORAGE_SECRET_KEY: str = DEFAULT_STORAGE_SECRET_KEY
+    STORAGE_REGION: str = DEFAULT_STORAGE_REGION
+    STORAGE_AUDIO_BUCKET: str = DEFAULT_STORAGE_AUDIO_BUCKET
+    STORAGE_LECTURES_BUCKET: str = DEFAULT_STORAGE_LECTURES_BUCKET
+    STORAGE_IMAGES_BUCKET: str = DEFAULT_STORAGE_IMAGES_BUCKET
 
     # Content generation settings
     content_backend: str = DEFAULT_CONTENT_BACKEND
@@ -143,6 +163,13 @@ class Settings(BaseSettings):
             "anthropic_api_key": self.ANTHROPIC_API_KEY,
             "elevenlabs_api_key": self.ELEVENLABS_API_KEY,
             "openai_api_key": self.OPENAI_API_KEY,
+            "storage_type": self.STORAGE_TYPE,
+            "storage_endpoint_url": self.STORAGE_ENDPOINT_URL,
+            "storage_public_url": self.STORAGE_PUBLIC_URL,
+            "storage_region": self.STORAGE_REGION,
+            "storage_audio_bucket": self.STORAGE_AUDIO_BUCKET,
+            "storage_lectures_bucket": self.STORAGE_LECTURES_BUCKET,
+            "storage_images_bucket": self.STORAGE_IMAGES_BUCKET,
         }
 
     def log_configuration(self) -> None:
@@ -157,6 +184,10 @@ class Settings(BaseSettings):
         logger.info(f"Audio storage path: {self.AUDIO_STORAGE_PATH}")
         logger.info(f"Audio path: {self.AUDIO_PATH}")
         logger.info(f"Text export path: {self.TEXT_EXPORT_PATH}")
+        logger.info(f"Storage type: {self.STORAGE_TYPE}")
+        if self.STORAGE_TYPE == "minio":
+            logger.info(f"MinIO endpoint: {self.STORAGE_ENDPOINT_URL}")
+            logger.info(f"MinIO public URL: {self.STORAGE_PUBLIC_URL}")
 
 
 @lru_cache

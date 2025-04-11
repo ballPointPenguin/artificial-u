@@ -55,6 +55,7 @@ class TTSService:
         self.audio_utils = audio_utils or AudioUtils(
             base_audio_path=audio_path, logger=self.logger
         )
+        self.audio_path = audio_path
 
     def convert_text_to_speech(
         self,
@@ -194,6 +195,7 @@ class TTSService:
 
             try:
                 self.audio_utils.save_audio_file(file_path, audio_data)
+                self.logger.info(f"Audio saved to file: {file_path}")
             except Exception as e:
                 self.logger.error(f"Failed to save audio file: {e}")
                 # Continue without saving
