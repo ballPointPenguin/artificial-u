@@ -1,8 +1,8 @@
 from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
 from artificial_u.api.config import get_settings
 from artificial_u.api.middlewares.logging_middleware import LoggingMiddleware
 from artificial_u.api.middlewares.error_handler import add_error_handlers
+from artificial_u.api.middlewares.cors_middleware import setup_cors
 from artificial_u.api.utils.logging import setup_logging
 
 # Import routers
@@ -33,13 +33,7 @@ def create_application() -> FastAPI:
     )
 
     # Configure CORS
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=settings.cors_origins,
-        allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
-    )
+    setup_cors(app)
 
     # Add custom middlewares
     app.add_middleware(LoggingMiddleware)

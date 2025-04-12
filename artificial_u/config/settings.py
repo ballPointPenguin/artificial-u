@@ -58,7 +58,13 @@ class Settings(BaseSettings):
 
     # CORS settings
     cors_origins: List[str] = Field(
-        default=["http://localhost:8000", "http://localhost:3000"]
+        default=[
+            "http://localhost:8000",
+            "http://localhost:3000",
+            "http://localhost:5173",
+            "https://artificial-u.example.com",
+            "https://*.artificial-u.example.com",
+        ]
     )
 
     # Database settings
