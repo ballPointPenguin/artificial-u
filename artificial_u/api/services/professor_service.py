@@ -30,7 +30,7 @@ class ProfessorService:
         self,
         page: int = 1,
         size: int = 10,
-        department: Optional[str] = None,
+        department_id: Optional[int] = None,
         name: Optional[str] = None,
         specialization: Optional[str] = None,
     ) -> ProfessorsListResponse:
@@ -40,7 +40,7 @@ class ProfessorService:
         Args:
             page: Page number (starting from 1)
             size: Number of items per page
-            department: Filter by department
+            department_id: Filter by department ID
             name: Filter by name (partial match)
             specialization: Filter by specialization (partial match)
 
@@ -51,8 +51,8 @@ class ProfessorService:
         professors = self.repository.list_professors()
 
         # Apply filters if provided
-        if department:
-            professors = [p for p in professors if p.department == department]
+        if department_id:
+            professors = [p for p in professors if p.department_id == department_id]
         if name:
             professors = [p for p in professors if name.lower() in p.name.lower()]
         if specialization:
@@ -160,17 +160,13 @@ class ProfessorService:
         Returns:
             True if deleted successfully, False otherwise
         """
-        # For now, we'll implement a simple check since we don't have a delete method
-        # in the Repository class. In a real implementation, you'd call repository.delete_professor
+        # Check if professor exists
         professor = self.repository.get_professor(professor_id)
         if not professor:
             return False
 
-        # TODO: Implement actual deletion in the repository
-        # This would be:
-        # return self.repository.delete_professor(professor_id)
-
-        return True
+        # Delete the professor using the repository method
+        return self.repository.delete_professor(professor_id)
 
     def get_professor_courses(
         self, professor_id: int
@@ -201,7 +197,7 @@ class ProfessorService:
                 id=c.id,
                 code=c.code,
                 title=c.title,
-                department=c.department,
+                department_id=c.department_id,
                 level=c.level,
                 credits=c.credits,
             )

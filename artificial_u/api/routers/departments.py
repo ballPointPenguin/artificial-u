@@ -147,9 +147,6 @@ async def update_department(
     description="Delete a department.",
     responses={
         404: {"description": "Department not found"},
-        409: {
-            "description": "Cannot delete department with associated professors or courses"
-        },
     },
 )
 async def delete_department(
@@ -161,22 +158,14 @@ async def delete_department(
 
     - **department_id**: The unique identifier of the department to delete
     - Returns no content on successful deletion
-    - Returns 409 Conflict if department has associated professors or courses
+    - Any associated professors or courses will have their department_id set to null
     """
     success = service.delete_department(department_id)
     if not success:
-        # First check if department exists
-        department = service.get_department(department_id)
-        if not department:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Department with ID {department_id} not found",
-            )
-        else:
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail=f"Cannot delete department with ID {department_id} because it has associated professors or courses",
-            )
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Department with ID {department_id} not found",
+        )
     return JSONResponse(status_code=status.HTTP_204_NO_CONTENT, content=None)
 
 

@@ -59,8 +59,6 @@ def mock_repository(monkeypatch, temp_assets_dir):
                 else None
             ),
             "created_at": datetime.now(),
-            "lecture_type": "standard",
-            "tags": [f"tag{i}", "test"] if i % 2 == 0 else ["test"],
         }
         for i in range(1, 11)
     ]
@@ -151,7 +149,6 @@ def mock_repository(monkeypatch, temp_assets_dir):
         size=10,
         course_id=None,
         professor_id=None,
-        tags=None,
         search_query=None,
         *args,
         **kwargs,
@@ -170,9 +167,6 @@ def mock_repository(monkeypatch, temp_assets_dir):
                 continue
             if professor_id is not None and course.professor_id != professor_id:
                 continue
-            if tags is not None:
-                if not all(tag in lecture.get("tags", []) for tag in tags):
-                    continue
             if search_query is not None:
                 if (
                     search_query.lower() not in lecture["title"].lower()
@@ -348,7 +342,6 @@ def mock_repository(monkeypatch, temp_assets_dir):
         self,
         course_id=None,
         professor_id=None,
-        tags=None,
         search_query=None,
         *args,
         **kwargs,
@@ -367,9 +360,6 @@ def mock_repository(monkeypatch, temp_assets_dir):
                 continue
             if professor_id is not None and course.professor_id != professor_id:
                 continue
-            if tags is not None:
-                if not all(tag in lecture.get("tags", []) for tag in tags):
-                    continue
             if search_query is not None:
                 if (
                     search_query.lower() not in lecture["title"].lower()

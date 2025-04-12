@@ -12,8 +12,8 @@ class DepartmentBase(BaseModel):
 
     name: str
     code: str
-    faculty: str
-    description: str
+    faculty: Optional[str] = None
+    description: Optional[str] = None
 
 
 # Department creation model
@@ -70,7 +70,7 @@ class CourseBrief(BaseModel):
     title: str
     level: str
     credits: int
-    professor_id: int
+    professor_id: Optional[int] = None
 
 
 # Department's professors response model

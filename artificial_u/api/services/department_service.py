@@ -174,21 +174,9 @@ class DepartmentService:
         if not department:
             return False
 
-        # Check if department has associated resources
-        professors = self.repository.list_professors()
-        department_professors = [
-            p for p in professors if p.department == department.name
-        ]
-
-        # Don't delete if has associated professors
-        if department_professors:
-            return False
-
-        # TODO: Implement actual deletion in the repository
-        # This would be:
-        # return self.repository.delete_department(department_id)
-
-        return True
+        # Delete the department using the repository method
+        # Associated professors and courses will have their department_id set to null
+        return self.repository.delete_department(department_id)
 
     def get_department_professors(
         self, department_id: int
@@ -210,9 +198,9 @@ class DepartmentService:
         # Get all professors
         all_professors = self.repository.list_professors()
 
-        # Filter professors by department name
+        # Filter professors by department_id
         department_professors = [
-            p for p in all_professors if p.department == department.name
+            p for p in all_professors if p.department_id == department_id
         ]
 
         # Convert to brief format
@@ -252,8 +240,10 @@ class DepartmentService:
         # Get all courses
         all_courses = self.repository.list_courses()
 
-        # Filter courses by department name
-        department_courses = [c for c in all_courses if c.department == department.name]
+        # Filter courses by department_id
+        department_courses = [
+            c for c in all_courses if c.department_id == department_id
+        ]
 
         # Convert to brief format
         course_briefs = [

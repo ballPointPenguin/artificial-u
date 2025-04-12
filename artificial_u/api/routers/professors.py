@@ -165,8 +165,6 @@ async def delete_professor(
     - **professor_id**: The unique identifier of the professor to delete
     - Returns no content on successful deletion
     """
-    # In a real implementation, we would check for associated resources and possibly
-    # implement soft delete if references exist
     success = service.delete_professor(professor_id)
     if not success:
         raise HTTPException(

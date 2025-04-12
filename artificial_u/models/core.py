@@ -87,7 +87,7 @@ class Professor(BaseModel):
             "example": {
                 "name": "Dr. Mikhail Volkov",
                 "title": "Professor of Computer Science",
-                "department": "Computer Science",
+                "department_id": 1,
                 "specialization": "Artificial Intelligence",
                 "background": "58-year-old Russian-American computer scientist with background at Moscow State University and Bell Labs",
                 "personality": "Methodical, philosophical, occasional dry humor",
@@ -108,7 +108,7 @@ class Professor(BaseModel):
     id: Optional[int] = None
     name: str
     title: str
-    department: str
+    department_id: Optional[int] = None
     specialization: str
     background: str
     personality: str
@@ -119,6 +119,7 @@ class Professor(BaseModel):
     age: Optional[int] = None
     voice_settings: Dict[str, Any] = Field(default_factory=dict)
     image_path: Optional[str] = None
+    voice_id: Optional[int] = None
 
 
 class Course(BaseModel):
@@ -129,7 +130,7 @@ class Course(BaseModel):
             "example": {
                 "code": "CS4511",
                 "title": "Introduction to Artificial Intelligence",
-                "department": "Computer Science",
+                "department_id": 1,
                 "level": "Undergraduate",
                 "credits": 3,
                 "professor_id": 1,
@@ -143,10 +144,10 @@ class Course(BaseModel):
     id: Optional[int] = None
     code: str
     title: str
-    department: str
+    department_id: Optional[int] = None
     level: str  # Undergraduate, Graduate, etc.
     credits: int = Field(default=3, ge=0)
-    professor_id: int
+    professor_id: Optional[int] = None
     description: str
     lectures_per_week: int = Field(default=2, gt=0)
     total_weeks: int = Field(default=14, gt=0)

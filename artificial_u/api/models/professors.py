@@ -12,7 +12,7 @@ class ProfessorBase(BaseModel):
 
     name: str
     title: str
-    department: str
+    department_id: Optional[int] = None
     specialization: str
     background: str
     personality: str
@@ -23,6 +23,7 @@ class ProfessorBase(BaseModel):
     age: Optional[int] = None
     voice_settings: Dict[str, Any] = Field(default_factory=dict)
     image_path: Optional[str] = None
+    voice_id: Optional[int] = None
 
 
 # Professor creation model
@@ -67,7 +68,7 @@ class CourseBrief(BaseModel):
     id: int
     code: str
     title: str
-    department: str
+    department_id: Optional[int] = None
     level: str
     credits: int
 

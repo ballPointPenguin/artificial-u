@@ -40,8 +40,11 @@ class DepartmentModel(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     name = Column(String, nullable=False, unique=True)
     code = Column(String, nullable=False, unique=True)
-    faculty = Column(String, nullable=False)
-    description = Column(Text, nullable=False)
+    faculty = Column(String, nullable=True)
+    description = Column(Text, nullable=True)
+
+    professors = relationship("ProfessorModel", back_populates="department")
+    courses = relationship("CourseModel", back_populates="department")
 
 
 class VoiceModel(Base):
@@ -64,6 +67,8 @@ class VoiceModel(Base):
     popularity_score = Column(Integer, nullable=True)
     last_updated = Column(DateTime, nullable=False, default=datetime.now)
 
+    professor = relationship("ProfessorModel", back_populates="voice")
+
     # Create indexes
     __table_args__ = (
         Index("idx_voices_language", "language"),
@@ -77,20 +82,23 @@ class ProfessorModel(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     name = Column(String, nullable=False)
-    title = Column(String, nullable=False)
-    department = Column(String, nullable=False)
-    specialization = Column(String, nullable=False)
-    background = Column(Text, nullable=False)
-    personality = Column(Text, nullable=False)
-    teaching_style = Column(Text, nullable=False)
+    title = Column(String, nullable=True)
+    department_id = Column(Integer, ForeignKey("departments.id"), nullable=True)
+    specialization = Column(String, nullable=True)
+    background = Column(Text, nullable=True)
+    personality = Column(Text, nullable=True)
+    teaching_style = Column(Text, nullable=True)
     gender = Column(String, nullable=True)
     accent = Column(String, nullable=True)
     description = Column(Text, nullable=True)
     age = Column(Integer, nullable=True)
+    voice_id = Column(Integer, ForeignKey("voices.id"), nullable=True)
     voice_settings = Column(Text, nullable=True)  # Stored as JSON
     image_path = Column(String, nullable=True)
 
+    department = relationship("DepartmentModel", back_populates="professors")
     courses = relationship("CourseModel", back_populates="professor")
+    voice = relationship("VoiceModel", back_populates="professor")
 
 
 class CourseModel(Base):
@@ -99,16 +107,17 @@ class CourseModel(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     code = Column(String, nullable=False, unique=True)
     title = Column(String, nullable=False)
-    department = Column(String, nullable=False)
-    level = Column(String, nullable=False)
-    credits = Column(Integer, nullable=False, default=3)
-    professor_id = Column(Integer, ForeignKey("professors.id"), nullable=False)
-    description = Column(Text, nullable=False)
-    lectures_per_week = Column(Integer, nullable=False, default=2)
-    total_weeks = Column(Integer, nullable=False, default=14)
+    department_id = Column(Integer, ForeignKey("departments.id"), nullable=True)
+    level = Column(String, nullable=True)
+    credits = Column(Integer, nullable=True, default=3)
+    professor_id = Column(Integer, ForeignKey("professors.id"), nullable=True)
+    description = Column(Text, nullable=True)
+    lectures_per_week = Column(Integer, nullable=True, default=2)
+    total_weeks = Column(Integer, nullable=True, default=14)
     syllabus = Column(Text, nullable=True)
     generated_at = Column(DateTime, nullable=False, default=datetime.now)
 
+    department = relationship("DepartmentModel", back_populates="courses")
     professor = relationship("ProfessorModel", back_populates="courses")
     lectures = relationship("LectureModel", back_populates="course")
 
@@ -121,8 +130,8 @@ class LectureModel(Base):
     course_id = Column(Integer, ForeignKey("courses.id"), nullable=False)
     week_number = Column(Integer, nullable=False)
     order_in_week = Column(Integer, nullable=False, default=1)
-    description = Column(Text, nullable=False)
-    content = Column(Text, nullable=False)
+    description = Column(Text, nullable=True)
+    content = Column(Text, nullable=True)
     audio_url = Column(String, nullable=True)
     generated_at = Column(DateTime, nullable=False, default=datetime.now)
 
@@ -243,10 +252,7 @@ class Repository:
             "week_number": week_number,
             "order_in_week": order_in_week,
             "description": description,
-            "lecture_type": getattr(lecture, "lecture_type", "standard"),
-            "tags": getattr(lecture, "tags", []),
             "created_at": getattr(lecture, "created_at", datetime.now()),
-            "duration_seconds": 1800,  # 30 minutes default
             "has_audio": bool(audio_url),
         }
 
@@ -591,6 +597,28 @@ class Repository:
 
             session.commit()
             return professor
+
+    def delete_professor(self, professor_id: int) -> bool:
+        """
+        Delete a professor by ID.
+
+        Args:
+            professor_id: ID of the professor to delete
+
+        Returns:
+            True if deleted successfully, False if professor not found
+        """
+        with Session(self.engine) as session:
+            db_professor = (
+                session.query(ProfessorModel).filter_by(id=professor_id).first()
+            )
+
+            if not db_professor:
+                return False
+
+            session.delete(db_professor)
+            session.commit()
+            return True
 
     # Course operations
     def create_course(self, course: Course) -> Course:
@@ -1045,3 +1073,37 @@ class Repository:
             session.refresh(db_department)
 
             return department
+
+    def delete_department(self, department_id: int) -> bool:
+        """
+        Delete a department by ID and set department_id to null for associated records.
+
+        Args:
+            department_id: ID of the department to delete
+
+        Returns:
+            True if deleted successfully, False if department not found
+        """
+        with Session(self.engine) as session:
+            # Check if department exists
+            db_department = (
+                session.query(DepartmentModel).filter_by(id=department_id).first()
+            )
+
+            if not db_department:
+                return False
+
+            # Update associated professors to set department_id to null
+            session.query(ProfessorModel).filter_by(department_id=department_id).update(
+                {ProfessorModel.department_id: None}
+            )
+
+            # Update associated courses to set department_id to null
+            session.query(CourseModel).filter_by(department_id=department_id).update(
+                {CourseModel.department_id: None}
+            )
+
+            # Delete the department
+            session.delete(db_department)
+            session.commit()
+            return True

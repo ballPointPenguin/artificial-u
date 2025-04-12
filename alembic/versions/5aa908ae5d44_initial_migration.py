@@ -1,8 +1,8 @@
 """Initial migration
 
-Revision ID: 1fa616d97d90
+Revision ID: 5aa908ae5d44
 Revises: 
-Create Date: 2025-04-10 20:28:39.564521
+Create Date: 2025-04-12 15:15:26.293377
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = '1fa616d97d90'
+revision = '5aa908ae5d44'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -22,28 +22,11 @@ def upgrade() -> None:
     sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
     sa.Column('name', sa.String(), nullable=False),
     sa.Column('code', sa.String(), nullable=False),
-    sa.Column('faculty', sa.String(), nullable=False),
-    sa.Column('description', sa.Text(), nullable=False),
+    sa.Column('faculty', sa.String(), nullable=True),
+    sa.Column('description', sa.Text(), nullable=True),
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('code'),
     sa.UniqueConstraint('name')
-    )
-    op.create_table('professors',
-    sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
-    sa.Column('name', sa.String(), nullable=False),
-    sa.Column('title', sa.String(), nullable=False),
-    sa.Column('department', sa.String(), nullable=False),
-    sa.Column('specialization', sa.String(), nullable=False),
-    sa.Column('background', sa.Text(), nullable=False),
-    sa.Column('personality', sa.Text(), nullable=False),
-    sa.Column('teaching_style', sa.Text(), nullable=False),
-    sa.Column('gender', sa.String(), nullable=True),
-    sa.Column('accent', sa.String(), nullable=True),
-    sa.Column('description', sa.Text(), nullable=True),
-    sa.Column('age', sa.Integer(), nullable=True),
-    sa.Column('voice_settings', sa.Text(), nullable=True),
-    sa.Column('image_path', sa.String(), nullable=True),
-    sa.PrimaryKeyConstraint('id')
     )
     op.create_table('voices',
     sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
@@ -66,19 +49,40 @@ def upgrade() -> None:
     sa.UniqueConstraint('voice_id')
     )
     op.create_index('idx_voices_language', 'voices', ['language'], unique=False)
+    op.create_table('professors',
+    sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
+    sa.Column('name', sa.String(), nullable=False),
+    sa.Column('title', sa.String(), nullable=True),
+    sa.Column('department_id', sa.Integer(), nullable=True),
+    sa.Column('specialization', sa.String(), nullable=True),
+    sa.Column('background', sa.Text(), nullable=True),
+    sa.Column('personality', sa.Text(), nullable=True),
+    sa.Column('teaching_style', sa.Text(), nullable=True),
+    sa.Column('gender', sa.String(), nullable=True),
+    sa.Column('accent', sa.String(), nullable=True),
+    sa.Column('description', sa.Text(), nullable=True),
+    sa.Column('age', sa.Integer(), nullable=True),
+    sa.Column('voice_id', sa.Integer(), nullable=True),
+    sa.Column('voice_settings', sa.Text(), nullable=True),
+    sa.Column('image_path', sa.String(), nullable=True),
+    sa.ForeignKeyConstraint(['department_id'], ['departments.id'], ),
+    sa.ForeignKeyConstraint(['voice_id'], ['voices.id'], ),
+    sa.PrimaryKeyConstraint('id')
+    )
     op.create_table('courses',
     sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
     sa.Column('code', sa.String(), nullable=False),
     sa.Column('title', sa.String(), nullable=False),
-    sa.Column('department', sa.String(), nullable=False),
-    sa.Column('level', sa.String(), nullable=False),
-    sa.Column('credits', sa.Integer(), nullable=False),
-    sa.Column('professor_id', sa.Integer(), nullable=False),
-    sa.Column('description', sa.Text(), nullable=False),
-    sa.Column('lectures_per_week', sa.Integer(), nullable=False),
-    sa.Column('total_weeks', sa.Integer(), nullable=False),
+    sa.Column('department_id', sa.Integer(), nullable=True),
+    sa.Column('level', sa.String(), nullable=True),
+    sa.Column('credits', sa.Integer(), nullable=True),
+    sa.Column('professor_id', sa.Integer(), nullable=True),
+    sa.Column('description', sa.Text(), nullable=True),
+    sa.Column('lectures_per_week', sa.Integer(), nullable=True),
+    sa.Column('total_weeks', sa.Integer(), nullable=True),
     sa.Column('syllabus', sa.Text(), nullable=True),
     sa.Column('generated_at', sa.DateTime(), nullable=False),
+    sa.ForeignKeyConstraint(['department_id'], ['departments.id'], ),
     sa.ForeignKeyConstraint(['professor_id'], ['professors.id'], ),
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('code')
@@ -89,9 +93,9 @@ def upgrade() -> None:
     sa.Column('course_id', sa.Integer(), nullable=False),
     sa.Column('week_number', sa.Integer(), nullable=False),
     sa.Column('order_in_week', sa.Integer(), nullable=False),
-    sa.Column('description', sa.Text(), nullable=False),
-    sa.Column('content', sa.Text(), nullable=False),
-    sa.Column('audio_path', sa.String(), nullable=True),
+    sa.Column('description', sa.Text(), nullable=True),
+    sa.Column('content', sa.Text(), nullable=True),
+    sa.Column('audio_url', sa.String(), nullable=True),
     sa.Column('generated_at', sa.DateTime(), nullable=False),
     sa.ForeignKeyConstraint(['course_id'], ['courses.id'], ),
     sa.PrimaryKeyConstraint('id')
@@ -103,8 +107,8 @@ def downgrade() -> None:
     # ### commands auto generated by Alembic - please adjust! ###
     op.drop_table('lectures')
     op.drop_table('courses')
+    op.drop_table('professors')
     op.drop_index('idx_voices_language', table_name='voices')
     op.drop_table('voices')
-    op.drop_table('professors')
     op.drop_table('departments')
     # ### end Alembic commands ### 
