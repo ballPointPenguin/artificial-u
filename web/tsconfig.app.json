@@ -4,9 +4,16 @@
     "target": "ES2020",
     "useDefineForClassFields": true,
     "module": "ESNext",
-    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "lib": [
+      "ES2020",
+      "DOM",
+      "DOM.Iterable"
+    ],
     "skipLibCheck": true,
-
+    "types": [
+      "vite/client",
+      "@solidjs/router"
+    ],
     /* Bundler mode */
     "moduleResolution": "bundler",
     "allowImportingTsExtensions": true,
@@ -15,7 +22,6 @@
     "noEmit": true,
     "jsx": "preserve",
     "jsxImportSource": "solid-js",
-
     /* Linting */
     "strict": true,
     "noUnusedLocals": true,
@@ -23,5 +29,7 @@
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true
   },
-  "include": ["src"]
+  "include": [
+    "src"
+  ]
 }

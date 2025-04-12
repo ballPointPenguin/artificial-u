@@ -11,6 +11,9 @@ importers:
       '@kobalte/core':
         specifier: ^0.13.9
         version: 0.13.9(solid-js@1.9.5)
+      '@solidjs/router':
+        specifier: ^0.15.3
+        version: 0.15.3(solid-js@1.9.5)
       solid-js:
         specifier: ^1.9.5
         version: 1.9.5
@@ -627,6 +630,11 @@ packages:
     resolution: {integrity: sha512-e7hTlJ1Ywh2+g/Qug+n4L1mpfxsikoIS4/sHE2EK9WatQt8UJqop/vE6bsLnXlU1xuhb/jo94Ah5Y27rd4wP7A==}
     peerDependencies:
       solid-js: ^1.6.12
+
+  '@solidjs/router@0.15.3':
+    resolution: {integrity: sha512-iEbW8UKok2Oio7o6Y4VTzLj+KFCmQPGEpm1fS3xixwFBdclFVBvaQVeibl1jys4cujfAK5Kn6+uG2uBm3lxOMw==}
+    peerDependencies:
+      solid-js: ^1.8.6
 
   '@swc/helpers@0.5.17':
     resolution: {integrity: sha512-5IKx/Y13RsYd+sauPb2x+U/xZikHjolzfuDgTAl/Tdf3Q8rslRvC19NKDLgAJQ6wsqADk10ntlv08nPFw/gO/A==}
@@ -1954,6 +1962,10 @@ snapshots:
       solid-js: 1.9.5
 
   '@solid-primitives/utils@6.3.0(solid-js@1.9.5)':
+    dependencies:
+      solid-js: 1.9.5
+
+  '@solidjs/router@0.15.3(solid-js@1.9.5)':
     dependencies:
       solid-js: 1.9.5
 
