@@ -1,5 +1,5 @@
-import type { Component } from 'solid-js';
-import { Button } from '@kobalte/core';
+import type { Component } from 'solid-js'
+import { Button } from '@kobalte/core'
 
 const App: Component = () => {
   return (
@@ -45,9 +45,8 @@ const App: Component = () => {
       >
         Disabled Button
       </Button.Root>
-
     </div>
-  );
-};
+  )
+}
 
-export default App;
+export default App
