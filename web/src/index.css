@@ -1,13 +1,328 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+/* Import Google Fonts */
+@import url("https://fonts.googleapis.com/css2?family=Cinzel:wght@400..900&family=Cormorant+Garamond:ital,wght@0,300..700;1,300..700&family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap");
 
-/* Base styles that extend Tailwind */
-:root {
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-    Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+/* Replace @tailwind directives with the new import */
+@import "tailwindcss";
+
+/* Add theme customization */
+@theme {
+  /* Dark academia meets vaporwave colors */
+  --color-arcanum-50: #f8f5f0;
+  --color-arcanum-100: #e8e2d9;
+  --color-arcanum-200: #d6cabf;
+  --color-arcanum-300: #c2b09f;
+  --color-arcanum-400: #b09981;
+  --color-arcanum-500: #a48c71;
+  --color-arcanum-600: #8b7054;
+  --color-arcanum-700: #705a45;
+  --color-arcanum-800: #594936;
+  --color-arcanum-900: #473d2e;
+  --color-arcanum-950: #2a241c;
+
+  --color-parchment-50: #fbf8f1;
+  --color-parchment-100: #f3ecda;
+  --color-parchment-200: #e6d9b7;
+  --color-parchment-300: #d9c590;
+  --color-parchment-400: #ceb06c;
+  --color-parchment-500: #c29747;
+  --color-parchment-600: #ab7a3d;
+  --color-parchment-700: #8c5e34;
+  --color-parchment-800: #734c31;
+  --color-parchment-900: #61402c;
+  --color-parchment-950: #352116;
+
+  --color-mystic-50: #f3f1ff;
+  --color-mystic-100: #ebe5ff;
+  --color-mystic-200: #d9d0ff;
+  --color-mystic-300: #baacff;
+  --color-mystic-400: #9f7fff;
+  --color-mystic-500: #8656ff;
+  --color-mystic-600: #7b33ff;
+  --color-mystic-700: #6b1afd;
+  --color-mystic-800: #5a0feb;
+  --color-mystic-900: #4b12c2;
+  --color-mystic-950: #2d0a7c;
+
+  --color-vaporwave-50: #f3f8ff;
+  --color-vaporwave-100: #e2eeff;
+  --color-vaporwave-200: #cfe0ff;
+  --color-vaporwave-300: #b0cafe;
+  --color-vaporwave-400: #7e9eff;
+  --color-vaporwave-500: #5779ff;
+  --color-vaporwave-600: #3b59ff;
+  --color-vaporwave-700: #1e3cf8;
+  --color-vaporwave-800: #1930df;
+  --color-vaporwave-900: #192ab6;
+  --color-vaporwave-950: #13186a;
+
+  --color-nebula-50: #fbf6ff;
+  --color-nebula-100: #f6edff;
+  --color-nebula-200: #eddaff;
+  --color-nebula-300: #e2c0ff;
+  --color-nebula-400: #d097fe;
+  --color-nebula-500: #b866f9;
+  --color-nebula-600: #a143ef;
+  --color-nebula-700: #8f2dd4;
+  --color-nebula-800: #7426ab;
+  --color-nebula-900: #60238a;
+  --color-nebula-950: #3f115e;
+
+  /* Font families */
+  --font-serif: "Cormorant Garamond", "Garamond", "Times New Roman", serif;
+  --font-display: "Cinzel", serif;
+  --font-sans: "Inter", "Helvetica", "Arial", sans-serif;
+
+  /* Background images */
+  --background-cosmic-wisps: linear-gradient(
+      to right,
+      rgba(86, 11, 173, 0.05),
+      rgba(5, 2, 46, 0.1)
+    ), url("/images/cosmic-wisps.png");
+  --background-parchment-texture: url("/images/parchment-texture.png");
+  --background-nebula-glow: radial-gradient(
+    circle at center,
+    rgba(114, 9, 183, 0.2),
+    rgba(58, 12, 163, 0.1),
+    transparent 70%
+  );
+
+  /* Box shadows */
+  --shadow-arcane: 0 0 15px rgba(138, 43, 226, 0.3);
+  --shadow-glow: 0 0 8px rgba(186, 104, 200, 0.6);
+  --shadow-text: 0 0 3px rgba(255, 217, 0, 0.3);
+
+  /* Text shadows */
+  --text-shadow-arcane: 0 0 5px rgba(138, 43, 226, 0.5);
+  --text-shadow-golden: 0 0 2px rgba(219, 180, 12, 0.4);
+
+  /* Animation keyframes */
+  @keyframes wisps {
+    0%,
+    100% {
+      opacity: 0.6;
+      transform: translateY(0px);
+    }
+    50% {
+      opacity: 0.8;
+      transform: translateY(-15px);
+    }
+  }
+
+  @keyframes glow {
+    0% {
+      box-shadow: 0 0 5px rgba(138, 43, 226, 0.3);
+    }
+    100% {
+      box-shadow: 0 0 20px rgba(138, 43, 226, 0.6);
+    }
+  }
+
+  @keyframes float {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-10px);
+    }
+  }
+
+  /* Animation properties */
+  --animation-wisps: wisps 8s ease infinite;
+  --animation-glow: glow 3s ease-in-out infinite alternate;
+  --animation-float: float 6s ease-in-out infinite;
 }
 
-body {
-  min-height: 100vh;
+/* Theme variant variables */
+:root {
+  /* Default theme (dark academia) */
+  --color-background: 42, 36, 28;
+  --color-foreground: 248, 245, 240;
+  --color-primary: 194, 151, 71;
+  --color-secondary: 138, 86, 255;
+  --color-accent: 176, 153, 129;
+  --color-muted: 112, 90, 69;
+  --color-border: 89, 73, 54;
+}
+
+/* Theme Classes */
+.theme-dark-academia {
+  --color-background: 42, 36, 28;
+  --color-foreground: 248, 245, 240;
+  --color-primary: 194, 151, 71;
+  --color-secondary: 138, 86, 255;
+  --color-accent: 176, 153, 129;
+  --color-muted: 112, 90, 69;
+  --color-border: 89, 73, 54;
+}
+
+.theme-vaporwave {
+  --color-background: 19, 24, 106;
+  --color-foreground: 243, 248, 255;
+  --color-primary: 134, 86, 255;
+  --color-secondary: 176, 202, 254;
+  --color-accent: 208, 151, 254;
+  --color-muted: 90, 15, 235;
+  --color-border: 67, 38, 189;
+}
+
+.theme-cosmic-horror {
+  --color-background: 23, 11, 33;
+  --color-foreground: 237, 237, 245;
+  --color-primary: 107, 15, 86;
+  --color-secondary: 24, 82, 98;
+  --color-accent: 159, 43, 104;
+  --color-muted: 61, 27, 79;
+  --color-border: 82, 36, 83;
+}
+
+.theme-techno-occult {
+  --color-background: 11, 26, 35;
+  --color-foreground: 239, 246, 248;
+  --color-primary: 42, 157, 143;
+  --color-secondary: 233, 196, 106;
+  --color-accent: 89, 36, 99;
+  --color-muted: 38, 70, 83;
+  --color-border: 32, 56, 66;
+}
+
+/* Custom Utilities - Tailwind v4 style with @utility directives */
+@utility text-shadow-arcane {
+  text-shadow: var(--text-shadow-arcane);
+}
+
+@utility text-shadow-golden {
+  text-shadow: var(--text-shadow-golden);
+}
+
+/* Base Styles */
+@layer base {
+  html {
+    @apply antialiased;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-arcanum-950 text-parchment-100 font-serif;
+    background-image: linear-gradient(
+      to bottom,
+      rgba(var(--color-background), 1),
+      rgba(var(--color-background), 0.95)
+    );
+    min-height: 100vh;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    @apply font-display text-parchment-100 tracking-wide;
+  }
+
+  a {
+    @apply transition-colors duration-200;
+  }
+
+  /* Scrollbar styling */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-arcanum-900;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-parchment-800 rounded-full;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-parchment-700;
+  }
+}
+
+/* Component Classes */
+@layer components {
+  .arcane-glow {
+    @apply transition-all duration-300;
+    box-shadow: var(--shadow-arcane);
+  }
+
+  .arcane-glow:hover {
+    box-shadow: var(--shadow-glow);
+  }
+
+  .btn-arcane {
+    @apply px-6 py-3 rounded border border-parchment-400 text-parchment-100 
+           bg-arcanum-900/50 hover:bg-arcanum-800/50 
+           transition-colors duration-300 font-serif tracking-wider;
+  }
+
+  .btn-arcane-primary {
+    @apply px-6 py-3 rounded bg-gradient-to-r from-parchment-700/50 to-mystic-800/50 
+           text-parchment-100 font-display tracking-wider border border-parchment-500/50 
+           shadow-arcane hover:shadow-glow transition-all duration-300;
+  }
+
+  .arcane-border {
+    @apply border border-parchment-800/30;
+  }
+
+  .arcane-card {
+    @apply bg-arcanum-900 border border-parchment-800/30 rounded-sm p-6 transition-all duration-300;
+  }
+
+  .arcane-card:hover {
+    @apply shadow-arcane;
+  }
+
+  .arcane-input {
+    @apply w-full px-4 py-2 bg-arcanum-800 border border-parchment-700/30 
+           rounded-sm text-parchment-100 placeholder:text-parchment-500 
+           focus:outline-none focus:border-mystic-500 transition-colors duration-200;
+  }
+
+  .nav-link {
+    @apply text-parchment-200 hover:text-parchment-100 tracking-wide 
+           font-serif uppercase text-sm text-shadow-golden;
+  }
+
+  /* Background image for cosmic wisps */
+  .bg-cosmic-wisps {
+    background-image: var(--background-cosmic-wisps);
+    position: relative;
+  }
+
+  .bg-cosmic-wisps::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(
+        circle at 20% 30%,
+        rgba(134, 86, 255, 0.15),
+        transparent 40%
+      ),
+      radial-gradient(
+        circle at 70% 60%,
+        rgba(107, 15, 86, 0.1),
+        transparent 50%
+      );
+    z-index: -1;
+  }
+
+  /* Animation classes using the animation variables */
+  .animate-wisps {
+    animation: var(--animation-wisps);
+  }
+
+  .animate-glow {
+    animation: var(--animation-glow);
+  }
+
+  .animate-float {
+    animation: var(--animation-float);
+  }
 }

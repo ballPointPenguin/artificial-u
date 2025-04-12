@@ -1,9 +1,10 @@
-import { defineConfig } from "vite";
-import solid from "vite-plugin-solid";
+import { defineConfig } from 'vite'
+import solid from 'vite-plugin-solid'
+import tailwindcss from '@tailwindcss/vite'
 
 export default defineConfig({
-	plugins: [solid()],
-	server: {
-		allowedHosts: ["aliencyborg.share.zrok.io", "localhost"],
-	},
-});
+  plugins: [solid(), tailwindcss()],
+  server: {
+    allowedHosts: ['aliencyborg.share.zrok.io', 'localhost'],
+  },
+})
