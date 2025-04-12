@@ -72,7 +72,7 @@ const DepartmentsPage = () => {
           fallback={
             <div class="text-red-500">
               Error loading departments:{' '}
-              {departments.error?.message || 'Unknown error'}
+              {(departments.error as Error).message || 'Unknown error'}
             </div>
           }
         >

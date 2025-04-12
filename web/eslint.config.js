@@ -1,7 +1,7 @@
 import eslintJs from '@eslint/js'
-import tseslint from 'typescript-eslint'
 import solidPlugin from 'eslint-plugin-solid'
 import globals from 'globals'
+import tseslint from 'typescript-eslint'
 
 export default tseslint.config(
   // 1. Global ignores
