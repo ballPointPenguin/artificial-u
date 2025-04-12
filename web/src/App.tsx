@@ -15,6 +15,15 @@ const App: Component = () => {
       {/* Nested routes rendered inside Layout's {props.children} */}
       <Route path="/" component={Home} />
       <Route path="/about" component={About} />
+
+      {/* Academic routes */}
+      <Route path="/academics">
+        {/* Departments routes */}
+        <Route path="/departments" component={Departments} />
+        <Route path="/departments/:id" component={DepartmentDetail} />
+      </Route>
+
+      {/* Keep old direct routes for backward compatibility */}
       <Route path="/departments" component={Departments} />
       <Route path="/departments/:id" component={DepartmentDetail} />
     </Route>

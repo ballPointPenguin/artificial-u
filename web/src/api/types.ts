@@ -78,6 +78,8 @@ export interface ProfessorLecturesResponse {
 export interface Department {
   id: number
   name: string
+  code: string
+  faculty: string
   description: string
   created_at: string
   updated_at: string
