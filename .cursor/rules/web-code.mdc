@@ -1,0 +1,17 @@
+---
+description: 
+globs: ./web/*
+alwaysApply: false
+---
+
+# Code Style for JS, TS, JSX, TSX
+
+- "web" code is linted according to eslint (./eslint.config.js)
+- "web" code is formatted according to BiomeJS (./web/biome.json)
+- Semicolons are only used "as-needed"
+- Default "tab" spacing is 2 spaces
+- single quotes '' preferred
+- trailing commas use 'es5' conditions
+- within `./web`, run `pnpm run format` to re-format
+- within `./web`, run `pnpm run lint` to lint
+- within `./web`, validate the build with `pnpm run build`

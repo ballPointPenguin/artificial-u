@@ -1,6 +1,9 @@
-import { defineConfig } from 'vite'
-import solid from 'vite-plugin-solid'
+import { defineConfig } from "vite";
+import solid from "vite-plugin-solid";
 
 export default defineConfig({
-  plugins: [solid()],
-})
+	plugins: [solid()],
+	server: {
+		allowedHosts: ["aliencyborg.share.zrok.io", "localhost"],
+	},
+});
