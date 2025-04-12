@@ -1,20 +1,31 @@
-import { useParams } from '@solidjs/router'
-import { Show, createResource } from 'solid-js'
-import { getProfessor } from '../../api/services/professor-service'
+import { useNavigate, useParams } from '@solidjs/router'
+import { Show, createResource, createSignal } from 'solid-js'
+import {
+  deleteProfessor,
+  getProfessor,
+  updateProfessor,
+} from '../../api/services/professor-service'
 import type { Professor } from '../../api/types'
+import ConfirmationModal from '../ConfirmationModal'
+import { Button } from '../ui/Button'
+import ProfessorForm, { type ProfessorFormData } from './ProfessorForm'
 
 export default function ProfessorDetail() {
   const params = useParams()
+  const navigate = useNavigate()
+  const [isEditing, setIsEditing] = createSignal(false)
+  const [isDeleting, setIsDeleting] = createSignal(false)
+  const [isSubmitting, setIsSubmitting] = createSignal(false)
+  const [error, setError] = createSignal('')
 
   // Fetch the specific professor using createResource
-  const [professorResource] = createResource(
-    () => params.id,
-    async (id: string): Promise<Professor> => {
-      if (!id) throw new Error('Professor ID is missing')
-      // Ensure ID is a number for the API call
-      return await getProfessor(Number(id))
+  const [professorResource, { refetch }] = createResource(() => {
+    const id = Number.parseInt(params.id, 10)
+    if (Number.isNaN(id)) {
+      throw new Error('Professor ID is missing or invalid')
     }
-  )
+    return id
+  }, getProfessor)
 
   // Type-safe helper to get error message
   const getErrorMessage = () => {
@@ -22,114 +33,226 @@ export default function ProfessorDetail() {
     return error instanceof Error ? error.message : 'Unknown error'
   }
 
+  const handleSubmitUpdate = async (formData: ProfessorFormData) => {
+    setIsSubmitting(true)
+    setError('')
+
+    try {
+      const id = Number.parseInt(params.id, 10)
+      if (Number.isNaN(id)) {
+        throw new Error('Invalid professor ID')
+      }
+
+      const updatedProfessor = {
+        ...formData,
+        background: formData.background || '',
+        personality: formData.personality || '',
+        teaching_style: formData.teaching_style || '',
+      }
+
+      await updateProfessor(id, updatedProfessor)
+      setIsEditing(false)
+      void refetch()
+    } catch (error) {
+      setError(
+        error instanceof Error ? error.message : 'Failed to update professor'
+      )
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  const handleDelete = async () => {
+    setIsSubmitting(true)
+    setError('')
+
+    try {
+      const id = Number.parseInt(params.id, 10)
+      if (Number.isNaN(id)) {
+        throw new Error('Invalid professor ID')
+      }
+
+      await deleteProfessor(id)
+      // Navigate back to professors list after deletion
+      navigate('/academics/professors')
+    } catch (error) {
+      setError(
+        error instanceof Error ? error.message : 'Failed to delete professor'
+      )
+      setIsDeleting(false)
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
   return (
     <div class="arcane-card p-8">
-      {/* Use resource loading state */}
-      <Show when={professorResource.loading}>
-        <p class="text-parchment-300">Loading professor details...</p>
-      </Show>
-      {/* Use resource error state */}
-      <Show when={professorResource.error !== undefined}>
-        <p class="text-red-400">Error loading professor: {getErrorMessage()}</p>
-      </Show>
-      {/* Use resource data */}
-      <Show when={professorResource()} keyed>
-        {(prof) => (
-          <>
-            <h1 class="text-3xl font-display text-parchment-100 mb-4 text-shadow-golden">
-              {prof.name}
-            </h1>
-            <div class="space-y-3 text-parchment-200">
-              <p>
-                <strong class="font-semibold text-parchment-100">
-                  Department:
-                </strong>{' '}
-                <span class="text-mystic-300">{prof.department}</span>
-              </p>
-              <p>
-                <strong class="font-semibold text-parchment-100">Title:</strong>{' '}
-                <span class="text-parchment-200">{prof.title}</span>
-              </p>
-              <p>
-                <strong class="font-semibold text-parchment-100">
-                  Specialization:
-                </strong>{' '}
-                <span class="text-parchment-200">{prof.specialization}</span>
-              </p>
-
-              <Show when={prof.description}>
-                <p>
-                  <strong class="font-semibold text-parchment-100">
-                    Description:
-                  </strong>
-                  <span class="block mt-1 whitespace-pre-wrap">
-                    {prof.description}
-                  </span>
-                </p>
-              </Show>
-
-              <Show when={prof.background}>
-                <p>
-                  <strong class="font-semibold text-parchment-100">
-                    Background:
-                  </strong>
-                  <span class="block mt-1 whitespace-pre-wrap">
-                    {prof.background}
-                  </span>
-                </p>
-              </Show>
-
-              <Show when={prof.teaching_style}>
-                <p>
-                  <strong class="font-semibold text-parchment-100">
-                    Teaching Style:
-                  </strong>{' '}
-                  <span class="text-parchment-200">{prof.teaching_style}</span>
-                </p>
-              </Show>
-
-              <Show when={prof.personality}>
-                <p>
-                  <strong class="font-semibold text-parchment-100">
-                    Personality:
-                  </strong>{' '}
-                  <span class="text-parchment-200">{prof.personality}</span>
-                </p>
-              </Show>
-
-              <Show when={prof.email}>
-                <p>
-                  <strong class="font-semibold text-parchment-100">
-                    Email:
-                  </strong>{' '}
-                  <a
-                    href={prof.email ? `mailto:${prof.email}` : '#'}
-                    class="text-vaporwave-400 hover:text-vaporwave-300"
-                  >
-                    {prof.email}
-                  </a>
-                </p>
-              </Show>
-
-              <Show when={prof.bio}>
-                <p>
-                  <strong class="font-semibold text-parchment-100">Bio:</strong>
-                  <span class="block mt-1 whitespace-pre-wrap">{prof.bio}</span>
-                </p>
-              </Show>
-
-              {/* Display image if available */}
-              <Show when={prof.image_path || prof.image_url}>
-                <img
-                  src={prof.image_path || prof.image_url || ''}
-                  alt={`Professor ${prof.name}`}
-                  class="mt-4 max-w-full h-auto rounded-lg shadow-lg"
-                />
-              </Show>
+      {/* Loading and error states */}
+      <Show
+        when={!professorResource.loading}
+        fallback={
+          <p class="text-parchment-300">Loading professor details...</p>
+        }
+      >
+        <Show
+          when={!professorResource.error}
+          fallback={
+            <div class="bg-red-900/20 border border-red-500 text-red-300 px-4 py-3 rounded">
+              <p>Error loading professor: {getErrorMessage()}</p>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => void refetch()}
+                class="mt-2 text-red-300 hover:text-red-100"
+              >
+                Try Again
+              </Button>
             </div>
-          </>
-        )}
+          }
+        >
+          <Show
+            when={!isEditing()}
+            fallback={
+              <div>
+                <h2 class="text-xl font-semibold mb-4">Edit Professor</h2>
+                <ProfessorForm
+                  professor={professorResource() as Professor}
+                  onSubmit={handleSubmitUpdate}
+                  onCancel={() => setIsEditing(false)}
+                  isSubmitting={isSubmitting()}
+                  error={error()}
+                />
+              </div>
+            }
+          >
+            {/* Professor details display */}
+            <div>
+              <div class="flex justify-between items-center mb-4">
+                <h1 class="text-3xl font-display text-parchment-100 text-shadow-golden">
+                  {professorResource()?.name}
+                </h1>
+                <div class="flex space-x-2">
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => setIsEditing(true)}
+                  >
+                    Edit
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setIsDeleting(true)}
+                    class="border-red-500/50 text-red-300 hover:bg-red-900/30 hover:border-red-500"
+                  >
+                    Delete
+                  </Button>
+                </div>
+              </div>
+
+              <div class="space-y-3 text-parchment-200">
+                <p>
+                  <strong class="font-semibold text-parchment-100">
+                    Department:
+                  </strong>{' '}
+                  <span class="text-mystic-300">
+                    {professorResource()?.department}
+                  </span>
+                </p>
+                <p>
+                  <strong class="font-semibold text-parchment-100">
+                    Title:
+                  </strong>{' '}
+                  <span class="text-parchment-200">
+                    {professorResource()?.title}
+                  </span>
+                </p>
+                <p>
+                  <strong class="font-semibold text-parchment-100">
+                    Specialization:
+                  </strong>{' '}
+                  <span class="text-parchment-200">
+                    {professorResource()?.specialization}
+                  </span>
+                </p>
+
+                <Show when={professorResource()?.description}>
+                  <p>
+                    <strong class="font-semibold text-parchment-100">
+                      Description:
+                    </strong>
+                    <span class="block mt-1 whitespace-pre-wrap">
+                      {professorResource()?.description}
+                    </span>
+                  </p>
+                </Show>
+
+                <Show when={professorResource()?.background}>
+                  <p>
+                    <strong class="font-semibold text-parchment-100">
+                      Background:
+                    </strong>
+                    <span class="block mt-1 whitespace-pre-wrap">
+                      {professorResource()?.background}
+                    </span>
+                  </p>
+                </Show>
+
+                <Show when={professorResource()?.teaching_style}>
+                  <p>
+                    <strong class="font-semibold text-parchment-100">
+                      Teaching Style:
+                    </strong>{' '}
+                    <span class="text-parchment-200">
+                      {professorResource()?.teaching_style}
+                    </span>
+                  </p>
+                </Show>
+
+                <Show when={professorResource()?.personality}>
+                  <p>
+                    <strong class="font-semibold text-parchment-100">
+                      Personality:
+                    </strong>{' '}
+                    <span class="text-parchment-200">
+                      {professorResource()?.personality}
+                    </span>
+                  </p>
+                </Show>
+
+                {/* Display image if available */}
+                <Show when={professorResource()?.image_path}>
+                  <img
+                    src={
+                      professorResource()?.image_path
+                        ? String(professorResource()?.image_path)
+                        : ''
+                    }
+                    alt={`Professor ${String(professorResource()?.name || '')}`}
+                    class="mt-4 max-w-full h-auto rounded-lg shadow-lg"
+                  />
+                </Show>
+              </div>
+            </div>
+          </Show>
+        </Show>
       </Show>
+
+      {/* Delete confirmation modal */}
+      <ConfirmationModal
+        isOpen={isDeleting()}
+        title="Delete Professor"
+        message={
+          <div>
+            <p>Are you sure you want to delete this professor?</p>
+            <p class="mt-2 font-medium">This action cannot be undone.</p>
+          </div>
+        }
+        confirmText="Delete Professor"
+        onConfirm={() => void handleDelete()}
+        onCancel={() => setIsDeleting(false)}
+        isConfirming={isSubmitting()}
+      />
     </div>
   )
 }

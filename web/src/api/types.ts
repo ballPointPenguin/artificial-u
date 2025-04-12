@@ -30,27 +30,22 @@ export interface HealthCheckResponse {
 export interface Professor {
   id: number
   name: string
-  department: string
   title: string
+  department: string
   specialization: string
   background: string
   personality: string
   teaching_style: string
   gender: string | null
   accent: string | null
-  description: string
+  description: string | null
   age: number | null
-  voice_settings?: {
+  voice_settings: {
     voice_id: string
     stability: number
     clarity: number
-  }
+  } | null
   image_path: string | null
-  email?: string
-  bio?: string
-  image_url?: string | null
-  created_at?: string
-  updated_at?: string
 }
 
 export type ProfessorsList = PaginatedResponse<Professor>
@@ -94,8 +89,8 @@ export interface Department {
   code: string
   faculty: string
   description: string
-  created_at: string
-  updated_at: string
+  created_at?: string
+  updated_at?: string
 }
 
 export type DepartmentsList = PaginatedResponse<Department>
@@ -106,14 +101,14 @@ export interface Course {
   code: string
   title: string
   department: string
-  department_id: number
+  level: string
+  credits: number
   professor_id: number
-  professor_name: string
   description: string
-  credit_hours: number
-  semester: string
-  created_at: string
-  updated_at: string
+  lectures_per_week: number
+  total_weeks: number
+  syllabus: string | null
+  generated_at: string
 }
 
 export type CoursesList = PaginatedResponse<Course>
@@ -122,21 +117,36 @@ export type CoursesList = PaginatedResponse<Course>
 export interface Lecture {
   id: number
   title: string
-  description: string
   course_id: number
-  course_title: string
-  professor_id: number
-  professor_name: string
-  date: string
-  duration: number
-  status: string
+  week_number: number
+  order_in_week: number
+  description: string
+  content: string
   audio_url: string | null
-  transcript: string | null
-  created_at: string
-  updated_at: string
+  generated_at: string
 }
 
 export type LecturesList = PaginatedResponse<Lecture>
+
+// Voice types
+export interface Voice {
+  id: number
+  voice_id: string
+  name: string
+  accent: string | null
+  gender: string | null
+  age: string | null
+  descriptive: string | null
+  use_case: string | null
+  category: string | null
+  language: string | null
+  locale: string | null
+  description: string | null
+  preview_url: string | null
+  verified_languages: Record<string, unknown>
+  popularity_score: number | null
+  last_updated: string
+}
 
 // Error response type
 export interface APIError {
