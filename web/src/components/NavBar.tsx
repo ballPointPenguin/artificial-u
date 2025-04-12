@@ -87,14 +87,21 @@ export function NavBar() {
                     Departments
                   </A>
                   <A
-                    href="#"
+                    href="/academics/professors"
+                    class="block px-4 py-2 text-parchment-200 hover:bg-arcanum-800 tracking-wide font-serif text-sm"
+                    onClick={() => setIsAcademicsOpen(false)}
+                  >
+                    Professors
+                  </A>
+                  <A
+                    href="/academics/programs"
                     class="block px-4 py-2 text-parchment-200 hover:bg-arcanum-800 tracking-wide font-serif text-sm"
                     onClick={() => setIsAcademicsOpen(false)}
                   >
                     Programs
                   </A>
                   <A
-                    href="#"
+                    href="/academics/courses"
                     class="block px-4 py-2 text-parchment-200 hover:bg-arcanum-800 tracking-wide font-serif text-sm"
                     onClick={() => setIsAcademicsOpen(false)}
                   >
@@ -207,14 +214,21 @@ export function NavBar() {
                     Departments
                   </A>
                   <A
-                    href="#"
+                    href="/academics/professors"
+                    class="block text-parchment-200 hover:text-parchment-100 py-2 tracking-wide font-serif text-sm"
+                    onClick={toggleMobileMenu}
+                  >
+                    Professors
+                  </A>
+                  <A
+                    href="/academics/programs"
                     class="block text-parchment-200 hover:text-parchment-100 py-2 tracking-wide font-serif text-sm"
                     onClick={toggleMobileMenu}
                   >
                     Programs
                   </A>
                   <A
-                    href="#"
+                    href="/academics/courses"
                     class="block text-parchment-200 hover:text-parchment-100 py-2 tracking-wide font-serif text-sm"
                     onClick={toggleMobileMenu}
                   >

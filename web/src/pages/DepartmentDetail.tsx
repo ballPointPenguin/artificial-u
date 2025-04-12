@@ -68,7 +68,7 @@ const DepartmentDetail = () => {
 
       await deleteDepartment(id)
       // Navigate back to departments list after deletion
-      navigate('/departments')
+      navigate('/academics/departments')
     } catch (error) {
       setError(
         error instanceof Error ? error.message : 'Failed to delete department'
@@ -83,7 +83,10 @@ const DepartmentDetail = () => {
     <div class="container mx-auto px-4 py-8">
       {/* Breadcrumb navigation - Use theme colors */}
       <div class="mb-6">
-        <A href="/departments" class="text-mystic-500 hover:text-mystic-300">
+        <A
+          href="/academics/departments"
+          class="text-mystic-500 hover:text-mystic-300"
+        >
           ← Back to Departments
         </A>
       </div>

@@ -32,12 +32,25 @@ export interface Professor {
   name: string
   department: string
   title: string
-  email: string
   specialization: string
-  bio: string
-  image_url: string | null
-  created_at: string
-  updated_at: string
+  background: string
+  personality: string
+  teaching_style: string
+  gender: string | null
+  accent: string | null
+  description: string
+  age: number | null
+  voice_settings?: {
+    voice_id: string
+    stability: number
+    clarity: number
+  }
+  image_path: string | null
+  email?: string
+  bio?: string
+  image_url?: string | null
+  created_at?: string
+  updated_at?: string
 }
 
 export type ProfessorsList = PaginatedResponse<Professor>

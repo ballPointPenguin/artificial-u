@@ -18,7 +18,7 @@ const DepartmentCard = (props: { department: Department }) => {
         {props.department.description}
       </p>
       <A
-        href={`/departments/${String(props.department.id)}`}
+        href={`/academics/departments/${String(props.department.id)}`}
         class="text-mystic-500 hover:text-mystic-300 font-medium mt-auto"
       >
         View Details
