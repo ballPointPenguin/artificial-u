@@ -1,5 +1,5 @@
-import type { Component } from 'solid-js';
-import { A, type RouteSectionProps } from '@solidjs/router';
+import type { Component } from 'solid-js'
+import { A, type RouteSectionProps } from '@solidjs/router'
 
 const Layout: Component<RouteSectionProps> = (props) => {
   return (
@@ -19,11 +19,9 @@ const Layout: Component<RouteSectionProps> = (props) => {
         </ul>
       </nav>
 
-      <main class="flex-grow p-4">
-        {props.children}
-      </main>
+      <main class="flex-grow p-4">{props.children}</main>
     </div>
-  );
-};
+  )
+}
 
-export default Layout; 
+export default Layout

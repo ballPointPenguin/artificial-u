@@ -16,5 +16,5 @@ if (root) {
     root
   )
 } else {
-  console.error("Root element not found")
+  console.error('Root element not found')
 }

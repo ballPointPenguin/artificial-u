@@ -1,4 +1,4 @@
-import type { Component } from 'solid-js';
+import type { Component } from 'solid-js'
 
 const About: Component = () => {
   return (
@@ -6,7 +6,7 @@ const About: Component = () => {
       <h2 class="text-2xl font-bold">About Page</h2>
       <p>This is the about page.</p>
     </div>
-  );
-};
+  )
+}
 
-export default About; 
+export default About
