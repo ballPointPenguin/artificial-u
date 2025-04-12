@@ -1,0 +1,41 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+## Development Workflow Guidelines
+
+Follow these streamlined steps for new features and significant changes:
+
+Research
+	•	Identify current best practices and idiomatic patterns
+	•	Prefer modern (recent) solutions over legacy
+
+Balance
+	•	Find the middle ground between originality and proven patterns
+	•	Contextualize choices to the specific task
+
+Recognize Limits
+	•	Stop and revert if stuck on unsuccessful attempts
+	•	Seek clarification when needed
+
+Iterative Development Cycle
+	1.	Ideate
+	•	Consider multiple solutions; select a promising one
+	•	Research existing implementations
+	2.	Proliferate
+	•	Implement chosen approach
+	3.	Validate
+	•	Test thoroughly
+	•	If unsuccessful, ideate again or seek input
+	4.	Simplify
+	•	Remove unnecessary code and duplication
+	•	Abstract common patterns
+	5.	Document
+	•	Maintain clear, concise documentation
+	•	Write informative commit messages
+	6.	Continue
+	•	Move forward, applying lessons learned
+
+These guidelines are flexible; adapt as needed.
+

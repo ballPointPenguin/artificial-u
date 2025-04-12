@@ -1,0 +1,24 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+## Greenfield Development Guidelines
+
+This project is currently in rapid, exploratory development and **not yet deployed to any production environment**. It is therefore highly tolerant of breaking changes, aggressive refactoring, and rapid iteration. The following guidelines should inform all development decisions during this phase:
+
+- **Move Fast, Break Things**: Prioritize speed of iteration and improvement over stability or backward compatibility.
+- **Direct Schema Changes**: Prefer directly editing database schemas over creating incremental, sequential migrations.
+- **Aggressive Refactoring**: Freely move, rename, or restructure modules, classes, functions, and files to maintain clarity, simplicity, and adherence to best practices.
+- **Remove Rather than Deprecate**: Fully delete outdated or unnecessary code paths immediately instead of marking them as deprecated.
+- **Postpone Production Considerations**: Do not spend time addressing deployment, scalability, or backward compatibility at this stage—these concerns will be addressed later.
+- **No Upgrade Documentation**: Do not document upgrade paths or compatibility strategies for hypothetical or future users of older versions.
+
+However, continue to rigorously monitor and maintain:
+
+- **Unit and Integration Tests**
+- **Linting and Code Style Enforcement**
+- **Best Practices in Coding and Architecture**
+
+Embrace this opportunity to innovate quickly and boldly. Fail forward!
+
