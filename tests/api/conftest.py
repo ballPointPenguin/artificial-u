@@ -6,7 +6,8 @@ from sqlalchemy import create_engine, text
 from sqlalchemy.exc import OperationalError
 
 from artificial_u.api.app import app, create_application
-from artificial_u.models.database import Base, Repository
+from artificial_u.models.database import Base
+from artificial_u.models.repositories import RepositoryFactory
 
 
 def pytest_runtest_setup(item):
@@ -58,7 +59,7 @@ def test_app():
 @pytest.fixture
 def test_repository(test_db_url):
     """Create a repository for database operations in tests."""
-    return Repository(db_url=test_db_url)
+    return RepositoryFactory(db_url=test_db_url)
 
 
 @pytest.fixture(scope="function")

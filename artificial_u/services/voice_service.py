@@ -11,7 +11,7 @@ from typing import Any, Dict, List, Optional
 from artificial_u.integrations.elevenlabs.client import ElevenLabsClient
 from artificial_u.integrations.elevenlabs.voice_mapper import VoiceMapper
 from artificial_u.models.core import Professor, Voice
-from artificial_u.models.database import Repository
+from artificial_u.models.repositories import RepositoryFactory
 
 
 class VoiceService:
@@ -22,7 +22,7 @@ class VoiceService:
         api_key: Optional[str] = None,
         client: Optional[ElevenLabsClient] = None,
         mapper: Optional[VoiceMapper] = None,
-        repository: Optional[Repository] = None,
+        repository: Optional[RepositoryFactory] = None,
         logger=None,
     ):
         """
@@ -355,7 +355,7 @@ class VoiceService:
 
         return voices_page
 
-    def set_repository(self, repository: Repository) -> None:
+    def set_repository(self, repository: RepositoryFactory) -> None:
         """
         Set the database repository.
 

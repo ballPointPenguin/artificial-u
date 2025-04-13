@@ -17,7 +17,7 @@ from artificial_u.api.models.professors import (
     ProfessorUpdate,
 )
 from artificial_u.api.services.professor_service import ProfessorService
-from artificial_u.models.database import Repository
+from artificial_u.models.repositories import RepositoryFactory
 
 router = APIRouter(
     prefix="/professors",
@@ -26,13 +26,13 @@ router = APIRouter(
 )
 
 
-def get_repository(settings: Settings = Depends(get_settings)) -> Repository:
+def get_repository(settings: Settings = Depends(get_settings)) -> RepositoryFactory:
     """Dependency for getting repository instance."""
-    return Repository(db_url=settings.DATABASE_URL)
+    return RepositoryFactory(db_url=settings.DATABASE_URL)
 
 
 def get_professor_service(
-    repository: Repository = Depends(get_repository),
+    repository: RepositoryFactory = Depends(get_repository),
 ) -> ProfessorService:
     """Dependency for getting professor service."""
     return ProfessorService(repository)

@@ -11,7 +11,7 @@ from artificial_u.config.config_manager import ConfigManager
 from artificial_u.generators.factory import create_generator
 from artificial_u.integrations.elevenlabs.client import ElevenLabsClient
 from artificial_u.models.core import Course, Department, Lecture, Professor
-from artificial_u.models.database import Repository
+from artificial_u.models.repositories import RepositoryFactory
 from artificial_u.services.audio_service import AudioService
 from artificial_u.services.course_service import CourseService
 from artificial_u.services.lecture_service import LectureService
@@ -103,7 +103,7 @@ class UniversitySystem:
             )
 
             # Initialize repository
-            self.repository = Repository(db_url=config["db_url"])
+            self.repository = RepositoryFactory(db_url=config["db_url"])
 
             # Initialize audio components
             self.elevenlabs_client = ElevenLabsClient(

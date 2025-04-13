@@ -90,7 +90,7 @@ class CourseService:
 
         # Save to database
         try:
-            course = self.repository.create_course(course)
+            course = self.repository.course.create(course)
             self.logger.info(f"Course created with ID: {course.id}")
             return course, professor
         except Exception as e:
@@ -129,7 +129,7 @@ class CourseService:
         Raises:
             CourseNotFoundError: If course not found
         """
-        course = self.repository.get_course(course_id)
+        course = self.repository.course.get(course_id)
         if not course:
             error_msg = f"Course with ID {course_id} not found"
             self.logger.error(error_msg)
@@ -149,7 +149,7 @@ class CourseService:
         Raises:
             CourseNotFoundError: If course not found
         """
-        course = self.repository.get_course_by_code(course_code)
+        course = self.repository.course.get_by_code(course_code)
         if not course:
             error_msg = f"Course with code {course_code} not found"
             self.logger.error(error_msg)
@@ -171,11 +171,11 @@ class CourseService:
         )
 
         try:
-            courses = self.repository.list_courses(department)
+            courses = self.repository.course.list(department)
             result = []
 
             for course in courses:
-                professor = self.repository.get_professor(course.professor_id)
+                professor = self.repository.professor.get(course.professor_id)
                 result.append({"course": course, "professor": professor})
 
             self.logger.debug(f"Found {len(result)} courses")
@@ -216,6 +216,6 @@ class CourseService:
                 name="Statistics",
                 code="STAT",
                 faculty="Science and Engineering",
-                description="The Statistics department focuses on statistical theory and its applications to data analysis.",
+                description="Focuses on statistical theory and its applications to data analysis.",
             ),
         ]

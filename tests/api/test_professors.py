@@ -7,7 +7,7 @@ from fastapi.testclient import TestClient
 
 from artificial_u.api.app import app
 from artificial_u.models.core import Course, Lecture, Professor
-from artificial_u.models.database import Repository
+from artificial_u.models.repositories import RepositoryFactory
 
 
 @pytest.fixture
@@ -99,16 +99,18 @@ def mock_repository(monkeypatch):
         return sample_courses
 
     def mock_list_lectures_by_course(self, course_id, *args, **kwargs):
-        return [l for l in sample_lectures if l.course_id == course_id]
+        return [
+            lecture for lecture in sample_lectures if lecture.course_id == course_id
+        ]
 
     # Patch the Repository methods
-    monkeypatch.setattr(Repository, "list_professors", mock_list_professors)
-    monkeypatch.setattr(Repository, "get_professor", mock_get_professor)
-    monkeypatch.setattr(Repository, "create_professor", mock_create_professor)
-    monkeypatch.setattr(Repository, "update_professor", mock_update_professor)
-    monkeypatch.setattr(Repository, "list_courses", mock_list_courses)
+    monkeypatch.setattr(RepositoryFactory, "list_professors", mock_list_professors)
+    monkeypatch.setattr(RepositoryFactory, "get_professor", mock_get_professor)
+    monkeypatch.setattr(RepositoryFactory, "create_professor", mock_create_professor)
+    monkeypatch.setattr(RepositoryFactory, "update_professor", mock_update_professor)
+    monkeypatch.setattr(RepositoryFactory, "list_courses", mock_list_courses)
     monkeypatch.setattr(
-        Repository, "list_lectures_by_course", mock_list_lectures_by_course
+        RepositoryFactory, "list_lectures_by_course", mock_list_lectures_by_course
     )
 
     return sample_professors

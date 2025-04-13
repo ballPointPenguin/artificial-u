@@ -10,9 +10,6 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from artificial_u.config.defaults import DEFAULT_LECTURE_WORD_COUNT
 from artificial_u.models.core import Course, Lecture, Professor
-from artificial_u.models.database import Repository
-from artificial_u.services.course_service import CourseService
-from artificial_u.services.professor_service import ProfessorService
 from artificial_u.services.storage_service import StorageService
 from artificial_u.utils.exceptions import (
     ContentGenerationError,
@@ -114,7 +111,7 @@ class LectureService:
 
         # Save lecture to database
         try:
-            lecture = self.repository.create_lecture(lecture)
+            lecture = self.repository.lecture.create(lecture)
             self.logger.info(f"Lecture created with ID: {lecture.id}")
         except Exception as e:
             error_msg = f"Failed to save lecture: {str(e)}"
@@ -178,7 +175,7 @@ class LectureService:
             prev_number = course.lectures_per_week
 
         try:
-            previous_lecture = self.repository.get_lecture_by_course_week_order(
+            previous_lecture = self.repository.lecture.get_by_course_week_order(
                 course_id=course.id, week_number=prev_week, order_in_week=prev_number
             )
             if previous_lecture:
@@ -367,7 +364,7 @@ class LectureService:
         Raises:
             LectureNotFoundError: If lecture not found
         """
-        lecture = self.repository.get_lecture_by_course_week_order(
+        lecture = self.repository.lecture.get_by_course_week_order(
             course_id=course_id, week_number=week_number, order_in_week=order_in_week
         )
         if not lecture:
@@ -448,8 +445,7 @@ class LectureService:
                     lecture, metrics = lecture_tuple
 
                     # Save the lecture to the database
-                    lecture_id = self.repository.add_lecture(lecture)
-                    lecture.id = lecture_id
+                    lecture = self.repository.lecture.create(lecture)
                     lectures.append(lecture)
 
                     # Track token savings
@@ -466,7 +462,8 @@ class LectureService:
             else:
                 # Use individual lecture creation if caching is not available
                 self.logger.info(
-                    f"Generating lecture series for {course.code} without caching (not using Anthropic or caching disabled)"
+                    f"Generating lecture series for {course.code} without caching "
+                    f"(not using Anthropic or caching disabled)"
                 )
 
                 lectures = []
@@ -488,8 +485,7 @@ class LectureService:
                     )
 
                     # Save the lecture to the database
-                    lecture_id = self.repository.add_lecture(lecture)
-                    lecture.id = lecture_id
+                    lecture = self.repository.lecture.create(lecture)
                     lectures.append(lecture)
 
                     # Update previous lecture for the next iteration
@@ -526,14 +522,12 @@ class LectureService:
         lectures = []
 
         try:
-            courses_info = self.repository.list_courses()
+            courses = self.repository.course.list()
 
-            for course_info in courses_info:
+            for course in courses:
                 # Handle either format - dict with "course" key or direct Course object
-                if isinstance(course_info, dict) and "course" in course_info:
-                    course = course_info["course"]
-                else:
-                    course = course_info  # Assume it's a Course object directly
+                if isinstance(course, dict) and "course" in course:
+                    course = course["course"]
 
                 # Skip if filtering by course code and this isn't the right course
                 if course_code and course.code != course_code:
@@ -567,14 +561,14 @@ class LectureService:
         lectures = []
 
         try:
-            professor = self.repository.get_professor(course.professor_id)
+            professor = self.repository.professor.get(course.professor_id)
             if not professor:
                 self.logger.warning(
                     f"Professor not found for course {course.code}, skipping"
                 )
                 return []
 
-            course_lectures = self.repository.list_lectures_by_course(course.id)
+            course_lectures = self.repository.lecture.list_by_course(course.id)
 
             for lecture in course_lectures:
                 # Get model information and skip if it doesn't match the filter
@@ -641,7 +635,9 @@ class LectureService:
             with open(lecture_path, "r", encoding="utf-8") as f:
                 content = f.read()
                 # Look for the model info in the header
-                model_lines = [l for l in content.split("\n") if "Generated with:" in l]
+                model_lines = [
+                    line for line in content.split("\n") if "Generated with:" in line
+                ]
                 if model_lines:
                     return model_lines[0].replace("## Generated with:", "").strip()
         except Exception as e:

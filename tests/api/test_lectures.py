@@ -11,8 +11,8 @@ import pytest
 from fastapi.testclient import TestClient
 
 from artificial_u.api.app import app
-from artificial_u.models.core import Course, Lecture, Professor
-from artificial_u.models.database import Repository
+from artificial_u.models.core import Course, Lecture
+from artificial_u.models.repositories import RepositoryFactory
 
 
 @pytest.fixture
@@ -41,9 +41,8 @@ def temp_assets_dir():
 def mock_repository(monkeypatch, temp_assets_dir):
     """Mock repository for testing."""
     from artificial_u.api.routers.lectures import get_repository
-    from artificial_u.models.database import Repository
 
-    app.dependency_overrides[get_repository] = lambda: Repository()
+    app.dependency_overrides[get_repository] = lambda: RepositoryFactory()
     # Sample lecture data
     sample_lectures = [
         {
@@ -77,21 +76,6 @@ def mock_repository(monkeypatch, temp_assets_dir):
             description=f"Description for course {i}",
             lectures_per_week=2,
             total_weeks=14,
-        )
-        for i in range(1, 4)
-    ]
-
-    # Sample professor data
-    sample_professors = [
-        Professor(
-            id=i,
-            name=f"Dr. Test Professor {i}",
-            title=f"Professor of Test {i}",
-            department="Computer Science",
-            specialization=f"Test Specialization {i}",
-            background="Test background",
-            personality="Test personality",
-            teaching_style="Test teaching style",
         )
         for i in range(1, 4)
     ]
@@ -285,13 +269,11 @@ def mock_repository(monkeypatch, temp_assets_dir):
     def mock_delete_lecture(self, lecture_id, *args, **kwargs):
         """Mock delete lecture method that prevents recursion"""
         # Use a direct indexing approach instead of iterating during deletion
-        lecture_to_delete = None
         lecture_index = None
 
         # First find the lecture
         for i, lecture in enumerate(sample_lectures):
             if lecture["id"] == lecture_id:
-                lecture_to_delete = lecture
                 lecture_index = i
                 break
 
@@ -374,19 +356,25 @@ def mock_repository(monkeypatch, temp_assets_dir):
         return next((c for c in sample_courses if c.id == course_id), None)
 
     # Patch the Repository methods
-    monkeypatch.setattr(Repository, "list_lectures", mock_list_lectures)
-    monkeypatch.setattr(Repository, "count_lectures", mock_count_lectures)
-    monkeypatch.setattr(Repository, "get_course", mock_get_course)
-    monkeypatch.setattr(Repository, "get_lecture", mock_get_lecture)
-    monkeypatch.setattr(Repository, "get_lecture_content", mock_get_lecture_content)
-    monkeypatch.setattr(Repository, "get_lecture_audio_url", mock_get_lecture_audio_url)
-    monkeypatch.setattr(Repository, "create_lecture", mock_create_lecture)
-    monkeypatch.setattr(Repository, "update_lecture", mock_update_lecture)
-    monkeypatch.setattr(Repository, "delete_lecture", mock_delete_lecture)
+    monkeypatch.setattr(RepositoryFactory, "list_lectures", mock_list_lectures)
+    monkeypatch.setattr(RepositoryFactory, "count_lectures", mock_count_lectures)
+    monkeypatch.setattr(RepositoryFactory, "get_course", mock_get_course)
+    monkeypatch.setattr(RepositoryFactory, "get_lecture", mock_get_lecture)
     monkeypatch.setattr(
-        Repository, "_build_lecture_summary", mock_build_lecture_summary
+        RepositoryFactory, "get_lecture_content", mock_get_lecture_content
     )
-    monkeypatch.setattr(Repository, "_build_lecture_detail", mock_build_lecture_detail)
+    monkeypatch.setattr(
+        RepositoryFactory, "get_lecture_audio_url", mock_get_lecture_audio_url
+    )
+    monkeypatch.setattr(RepositoryFactory, "create_lecture", mock_create_lecture)
+    monkeypatch.setattr(RepositoryFactory, "update_lecture", mock_update_lecture)
+    monkeypatch.setattr(RepositoryFactory, "delete_lecture", mock_delete_lecture)
+    monkeypatch.setattr(
+        RepositoryFactory, "_build_lecture_summary", mock_build_lecture_summary
+    )
+    monkeypatch.setattr(
+        RepositoryFactory, "_build_lecture_detail", mock_build_lecture_detail
+    )
 
     # Patch the lecture service methods for content assets
     from artificial_u.api.services.lecture_service import LectureApiService
@@ -510,13 +498,15 @@ def test_download_lecture_content(client, mock_repository):
 def test_get_lecture_audio(client, mock_repository):
     """Test getting lecture audio."""
     # Find a lecture with audio path that's a URL
-    lecture_with_audio = next((l for l in mock_repository if l["id"] == 2), None)
+    lecture_with_audio = next(
+        (lecture for lecture in mock_repository if lecture["id"] == 2), None
+    )
     if lecture_with_audio:
         # Set the audio path to be a URL
         lecture_with_audio["audio_url"] = "https://example.com/storage/lecture_2.mp3"
     else:
         # If lecture 2 doesn't exist, find any lecture and set its audio path
-        lecture_with_audio = next((l for l in mock_repository), None)
+        lecture_with_audio = next((lecture for lecture in mock_repository), None)
         lecture_with_audio["audio_url"] = (
             "https://example.com/storage/lecture_audio.mp3"
         )
@@ -531,7 +521,7 @@ def test_get_lecture_audio(client, mock_repository):
 
     # Test with lecture that has no audio
     lecture_without_audio = next(
-        (l for l in mock_repository if not l["audio_url"]), None
+        (lecture for lecture in mock_repository if not lecture["audio_url"]), None
     )
     assert lecture_without_audio is not None
 

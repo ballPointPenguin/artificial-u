@@ -5,18 +5,15 @@ These tests verify the interaction between different components
 but mock external API calls.
 """
 
-import os
 from unittest.mock import MagicMock, patch
 
 import pytest
 
-from artificial_u.config.defaults import DEFAULT_LOG_LEVEL
 from artificial_u.models.core import Course, Lecture, Professor
 from artificial_u.system import UniversitySystem
 from artificial_u.utils.exceptions import (
     ContentGenerationError,
     CourseNotFoundError,
-    LectureNotFoundError,
     ProfessorNotFoundError,
 )
 
@@ -28,7 +25,7 @@ def mock_system():
         patch("artificial_u.system.create_generator") as mock_create_generator,
         patch("artificial_u.system.VoiceService") as MockVoiceService,
         patch("artificial_u.system.TTSService") as MockTTSService,
-        patch("artificial_u.system.Repository") as MockRepository,
+        patch("artificial_u.system.RepositoryFactory") as MockRepository,
         patch("pathlib.Path.mkdir"),
     ):
 
@@ -74,7 +71,7 @@ def mock_system():
 
         # Set up mock repository
         mock_repository = MockRepository.return_value
-        mock_repository.create_professor.side_effect = lambda p: Professor(
+        mock_repository.professor.create.side_effect = lambda p: Professor(
             id=123,
             name=p.name,
             title=p.title,
@@ -89,7 +86,7 @@ def mock_system():
             description=p.description,
             age=p.age,
         )
-        mock_repository.create_course.side_effect = lambda c: Course(
+        mock_repository.course.create.side_effect = lambda c: Course(
             id=123,
             code=c.code,
             title=c.title,
@@ -101,7 +98,7 @@ def mock_system():
             total_weeks=c.total_weeks,
             lectures_per_week=c.lectures_per_week,
         )
-        mock_repository.get_professor.return_value = Professor(
+        mock_repository.professor.get.return_value = Professor(
             id=123,
             name="Dr. Mock",
             title="Professor of Computer Science",
@@ -116,7 +113,7 @@ def mock_system():
             description="A distinguished professor with a professorial appearance",
             age=52,
         )
-        mock_repository.get_course_by_code.return_value = Course(
+        mock_repository.course.get_by_code.return_value = Course(
             id=123,
             code="CS101",
             title="Introduction to Computer Science",
@@ -130,7 +127,7 @@ def mock_system():
         )
 
         # Mock lecture update
-        mock_repository.update_lecture.side_effect = lambda lecture: Lecture(
+        mock_repository.lecture.update.side_effect = lambda lecture: Lecture(
             id=lecture.id,
             title=lecture.title if hasattr(lecture, "title") else "Mock Lecture Title",
             course_id=lecture.course_id if hasattr(lecture, "course_id") else 123,
@@ -189,7 +186,7 @@ def mock_system():
 def setup_common_repository_patterns(mock_repository):
     """Set up common repository mock patterns used across tests."""
     # Mock lecture retrieval
-    mock_repository.get_lecture_by_course_week_order.return_value = Lecture(
+    mock_repository.lecture.get_by_course_week_order.return_value = Lecture(
         id=123,
         title="Mock Lecture Title",
         course_id=123,
@@ -200,18 +197,18 @@ def setup_common_repository_patterns(mock_repository):
     )
 
     # Mock lecture creation
-    mock_repository.create_lecture.side_effect = lambda l: Lecture(
+    mock_repository.lecture.create.side_effect = lambda lecture: Lecture(
         id=123,
-        title=l.title,
-        course_id=l.course_id,
-        week_number=l.week_number,
-        order_in_week=l.order_in_week,
-        description=l.description,
-        content=l.content,
+        title=lecture.title,
+        course_id=lecture.course_id,
+        week_number=lecture.week_number,
+        order_in_week=lecture.order_in_week,
+        description=lecture.description,
+        content=lecture.content,
     )
 
     # Mock course listing
-    mock_repository.list_courses.return_value = [
+    mock_repository.course.list.return_value = [
         Course(
             id=123,
             code="CS101",
@@ -227,7 +224,7 @@ def setup_common_repository_patterns(mock_repository):
     ]
 
     # Mock lecture listing
-    mock_repository.list_lectures_by_course.return_value = [
+    mock_repository.lecture.list_by_course.return_value = [
         Lecture(
             id=123,
             title="Mock Lecture Title",
@@ -294,12 +291,16 @@ async def test_lecture_generation_flow(mock_system):
 async def test_error_handling(mock_system):
     """Test error handling in the system."""
     # Test course not found error
-    with patch.object(mock_system.repository, "get_course_by_code", return_value=None):
+    with patch.object(
+        mock_system.course_service,
+        "get_course_by_code",
+        side_effect=CourseNotFoundError("Course not found"),
+    ):
         with pytest.raises(CourseNotFoundError):
             mock_system.generate_lecture(course_code="NONEXISTENT", week=1, number=1)
 
     # Test professor not found error
-    with patch.object(mock_system.repository, "get_professor", return_value=None):
+    with patch.object(mock_system.repository.professor, "get", return_value=None):
         with pytest.raises(ProfessorNotFoundError):
             mock_system.create_course(
                 title="Test Course",
@@ -310,7 +311,7 @@ async def test_error_handling(mock_system):
 
     # Test lecture not found error
     with patch.object(
-        mock_system.repository, "get_lecture_by_course_week_order", return_value=None
+        mock_system.repository.lecture, "get_by_course_week_order", return_value=None
     ):
         with pytest.raises(
             ValueError, match="Lecture for course CS101, week 999, number 999 not found"

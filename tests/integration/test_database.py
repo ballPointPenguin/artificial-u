@@ -9,8 +9,8 @@ from dotenv import load_dotenv
 from sqlalchemy import create_engine
 from sqlalchemy.exc import OperationalError
 
-from artificial_u.models.core import Course, Department, Lecture, Professor
-from artificial_u.models.database import Repository
+from artificial_u.models.core import Course, Lecture, Professor
+from artificial_u.models.repositories import RepositoryFactory
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -32,7 +32,7 @@ def test_db_url():
 @pytest.fixture
 def repository(test_db_url):
     """Create a repository instance with the test database."""
-    return Repository(db_url=test_db_url)
+    return RepositoryFactory(db_url=test_db_url)
 
 
 @pytest.fixture
@@ -51,7 +51,7 @@ def sample_professor():
 @pytest.fixture
 def db_professor(repository, sample_professor):
     """Create a professor in the database for testing."""
-    return repository.create_professor(sample_professor)
+    return repository.professor.create(sample_professor)
 
 
 @pytest.fixture
@@ -72,7 +72,7 @@ def sample_course(db_professor):
 @pytest.fixture
 def db_course(repository, sample_course):
     """Create a course in the database for testing."""
-    return repository.create_course(sample_course)
+    return repository.course.create(sample_course)
 
 
 @pytest.fixture
@@ -110,7 +110,7 @@ def setup_database(test_db_url, db_available):
         pytest.skip("Database not available")
 
     # Get the SQLAlchemy engine
-    from sqlalchemy import create_engine, text
+    from sqlalchemy import create_engine
 
     from artificial_u.models.database import Base
 
@@ -133,26 +133,26 @@ def setup_database(test_db_url, db_available):
 def test_professor_crud(repository, sample_professor):
     """Test CRUD operations for professors."""
     # Create
-    created_prof = repository.create_professor(sample_professor)
+    created_prof = repository.professor.create(sample_professor)
     assert created_prof.id is not None
 
     # Read
-    retrieved_prof = repository.get_professor(created_prof.id)
+    retrieved_prof = repository.professor.get(created_prof.id)
     assert retrieved_prof is not None
     assert retrieved_prof.name == sample_professor.name
 
     # List
-    professors = repository.list_professors()
+    professors = repository.professor.list()
     assert len(professors) == 1
     assert professors[0].id == created_prof.id
 
     # Update
     retrieved_prof.title = "Updated Professor of Testing"
-    updated_prof = repository.update_professor(retrieved_prof)
+    updated_prof = repository.professor.update(retrieved_prof)
     assert updated_prof.title == "Updated Professor of Testing"
 
     # Verify update
-    verified_prof = repository.get_professor(created_prof.id)
+    verified_prof = repository.professor.get(created_prof.id)
     assert verified_prof.title == "Updated Professor of Testing"
 
 
@@ -161,21 +161,21 @@ def test_professor_crud(repository, sample_professor):
 def test_course_crud(repository, sample_course):
     """Test CRUD operations for courses."""
     # Create course
-    created_course = repository.create_course(sample_course)
+    created_course = repository.course.create(sample_course)
     assert created_course.id is not None
 
     # Read
-    retrieved_course = repository.get_course(created_course.id)
+    retrieved_course = repository.course.get(created_course.id)
     assert retrieved_course is not None
     assert retrieved_course.code == sample_course.code
 
     # Read by code
-    code_retrieved_course = repository.get_course_by_code(sample_course.code)
+    code_retrieved_course = repository.course.get_by_code(sample_course.code)
     assert code_retrieved_course is not None
     assert code_retrieved_course.id == created_course.id
 
     # List
-    all_courses = repository.list_courses()
+    all_courses = repository.course.list()
     assert len(all_courses) == 1
     assert all_courses[0].id == created_course.id
 
@@ -185,30 +185,30 @@ def test_course_crud(repository, sample_course):
 def test_lecture_crud(repository, db_course, sample_lecture):
     """Test CRUD operations for lectures."""
     # Create lecture
-    created_lecture = repository.create_lecture(sample_lecture)
+    created_lecture = repository.lecture.create(sample_lecture)
     assert created_lecture.id is not None
 
     # Read
-    retrieved_lecture = repository.get_lecture(created_lecture.id)
+    retrieved_lecture = repository.lecture.get(created_lecture.id)
     assert retrieved_lecture is not None
     assert retrieved_lecture.title == sample_lecture.title
 
     # Read by course/week/order
-    week_lecture = repository.get_lecture_by_course_week_order(
+    week_lecture = repository.lecture.get_by_course_week_order(
         db_course.id, week_number=1, order_in_week=1
     )
     assert week_lecture is not None
     assert week_lecture.id == created_lecture.id
 
     # List by course
-    course_lectures = repository.list_lectures_by_course(db_course.id)
+    course_lectures = repository.lecture.list_by_course(db_course.id)
     assert len(course_lectures) == 1
     assert course_lectures[0].id == created_lecture.id
 
     # Update audio path
-    lecture_to_update = repository.get_lecture(created_lecture.id)
+    lecture_to_update = repository.lecture.get(created_lecture.id)
     lecture_to_update.audio_url = "storage://test_audio.mp3"
-    updated_lecture = repository.update_lecture(lecture_to_update)
+    updated_lecture = repository.lecture.update(lecture_to_update)
     assert updated_lecture is not None
     assert updated_lecture.audio_url == "storage://test_audio.mp3"
 
@@ -218,14 +218,14 @@ def test_lecture_crud(repository, db_course, sample_lecture):
 def test_relationships(repository, db_professor, db_course, sample_lecture):
     """Test relationships between models."""
     # Create lecture
-    created_lecture = repository.create_lecture(sample_lecture)
+    repository.lecture.create(sample_lecture)
 
     # Verify course listing includes the correct professor
-    courses = repository.list_courses()
+    courses = repository.course.list()
     assert len(courses) == 1
     assert courses[0].professor_id == db_professor.id
 
     # Verify lecture listing includes the correct course
-    lectures = repository.list_lectures_by_course(db_course.id)
+    lectures = repository.lecture.list_by_course(db_course.id)
     assert len(lectures) == 1
     assert lectures[0].course_id == db_course.id
