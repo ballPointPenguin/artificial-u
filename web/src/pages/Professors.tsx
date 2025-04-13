@@ -39,7 +39,6 @@ export default function ProfessorsPage() {
     try {
       const newProfessor = {
         ...formData,
-        department: formData.department || '',
         specialization: formData.specialization || '',
         background: formData.background || '',
         personality: formData.personality || '',

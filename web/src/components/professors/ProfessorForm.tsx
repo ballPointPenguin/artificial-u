@@ -12,8 +12,6 @@ export interface ProfessorFormData {
   gender: string
   accent: string
   age: number | null
-  voice_id?: number
-  department_id?: string
   specialization?: string
   background?: string
   personality?: string

@@ -153,14 +153,6 @@ export default function ProfessorDetail() {
               <div class="space-y-3 text-parchment-200">
                 <p>
                   <strong class="font-semibold text-parchment-100">
-                    Department:
-                  </strong>{' '}
-                  <span class="text-mystic-300">
-                    {professorResource()?.department}
-                  </span>
-                </p>
-                <p>
-                  <strong class="font-semibold text-parchment-100">
                     Title:
                   </strong>{' '}
                   <span class="text-parchment-200">

@@ -16,10 +16,6 @@ export default function ProfessorListItem(props: ProfessorListItemProps) {
         {props.professor.name}
       </h3>
       <p class="text-sm text-parchment-300">
-        Department:{' '}
-        <span class="text-mystic-300">{props.professor.department}</span>
-      </p>
-      <p class="text-sm text-parchment-300">
         Title: <span class="text-mystic-300">{props.professor.title}</span>
       </p>
       <p class="text-sm text-parchment-300">
