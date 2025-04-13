@@ -3,7 +3,7 @@ Professor management service for ArtificialU.
 """
 
 import logging
-from typing import Optional
+from typing import Any, Dict, List, Optional
 
 from artificial_u.models.core import Professor
 from artificial_u.services.voice_service import VoiceService
@@ -295,3 +295,164 @@ class ProfessorService:
         else:
             self.logger.debug("No professor ID provided, creating new professor")
             return self.create_professor()
+
+    def list_professors(
+        self,
+        filters: Optional[Dict[str, Any]] = None,
+        page: Optional[int] = None,
+        size: Optional[int] = None,
+    ) -> List[Professor]:
+        """
+        List professors with optional filtering and pagination.
+
+        Args:
+            filters: Dictionary of filter criteria (department_id, name, specialization)
+            page: Page number (starting from 1)
+            size: Number of items per page
+
+        Returns:
+            List[Professor]: List of professor objects
+        """
+        # Get all professors
+        professors = self.repository.professor.list()
+
+        # Apply filters if provided
+        if filters:
+            if filters.get("department_id") is not None:
+                professors = [
+                    p for p in professors if p.department_id == filters["department_id"]
+                ]
+            if filters.get("name"):
+                professors = [
+                    p for p in professors if filters["name"].lower() in p.name.lower()
+                ]
+            if filters.get("specialization"):
+                professors = [
+                    p
+                    for p in professors
+                    if filters["specialization"].lower() in p.specialization.lower()
+                ]
+
+        # Apply pagination if provided
+        if page is not None and size is not None:
+            start_idx = (page - 1) * size
+            end_idx = start_idx + size
+            professors = professors[start_idx:end_idx]
+
+        return professors
+
+    def update_professor(
+        self, professor_id: str, attributes: Dict[str, Any]
+    ) -> Professor:
+        """
+        Update a professor with specified attributes.
+
+        Args:
+            professor_id: ID of the professor to update
+            attributes: Dictionary of attributes to update
+
+        Returns:
+            Professor: Updated professor
+
+        Raises:
+            ProfessorNotFoundError: If professor not found
+        """
+        # Get existing professor
+        professor = self.get_professor(professor_id)
+
+        # Update fields
+        for key, value in attributes.items():
+            if hasattr(professor, key):
+                setattr(professor, key, value)
+
+        # Save changes
+        try:
+            updated_professor = self.repository.professor.update(professor)
+            self.logger.info(f"Professor {professor_id} updated successfully")
+            return updated_professor
+        except Exception as e:
+            error_msg = f"Failed to update professor: {str(e)}"
+            self.logger.error(error_msg)
+            raise DatabaseError(error_msg) from e
+
+    def delete_professor(self, professor_id: str) -> bool:
+        """
+        Delete a professor.
+
+        Args:
+            professor_id: ID of the professor to delete
+
+        Returns:
+            bool: True if deleted successfully
+
+        Raises:
+            ProfessorNotFoundError: If professor not found
+        """
+        # Check if professor exists
+        professor = self.repository.professor.get(professor_id)
+        if not professor:
+            error_msg = f"Professor with ID {professor_id} not found"
+            self.logger.error(error_msg)
+            raise ProfessorNotFoundError(error_msg)
+
+        # Delete the professor
+        success = self.repository.professor.delete(professor_id)
+        if success:
+            self.logger.info(f"Professor {professor_id} deleted successfully")
+        else:
+            error_msg = f"Failed to delete professor {professor_id}"
+            self.logger.error(error_msg)
+            raise DatabaseError(error_msg)
+
+        return success
+
+    def list_professor_courses(self, professor_id: str) -> List:
+        """
+        Get courses taught by a professor.
+
+        Args:
+            professor_id: ID of the professor
+
+        Returns:
+            List: List of courses
+
+        Raises:
+            ProfessorNotFoundError: If professor not found
+        """
+        # Check if professor exists - this will raise an exception if not found
+        self.get_professor(professor_id)
+
+        # Get all courses
+        all_courses = self.repository.course.list()
+
+        # Filter courses by professor_id
+        professor_courses = [c for c in all_courses if c.professor_id == professor_id]
+
+        return professor_courses
+
+    def list_professor_lectures(self, professor_id: str) -> List:
+        """
+        Get lectures by a professor.
+
+        Args:
+            professor_id: ID of the professor
+
+        Returns:
+            List: List of lectures
+
+        Raises:
+            ProfessorNotFoundError: If professor not found
+        """
+        # Check if professor exists - this will raise an exception if not found
+        self.get_professor(professor_id)
+
+        # Get courses taught by the professor
+        professor_courses = self.list_professor_courses(professor_id)
+
+        # Get lectures for all these courses
+        all_lectures = []
+        for course in professor_courses:
+            course_lectures = self.repository.lecture.list_by_course(course.id)
+            all_lectures.extend(course_lectures)
+
+        return all_lectures

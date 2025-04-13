@@ -2,9 +2,9 @@
 API models for Professor resources.
 """
 
-from typing import Any, Dict, List, Optional
+from typing import List, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 
 # Base Professor model with common fields

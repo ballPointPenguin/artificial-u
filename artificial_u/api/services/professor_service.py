@@ -15,16 +15,32 @@ from artificial_u.api.models.professors import (
     ProfessorsListResponse,
     ProfessorUpdate,
 )
-from artificial_u.models.core import Professor
-from artificial_u.models.repositories import RepositoryFactory
+from artificial_u.services.professor_service import (
+    ProfessorService as CoreProfessorService,
+)
+from artificial_u.utils.exceptions import DatabaseError, ProfessorNotFoundError
 
 
 class ProfessorService:
-    """Service for professor-related operations."""
+    """API Service for professor-related operations."""
 
-    def __init__(self, repository: RepositoryFactory):
-        """Initialize with database repository."""
+    def __init__(self, repository, core_professor_service=None):
+        """
+        Initialize with database repository and core professor service.
+
+        Args:
+            repository: Database repository factory
+            core_professor_service: Core professor service (will be created if not provided)
+        """
         self.repository = repository
+
+        # Set up the core professor service if not provided
+        self.core_service = core_professor_service
+        if not self.core_service:
+            self.core_service = CoreProfessorService(
+                repository=repository,
+                content_generator=None,  # API service doesn't need content generation
+            )
 
     def get_professors(
         self,
@@ -47,28 +63,25 @@ class ProfessorService:
         Returns:
             ProfessorsListResponse with paginated professors
         """
-        # Get all professors
-        professors = self.repository.professor.list()
-
-        # Apply filters if provided
+        # Create filters dictionary for the core service
+        filters = {}
         if department_id is not None:
-            professors = [p for p in professors if p.department_id == department_id]
+            filters["department_id"] = department_id
         if name:
-            professors = [p for p in professors if name.lower() in p.name.lower()]
+            filters["name"] = name
         if specialization:
-            professors = [
-                p
-                for p in professors
-                if specialization.lower() in p.specialization.lower()
-            ]
+            filters["specialization"] = specialization
+
+        # Get all professors with filters
+        all_professors = self.core_service.list_professors(filters=filters)
 
         # Count total before pagination
-        total = len(professors)
+        total = len(all_professors)
 
         # Apply pagination
-        start_idx = (page - 1) * size
-        end_idx = start_idx + size
-        paginated_professors = professors[start_idx:end_idx]
+        paginated_professors = self.core_service.list_professors(
+            filters=filters, page=page, size=size
+        )
 
         # Calculate total pages
         total_pages = ceil(total / size) if total > 0 else 1
@@ -97,10 +110,11 @@ class ProfessorService:
         Returns:
             ProfessorResponse or None if not found
         """
-        professor = self.repository.professor.get(professor_id)
-        if not professor:
+        try:
+            professor = self.core_service.get_professor(str(professor_id))
+            return ProfessorResponse.model_validate(professor.model_dump())
+        except ProfessorNotFoundError:
             return None
-        return ProfessorResponse.model_validate(professor.model_dump())
 
     def create_professor(self, professor_data: ProfessorCreate) -> ProfessorResponse:
         """
@@ -112,13 +126,13 @@ class ProfessorService:
         Returns:
             Created professor with ID
         """
-        # Convert to core model
-        professor = Professor(**professor_data.model_dump())
+        # Extract data from the create model
+        data = professor_data.model_dump()
 
-        # Save to database
-        created_professor = self.repository.professor.create(professor)
+        # Use the core service to create the professor
+        created_professor = self.core_service.create_professor(**data)
 
-        # Convert back to response model
+        # Convert to API response model
         return ProfessorResponse.model_validate(created_professor.model_dump())
 
     def update_professor(
@@ -134,21 +148,23 @@ class ProfessorService:
         Returns:
             Updated professor or None if not found
         """
-        # Check if professor exists
-        existing_professor = self.repository.professor.get(professor_id)
-        if not existing_professor:
+        try:
+            # Extract non-None values for update
+            update_data = {
+                k: v for k, v in professor_data.model_dump().items() if v is not None
+            }
+
+            # Use core service to update
+            updated_professor = self.core_service.update_professor(
+                str(professor_id), update_data
+            )
+
+            # Convert to response model
+            return ProfessorResponse.model_validate(updated_professor.model_dump())
+        except ProfessorNotFoundError:
             return None
-
-        # Update fields
-        professor_dict = professor_data.model_dump()
-        for key, value in professor_dict.items():
-            setattr(existing_professor, key, value)
-
-        # Save changes
-        updated_professor = self.repository.professor.update(existing_professor)
-
-        # Convert to response model
-        return ProfessorResponse.model_validate(updated_professor.model_dump())
+        except DatabaseError:
+            return None
 
     def delete_professor(self, professor_id: int) -> bool:
         """
@@ -160,13 +176,10 @@ class ProfessorService:
         Returns:
             True if deleted successfully, False otherwise
         """
-        # Check if professor exists
-        professor = self.repository.professor.get(professor_id)
-        if not professor:
+        try:
+            return self.core_service.delete_professor(str(professor_id))
+        except (ProfessorNotFoundError, DatabaseError):
             return False
-
-        # Delete the professor using the repository method
-        return self.repository.professor.delete(professor_id)
 
     def get_professor_courses(
         self, professor_id: int
@@ -180,35 +193,30 @@ class ProfessorService:
         Returns:
             ProfessorCoursesResponse or None if professor not found
         """
-        # First check if professor exists
-        professor = self.repository.professor.get(professor_id)
-        if not professor:
-            return None
+        try:
+            # Use core service to get courses
+            courses = self.core_service.list_professor_courses(str(professor_id))
 
-        # Get all courses
-        all_courses = self.repository.course.list()
+            # Convert to brief format
+            course_briefs = [
+                CourseBrief(
+                    id=c.id,
+                    code=c.code,
+                    title=c.title,
+                    department_id=c.department_id,
+                    level=c.level,
+                    credits=c.credits,
+                )
+                for c in courses
+            ]
 
-        # Filter courses by professor_id
-        professor_courses = [c for c in all_courses if c.professor_id == professor_id]
-
-        # Convert to brief format
-        course_briefs = [
-            CourseBrief(
-                id=c.id,
-                code=c.code,
-                title=c.title,
-                department_id=c.department_id,
-                level=c.level,
-                credits=c.credits,
+            return ProfessorCoursesResponse(
+                professor_id=professor_id,
+                courses=course_briefs,
+                total=len(course_briefs),
             )
-            for c in professor_courses
-        ]
-
-        return ProfessorCoursesResponse(
-            professor_id=professor_id,
-            courses=course_briefs,
-            total=len(course_briefs),
-        )
+        except ProfessorNotFoundError:
+            return None
 
     def get_professor_lectures(
         self, professor_id: int
@@ -222,36 +230,27 @@ class ProfessorService:
         Returns:
             ProfessorLecturesResponse or None if professor not found
         """
-        # First check if professor exists
-        professor = self.repository.professor.get(professor_id)
-        if not professor:
-            return None
+        try:
+            # Use core service to get lectures
+            lectures = self.core_service.list_professor_lectures(str(professor_id))
 
-        # Get courses taught by the professor
-        all_courses = self.repository.course.list()
-        professor_courses = [c for c in all_courses if c.professor_id == professor_id]
+            # Convert to brief format
+            lecture_briefs = [
+                LectureBrief(
+                    id=lecture.id,
+                    title=lecture.title,
+                    course_id=lecture.course_id,
+                    week_number=lecture.week_number,
+                    order_in_week=lecture.order_in_week,
+                    description=lecture.description,
+                )
+                for lecture in lectures
+            ]
 
-        # Get lectures for all these courses
-        all_lectures = []
-        for course in professor_courses:
-            course_lectures = self.repository.lecture.list_by_course(course.id)
-            all_lectures.extend(course_lectures)
-
-        # Convert to brief format
-        lecture_briefs = [
-            LectureBrief(
-                id=lecture.id,
-                title=lecture.title,
-                course_id=lecture.course_id,
-                week_number=lecture.week_number,
-                order_in_week=lecture.order_in_week,
-                description=lecture.description,
+            return ProfessorLecturesResponse(
+                professor_id=professor_id,
+                lectures=lecture_briefs,
+                total=len(lecture_briefs),
             )
-            for lecture in all_lectures
-        ]
-
-        return ProfessorLecturesResponse(
-            professor_id=professor_id,
-            lectures=lecture_briefs,
-            total=len(lecture_briefs),
-        )
+        except ProfessorNotFoundError:
+            return None
