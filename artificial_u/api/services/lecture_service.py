@@ -2,23 +2,24 @@
 Lecture API service for handling lecture operations in the API layer.
 """
 
-from typing import List, Optional, Dict, Any, Tuple
-from datetime import datetime
-import os
 import hashlib
+import os
+from datetime import datetime
+from typing import Any, Dict, List, Optional, Tuple
+
 from fastapi import HTTPException, status
 from sqlalchemy.exc import IntegrityError
 
-from artificial_u.models.database import Repository
-from artificial_u.models.core import Lecture as LectureCore
-from artificial_u.api.models.lectures import (
-    LectureCreate,
-    LectureUpdate,
-    Lecture,
-    LectureList,
-)
-from artificial_u.utils.exceptions import LectureNotFoundError
 from artificial_u.api.config import get_settings
+from artificial_u.api.models.lectures import (
+    Lecture,
+    LectureCreate,
+    LectureList,
+    LectureUpdate,
+)
+from artificial_u.models.core import Lecture as LectureCore
+from artificial_u.models.database import Repository
+from artificial_u.utils.exceptions import LectureNotFoundError
 
 
 # Add content_asset_field to track content files in DB

@@ -2,21 +2,21 @@
 Course service for handling business logic related to courses.
 """
 
-from typing import List, Optional
 from math import ceil
+from typing import List, Optional
 
-from artificial_u.models.database import Repository
-from artificial_u.models.core import Course, Lecture, Professor, Department
 from artificial_u.api.models.courses import (
     CourseCreate,
-    CourseUpdate,
+    CourseLecturesResponse,
     CourseResponse,
     CoursesListResponse,
+    CourseUpdate,
+    DepartmentBrief,
     LectureBrief,
     ProfessorBrief,
-    CourseLecturesResponse,
-    DepartmentBrief,
 )
+from artificial_u.models.core import Course, Department, Lecture, Professor
+from artificial_u.models.database import Repository
 
 
 class CourseService:

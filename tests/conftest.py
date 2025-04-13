@@ -2,9 +2,9 @@
 Pytest configuration and shared fixtures.
 """
 
+import logging
 import os
 import sys
-import logging
 from pathlib import Path
 from typing import Generator
 
@@ -33,7 +33,8 @@ def is_unit_test():
 if not is_unit_test() or "tests/unit" in os.getcwd():
     from sqlalchemy import create_engine
     from sqlalchemy.exc import OperationalError
-    from artificial_u.models.database import Repository, Base
+
+    from artificial_u.models.database import Base, Repository
     from artificial_u.system import UniversitySystem
 else:
     # Create placeholder classes/variables to avoid import errors

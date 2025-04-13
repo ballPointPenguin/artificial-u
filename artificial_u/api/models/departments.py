@@ -3,6 +3,7 @@ API models for Department resources.
 """
 
 from typing import List, Optional
+
 from pydantic import BaseModel, Field
 
 

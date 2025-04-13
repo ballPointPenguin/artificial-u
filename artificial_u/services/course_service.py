@@ -3,18 +3,18 @@ Course management service for ArtificialU.
 """
 
 import logging
-from typing import Dict, List, Optional, Tuple, Any
+from typing import Any, Dict, List, Optional, Tuple
 
-from artificial_u.models.core import Course, Professor, Department
-from artificial_u.utils.exceptions import (
-    ContentGenerationError,
-    DatabaseError,
-    CourseNotFoundError,
-)
 from artificial_u.config.defaults import (
     DEFAULT_COURSE_LEVEL,
     DEFAULT_COURSE_WEEKS,
     DEFAULT_LECTURES_PER_WEEK,
+)
+from artificial_u.models.core import Course, Department, Professor
+from artificial_u.utils.exceptions import (
+    ContentGenerationError,
+    CourseNotFoundError,
+    DatabaseError,
 )
 
 

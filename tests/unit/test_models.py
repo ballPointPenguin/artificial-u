@@ -3,8 +3,10 @@ Unit tests for data models.
 """
 
 from datetime import datetime
+
 import pytest
-from artificial_u.models.core import Department, Professor, Course, Lecture, Voice
+
+from artificial_u.models.core import Course, Department, Lecture, Professor, Voice
 
 
 @pytest.mark.unit

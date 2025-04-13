@@ -5,20 +5,20 @@ These tests verify the interaction between different components
 but mock external API calls.
 """
 
-# pylint: disable=unused-import,redefined-outer-name,invalid-name,wrong-import-order,no-member
-
 import os
+from unittest.mock import MagicMock, patch
+
 import pytest
-from unittest.mock import patch, MagicMock
+
+from artificial_u.config.defaults import DEFAULT_LOG_LEVEL
+from artificial_u.models.core import Course, Lecture, Professor
 from artificial_u.system import UniversitySystem
-from artificial_u.models.core import Professor, Course, Lecture
 from artificial_u.utils.exceptions import (
-    ProfessorNotFoundError,
+    ContentGenerationError,
     CourseNotFoundError,
     LectureNotFoundError,
-    ContentGenerationError,
+    ProfessorNotFoundError,
 )
-from artificial_u.config.defaults import DEFAULT_LOG_LEVEL
 
 
 @pytest.fixture

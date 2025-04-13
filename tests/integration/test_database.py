@@ -3,12 +3,13 @@ Integration tests for the database models and repository.
 """
 
 import os
+
 import pytest
 from dotenv import load_dotenv
 from sqlalchemy import create_engine
 from sqlalchemy.exc import OperationalError
 
-from artificial_u.models.core import Professor, Course, Lecture, Department
+from artificial_u.models.core import Course, Department, Lecture, Professor
 from artificial_u.models.database import Repository
 
 
@@ -110,6 +111,7 @@ def setup_database(test_db_url, db_available):
 
     # Get the SQLAlchemy engine
     from sqlalchemy import create_engine, text
+
     from artificial_u.models.database import Base
 
     engine = create_engine(test_db_url)

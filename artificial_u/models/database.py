@@ -2,30 +2,33 @@
 Database models and repository for ArtificialU.
 """
 
-import os
 import json
 import logging
-from pathlib import Path
-from typing import Dict, List, Optional, Union, Any
+import os
 from datetime import datetime
-from sqlalchemy import or_, func, case, desc
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Union
 
 from sqlalchemy import (
+    JSON,
     Boolean,
     Column,
     DateTime,
     ForeignKey,
+    Index,
     Integer,
     String,
     Text,
+    case,
     create_engine,
-    JSON,
-    Index,
+    desc,
+    func,
+    or_,
 )
-from sqlalchemy.orm import relationship, Session, DeclarativeBase
 from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.orm import DeclarativeBase, Session, relationship
 
-from artificial_u.models.core import Professor, Course, Lecture, Department, Voice
+from artificial_u.models.core import Course, Department, Lecture, Professor, Voice
 
 
 # SQLAlchemy Base

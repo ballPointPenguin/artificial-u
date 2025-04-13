@@ -3,14 +3,12 @@ Test the generator factory functions.
 """
 
 import os
-import pytest
 from unittest.mock import patch
 
-from artificial_u.generators.factory import (
-    create_ollama_generator,
-    create_generator,
-)
+import pytest
+
 from artificial_u.generators.content import ContentGenerator
+from artificial_u.generators.factory import create_generator, create_ollama_generator
 
 # Skip these tests if Ollama is not installed or not running
 ollama_installed = True

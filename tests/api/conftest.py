@@ -1,11 +1,12 @@
 import os
+
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine, text
 from sqlalchemy.exc import OperationalError
 
 from artificial_u.api.app import app, create_application
-from artificial_u.models.database import Repository, Base
+from artificial_u.models.database import Base, Repository
 
 
 def pytest_runtest_setup(item):

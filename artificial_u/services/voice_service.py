@@ -5,13 +5,13 @@ This service manages voice selection and assignment for professors.
 """
 
 import logging
-from typing import Dict, List, Optional, Any
 from datetime import datetime
+from typing import Any, Dict, List, Optional
 
-from artificial_u.models.core import Professor, Voice
-from artificial_u.models.database import Repository
 from artificial_u.integrations.elevenlabs.client import ElevenLabsClient
 from artificial_u.integrations.elevenlabs.voice_mapper import VoiceMapper
+from artificial_u.models.core import Professor, Voice
+from artificial_u.models.database import Repository
 
 
 class VoiceService:

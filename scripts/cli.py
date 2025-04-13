@@ -5,34 +5,35 @@ Command-Line Interface for ArtificialU.
 A simplified CLI providing access to core system functionality.
 """
 
+import asyncio
 import os
-import sys
-import click
 import platform
 import subprocess
-import asyncio
-from pathlib import Path
-from dotenv import load_dotenv
+import sys
 import traceback
-from typing import Optional, List, Dict
+from pathlib import Path
+from typing import Dict, List, Optional
 
-from artificial_u.system import UniversitySystem
-from artificial_u.config.defaults import DEPARTMENTS
-from artificial_u.utils.exceptions import ContentGenerationError
+import click
+from dotenv import load_dotenv
 from rich.console import Console
-from rich.panel import Panel
-from rich.table import Table
 from rich.markdown import Markdown
-from rich.prompt import Confirm, Prompt
+from rich.panel import Panel
 from rich.progress import (
+    BarColumn,
+    MofNCompleteColumn,
     Progress,
     SpinnerColumn,
     TextColumn,
-    BarColumn,
     TimeElapsedColumn,
-    MofNCompleteColumn,
 )
+from rich.prompt import Confirm, Prompt
 from rich.syntax import Syntax
+from rich.table import Table
+
+from artificial_u.config.defaults import DEPARTMENTS
+from artificial_u.system import UniversitySystem
+from artificial_u.utils.exceptions import ContentGenerationError
 
 # Load environment variables
 load_dotenv()

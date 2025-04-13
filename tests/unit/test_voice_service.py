@@ -5,13 +5,14 @@ These tests use mocking to avoid actual API calls or database operations
 while verifying the service behaves as expected.
 """
 
-import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
-from artificial_u.models.core import Professor
-from artificial_u.services.voice_service import VoiceService
+import pytest
+
 from artificial_u.integrations.elevenlabs.client import ElevenLabsClient
 from artificial_u.integrations.elevenlabs.voice_mapper import VoiceMapper
+from artificial_u.models.core import Professor
+from artificial_u.services.voice_service import VoiceService
 
 
 @pytest.fixture

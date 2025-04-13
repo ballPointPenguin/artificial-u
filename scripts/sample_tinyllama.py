@@ -3,9 +3,9 @@
 Sample script to demonstrate generating and viewing lectures with TinyLlama.
 """
 
+import json
 import os
 import sys
-import json
 from pathlib import Path
 
 from artificial_u.system import UniversitySystem

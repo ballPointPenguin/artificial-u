@@ -4,14 +4,14 @@ Audio processing service for ArtificialU.
 
 import logging
 import os
-from typing import Optional, Tuple, Dict, Any, List
 import urllib.parse
+from typing import Any, Dict, List, Optional, Tuple
 
 from artificial_u.models.core import Lecture
-from artificial_u.utils.exceptions import AudioProcessingError
-from artificial_u.services.voice_service import VoiceService
-from artificial_u.services.tts_service import TTSService
 from artificial_u.services.storage_service import StorageService
+from artificial_u.services.tts_service import TTSService
+from artificial_u.services.voice_service import VoiceService
+from artificial_u.utils.exceptions import AudioProcessingError
 
 
 class AudioService:

@@ -4,18 +4,18 @@ Services module for ArtificialU.
 This module provides service-layer abstractions for core functionality.
 """
 
+import logging
 import os
 import sys
-import logging
 from typing import Optional
 
-from artificial_u.services.professor_service import ProfessorService
+from artificial_u.services.audio_service import AudioService
 from artificial_u.services.course_service import CourseService
 from artificial_u.services.lecture_service import LectureService
-from artificial_u.services.audio_service import AudioService
-from artificial_u.services.voice_service import VoiceService
-from artificial_u.services.tts_service import TTSService
+from artificial_u.services.professor_service import ProfessorService
 from artificial_u.services.storage_service import StorageService
+from artificial_u.services.tts_service import TTSService
+from artificial_u.services.voice_service import VoiceService
 
 __all__ = [
     "ProfessorService",

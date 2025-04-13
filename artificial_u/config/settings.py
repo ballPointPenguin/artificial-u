@@ -4,31 +4,32 @@ Centralized configuration management for ArtificialU.
 Uses Pydantic's BaseSettings for robust environment variable handling with validation.
 """
 
+import logging
 import os
 import sys
-import logging
 from enum import Enum
 from functools import lru_cache
 from pathlib import Path
-from typing import List, Optional, Dict, Any, Callable, Union
-from pydantic import AnyHttpUrl, Field, field_validator, model_validator, ConfigDict
+from typing import Any, Callable, Dict, List, Optional, Union
+
+from pydantic import AnyHttpUrl, ConfigDict, Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from artificial_u.config.defaults import (
-    DEFAULT_DB_URL,
-    DEFAULT_TEMP_AUDIO_PATH,
     DEFAULT_CONTENT_BACKEND,
-    DEFAULT_OLLAMA_MODEL,
+    DEFAULT_DB_URL,
     DEFAULT_LOG_LEVEL,
-    DEFAULT_STORAGE_TYPE,
-    DEFAULT_STORAGE_ENDPOINT_URL,
-    DEFAULT_STORAGE_PUBLIC_URL,
+    DEFAULT_OLLAMA_MODEL,
     DEFAULT_STORAGE_ACCESS_KEY,
-    DEFAULT_STORAGE_SECRET_KEY,
-    DEFAULT_STORAGE_REGION,
     DEFAULT_STORAGE_AUDIO_BUCKET,
-    DEFAULT_STORAGE_LECTURES_BUCKET,
+    DEFAULT_STORAGE_ENDPOINT_URL,
     DEFAULT_STORAGE_IMAGES_BUCKET,
+    DEFAULT_STORAGE_LECTURES_BUCKET,
+    DEFAULT_STORAGE_PUBLIC_URL,
+    DEFAULT_STORAGE_REGION,
+    DEFAULT_STORAGE_SECRET_KEY,
+    DEFAULT_STORAGE_TYPE,
+    DEFAULT_TEMP_AUDIO_PATH,
 )
 
 

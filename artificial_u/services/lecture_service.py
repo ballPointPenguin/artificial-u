@@ -2,26 +2,24 @@
 Lecture management service for ArtificialU.
 """
 
-# pylint: disable=too-many-arguments,too-many-instance-attributes
-
-import os
 import logging
-from typing import Dict, List, Optional, Tuple, Any
-from pathlib import Path
+import os
 from datetime import datetime
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple
 
-from artificial_u.models.core import Course, Professor, Lecture
-from artificial_u.utils.random_generators import RandomGenerators
+from artificial_u.config.defaults import DEFAULT_LECTURE_WORD_COUNT
+from artificial_u.models.core import Course, Lecture, Professor
+from artificial_u.models.database import Repository
+from artificial_u.services.course_service import CourseService
+from artificial_u.services.professor_service import ProfessorService
+from artificial_u.services.storage_service import StorageService
 from artificial_u.utils.exceptions import (
     ContentGenerationError,
     DatabaseError,
     LectureNotFoundError,
 )
-from artificial_u.config.defaults import DEFAULT_LECTURE_WORD_COUNT
-from artificial_u.models.database import Repository
-from artificial_u.services.professor_service import ProfessorService
-from artificial_u.services.course_service import CourseService
-from artificial_u.services.storage_service import StorageService
+from artificial_u.utils.random_generators import RandomGenerators
 
 
 class LectureService:
@@ -341,7 +339,7 @@ class LectureService:
             str: Formatted header text
         """
         return f"""# {lecture.title}
-        
+
 ## Course: {course.title} ({course.code})
 ## Professor: {professor.name}
 ## Week: {lecture.week_number}, Lecture: {lecture.order_in_week}

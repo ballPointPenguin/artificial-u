@@ -5,8 +5,9 @@ This file contains fixtures specifically for unit tests,
 including mocks for external dependencies.
 """
 
+from unittest.mock import MagicMock, patch
+
 import pytest
-from unittest.mock import patch, MagicMock
 
 
 # Mock Repository to avoid database connections

@@ -6,7 +6,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from artificial_u.api.app import app
-from artificial_u.models.core import Professor, Course, Lecture
+from artificial_u.models.core import Course, Lecture, Professor
 from artificial_u.models.database import Repository
 
 

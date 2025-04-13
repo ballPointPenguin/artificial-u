@@ -2,21 +2,21 @@
 Professor service for handling business logic related to professors.
 """
 
-from typing import List, Optional, Dict, Any
 from math import ceil
+from typing import Any, Dict, List, Optional
 
-from artificial_u.models.database import Repository
-from artificial_u.models.core import Professor, Course, Lecture
 from artificial_u.api.models.professors import (
-    ProfessorCreate,
-    ProfessorUpdate,
-    ProfessorResponse,
-    ProfessorsListResponse,
     CourseBrief,
     LectureBrief,
     ProfessorCoursesResponse,
+    ProfessorCreate,
     ProfessorLecturesResponse,
+    ProfessorResponse,
+    ProfessorsListResponse,
+    ProfessorUpdate,
 )
+from artificial_u.models.core import Course, Lecture, Professor
+from artificial_u.models.database import Repository
 
 
 class ProfessorService:

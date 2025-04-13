@@ -3,13 +3,14 @@
 Initialize PostgreSQL database for ArtificialU.
 """
 
-import os
-import sys
-import logging
 import argparse
+import logging
+import os
 import subprocess
-from dotenv import load_dotenv
+import sys
+
 import sqlalchemy
+from dotenv import load_dotenv
 from sqlalchemy import text
 
 

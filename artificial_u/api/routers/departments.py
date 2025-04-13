@@ -3,21 +3,21 @@ Department router for handling department-related API endpoints.
 """
 
 from typing import Optional
-from fastapi import APIRouter, Depends, HTTPException, Query, Path, status
+
+from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
 from fastapi.responses import JSONResponse
 
-from artificial_u.models.database import Repository
-from artificial_u.api.services.department_service import DepartmentService
-from artificial_u.api.config import get_settings, Settings
+from artificial_u.api.config import Settings, get_settings
 from artificial_u.api.models.departments import (
+    DepartmentCoursesResponse,
     DepartmentCreate,
-    DepartmentUpdate,
+    DepartmentProfessorsResponse,
     DepartmentResponse,
     DepartmentsListResponse,
-    DepartmentProfessorsResponse,
-    DepartmentCoursesResponse,
+    DepartmentUpdate,
 )
-
+from artificial_u.api.services.department_service import DepartmentService
+from artificial_u.models.database import Repository
 
 router = APIRouter(
     prefix="/departments",

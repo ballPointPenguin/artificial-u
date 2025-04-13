@@ -6,9 +6,9 @@ import logging
 from typing import Optional
 
 from artificial_u.models.core import Professor
-from artificial_u.utils.random_generators import RandomGenerators
-from artificial_u.utils.exceptions import DatabaseError, ProfessorNotFoundError
 from artificial_u.services.voice_service import VoiceService
+from artificial_u.utils.exceptions import DatabaseError, ProfessorNotFoundError
+from artificial_u.utils.random_generators import RandomGenerators
 
 
 class ProfessorService:

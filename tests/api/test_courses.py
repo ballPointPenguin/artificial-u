@@ -2,12 +2,13 @@
 Tests for the course API endpoints.
 """
 
-import pytest
-from fastapi.testclient import TestClient
 from datetime import datetime
 
+import pytest
+from fastapi.testclient import TestClient
+
 from artificial_u.api.app import app
-from artificial_u.models.core import Course, Professor, Department, Lecture
+from artificial_u.models.core import Course, Department, Lecture, Professor
 from artificial_u.models.database import Repository
 
 

@@ -4,26 +4,19 @@ Lecture router for handling lecture-related API endpoints.
 
 import os
 from typing import List, Optional
-from fastapi import (
-    APIRouter,
-    Depends,
-    HTTPException,
-    Query,
-    Path,
-    status,
-)
-from fastapi.responses import JSONResponse, FileResponse
 
-from artificial_u.models.database import Repository
-from artificial_u.api.services.lecture_service import LectureApiService
-from artificial_u.api.config import get_settings, Settings
+from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
+from fastapi.responses import FileResponse, JSONResponse
+
+from artificial_u.api.config import Settings, get_settings
 from artificial_u.api.models.lectures import (
-    LectureCreate,
-    LectureUpdate,
     Lecture,
+    LectureCreate,
     LectureList,
+    LectureUpdate,
 )
-
+from artificial_u.api.services.lecture_service import LectureApiService
+from artificial_u.models.database import Repository
 
 router = APIRouter(
     prefix="/lectures",

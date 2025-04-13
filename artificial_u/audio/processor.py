@@ -3,21 +3,20 @@ Simplified Audio processor using ElevenLabs API for ArtificialU.
 Focuses on the minimal functionality needed for text-to-speech conversion.
 """
 
+import logging
 import os
 import re
-import logging
-from pathlib import Path
-from typing import Dict, List, Optional, Tuple, Any, Union
 import time
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 # Import from ElevenLabs Python SDK
 from elevenlabs import play
 from elevenlabs.client import ElevenLabs
 
-from artificial_u.models.core import Professor, Lecture
-
 # Import the refactored voice selection system
 from artificial_u.integrations.elevenlabs import VoiceSelectionManager
+from artificial_u.models.core import Lecture, Professor
 
 
 class AudioProcessorError(Exception):

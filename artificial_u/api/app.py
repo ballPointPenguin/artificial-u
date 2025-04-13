@@ -1,17 +1,18 @@
 from fastapi import FastAPI
+
 from artificial_u.api.config import get_settings
-from artificial_u.api.middlewares.logging_middleware import LoggingMiddleware
-from artificial_u.api.middlewares.error_handler import add_error_handlers
 from artificial_u.api.middlewares.cors_middleware import setup_cors
-from artificial_u.api.utils.logging import setup_logging
+from artificial_u.api.middlewares.error_handler import add_error_handlers
+from artificial_u.api.middlewares.logging_middleware import LoggingMiddleware
+from artificial_u.api.routers.courses import router as courses_router
+from artificial_u.api.routers.departments import router as departments_router
 
 # Import routers
 from artificial_u.api.routers.health import router as health_router
 from artificial_u.api.routers.index import router as index_router
-from artificial_u.api.routers.professors import router as professors_router
-from artificial_u.api.routers.departments import router as departments_router
-from artificial_u.api.routers.courses import router as courses_router
 from artificial_u.api.routers.lectures import router as lectures_router
+from artificial_u.api.routers.professors import router as professors_router
+from artificial_u.api.utils.logging import setup_logging
 
 
 def create_application() -> FastAPI:

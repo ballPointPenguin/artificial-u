@@ -3,10 +3,11 @@
 Sample script to demonstrate generating and viewing lectures with Anthropic's Claude.
 """
 
+import json
 import os
 import sys
-import json
 from pathlib import Path
+
 from dotenv import load_dotenv
 
 from artificial_u.system import UniversitySystem

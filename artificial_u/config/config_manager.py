@@ -7,14 +7,14 @@ interface while delegating to the new Pydantic-based settings.
 
 import logging
 import warnings
-from typing import Optional, Dict, Any
+from typing import Any, Dict, Optional
 
-from artificial_u.config.settings import get_settings
 from artificial_u.config.defaults import (
     DEFAULT_CONTENT_BACKEND,
     DEFAULT_LOG_LEVEL,
     DEFAULT_STORAGE_TYPE,
 )
+from artificial_u.config.settings import get_settings
 
 # Default caching settings
 DEFAULT_ENABLE_CACHING = False

@@ -5,9 +5,9 @@ This module provides utilities for processing text to improve TTS quality,
 including special handling for technical terms, stage directions, and mathematical notation.
 """
 
-import re
 import logging
-from typing import Dict, List, Optional, Any
+import re
+from typing import Any, Dict, List, Optional
 
 from artificial_u.models.core import Professor
 

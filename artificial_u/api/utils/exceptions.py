@@ -3,7 +3,8 @@ Custom exception classes for the API.
 Provides a hierarchy of exceptions for handling different types of API errors.
 """
 
-from typing import List, Dict, Any, Optional
+from typing import Any, Dict, List, Optional
+
 from fastapi import status
 
 

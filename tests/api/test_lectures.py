@@ -3,14 +3,15 @@ Tests for the lecture API endpoints.
 """
 
 import os
-import pytest
+import shutil
 import tempfile
 from datetime import datetime
+
+import pytest
 from fastapi.testclient import TestClient
-import shutil
 
 from artificial_u.api.app import app
-from artificial_u.models.core import Lecture, Course, Professor
+from artificial_u.models.core import Course, Lecture, Professor
 from artificial_u.models.database import Repository
 
 

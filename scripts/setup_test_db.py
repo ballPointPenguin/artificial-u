@@ -4,13 +4,14 @@ Script to create and set up the test database for running integration tests.
 Applies Alembic migrations to ensure the database schema is up to date.
 """
 
-import os
-import sys
 import logging
+import os
 import subprocess
+import sys
 from pathlib import Path
-from dotenv import load_dotenv
+
 import sqlalchemy
+from dotenv import load_dotenv
 from sqlalchemy import text
 
 # Configure logging

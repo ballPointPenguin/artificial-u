@@ -3,6 +3,7 @@ Test that API keys are properly loaded in test environment.
 """
 
 import os
+
 import pytest
 
 

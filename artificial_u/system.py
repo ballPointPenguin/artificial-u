@@ -3,22 +3,22 @@ Main system class for ArtificialU.
 """
 
 import logging
-from typing import Dict, List, Optional, Tuple, Any
+from typing import Any, Dict, List, Optional, Tuple
 
-from artificial_u.generators.factory import create_generator
-from artificial_u.models.database import Repository
-from artificial_u.models.core import Professor, Course, Lecture, Department
+from artificial_u.audio.audio_utils import AudioUtils
+from artificial_u.audio.speech_processor import SpeechProcessor
 from artificial_u.config.config_manager import ConfigManager
-from artificial_u.services.professor_service import ProfessorService
+from artificial_u.generators.factory import create_generator
+from artificial_u.integrations.elevenlabs.client import ElevenLabsClient
+from artificial_u.models.core import Course, Department, Lecture, Professor
+from artificial_u.models.database import Repository
+from artificial_u.services.audio_service import AudioService
 from artificial_u.services.course_service import CourseService
 from artificial_u.services.lecture_service import LectureService
-from artificial_u.services.audio_service import AudioService
-from artificial_u.services.voice_service import VoiceService
-from artificial_u.services.tts_service import TTSService
+from artificial_u.services.professor_service import ProfessorService
 from artificial_u.services.storage_service import StorageService
-from artificial_u.integrations.elevenlabs.client import ElevenLabsClient
-from artificial_u.audio.speech_processor import SpeechProcessor
-from artificial_u.audio.audio_utils import AudioUtils
+from artificial_u.services.tts_service import TTSService
+from artificial_u.services.voice_service import VoiceService
 from artificial_u.utils.exceptions import ConfigurationError
 
 
@@ -262,10 +262,10 @@ class UniversitySystem:
         # Simple sample lecture content
         return """
         # Introduction to Neural Networks
-        
+
         *[Professor enters the lecture hall]*
-        
+
         Good morning, everyone. Today we'll be discussing the fundamentals of neural networks...
-        
+
         *[The rest of the lecture would go here]*
         """

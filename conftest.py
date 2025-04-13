@@ -5,11 +5,11 @@ Ensures tests use the proper environment settings.
 
 import os
 import sys
+
 import pytest
 
 # Import the settings (this will auto-load .env.test in test environments)
 from artificial_u.config.settings import get_settings
-
 
 # Ensure environment is correctly set up for tests
 # For automated tests, make sure TESTING flag is set

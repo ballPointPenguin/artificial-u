@@ -3,22 +3,22 @@ Course router for handling course-related API endpoints.
 """
 
 from typing import Optional
-from fastapi import APIRouter, Depends, HTTPException, Query, Path, status
+
+from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
 from fastapi.responses import JSONResponse
 
-from artificial_u.models.database import Repository
-from artificial_u.api.services.course_service import CourseService
-from artificial_u.api.config import get_settings, Settings
+from artificial_u.api.config import Settings, get_settings
 from artificial_u.api.models.courses import (
     CourseCreate,
-    CourseUpdate,
+    CourseLecturesResponse,
     CourseResponse,
     CoursesListResponse,
-    ProfessorBrief,
+    CourseUpdate,
     DepartmentBrief,
-    CourseLecturesResponse,
+    ProfessorBrief,
 )
-
+from artificial_u.api.services.course_service import CourseService
+from artificial_u.models.database import Repository
 
 router = APIRouter(
     prefix="/courses",

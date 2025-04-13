@@ -5,10 +5,11 @@ This module provides functionality to match professor profiles to appropriate El
 based on characteristics like gender, nationality, accent, and age.
 """
 
-from typing import Dict, List, Optional, Any
+import logging
 import os
 import random
-import logging
+from typing import Any, Dict, List, Optional
+
 import requests
 from elevenlabs.client import ElevenLabs
 

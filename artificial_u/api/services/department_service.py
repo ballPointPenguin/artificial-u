@@ -2,21 +2,21 @@
 Department service for handling business logic related to departments.
 """
 
-from typing import List, Optional
 from math import ceil
+from typing import List, Optional
 
-from artificial_u.models.database import Repository
-from artificial_u.models.core import Department, Professor, Course
 from artificial_u.api.models.departments import (
+    CourseBrief,
+    DepartmentCoursesResponse,
     DepartmentCreate,
-    DepartmentUpdate,
+    DepartmentProfessorsResponse,
     DepartmentResponse,
     DepartmentsListResponse,
+    DepartmentUpdate,
     ProfessorBrief,
-    CourseBrief,
-    DepartmentProfessorsResponse,
-    DepartmentCoursesResponse,
 )
+from artificial_u.models.core import Course, Department, Professor
+from artificial_u.models.database import Repository
 
 
 class DepartmentService:

@@ -1,7 +1,9 @@
+import time
+
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
-import time
-from artificial_u.api.config import get_settings, Settings
+
+from artificial_u.api.config import Settings, get_settings
 
 router = APIRouter(prefix="/health", tags=["Health"])
 

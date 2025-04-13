@@ -1,8 +1,9 @@
 """Base prompt utilities for Artificial-U."""
 
 import os
-from typing import Dict, List, Optional, Any, Union
 import re
+from typing import Any, Dict, List, Optional, Union
+
 import anthropic
 
 

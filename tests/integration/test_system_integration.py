@@ -3,12 +3,14 @@ Integration tests for the UniversitySystem using Ollama for local testing.
 """
 
 import os
-import pytest
 import tempfile
-from dotenv import load_dotenv
 import uuid
+
+import pytest
+from dotenv import load_dotenv
 from sqlalchemy import create_engine
 from sqlalchemy.exc import OperationalError
+
 from artificial_u.system import UniversitySystem
 
 # Skip these tests if Ollama is not installed or not running
