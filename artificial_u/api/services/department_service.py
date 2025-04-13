@@ -5,6 +5,8 @@ Department service for handling business logic related to departments.
 from math import ceil
 from typing import Optional
 
+from fastapi import HTTPException, status
+
 from artificial_u.api.models.departments import (
     CourseBrief,
     DepartmentCoursesResponse,
@@ -161,22 +163,41 @@ class DepartmentService:
 
     def delete_department(self, department_id: int) -> bool:
         """
-        Delete a department.
+        Delete a department, checking for dependencies first.
 
         Args:
             department_id: ID of the department to delete
 
         Returns:
             True if deleted successfully, False otherwise
+
+        Raises:
+            HTTPException 409 Conflict if dependencies exist.
         """
         # Check if department exists
         department = self.repository.department.get(department_id)
         if not department:
-            return False
+            return False  # Signal not found, router will raise 404
 
-        # Delete the department using the repository method
-        # Associated professors and courses will have their department_id set to null
-        return self.repository.department.delete(department_id)
+        # Check for dependent professors
+        professors = self.repository.professor.list(department_id=department_id)
+        if professors:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Cannot delete department with associated professors.",
+            )
+
+        # Check for dependent courses
+        courses = self.repository.course.list(department_id=department_id)
+        if courses:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Cannot delete department with associated courses.",
+            )
+
+        # If no dependencies, proceed with deletion
+        deleted = self.repository.department.delete(department_id)
+        return deleted  # Should return True if successful
 
     def get_department_professors(
         self, department_id: int

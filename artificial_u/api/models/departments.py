@@ -2,9 +2,10 @@
 API models for Department resources.
 """
 
+from datetime import datetime
 from typing import List, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 
 # Base Department model with common fields
@@ -36,6 +37,7 @@ class DepartmentResponse(DepartmentBase):
     """Model for department responses."""
 
     id: int
+    generated_at: datetime
 
     class Config:
         from_attributes = True

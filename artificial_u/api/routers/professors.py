@@ -47,7 +47,7 @@ def get_professor_service(
 async def list_professors(
     page: int = Query(1, ge=1, description="Page number"),
     size: int = Query(10, ge=1, le=100, description="Items per page"),
-    department: Optional[str] = Query(None, description="Filter by department"),
+    department_id: Optional[int] = Query(None, description="Filter by department ID"),
     name: Optional[str] = Query(None, description="Filter by name (partial match)"),
     specialization: Optional[str] = Query(
         None, description="Filter by specialization (partial match)"
@@ -59,14 +59,14 @@ async def list_professors(
 
     - **page**: Page number (starting from 1)
     - **size**: Number of items per page (1-100)
-    - **department**: Filter by department name (exact match)
+    - **department_id**: Filter by department ID (exact match)
     - **name**: Filter by professor name (partial match)
     - **specialization**: Filter by specialization (partial match)
     """
     return service.get_professors(
         page=page,
         size=size,
-        department=department,
+        department_id=department_id,
         name=name,
         specialization=specialization,
     )

@@ -51,7 +51,7 @@ class ProfessorService:
         professors = self.repository.professor.list()
 
         # Apply filters if provided
-        if department_id:
+        if department_id is not None:
             professors = [p for p in professors if p.department_id == department_id]
         if name:
             professors = [p for p in professors if name.lower() in p.name.lower()]

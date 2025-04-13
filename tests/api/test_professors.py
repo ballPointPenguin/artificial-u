@@ -2,12 +2,65 @@
 Tests for the professor API endpoints.
 """
 
+from datetime import datetime
+
 import pytest
 from fastapi.testclient import TestClient
 
 from artificial_u.api.app import app
 from artificial_u.models.core import Course, Lecture, Professor
-from artificial_u.models.repositories import RepositoryFactory
+
+# Base data definitions
+sample_professors_base = [
+    Professor(
+        id=i,
+        name=f"Dr. Test Professor {i}",
+        title=f"Professor of Test {i}",
+        department_id=1,
+        specialization=f"Test Specialization {i}",
+        background="Test background",
+        personality="Test personality",
+        teaching_style="Test teaching style",
+        gender="Male",
+        accent="Standard",
+        description=f"Description for professor {i}",
+        age=45 + i,
+        voice_id=1,
+        image_path=f"/path/to/image{i}.jpg",
+    )
+    for i in range(1, 4)
+]
+
+sample_courses_base = [
+    Course(
+        id=i,
+        code=f"TEST{i}01",
+        title=f"Test Course {i}",
+        department_id=1,
+        level="Undergraduate",
+        credits=3,
+        professor_id=i,
+        description=f"Test course description {i}",
+        lectures_per_week=2,
+        total_weeks=14,
+        generated_at=datetime.now(),
+    )
+    for i in range(1, 4)
+]
+
+sample_lectures_data = []
+for i in range(1, 7):
+    lecture_dict = {
+        "id": i,
+        "title": f"Test Lecture {i}",
+        "course_id": (i % 3) + 1,
+        "week_number": 1,
+        "order_in_week": i,
+        "description": f"Test lecture description {i}",
+        "content": f"Test lecture content {i}",
+        "generated_at": datetime.now(),
+    }
+    sample_lectures_data.append(lecture_dict)
 
 
 @pytest.fixture
@@ -18,102 +71,108 @@ def client():
 
 @pytest.fixture
 def mock_repository(monkeypatch):
-    """Mock repository for testing."""
-    # Sample professor data
-    sample_professors = [
-        Professor(
-            id=i,
-            name=f"Dr. Test Professor {i}",
-            title=f"Professor of Test {i}",
-            department_id=1,
-            specialization=f"Test Specialization {i}",
-            background="Test background",
-            personality="Test personality",
-            teaching_style="Test teaching style",
-            gender="Male",
-            accent="Standard",
-            description=f"Description for professor {i}",
-            age=45 + i,
-            voice_id=1,
-            image_path=f"/path/to/image{i}.jpg",
-        )
-        for i in range(1, 4)
+    """Mock repository with encapsulated state for testing professor API."""
+
+    # --- State local to this fixture instance ---
+    local_sample_professors = [
+        Professor(**p.model_dump()) for p in sample_professors_base
     ]
+    local_sample_courses = [Course(**c.model_dump()) for c in sample_courses_base]
+    local_sample_lectures = [Lecture(**lec_dict) for lec_dict in sample_lectures_data]
+    # --- End Local State ---
 
-    # Sample courses data
-    sample_courses = [
-        Course(
-            id=i,
-            code=f"TEST{i}01",
-            title=f"Test Course {i}",
-            department="Test Department",
-            level="Undergraduate",
-            credits=3,
-            professor_id=1,
-            description=f"Test course description {i}",
-            lectures_per_week=2,
-            total_weeks=14,
-        )
-        for i in range(1, 3)
-    ]
+    # --- Define and Patch Repository Methods (using helpers) ---
+    _patch_professor_repo_methods(monkeypatch, locals())
+    _patch_prof_dependent_repo_methods(monkeypatch, locals())
+    # --- End Patching ---
 
-    # Sample lectures data
-    sample_lectures = [
-        Lecture(
-            id=i,
-            title=f"Test Lecture {i}",
-            course_id=1,
-            week_number=1,
-            order_in_week=i,
-            description=f"Test lecture description {i}",
-            content=f"Test lecture content {i}",
-        )
-        for i in range(1, 4)
-    ]
+    # Return the local state if tests need to inspect it
+    return locals()
 
-    # Mock the repository methods
-    def mock_list_professors(self, *args, **kwargs):
-        return sample_professors
 
-    def mock_get_professor(self, professor_id, *args, **kwargs):
-        for professor in sample_professors:
-            if professor.id == professor_id:
-                return professor
-        return None
+# --- Mock Function Definitions (Outside Fixture) ---
+def mock_list_professors(local_sample_professors, *args, **kwargs):
+    # Add filtering logic if service passes filters to repo
+    # For now, return all as service handles filtering
+    return local_sample_professors
 
-    def mock_create_professor(self, professor, *args, **kwargs):
-        # Set an integer ID instead of a string
-        professor.id = len(sample_professors) + 1
-        return professor
 
-    def mock_update_professor(self, professor, *args, **kwargs):
-        for i, p in enumerate(sample_professors):
-            if p.id == professor.id:
-                sample_professors[i] = professor
-                return professor
-        return None
+def mock_get_professor(local_sample_professors, professor_id, *args, **kwargs):
+    return next((p for p in local_sample_professors if p.id == professor_id), None)
 
-    def mock_list_courses(self, department=None, *args, **kwargs):
-        if department:
-            return [c for c in sample_courses if c.department == department]
-        return sample_courses
 
-    def mock_list_lectures_by_course(self, course_id, *args, **kwargs):
-        return [
-            lecture for lecture in sample_lectures if lecture.course_id == course_id
-        ]
+def mock_create_professor_impl(local_sample_professors, professor):
+    new_id = (
+        max(p.id for p in local_sample_professors) if local_sample_professors else 0
+    ) + 1
+    professor.id = new_id
+    local_sample_professors.append(professor)
+    return professor
 
-    # Patch the Repository methods
-    monkeypatch.setattr(RepositoryFactory, "list_professors", mock_list_professors)
-    monkeypatch.setattr(RepositoryFactory, "get_professor", mock_get_professor)
-    monkeypatch.setattr(RepositoryFactory, "create_professor", mock_create_professor)
-    monkeypatch.setattr(RepositoryFactory, "update_professor", mock_update_professor)
-    monkeypatch.setattr(RepositoryFactory, "list_courses", mock_list_courses)
+
+def mock_update_professor_impl(local_sample_professors, professor):
+    for i, p in enumerate(local_sample_professors):
+        if p.id == professor.id:
+            local_sample_professors[i] = professor
+            return professor
+    return None
+
+
+def mock_delete_professor_impl(local_sample_professors, prof_id):
+    initial_len = len(local_sample_professors)
+    # Simulate constraint checks if needed (e.g., check courses)
+    new_list = [p for p in local_sample_professors if p.id != prof_id]
+    local_sample_professors[:] = new_list
+    return len(local_sample_professors) < initial_len
+
+
+def mock_list_courses(local_sample_courses, *args, **kwargs):
+    # Service currently filters after getting all, so just return all
+    return local_sample_courses
+
+
+def mock_list_lectures_by_course(local_sample_lectures, course_id, *args, **kwargs):
+    return [lec for lec in local_sample_lectures if lec.course_id == course_id]
+
+
+# --- Patching Helper Functions ---
+def _patch_professor_repo_methods(monkeypatch, local_state):
+    local_profs = local_state["local_sample_professors"]
     monkeypatch.setattr(
-        RepositoryFactory, "list_lectures_by_course", mock_list_lectures_by_course
+        "artificial_u.models.repositories.professor.ProfessorRepository.list",
+        lambda self, **kwargs: mock_list_professors(local_profs, **kwargs),
+    )
+    monkeypatch.setattr(
+        "artificial_u.models.repositories.professor.ProfessorRepository.get",
+        lambda self, pid, **kwargs: mock_get_professor(local_profs, pid, **kwargs),
+    )
+    monkeypatch.setattr(
+        "artificial_u.models.repositories.professor.ProfessorRepository.create",
+        lambda self, prof, **kwargs: mock_create_professor_impl(local_profs, prof),
+    )
+    monkeypatch.setattr(
+        "artificial_u.models.repositories.professor.ProfessorRepository.update",
+        lambda self, prof, **kwargs: mock_update_professor_impl(local_profs, prof),
+    )
+    monkeypatch.setattr(
+        "artificial_u.models.repositories.professor.ProfessorRepository.delete",
+        lambda self, pid, **kwargs: mock_delete_professor_impl(local_profs, pid),
     )
 
-    return sample_professors
+
+def _patch_prof_dependent_repo_methods(monkeypatch, local_state):
+    local_courses = local_state["local_sample_courses"]
+    local_lecs = local_state["local_sample_lectures"]
+    monkeypatch.setattr(
+        "artificial_u.models.repositories.course.CourseRepository.list",
+        lambda self, **kwargs: mock_list_courses(local_courses, **kwargs),
+    )
+    monkeypatch.setattr(
+        "artificial_u.models.repositories.lecture.LectureRepository.list_by_course",
+        lambda self, cid, **kwargs: mock_list_lectures_by_course(
+            local_lecs, cid, **kwargs
+        ),
+    )
 
 
 @pytest.mark.api
@@ -123,8 +182,8 @@ def test_list_professors(client, mock_repository):
     assert response.status_code == 200
     data = response.json()
     assert "items" in data
-    assert len(data["items"]) == 3
-    assert data["total"] == 3
+    assert len(data["items"]) == len(sample_professors_base)
+    assert data["total"] == len(sample_professors_base)
 
 
 @pytest.mark.api
@@ -217,7 +276,7 @@ def test_get_professor_courses(client, mock_repository):
     assert response.status_code == 200
     data = response.json()
     assert data["professor_id"] == 1
-    assert len(data["courses"]) == 2
+    assert len(data["courses"]) == 1
 
     # Test with invalid ID
     response = client.get("/api/v1/professors/999/courses")
@@ -232,7 +291,7 @@ def test_get_professor_lectures(client, mock_repository):
     assert response.status_code == 200
     data = response.json()
     assert data["professor_id"] == 1
-    assert len(data["lectures"]) == 3
+    assert len(data["lectures"]) == 2
 
     # Test with invalid ID
     response = client.get("/api/v1/professors/999/lectures")

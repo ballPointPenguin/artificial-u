@@ -151,10 +151,17 @@ class CourseService:
         if not existing_course:
             return None
 
-        # Update fields
-        course_dict = course_data.model_dump()
-        for key, value in course_dict.items():
-            setattr(existing_course, key, value)
+        # Update fields from the provided data, excluding unset fields
+        update_data = course_data.model_dump(exclude_unset=True)
+        for key, value in update_data.items():
+            # Ensure the key exists on the core model before setting
+            if hasattr(existing_course, key):
+                setattr(existing_course, key, value)
+            else:
+                # Log or handle fields present in update data but not in core model
+                self.logger.warning(
+                    f"Skipping update for non-existent field '{key}' on Course model"
+                )
 
         # Save changes
         updated_course = self.repository.course.update(existing_course)
@@ -205,7 +212,7 @@ class CourseService:
             id=professor.id,
             name=professor.name,
             title=professor.title,
-            department=professor.department,
+            department_id=professor.department_id,
             specialization=professor.specialization,
         )
 
@@ -221,14 +228,11 @@ class CourseService:
         """
         # Get the course
         course = self.repository.course.get(course_id)
-        if not course:
+        if not course or not course.department_id:
             return None
 
-        # Get departments
-        departments = self.repository.department.list()
-
-        # Find matching department by name
-        department = next((d for d in departments if d.name == course.department), None)
+        # Get the department using the ID
+        department = self.repository.department.get(course.department_id)
         if not department:
             return None
 

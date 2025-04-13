@@ -14,7 +14,7 @@ class CourseBase(BaseModel):
 
     code: str
     title: str
-    department: str
+    department_id: int
     level: str  # Undergraduate, Graduate, etc.
     credits: int = Field(default=3, ge=0)
     professor_id: int
@@ -67,7 +67,7 @@ class ProfessorBrief(BaseModel):
     id: int
     name: str
     title: str
-    department: str
+    department_id: int
     specialization: str
 
 

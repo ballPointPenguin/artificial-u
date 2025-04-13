@@ -271,7 +271,7 @@ class LectureApiService:
             HTTPException: If course doesn't exist or other validation errors
         """
         # Validate course exists
-        course = self.repository.get_course(lecture_data.course_id)
+        course = self.repository.course.get(lecture_data.course_id)
         if not course:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,

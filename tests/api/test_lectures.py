@@ -12,7 +12,203 @@ from fastapi.testclient import TestClient
 
 from artificial_u.api.app import app
 from artificial_u.models.core import Course, Lecture
-from artificial_u.models.repositories import RepositoryFactory
+
+# Sample data used by mocks
+sample_lectures_data = [
+    {
+        "id": i,
+        "title": f"Test Lecture {i}",
+        "course_id": i % 3 + 1,  # Assign to courses 1-3
+        "week_number": (i % 7) + 1,  # Weeks 1-7
+        "order_in_week": (i % 2) + 1,  # Order 1-2
+        "description": f"Description for lecture {i}",
+        "content": f"Full content for lecture {i}. This is a test lecture content.",
+        "audio_url": (
+            f"mock_storage://audio_files/course_{i % 3 + 1}/lecture_{i}.mp3"
+            if i % 2 == 0
+            else None
+        ),
+        "created_at": datetime.now(),
+        "generated_at": datetime.now(),  # Ensure generated_at is present
+    }
+    for i in range(1, 11)
+]
+
+sample_courses_data = [
+    Course(
+        id=i,
+        code=f"CS{i}01",
+        title=f"Test Course {i}",
+        department_id=1,
+        level="Undergraduate" if i % 2 == 0 else "Graduate",
+        credits=3,
+        professor_id=i,
+        description=f"Description for course {i}",
+        lectures_per_week=2,
+        total_weeks=14,
+    )
+    for i in range(1, 4)
+]
+
+
+# Mock repository functions
+def mock_list_lectures(
+    self,
+    page=1,
+    size=10,
+    course_id=None,
+    professor_id=None,
+    search_query=None,
+    *args,
+    **kwargs,
+):
+    filtered = []
+    for lecture_dict in sample_lectures_data:
+        lecture_course_id = lecture_dict.get("course_id")
+        if course_id is not None and lecture_course_id != course_id:
+            continue
+        course = next(
+            (c for c in sample_courses_data if c.id == lecture_course_id), None
+        )
+        if not course:
+            continue
+        if professor_id is not None and course.professor_id != professor_id:
+            continue
+        if search_query is not None:
+            if (
+                search_query.lower() not in lecture_dict.get("title", "").lower()
+                and search_query.lower()
+                not in lecture_dict.get("description", "").lower()
+            ):
+                continue
+        filtered.append(Lecture(**lecture_dict))
+    start_idx = (page - 1) * size
+    end_idx = start_idx + size
+    return filtered[start_idx:end_idx]
+
+
+def mock_get_lecture(self, lecture_id, *args, **kwargs):
+    for lecture_dict in sample_lectures_data:
+        if lecture_dict.get("id") == lecture_id:
+            return Lecture(**lecture_dict)
+    return None
+
+
+def mock_get_lecture_content(self, lecture_id, *args, **kwargs):
+    for lecture_dict in sample_lectures_data:
+        if lecture_dict.get("id") == lecture_id:
+            return lecture_dict.get("content")  # Return just content
+    return None
+
+
+def mock_get_lecture_audio_url(self, lecture_id, *args, **kwargs):
+    for lecture_dict in sample_lectures_data:
+        if lecture_dict.get("id") == lecture_id:
+            return lecture_dict.get("audio_url")
+    return None
+
+
+def mock_create_lecture(self, lecture_data, *args, **kwargs):
+    new_id = len(sample_lectures_data) + 1
+    new_lecture_dict = {
+        "id": new_id,
+        "title": lecture_data.title,
+        "course_id": lecture_data.course_id,
+        "week_number": lecture_data.week_number,
+        "order_in_week": lecture_data.order_in_week,
+        "description": lecture_data.description,
+        "content": lecture_data.content,
+        "audio_url": lecture_data.audio_url,
+        "created_at": datetime.now(),
+        "generated_at": datetime.now(),
+    }
+    sample_lectures_data.append(new_lecture_dict)
+    return Lecture(**new_lecture_dict)
+
+
+def mock_update_lecture(self, lecture_object, *args, **kwargs):
+    for i, lecture_dict in enumerate(sample_lectures_data):
+        if lecture_dict.get("id") == lecture_object.id:
+            # Update the dictionary
+            updated_dict = lecture_dict.copy()
+            updated_dict.update(lecture_object.model_dump(exclude_unset=True))
+            sample_lectures_data[i] = updated_dict
+            return Lecture(**updated_dict)
+    return None
+
+
+def mock_delete_lecture(self, lecture_id, *args, **kwargs):
+    global sample_lectures_data
+    initial_len = len(sample_lectures_data)
+    sample_lectures_data = [
+        lec_dict
+        for lec_dict in sample_lectures_data
+        if lec_dict.get("id") != lecture_id
+    ]
+    return len(sample_lectures_data) < initial_len
+
+
+def mock_count_lectures(
+    self,
+    course_id=None,
+    professor_id=None,
+    search_query=None,
+    *args,
+    **kwargs,
+):
+    # Simplified count based on filtered list from mock_list_lectures logic
+    # This avoids duplicating the complex filtering logic here
+    filtered = []
+    for lecture_dict in sample_lectures_data:
+        lecture_course_id = lecture_dict.get("course_id")
+        if course_id is not None and lecture_course_id != course_id:
+            continue
+        course = next(
+            (c for c in sample_courses_data if c.id == lecture_course_id), None
+        )
+        if not course:
+            continue
+        if professor_id is not None and course.professor_id != professor_id:
+            continue
+        if search_query is not None:
+            if (
+                search_query.lower() not in lecture_dict.get("title", "").lower()
+                and search_query.lower()
+                not in lecture_dict.get("description", "").lower()
+            ):
+                continue
+        filtered.append(Lecture(**lecture_dict))
+    return len(filtered)
+
+
+def mock_get_course(self, course_id, *args, **kwargs):
+    return next((c for c in sample_courses_data if c.id == course_id), None)
+
+
+# Mock content asset path generation (remains in the test setup as it depends on temp_assets_dir)
+def get_mock_content_asset_path(temp_dir, lecture_id):
+    for lecture in sample_lectures_data:
+        if lecture["id"] == lecture_id:
+            course_id = lecture["course_id"]
+            week = lecture["week_number"]
+            order = lecture["order_in_week"]
+            content_dir = os.path.join(temp_dir, "assets", "lectures", str(course_id))
+            os.makedirs(content_dir, exist_ok=True)
+            filename = f"w{week}_l{order}_{lecture_id}.txt"
+            return os.path.join(content_dir, filename)
+    return None
+
+
+async def mock_ensure_content_asset(temp_dir, lecture_id):
+    asset_path = get_mock_content_asset_path(temp_dir, lecture_id)
+    if not asset_path:
+        return None
+    for lecture in sample_lectures_data:
+        if lecture["id"] == lecture_id:
+            with open(asset_path, "w", encoding="utf-8") as f:
+                f.write(lecture["content"])
+            return asset_path
+    return None
 
 
 @pytest.fixture
@@ -24,404 +220,85 @@ def client():
 @pytest.fixture(scope="function")
 def temp_assets_dir():
     """Create a temporary assets directory for testing content file generation."""
-    # Create a temporary directory
     temp_dir = tempfile.mkdtemp()
     assets_dir = os.path.join(temp_dir, "assets", "lectures")
     os.makedirs(assets_dir, exist_ok=True)
-
-    # Monkeypatch the path in the service
-    # (In a real test, you would use monkeypatch to override the asset directory path)
     yield temp_dir
-
-    # Cleanup
     shutil.rmtree(temp_dir)
 
 
 @pytest.fixture
 def mock_repository(monkeypatch, temp_assets_dir):
-    """Mock repository for testing."""
-    from artificial_u.api.routers.lectures import get_repository
-
-    app.dependency_overrides[get_repository] = lambda: RepositoryFactory()
-    # Sample lecture data
-    sample_lectures = [
-        {
-            "id": i,
-            "title": f"Test Lecture {i}",
-            "course_id": i % 3 + 1,  # Assign to courses 1-3
-            "week_number": (i % 7) + 1,  # Weeks 1-7
-            "order_in_week": (i % 2) + 1,  # Order 1-2
-            "description": f"Description for lecture {i}",
-            "content": f"Full content for lecture {i}. This is a test lecture content.",
-            "audio_url": (
-                f"mock_storage://audio_files/course_{i % 3 + 1}/lecture_{i}.mp3"
-                if i % 2 == 0
-                else None
-            ),
-            "created_at": datetime.now(),
-        }
-        for i in range(1, 11)
-    ]
-
-    # Sample course data
-    sample_courses = [
-        Course(
-            id=i,
-            code=f"CS{i}01",
-            title=f"Test Course {i}",
-            department="Computer Science",
-            level="Undergraduate" if i % 2 == 0 else "Graduate",
-            credits=3,
-            professor_id=i,
-            description=f"Description for course {i}",
-            lectures_per_week=2,
-            total_weeks=14,
-        )
-        for i in range(1, 4)
-    ]
-
-    # Mock content asset paths
-    def mock_content_asset_path(cls, lecture_id, *args, **kwargs):
-        """Mock to get the content asset path."""
-        for lecture in sample_lectures:
-            if lecture["id"] == lecture_id:
-                # Ensure course_id is an integer
-                course_id = (
-                    int(lecture["course_id"])
-                    if lecture["course_id"] is not None
-                    else None
-                )
-                week = lecture["week_number"]
-                order = lecture["order_in_week"]
-
-                # Create directory structure
-                content_dir = os.path.join(
-                    temp_assets_dir, "assets", "lectures", str(course_id)
-                )
-                os.makedirs(content_dir, exist_ok=True)
-
-                # Generate filename
-                filename = f"w{week}_l{order}_{lecture_id}.txt"
-                return os.path.join(content_dir, filename)
-        return None
-
-    async def mock_ensure_content_asset(cls, lecture_id, *args, **kwargs):
-        """Mock to ensure content asset exists."""
-        for lecture in sample_lectures:
-            if lecture["id"] == lecture_id:
-                # Ensure correct type handling for course_id
-                lecture_copy = lecture.copy()
-                lecture_copy["course_id"] = (
-                    int(lecture_copy["course_id"])
-                    if lecture_copy["course_id"] is not None
-                    else None
-                )
-
-                # Get asset path using the properly typed lecture
-                asset_path = mock_content_asset_path(cls, lecture_id)
-
-                # Create the file with content
-                with open(asset_path, "w", encoding="utf-8") as f:
-                    f.write(lecture["content"])
-
-                return asset_path
-        return None
-
-    # Mock the repository methods
-    def mock_list_lectures(
-        self,
-        page=1,
-        size=10,
-        course_id=None,
-        professor_id=None,
-        search_query=None,
-        *args,
-        **kwargs,
-    ):
-        filtered = []
-        for lecture in sample_lectures:
-            lecture_course_id = (
-                int(lecture["course_id"]) if lecture["course_id"] is not None else None
-            )
-            if course_id is not None and lecture_course_id != course_id:
-                continue
-            course = next(
-                (c for c in sample_courses if c.id == lecture_course_id), None
-            )
-            if not course:
-                continue
-            if professor_id is not None and course.professor_id != professor_id:
-                continue
-            if search_query is not None:
-                if (
-                    search_query.lower() not in lecture["title"].lower()
-                    and search_query.lower() not in lecture["description"].lower()
-                ):
-                    continue
-            entry = lecture.copy()
-            if "generated_at" not in entry:
-                entry["generated_at"] = entry.get("created_at")
-            filtered.append(Lecture(**entry))
-        start_idx = (page - 1) * size
-        end_idx = start_idx + size
-        page_data = filtered[start_idx:end_idx]
-
-        # Build response models
-        response_items = []
-        for lecture_core in page_data:
-            response_items.append(Lecture.model_validate(lecture_core))
-
-        return response_items
-
-    def mock_get_lecture(self, lecture_id, *args, **kwargs):
-        for lecture in sample_lectures:
-            if lecture["id"] == lecture_id:
-                # Make a copy of the lecture to avoid modifying the original
-                lecture_copy = lecture.copy()
-                # Ensure course_id is an integer
-                lecture_copy["course_id"] = (
-                    int(lecture_copy["course_id"])
-                    if lecture_copy["course_id"] is not None
-                    else None
-                )
-                if "generated_at" not in lecture_copy:
-                    lecture_copy["generated_at"] = lecture_copy.get("created_at")
-                return Lecture(
-                    **lecture_copy
-                )  # Convert the dictionary to a Lecture object
-        return None
-
-    def mock_get_lecture_content(self, lecture_id, *args, **kwargs):
-        for lecture in sample_lectures:
-            if lecture["id"] == lecture_id:
-                return {
-                    "id": lecture["id"],
-                    "title": lecture["title"],
-                    "content": lecture["content"],
-                    "sections": None,  # In a real system, this would have sections
-                }
-        return None
-
-    def mock_get_lecture_audio_url(self, lecture_id, *args, **kwargs):
-        for lecture in sample_lectures:
-            if lecture["id"] == lecture_id:
-                return lecture["audio_url"]
-        return None
-
-    def mock_create_lecture(self, lecture_data, *args, **kwargs):
-        # Create a new ID
-        new_id = len(sample_lectures) + 1
-
-        # Create lecture with simplified fields matching the current model
-        new_lecture = {
-            "id": new_id,
-            "title": lecture_data.title,
-            "course_id": lecture_data.course_id,
-            "week_number": lecture_data.week_number,
-            "order_in_week": lecture_data.order_in_week,
-            "description": lecture_data.description,
-            "content": lecture_data.content,
-            "audio_url": None,  # No audio initially
-            "created_at": datetime.now(),
-        }
-
-        # Add to sample data
-        sample_lectures.append(new_lecture)
-
-        # Return detail view with simplified model
-        return Lecture(**new_lecture)
-
-    def mock_update_lecture(self, lecture_object, *args, **kwargs):
-        # Extract lecture_id and update data from the passed object
-        lecture_id = lecture_object.id
-
-        for i, lecture in enumerate(sample_lectures):
-            if lecture["id"] == lecture_id:
-                # Make a copy to avoid modifying the original directly
-                lecture_copy = lecture.copy()
-
-                # Update fields from the lecture_object
-                lecture_copy["title"] = lecture_object.title
-                lecture_copy["description"] = lecture_object.description
-                lecture_copy["content"] = lecture_object.content
-                lecture_copy["week_number"] = lecture_object.week_number
-                lecture_copy["order_in_week"] = lecture_object.order_in_week
-                lecture_copy["audio_url"] = lecture_object.audio_url  # Update audio url
-
-                # Ensure course_id is an integer (if needed, though it shouldn't change)
-                lecture_copy["course_id"] = (
-                    int(lecture_copy["course_id"])
-                    if lecture_copy["course_id"] is not None
-                    else None
-                )
-
-                # Ensure generated_at exists
-                if "generated_at" not in lecture_copy:
-                    lecture_copy["generated_at"] = lecture_copy.get("created_at")
-
-                # Update the lecture in the list
-                sample_lectures[i] = lecture_copy
-
-                # Return the updated Lecture object
-                return Lecture(**lecture_copy)
-        return None
-
-    def mock_delete_lecture(self, lecture_id, *args, **kwargs):
-        """Mock delete lecture method that prevents recursion"""
-        # Use a direct indexing approach instead of iterating during deletion
-        lecture_index = None
-
-        # First find the lecture
-        for i, lecture in enumerate(sample_lectures):
-            if lecture["id"] == lecture_id:
-                lecture_index = i
-                break
-
-        # Then delete it if found
-        if lecture_index is not None:
-            del sample_lectures[lecture_index]
-            return True
-
-        return False
-
-    def mock_build_lecture_summary(self, lecture, courses, professors):
-        # Ensure course_id is an integer
-        course_id = (
-            int(lecture["course_id"]) if lecture["course_id"] is not None else None
-        )
-
-        # Create a simplified lecture summary compatible with the current API
-        return {
-            "id": lecture["id"],
-            "title": lecture["title"],
-            "course_id": course_id,
-            "week_number": lecture["week_number"],
-            "order_in_week": lecture["order_in_week"],
-            "description": lecture["description"],
-            "has_audio": bool(lecture.get("audio_url")),
-            "audio_url": lecture.get("audio_url"),
-        }
-
-    def mock_build_lecture_detail(self, lecture, courses, professors):
-        # Create a simplified lecture detail compatible with the current API
-        # Ensure course_id is an integer
-        course_id = (
-            int(lecture["course_id"]) if lecture["course_id"] is not None else None
-        )
-
-        return {
-            "id": lecture["id"],
-            "title": lecture["title"],
-            "description": lecture["description"],
-            "content": lecture["content"],
-            "course_id": course_id,
-            "week_number": lecture["week_number"],
-            "order_in_week": lecture["order_in_week"],
-            "audio_url": lecture.get("audio_url"),
-            "generated_at": lecture.get("generated_at", lecture.get("created_at")),
-        }
-
-    def mock_count_lectures(
-        self,
-        course_id=None,
-        professor_id=None,
-        search_query=None,
-        *args,
-        **kwargs,
-    ):
-        filtered = []
-        for lecture in sample_lectures:
-            lecture_course_id = (
-                int(lecture["course_id"]) if lecture["course_id"] is not None else None
-            )
-            if course_id is not None and lecture_course_id != course_id:
-                continue
-            course = next(
-                (c for c in sample_courses if c.id == lecture_course_id), None
-            )
-            if not course:
-                continue
-            if professor_id is not None and course.professor_id != professor_id:
-                continue
-            if search_query is not None:
-                if (
-                    search_query.lower() not in lecture["title"].lower()
-                    and search_query.lower() not in lecture["description"].lower()
-                ):
-                    continue
-            filtered.append(lecture)
-        return len(filtered)
-
-    def mock_get_course(self, course_id, *args, **kwargs):
-        return next((c for c in sample_courses if c.id == course_id), None)
-
-    # Patch the Repository methods
-    monkeypatch.setattr(RepositoryFactory, "list_lectures", mock_list_lectures)
-    monkeypatch.setattr(RepositoryFactory, "count_lectures", mock_count_lectures)
-    monkeypatch.setattr(RepositoryFactory, "get_course", mock_get_course)
-    monkeypatch.setattr(RepositoryFactory, "get_lecture", mock_get_lecture)
+    """Mock repository for testing by patching nested repository methods."""
+    # Patch repository methods
     monkeypatch.setattr(
-        RepositoryFactory, "get_lecture_content", mock_get_lecture_content
+        "artificial_u.models.repositories.lecture.LectureRepository.list",
+        mock_list_lectures,
     )
     monkeypatch.setattr(
-        RepositoryFactory, "get_lecture_audio_url", mock_get_lecture_audio_url
-    )
-    monkeypatch.setattr(RepositoryFactory, "create_lecture", mock_create_lecture)
-    monkeypatch.setattr(RepositoryFactory, "update_lecture", mock_update_lecture)
-    monkeypatch.setattr(RepositoryFactory, "delete_lecture", mock_delete_lecture)
-    monkeypatch.setattr(
-        RepositoryFactory, "_build_lecture_summary", mock_build_lecture_summary
+        "artificial_u.models.repositories.lecture.LectureRepository.count",
+        mock_count_lectures,
     )
     monkeypatch.setattr(
-        RepositoryFactory, "_build_lecture_detail", mock_build_lecture_detail
+        "artificial_u.models.repositories.lecture.LectureRepository.get",
+        mock_get_lecture,
+    )
+    monkeypatch.setattr(
+        "artificial_u.models.repositories.lecture.LectureRepository.get_content",
+        mock_get_lecture_content,
+    )
+    monkeypatch.setattr(
+        "artificial_u.models.repositories.lecture.LectureRepository.get_audio_url",
+        mock_get_lecture_audio_url,
+    )
+    monkeypatch.setattr(
+        "artificial_u.models.repositories.lecture.LectureRepository.create",
+        mock_create_lecture,
+    )
+    monkeypatch.setattr(
+        "artificial_u.models.repositories.lecture.LectureRepository.update",
+        mock_update_lecture,
+    )
+    monkeypatch.setattr(
+        "artificial_u.models.repositories.lecture.LectureRepository.delete",
+        mock_delete_lecture,
+    )
+    monkeypatch.setattr(
+        "artificial_u.models.repositories.course.CourseRepository.get", mock_get_course
     )
 
-    # Patch the lecture service methods for content assets
+    # Patch service methods related to file handling
     from artificial_u.api.services.lecture_service import LectureApiService
 
+    # Use lambda to pass temp_assets_dir to the mock functions
     monkeypatch.setattr(
-        LectureApiService, "get_lecture_content_asset_path", mock_content_asset_path
+        LectureApiService,
+        "get_lecture_content_asset_path",
+        lambda self, lid: get_mock_content_asset_path(temp_assets_dir, lid),
     )
     monkeypatch.setattr(
-        LectureApiService, "ensure_content_asset_exists", mock_ensure_content_asset
+        LectureApiService,
+        "ensure_content_asset_exists",
+        lambda self, lid: mock_ensure_content_asset(temp_assets_dir, lid),
     )
 
-    # Custom implementation of LectureApiService.get_lecture to handle mocked repository
-    def mock_service_get_lecture(self, lecture_id):
-        # Get lecture from repository
-        lecture = self.repository.get_lecture(lecture_id)
-        if not lecture:
-            return None
-
-        # The mocked repository.get_lecture now returns a Lecture object directly.
-        # We just need to return it.
-        return lecture
-
-    # Patch the Lecture service methods
-    monkeypatch.setattr(LectureApiService, "get_lecture", mock_service_get_lecture)
-
-    # Store original os.path.exists before patching
+    # Mock os.path.exists to handle temp asset paths and known audio URLs
     original_path_exists = os.path.exists
 
-    # Mock os.path.exists for audio file checking
     def mock_path_exists(path):
-        # For audio files
-        if "audio_files" in path and path in [
-            lecture["audio_url"] for lecture in sample_lectures if lecture["audio_url"]
-        ]:
-            return True
-
-        # For text content files (checking if in temporary directory)
         if temp_assets_dir in path:
-            # Call the original os.path.exists to avoid recursion
-            return original_path_exists(path)
-
-        # For other paths, delegate to the original function
+            return original_path_exists(path)  # Check actual temp file
+        if path in [
+            lec_dict.get("audio_url")
+            for lec_dict in sample_lectures_data
+            if lec_dict.get("audio_url")
+        ]:
+            return True  # Assume mock audio URLs exist
         return original_path_exists(path)
 
     monkeypatch.setattr(os.path, "exists", mock_path_exists)
 
-    return sample_lectures
+    return sample_lectures_data  # Return sample data if needed by tests
 
 
 @pytest.mark.api
