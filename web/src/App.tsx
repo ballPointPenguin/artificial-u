@@ -9,6 +9,8 @@ const Departments = lazy(() => import('./pages/Departments'))
 const DepartmentDetail = lazy(() => import('./pages/DepartmentDetail'))
 const Professors = lazy(() => import('./pages/Professors'))
 const ProfessorDetail = lazy(() => import('./pages/ProfessorDetail'))
+const Courses = lazy(() => import('./pages/Courses'))
+const CourseDetail = lazy(() => import('./pages/CourseDetail'))
 
 const App: Component = () => {
   return (
@@ -25,6 +27,10 @@ const App: Component = () => {
         {/* Professor routes */}
         <Route path="/professors" component={Professors} />
         <Route path="/professors/:id" component={ProfessorDetail} />
+
+        {/* Courses routes */}
+        <Route path="/courses" component={Courses} />
+        <Route path="/courses/:id" component={CourseDetail} />
       </Route>
     </Route>
   )

@@ -89,6 +89,14 @@ export interface Department {
 
 export type DepartmentsList = PaginatedResponse<Department>
 
+// Brief Department info for nested responses
+export interface DepartmentBrief {
+  id: number
+  name: string
+  code: string
+  faculty: string
+}
+
 // Course types
 export interface Course {
   id: number
@@ -106,6 +114,15 @@ export interface Course {
 
 export type CoursesList = PaginatedResponse<Course>
 
+// Brief Professor info for nested responses
+export interface ProfessorBrief {
+  id: number
+  name: string
+  title: string
+  department_id: number // Assuming this is available from backend
+  specialization: string
+}
+
 // Lecture types
 export interface Lecture {
   id: number
@@ -119,7 +136,22 @@ export interface Lecture {
   generated_at: string
 }
 
-export type LecturesList = PaginatedResponse<Lecture>
+// Brief Lecture info for nested responses
+export interface LectureBrief {
+  id: number
+  title: string
+  week_number: number
+  order_in_week: number
+  description: string
+  audio_url: string | null
+}
+
+// Updated LecturesList to use LectureBrief for Course detail view
+export interface LecturesList {
+  course_id: number
+  lectures: LectureBrief[]
+  total: number
+}
 
 // Voice types
 export interface Voice {

@@ -47,6 +47,8 @@ export const ENDPOINTS = {
     list: '/v1/courses',
     detail: (id: number) => `/v1/courses/${String(id)}`,
     lectures: (id: number) => `/v1/courses/${String(id)}/lectures`,
+    professor: (id: number) => `/v1/courses/${String(id)}/professor`,
+    department: (id: number) => `/v1/courses/${String(id)}/department`,
   },
   lectures: {
     list: '/v1/lectures',

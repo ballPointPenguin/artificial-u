@@ -48,7 +48,7 @@ def get_course_service(
 async def list_courses(
     page: int = Query(1, ge=1, description="Page number"),
     size: int = Query(10, ge=1, le=100, description="Items per page"),
-    department: Optional[str] = Query(None, description="Filter by department"),
+    department_id: Optional[int] = Query(None, description="Filter by department ID"),
     professor_id: Optional[int] = Query(None, description="Filter by professor ID"),
     level: Optional[str] = Query(None, description="Filter by course level"),
     title: Optional[str] = Query(None, description="Filter by title (partial match)"),
@@ -59,7 +59,7 @@ async def list_courses(
 
     - **page**: Page number (starting from 1)
     - **size**: Number of items per page (1-100)
-    - **department**: Filter by department name (exact match)
+    - **department_id**: Filter by department ID
     - **professor_id**: Filter by professor ID
     - **level**: Filter by course level (e.g., 'Undergraduate', 'Graduate')
     - **title**: Filter by course title (partial match)
@@ -67,7 +67,7 @@ async def list_courses(
     return service.get_courses(
         page=page,
         size=size,
-        department=department,
+        department_id=department_id,
         professor_id=professor_id,
         level=level,
         title=title,

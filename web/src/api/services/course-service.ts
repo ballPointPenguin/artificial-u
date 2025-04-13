@@ -3,12 +3,18 @@
  */
 import { httpClient } from '../client'
 import { ENDPOINTS } from '../config'
-import type { Course, CoursesList, LecturesList } from '../types'
+import type {
+  Course,
+  CoursesList,
+  DepartmentBrief,
+  LecturesList,
+  ProfessorBrief,
+} from '../types'
 
 interface GetCoursesParams {
   page?: number
   size?: number
-  department?: string
+  department_id?: number
   professor_id?: number
   semester?: string
   title?: string
@@ -24,7 +30,8 @@ export async function getCourses(
 
   if (params.page) queryParams.append('page', String(params.page))
   if (params.size) queryParams.append('size', String(params.size))
-  if (params.department) queryParams.append('department', params.department)
+  if (params.department_id)
+    queryParams.append('department_id', String(params.department_id))
   if (params.professor_id)
     queryParams.append('professor_id', String(params.professor_id))
   if (params.semester) queryParams.append('semester', params.semester)
@@ -54,7 +61,7 @@ export async function getCourseLectures(id: number): Promise<LecturesList> {
  * Create a new course
  */
 export async function createCourse(
-  data: Omit<Course, 'id' | 'created_at' | 'updated_at'>
+  data: Omit<Course, 'id' | 'generated_at'>
 ): Promise<Course> {
   return httpClient.post<Course>(ENDPOINTS.courses.list, data)
 }
@@ -74,4 +81,20 @@ export async function updateCourse(
  */
 export async function deleteCourse(id: number): Promise<Record<string, never>> {
   return httpClient.delete<Record<string, never>>(ENDPOINTS.courses.detail(id))
+}
+
+/**
+ * Get professor for a course
+ */
+export async function getCourseProfessor(id: number): Promise<ProfessorBrief> {
+  return httpClient.get<ProfessorBrief>(ENDPOINTS.courses.professor(id))
+}
+
+/**
+ * Get department for a course
+ */
+export async function getCourseDepartment(
+  id: number
+): Promise<DepartmentBrief> {
+  return httpClient.get<DepartmentBrief>(ENDPOINTS.courses.department(id))
 }

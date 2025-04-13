@@ -30,7 +30,7 @@ class CourseService:
         self,
         page: int = 1,
         size: int = 10,
-        department: Optional[str] = None,
+        department_id: Optional[int] = None,
         professor_id: Optional[int] = None,
         level: Optional[str] = None,
         title: Optional[str] = None,
@@ -41,7 +41,7 @@ class CourseService:
         Args:
             page: Page number (starting from 1)
             size: Number of items per page
-            department: Filter by department name
+            department_id: Filter by department ID
             professor_id: Filter by professor ID
             level: Filter by course level (e.g., 'Undergraduate', 'Graduate')
             title: Filter by course title (partial match)
@@ -50,7 +50,7 @@ class CourseService:
             CoursesListResponse with paginated courses
         """
         # Get all courses
-        courses = self.repository.course.list(department=department)
+        courses = self.repository.course.list(department_id=department_id)
 
         # Apply additional filters if provided
         if professor_id:
