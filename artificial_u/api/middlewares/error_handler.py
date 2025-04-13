@@ -1,9 +1,10 @@
 import logging
+from typing import Any, Dict, Union
+
 from fastapi import FastAPI, Request, status
-from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException
-from typing import Union, Dict, Any
 
 from artificial_u.api.models.errors import ErrorDetail, ErrorResponse
 from artificial_u.api.utils.exceptions import APIError

@@ -1,6 +1,7 @@
 """System prompts shared across generators."""
 
 from typing import Dict
+
 from artificial_u.prompts.base import PromptTemplate
 
 # System prompts for different content generation tasks

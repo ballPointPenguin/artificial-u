@@ -4,10 +4,12 @@ CORS (Cross-Origin Resource Sharing) middleware configuration for ArtificialU AP
 This module provides functions to configure CORS middleware for different environments.
 """
 
+import logging
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+
 from artificial_u.api.config import get_settings
-import logging
 
 logger = logging.getLogger("artificial_u")
 

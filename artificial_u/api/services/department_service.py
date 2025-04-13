@@ -2,27 +2,29 @@
 Department service for handling business logic related to departments.
 """
 
-from typing import List, Optional
 from math import ceil
+from typing import Optional
 
-from artificial_u.models.database import Repository
-from artificial_u.models.core import Department, Professor, Course
+from fastapi import HTTPException, status
+
 from artificial_u.api.models.departments import (
+    CourseBrief,
+    DepartmentCoursesResponse,
     DepartmentCreate,
-    DepartmentUpdate,
+    DepartmentProfessorsResponse,
     DepartmentResponse,
     DepartmentsListResponse,
+    DepartmentUpdate,
     ProfessorBrief,
-    CourseBrief,
-    DepartmentProfessorsResponse,
-    DepartmentCoursesResponse,
 )
+from artificial_u.models.core import Department
+from artificial_u.models.repositories import RepositoryFactory
 
 
 class DepartmentService:
     """Service for department-related operations."""
 
-    def __init__(self, repository: Repository):
+    def __init__(self, repository: RepositoryFactory):
         """Initialize with database repository."""
         self.repository = repository
 
@@ -46,7 +48,7 @@ class DepartmentService:
             DepartmentsListResponse with paginated departments
         """
         # Get all departments
-        departments = self.repository.list_departments()
+        departments = self.repository.department.list()
 
         # Apply filters if provided
         if faculty:
@@ -89,7 +91,7 @@ class DepartmentService:
         Returns:
             DepartmentResponse or None if not found
         """
-        department = self.repository.get_department(department_id)
+        department = self.repository.department.get(department_id)
         if not department:
             return None
         return DepartmentResponse.model_validate(department.model_dump())
@@ -104,7 +106,7 @@ class DepartmentService:
         Returns:
             DepartmentResponse or None if not found
         """
-        department = self.repository.get_department_by_code(code)
+        department = self.repository.department.get_by_code(code)
         if not department:
             return None
         return DepartmentResponse.model_validate(department.model_dump())
@@ -125,7 +127,7 @@ class DepartmentService:
         department = Department(**department_data.model_dump())
 
         # Save to database
-        created_department = self.repository.create_department(department)
+        created_department = self.repository.department.create(department)
 
         # Convert back to response model
         return DepartmentResponse.model_validate(created_department.model_dump())
@@ -144,7 +146,7 @@ class DepartmentService:
             Updated department or None if not found
         """
         # Check if department exists
-        existing_department = self.repository.get_department(department_id)
+        existing_department = self.repository.department.get(department_id)
         if not existing_department:
             return None
 
@@ -154,29 +156,48 @@ class DepartmentService:
             setattr(existing_department, key, value)
 
         # Save changes
-        updated_department = self.repository.update_department(existing_department)
+        updated_department = self.repository.department.update(existing_department)
 
         # Convert to response model
         return DepartmentResponse.model_validate(updated_department.model_dump())
 
     def delete_department(self, department_id: int) -> bool:
         """
-        Delete a department.
+        Delete a department, checking for dependencies first.
 
         Args:
             department_id: ID of the department to delete
 
         Returns:
             True if deleted successfully, False otherwise
+
+        Raises:
+            HTTPException 409 Conflict if dependencies exist.
         """
         # Check if department exists
-        department = self.repository.get_department(department_id)
+        department = self.repository.department.get(department_id)
         if not department:
-            return False
+            return False  # Signal not found, router will raise 404
 
-        # Delete the department using the repository method
-        # Associated professors and courses will have their department_id set to null
-        return self.repository.delete_department(department_id)
+        # Check for dependent professors
+        professors = self.repository.professor.list(department_id=department_id)
+        if professors:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Cannot delete department with associated professors.",
+            )
+
+        # Check for dependent courses
+        courses = self.repository.course.list(department_id=department_id)
+        if courses:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Cannot delete department with associated courses.",
+            )
+
+        # If no dependencies, proceed with deletion
+        deleted = self.repository.department.delete(department_id)
+        return deleted  # Should return True if successful
 
     def get_department_professors(
         self, department_id: int
@@ -191,12 +212,12 @@ class DepartmentService:
             DepartmentProfessorsResponse or None if department not found
         """
         # First check if department exists
-        department = self.repository.get_department(department_id)
+        department = self.repository.department.get(department_id)
         if not department:
             return None
 
         # Get all professors
-        all_professors = self.repository.list_professors()
+        all_professors = self.repository.professor.list()
 
         # Filter professors by department_id
         department_professors = [
@@ -233,12 +254,12 @@ class DepartmentService:
             DepartmentCoursesResponse or None if department not found
         """
         # First check if department exists
-        department = self.repository.get_department(department_id)
+        department = self.repository.department.get(department_id)
         if not department:
             return None
 
         # Get all courses
-        all_courses = self.repository.list_courses()
+        all_courses = self.repository.course.list()
 
         # Filter courses by department_id
         department_courses = [

@@ -4,6 +4,7 @@ Test CORS configuration for the API
 
 import pytest
 from fastapi.testclient import TestClient
+
 from artificial_u.api.app import app
 
 

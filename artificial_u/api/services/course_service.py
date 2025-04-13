@@ -2,27 +2,27 @@
 Course service for handling business logic related to courses.
 """
 
-from typing import List, Optional
 from math import ceil
+from typing import Optional
 
-from artificial_u.models.database import Repository
-from artificial_u.models.core import Course, Lecture, Professor, Department
 from artificial_u.api.models.courses import (
     CourseCreate,
-    CourseUpdate,
+    CourseLecturesResponse,
     CourseResponse,
     CoursesListResponse,
+    CourseUpdate,
+    DepartmentBrief,
     LectureBrief,
     ProfessorBrief,
-    CourseLecturesResponse,
-    DepartmentBrief,
 )
+from artificial_u.models.core import Course
+from artificial_u.models.repositories import RepositoryFactory
 
 
 class CourseService:
     """Service for course-related operations."""
 
-    def __init__(self, repository: Repository):
+    def __init__(self, repository: RepositoryFactory):
         """Initialize with database repository."""
         self.repository = repository
 
@@ -50,7 +50,7 @@ class CourseService:
             CoursesListResponse with paginated courses
         """
         # Get all courses
-        courses = self.repository.list_courses(department=department)
+        courses = self.repository.course.list(department=department)
 
         # Apply additional filters if provided
         if professor_id:
@@ -94,7 +94,7 @@ class CourseService:
         Returns:
             CourseResponse or None if not found
         """
-        course = self.repository.get_course(course_id)
+        course = self.repository.course.get(course_id)
         if not course:
             return None
         return CourseResponse.model_validate(course.model_dump())
@@ -109,7 +109,7 @@ class CourseService:
         Returns:
             CourseResponse or None if not found
         """
-        course = self.repository.get_course_by_code(code)
+        course = self.repository.course.get_by_code(code)
         if not course:
             return None
         return CourseResponse.model_validate(course.model_dump())
@@ -128,7 +128,7 @@ class CourseService:
         course = Course(**course_data.model_dump())
 
         # Save to database
-        created_course = self.repository.create_course(course)
+        created_course = self.repository.course.create(course)
 
         # Convert back to response model
         return CourseResponse.model_validate(created_course.model_dump())
@@ -147,21 +147,24 @@ class CourseService:
             Updated course or None if not found
         """
         # Check if course exists
-        existing_course = self.repository.get_course(course_id)
+        existing_course = self.repository.course.get(course_id)
         if not existing_course:
             return None
 
-        # Update fields
-        course_dict = course_data.model_dump()
-        for key, value in course_dict.items():
-            setattr(existing_course, key, value)
+        # Update fields from the provided data, excluding unset fields
+        update_data = course_data.model_dump(exclude_unset=True)
+        for key, value in update_data.items():
+            # Ensure the key exists on the core model before setting
+            if hasattr(existing_course, key):
+                setattr(existing_course, key, value)
+            else:
+                # Log or handle fields present in update data but not in core model
+                self.logger.warning(
+                    f"Skipping update for non-existent field '{key}' on Course model"
+                )
 
         # Save changes
-        # Note: Repository doesn't have update_course method yet, so we use create_course
-        # but we need to preserve the original ID
-        original_id = existing_course.id
-        updated_course = self.repository.create_course(existing_course)
-        updated_course.id = original_id
+        updated_course = self.repository.course.update(existing_course)
 
         # Convert to response model
         return CourseResponse.model_validate(updated_course.model_dump())
@@ -177,16 +180,12 @@ class CourseService:
             True if deleted successfully, False otherwise
         """
         # Check if course exists
-        course = self.repository.get_course(course_id)
+        course = self.repository.course.get(course_id)
         if not course:
             return False
 
-        # TODO: Implement actual deletion in the repository
-        # This would be:
-        # return self.repository.delete_course(course_id)
-
-        # For now, we'll return True if the course exists
-        return True
+        # Delete the course
+        return self.repository.course.delete(course_id)
 
     def get_course_professor(self, course_id: int) -> Optional[ProfessorBrief]:
         """
@@ -199,12 +198,12 @@ class CourseService:
             ProfessorBrief or None if course or professor not found
         """
         # Get the course
-        course = self.repository.get_course(course_id)
+        course = self.repository.course.get(course_id)
         if not course:
             return None
 
         # Get the professor
-        professor = self.repository.get_professor(course.professor_id)
+        professor = self.repository.professor.get(course.professor_id)
         if not professor:
             return None
 
@@ -213,7 +212,7 @@ class CourseService:
             id=professor.id,
             name=professor.name,
             title=professor.title,
-            department=professor.department,
+            department_id=professor.department_id,
             specialization=professor.specialization,
         )
 
@@ -228,15 +227,12 @@ class CourseService:
             DepartmentBrief or None if course or department not found
         """
         # Get the course
-        course = self.repository.get_course(course_id)
-        if not course:
+        course = self.repository.course.get(course_id)
+        if not course or not course.department_id:
             return None
 
-        # Get departments
-        departments = self.repository.list_departments()
-
-        # Find matching department by name
-        department = next((d for d in departments if d.name == course.department), None)
+        # Get the department using the ID
+        department = self.repository.department.get(course.department_id)
         if not department:
             return None
 
@@ -259,12 +255,12 @@ class CourseService:
             CourseLecturesResponse or None if course not found
         """
         # First check if course exists
-        course = self.repository.get_course(course_id)
+        course = self.repository.course.get(course_id)
         if not course:
             return None
 
         # Get lectures for the course
-        lectures = self.repository.list_lectures_by_course(course_id)
+        lectures = self.repository.lecture.list_by_course(course_id)
 
         # Convert to brief format
         lecture_briefs = [

@@ -3,11 +3,11 @@ Ollama adapter for ArtificialU to use local models for testing.
 """
 
 import os
+import re
 import signal
 import time
-from typing import Dict, List, Optional, Any, Union
 from dataclasses import dataclass
-import re
+from typing import Any, Dict, List, Optional, Union
 
 import ollama
 

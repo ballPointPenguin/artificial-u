@@ -6,8 +6,9 @@ while verifying the client behaves as expected.
 """
 
 import os
+from unittest.mock import MagicMock, patch
+
 import pytest
-from unittest.mock import patch, MagicMock
 
 from artificial_u.integrations.elevenlabs.client import ElevenLabsClient
 

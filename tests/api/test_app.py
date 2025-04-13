@@ -1,5 +1,6 @@
 import pytest
 from fastapi.testclient import TestClient
+
 from artificial_u.api.app import app
 
 client = TestClient(app)

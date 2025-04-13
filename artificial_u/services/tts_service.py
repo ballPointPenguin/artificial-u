@@ -5,12 +5,12 @@ This service handles converting text to speech using ElevenLabs.
 """
 
 import logging
-from typing import Dict, List, Optional, Tuple, Any, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
-from artificial_u.models.core import Lecture, Professor
-from artificial_u.integrations.elevenlabs.client import ElevenLabsClient
-from artificial_u.audio.speech_processor import SpeechProcessor
 from artificial_u.audio.audio_utils import AudioUtils
+from artificial_u.audio.speech_processor import SpeechProcessor
+from artificial_u.integrations.elevenlabs.client import ElevenLabsClient
+from artificial_u.models.core import Lecture, Professor
 from artificial_u.utils.exceptions import AudioProcessingError
 
 

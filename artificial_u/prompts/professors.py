@@ -1,6 +1,7 @@
 """Professor prompt templates."""
 
 from typing import List, Optional
+
 from artificial_u.prompts.base import PromptTemplate, xml_tag
 
 # Example professor profiles to use as demonstrations

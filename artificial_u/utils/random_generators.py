@@ -3,18 +3,18 @@ Utility classes for random value generation in ArtificialU.
 """
 
 import random
-from typing import Dict, List, Optional, Any
+from typing import Any, Dict, List, Optional
 
 from artificial_u.config.defaults import (
-    PROFESSOR_TITLES,
-    PROFESSOR_LAST_NAMES,
-    DEPARTMENTS,
     DEPARTMENT_SPECIALIZATIONS,
-    TEACHING_STYLES,
+    DEPARTMENTS,
     PERSONALITIES,
-    PROFESSOR_GENDERS,
     PROFESSOR_ACCENTS,
     PROFESSOR_AGE_RANGES,
+    PROFESSOR_GENDERS,
+    PROFESSOR_LAST_NAMES,
+    PROFESSOR_TITLES,
+    TEACHING_STYLES,
 )
 
 

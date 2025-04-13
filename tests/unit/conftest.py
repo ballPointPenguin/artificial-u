@@ -5,15 +5,16 @@ This file contains fixtures specifically for unit tests,
 including mocks for external dependencies.
 """
 
+from unittest.mock import MagicMock, patch
+
 import pytest
-from unittest.mock import patch, MagicMock
 
 
 # Mock Repository to avoid database connections
 @pytest.fixture(autouse=True)
 def mock_repository():
     """Mock the Repository class to avoid database connections in unit tests."""
-    with patch("artificial_u.models.database.Repository") as mock_repo_class:
+    with patch("artificial_u.models.repositories.RepositoryFactory") as mock_repo_class:
         # Create a mock instance that will be returned when Repository is instantiated
         mock_repo = MagicMock()
         mock_repo_class.return_value = mock_repo

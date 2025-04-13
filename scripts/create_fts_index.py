@@ -4,9 +4,10 @@ Script to create PostgreSQL full-text search index for the voices table.
 Run this after running alembic migrations.
 """
 
+import logging
 import os
 import sys
-import logging
+
 from sqlalchemy import create_engine, text
 
 # Get the project root directory

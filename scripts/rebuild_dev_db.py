@@ -4,15 +4,16 @@ Script to rebuild the development database and recreate initial Alembic migratio
 Only for use in development/greenfield phase.
 """
 
-import os
-import sys
+import argparse
 import glob
 import logging
-import argparse
+import os
 import subprocess
+import sys
 from pathlib import Path
-from dotenv import load_dotenv
+
 import sqlalchemy
+from dotenv import load_dotenv
 from sqlalchemy import text
 
 # Configure logging

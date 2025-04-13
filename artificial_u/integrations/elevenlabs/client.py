@@ -4,14 +4,14 @@ ElevenLabs API client for ArtificialU.
 Provides low-level access to the ElevenLabs API for text-to-speech and voice management.
 """
 
-import os
 import logging
-import time
-from typing import Dict, List, Optional, Any, Union, Generator, Tuple
-import requests
+import os
 import sys
+import time
+from typing import Any, Dict, Generator, List, Optional, Tuple, Union
 from unittest.mock import MagicMock
 
+import requests
 from elevenlabs import play
 from elevenlabs.client import ElevenLabs
 

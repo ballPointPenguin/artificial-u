@@ -4,8 +4,8 @@ Audio utilities for ArtificialU.
 This module provides utilities for audio file handling, playback, and management.
 """
 
-import os
 import logging
+import os
 from pathlib import Path
 from typing import Optional, Tuple
 

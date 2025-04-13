@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
-from artificial_u.api.config import get_settings, Settings
+
+from artificial_u.api.config import Settings, get_settings
 
 router = APIRouter(tags=["Root"])
 

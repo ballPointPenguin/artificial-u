@@ -2,30 +2,29 @@
 Lecture API service for handling lecture operations in the API layer.
 """
 
-from typing import List, Optional, Dict, Any, Tuple
-from datetime import datetime
-import os
 import hashlib
+import os
+from typing import Optional
+
 from fastapi import HTTPException, status
 from sqlalchemy.exc import IntegrityError
 
-from artificial_u.models.database import Repository
-from artificial_u.models.core import Lecture as LectureCore
-from artificial_u.api.models.lectures import (
-    LectureCreate,
-    LectureUpdate,
-    Lecture,
-    LectureList,
-)
-from artificial_u.utils.exceptions import LectureNotFoundError
 from artificial_u.api.config import get_settings
+from artificial_u.api.models.lectures import (
+    Lecture,
+    LectureCreate,
+    LectureList,
+    LectureUpdate,
+)
+from artificial_u.models.core import Lecture as LectureCore
+from artificial_u.models.repositories import RepositoryFactory
 
 
 # Add content_asset_field to track content files in DB
 class LectureApiService:
     """Service for handling lecture API operations."""
 
-    def __init__(self, repository: Repository, storage_service=None):
+    def __init__(self, repository: RepositoryFactory, storage_service=None):
         """Initialize the lecture service with a repository and optional storage service."""
         self.repository = repository
         self.storage_service = storage_service
@@ -53,7 +52,7 @@ class LectureApiService:
             LectureList: Paginated list of lectures
         """
         # Get lectures from repository with filtering
-        lectures = self.repository.list_lectures(
+        lectures = self.repository.lecture.list(
             page=page,
             size=size,
             course_id=course_id,
@@ -61,7 +60,7 @@ class LectureApiService:
             search_query=search_query,
         )
 
-        total_count = self.repository.count_lectures(
+        total_count = self.repository.lecture.count(
             course_id=course_id,
             professor_id=professor_id,
             search_query=search_query,
@@ -133,7 +132,7 @@ class LectureApiService:
         Returns:
             Lecture: Lecture information or None if not found
         """
-        lecture = self.repository.get_lecture(lecture_id)
+        lecture = self.repository.lecture.get(lecture_id)
         if not lecture:
             return None
 
@@ -177,7 +176,7 @@ class LectureApiService:
         Returns:
             Optional[str]: Path where content asset exists or should be created
         """
-        lecture = self.repository.get_lecture(lecture_id)
+        lecture = self.repository.lecture.get(lecture_id)
         if not lecture:
             return None
 
@@ -209,7 +208,7 @@ class LectureApiService:
         Returns:
             Optional[str]: Path to the content asset file or None if lecture not found
         """
-        lecture = self.repository.get_lecture(lecture_id)
+        lecture = self.repository.lecture.get(lecture_id)
         if not lecture:
             return None
 
@@ -233,7 +232,7 @@ class LectureApiService:
         Returns:
             Optional[str]: MD5 hash of the lecture content or None if not found
         """
-        lecture = self.repository.get_lecture(lecture_id)
+        lecture = self.repository.lecture.get(lecture_id)
         if not lecture or not lecture.content:
             return None
 
@@ -256,7 +255,7 @@ class LectureApiService:
             Optional[str]: Path or URL to the audio file, or None if not found/no audio
         """
         # Get the audio url from the repository
-        return self.repository.get_lecture_audio_url(lecture_id)
+        return self.repository.lecture.get_audio_url(lecture_id)
 
     def create_lecture(self, lecture_data: LectureCreate) -> Lecture:
         """
@@ -272,7 +271,7 @@ class LectureApiService:
             HTTPException: If course doesn't exist or other validation errors
         """
         # Validate course exists
-        course = self.repository.get_course(lecture_data.course_id)
+        course = self.repository.course.get(lecture_data.course_id)
         if not course:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -280,22 +279,14 @@ class LectureApiService:
             )
 
         # Create core model from API model
-        core_lecture = LectureCore(
-            title=lecture_data.title,
-            course_id=lecture_data.course_id,
-            week_number=lecture_data.week_number,
-            order_in_week=lecture_data.order_in_week,
-            description=lecture_data.description,
-            content=lecture_data.content,
-            audio_url=lecture_data.audio_url,
-        )
+        lecture_core = LectureCore(**lecture_data.model_dump())
 
         try:
             # Save to database
-            lecture = self.repository.create_lecture(core_lecture)
+            created_lecture = self.repository.lecture.create(lecture_core)
 
             # Return the created lecture
-            return self.get_lecture(lecture.id)
+            return self.get_lecture(created_lecture.id)
         except IntegrityError as e:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -306,51 +297,41 @@ class LectureApiService:
         self, lecture_id: int, lecture_data: LectureUpdate
     ) -> Optional[Lecture]:
         """
-        Update an existing lecture.
+        Update an existing lecture with new information.
 
         Args:
             lecture_id: The unique identifier of the lecture to update
-            lecture_data: The updated lecture data
+            lecture_data: An instance of LectureUpdate containing fields to update
 
         Returns:
-            Optional[Lecture]: The updated lecture or None if not found
+            Optional[Lecture]: The updated lecture information or None if not found
         """
-        # Get existing lecture
-        lecture = self.repository.get_lecture(lecture_id)
-        if not lecture:
+        # Check if the lecture exists
+        existing_lecture = self.repository.lecture.get(lecture_id)
+        if not existing_lecture:
             return None
 
-        # Update fields that are present in the update data
-        if lecture_data.title is not None:
-            lecture.title = lecture_data.title
+        # Update fields from lecture_data if they are provided (not None)
+        update_data = lecture_data.model_dump(exclude_unset=True)
+        for key, value in update_data.items():
+            setattr(existing_lecture, key, value)
+            # Special handling for content update: remove old asset if content changes
+            if key == "content" and value is not None:
+                asset_path = self.get_lecture_content_asset_path(lecture_id)
+                if asset_path and os.path.exists(asset_path):
+                    try:
+                        os.remove(asset_path)
+                    except OSError as e:
+                        # Log or handle error if needed, but don't block update
+                        print(f"Error removing old content asset {asset_path}: {e}")
 
-        if lecture_data.description is not None:
-            lecture.description = lecture_data.description
-
-        if lecture_data.content is not None:
-            lecture.content = lecture_data.content
-
-            # If content was updated, we should remove any existing content asset
-            # so it will be regenerated with new content when requested
-            asset_path = self.get_lecture_content_asset_path(lecture_id)
-            if os.path.exists(asset_path):
-                try:
-                    os.remove(asset_path)
-                except (OSError, PermissionError) as e:
-                    # Log error but don't fail the update
-                    print(f"Warning: Failed to remove outdated content asset: {str(e)}")
-
-        if lecture_data.week_number is not None:
-            lecture.week_number = lecture_data.week_number
-
-        if lecture_data.order_in_week is not None:
-            lecture.order_in_week = lecture_data.order_in_week
-
-        if lecture_data.audio_url is not None:
-            lecture.audio_url = lecture_data.audio_url
-
-        # Save updated lecture
-        updated_lecture = self.repository.update_lecture(lecture)
+        try:
+            updated_lecture = self.repository.lecture.update(existing_lecture)
+        except IntegrityError:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Update failed due to database constraints.",
+            )
 
         # Return updated lecture with details
         return self.get_lecture(updated_lecture.id)
@@ -365,5 +346,10 @@ class LectureApiService:
         Returns:
             bool: True if lecture was deleted, False if not found
         """
-        # Simply delete the lecture database record and let assets remain
-        return self.repository.delete_lecture(lecture_id)
+        # Check if lecture exists first
+        lecture = self.repository.lecture.get(lecture_id)
+        if not lecture:
+            return False
+
+        # Attempt to delete the lecture from the database
+        return self.repository.lecture.delete(lecture_id)

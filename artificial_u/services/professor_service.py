@@ -6,9 +6,9 @@ import logging
 from typing import Optional
 
 from artificial_u.models.core import Professor
-from artificial_u.utils.random_generators import RandomGenerators
-from artificial_u.utils.exceptions import DatabaseError, ProfessorNotFoundError
 from artificial_u.services.voice_service import VoiceService
+from artificial_u.utils.exceptions import DatabaseError, ProfessorNotFoundError
+from artificial_u.utils.random_generators import RandomGenerators
 
 
 class ProfessorService:
@@ -81,122 +81,144 @@ class ProfessorService:
         """
         self.logger.info("Creating new professor")
 
-        # First, ensure we have department and specialization as they're required
+        # First, ensure we have department and specialization
         department = department or RandomGenerators.generate_department()
-        self.logger.debug(f"Using department: {department}")
-
         specialization = specialization or RandomGenerators.generate_specialization(
             department
         )
-        self.logger.debug(f"Using specialization: {specialization}")
 
-        # Try to use the content generator for AI-powered professor creation
-        try:
-            if self.content_generator:
-                self.logger.info("Using AI to generate professor profile")
+        # Consolidate provided attributes
+        provided_attrs = {
+            k: v
+            for k, v in {
+                "name": name,
+                "title": title,
+                "background": background,
+                "teaching_style": teaching_style,
+                "personality": personality,
+                "gender": gender,
+                "accent": accent,
+                "description": description,
+                "age": age,
+            }.items()
+            if v is not None
+        }
 
-                # Determine age range string if we have a specific age
-                age_range = None
-                if age:
-                    decade = (age // 10) * 10
-                    age_range = f"{decade}-{decade+10}"
-
-                # Generate professor using AI
-                professor = self.content_generator.create_professor(
-                    department=department,
-                    specialization=specialization,
-                    gender=gender,
-                    nationality=None,  # Not currently supported in system interface
-                    age_range=age_range,
-                    accent=accent,
+        # Try AI generation first
+        professor = None
+        if self.content_generator:
+            try:
+                professor = self._create_professor_with_ai(
+                    department, specialization, provided_attrs
+                )
+            except Exception as e:
+                self.logger.warning(
+                    f"AI generation failed, falling back to random generation: {e}"
                 )
 
-                # Override specific attributes if they were provided
-                if name:
-                    professor.name = name
-                if title:
-                    professor.title = title
-                if background:
-                    professor.background = background
-                if teaching_style:
-                    professor.teaching_style = teaching_style
-                if personality:
-                    professor.personality = personality
-                if description:
-                    professor.description = description
-                if age:
-                    professor.age = age
-
-                self.logger.info("Successfully created professor using AI")
-
-            else:
-                raise ValueError("Content generator not available")
-
-        except Exception as e:
-            # Log the exception
-            self.logger.warning(
-                f"AI generation failed, falling back to random generation: {e}"
+        # If AI generation failed or wasn't attempted, use random generation
+        if professor is None:
+            professor = self._create_professor_with_random(
+                department, specialization, provided_attrs
             )
 
-            # Fall back to random generation for all fields
-            name = name or RandomGenerators.generate_professor_name()
-            self.logger.debug(f"Using professor name: {name}")
-
-            title = title or RandomGenerators.generate_professor_title(department)
-            self.logger.debug(f"Using title: {title}")
-
-            background = background or RandomGenerators.generate_background(
-                specialization
-            )
-            self.logger.debug(f"Using background: {background}")
-
-            teaching_style = (
-                teaching_style or RandomGenerators.generate_teaching_style()
-            )
-            self.logger.debug(f"Using teaching style: {teaching_style}")
-
-            personality = personality or RandomGenerators.generate_personality()
-            self.logger.debug(f"Using personality: {personality}")
-
-            gender = gender or RandomGenerators.generate_gender()
-            self.logger.debug(f"Using gender: {gender}")
-
-            accent = accent or RandomGenerators.generate_accent()
-            self.logger.debug(f"Using accent: {accent}")
-
-            description = description or RandomGenerators.generate_description(gender)
-            self.logger.debug("Generated physical description")
-
-            age = age or RandomGenerators.generate_age()
-            self.logger.debug(f"Using age: {age}")
-
-            # Create professor object
-            professor = Professor(
-                name=name,
-                title=title,
-                department=department,
-                specialization=specialization,
-                background=background,
-                teaching_style=teaching_style,
-                personality=personality,
-                gender=gender,
-                accent=accent,
-                description=description,
-                age=age,
-            )
-
-        # Assign a voice to the professor
+        # Assign a voice
         self._assign_voice_to_professor(professor)
 
-        # Save professor to repository to get an ID
+        # Save professor to repository
         try:
-            saved_professor = self.repository.create_professor(professor)
+            saved_professor = self.repository.professor.create(professor)
             self.logger.info(f"Professor created with ID: {saved_professor.id}")
             return saved_professor
         except Exception as e:
             error_msg = f"Failed to save professor: {str(e)}"
             self.logger.error(error_msg)
             raise DatabaseError(error_msg) from e
+
+    def _create_professor_with_ai(
+        self,
+        department: str,
+        specialization: str,
+        provided_attrs: dict,
+    ) -> Professor:
+        """Helper to create professor using AI content generator."""
+        self.logger.info("Using AI to generate professor profile")
+
+        # Determine age range string if we have a specific age
+        age_range = None
+        age = provided_attrs.get("age")
+        if age:
+            decade = (age // 10) * 10
+            age_range = f"{decade}-{decade+10}"
+
+        # Generate professor using AI
+        professor = self.content_generator.create_professor(
+            department=department,
+            specialization=specialization,
+            gender=provided_attrs.get("gender"),
+            nationality=None,  # Not currently supported in system interface
+            age_range=age_range,
+            accent=provided_attrs.get("accent"),
+        )
+
+        # Override AI-generated attributes with any provided ones
+        for key, value in provided_attrs.items():
+            setattr(professor, key, value)
+
+        self.logger.info("Successfully created professor using AI")
+        return professor
+
+    def _create_professor_with_random(
+        self,
+        department: str,
+        specialization: str,
+        provided_attrs: dict,
+    ) -> Professor:
+        """Helper to create professor using random generation."""
+        self.logger.info("Using random generation for professor profile")
+
+        # Generate or use provided attributes
+        attrs = {
+            "department": department,
+            "specialization": specialization,
+            "name": (
+                provided_attrs.get("name") or RandomGenerators.generate_professor_name()
+            ),
+            "title": (
+                provided_attrs.get("title")
+                or RandomGenerators.generate_professor_title(department)
+            ),
+            "background": (
+                provided_attrs.get("background")
+                or RandomGenerators.generate_background(specialization)
+            ),
+            "teaching_style": (
+                provided_attrs.get("teaching_style")
+                or RandomGenerators.generate_teaching_style()
+            ),
+            "personality": (
+                provided_attrs.get("personality")
+                or RandomGenerators.generate_personality()
+            ),
+            "gender": (
+                provided_attrs.get("gender") or RandomGenerators.generate_gender()
+            ),
+            "accent": (
+                provided_attrs.get("accent") or RandomGenerators.generate_accent()
+            ),
+            "description": (
+                provided_attrs.get("description")
+                or RandomGenerators.generate_description(provided_attrs.get("gender"))
+            ),
+            "age": (provided_attrs.get("age") or RandomGenerators.generate_age()),
+        }
+
+        # Log generated/used values
+        for key, value in attrs.items():
+            self.logger.debug(f"Using {key}: {value}")
+
+        # Create professor object
+        return Professor(**attrs)
 
     def _assign_voice_to_professor(self, professor: Professor) -> None:
         """
@@ -247,7 +269,7 @@ class ProfessorService:
         Raises:
             ProfessorNotFoundError: If professor not found
         """
-        professor = self.repository.get_professor(professor_id)
+        professor = self.repository.professor.get(professor_id)
         if not professor:
             error_msg = f"Professor with ID {professor_id} not found"
             self.logger.error(error_msg)

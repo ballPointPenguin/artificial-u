@@ -3,13 +3,13 @@ Test that the ContentGenerator works with Ollama for local development and testi
 """
 
 import os
-import pytest
 from unittest.mock import patch
+
+import pytest
 
 from artificial_u.generators.content import ContentGenerator
 from artificial_u.generators.ollama_adapter import OllamaClient
-from artificial_u.models.core import Professor, Course, Lecture
-
+from artificial_u.models.core import Course, Lecture, Professor
 
 # Skip these tests if Ollama is not installed or not running
 ollama_installed = True

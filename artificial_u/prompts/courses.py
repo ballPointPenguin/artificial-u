@@ -1,7 +1,8 @@
 """Course-related prompt templates."""
 
 from typing import Dict, Optional
-from artificial_u.prompts.base import PromptTemplate, xml_tag, StructuredPrompt
+
+from artificial_u.prompts.base import PromptTemplate, StructuredPrompt, xml_tag
 
 # Course syllabus template
 SYLLABUS_PROMPT = PromptTemplate(

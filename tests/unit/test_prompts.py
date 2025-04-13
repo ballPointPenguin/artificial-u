@@ -1,15 +1,16 @@
 """Tests for the prompt module."""
 
 import pytest
+
 from artificial_u.prompts.base import (
     PromptTemplate,
     StructuredPrompt,
-    xml_tag,
     extract_xml_content,
+    xml_tag,
 )
-from artificial_u.prompts.professors import get_professor_prompt
 from artificial_u.prompts.courses import get_syllabus_prompt
-from artificial_u.prompts.lectures import get_lecture_prompt, StructuredLecturePrompt
+from artificial_u.prompts.lectures import StructuredLecturePrompt, get_lecture_prompt
+from artificial_u.prompts.professors import get_professor_prompt
 from artificial_u.prompts.system import get_system_prompt
 
 

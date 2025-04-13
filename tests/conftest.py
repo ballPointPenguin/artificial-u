@@ -4,11 +4,12 @@ Pytest configuration and shared fixtures.
 
 import os
 import sys
-import logging
 from pathlib import Path
 from typing import Generator
 
 import pytest
+
+from artificial_u.config.settings import get_settings
 
 # Add the project root to Python path (must happen before imports)
 project_root = str(Path(__file__).parent.parent)
@@ -16,7 +17,6 @@ if project_root not in sys.path:
     sys.path.insert(0, project_root)
 
 # Import the settings (this will auto-load .env.test in test environments)
-from artificial_u.config.settings import get_settings
 
 # Ensure environment is set up for testing
 os.environ["TESTING"] = "true"
@@ -33,13 +33,17 @@ def is_unit_test():
 if not is_unit_test() or "tests/unit" in os.getcwd():
     from sqlalchemy import create_engine
     from sqlalchemy.exc import OperationalError
-    from artificial_u.models.database import Repository, Base
+
+    from artificial_u.models.database import Base
+    from artificial_u.models.repositories import RepositoryFactory
     from artificial_u.system import UniversitySystem
 else:
     # Create placeholder classes/variables to avoid import errors
-    create_engine = lambda x: None
+    def create_engine(x):
+        return None
+
     OperationalError = Exception
-    Repository = object
+    RepositoryFactory = object
     Base = object
     UniversitySystem = object
 
@@ -102,7 +106,7 @@ def test_audio_path(tmp_path_factory) -> Path:
 
 
 @pytest.fixture
-def repository(test_db_url: str) -> Generator[Repository, None, None]:
+def repository(test_db_url: str) -> Generator[RepositoryFactory, None, None]:
     """Provide a test repository instance with a clean database."""
     # Create a new engine and recreate all tables
     engine = create_engine(test_db_url)
@@ -111,7 +115,7 @@ def repository(test_db_url: str) -> Generator[Repository, None, None]:
     Base.metadata.drop_all(engine)
     Base.metadata.create_all(engine)
 
-    repo = Repository(db_url=test_db_url)
+    repo = RepositoryFactory(db_url=test_db_url)
     yield repo
 
     # Cleanup by dropping tables
@@ -119,7 +123,7 @@ def repository(test_db_url: str) -> Generator[Repository, None, None]:
 
 
 @pytest.fixture
-def mock_system(repository: Repository, test_audio_path: Path) -> UniversitySystem:
+def mock_system() -> UniversitySystem:
     """Provide a UniversitySystem instance with mocked external dependencies."""
     settings = get_settings()
 

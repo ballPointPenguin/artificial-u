@@ -2,20 +2,21 @@
 Content generator for ArtificialU using either Anthropic Claude API or alternative models.
 """
 
-import os
-from typing import Dict, List, Optional, Any, Tuple
-import anthropic
 import json
+import logging
+import os
 import re
 import time
-import logging
+from typing import Any, Dict, List, Optional, Tuple
 
-from artificial_u.models.core import Professor, Course, Lecture
-from artificial_u.prompts.professors import get_professor_prompt
+import anthropic
+
+from artificial_u.models.core import Course, Lecture, Professor
+from artificial_u.prompts.base import extract_xml_content
 from artificial_u.prompts.courses import get_syllabus_prompt
 from artificial_u.prompts.lectures import get_lecture_prompt
+from artificial_u.prompts.professors import get_professor_prompt
 from artificial_u.prompts.system import get_system_prompt
-from artificial_u.prompts.base import extract_xml_content
 
 
 class ContentGenerator:

@@ -4,18 +4,18 @@ Services module for ArtificialU.
 This module provides service-layer abstractions for core functionality.
 """
 
+import logging
 import os
 import sys
-import logging
 from typing import Optional
 
-from artificial_u.services.professor_service import ProfessorService
+from artificial_u.services.audio_service import AudioService
 from artificial_u.services.course_service import CourseService
 from artificial_u.services.lecture_service import LectureService
-from artificial_u.services.audio_service import AudioService
-from artificial_u.services.voice_service import VoiceService
-from artificial_u.services.tts_service import TTSService
+from artificial_u.services.professor_service import ProfessorService
 from artificial_u.services.storage_service import StorageService
+from artificial_u.services.tts_service import TTSService
+from artificial_u.services.voice_service import VoiceService
 
 __all__ = [
     "ProfessorService",
@@ -40,11 +40,10 @@ def is_test_environment() -> bool:
 # This avoids database connection issues during unit tests
 if not is_test_environment():
     try:
-        from artificial_u.models.database import Repository
-        from artificial_u.services.voice_service import VoiceService
+        from artificial_u.models.repositories import RepositoryFactory
 
         # Initialize services
-        db_repository = Repository()
+        db_repository = RepositoryFactory()
         voice_service = VoiceService(repository=db_repository)
 
         logger.info("Initialized production services")

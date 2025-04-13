@@ -6,9 +6,9 @@ characteristics like gender, nationality, accent, and age.
 """
 
 import logging
-import re
 import random
-from typing import Dict, List, Optional, Any
+import re
+from typing import Any, Dict, List, Optional
 
 from artificial_u.models.core import Professor
 

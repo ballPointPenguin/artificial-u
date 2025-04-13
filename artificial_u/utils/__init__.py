@@ -2,17 +2,17 @@
 Utility modules for the ArtificialU system.
 """
 
-from artificial_u.utils.random_generators import RandomGenerators
 from artificial_u.utils.exceptions import (
     ArtificialUException,
-    ProfessorNotFoundError,
-    CourseNotFoundError,
-    LectureNotFoundError,
-    ContentGenerationError,
     AudioProcessingError,
-    DatabaseError,
     ConfigurationError,
+    ContentGenerationError,
+    CourseNotFoundError,
+    DatabaseError,
+    LectureNotFoundError,
+    ProfessorNotFoundError,
 )
+from artificial_u.utils.random_generators import RandomGenerators
 
 __all__ = [
     "RandomGenerators",

@@ -3,6 +3,7 @@ Integration tests package for the ArtificialU project.
 """
 
 import os
+
 import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.exc import OperationalError

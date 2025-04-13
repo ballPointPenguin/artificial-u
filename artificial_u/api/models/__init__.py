@@ -3,47 +3,44 @@ API data models for serialization and validation.
 These models define the structure of request and response data.
 """
 
-# Re-export models for easier imports
-from artificial_u.api.models.professors import (
-    ProfessorBase,
-    ProfessorCreate,
-    ProfessorUpdate,
-    ProfessorResponse,
-    ProfessorsListResponse,
-    CourseBrief as ProfessorCourseBrief,
-    LectureBrief as ProfessorLectureBrief,
-    ProfessorCoursesResponse,
-    ProfessorLecturesResponse,
-)
-from artificial_u.api.models.departments import (
-    DepartmentBase,
-    DepartmentCreate,
-    DepartmentUpdate,
-    DepartmentResponse,
-    DepartmentsListResponse,
-    ProfessorBrief as DepartmentProfessorBrief,
-    CourseBrief as DepartmentCourseBrief,
-    DepartmentProfessorsResponse,
-    DepartmentCoursesResponse,
-)
 from artificial_u.api.models.courses import (
     CourseBase,
     CourseCreate,
-    CourseUpdate,
+    CourseLecturesResponse,
     CourseResponse,
     CoursesListResponse,
-    ProfessorBrief,
-    LectureBrief,
+    CourseUpdate,
     DepartmentBrief,
-    CourseLecturesResponse,
+    LectureBrief,
+    ProfessorBrief,
 )
-from artificial_u.api.models.errors import (
-    ErrorDetail,
-    ErrorResponse,
+from artificial_u.api.models.departments import CourseBrief as DepartmentCourseBrief
+from artificial_u.api.models.departments import (
+    DepartmentBase,
+    DepartmentCoursesResponse,
+    DepartmentCreate,
+    DepartmentProfessorsResponse,
+    DepartmentResponse,
+    DepartmentsListResponse,
+    DepartmentUpdate,
 )
-from artificial_u.api.models.error_codes import (
-    ErrorCode,
-    get_error_description,
+from artificial_u.api.models.departments import (
+    ProfessorBrief as DepartmentProfessorBrief,
+)
+from artificial_u.api.models.error_codes import ErrorCode, get_error_description
+from artificial_u.api.models.errors import ErrorDetail, ErrorResponse
+
+# Re-export models for easier imports
+from artificial_u.api.models.professors import CourseBrief as ProfessorCourseBrief
+from artificial_u.api.models.professors import LectureBrief as ProfessorLectureBrief
+from artificial_u.api.models.professors import (
+    ProfessorBase,
+    ProfessorCoursesResponse,
+    ProfessorCreate,
+    ProfessorLecturesResponse,
+    ProfessorResponse,
+    ProfessorsListResponse,
+    ProfessorUpdate,
 )
 
 # All models that should be available for import

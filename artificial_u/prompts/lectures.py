@@ -1,6 +1,7 @@
 """Lecture-related prompt templates."""
 
 from typing import Optional
+
 from artificial_u.prompts.base import PromptTemplate, StructuredPrompt, xml_tag
 
 # Basic lecture generation template

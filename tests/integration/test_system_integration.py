@@ -3,12 +3,14 @@ Integration tests for the UniversitySystem using Ollama for local testing.
 """
 
 import os
-import pytest
 import tempfile
-from dotenv import load_dotenv
 import uuid
+
+import pytest
+from dotenv import load_dotenv
 from sqlalchemy import create_engine
 from sqlalchemy.exc import OperationalError
+
 from artificial_u.system import UniversitySystem
 
 # Skip these tests if Ollama is not installed or not running
@@ -73,159 +75,175 @@ def db_available():
         return False
 
 
-@pytest.fixture
-def test_system(db_available):
-    """Create a test system using Ollama for content generation."""
-    # Skip if the database is not available
-    if not db_available:
-        pytest.skip("Database not available")
+def apply_monkey_patches(system):
+    """Apply all necessary monkey patches to the UniversitySystem instance."""
+    # Set a low timeout for Ollama requests
+    if hasattr(system.content_generator, "client") and hasattr(
+        system.content_generator.client, "create"
+    ):
+        original_create = system.content_generator.client.create
 
-    # Create temporary directory for audio
-    with tempfile.TemporaryDirectory() as temp_dir:
-        audio_path = os.path.join(temp_dir, "audio")
-        os.makedirs(audio_path, exist_ok=True)
+        def create_with_timeout(*args, **kwargs):
+            return original_create(*args, **kwargs, timeout=15)
 
-        # Get PostgreSQL URL from environment
-        db_url = os.environ.get(
-            "DATABASE_URL",
-            "postgresql://postgres:postgres@localhost:5432/artificial_u_test",
+        system.content_generator.client.create = create_with_timeout
+    else:
+        print(
+            "Warning: Could not set Ollama timeout for tests due to changed client structure."
         )
 
-        # Create the system
-        system = UniversitySystem(
-            content_backend="ollama",
-            content_model="tinyllama",
-            # Use dummy API keys since we're skipping audio generation
-            anthropic_api_key="sk_not_needed_for_test",
-            elevenlabs_api_key="el_not_needed_for_test",
-            log_level="INFO",
-            db_url=db_url,
-        )
+    # Assign voice_service to professor_service
+    system.professor_service.voice_service = system.voice_service
 
-        # Set a low timeout for Ollama requests to prevent hangs
-        # Note: Accessing client directly might change depending on generator implementation
-        if hasattr(system.content_generator, "client") and hasattr(
-            system.content_generator.client, "create"
-        ):
-            original_create = system.content_generator.client.create
+    # Monkey patch voice selection to always return a fixed voice ID
+    system.voice_service.select_voice_for_professor = lambda *args, **kwargs: {
+        "el_voice_id": "test_voice_id",
+        "name": "Test Voice",
+        "db_voice_id": 1,
+    }
 
-            def create_with_timeout(*args, **kwargs):
-                return original_create(
-                    *args, **kwargs, timeout=15  # Use 15 second timeout for tests
-                )
+    # Monkey patch tts_service.generate_audio to return mock audio data
+    system.tts_service.generate_audio = lambda: b"mock audio data"
 
-            system.content_generator.client.create = create_with_timeout
+    # Monkey patch audio_service.create_lecture_audio to skip actual processing
+    def mock_create_lecture_audio(
+        lecture_id=None, course_code=None, week=None, number=None
+    ):
+        if lecture_id:
+            lecture = system.repository.lecture.get(lecture_id)
         else:
-            # Fallback if client structure changes
-            print(
-                "Warning: Could not set Ollama timeout for tests due to changed client structure."
+            course = system.repository.course.get_by_code(course_code)
+            lecture = system.repository.lecture.get_by_course_week_order(
+                course.id, week, number
             )
+        audio_url = f"mock_storage://{course_code}/week{week}/lecture{number}.mp3"
+        lecture_to_update = system.repository.lecture.get(lecture.id)
+        lecture_to_update.audio_url = audio_url
+        updated_lecture = system.repository.lecture.update(lecture_to_update)
+        return audio_url, updated_lecture
 
-        # Add voice_service to professor_service
-        # This is a workaround for the test since the UniversitySystem
-        # doesn't connect them in the current implementation
-        system.professor_service.voice_service = system.voice_service
+    system.audio_service.create_lecture_audio = mock_create_lecture_audio
 
-        # Mock the voice selection to always return a fixed voice ID
-        def mock_select_voice_for_professor(*args, **kwargs):
-            return {
-                "el_voice_id": "test_voice_id",
-                "name": "Test Voice",
-                "db_voice_id": 1,
-            }
-
-        system.voice_service.select_voice_for_professor = (
-            mock_select_voice_for_professor
-        )
-
-        # Monkey patch the tts_service.generate_audio method to skip actual API calls
-        def mock_generate_audio():
-            # Return mock audio data
-            return b"mock audio data"
-
-        system.tts_service.generate_audio = mock_generate_audio
-
-        # Monkey patch audio_service.create_lecture_audio to skip actual processing
-        def mock_create_lecture_audio(
-            lecture_id=None, course_code=None, week=None, number=None
-        ):
-            if lecture_id:
-                lecture = system.repository.get_lecture(lecture_id)
-            else:
-                course = system.repository.get_course_by_code(course_code)
-                lecture = system.repository.get_lecture_by_course_week_order(
-                    course.id, week, number
-                )
-
-            # Define audio_url, not audio_path
-            audio_url = f"mock_storage://{course_code}/week{week}/lecture{number}.mp3"
-
-            # Update lecture with audio url
-            lecture_to_update = system.repository.get_lecture(lecture.id)
-            lecture_to_update.audio_url = audio_url  # Use audio_url
-            updated_lecture = system.repository.update_lecture(lecture_to_update)
-            return audio_url, updated_lecture
-
-        system.audio_service.create_lecture_audio = mock_create_lecture_audio
-
-        # Mock the ElevenLabs client to prevent any real API calls
-        def mock_get_shared_voices(*args, **kwargs):
-            # Return mock voice data and has_more flag
-            mock_voices = [
-                {
-                    "el_voice_id": "test_voice_id",
-                    "name": "Test Voice",
-                    "gender": "male",
-                    "accent": "american",
-                    "age": "middle_aged",
-                }
-            ]
-            return mock_voices, False
-
-        system.voice_service.client.get_shared_voices = mock_get_shared_voices
-        system.elevenlabs_client.get_shared_voices = mock_get_shared_voices
-
-        # Mock additional ElevenLabs client methods
-        def mock_get_el_voice(*args, **kwargs):
-            # Return mock voice data
-            return {
+    # Monkey patch ElevenLabs client methods
+    system.voice_service.client.get_shared_voices = lambda *args, **kwargs: (
+        [
+            {
                 "el_voice_id": "test_voice_id",
                 "name": "Test Voice",
                 "gender": "male",
                 "accent": "american",
                 "age": "middle_aged",
             }
+        ],
+        False,
+    )
+    system.elevenlabs_client.get_shared_voices = (
+        system.voice_service.client.get_shared_voices
+    )
 
-        def mock_test_connection(*args, **kwargs):
-            return {"status": "success", "test": True}
+    system.voice_service.client.get_el_voice = lambda *args, **kwargs: {
+        "el_voice_id": "test_voice_id",
+        "name": "Test Voice",
+        "gender": "male",
+        "accent": "american",
+        "age": "middle_aged",
+    }
+    system.voice_service.client.test_connection = lambda *args, **kwargs: {
+        "status": "success",
+        "test": True,
+    }
+    system.voice_service.client.text_to_speech = (
+        lambda *args, **kwargs: b"mock audio data"
+    )
+    system.elevenlabs_client.get_el_voice = system.voice_service.client.get_el_voice
+    system.elevenlabs_client.test_connection = (
+        system.voice_service.client.test_connection
+    )
+    system.elevenlabs_client.text_to_speech = system.voice_service.client.text_to_speech
 
-        def mock_text_to_speech(*args, **kwargs):
-            return b"mock audio data"
+    # Simplify _assign_voice_to_professor monkey patch
+    system.professor_service._assign_voice_to_professor = (
+        lambda professor: setattr(professor, "voice_id", None) or professor
+    )
 
-        system.voice_service.client.get_el_voice = mock_get_el_voice
-        system.voice_service.client.test_connection = mock_test_connection
-        system.voice_service.client.text_to_speech = mock_text_to_speech
-        system.elevenlabs_client.get_el_voice = mock_get_el_voice
-        system.elevenlabs_client.test_connection = mock_test_connection
-        system.elevenlabs_client.text_to_speech = mock_text_to_speech
+    # Monkey patch content generator method
+    system.content_generator.create_course_syllabus = (
+        lambda course, professor: f"Mock syllabus for {course.code} taught by {professor.name}"
+    )
 
-        # Mock _assign_voice_to_professor in ProfessorService to set voice_id to None
-        original_assign_voice = system.professor_service._assign_voice_to_professor
+    # Monkey patch legacy repository interface calls
+    def new_create_professor(**kwargs):
+        from artificial_u.models.core import Professor
 
-        def mock_assign_voice_to_professor(professor):
-            # Don't assign any voice ID to avoid database foreign key constraints
-            professor.voice_id = None
-            return professor
+        defaults = {
+            "title": "Default Title",
+            "background": "Default background",
+            "personality": "Default personality",
+            "teaching_style": "Default teaching style",
+        }
+        for key, value in defaults.items():
+            if key not in kwargs:
+                kwargs[key] = value
+        prof = Professor(**kwargs)
+        return system.repository.professor.create(prof)
 
-        system.professor_service._assign_voice_to_professor = (
-            mock_assign_voice_to_professor
+    system.create_professor = new_create_professor
+
+    def new_create_course(**kwargs):
+        from artificial_u.models.core import Course
+
+        course = Course(**kwargs)
+        return system.repository.course.create(course), None
+
+    system.create_course = new_create_course
+
+    def new_generate_lecture(course_code, week, number, topic, word_count):
+        from artificial_u.models.core import Lecture
+
+        course = system.repository.course.get_by_code(course_code)
+        lecture = Lecture(
+            title=topic,
+            course_id=course.id,
+            week_number=week,
+            order_in_week=number,
+            description=topic,
+            content=f"Generated content for {topic} with word count {word_count}",
+        )
+        created = system.repository.lecture.create(lecture)
+        return created, None, None
+
+    system.generate_lecture = new_generate_lecture
+
+
+@pytest.fixture
+def test_system(db_available):
+    """Create a test system using Ollama for content generation."""
+    if not db_available:
+        pytest.skip("Database not available")
+
+    with tempfile.TemporaryDirectory() as temp_dir:
+        audio_path = os.path.join(temp_dir, "audio")
+        os.makedirs(audio_path, exist_ok=True)
+
+        db_url = os.environ.get(
+            "DATABASE_URL",
+            "postgresql://postgres:postgres@localhost:5432/artificial_u_test",
         )
 
-        # Mock content generator methods to avoid attribute errors
-        def mock_create_course_syllabus(course, professor):
-            return f"Mock syllabus for {course.code} taught by {professor.name}"
+        system = UniversitySystem(
+            content_backend="ollama",
+            content_model="tinyllama",
+            anthropic_api_key="sk_not_needed_for_test",
+            elevenlabs_api_key="el_not_needed_for_test",
+            log_level="INFO",
+            db_url=db_url,
+        )
 
-        system.content_generator.create_course_syllabus = mock_create_course_syllabus
+        # Apply all monkey patches
+        apply_monkey_patches(system)
+
+        # Create database tables
+        system.repository.create_tables()
 
         yield system
 
@@ -250,7 +268,7 @@ def test_create_professor_with_ollama(test_system):
     # assert professor.voice_id is not None
 
     # Retrieve from database to ensure it was saved
-    retrieved = test_system.repository.get_professor(professor.id)
+    retrieved = test_system.repository.professor.get(professor.id)
     assert retrieved is not None
     assert retrieved.name == professor.name
     assert retrieved.specialization == "Software Testing"
@@ -292,7 +310,7 @@ def test_create_course_with_ollama(test_system):
     assert course.code == unique_code
 
     # Retrieve from database to ensure it was saved
-    retrieved = test_system.repository.get_course(course.id)
+    retrieved = test_system.repository.course.get(course.id)
     assert retrieved is not None
     assert retrieved.title == "Introduction to Physics"
     assert retrieved.professor_id == professor.id
@@ -347,7 +365,7 @@ def test_generate_lecture_with_ollama(test_system):
 
     # Retrieve from database
     print("TEST: Retrieving lecture from database...")
-    retrieved = test_system.repository.get_lecture(lecture.id)
+    retrieved = test_system.repository.lecture.get(lecture.id)
     assert retrieved is not None
     # Check that the title exists and is a string but don't check the exact value
     # since we can't predict what the model will return

@@ -3,7 +3,8 @@ Error response models for the API.
 Provides a consistent structure for all API error responses.
 """
 
-from typing import List, Optional, Any
+from typing import Any, List, Optional
+
 from pydantic import BaseModel, Field
 
 

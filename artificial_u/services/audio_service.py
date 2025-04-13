@@ -4,14 +4,14 @@ Audio processing service for ArtificialU.
 
 import logging
 import os
-from typing import Optional, Tuple, Dict, Any, List
 import urllib.parse
+from typing import Any, Dict, List, Optional, Tuple
 
-from artificial_u.models.core import Lecture
-from artificial_u.utils.exceptions import AudioProcessingError
-from artificial_u.services.voice_service import VoiceService
-from artificial_u.services.tts_service import TTSService
+from artificial_u.models.core import Lecture, Professor
 from artificial_u.services.storage_service import StorageService
+from artificial_u.services.tts_service import TTSService
+from artificial_u.services.voice_service import VoiceService
+from artificial_u.utils.exceptions import AudioProcessingError
 
 
 class AudioService:
@@ -72,14 +72,14 @@ class AudioService:
         )
 
         # Get course
-        course = self.repository.get_course_by_code(course_code)
+        course = self.repository.course.get_by_code(course_code)
         if not course:
             error_msg = f"Course with code {course_code} not found"
             self.logger.error(error_msg)
             raise ValueError(error_msg)
 
         # Get lecture
-        lecture = self.repository.get_lecture_by_course_week_order(
+        lecture = self.repository.lecture.get_by_course_week_order(
             course_id=course.id, week_number=week, order_in_week=number
         )
         if not lecture:
@@ -88,33 +88,17 @@ class AudioService:
             raise ValueError(error_msg)
 
         # Get professor
-        professor = self.repository.get_professor(course.professor_id)
+        professor = self.repository.professor.get(course.professor_id)
         if not professor:
             error_msg = f"Professor with ID {course.professor_id} not found"
             self.logger.error(error_msg)
             raise ValueError(error_msg)
 
+        # Get voice ID
+        el_voice_id = self._get_professor_voice_id(professor)
+
         # Generate audio
         try:
-            # Get voice ID for professor if not already assigned
-            if not professor.voice_id:
-                # Select a voice and update professor record
-                voice_data = self.voice_service.select_voice_for_professor(professor)
-
-                # Update local professor object with the db voice ID
-                if "db_voice_id" in voice_data:
-                    professor.voice_id = voice_data["db_voice_id"]
-                    # Use the ElevenLabs voice ID
-                    el_voice_id = voice_data["voice_id"]
-                else:
-                    raise ValueError("Failed to assign voice to professor")
-            else:
-                # Use professor.voice_id to get the voice record from db, use its el_voice_id
-                voice_record = self.repository.get_voice(professor.voice_id)
-                if not voice_record:
-                    raise ValueError(f"Voice with ID {professor.voice_id} not found")
-                el_voice_id = voice_record.el_voice_id
-
             # Generate audio using TTS service
             # The TTS service might still use a local temp file, but we get the bytes
             _, audio_data = self.tts_service.generate_lecture_audio(
@@ -133,7 +117,7 @@ class AudioService:
             )
 
             if not success:
-                error_msg = f"Failed to upload audio to storage"
+                error_msg = "Failed to upload audio to storage"
                 self.logger.error(error_msg)
                 raise AudioProcessingError(error_msg)
 
@@ -150,7 +134,7 @@ class AudioService:
         # Update lecture with audio url
         try:
             # Get the lecture first
-            lecture_to_update = self.repository.get_lecture(lecture.id)
+            lecture_to_update = self.repository.lecture.get(lecture.id)
             if not lecture_to_update:
                 raise ValueError(f"Lecture with ID {lecture.id} not found")
 
@@ -158,7 +142,7 @@ class AudioService:
             lecture_to_update.audio_url = audio_url  # Renamed from audio_path
 
             # Use the general update_lecture method
-            lecture = self.repository.update_lecture(lecture_to_update)
+            lecture = self.repository.lecture.update(lecture_to_update)
             self.logger.debug(f"Lecture updated with audio url: {audio_url}")
         except Exception as e:
             error_msg = f"Failed to update lecture with audio url: {str(e)}"
@@ -166,6 +150,26 @@ class AudioService:
             raise ValueError(error_msg) from e
 
         return audio_url, lecture
+
+    def _get_professor_voice_id(self, professor: Professor) -> str:
+        """Get the ElevenLabs voice ID for a professor, assigning if necessary."""
+        if not professor.voice_id:
+            # Select a voice and update professor record
+            voice_data = self.voice_service.select_voice_for_professor(professor)
+
+            # Update local professor object with the db voice ID
+            if "db_voice_id" in voice_data:
+                professor.voice_id = voice_data["db_voice_id"]
+                # Return the ElevenLabs voice ID
+                return voice_data["el_voice_id"]  # Use el_voice_id from select method
+            else:
+                raise ValueError("Failed to assign voice to professor")
+        else:
+            # Use professor.voice_id to get the voice record from db, use its el_voice_id
+            voice_record = self.repository.voice.get(professor.voice_id)
+            if not voice_record:
+                raise ValueError(f"Voice with ID {professor.voice_id} not found")
+            return voice_record.el_voice_id
 
     def list_available_voices(self, **filters) -> List[Dict[str, Any]]:
         """

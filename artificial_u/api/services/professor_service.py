@@ -2,27 +2,27 @@
 Professor service for handling business logic related to professors.
 """
 
-from typing import List, Optional, Dict, Any
 from math import ceil
+from typing import Optional
 
-from artificial_u.models.database import Repository
-from artificial_u.models.core import Professor, Course, Lecture
 from artificial_u.api.models.professors import (
-    ProfessorCreate,
-    ProfessorUpdate,
-    ProfessorResponse,
-    ProfessorsListResponse,
     CourseBrief,
     LectureBrief,
     ProfessorCoursesResponse,
+    ProfessorCreate,
     ProfessorLecturesResponse,
+    ProfessorResponse,
+    ProfessorsListResponse,
+    ProfessorUpdate,
 )
+from artificial_u.models.core import Professor
+from artificial_u.models.repositories import RepositoryFactory
 
 
 class ProfessorService:
     """Service for professor-related operations."""
 
-    def __init__(self, repository: Repository):
+    def __init__(self, repository: RepositoryFactory):
         """Initialize with database repository."""
         self.repository = repository
 
@@ -48,10 +48,10 @@ class ProfessorService:
             ProfessorsListResponse with paginated professors
         """
         # Get all professors
-        professors = self.repository.list_professors()
+        professors = self.repository.professor.list()
 
         # Apply filters if provided
-        if department_id:
+        if department_id is not None:
             professors = [p for p in professors if p.department_id == department_id]
         if name:
             professors = [p for p in professors if name.lower() in p.name.lower()]
@@ -97,7 +97,7 @@ class ProfessorService:
         Returns:
             ProfessorResponse or None if not found
         """
-        professor = self.repository.get_professor(professor_id)
+        professor = self.repository.professor.get(professor_id)
         if not professor:
             return None
         return ProfessorResponse.model_validate(professor.model_dump())
@@ -116,7 +116,7 @@ class ProfessorService:
         professor = Professor(**professor_data.model_dump())
 
         # Save to database
-        created_professor = self.repository.create_professor(professor)
+        created_professor = self.repository.professor.create(professor)
 
         # Convert back to response model
         return ProfessorResponse.model_validate(created_professor.model_dump())
@@ -135,7 +135,7 @@ class ProfessorService:
             Updated professor or None if not found
         """
         # Check if professor exists
-        existing_professor = self.repository.get_professor(professor_id)
+        existing_professor = self.repository.professor.get(professor_id)
         if not existing_professor:
             return None
 
@@ -145,7 +145,7 @@ class ProfessorService:
             setattr(existing_professor, key, value)
 
         # Save changes
-        updated_professor = self.repository.update_professor(existing_professor)
+        updated_professor = self.repository.professor.update(existing_professor)
 
         # Convert to response model
         return ProfessorResponse.model_validate(updated_professor.model_dump())
@@ -161,12 +161,12 @@ class ProfessorService:
             True if deleted successfully, False otherwise
         """
         # Check if professor exists
-        professor = self.repository.get_professor(professor_id)
+        professor = self.repository.professor.get(professor_id)
         if not professor:
             return False
 
         # Delete the professor using the repository method
-        return self.repository.delete_professor(professor_id)
+        return self.repository.professor.delete(professor_id)
 
     def get_professor_courses(
         self, professor_id: int
@@ -181,12 +181,12 @@ class ProfessorService:
             ProfessorCoursesResponse or None if professor not found
         """
         # First check if professor exists
-        professor = self.repository.get_professor(professor_id)
+        professor = self.repository.professor.get(professor_id)
         if not professor:
             return None
 
         # Get all courses
-        all_courses = self.repository.list_courses()
+        all_courses = self.repository.course.list()
 
         # Filter courses by professor_id
         professor_courses = [c for c in all_courses if c.professor_id == professor_id]
@@ -223,31 +223,31 @@ class ProfessorService:
             ProfessorLecturesResponse or None if professor not found
         """
         # First check if professor exists
-        professor = self.repository.get_professor(professor_id)
+        professor = self.repository.professor.get(professor_id)
         if not professor:
             return None
 
         # Get courses taught by the professor
-        all_courses = self.repository.list_courses()
+        all_courses = self.repository.course.list()
         professor_courses = [c for c in all_courses if c.professor_id == professor_id]
 
         # Get lectures for all these courses
         all_lectures = []
         for course in professor_courses:
-            course_lectures = self.repository.list_lectures_by_course(course.id)
+            course_lectures = self.repository.lecture.list_by_course(course.id)
             all_lectures.extend(course_lectures)
 
         # Convert to brief format
         lecture_briefs = [
             LectureBrief(
-                id=l.id,
-                title=l.title,
-                course_id=l.course_id,
-                week_number=l.week_number,
-                order_in_week=l.order_in_week,
-                description=l.description,
+                id=lecture.id,
+                title=lecture.title,
+                course_id=lecture.course_id,
+                week_number=lecture.week_number,
+                order_in_week=lecture.order_in_week,
+                description=lecture.description,
             )
-            for l in all_lectures
+            for lecture in all_lectures
         ]
 
         return ProfessorLecturesResponse(

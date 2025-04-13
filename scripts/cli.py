@@ -5,34 +5,28 @@ Command-Line Interface for ArtificialU.
 A simplified CLI providing access to core system functionality.
 """
 
-import os
-import sys
-import click
-import platform
-import subprocess
 import asyncio
-from pathlib import Path
-from dotenv import load_dotenv
+import os
 import traceback
-from typing import Optional, List, Dict
 
-from artificial_u.system import UniversitySystem
-from artificial_u.config.defaults import DEPARTMENTS
-from artificial_u.utils.exceptions import ContentGenerationError
+import click
+from dotenv import load_dotenv
 from rich.console import Console
-from rich.panel import Panel
-from rich.table import Table
 from rich.markdown import Markdown
-from rich.prompt import Confirm, Prompt
+from rich.panel import Panel
 from rich.progress import (
+    BarColumn,
     Progress,
     SpinnerColumn,
     TextColumn,
-    BarColumn,
     TimeElapsedColumn,
-    MofNCompleteColumn,
 )
-from rich.syntax import Syntax
+from rich.prompt import Confirm
+from rich.table import Table
+
+from artificial_u.config.defaults import DEPARTMENTS
+from artificial_u.system import UniversitySystem
+from artificial_u.utils.exceptions import ContentGenerationError
 
 # Load environment variables
 load_dotenv()
@@ -174,12 +168,12 @@ def show_syllabus(course_code):
     """Display a course syllabus."""
     try:
         system = get_system()
-        course = system.repository.get_course_by_code(course_code)
+        course = system.repository.course.get_by_code(course_code)
         if not course:
             console.print(f"[red]Course {course_code} not found[/red]")
             return
 
-        professor = system.repository.get_professor(course.professor_id)
+        professor = system.repository.professor.get(course.professor_id)
 
         # Display syllabus
         if course.syllabus:
@@ -205,7 +199,7 @@ def list_professors():
     """List all professors."""
     try:
         system = get_system()
-        professors = system.repository.list_professors()
+        professors = system.repository.professor.list()
 
         if not professors:
             console.print("[yellow]No professors found.[/yellow]")
@@ -250,7 +244,7 @@ def create_professor(
         console.print(
             Panel(
                 f"Creating professor with AI{f': [bold]{name}[/bold]' if name else ''}",
-                subtitle=f"{department or 'AI-generated department'} - {specialization or 'AI-generated specialization'}",
+                subtitle=f"{department or 'AI-generated dept.'} - {specialization or 'AI-generated spec.'}",
             )
         )
 
@@ -488,11 +482,11 @@ def play_lecture(course_code, week, number):
         lectures = system.get_lecture_preview(course_code=course_code)
         lecture = next(
             (
-                l
-                for l in lectures
-                if l["course_code"] == course_code
-                and l["week"] == week
-                and l["number"] == number
+                lecture_preview
+                for lecture_preview in lectures
+                if lecture_preview["course_code"] == course_code
+                and lecture_preview["week"] == week
+                and lecture_preview["number"] == number
             ),
             None,
         )
@@ -567,13 +561,13 @@ def show_lecture(course_code, week, number):
     """Display a generated lecture content."""
     try:
         system = get_system()
-        course = system.repository.get_course_by_code(course_code)
+        course = system.repository.course.get_by_code(course_code)
         if not course:
             console.print(f"[red]Error:[/red] Course {course_code} not found")
             return
 
         # Get the lecture
-        lecture = system.repository.get_lecture_by_course_week_order(
+        lecture = system.repository.lecture.get_by_course_week_order(
             course_id=course.id, week_number=week, order_in_week=number
         )
 
@@ -595,7 +589,7 @@ def show_lecture(course_code, week, number):
                 f"\n[green]Audio available at URL:[/green] {lecture.audio_url}"
             )
         else:
-            console.print(f"\n[yellow]No audio available.[/yellow]")
+            console.print("\n[yellow]No audio available.[/yellow]")
             console.print("Generate audio with [bold]create-audio[/bold] command")
 
     except Exception as e:
