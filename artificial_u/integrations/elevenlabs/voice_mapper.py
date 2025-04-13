@@ -85,7 +85,7 @@ class VoiceMapper:
         """
         self.logger = logger or logging.getLogger(__name__)
 
-    def extract_gender(self, professor: Professor) -> str:
+    def extract_gender(self, professor: Professor) -> Optional[str]:
         """
         Extract gender information from professor profile.
 
@@ -93,82 +93,74 @@ class VoiceMapper:
             professor: Professor profile
 
         Returns:
-            Gender ('male', 'female', or 'neutral')
+            Gender ('male', 'female', or None for any/neutral)
         """
-        # If professor has a gender attribute, use it
-        if hasattr(professor, "gender") and professor.gender:
-            gender = professor.gender.lower()
-            if gender in ["male", "man", "m"]:
-                return "male"
-            elif gender in ["female", "woman", "f"]:
-                return "female"
-            else:
-                return "neutral"
+        # Skip processing if no gender provided
+        if not hasattr(professor, "gender") or not professor.gender:
+            return None
 
-        # Otherwise, try to infer from background or name
-        background = professor.background.lower()
-        name = professor.name.lower()
+        # Normalize the input
+        gender_str = professor.gender.lower().strip()
 
-        # Check for female indicators first (to avoid 'female' matching 'male')
-        female_indicators = [
-            "she ",
-            "her ",
-            "female",
-            "woman",
-            "lady",
-            "mrs.",
-            "mrs ",
-            "ms.",
-            "ms ",
-            "miss",
-            "mother",
-            "sister",
-            "daughter",
-        ]
-        if any(indicator in background for indicator in female_indicators):
-            return "female"
-
-        # Check for male indicators
-        male_indicators = [
-            "he ",
-            "his ",
-            "him ",
-            "male",
-            "man",
-            "gentleman",
-            "mr.",
-            "mr ",
-            "sir",
-            "father",
-            "brother",
-            "son",
-        ]
-        if any(indicator in background for indicator in male_indicators):
-            return "male"
-
-        # Check name prefix
-        if re.search(r"\b(mr|mister|sir|lord)\b", name):
-            return "male"
-        elif re.search(r"\b(mrs|miss|ms|madam|lady|sister)\b", name):
-            return "female"
-
-        # Check common name patterns with word boundaries
-        # This is a simplified approach
-        if re.search(
-            r"\b(john|james|robert|michael|william|david|richard)\b",
-            name,
-            re.IGNORECASE,
+        # Use word boundaries to avoid substring issues
+        # Check for explicit male indicators
+        if (
+            gender_str == "male"
+            or gender_str == "man"
+            or gender_str == "boy"
+            or gender_str == "m"
+            or gender_str == "he"
+            or gender_str == "his"
+            or gender_str == "him"
+            or gender_str.startswith("he/")
+            or gender_str.startswith("his/")
+            or gender_str.startswith("him/")
         ):
             return "male"
-        elif re.search(
-            r"\b(mary|patricia|jennifer|linda|elizabeth|barbara|susan)\b",
-            name,
-            re.IGNORECASE,
+
+        # Check for explicit female indicators
+        if (
+            gender_str == "female"
+            or gender_str == "woman"
+            or gender_str == "girl"
+            or gender_str == "f"
+            or gender_str == "she"
+            or gender_str == "her"
+            or gender_str == "hers"
+            or gender_str.startswith("she/")
+            or gender_str.startswith("her/")
+            or gender_str.startswith("hers/")
         ):
             return "female"
 
-        # Default to neutral if we can't determine
-        return "neutral"
+        # Check for terms that should be treated as neutral/any
+        neutral_terms = [
+            "non-binary",
+            "nonbinary",
+            "enby",
+            "nb",
+            "genderqueer",
+            "genderfluid",
+            "agender",
+            "they",
+            "them",
+            "theirs",
+            "ze",
+            "zir",
+            "neutral",
+            "any",
+            "other",
+        ]
+
+        for term in neutral_terms:
+            if term in gender_str or gender_str.startswith(f"{term}/"):
+                return None
+
+        # If we reach here, we're unsure - default to None (any) as requested
+        self.logger.debug(
+            f"Unable to determine gender from string '{professor.gender}', defaulting to None (any)"
+        )
+        return None
 
     def extract_accent(self, professor: Professor) -> Optional[str]:
         """
@@ -263,55 +255,34 @@ class VoiceMapper:
         # Default to middle-aged for professors
         return "middle_aged"
 
-    def extract_profile_attributes(
-        self, professor: Professor, additional_context: Optional[Dict[str, Any]] = None
-    ) -> Dict[str, Any]:
+    def extract_profile_attributes(self, professor: Professor) -> Dict[str, Any]:
         """
-        Extract relevant attributes from professor profile for voice matching.
+        Extract all relevant attributes from a professor profile for voice matching.
 
         Args:
             professor: Professor profile
-            additional_context: Optional additional context to override extraction
 
         Returns:
-            Dictionary of attributes for voice matching
+            Dict of attributes for voice matching
         """
-        # Start with additional context if provided
-        attributes = {}
+        # Basic attributes directly from professor fields
+        gender = self.extract_gender(professor)
+        accent = self.extract_accent(professor)
+        age = self.extract_age(professor)
 
-        if additional_context:
-            attributes = {
-                "gender": additional_context.get("gender"),
-                "accent": additional_context.get("accent"),
-                "age": additional_context.get("age"),
-            }
+        # Build attributes dictionary
+        attributes = {
+            "language": "en",  # Default to English
+            "use_case": "informative_educational",  # Educational content
+        }
 
-        # Fill in missing attributes through extraction
-        if not attributes.get("gender"):
-            attributes["gender"] = self.extract_gender(professor)
-
-        if not attributes.get("accent"):
-            attributes["accent"] = self.extract_accent(professor)
-
-        if not attributes.get("age"):
-            extracted_age = self.extract_age(professor)
-            # If age is a number in additional_context, convert to category
-            if isinstance(attributes.get("age"), int):
-                age = attributes["age"]
-                if age < 35:
-                    attributes["age"] = "young"
-                elif age > 60:
-                    attributes["age"] = "old"
-                else:
-                    attributes["age"] = "middle_aged"
-            else:
-                attributes["age"] = extracted_age
-
-        # Use case - for educational content, prefer informative voices
-        attributes["use_case"] = "informative_educational"
-
-        # Language - default to English
-        attributes["language"] = "en"
+        # Only add attributes if they have values
+        if gender:
+            attributes["gender"] = gender
+        if accent:
+            attributes["accent"] = accent
+        if age:
+            attributes["age"] = age
 
         return attributes
 

@@ -51,7 +51,7 @@ class VoiceModel(Base):
     __tablename__ = "voices"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    voice_id = Column(String, nullable=False, unique=True)
+    el_voice_id = Column(String, nullable=False, unique=True)
     name = Column(String, nullable=False)
     accent = Column(String(100), nullable=True)
     gender = Column(String(50), nullable=True)
@@ -93,7 +93,6 @@ class ProfessorModel(Base):
     description = Column(Text, nullable=True)
     age = Column(Integer, nullable=True)
     voice_id = Column(Integer, ForeignKey("voices.id"), nullable=True)
-    voice_settings = Column(Text, nullable=True)  # Stored as JSON
     image_path = Column(String, nullable=True)
 
     department = relationship("DepartmentModel", back_populates="professors")
@@ -312,7 +311,7 @@ class Repository:
         """Create a new voice record."""
         with Session(self.engine) as session:
             db_voice = VoiceModel(
-                voice_id=voice.voice_id,
+                el_voice_id=voice.el_voice_id,
                 name=voice.name,
                 accent=voice.accent,
                 gender=voice.gender,
@@ -346,7 +345,7 @@ class Repository:
 
             return Voice(
                 id=db_voice.id,
-                voice_id=db_voice.voice_id,
+                el_voice_id=db_voice.el_voice_id,
                 name=db_voice.name,
                 accent=db_voice.accent,
                 gender=db_voice.gender,
@@ -367,7 +366,7 @@ class Repository:
         """Get a voice by ElevenLabs voice ID."""
         with Session(self.engine) as session:
             db_voice = (
-                session.query(VoiceModel).filter_by(voice_id=elevenlabs_id).first()
+                session.query(VoiceModel).filter_by(el_voice_id=elevenlabs_id).first()
             )
 
             if not db_voice:
@@ -375,7 +374,7 @@ class Repository:
 
             return Voice(
                 id=db_voice.id,
-                voice_id=db_voice.voice_id,
+                el_voice_id=db_voice.el_voice_id,
                 name=db_voice.name,
                 accent=db_voice.accent,
                 gender=db_voice.gender,
@@ -432,7 +431,7 @@ class Repository:
             return [
                 Voice(
                     id=v.id,
-                    voice_id=v.voice_id,
+                    el_voice_id=v.el_voice_id,
                     name=v.name,
                     accent=v.accent,
                     gender=v.gender,
@@ -459,7 +458,7 @@ class Repository:
             if not db_voice:
                 raise ValueError(f"Voice with ID {voice.id} not found")
 
-            db_voice.voice_id = voice.voice_id
+            db_voice.el_voice_id = voice.el_voice_id
             db_voice.name = voice.name
             db_voice.accent = voice.accent
             db_voice.gender = voice.gender
@@ -480,7 +479,7 @@ class Repository:
 
     def upsert_voice(self, voice: Voice) -> Voice:
         """Create or update a voice based on ElevenLabs voice_id."""
-        existing_voice = self.get_voice_by_elevenlabs_id(voice.voice_id)
+        existing_voice = self.get_voice_by_elevenlabs_id(voice.el_voice_id)
         if existing_voice:
             voice.id = existing_voice.id
             return self.update_voice(voice)
@@ -493,7 +492,7 @@ class Repository:
             db_professor = ProfessorModel(
                 name=professor.name,
                 title=professor.title,
-                department=professor.department,
+                department_id=professor.department_id,
                 specialization=professor.specialization,
                 background=professor.background,
                 personality=professor.personality,
@@ -502,8 +501,8 @@ class Repository:
                 accent=professor.accent,
                 description=professor.description,
                 age=professor.age,
-                voice_settings=json.dumps(professor.voice_settings),
                 image_path=professor.image_path,
+                voice_id=professor.voice_id,
             )
 
             session.add(db_professor)
@@ -526,7 +525,7 @@ class Repository:
                 id=db_professor.id,
                 name=db_professor.name,
                 title=db_professor.title,
-                department=db_professor.department,
+                department_id=db_professor.department_id,
                 specialization=db_professor.specialization,
                 background=db_professor.background,
                 personality=db_professor.personality,
@@ -535,11 +534,7 @@ class Repository:
                 accent=db_professor.accent,
                 description=db_professor.description,
                 age=db_professor.age,
-                voice_settings=(
-                    json.loads(db_professor.voice_settings)
-                    if db_professor.voice_settings
-                    else {}
-                ),
+                voice_id=db_professor.voice_id,
                 image_path=db_professor.image_path,
             )
 
@@ -553,7 +548,7 @@ class Repository:
                     id=p.id,
                     name=p.name,
                     title=p.title,
-                    department=p.department,
+                    department_id=p.department_id,
                     specialization=p.specialization,
                     background=p.background,
                     personality=p.personality,
@@ -562,9 +557,7 @@ class Repository:
                     accent=p.accent,
                     description=p.description,
                     age=p.age,
-                    voice_settings=(
-                        json.loads(p.voice_settings) if p.voice_settings else {}
-                    ),
+                    voice_id=p.voice_id,
                     image_path=p.image_path,
                 )
                 for p in db_professors
@@ -583,7 +576,7 @@ class Repository:
             # Update fields
             db_professor.name = professor.name
             db_professor.title = professor.title
-            db_professor.department = professor.department
+            db_professor.department_id = professor.department_id
             db_professor.specialization = professor.specialization
             db_professor.background = professor.background
             db_professor.personality = professor.personality
@@ -592,11 +585,56 @@ class Repository:
             db_professor.accent = professor.accent
             db_professor.description = professor.description
             db_professor.age = professor.age
-            db_professor.voice_settings = json.dumps(professor.voice_settings)
             db_professor.image_path = professor.image_path
-
+            db_professor.voice_id = professor.voice_id
             session.commit()
             return professor
+
+    def update_professor_field(
+        self, professor_id: int, **fields
+    ) -> Optional[Professor]:
+        """
+        Update specific fields of a professor.
+
+        Args:
+            professor_id: ID of the professor to update
+            **fields: Field name-value pairs to update
+
+        Returns:
+            Updated professor or None if not found
+        """
+        with Session(self.engine) as session:
+            db_professor = (
+                session.query(ProfessorModel).filter_by(id=professor_id).first()
+            )
+
+            if not db_professor:
+                return None
+
+            # Update only the specified fields
+            for field, value in fields.items():
+                if hasattr(db_professor, field):
+                    setattr(db_professor, field, value)
+
+            session.commit()
+
+            # Convert to core model and return
+            return Professor(
+                id=db_professor.id,
+                name=db_professor.name,
+                title=db_professor.title,
+                department_id=db_professor.department_id,
+                specialization=db_professor.specialization,
+                background=db_professor.background,
+                personality=db_professor.personality,
+                teaching_style=db_professor.teaching_style,
+                gender=db_professor.gender,
+                accent=db_professor.accent,
+                description=db_professor.description,
+                age=db_professor.age,
+                voice_id=db_professor.voice_id,
+                image_path=db_professor.image_path,
+            )
 
     def delete_professor(self, professor_id: int) -> bool:
         """
@@ -627,7 +665,7 @@ class Repository:
             db_course = CourseModel(
                 code=course.code,
                 title=course.title,
-                department=course.department,
+                department_id=course.department_id,
                 level=course.level,
                 credits=course.credits,
                 professor_id=course.professor_id,
@@ -656,7 +694,7 @@ class Repository:
                 id=db_course.id,
                 code=db_course.code,
                 title=db_course.title,
-                department=db_course.department,
+                department_id=db_course.department_id,
                 level=db_course.level,
                 credits=db_course.credits,
                 professor_id=db_course.professor_id,

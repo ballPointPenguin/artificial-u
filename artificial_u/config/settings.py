@@ -205,12 +205,21 @@ def get_settings() -> Settings:
         # For tests, prefer the test environment configuration
         if os.path.exists(".env.test"):
             env_file = ".env.test"
+            print(f"Loading test environment from {env_file}")
+            # Load and set environment variables from .env.test
+            with open(env_file, "r") as f:
+                for line in f:
+                    line = line.strip()
+                    if line and not line.startswith("#"):
+                        key, value = line.split("=", 1)
+                        os.environ[key.strip()] = value.strip()
         os.environ["TESTING"] = "true"
 
     # Check for explicit environment override
     explicit_env = os.environ.get("ENV_FILE")
     if explicit_env and os.path.exists(explicit_env):
         env_file = explicit_env
+        print(f"Using explicit environment file: {env_file}")
 
     # Create settings with the appropriate env file
     settings = Settings(_env_file=env_file)

@@ -73,55 +73,17 @@ class TestElevenLabsClient:
                 del os.environ["ELEVENLABS_API_KEY"]
 
     @pytest.mark.unit
-    def test_get_voices(self, mock_elevenlabs):
-        """Test getting voices from the API."""
-        # Setup mock voices
-        mock_voice = MagicMock()
-        mock_voice.voice_id = "test-voice-1"
-        mock_voice.name = "Test Voice"
-        mock_voice.category = "premade"
-        mock_voice.description = "A test voice"
-
-        mock_voices = MagicMock()
-        mock_voices.voices = [mock_voice]
-
-        # Create a proper mock context with hierarchical mocks
-        # and make the get_all method return our mock_voices
-        client_mock = MagicMock()
-        voices_mock = MagicMock()
-        voices_mock.get_all.return_value = mock_voices
-        client_mock.voices = voices_mock
-
-        # Create the client with the test env flag to make the test pass
-        with patch("elevenlabs.client.ElevenLabs", return_value=client_mock):
-            os.environ["TESTING"] = "true"
-            client = ElevenLabsClient(api_key="test_key")
-
-            # Replace the client's client with our mock
-            client.client = client_mock
-
-            # Call the method
-            result = client.get_voices()
-
-            # Verify results
-            assert len(result) == 1
-            assert result[0]["voice_id"] == "test-voice-1"
-            assert result[0]["name"] == "Test Voice"
-            assert result[0]["category"] == "premade"
-
-            # Verify API was called
-            client.client.voices.get_all.assert_called_once()
-
-    @pytest.mark.unit
     def test_get_shared_voices(self, mock_requests):
         """Test getting shared voices from the API."""
         # Create client and call method
         client = ElevenLabsClient(api_key="test_key")
-        voices, has_more = client.get_shared_voices(gender="female", accent="american")
+        el_voices, has_more = client.get_shared_voices(
+            gender="female", accent="american"
+        )
 
         # Verify results
-        assert len(voices) == 1
-        assert voices[0]["voice_id"] == "test-voice-1"
+        assert len(el_voices) == 1
+        assert el_voices[0]["el_voice_id"] == "test-voice-1"
         assert not has_more
 
         # Verify API was called with correct parameters
@@ -155,12 +117,12 @@ class TestElevenLabsClient:
 
             # Set up our test data
             model_id = "test-model"
-            voice_id = "test-voice-1"
+            el_voice_id = "test-voice-1"
             text = "Hello world"
 
             # Test method that now returns mocked data
             result = client.text_to_speech(
-                text=text, voice_id=voice_id, model_id=model_id
+                text=text, el_voice_id=el_voice_id, model_id=model_id
             )
 
             # The result should be our mock audio data

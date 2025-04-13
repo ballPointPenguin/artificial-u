@@ -62,11 +62,7 @@ def mock_system():
 
         # Set up mock voice service
         mock_voice_service = MockVoiceService.return_value
-        mock_voice_service.select_voice_for_professor.return_value = {
-            "voice_id": "voice123",
-            "stability": 0.5,
-            "clarity": 0.8,
-        }
+        mock_voice_service.select_voice_for_professor.return_value = 1
 
         # Set up mock TTS service
         mock_tts_service = MockTTSService.return_value
@@ -82,12 +78,12 @@ def mock_system():
             id=123,
             name=p.name,
             title=p.title,
-            department=p.department,
+            department_id=p.department_id,
             specialization=p.specialization,
             background=p.background,
             teaching_style=p.teaching_style,
             personality=p.personality,
-            voice_settings=p.voice_settings,
+            voice_id=p.voice_id,
             gender=p.gender,
             accent=p.accent,
             description=p.description,
@@ -97,7 +93,7 @@ def mock_system():
             id=123,
             code=c.code,
             title=c.title,
-            department=c.department,
+            department_id=c.department_id,
             level=c.level,
             description=c.description,
             syllabus=c.syllabus,
@@ -109,12 +105,12 @@ def mock_system():
             id=123,
             name="Dr. Mock",
             title="Professor of Computer Science",
-            department="Computer Science",
+            department_id=1,
             specialization="Artificial Intelligence",
             background="Test background",
             teaching_style="Interactive",
             personality="Enthusiastic",
-            voice_settings={"voice_id": "voice123"},
+            voice_id=1,
             gender="Male",
             accent="British",
             description="A distinguished professor with a professorial appearance",
@@ -124,7 +120,7 @@ def mock_system():
             id=123,
             code="CS101",
             title="Introduction to Computer Science",
-            department="Computer Science",
+            department_id=1,
             level="Undergraduate",
             description="A basic course in CS",
             syllabus="Mock syllabus",

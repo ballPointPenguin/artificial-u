@@ -1,8 +1,8 @@
 """Initial migration
 
-Revision ID: 5aa908ae5d44
+Revision ID: 6a7f5b9b5515
 Revises: 
-Create Date: 2025-04-12 15:15:26.293377
+Create Date: 2025-04-12 19:16:57.413076
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = '5aa908ae5d44'
+revision = '6a7f5b9b5515'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -30,7 +30,7 @@ def upgrade() -> None:
     )
     op.create_table('voices',
     sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
-    sa.Column('voice_id', sa.String(), nullable=False),
+    sa.Column('el_voice_id', sa.String(), nullable=False),
     sa.Column('name', sa.String(), nullable=False),
     sa.Column('accent', sa.String(length=100), nullable=True),
     sa.Column('gender', sa.String(length=50), nullable=True),
@@ -46,7 +46,7 @@ def upgrade() -> None:
     sa.Column('popularity_score', sa.Integer(), nullable=True),
     sa.Column('last_updated', sa.DateTime(), nullable=False),
     sa.PrimaryKeyConstraint('id'),
-    sa.UniqueConstraint('voice_id')
+    sa.UniqueConstraint('el_voice_id')
     )
     op.create_index('idx_voices_language', 'voices', ['language'], unique=False)
     op.create_table('professors',
@@ -63,7 +63,6 @@ def upgrade() -> None:
     sa.Column('description', sa.Text(), nullable=True),
     sa.Column('age', sa.Integer(), nullable=True),
     sa.Column('voice_id', sa.Integer(), nullable=True),
-    sa.Column('voice_settings', sa.Text(), nullable=True),
     sa.Column('image_path', sa.String(), nullable=True),
     sa.ForeignKeyConstraint(['department_id'], ['departments.id'], ),
     sa.ForeignKeyConstraint(['voice_id'], ['voices.id'], ),

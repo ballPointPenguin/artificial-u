@@ -25,7 +25,7 @@ def mock_repository(monkeypatch):
             id=i,
             name=f"Dr. Test Professor {i}",
             title=f"Professor of Test {i}",
-            department="Test Department",
+            department_id=1,
             specialization=f"Test Specialization {i}",
             background="Test background",
             personality="Test personality",
@@ -34,7 +34,7 @@ def mock_repository(monkeypatch):
             accent="Standard",
             description=f"Description for professor {i}",
             age=45 + i,
-            voice_settings={"voice_id": f"test_voice_{i}", "stability": 0.5},
+            voice_id=1,
             image_path=f"/path/to/image{i}.jpg",
         )
         for i in range(1, 4)
@@ -146,7 +146,7 @@ def test_create_professor(client, mock_repository):
     new_professor = {
         "name": "Dr. New Professor",
         "title": "Professor of New",
-        "department": "New Department",
+        "department_id": 1,
         "specialization": "New Specialization",
         "background": "New background",
         "personality": "New personality",
@@ -155,7 +155,7 @@ def test_create_professor(client, mock_repository):
         "accent": "British",
         "description": "A brilliant new professor",
         "age": 42,
-        "voice_settings": {"voice_id": "new_voice", "stability": 0.7},
+        "voice_id": 1,
         "image_path": "/path/to/new_image.jpg",
     }
     response = client.post("/api/v1/professors", json=new_professor)
@@ -171,7 +171,7 @@ def test_update_professor(client, mock_repository):
     updated_data = {
         "name": "Dr. Updated Professor",
         "title": "Professor of Updated",
-        "department": "Updated Department",
+        "department_id": 2,
         "specialization": "Updated Specialization",
         "background": "Updated background",
         "personality": "Updated personality",
@@ -180,7 +180,7 @@ def test_update_professor(client, mock_repository):
         "accent": "Australian",
         "description": "An updated professor profile",
         "age": 50,
-        "voice_settings": {"voice_id": "updated_voice", "stability": 0.8},
+        "voice_id": 2,
         "image_path": "/path/to/updated_image.jpg",
     }
     # Test with valid ID

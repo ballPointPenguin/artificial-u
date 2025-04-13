@@ -1,76 +1,151 @@
 #!/usr/bin/env python3
 """
-Script to create the test database for running integration tests.
+Script to create and set up the test database for running integration tests.
+Applies Alembic migrations to ensure the database schema is up to date.
 """
 
 import os
 import sys
+import logging
 import subprocess
 from pathlib import Path
+from dotenv import load_dotenv
+import sqlalchemy
+from sqlalchemy import text
 
-# Add the project root to Python path
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
+)
+logger = logging.getLogger(__name__)
+
+# Get the project root directory
 project_root = Path(__file__).parent.parent
-sys.path.insert(0, str(project_root))
 
-# Set up test environment
+# Force test environment
 os.environ["TESTING"] = "true"
 os.environ["ENV_FILE"] = str(project_root / ".env.test")
+
+# Load test environment variables first
+load_dotenv(str(project_root / ".env.test"), override=True)
+
+# Add the project root to Python path
+sys.path.insert(0, str(project_root))
 
 # Import settings (will automatically load .env.test)
 from artificial_u.config.settings import get_settings
 
 
+def get_database_name(db_url):
+    """Extract database name from connection URL."""
+    if "postgresql://" in db_url:
+        return db_url.split("/")[-1]
+    return None
+
+
 def setup_test_database():
-    """Create and set up the test database."""
+    """Create and set up the test database with Alembic migrations."""
     # Get settings for the test environment
     settings = get_settings()
-    print(f"Environment: {settings.environment}")
+    logger.info(f"Environment: {settings.environment}")
 
     # Get database URL from settings
     db_url = settings.DATABASE_URL
-    print(f"Using database URL: {db_url}")
+    logger.info(f"Using database URL: {db_url}")
 
     if not db_url:
-        print("Error: DATABASE_URL not found in test settings")
+        logger.error("DATABASE_URL not found in test settings")
         return False
 
-    # Extract database name and connection details from URL
-    db_parts = db_url.split("/")
-    db_name = db_parts[-1]
+    # Verify this is a test database
+    db_name = get_database_name(db_url)
+    if not db_name or "test" not in db_name.lower():
+        logger.error(
+            f"Database name '{db_name}' does not contain 'test'. This script should only be used with test databases."
+        )
+        logger.error(
+            "Please check your .env.test file and ensure DATABASE_URL points to a test database."
+        )
+        return False
 
-    # Parse connection details for PostgreSQL
-    connection_info = db_url.split("//")[1].split("@")[0]
-    user_password = connection_info.split(":")
-    db_user = user_password[0]
-    db_password = user_password[1]
+    # Drop and recreate database
+    if not drop_database(db_url):
+        return False
 
-    # Set PostgreSQL password environment variable to avoid prompt
-    os.environ["PGPASSWORD"] = db_password
+    # Apply migrations
+    if not apply_migrations():
+        return False
 
-    connection_string = (
-        "/".join(db_parts[:-1]) + "/postgres"
-    )  # Connect to postgres database for admin operations
+    logger.info("Test database setup completed successfully!")
+    return True
 
-    print(f"Setting up test database: {db_name}")
-    print(f"Using connection string: {connection_string}")
+
+def drop_database(db_url):
+    """Drop the database if it exists and create a new one."""
+    db_name = get_database_name(db_url)
+    if not db_name:
+        logger.error(f"Invalid database URL format: {db_url}")
+        return False
+
+    # Create a connection URL to postgres database
+    postgres_url = db_url.rsplit("/", 1)[0] + "/postgres"
 
     try:
-        # Drop the database if it exists
-        drop_cmd = f"dropdb --if-exists -h {db_url.split('@')[1].split('/')[0]} -U {db_user} {db_name}"
-        print(f"Dropping existing database: {drop_cmd}")
-        subprocess.run(drop_cmd, shell=True, check=True)
+        # Connect to postgres database
+        engine = sqlalchemy.create_engine(postgres_url)
+        with engine.connect() as conn:
+            # Don't automatically commit transactions
+            conn.execution_options(isolation_level="AUTOCOMMIT")
 
-        # Create the database
-        create_cmd = (
-            f"createdb -h {db_url.split('@')[1].split('/')[0]} -U {db_user} {db_name}"
+            # Check if database exists
+            result = conn.execute(
+                text(f"SELECT 1 FROM pg_database WHERE datname = '{db_name}'")
+            )
+            exists = result.scalar() == 1
+
+            if exists:
+                logger.info(f"Dropping database {db_name}")
+                # Make sure there are no active connections
+                conn.execute(
+                    text(
+                        f"SELECT pg_terminate_backend(pg_stat_activity.pid) "
+                        f"FROM pg_stat_activity WHERE pg_stat_activity.datname = '{db_name}' "
+                        f"AND pid <> pg_backend_pid()"
+                    )
+                )
+                conn.execute(text(f"DROP DATABASE {db_name}"))
+                logger.info(f"Database {db_name} dropped successfully")
+            else:
+                logger.info(f"Database {db_name} does not exist, nothing to drop")
+
+            # Create the database
+            logger.info(f"Creating database {db_name}")
+            conn.execute(text(f"CREATE DATABASE {db_name}"))
+            logger.info(f"Database {db_name} created successfully")
+
+        return True
+    except Exception as e:
+        logger.error(f"Error recreating database: {str(e)}")
+        return False
+
+
+def apply_migrations():
+    """Apply Alembic migrations to the test database."""
+    try:
+        logger.info("Applying Alembic migrations")
+        result = subprocess.run(
+            ["alembic", "upgrade", "head"],
+            check=True,
+            capture_output=True,
+            text=True,
         )
-        print(f"Creating database: {create_cmd}")
-        subprocess.run(create_cmd, shell=True, check=True)
-
-        print(f"Successfully created database '{db_name}'")
+        logger.info(f"Migrations applied successfully: {result.stdout}")
         return True
     except subprocess.CalledProcessError as e:
-        print(f"Error creating test database: {e}")
+        logger.error(f"Error applying migrations: {e.stderr}")
+        return False
+    except Exception as e:
+        logger.error(f"Unexpected error applying migrations: {str(e)}")
         return False
 
 

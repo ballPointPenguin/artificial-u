@@ -81,43 +81,21 @@ class ElevenLabsClient:
             "Accept": "application/json",
         }
 
-    def get_voices(self) -> List[Dict[str, Any]]:
-        """
-        Get available voices from the ElevenLabs API.
-
-        Returns:
-            List of voice information dictionaries
-        """
-        try:
-            response = self.client.voices.get_all()
-            return [
-                {
-                    "voice_id": voice.voice_id,
-                    "name": voice.name,
-                    "category": getattr(voice, "category", "premade"),
-                    "description": getattr(voice, "description", ""),
-                }
-                for voice in response.voices
-            ]
-        except Exception as e:
-            self.logger.error(f"Error retrieving voices: {e}")
-            return []
-
-    def get_voice(self, voice_id: str) -> Optional[Dict[str, Any]]:
+    def get_el_voice(self, el_voice_id: str) -> Optional[Dict[str, Any]]:
         """
         Get details of a specific voice.
 
         Args:
-            voice_id: ID of the voice to retrieve
+            el_voice_id: ElevenLabs Voice ID of the voice to retrieve
 
         Returns:
             Voice details or None if not found
         """
         try:
-            response = self.client.voices.get(voice_id=voice_id)
+            response = self.client.voices.get(voice_id=el_voice_id)
 
             voice_data = {
-                "voice_id": response.voice_id,
+                "el_voice_id": response.voice_id,
                 "name": response.name,
                 "category": getattr(response, "category", "premade"),
                 "gender": getattr(response, "labels", {}).get("gender", "neutral"),
@@ -129,7 +107,7 @@ class ElevenLabsClient:
 
             return voice_data
         except Exception as e:
-            self.logger.error(f"Error retrieving voice {voice_id}: {e}")
+            self.logger.error(f"Error retrieving ElevenLabs voice {el_voice_id}: {e}")
             return None
 
     def get_shared_voices(
@@ -185,35 +163,35 @@ class ElevenLabsClient:
                 # Response is a typed object, not a dictionary
                 # Extract the voices and has_more attributes
                 try:
-                    voices = response.voices
+                    el_voices = response.voices
                     has_more = getattr(response, "has_more", False)
 
                     # Format the voice data
                     formatted_voices = []
-                    for voice in voices:
+                    for el_voice in el_voices:
                         # Convert voice object to dictionary
-                        voice_dict = {
-                            "voice_id": voice.voice_id,
-                            "name": voice.name,
-                            "gender": getattr(voice, "gender", None),
-                            "accent": getattr(voice, "accent", None),
-                            "age": getattr(voice, "age", None),
-                            "descriptive": getattr(voice, "descriptive", None),
-                            "use_case": getattr(voice, "use_case", None),
-                            "category": getattr(voice, "category", None),
-                            "language": getattr(voice, "language", None),
-                            "locale": getattr(voice, "locale", None),
-                            "description": getattr(voice, "description", ""),
-                            "preview_url": getattr(voice, "preview_url", ""),
+                        el_voice_dict = {
+                            "el_voice_id": el_voice.voice_id,
+                            "name": el_voice.name,
+                            "gender": getattr(el_voice, "gender", None),
+                            "accent": getattr(el_voice, "accent", None),
+                            "age": getattr(el_voice, "age", None),
+                            "descriptive": getattr(el_voice, "descriptive", None),
+                            "use_case": getattr(el_voice, "use_case", None),
+                            "category": getattr(el_voice, "category", None),
+                            "language": getattr(el_voice, "language", None),
+                            "locale": getattr(el_voice, "locale", None),
+                            "description": getattr(el_voice, "description", ""),
+                            "preview_url": getattr(el_voice, "preview_url", ""),
                             "verified_languages": getattr(
-                                voice, "verified_languages", []
+                                el_voice, "verified_languages", []
                             ),
-                            "cloned_by_count": getattr(voice, "cloned_by_count", 0),
+                            "cloned_by_count": getattr(el_voice, "cloned_by_count", 0),
                             "usage_character_count_1y": getattr(
-                                voice, "usage_character_count_1y", 0
+                                el_voice, "usage_character_count_1y", 0
                             ),
                         }
-                        formatted_voices.append(voice_dict)
+                        formatted_voices.append(el_voice_dict)
 
                     return formatted_voices, has_more
                 except Exception as e:
@@ -306,7 +284,7 @@ class ElevenLabsClient:
         quality_score = min(1.0, quality_score)
 
         return {
-            "voice_id": voice_data.get("voice_id", ""),
+            "el_voice_id": voice_data.get("voice_id", ""),
             "name": voice_data.get("name", "Unknown"),
             "gender": voice_data.get("gender", "neutral"),
             "accent": voice_data.get("accent", "american"),
@@ -352,7 +330,7 @@ class ElevenLabsClient:
     def text_to_speech(
         self,
         text: str,
-        voice_id: str,
+        el_voice_id: str,
         model_id: Optional[str] = None,
         voice_settings: Optional[Dict[str, float]] = None,
     ) -> bytes:
@@ -361,7 +339,7 @@ class ElevenLabsClient:
 
         Args:
             text: Text to convert to speech
-            voice_id: Voice ID to use
+            el_voice_id: ElevenLabs Voice ID to use
             model_id: Model ID to use (defaults to eleven_flash_v2_5)
             voice_settings: Voice settings (stability, clarity, etc.)
 
@@ -385,7 +363,7 @@ class ElevenLabsClient:
                 # Get audio stream from the API
                 audio_stream = self.client.text_to_speech.convert(
                     text=text,
-                    voice_id=voice_id,
+                    voice_id=el_voice_id,
                     model_id=model_id,
                     voice_settings=voice_settings,
                 )

@@ -1,7 +1,6 @@
-import { For, Show, createResource } from 'solid-js'
+import { Show } from 'solid-js'
 import type { Component } from 'solid-js'
-import { getDepartments } from '../../api/services/department-service'
-import type { Department, DepartmentsList, Professor } from '../../api/types'
+import type { Professor } from '../../api/types'
 import { Button } from '../ui/Button'
 
 // Form data interface matching the API model
@@ -13,12 +12,8 @@ export interface ProfessorFormData {
   gender: string
   accent: string
   age: number | null
-  voice_settings: {
-    voice_id: string
-    stability: number
-    clarity: number
-  }
-  department?: string
+  voice_id?: number
+  department_id?: string
   specialization?: string
   background?: string
   personality?: string
@@ -35,8 +30,6 @@ interface ProfessorFormProps {
 }
 
 const ProfessorForm: Component<ProfessorFormProps> = (props) => {
-  const [departments] = createResource<DepartmentsList>(() => getDepartments())
-
   const handleSubmit = (e: SubmitEvent) => {
     e.preventDefault()
     const form = e.currentTarget as HTMLFormElement
@@ -50,12 +43,6 @@ const ProfessorForm: Component<ProfessorFormProps> = (props) => {
       gender: formData.get('gender') as string,
       accent: formData.get('accent') as string,
       age: Number.parseInt(formData.get('age') as string) || null,
-      voice_settings: {
-        voice_id: formData.get('voice_id') as string,
-        stability: Number.parseFloat(formData.get('stability') as string) || 0,
-        clarity: Number.parseFloat(formData.get('clarity') as string) || 0,
-      },
-      department: (formData.get('department') as string) || undefined,
       specialization: (formData.get('specialization') as string) || undefined,
       background: (formData.get('background') as string) || undefined,
       personality: (formData.get('personality') as string) || undefined,
@@ -87,30 +74,6 @@ const ProfessorForm: Component<ProfessorFormProps> = (props) => {
           value={props.professor?.name || ''}
           class="arcane-input"
         />
-      </div>
-
-      <div>
-        <label
-          for="department"
-          class="block text-sm font-medium mb-1 text-parchment-300"
-        >
-          Department
-        </label>
-        <select id="department" name="department" class="arcane-input">
-          <option value="">Select a department</option>
-          <Show when={!departments.loading && !departments.error}>
-            <For each={departments()?.items || []}>
-              {(dept: Department) => (
-                <option
-                  value={dept.name}
-                  selected={props.professor?.department === dept.name}
-                >
-                  {dept.name}
-                </option>
-              )}
-            </For>
-          </Show>
-        </select>
       </div>
 
       <div>
@@ -255,47 +218,6 @@ const ProfessorForm: Component<ProfessorFormProps> = (props) => {
           value={props.professor?.age || ''}
           class="arcane-input"
         />
-      </div>
-
-      <div>
-        <label
-          for="voice_settings"
-          class="block text-sm font-medium mb-1 text-parchment-300"
-        >
-          Voice Settings
-        </label>
-        <div class="space-y-2">
-          <input
-            id="voice_id"
-            name="voice_id"
-            type="text"
-            placeholder="Voice ID"
-            value={props.professor?.voice_settings?.voice_id || ''}
-            class="arcane-input"
-          />
-          <input
-            id="stability"
-            name="stability"
-            type="number"
-            step="0.1"
-            min="0"
-            max="1"
-            placeholder="Stability (0-1)"
-            value={props.professor?.voice_settings?.stability || ''}
-            class="arcane-input"
-          />
-          <input
-            id="clarity"
-            name="clarity"
-            type="number"
-            step="0.1"
-            min="0"
-            max="1"
-            placeholder="Clarity (0-1)"
-            value={props.professor?.voice_settings?.clarity || ''}
-            class="arcane-input"
-          />
-        </div>
       </div>
 
       <Show when={props.error}>

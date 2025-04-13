@@ -11,7 +11,7 @@ cd /path/to/artificial-u
 python -m pytest -m unit
 ```
 
-This will run only tests marked with `@pytest.mark.unit` and will skip collecting tests from the `manual` directory to avoid import errors.
+This will run only tests marked with `@pytest.mark.unit`.
 
 ## Testing Philosophy
 
@@ -31,15 +31,13 @@ Unit tests use dummy API keys from `.env.test`:
 
 - **Unit Tests**: Located in `tests/unit/`, these don't need real API keys or database connections
 - **Integration Tests**: Located in parent directories, these test interactions between components
-- **Manual Tests**: Located in `tests/manual/`, these are for real API testing and require valid API keys
 
 ## Test Collection Optimization
 
 When running with the `-m unit` flag, the test collector will:
 
-1. Skip collecting tests from the `manual` directory completely
-2. Avoid loading database connections when running unit tests
-3. Provide dummy implementations of certain classes to prevent import errors
+1. Avoid loading database connections when running unit tests
+2. Provide dummy implementations of certain classes to prevent import errors
 
 This approach keeps the testing concerns out of the production code while still allowing seamless test execution.
 

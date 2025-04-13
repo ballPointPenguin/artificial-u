@@ -21,7 +21,6 @@ class ProfessorBase(BaseModel):
     accent: Optional[str] = None
     description: Optional[str] = None
     age: Optional[int] = None
-    voice_settings: Dict[str, Any] = Field(default_factory=dict)
     image_path: Optional[str] = None
     voice_id: Optional[int] = None
 

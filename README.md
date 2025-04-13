@@ -155,7 +155,7 @@ For more details on any command, use the --help option:
 The project uses pytest for testing. Tests are organized into several categories:
 
 ```bash
-# Run all automated tests (excluding manual API tests)
+# Run all automated tests
 pytest
 
 # Run specific test categories
@@ -165,9 +165,6 @@ pytest -m e2e          # End-to-end tests only
 
 # Run with coverage report
 pytest --cov=artificial_u
-
-# Run manual API integration tests (requires API keys)
-ELEVENLABS_API_KEY=<your_api_key> pytest tests/manual/test_api_integration.py -v
 ```
 
 ### Setting Up the Test Database
@@ -184,12 +181,6 @@ python scripts/setup_test_db.py
 # Run integration tests
 pytest tests/integration -v
 ```
-
-For manual API tests, make sure to:
-
-1. Pass any required API keys as environment variables to pytest
-2. Never commit API keys to version control
-3. Run manual tests separately from automated test suite
 
 ## Project Structure
 

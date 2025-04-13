@@ -28,7 +28,7 @@ def test_department_creation():
 def test_voice_creation():
     """Test Voice model creation and validation."""
     voice = Voice(
-        voice_id="test_voice_123",
+        el_voice_id="test_voice_123",
         name="British Male Teacher",
         accent="british",
         gender="male",
@@ -42,7 +42,7 @@ def test_voice_creation():
         preview_url="https://example.com/preview.mp3",
     )
 
-    assert voice.voice_id == "test_voice_123"
+    assert voice.el_voice_id == "test_voice_123"
     assert voice.name == "British Male Teacher"
     assert voice.accent == "british"
     assert voice.gender == "male"
@@ -58,11 +58,11 @@ def test_voice_creation():
 def test_voice_minimal_creation():
     """Test Voice model creation with only required fields."""
     voice = Voice(
-        voice_id="minimal_voice_456",
+        el_voice_id="minimal_voice_456",
         name="Basic Voice",
     )
 
-    assert voice.voice_id == "minimal_voice_456"
+    assert voice.el_voice_id == "minimal_voice_456"
     assert voice.name == "Basic Voice"
     assert voice.accent is None
     assert voice.gender is None
@@ -80,17 +80,17 @@ def test_professor_creation():
     prof = Professor(
         name="Dr. Jane Smith",
         title="Associate Professor",
-        department="Computer Science",
+        department_id=1,
         specialization="Machine Learning",
         background="15 years of research experience in ML",
         personality="Enthusiastic and engaging",
         teaching_style="Interactive with hands-on examples",
+        voice_id=1,
     )
 
     assert prof.name == "Dr. Jane Smith"
-    assert prof.department == "Computer Science"
-    assert isinstance(prof.voice_settings, dict)
-    assert prof.voice_settings == {}  # Should be empty by default
+    assert prof.department_id == 1
+    assert prof.voice_id == 1
     assert prof.image_path is None
 
 
@@ -151,13 +151,13 @@ def test_invalid_voice():
     """Test Voice model validation with missing required fields."""
     with pytest.raises(ValueError):
         Voice(
-            # Missing required voice_id field
+            # Missing required el_voice_id field
             name="Invalid Voice",
         )
 
     with pytest.raises(ValueError):
         Voice(
-            voice_id="missing_name_voice",
+            el_voice_id="missing_name_voice",
             # Missing required name field
         )
 

@@ -118,15 +118,10 @@ class AudioProcessor:
 
         # Simple voice mapping for different professor types (used as fallback)
         self.voice_mapping = {
-            "stem": "21m00Tcm4TlvDq8ikWAM",  # Rachel
-            "humanities": "EXAVITQu4vr4xnSDxMaL",  # Bella
-            "business": "AZnzlk1XvdvUeBnXmlld",  # Adam
             "default": "21m00Tcm4TlvDq8ikWAM",  # Rachel as default
         }
 
-    def enhance_speech_markup(
-        self, text: str, professor: Optional[Professor] = None
-    ) -> str:
+    def enhance_speech_markup(self, text: str) -> str:
         """
         Enhance text with ElevenLabs-compatible speech markup for better pronunciation.
         Currently focused on minimal processing that preserves the original text structure.
@@ -160,116 +155,26 @@ class AudioProcessor:
 
         return enhanced_text
 
-    def get_voice_id_for_professor(self, professor: Professor) -> str:
+    def get_voice_for_professor(self, professor: Professor) -> str:
         """
-        Get an appropriate voice ID for a professor.
+        Get an appropriate ElevenLabs voice ID for a professor.
 
         Args:
             professor: Professor profile
 
         Returns:
-            str: Voice ID to use
+            str: ElevenLabs voice ID to use
         """
-        # If professor has voice settings with a voice ID, use that (manual override)
-        if professor.voice_settings and "voice_id" in professor.voice_settings:
-            return professor.voice_settings["voice_id"]
-
         try:
-            # Use the smart voice selection system
-            # Pass more detailed professor attributes to help with voice selection
-            voice_context = {
-                "gender": professor.gender,
-                "accent": professor.accent,
-                "age": professor.age,
-                "description": professor.description,
-            }
+            # Use the voice service to select a voice
+            voice_data = self.voice_manager.select_voice_for_professor(professor)
 
-            voice_data = self.voice_manager.get_voice_for_professor(
-                professor, additional_context=voice_context
-            )
-
+            # Extract and return just the el_voice_id
             return voice_data["voice_id"]
         except Exception as e:
-            self.logger.error(f"Error selecting voice using smart system: {e}")
-            self.logger.info("Falling back to simple mapping system")
-
-            # Extended voice mapping to include gender variants
-            extended_mapping = {
-                **self.voice_mapping,  # Include original mappings
-                "stem_female": "21m00Tcm4TlvDq8ikWAM",  # Rachel
-                "stem_male": "AZnzlk1XvdvUeBnXmlld",  # Adam
-                "humanities_female": "EXAVITQu4vr4xnSDxMaL",  # Bella
-                "humanities_male": "SOYHLrjzK2X1ezoPC6cr",  # Thomas
-                "business_female": "pFZP5JQG7L8NABrQBdQq",  # Nicole
-                "business_male": "AZnzlk1XvdvUeBnXmlld",  # Adam
-            }
-
-            # Derive department_type from professor's department and gender
-            department_category = self._get_department_category(professor.department)
-            gender = (
-                professor.gender.lower() if professor.gender else "male"
-            )  # Default to male if not specified
-            department_type = f"{department_category}_{gender}"
-
-            # Get voice ID from extended mapping, fallback to department type, then default
-            return extended_mapping.get(
-                department_type,
-                self.voice_mapping.get(
-                    department_type.split("_")[0], self.voice_mapping["default"]
-                ),
-            )
-
-    def _get_department_category(self, department: str) -> str:
-        """
-        Categorize department into broad categories for voice selection.
-
-        Args:
-            department: Department name
-
-        Returns:
-            str: Category (stem, humanities, business, or default)
-        """
-        department = department.lower()
-
-        # STEM departments
-        if any(
-            stem in department
-            for stem in [
-                "comput",
-                "math",
-                "physics",
-                "biolog",
-                "chem",
-                "engineer",
-                "statistic",
-            ]
-        ):
-            return "stem"
-
-        # Humanities departments
-        elif any(
-            hum in department
-            for hum in [
-                "histor",
-                "philosoph",
-                "english",
-                "art",
-                "language",
-                "literature",
-                "music",
-            ]
-        ):
-            return "humanities"
-
-        # Business departments
-        elif any(
-            bus in department
-            for bus in ["business", "econom", "financ", "account", "market"]
-        ):
-            return "business"
-
-        # Default case
-        return "default"
+            self.logger.error(f"Error selecting voice: {e}")
+            # Fall back to a default voice if all else fails
+            return self.voice_mapping.get("default", "21m00Tcm4TlvDq8ikWAM")
 
     def split_lecture_into_chunks(
         self, text: str, max_chunk_size: int = DEFAULT_CHUNK_SIZE
@@ -389,12 +294,12 @@ class AudioProcessor:
 
         return chunks
 
-    def validate_voice_and_model(self, voice_id: str, model_id: str) -> bool:
+    def validate_voice_and_model(self, el_voice_id: str, model_id: str) -> bool:
         """
-        Validates that the voice ID exists and is compatible with the specified model.
+        Validates that the ElevenLabs voice ID exists and is compatible with the specified model.
 
         Args:
-            voice_id: The voice ID to validate
+            el_voice_id: The ElevenLabs voice ID to validate
             model_id: The model ID to validate
 
         Returns:
@@ -403,20 +308,24 @@ class AudioProcessor:
         try:
             # Simplified validation that just checks if we can access voices
             # This avoids potential API response structure mismatches
-            voices = self.get_available_voices()
+            el_voices = self.get_available_voices()
 
-            if not voices:
+            if not el_voices:
                 self.logger.error("Could not retrieve available voices")
                 return False
 
-            voice_ids = [
-                voice.get("voice_id") for voice in voices if voice.get("voice_id")
+            el_voice_ids = [
+                el_voice.get("el_voice_id")
+                for el_voice in el_voices
+                if el_voice.get("el_voice_id")
             ]
-            voice_exists = voice_id in voice_ids
+            el_voice_exists = el_voice_id in el_voice_ids
 
-            if not voice_exists:
-                self.logger.error(f"Voice ID {voice_id} not found in available voices")
-                self.logger.info(f"Available voice IDs: {voice_ids[:5]}...")
+            if not el_voice_exists:
+                self.logger.error(
+                    f"ElevenLabs Voice ID {el_voice_id} not found in available voices"
+                )
+                self.logger.info(f"Available voice IDs: {el_voice_ids[:5]}...")
                 return False
 
             # For model validation, we'll just use a known model list
@@ -438,7 +347,9 @@ class AudioProcessor:
                 )
                 # We'll return True anyway since ElevenLabs may introduce new models
 
-            self.logger.info(f"Validated voice ID {voice_id} and model ID {model_id}")
+            self.logger.info(
+                f"Validated ElevenLabs voice ID {el_voice_id} and model ID {model_id}"
+            )
             return True
 
         except Exception as e:
@@ -525,25 +436,19 @@ class AudioProcessor:
                 raise AudioProcessorError("Failed to connect to ElevenLabs API")
 
             # Enhance text with minimal speech markup
-            processed_text = self.enhance_speech_markup(lecture.content, professor)
+            processed_text = self.enhance_speech_markup(lecture.content)
 
             # Get appropriate voice ID
-            voice_id = self.get_voice_id_for_professor(professor)
-            self.logger.info(f"Using voice_id: {voice_id}")
+            el_voice_id = self.get_voice_for_professor(professor)
+            self.logger.info(f"Using el_voice_id: {el_voice_id}")
 
             # Validate voice and model
-            if not self.validate_voice_and_model(voice_id, self.DEFAULT_MODEL):
+            if not self.validate_voice_and_model(el_voice_id, self.DEFAULT_MODEL):
                 self.logger.warning("Falling back to default voice")
-                voice_id = self.voice_mapping["default"]
+                el_voice_id = self.voice_mapping["default"]
 
             # Set up voice settings, starting with reasonable defaults
             voice_settings = {"stability": 0.5, "clarity": 0.8, "style": 0.0}
-
-            # Override with professor-specific settings if available
-            if professor.voice_settings and isinstance(professor.voice_settings, dict):
-                for key in voice_settings:
-                    if key in professor.voice_settings:
-                        voice_settings[key] = professor.voice_settings[key]
 
             # Use default chunk size - ElevenLabs can handle larger chunks
             # with the minimal processing we're now doing
@@ -583,7 +488,7 @@ class AudioProcessor:
                         # Get audio stream from the API
                         audio_stream = self.client.text_to_speech.convert(
                             text=chunk,
-                            voice_id=voice_id,
+                            el_voice_id=el_voice_id,
                             model_id=self.DEFAULT_MODEL,
                             voice_settings=voice_settings,
                         )
@@ -666,7 +571,7 @@ class AudioProcessor:
             response = self.client.voices.get_all()
             return [
                 {
-                    "voice_id": voice.voice_id,
+                    "el_voice_id": voice.voice_id,
                     "name": voice.name,
                     "category": getattr(voice, "category", "premade"),
                     "description": getattr(voice, "description", ""),
@@ -724,22 +629,22 @@ class AudioProcessor:
         Returns:
             Dict[str, Any]: Dictionary containing available voices and models
         """
-        result = {"voices": [], "models": [], "subscription": {}, "errors": []}
+        result = {"el_voices": [], "models": [], "subscription": {}, "errors": []}
 
-        # Get available voices
+        # Get available ElevenLabs voices
         try:
-            voices = self.client.voices.get_all()
-            result["voices"] = [
+            el_voices = self.client.voices.get_all()
+            result["el_voices"] = [
                 {
-                    "voice_id": voice.voice_id,
-                    "name": voice.name,
-                    "category": getattr(voice, "category", "unknown"),
+                    "el_voice_id": el_voice.voice_id,
+                    "name": el_voice.name,
+                    "category": getattr(el_voice, "category", "unknown"),
                 }
-                for voice in voices.voices
+                for el_voice in el_voices.voices
             ]
         except Exception as e:
-            self.logger.error(f"Error retrieving voices: {str(e)}")
-            result["errors"].append(f"Voice retrieval error: {str(e)}")
+            self.logger.error(f"Error retrieving ElevenLabs voices: {str(e)}")
+            result["errors"].append(f"ElevenLabs voice retrieval error: {str(e)}")
 
         # Get available models
         try:

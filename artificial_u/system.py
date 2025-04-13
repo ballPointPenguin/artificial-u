@@ -146,7 +146,8 @@ class UniversitySystem:
         self.professor_service = ProfessorService(
             repository=self.repository,
             content_generator=self.content_generator,
-            audio_processor=None,  # No longer used
+            voice_service=self.voice_service,
+            elevenlabs_api_key=config["elevenlabs_api_key"],
             logger=logging.getLogger("artificial_u.services.professor_service"),
         )
 

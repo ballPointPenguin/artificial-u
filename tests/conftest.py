@@ -28,14 +28,6 @@ def is_unit_test():
     return any(arg in sys.argv for arg in ["-m unit", "unit"])
 
 
-# Custom collection logic to skip manual tests when running unit tests
-def pytest_ignore_collect(path, config):
-    """Skip collecting tests from manual directory when running unit tests"""
-    if is_unit_test() and "manual" in str(path):
-        return True
-    return False
-
-
 # Only import these if we're not running unit tests or if we're in the unit directory
 # This prevents import errors from other modules when running unit tests
 if not is_unit_test() or "tests/unit" in os.getcwd():

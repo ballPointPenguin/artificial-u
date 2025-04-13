@@ -3,9 +3,6 @@ Integration tests for the database models and repository.
 """
 
 import os
-import tempfile
-from datetime import datetime
-from pathlib import Path
 import pytest
 from dotenv import load_dotenv
 from sqlalchemy import create_engine
@@ -43,15 +40,10 @@ def sample_professor():
     return Professor(
         name="Dr. Test Professor",
         title="Professor of Testing",
-        department="Computer Science",
         specialization="Software Testing",
         background="Extensive experience in test-driven development",
         personality="Detail-oriented and methodical",
         teaching_style="Interactive with frequent code examples",
-        voice_settings={
-            "stability": 0.5,
-            "clarity": 0.8,
-        },
     )
 
 
@@ -67,7 +59,6 @@ def sample_course(db_professor):
     return Course(
         code="TEST101",
         title="Introduction to Testing",
-        department="Computer Science",
         level="Undergraduate",
         credits=3,
         professor_id=db_professor.id,
@@ -147,7 +138,6 @@ def test_professor_crud(repository, sample_professor):
     retrieved_prof = repository.get_professor(created_prof.id)
     assert retrieved_prof is not None
     assert retrieved_prof.name == sample_professor.name
-    assert retrieved_prof.voice_settings == sample_professor.voice_settings
 
     # List
     professors = repository.list_professors()
@@ -166,7 +156,7 @@ def test_professor_crud(repository, sample_professor):
 
 @pytest.mark.integration
 @pytest.mark.requires_db
-def test_course_crud(repository, db_professor, sample_course):
+def test_course_crud(repository, sample_course):
     """Test CRUD operations for courses."""
     # Create course
     created_course = repository.create_course(sample_course)
@@ -186,11 +176,6 @@ def test_course_crud(repository, db_professor, sample_course):
     all_courses = repository.list_courses()
     assert len(all_courses) == 1
     assert all_courses[0].id == created_course.id
-
-    # List by department
-    dept_courses = repository.list_courses(department="Computer Science")
-    assert len(dept_courses) == 1
-    assert dept_courses[0].id == created_course.id
 
 
 @pytest.mark.integration

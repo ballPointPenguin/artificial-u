@@ -60,7 +60,7 @@ class TTSService:
     def convert_text_to_speech(
         self,
         text: str,
-        voice_id: str,
+        el_voice_id: str,
         model_id: Optional[str] = None,
         voice_settings: Optional[Dict[str, float]] = None,
         chunk_size: int = 4000,
@@ -70,7 +70,7 @@ class TTSService:
 
         Args:
             text: Text to convert
-            voice_id: Voice ID to use
+            el_voice_id: ElevenLabs Voice ID to use
             model_id: Optional model ID (defaults to eleven_flash_v2_5)
             voice_settings: Optional voice settings
             chunk_size: Maximum size of text chunks
@@ -111,7 +111,7 @@ class TTSService:
             try:
                 audio_data = self.client.text_to_speech(
                     text=chunk,
-                    voice_id=voice_id,
+                    el_voice_id=el_voice_id,
                     model_id=model_id,
                     voice_settings=voice_settings,
                 )
@@ -139,7 +139,7 @@ class TTSService:
         self,
         lecture: Lecture,
         professor: Professor,
-        voice_id: Optional[str] = None,
+        el_voice_id: Optional[str] = None,
         model_id: Optional[str] = None,
         save_to_file: bool = True,
     ) -> Tuple[str, bytes]:
@@ -149,7 +149,7 @@ class TTSService:
         Args:
             lecture: Lecture to generate audio for
             professor: Professor delivering the lecture
-            voice_id: Optional voice ID (defaults to professor's voice settings)
+            el_voice_id: Optional ElevenLabs Voice ID
             model_id: Optional model ID
             save_to_file: Whether to save audio to file
 
@@ -157,29 +157,24 @@ class TTSService:
             Tuple of (file path or empty string, audio data)
         """
         # Get voice ID from professor if not specified
-        if not voice_id:
-            if professor.voice_settings and "voice_id" in professor.voice_settings:
-                voice_id = professor.voice_settings["voice_id"]
+        if not el_voice_id:
+            if professor.voice_id:
+                # Look up the voice in the database
+                voice = self.repository.get_voice(professor.voice_id)
+                if voice:
+                    el_voice_id = voice.el_voice_id
+                else:
+                    raise ValueError("No voice ID specified or found for professor")
+                # TODO: Maybe use select_voice_for_professor here?
             else:
-                raise ValueError("No voice ID specified or found in professor settings")
-
-        # Get voice settings from professor if available
-        voice_settings = None
-        if professor.voice_settings:
-            settings = {}
-            for key in ["stability", "clarity", "style"]:
-                if key in professor.voice_settings:
-                    settings[key] = professor.voice_settings[key]
-            if settings:
-                voice_settings = settings
+                raise ValueError("No voice ID specified or found for professor")
 
         # Generate the audio
         try:
             audio_data = self.convert_text_to_speech(
                 text=lecture.content,
-                voice_id=voice_id,
+                el_voice_id=el_voice_id,
                 model_id=model_id,
-                voice_settings=voice_settings,
             )
         except Exception as e:
             raise AudioProcessingError(f"Failed to generate lecture audio: {e}")

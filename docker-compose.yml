@@ -24,11 +24,11 @@ services:
     volumes:
       - ollama_data:/root/.ollama
     environment:
-      - OLLAMA_NUM_THREADS=2
+      - OLLAMA_NUM_THREADS=4
       - OLLAMA_NUM_GPU=0 # Disable GPU
       - OLLAMA_MODEL_PATH=/root/.ollama/models
-    mem_limit: "1g"
-    cpus: 2.0
+    mem_limit: "6g"
+    cpus: 4.0
 
   minio:
     image: minio/minio:latest

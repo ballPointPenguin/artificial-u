@@ -34,7 +34,7 @@ class Voice(BaseModel):
     model_config = ConfigDict(
         json_schema_extra={
             "example": {
-                "voice_id": "MF4J4IDTRo0AxOO4dpFR",
+                "el_voice_id": "MF4J4IDTRo0AxOO4dpFR",
                 "name": "Devi - Clear Hindi pronunciation",
                 "accent": "standard",
                 "gender": "female",
@@ -62,7 +62,7 @@ class Voice(BaseModel):
     )
 
     id: Optional[int] = None
-    voice_id: str
+    el_voice_id: str
     name: str
     accent: Optional[str] = None
     gender: Optional[str] = None
@@ -96,11 +96,7 @@ class Professor(BaseModel):
                 "accent": "Russian",
                 "description": "He has a distinguished appearance with salt-and-pepper hair neatly combed to the side and a well-groomed thick mustache but no beard. He wears tortoiseshell glasses that rest on a prominent nose. His face shows the subtle lines of experience, particularly around his eyes when he smiles, which is infrequent but warm. He typically dresses in academic formal wear - often a tweed or navy blazer with elbow patches, pressed slacks, a crisp button-down shirt, and his signature accessory: an assortment of bow ties (today's is burgundy). He stands with perfect posture, shoulders back, at about 5'10\". When lecturing, he often holds a piece of chalk delicately between his long fingers, occasionally tapping it thoughtfully against his palm. His expression is serious and contemplative, with piercing blue-gray eyes that suggest both analytical precision and philosophical depth. The lecture hall behind him features a traditional chalkboard filled with neat, methodical writing. On his desk sits a vintage leather satchel containing meticulously organized lecture notes and several dog-eared technical papers marked with precise annotations.",
                 "age": 58,
-                "voice_settings": {
-                    "voice_id": "example_id",
-                    "stability": 0.5,
-                    "clarity": 0.8,
-                },
+                "voice_id": 1,
             }
         }
     )
@@ -117,7 +113,6 @@ class Professor(BaseModel):
     accent: Optional[str] = None
     description: Optional[str] = None
     age: Optional[int] = None
-    voice_settings: Dict[str, Any] = Field(default_factory=dict)
     image_path: Optional[str] = None
     voice_id: Optional[int] = None
 

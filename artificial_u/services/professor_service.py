@@ -3,7 +3,7 @@ Professor management service for ArtificialU.
 """
 
 import logging
-from typing import Optional, Dict, Any
+from typing import Optional
 
 from artificial_u.models.core import Professor
 from artificial_u.utils.random_generators import RandomGenerators
@@ -18,7 +18,6 @@ class ProfessorService:
         self,
         repository,
         content_generator,
-        audio_processor=None,  # Kept for backward compatibility
         voice_service=None,
         elevenlabs_api_key=None,
         logger=None,
@@ -44,9 +43,6 @@ class ProfessorService:
             self.voice_service = VoiceService(
                 api_key=elevenlabs_api_key, logger=self.logger
             )
-
-        # Keep reference to audio_processor for backward compatibility
-        self.audio_processor = audio_processor
 
     def create_professor(
         self,
@@ -210,54 +206,27 @@ class ProfessorService:
             professor: Professor object to assign voice to
         """
         try:
-            # Make sure professor has a voice_settings dict
-            if not professor.voice_settings:
-                professor.voice_settings = {}
-
             # If we already have a voice_id, don't override it
-            if professor.voice_settings.get("voice_id"):
+            if professor.voice_id:
                 self.logger.debug(
-                    f"Professor {professor.name} already has voice ID {professor.voice_settings['voice_id']}"
+                    f"Professor {professor.name} already has voice ID {professor.voice_id}"
                 )
                 return
 
-            # Try using the voice service first
+            # Use the voice service
             if self.voice_service:
-                # Gather additional context for voice selection
-                additional_context = {
-                    "gender": professor.gender,
-                    "accent": professor.accent,
-                    "age": professor.age,
-                    "description": professor.description,
-                }
+                # Select a voice and update professor record
+                voice_data = self.voice_service.select_voice_for_professor(professor)
 
-                # Get voice data
-                voice_data = self.voice_service.select_voice_for_professor(
-                    professor, additional_context=additional_context
-                )
-
-                # Store the voice ID
-                professor.voice_settings["voice_id"] = voice_data["voice_id"]
-
-                # Store other voice properties if available
-                for key in ["stability", "clarity", "style"]:
-                    if key in voice_data:
-                        professor.voice_settings[key] = voice_data[key]
-
-                self.logger.debug(
-                    f"Voice ID {voice_data['voice_id']} assigned to professor {professor.name}"
-                )
-
-            # Fall back to audio_processor for backward compatibility
-            elif self.audio_processor:
-                voice_id = self.audio_processor.get_voice_id_for_professor(professor)
-                professor.voice_settings["voice_id"] = voice_id
-                self.logger.debug(
-                    f"Voice ID {voice_id} assigned to professor {professor.name} using audio_processor"
-                )
+                # Update local professor object
+                if "db_voice_id" in voice_data:
+                    professor.voice_id = voice_data["db_voice_id"]
+                    self.logger.debug(
+                        f"Voice ID {voice_data['db_voice_id']} assigned to professor {professor.name}"
+                    )
             else:
                 self.logger.warning(
-                    f"No voice service or audio processor available to assign voice to professor {professor.name}"
+                    f"No voice service available to assign voice to professor {professor.name}"
                 )
 
         except Exception as e:
