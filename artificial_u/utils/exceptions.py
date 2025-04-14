@@ -49,3 +49,15 @@ class ConfigurationError(ArtificialUException):
     """Raised when there is a configuration error."""
 
     pass
+
+
+class DepartmentNotFoundError(ArtificialUException):
+    """Raised when a department cannot be found."""
+
+    pass
+
+
+class DependencyError(ArtificialUException):
+    """Raised when a dependency error occurs."""
+
+    pass

@@ -10,6 +10,7 @@ setup(
         "anthropic>=0.18.1",
         "click>=8.1.7",
         "elevenlabs>=0.2.24",
+        "google-genai>=1.10.0",
         "pydantic>=2.4.0",
         "python-dotenv>=1.0.0",
         "rich>=13.6.0",

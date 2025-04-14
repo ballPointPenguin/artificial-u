@@ -118,7 +118,7 @@ STORAGE_IMAGES_BUCKET = "artificial-u-images"
 
 For production environments, set these variables in your `.env` file:
 
-```
+```txt
 STORAGE_TYPE=s3
 STORAGE_ACCESS_KEY=your-aws-access-key
 STORAGE_SECRET_KEY=your-aws-secret-key

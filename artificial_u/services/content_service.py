@@ -1,6 +1,8 @@
 import logging
 from typing import Optional
 
+from google.genai import types
+
 from artificial_u.config import get_settings
 from artificial_u.integrations import (
     anthropic_client,
@@ -108,34 +110,32 @@ class ContentService:
                 return response.choices[0].message.content
 
             elif backend == "gemini":
-                # Construct content list, handle system prompt via config
-                contents = [prompt]  # Basic case, might need adjustment for multi-turn
-                # config = {} # Commented out unused variable
-                if system_prompt:
-                    # Assuming google.genai.types.GenerateContentConfig is available
-                    # Need to import types from google.genai
-                    # from google.genai import types
-                    # config['system_instruction'] = types.Content(parts=[types.Part(text=system_prompt)])
-                    # The actual structure might differ slightly, check SDK docs
-                    # For simplicity, logging it for now - requires google.genai.types import
-                    self.logger.warning(
-                        "Gemini system prompt handling needs google.genai.types import and correct structure."
-                    )
-                    # Placeholder: Direct system instruction might be in GenerateContentConfig
-                    # from google.genai import types
-                    # config = types.GenerationConfig(system_instruction=system_prompt)
-                    # This needs verification based on the exact SDK version/method used.
-                    # Let's assume system_instruction is part of GenerateContentConfig for now
-                    pass  # System prompt handling needs verification
+                # Create content with the prompt
+                contents = [types.Content(parts=[types.Part.from_text(prompt)])]
 
-                # Need to use the correct method, likely client.models.generate_content
+                # Configure generation parameters
+                generation_config = types.GenerationConfig(
+                    temperature=0.7,
+                    max_output_tokens=1024,
+                )
+
+                # Add system prompt if provided
+                if system_prompt:
+                    generation_config.system_instruction = system_prompt
+
+                # Generate content using the Gemini API
                 response = await gemini_client.aio.models.generate_content(
                     model=target_model,
                     contents=contents,
-                    # generation_config=config # Commented out usage of unused variable
+                    generation_config=generation_config,
                 )
-                # Need to handle potential lack of text or errors in response
-                return response.text
+
+                # Extract and return the generated text
+                if response.candidates and response.candidates[0].content:
+                    return response.candidates[0].content.parts[0].text
+                else:
+                    self.logger.warning("No content generated from Gemini model")
+                    return ""
 
             elif backend == "ollama":
                 messages = []
