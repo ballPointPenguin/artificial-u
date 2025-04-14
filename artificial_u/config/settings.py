@@ -116,6 +116,22 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
+    def __hash__(self) -> int:
+        """Make Settings hashable for use with lru_cache."""
+        # Use a simple stable string representation for hashing
+        # Include only the key parameters that should make a settings instance unique
+        return hash(f"{self.environment}:{self.DATABASE_URL}:{self.content_backend}")
+
+    def __eq__(self, other):
+        """Implement equality check required for hashable objects."""
+        if not isinstance(other, Settings):
+            return False
+        return (
+            self.environment == other.environment
+            and self.DATABASE_URL == other.DATABASE_URL
+            and self.content_backend == other.content_backend
+        )
+
     @field_validator("content_model")
     @classmethod
     def set_default_model(cls, v, info):
@@ -216,7 +232,6 @@ def get_settings() -> Settings:
         # For tests, prefer the test environment configuration
         if os.path.exists(".env.test"):
             env_file = ".env.test"
-            print(f"Loading test environment from {env_file}")
             # Load and set environment variables from .env.test
             with open(env_file, "r") as f:
                 for line in f:
@@ -230,7 +245,6 @@ def get_settings() -> Settings:
     explicit_env = os.environ.get("ENV_FILE")
     if explicit_env and os.path.exists(explicit_env):
         env_file = explicit_env
-        print(f"Using explicit environment file: {env_file}")
 
     # Create settings with the appropriate env file
     settings = Settings(_env_file=env_file)
@@ -243,3 +257,8 @@ def get_settings() -> Settings:
         settings.log_configuration()
 
     return settings
+
+
+def clear_settings_cache():
+    """Clear the settings cache for testing or debugging purposes."""
+    get_settings.cache_clear()

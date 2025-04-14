@@ -23,7 +23,6 @@ router = APIRouter(
     prefix="/professors",
     tags=["professors"],
     responses={404: {"description": "Not found"}},
-    dependencies=[Depends(get_professor_api_service)],
 )
 
 

@@ -2,13 +2,13 @@
 Department router for handling department-related API endpoints.
 """
 
-from typing import List, Optional
+from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
 from fastapi.responses import JSONResponse
 
 from artificial_u.api.dependencies import get_department_api_service
-from artificial_u.api.models.course import CourseDetail
+from artificial_u.api.models.courses import CoursesListResponse
 from artificial_u.api.models.departments import (
     DepartmentCoursesResponse,
     DepartmentCreate,
@@ -17,7 +17,7 @@ from artificial_u.api.models.departments import (
     DepartmentsListResponse,
     DepartmentUpdate,
 )
-from artificial_u.api.models.professor import ProfessorDetail
+from artificial_u.api.models.professors import ProfessorsListResponse
 from artificial_u.api.services.department_service import DepartmentApiService
 
 # Create the router with dependencies that will be applied to all routes
@@ -238,7 +238,7 @@ async def get_department_by_code(
     return department
 
 
-@router.get("/{department_id}/professors", response_model=List[ProfessorDetail])
+@router.get("/{department_id}/professors", response_model=ProfessorsListResponse)
 async def list_department_professors(
     department_id: int,
     department_service: DepartmentApiService = Depends(get_department_api_service),
@@ -262,7 +262,7 @@ async def list_department_professors(
     return professors
 
 
-@router.get("/{department_id}/courses", response_model=List[CourseDetail])
+@router.get("/{department_id}/courses", response_model=CoursesListResponse)
 async def list_department_courses(
     department_id: int,
     department_service: DepartmentApiService = Depends(get_department_api_service),

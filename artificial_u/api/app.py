@@ -14,6 +14,7 @@ from artificial_u.api.routers.index import router as index_router
 from artificial_u.api.routers.lectures import router as lectures_router
 from artificial_u.api.routers.professors import router as professors_router
 from artificial_u.api.utils.logging import setup_logging
+from artificial_u.config.settings import Environment
 
 
 def create_application() -> FastAPI:
@@ -34,6 +35,8 @@ def create_application() -> FastAPI:
         openapi_url="/api/openapi.json",
         # Add global dependencies that will be applied to all routes
         dependencies=[Depends(get_repository)],
+        # Use debug mode only in development environment
+        debug=settings.environment == Environment.DEVELOPMENT,
     )
 
     # Configure CORS

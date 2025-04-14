@@ -7,12 +7,11 @@ services are properly initialized and reused across requests.
 """
 
 import logging
-from functools import lru_cache
 from typing import Optional
 
 from fastapi import Depends
 
-from artificial_u.api.config import Settings, get_settings
+from artificial_u.api.config import get_settings
 from artificial_u.api.services.course_service import CourseApiService
 from artificial_u.api.services.department_service import DepartmentApiService
 from artificial_u.api.services.lecture_service import LectureApiService
@@ -28,79 +27,71 @@ from artificial_u.services.storage_service import StorageService
 from artificial_u.services.voice_service import VoiceService
 
 
-@lru_cache()
-def get_repository(settings: Settings = Depends(get_settings)) -> RepositoryFactory:
+def get_repository() -> RepositoryFactory:
     """
     Get a repository factory instance.
-
-    Args:
-        settings: Application settings
 
     Returns:
         RepositoryFactory instance
     """
+    settings = get_settings()
     return RepositoryFactory(db_url=settings.DATABASE_URL)
 
 
-@lru_cache()
-def get_content_service(
-    settings: Settings = Depends(get_settings),
-    repository: RepositoryFactory = Depends(get_repository),
-) -> ContentService:
+def get_content_service() -> ContentService:
     """
     Get a content service instance.
-
-    Args:
-        settings: Application settings
-        repository: Repository factory
 
     Returns:
         ContentService instance
     """
     return ContentService(
-        repository=repository,
-        api_key=settings.OPENAI_API_KEY,
         logger=logging.getLogger("artificial_u.services.content_service"),
     )
 
 
-@lru_cache()
+def get_storage_service() -> StorageService:
+    """
+    Get a storage service instance.
+
+    Returns:
+        StorageService instance
+    """
+    return StorageService(
+        logger=logging.getLogger("artificial_u.services.storage_service"),
+    )
+
+
 def get_image_service(
-    settings: Settings = Depends(get_settings),
-    repository: RepositoryFactory = Depends(get_repository),
+    storage_service: StorageService = Depends(get_storage_service),
 ) -> ImageService:
     """
     Get an image service instance.
 
     Args:
-        settings: Application settings
-        repository: Repository factory
+        storage_service: Storage service
 
     Returns:
         ImageService instance
     """
     return ImageService(
-        repository=repository,
-        api_key=settings.OPENAI_API_KEY,
-        logger=logging.getLogger("artificial_u.services.image_service"),
+        storage_service=storage_service,
     )
 
 
-@lru_cache()
 def get_voice_service(
-    settings: Settings = Depends(get_settings),
     repository: RepositoryFactory = Depends(get_repository),
 ) -> Optional[VoiceService]:
     """
     Get a voice service instance if configured.
 
     Args:
-        settings: Application settings
         repository: Repository factory
 
     Returns:
         VoiceService instance if configured, None otherwise
     """
+    settings = get_settings()
     if not settings.ELEVENLABS_API_KEY:
         return None
 
@@ -111,26 +102,6 @@ def get_voice_service(
     )
 
 
-@lru_cache()
-def get_storage_service(
-    settings: Settings = Depends(get_settings),
-) -> StorageService:
-    """
-    Get a storage service instance.
-
-    Args:
-        settings: Application settings
-
-    Returns:
-        StorageService instance
-    """
-    return StorageService(
-        storage_path=settings.STORAGE_PATH,
-        logger=logging.getLogger("artificial_u.services.storage_service"),
-    )
-
-
-@lru_cache()
 def get_professor_service(
     repository: RepositoryFactory = Depends(get_repository),
     content_service: ContentService = Depends(get_content_service),
@@ -158,7 +129,6 @@ def get_professor_service(
     )
 
 
-@lru_cache()
 def get_course_service(
     repository: RepositoryFactory = Depends(get_repository),
     professor_service: ProfessorService = Depends(get_professor_service),
@@ -180,7 +150,6 @@ def get_course_service(
     )
 
 
-@lru_cache()
 def get_department_service(
     repository: RepositoryFactory = Depends(get_repository),
     professor_service: ProfessorService = Depends(get_professor_service),
@@ -205,7 +174,6 @@ def get_department_service(
     )
 
 
-@lru_cache()
 def get_lecture_service(
     repository: RepositoryFactory = Depends(get_repository),
     professor_service: ProfessorService = Depends(get_professor_service),
@@ -236,7 +204,6 @@ def get_lecture_service(
     )
 
 
-@lru_cache()
 def get_professor_api_service(
     repository: RepositoryFactory = Depends(get_repository),
     content_service: ContentService = Depends(get_content_service),
@@ -260,10 +227,10 @@ def get_professor_api_service(
         content_service=content_service,
         image_service=image_service,
         voice_service=voice_service,
+        logger=logging.getLogger("artificial_u.api.services.professor_service"),
     )
 
 
-@lru_cache()
 def get_course_api_service(
     repository: RepositoryFactory = Depends(get_repository),
     professor_service: ProfessorService = Depends(get_professor_service),
@@ -281,10 +248,10 @@ def get_course_api_service(
     return CourseApiService(
         repository=repository,
         professor_service=professor_service,
+        logger=logging.getLogger("artificial_u.api.services.course_service"),
     )
 
 
-@lru_cache()
 def get_department_api_service(
     repository: RepositoryFactory = Depends(get_repository),
     professor_service: ProfessorService = Depends(get_professor_service),
@@ -305,10 +272,10 @@ def get_department_api_service(
         repository=repository,
         professor_service=professor_service,
         course_service=course_service,
+        logger=logging.getLogger("artificial_u.api.services.department_service"),
     )
 
 
-@lru_cache()
 def get_lecture_api_service(
     repository: RepositoryFactory = Depends(get_repository),
     professor_service: ProfessorService = Depends(get_professor_service),
@@ -335,4 +302,5 @@ def get_lecture_api_service(
         course_service=course_service,
         content_service=content_service,
         storage_service=storage_service,
+        logger=logging.getLogger("artificial_u.api.services.lecture_service"),
     )

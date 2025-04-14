@@ -2,7 +2,7 @@
 Course router for handling course-related API endpoints.
 """
 
-from typing import List, Optional
+from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
 from fastapi.responses import JSONResponse
@@ -17,8 +17,8 @@ from artificial_u.api.models.courses import (
     DepartmentBrief,
     ProfessorBrief,
 )
-from artificial_u.api.models.lecture import LectureDetail
-from artificial_u.api.models.professor import ProfessorDetail
+from artificial_u.api.models.lectures import LectureList
+from artificial_u.api.models.professors import ProfessorsListResponse
 from artificial_u.api.services.course_service import CourseApiService
 
 # Create the router with dependencies that will be applied to all routes
@@ -270,7 +270,7 @@ async def get_course_lectures(
     return response
 
 
-@router.get("/{course_id}/professors", response_model=List[ProfessorDetail])
+@router.get("/{course_id}/professors", response_model=ProfessorsListResponse)
 async def list_course_professors(
     course_id: int,
 ):
@@ -293,7 +293,7 @@ async def list_course_professors(
     return professors
 
 
-@router.get("/{course_id}/lectures", response_model=List[LectureDetail])
+@router.get("/{course_id}/lectures", response_model=LectureList)
 async def list_course_lectures(
     course_id: int,
 ):
