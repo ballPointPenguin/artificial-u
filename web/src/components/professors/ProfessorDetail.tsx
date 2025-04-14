@@ -2,6 +2,7 @@ import { useNavigate, useParams } from '@solidjs/router'
 import { Show, createResource, createSignal } from 'solid-js'
 import {
   deleteProfessor,
+  generateProfessorImage,
   getProfessor,
   updateProfessor,
 } from '../../api/services/professor-service'
@@ -17,6 +18,8 @@ export default function ProfessorDetail() {
   const [isDeleting, setIsDeleting] = createSignal(false)
   const [isSubmitting, setIsSubmitting] = createSignal(false)
   const [error, setError] = createSignal('')
+  const [isGeneratingImage, setIsGeneratingImage] = createSignal(false)
+  const [generationError, setGenerationError] = createSignal('')
 
   // Fetch the specific professor using createResource
   const [professorResource, { refetch }] = createResource(() => {
@@ -85,6 +88,28 @@ export default function ProfessorDetail() {
     }
   }
 
+  const handleGenerateImage = async () => {
+    setIsGeneratingImage(true)
+    setGenerationError('')
+    setError('')
+
+    try {
+      const id = Number.parseInt(params.id, 10)
+      if (Number.isNaN(id)) {
+        throw new Error('Invalid professor ID')
+      }
+
+      await generateProfessorImage(id)
+      void refetch()
+    } catch (error) {
+      setGenerationError(
+        error instanceof Error ? error.message : 'Failed to generate image'
+      )
+    } finally {
+      setIsGeneratingImage(false)
+    }
+  }
+
   return (
     <div class="arcane-card p-8">
       {/* Loading and error states */}
@@ -127,11 +152,20 @@ export default function ProfessorDetail() {
           >
             {/* Professor details display */}
             <div>
-              <div class="flex justify-between items-center mb-4">
+              <div class="flex justify-between items-center mb-6">
                 <h1 class="text-3xl font-display text-parchment-100 text-shadow-golden">
                   {professorResource()?.name}
                 </h1>
                 <div class="flex space-x-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => void handleGenerateImage()}
+                    disabled={isGeneratingImage()}
+                    class="text-cyan-300 hover:text-cyan-100"
+                  >
+                    {isGeneratingImage() ? 'Generating...' : 'Generate Image'}
+                  </Button>
                   <Button
                     variant="secondary"
                     size="sm"
@@ -149,6 +183,13 @@ export default function ProfessorDetail() {
                   </Button>
                 </div>
               </div>
+
+              {/* Display generation error if any */}
+              <Show when={generationError()}>
+                <div class="bg-red-900/20 border border-red-500 text-red-300 px-4 py-3 rounded mb-4">
+                  <p>Error generating image: {generationError()}</p>
+                </div>
+              </Show>
 
               <div class="space-y-3 text-parchment-200">
                 <p>
@@ -213,15 +254,24 @@ export default function ProfessorDetail() {
                 </Show>
 
                 {/* Display image if available */}
-                <Show when={professorResource()?.image_path}>
+                <Show when={professorResource()?.image_url}>
+                  <p class="font-semibold text-parchment-100 mt-4">
+                    Profile Image:
+                  </p>
                   <img
                     src={
-                      professorResource()?.image_path
-                        ? String(professorResource()?.image_path)
+                      professorResource()?.image_url
+                        ? String(professorResource()?.image_url)
                         : ''
                     }
                     alt={`Professor ${String(professorResource()?.name || '')}`}
-                    class="mt-4 max-w-full h-auto rounded-lg shadow-lg"
+                    class="mt-2 max-w-xs h-auto rounded-lg shadow-lg"
+                    onError={(e) => {
+                      console.error(
+                        'Image failed to load:',
+                        e.currentTarget.src
+                      )
+                    }}
                   />
                 </Show>
               </div>

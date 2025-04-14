@@ -27,7 +27,7 @@ class ProfessorRepository(BaseRepository):
                 accent=professor.accent,
                 description=professor.description,
                 age=professor.age,
-                image_path=professor.image_path,
+                image_url=professor.image_url,
                 voice_id=professor.voice_id,
             )
 
@@ -62,7 +62,7 @@ class ProfessorRepository(BaseRepository):
                 description=db_professor.description,
                 age=db_professor.age,
                 voice_id=db_professor.voice_id,
-                image_path=db_professor.image_path,
+                image_url=db_professor.image_url,
             )
 
     def list(self) -> List[Professor]:
@@ -85,7 +85,7 @@ class ProfessorRepository(BaseRepository):
                     description=p.description,
                     age=p.age,
                     voice_id=p.voice_id,
-                    image_path=p.image_path,
+                    image_url=p.image_url,
                 )
                 for p in db_professors
             ]
@@ -112,7 +112,7 @@ class ProfessorRepository(BaseRepository):
             db_professor.accent = professor.accent
             db_professor.description = professor.description
             db_professor.age = professor.age
-            db_professor.image_path = professor.image_path
+            db_professor.image_url = professor.image_url
             db_professor.voice_id = professor.voice_id
             session.commit()
             return professor
@@ -159,7 +159,7 @@ class ProfessorRepository(BaseRepository):
                 description=db_professor.description,
                 age=db_professor.age,
                 voice_id=db_professor.voice_id,
-                image_path=db_professor.image_path,
+                image_url=db_professor.image_url,
             )
 
     def delete(self, professor_id: int) -> bool:

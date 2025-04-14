@@ -115,7 +115,7 @@ class Professor(BaseModel):
     accent: Optional[str] = None
     description: Optional[str] = None
     age: Optional[int] = None
-    image_path: Optional[str] = None
+    image_url: Optional[str] = None
     voice_id: Optional[int] = None
 
 

@@ -164,6 +164,7 @@ url = storage.get_file_url(
 | `DATABASE_URL` | Database connection string | `postgresql://postgres:postgres@localhost:5432/artificial_u_dev` |
 | `ANTHROPIC_API_KEY` | API key for Anthropic | None |
 | `ELEVENLABS_API_KEY` | API key for ElevenLabs | None |
+| `GOOGLE_API_KEY` | API key for Google | None |
 | `OPENAI_API_KEY` | API key for OpenAI | None |
 | `TEMP_AUDIO_PATH` | Path for *temporary* audio file processing | `temp_audio` |
 | `LOG_LEVEL` | Logging level | `INFO` |

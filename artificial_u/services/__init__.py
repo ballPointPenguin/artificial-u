@@ -7,10 +7,11 @@ This module provides service-layer abstractions for core functionality.
 import logging
 import os
 import sys
-from typing import Optional
 
 from artificial_u.services.audio_service import AudioService
+from artificial_u.services.content_service import ContentService
 from artificial_u.services.course_service import CourseService
+from artificial_u.services.image_service import ImageService
 from artificial_u.services.lecture_service import LectureService
 from artificial_u.services.professor_service import ProfessorService
 from artificial_u.services.storage_service import StorageService
@@ -25,6 +26,8 @@ __all__ = [
     "VoiceService",
     "TTSService",
     "StorageService",
+    "ImageService",
+    "ContentService",
 ]
 
 logger = logging.getLogger(__name__)

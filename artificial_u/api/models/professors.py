@@ -11,18 +11,18 @@ from pydantic import BaseModel
 class ProfessorBase(BaseModel):
     """Base Professor model with common fields."""
 
-    name: str
-    title: str
+    name: Optional[str] = None
+    title: Optional[str] = None
     department_id: Optional[int] = None
-    specialization: str
-    background: str
-    personality: str
-    teaching_style: str
+    specialization: Optional[str] = None
+    background: Optional[str] = None
+    personality: Optional[str] = None
+    teaching_style: Optional[str] = None
     gender: Optional[str] = None
     accent: Optional[str] = None
     description: Optional[str] = None
     age: Optional[int] = None
-    image_path: Optional[str] = None
+    image_url: Optional[str] = None
     voice_id: Optional[int] = None
 
 

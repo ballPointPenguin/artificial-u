@@ -39,7 +39,7 @@ export interface Professor {
   accent: string | null
   description: string | null
   age: number | null
-  image_path: string | null
+  image_url: string | null
 }
 
 export type ProfessorsList = PaginatedResponse<Professor>

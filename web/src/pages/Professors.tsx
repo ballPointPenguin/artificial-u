@@ -42,7 +42,7 @@ export default function ProfessorsPage() {
         specialization: formData.specialization || '',
         background: formData.background || '',
         personality: formData.personality || '',
-        image_path: formData.image_path || '',
+        image_url: formData.image_url || '',
       }
 
       await createProfessor(newProfessor)

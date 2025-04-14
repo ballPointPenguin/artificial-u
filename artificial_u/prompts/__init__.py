@@ -11,3 +11,5 @@ from artificial_u.prompts.base import (
     extract_xml_sections,
     xml_tag,
 )
+
+from . import courses, images, lectures, professors

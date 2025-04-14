@@ -2,7 +2,6 @@
 Default configuration values for the ArtificialU system.
 """
 
-import os
 from typing import Dict, List
 
 # Database defaults

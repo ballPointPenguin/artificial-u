@@ -76,7 +76,7 @@ class ProfessorModel(Base):
     description = Column(Text, nullable=True)
     age = Column(Integer, nullable=True)
     voice_id = Column(Integer, ForeignKey("voices.id"), nullable=True)
-    image_path = Column(String, nullable=True)
+    image_url = Column(String, nullable=True)
 
     department = relationship("DepartmentModel", back_populates="professors")
     courses = relationship("CourseModel", back_populates="professor")

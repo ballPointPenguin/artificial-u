@@ -93,7 +93,7 @@ def test_professor_creation():
     assert prof.name == "Dr. Jane Smith"
     assert prof.department_id == 1
     assert prof.voice_id == 1
-    assert prof.image_path is None
+    assert prof.image_url is None
 
 
 @pytest.mark.unit

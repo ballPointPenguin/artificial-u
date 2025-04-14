@@ -10,15 +10,20 @@ import pytest
 @pytest.mark.unit
 def test_environment_variables_are_set():
     """Test that required API keys have test values in the test environment."""
+    # Verify Anthropic API key
+    assert (
+        os.environ.get("ANTHROPIC_API_KEY") == "test_anthropic_key"
+    ), "Anthropic API key not set to test value"
+
     # Verify ElevenLabs API key
     assert (
         os.environ.get("ELEVENLABS_API_KEY") == "test_elevenlabs_key"
     ), "ElevenLabs API key not set to test value"
 
-    # Verify Anthropic API key
+    # Verify Google API key
     assert (
-        os.environ.get("ANTHROPIC_API_KEY") == "test_anthropic_key"
-    ), "Anthropic API key not set to test value"
+        os.environ.get("GOOGLE_API_KEY") == "test_google_key"
+    ), "Google API key not set to test value"
 
     # Verify OpenAI API key
     assert (

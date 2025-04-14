@@ -1,5 +1,5 @@
-import { Show } from 'solid-js'
 import type { Component } from 'solid-js'
+import { Show } from 'solid-js'
 import type { Professor } from '../../api/types'
 import { Button } from '../ui/Button'
 
@@ -15,7 +15,7 @@ export interface ProfessorFormData {
   specialization?: string
   background?: string
   personality?: string
-  image_path?: string
+  image_url?: string
 }
 
 interface ProfessorFormProps {
@@ -44,7 +44,7 @@ const ProfessorForm: Component<ProfessorFormProps> = (props) => {
       specialization: (formData.get('specialization') as string) || undefined,
       background: (formData.get('background') as string) || undefined,
       personality: (formData.get('personality') as string) || undefined,
-      image_path: (formData.get('image_path') as string) || undefined,
+      image_url: (formData.get('image_url') as string) || undefined,
     }
 
     try {

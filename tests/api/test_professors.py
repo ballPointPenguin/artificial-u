@@ -26,7 +26,7 @@ sample_professors_base = [
         description=f"Description for professor {i}",
         age=45 + i,
         voice_id=1,
-        image_path=f"/path/to/image{i}.jpg",
+        image_url=f"/path/to/image{i}.jpg",
     )
     for i in range(1, 4)
 ]
@@ -217,7 +217,7 @@ def test_create_professor(client, mock_repository):
         "description": "A brilliant new professor",
         "age": 42,
         "voice_id": 1,
-        "image_path": "/path/to/new_image.jpg",
+        "image_url": "/path/to/new_image.jpg",
     }
     response = client.post("/api/v1/professors", json=new_professor)
     assert response.status_code == 201
@@ -242,7 +242,7 @@ def test_update_professor(client, mock_repository):
         "description": "An updated professor profile",
         "age": 50,
         "voice_id": 2,
-        "image_path": "/path/to/updated_image.jpg",
+        "image_url": "/path/to/updated_image.jpg",
     }
     # Test with valid ID
     response = client.put("/api/v1/professors/1", json=updated_data)

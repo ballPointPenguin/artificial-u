@@ -38,6 +38,8 @@ export const ENDPOINTS = {
     detail: (id: number) => `/v1/professors/${String(id)}`,
     courses: (id: number) => `/v1/professors/${String(id)}/courses`,
     lectures: (id: number) => `/v1/professors/${String(id)}/lectures`,
+    generateImage: (id: number) =>
+      `/v1/professors/${String(id)}/generate-image`,
   },
   departments: {
     list: '/v1/departments',

@@ -2,7 +2,6 @@
 Content generator for ArtificialU using either Anthropic Claude API or alternative models.
 """
 
-import json
 import logging
 import os
 import re

@@ -97,3 +97,13 @@ export async function deleteProfessor(
     ENDPOINTS.professors.detail(id)
   )
 }
+
+/**
+ * Triggers the generation of a profile image for the specified professor.
+ */
+export async function generateProfessorImage(id: number): Promise<Professor> {
+  return httpClient.post<Professor>(
+    ENDPOINTS.professors.generateImage(id),
+    {} // Empty body for this POST request
+  )
+}
