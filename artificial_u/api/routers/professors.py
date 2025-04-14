@@ -7,7 +7,7 @@ from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
 from fastapi.responses import JSONResponse
 
-from artificial_u.api.config import Settings, get_settings
+from artificial_u.api.dependencies import get_professor_api_service
 from artificial_u.api.models.professors import (
     ProfessorCoursesResponse,
     ProfessorCreate,
@@ -16,26 +16,15 @@ from artificial_u.api.models.professors import (
     ProfessorsListResponse,
     ProfessorUpdate,
 )
-from artificial_u.api.services.professor_service import ProfessorService
-from artificial_u.models.repositories import RepositoryFactory
+from artificial_u.api.services.professor_service import ProfessorApiService
 
+# Create the router with dependencies that will be applied to all routes
 router = APIRouter(
     prefix="/professors",
     tags=["professors"],
     responses={404: {"description": "Not found"}},
+    dependencies=[Depends(get_professor_api_service)],
 )
-
-
-def get_repository(settings: Settings = Depends(get_settings)) -> RepositoryFactory:
-    """Dependency for getting repository instance."""
-    return RepositoryFactory(db_url=settings.DATABASE_URL)
-
-
-def get_professor_service(
-    repository: RepositoryFactory = Depends(get_repository),
-) -> ProfessorService:
-    """Dependency for getting professor service."""
-    return ProfessorService(repository)
 
 
 @router.get(
@@ -52,7 +41,7 @@ async def list_professors(
     specialization: Optional[str] = Query(
         None, description="Filter by specialization (partial match)"
     ),
-    service: ProfessorService = Depends(get_professor_service),
+    service: ProfessorApiService = Depends(get_professor_api_service),
 ):
     """
     Get a paginated list of professors with filtering options.
@@ -81,7 +70,7 @@ async def list_professors(
 )
 async def get_professor(
     professor_id: int = Path(..., description="The ID of the professor to retrieve"),
-    service: ProfessorService = Depends(get_professor_service),
+    service: ProfessorApiService = Depends(get_professor_api_service),
 ):
     """
     Get detailed information about a specific professor.
@@ -106,7 +95,7 @@ async def get_professor(
 )
 async def create_professor(
     professor_data: ProfessorCreate,
-    service: ProfessorService = Depends(get_professor_service),
+    service: ProfessorApiService = Depends(get_professor_api_service),
 ):
     """
     Create a new professor.
@@ -127,7 +116,7 @@ async def create_professor(
 async def update_professor(
     professor_data: ProfessorUpdate,
     professor_id: int = Path(..., description="The ID of the professor to update"),
-    service: ProfessorService = Depends(get_professor_service),
+    service: ProfessorApiService = Depends(get_professor_api_service),
 ):
     """
     Update an existing professor.
@@ -157,7 +146,7 @@ async def update_professor(
 )
 async def delete_professor(
     professor_id: int = Path(..., description="The ID of the professor to delete"),
-    service: ProfessorService = Depends(get_professor_service),
+    service: ProfessorApiService = Depends(get_professor_api_service),
 ):
     """
     Delete a professor.
@@ -183,7 +172,7 @@ async def delete_professor(
 )
 async def get_professor_courses(
     professor_id: int = Path(..., description="The ID of the professor"),
-    service: ProfessorService = Depends(get_professor_service),
+    service: ProfessorApiService = Depends(get_professor_api_service),
 ):
     """
     Get courses taught by a specific professor.
@@ -209,7 +198,7 @@ async def get_professor_courses(
 )
 async def get_professor_lectures(
     professor_id: int = Path(..., description="The ID of the professor"),
-    service: ProfessorService = Depends(get_professor_service),
+    service: ProfessorApiService = Depends(get_professor_api_service),
 ):
     """
     Get lectures by a specific professor.
@@ -241,7 +230,7 @@ async def generate_professor_image(
     professor_id: int = Path(
         ..., description="The ID of the professor to generate an image for"
     ),
-    service: ProfessorService = Depends(get_professor_service),
+    service: ProfessorApiService = Depends(get_professor_api_service),
 ):
     """
     Generate a profile image for a specific professor.

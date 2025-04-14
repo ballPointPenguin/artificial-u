@@ -2,6 +2,7 @@
 Department service for handling business logic related to departments.
 """
 
+import logging
 from math import ceil
 from typing import Optional
 
@@ -17,16 +18,41 @@ from artificial_u.api.models.departments import (
     DepartmentUpdate,
     ProfessorBrief,
 )
-from artificial_u.models.core import Department
 from artificial_u.models.repositories import RepositoryFactory
+from artificial_u.services import CourseService as CoreCourseService
+from artificial_u.services.department_service import DepartmentService
+from artificial_u.services.professor_service import ProfessorService
 
 
-class DepartmentService:
+class DepartmentApiService:
     """Service for department-related operations."""
 
-    def __init__(self, repository: RepositoryFactory):
-        """Initialize with database repository."""
+    def __init__(
+        self,
+        repository: RepositoryFactory,
+        professor_service: ProfessorService,
+        course_service: CoreCourseService,
+        logger=None,
+    ):
+        """
+        Initialize with required services.
+
+        Args:
+            repository: Database repository factory
+            professor_service: Professor service for professor-related operations
+            course_service: Course service for course-related operations
+            logger: Optional logger instance
+        """
         self.repository = repository
+        self.logger = logger or logging.getLogger(__name__)
+
+        # Initialize core service with dependencies
+        self.core_service = DepartmentService(
+            repository=repository,
+            professor_service=professor_service.core_service,
+            course_service=course_service.core_service,
+            logger=self.logger,
+        )
 
     def get_departments(
         self,
@@ -47,12 +73,10 @@ class DepartmentService:
         Returns:
             DepartmentsListResponse with paginated departments
         """
-        # Get all departments
-        departments = self.repository.department.list()
+        # Get all departments from core service
+        departments = self.core_service.list_departments(faculty)
 
-        # Apply filters if provided
-        if faculty:
-            departments = [d for d in departments if d.faculty == faculty]
+        # Apply name filter if provided
         if name:
             departments = [d for d in departments if name.lower() in d.name.lower()]
 
@@ -91,10 +115,11 @@ class DepartmentService:
         Returns:
             DepartmentResponse or None if not found
         """
-        department = self.repository.department.get(department_id)
-        if not department:
+        try:
+            department = self.core_service.get_department(department_id)
+            return DepartmentResponse.model_validate(department.model_dump())
+        except Exception:
             return None
-        return DepartmentResponse.model_validate(department.model_dump())
 
     def get_department_by_code(self, code: str) -> Optional[DepartmentResponse]:
         """
@@ -106,10 +131,11 @@ class DepartmentService:
         Returns:
             DepartmentResponse or None if not found
         """
-        department = self.repository.department.get_by_code(code)
-        if not department:
+        try:
+            department = self.core_service.get_department_by_code(code)
+            return DepartmentResponse.model_validate(department.model_dump())
+        except Exception:
             return None
-        return DepartmentResponse.model_validate(department.model_dump())
 
     def create_department(
         self, department_data: DepartmentCreate
@@ -123,14 +149,16 @@ class DepartmentService:
         Returns:
             Created department with ID
         """
-        # Convert to core model
-        department = Department(**department_data.model_dump())
+        # Create department using core service
+        department = self.core_service.create_department(
+            name=department_data.name,
+            code=department_data.code,
+            faculty=department_data.faculty,
+            description=department_data.description,
+        )
 
-        # Save to database
-        created_department = self.repository.department.create(department)
-
-        # Convert back to response model
-        return DepartmentResponse.model_validate(created_department.model_dump())
+        # Convert to response model
+        return DepartmentResponse.model_validate(department.model_dump())
 
     def update_department(
         self, department_id: int, department_data: DepartmentUpdate
@@ -145,21 +173,15 @@ class DepartmentService:
         Returns:
             Updated department or None if not found
         """
-        # Check if department exists
-        existing_department = self.repository.department.get(department_id)
-        if not existing_department:
+        try:
+            # Update department using core service
+            department = self.core_service.update_department(
+                department_id=department_id,
+                update_data=department_data.model_dump(exclude_unset=True),
+            )
+            return DepartmentResponse.model_validate(department.model_dump())
+        except Exception:
             return None
-
-        # Update fields
-        department_dict = department_data.model_dump()
-        for key, value in department_dict.items():
-            setattr(existing_department, key, value)
-
-        # Save changes
-        updated_department = self.repository.department.update(existing_department)
-
-        # Convert to response model
-        return DepartmentResponse.model_validate(updated_department.model_dump())
 
     def delete_department(self, department_id: int) -> bool:
         """
@@ -174,30 +196,15 @@ class DepartmentService:
         Raises:
             HTTPException 409 Conflict if dependencies exist.
         """
-        # Check if department exists
-        department = self.repository.department.get(department_id)
-        if not department:
-            return False  # Signal not found, router will raise 404
-
-        # Check for dependent professors
-        professors = self.repository.professor.list(department_id=department_id)
-        if professors:
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail="Cannot delete department with associated professors.",
-            )
-
-        # Check for dependent courses
-        courses = self.repository.course.list(department_id=department_id)
-        if courses:
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail="Cannot delete department with associated courses.",
-            )
-
-        # If no dependencies, proceed with deletion
-        deleted = self.repository.department.delete(department_id)
-        return deleted  # Should return True if successful
+        try:
+            return self.core_service.delete_department(department_id)
+        except Exception as e:
+            if "dependencies" in str(e).lower():
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail=str(e),
+                )
+            return False
 
     def get_department_professors(
         self, department_id: int
@@ -211,35 +218,28 @@ class DepartmentService:
         Returns:
             DepartmentProfessorsResponse or None if department not found
         """
-        # First check if department exists
-        department = self.repository.department.get(department_id)
-        if not department:
-            return None
+        try:
+            # Get professors using core service
+            professors = self.core_service.get_department_professors(department_id)
 
-        # Get all professors
-        all_professors = self.repository.professor.list()
+            # Convert to brief format
+            professor_briefs = [
+                ProfessorBrief(
+                    id=p.id,
+                    name=p.name,
+                    title=p.title,
+                    specialization=p.specialization,
+                )
+                for p in professors
+            ]
 
-        # Filter professors by department_id
-        department_professors = [
-            p for p in all_professors if p.department_id == department_id
-        ]
-
-        # Convert to brief format
-        professor_briefs = [
-            ProfessorBrief(
-                id=p.id,
-                name=p.name,
-                title=p.title,
-                specialization=p.specialization,
+            return DepartmentProfessorsResponse(
+                department_id=department_id,
+                professors=professor_briefs,
+                total=len(professor_briefs),
             )
-            for p in department_professors
-        ]
-
-        return DepartmentProfessorsResponse(
-            department_id=department_id,
-            professors=professor_briefs,
-            total=len(professor_briefs),
-        )
+        except Exception:
+            return None
 
     def get_department_courses(
         self, department_id: int
@@ -253,34 +253,27 @@ class DepartmentService:
         Returns:
             DepartmentCoursesResponse or None if department not found
         """
-        # First check if department exists
-        department = self.repository.department.get(department_id)
-        if not department:
-            return None
+        try:
+            # Get courses using core service
+            courses = self.core_service.get_department_courses(department_id)
 
-        # Get all courses
-        all_courses = self.repository.course.list()
+            # Convert to brief format
+            course_briefs = [
+                CourseBrief(
+                    id=c.id,
+                    code=c.code,
+                    title=c.title,
+                    level=c.level,
+                    credits=c.credits,
+                    professor_id=c.professor_id,
+                )
+                for c in courses
+            ]
 
-        # Filter courses by department_id
-        department_courses = [
-            c for c in all_courses if c.department_id == department_id
-        ]
-
-        # Convert to brief format
-        course_briefs = [
-            CourseBrief(
-                id=c.id,
-                code=c.code,
-                title=c.title,
-                level=c.level,
-                credits=c.credits,
-                professor_id=c.professor_id,
+            return DepartmentCoursesResponse(
+                department_id=department_id,
+                courses=course_briefs,
+                total=len(course_briefs),
             )
-            for c in department_courses
-        ]
-
-        return DepartmentCoursesResponse(
-            department_id=department_id,
-            courses=course_briefs,
-            total=len(course_briefs),
-        )
+        except Exception:
+            return None

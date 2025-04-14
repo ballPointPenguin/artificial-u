@@ -2,12 +2,12 @@
 Course router for handling course-related API endpoints.
 """
 
-from typing import Optional
+from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
 from fastapi.responses import JSONResponse
 
-from artificial_u.api.config import Settings, get_settings
+from artificial_u.api.dependencies import get_course_api_service
 from artificial_u.api.models.courses import (
     CourseCreate,
     CourseLecturesResponse,
@@ -17,26 +17,17 @@ from artificial_u.api.models.courses import (
     DepartmentBrief,
     ProfessorBrief,
 )
-from artificial_u.api.services.course_service import CourseService
-from artificial_u.models.repositories import RepositoryFactory
+from artificial_u.api.models.lecture import LectureDetail
+from artificial_u.api.models.professor import ProfessorDetail
+from artificial_u.api.services.course_service import CourseApiService
 
+# Create the router with dependencies that will be applied to all routes
 router = APIRouter(
     prefix="/courses",
     tags=["courses"],
     responses={404: {"description": "Not found"}},
+    dependencies=[Depends(get_course_api_service)],
 )
-
-
-def get_repository(settings: Settings = Depends(get_settings)) -> RepositoryFactory:
-    """Dependency for getting repository instance."""
-    return RepositoryFactory(db_url=settings.DATABASE_URL)
-
-
-def get_course_service(
-    repository: RepositoryFactory = Depends(get_repository),
-) -> CourseService:
-    """Dependency for getting course service."""
-    return CourseService(repository)
 
 
 @router.get(
@@ -52,7 +43,7 @@ async def list_courses(
     professor_id: Optional[int] = Query(None, description="Filter by professor ID"),
     level: Optional[str] = Query(None, description="Filter by course level"),
     title: Optional[str] = Query(None, description="Filter by title (partial match)"),
-    service: CourseService = Depends(get_course_service),
+    course_service: CourseApiService = Depends(get_course_api_service),
 ):
     """
     Get a paginated list of courses with filtering options.
@@ -64,7 +55,7 @@ async def list_courses(
     - **level**: Filter by course level (e.g., 'Undergraduate', 'Graduate')
     - **title**: Filter by course title (partial match)
     """
-    return service.get_courses(
+    return course_service.get_courses(
         page=page,
         size=size,
         department_id=department_id,
@@ -83,14 +74,14 @@ async def list_courses(
 )
 async def get_course(
     course_id: int = Path(..., description="The ID of the course to retrieve"),
-    service: CourseService = Depends(get_course_service),
 ):
     """
     Get detailed information about a specific course.
 
     - **course_id**: The unique identifier of the course
     """
-    course = service.get_course(course_id)
+    course_service = router.dependencies[0]
+    course = course_service.get_course(course_id)
     if not course:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -108,14 +99,14 @@ async def get_course(
 )
 async def get_course_by_code(
     code: str = Path(..., description="The code of the course to retrieve"),
-    service: CourseService = Depends(get_course_service),
 ):
     """
     Get detailed information about a specific course by its code.
 
     - **code**: The unique code of the course
     """
-    course = service.get_course_by_code(code)
+    course_service = router.dependencies[0]
+    course = course_service.get_course_by_code(code)
     if not course:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -133,7 +124,6 @@ async def get_course_by_code(
 )
 async def create_course(
     course_data: CourseCreate,
-    service: CourseService = Depends(get_course_service),
 ):
     """
     Create a new course.
@@ -141,7 +131,8 @@ async def create_course(
     - Request body contains all required course information
     - Returns the created course with its assigned ID
     """
-    return service.create_course(course_data)
+    course_service = router.dependencies[0]
+    return course_service.create_course(course_data)
 
 
 @router.put(
@@ -154,7 +145,6 @@ async def create_course(
 async def update_course(
     course_data: CourseUpdate,
     course_id: int = Path(..., description="The ID of the course to update"),
-    service: CourseService = Depends(get_course_service),
 ):
     """
     Update an existing course.
@@ -163,7 +153,8 @@ async def update_course(
     - Request body contains the updated course information
     - Returns the updated course
     """
-    updated_course = service.update_course(course_id, course_data)
+    course_service = router.dependencies[0]
+    updated_course = course_service.update_course(course_id, course_data)
     if not updated_course:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -184,7 +175,6 @@ async def update_course(
 )
 async def delete_course(
     course_id: int = Path(..., description="The ID of the course to delete"),
-    service: CourseService = Depends(get_course_service),
 ):
     """
     Delete a course.
@@ -192,7 +182,8 @@ async def delete_course(
     - **course_id**: The unique identifier of the course to delete
     - Returns no content on successful deletion
     """
-    success = service.delete_course(course_id)
+    course_service = router.dependencies[0]
+    success = course_service.delete_course(course_id)
     if not success:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -210,7 +201,6 @@ async def delete_course(
 )
 async def get_course_professor(
     course_id: int = Path(..., description="The ID of the course"),
-    service: CourseService = Depends(get_course_service),
 ):
     """
     Get information about the professor teaching a specific course.
@@ -218,7 +208,8 @@ async def get_course_professor(
     - **course_id**: The unique identifier of the course
     - Returns brief information about the professor
     """
-    professor = service.get_course_professor(course_id)
+    course_service = router.dependencies[0]
+    professor = course_service.get_course_professor(course_id)
     if not professor:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -236,7 +227,6 @@ async def get_course_professor(
 )
 async def get_course_department(
     course_id: int = Path(..., description="The ID of the course"),
-    service: CourseService = Depends(get_course_service),
 ):
     """
     Get information about the department offering a specific course.
@@ -244,7 +234,8 @@ async def get_course_department(
     - **course_id**: The unique identifier of the course
     - Returns brief information about the department
     """
-    department = service.get_course_department(course_id)
+    course_service = router.dependencies[0]
+    department = course_service.get_course_department(course_id)
     if not department:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -262,7 +253,6 @@ async def get_course_department(
 )
 async def get_course_lectures(
     course_id: int = Path(..., description="The ID of the course"),
-    service: CourseService = Depends(get_course_service),
 ):
     """
     Get lectures for a specific course.
@@ -270,10 +260,57 @@ async def get_course_lectures(
     - **course_id**: The unique identifier of the course
     - Returns a list of lectures for the course
     """
-    response = service.get_course_lectures(course_id)
+    course_service = router.dependencies[0]
+    response = course_service.get_course_lectures(course_id)
     if not response:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Course with ID {course_id} not found",
         )
     return response
+
+
+@router.get("/{course_id}/professors", response_model=List[ProfessorDetail])
+async def list_course_professors(
+    course_id: int,
+):
+    """
+    List professors for a course.
+
+    Args:
+        course_id: Course ID
+
+    Returns:
+        List of professors
+
+    Raises:
+        HTTPException: If course not found
+    """
+    course_service = router.dependencies[0]
+    professors = course_service.get_course_professors(course_id)
+    if not professors:
+        raise HTTPException(status_code=404, detail="Course not found")
+    return professors
+
+
+@router.get("/{course_id}/lectures", response_model=List[LectureDetail])
+async def list_course_lectures(
+    course_id: int,
+):
+    """
+    List lectures for a course.
+
+    Args:
+        course_id: Course ID
+
+    Returns:
+        List of lectures
+
+    Raises:
+        HTTPException: If course not found
+    """
+    course_service = router.dependencies[0]
+    lectures = course_service.get_course_lectures(course_id)
+    if not lectures:
+        raise HTTPException(status_code=404, detail="Course not found")
+    return lectures

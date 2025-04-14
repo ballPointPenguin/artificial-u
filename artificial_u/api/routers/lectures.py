@@ -2,13 +2,12 @@
 Lecture router for handling lecture-related API endpoints.
 """
 
-import os
-from typing import List, Optional
+from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import JSONResponse
 
-from artificial_u.api.config import Settings, get_settings
+from artificial_u.api.dependencies import get_lecture_api_service
 from artificial_u.api.models.lectures import (
     Lecture,
     LectureCreate,
@@ -16,25 +15,14 @@ from artificial_u.api.models.lectures import (
     LectureUpdate,
 )
 from artificial_u.api.services.lecture_service import LectureApiService
-from artificial_u.models.repositories import RepositoryFactory
 
+# Create the router with dependencies that will be applied to all routes
 router = APIRouter(
     prefix="/lectures",
     tags=["lectures"],
     responses={404: {"description": "Not found"}},
+    dependencies=[Depends(get_lecture_api_service)],
 )
-
-
-def get_repository(settings: Settings = Depends(get_settings)) -> RepositoryFactory:
-    """Dependency for getting repository instance."""
-    return RepositoryFactory(db_url=settings.DATABASE_URL)
-
-
-def get_lecture_service(
-    repository: RepositoryFactory = Depends(get_repository),
-) -> LectureApiService:
-    """Dependency for getting lecture service."""
-    return LectureApiService(repository)
 
 
 @router.get(
@@ -49,7 +37,7 @@ async def list_lectures(
     course_id: Optional[int] = Query(None, description="Filter by course ID"),
     professor_id: Optional[int] = Query(None, description="Filter by professor ID"),
     search: Optional[str] = Query(None, description="Search in title and description"),
-    service: LectureApiService = Depends(get_lecture_service),
+    lecture_service: LectureApiService = Depends(get_lecture_api_service),
 ):
     """
     Get a paginated list of lectures with filtering options.
@@ -60,7 +48,7 @@ async def list_lectures(
     - **professor_id**: Filter by professor ID
     - **search**: Search in title and description
     """
-    return service.get_lectures(
+    return lecture_service.get_lectures(
         page=page,
         size=size,
         course_id=course_id,
@@ -78,14 +66,14 @@ async def list_lectures(
 )
 async def get_lecture(
     lecture_id: int = Path(..., description="The ID of the lecture to retrieve"),
-    service: LectureApiService = Depends(get_lecture_service),
+    lecture_service: LectureApiService = Depends(get_lecture_api_service),
 ):
     """
     Get detailed information about a specific lecture.
 
     - **lecture_id**: The unique identifier of the lecture
     """
-    lecture = service.get_lecture(lecture_id)
+    lecture = lecture_service.get_lecture(lecture_id)
     if not lecture:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -103,14 +91,14 @@ async def get_lecture(
 )
 async def get_lecture_content(
     lecture_id: int = Path(..., description="The ID of the lecture"),
-    service: LectureApiService = Depends(get_lecture_service),
+    lecture_service: LectureApiService = Depends(get_lecture_api_service),
 ):
     """
     Get the full text content of a specific lecture.
 
     - **lecture_id**: The unique identifier of the lecture
     """
-    content = service.get_lecture_content(lecture_id)
+    content = lecture_service.get_lecture_content(lecture_id)
     if not content:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -130,7 +118,7 @@ async def get_lecture_content(
 )
 async def get_lecture_audio(
     lecture_id: int = Path(..., description="The ID of the lecture"),
-    service: LectureApiService = Depends(get_lecture_service),
+    lecture_service: LectureApiService = Depends(get_lecture_api_service),
 ):
     """
     Get the audio version of a specific lecture.
@@ -138,7 +126,7 @@ async def get_lecture_audio(
     - **lecture_id**: The unique identifier of the lecture
     - Returns a redirect to the storage URL where the audio file is stored
     """
-    audio_url = service.get_lecture_audio_url(lecture_id)
+    audio_url = lecture_service.get_lecture_audio_url(lecture_id)
     if not audio_url:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -170,7 +158,7 @@ async def get_lecture_audio(
 )
 async def create_lecture(
     lecture_data: LectureCreate,
-    service: LectureApiService = Depends(get_lecture_service),
+    lecture_service: LectureApiService = Depends(get_lecture_api_service),
 ):
     """
     Create a new lecture.
@@ -179,7 +167,7 @@ async def create_lecture(
     - Returns the created lecture with its assigned ID
     """
     # Create lecture
-    lecture = service.create_lecture(lecture_data)
+    lecture = lecture_service.create_lecture(lecture_data)
     return lecture
 
 
@@ -193,7 +181,7 @@ async def create_lecture(
 async def update_lecture(
     lecture_data: LectureUpdate,
     lecture_id: int = Path(..., description="The ID of the lecture to update"),
-    service: LectureApiService = Depends(get_lecture_service),
+    lecture_service: LectureApiService = Depends(get_lecture_api_service),
 ):
     """
     Update an existing lecture.
@@ -202,7 +190,7 @@ async def update_lecture(
     - Request body contains the updated lecture information (all fields optional)
     - Returns the updated lecture
     """
-    updated_lecture = service.update_lecture(lecture_id, lecture_data)
+    updated_lecture = lecture_service.update_lecture(lecture_id, lecture_data)
     if not updated_lecture:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -220,7 +208,7 @@ async def update_lecture(
 )
 async def delete_lecture(
     lecture_id: int = Path(..., description="The ID of the lecture to delete"),
-    service: LectureApiService = Depends(get_lecture_service),
+    lecture_service: LectureApiService = Depends(get_lecture_api_service),
 ):
     """
     Delete a lecture.
@@ -228,7 +216,7 @@ async def delete_lecture(
     - **lecture_id**: The unique identifier of the lecture to delete
     - Returns no content on successful deletion
     """
-    success = service.delete_lecture(lecture_id)
+    success = lecture_service.delete_lecture(lecture_id)
     if not success:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -248,33 +236,29 @@ async def delete_lecture(
 )
 async def download_lecture_content(
     lecture_id: int = Path(..., description="The ID of the lecture"),
-    service: LectureApiService = Depends(get_lecture_service),
+    lecture_service: LectureApiService = Depends(get_lecture_api_service),
 ):
     """
     Download the full text content of a specific lecture as a text file.
 
     - **lecture_id**: The unique identifier of the lecture
-    - Returns the text content as a downloadable file
+    - Returns the lecture content as plain text
     """
-    # Ensure lecture exists
-    lecture = service.get_lecture(lecture_id)
+    # Get the lecture details including title
+    lecture = lecture_service.get_lecture(lecture_id)
     if not lecture:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Lecture with ID {lecture_id} not found",
         )
 
-    # Ensure content asset file exists (lazy generation)
-    asset_path = await service.ensure_content_asset_exists(lecture_id)
-    if not asset_path or not os.path.exists(asset_path):
+    # Get content
+    content = lecture_service.get_lecture_content(lecture_id)
+    if not content or not content.content:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Failed to generate content file for lecture with ID {lecture_id}",
+            detail=f"Content for lecture with ID {lecture_id} not found",
         )
 
-    # Return the file for download
-    return FileResponse(
-        asset_path,
-        media_type="text/plain",
-        filename=f"lecture_{lecture_id}_{lecture.title.replace(' ', '_')}.txt",
-    )
+    # Return the content directly as a string
+    return content.content

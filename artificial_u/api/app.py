@@ -1,6 +1,7 @@
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
 
 from artificial_u.api.config import get_settings
+from artificial_u.api.dependencies import get_repository
 from artificial_u.api.middlewares.cors_middleware import setup_cors
 from artificial_u.api.middlewares.error_handler import add_error_handlers
 from artificial_u.api.middlewares.logging_middleware import LoggingMiddleware
@@ -31,6 +32,8 @@ def create_application() -> FastAPI:
         docs_url="/api/docs",
         redoc_url="/api/redoc",
         openapi_url="/api/openapi.json",
+        # Add global dependencies that will be applied to all routes
+        dependencies=[Depends(get_repository)],
     )
 
     # Configure CORS

@@ -17,24 +17,44 @@ from artificial_u.api.models.professors import (
     ProfessorUpdate,
 )
 from artificial_u.services import ProfessorService as CoreProfessorService
+from artificial_u.services.content_service import ContentService
+from artificial_u.services.image_service import ImageService
+from artificial_u.services.voice_service import VoiceService
 from artificial_u.utils.exceptions import DatabaseError, ProfessorNotFoundError
 
 
-class ProfessorService:
+class ProfessorApiService:
     """API Service for professor-related operations."""
 
-    def __init__(self, repository):
+    def __init__(
+        self,
+        repository,
+        content_service: ContentService,
+        image_service: ImageService,
+        voice_service: Optional[VoiceService] = None,
+        logger=None,
+    ):
         """
-        Initialize with database repository.
+        Initialize with all required services.
 
         Args:
             repository: Database repository factory
+            content_service: Content generation service
+            image_service: Image generation service
+            voice_service: Voice service for voice assignment (optional)
+            logger: Optional logger instance
         """
         self.repository = repository
-        self.logger = logging.getLogger(__name__)
+        self.logger = logger or logging.getLogger(__name__)
 
-        # Create CoreProfessorService - in a real app this would likely be injected
-        self.core_service = CoreProfessorService(repository=repository)
+        # Initialize core service with all required dependencies
+        self.core_service = CoreProfessorService(
+            repository=repository,
+            content_service=content_service,
+            image_service=image_service,
+            voice_service=voice_service,
+            logger=self.logger,
+        )
 
     def get_professors(
         self,
