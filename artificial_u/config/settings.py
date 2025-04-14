@@ -10,9 +10,9 @@ import sys
 from enum import Enum
 from functools import lru_cache
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional
 
-from pydantic import AnyHttpUrl, ConfigDict, Field, field_validator, model_validator
+from pydantic import Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from artificial_u.config.defaults import (
@@ -77,7 +77,13 @@ class Settings(BaseSettings):
     # API Keys
     ANTHROPIC_API_KEY: Optional[str] = None
     ELEVENLABS_API_KEY: Optional[str] = None
+    GOOGLE_API_KEY: Optional[str] = None
     OPENAI_API_KEY: Optional[str] = None
+
+    # Model names and configurations
+    CLAUDE_MODEL: str = "claude-3-5-sonnet-20240620"
+    GEMINI_IMAGEN_MODEL: str = "imagen-3.0-generate-002"
+    OPENAI_GPT_MODEL: str = "gpt-4o"
 
     # Temporary storage paths
     TEMP_AUDIO_PATH: str = DEFAULT_TEMP_AUDIO_PATH
@@ -98,6 +104,9 @@ class Settings(BaseSettings):
     content_model: Optional[str] = None
     enable_caching: bool = False
     cache_metrics: bool = True
+
+    # Integration service endpoints
+    OLLAMA_HOST: str = "http://localhost:11434"
 
     # Configure Pydantic to use .env files
     model_config = SettingsConfigDict(
@@ -164,6 +173,7 @@ class Settings(BaseSettings):
             "temp_audio_path": self.TEMP_AUDIO_PATH,
             "anthropic_api_key": self.ANTHROPIC_API_KEY,
             "elevenlabs_api_key": self.ELEVENLABS_API_KEY,
+            "google_api_key": self.GOOGLE_API_KEY,
             "openai_api_key": self.OPENAI_API_KEY,
             "storage_type": self.STORAGE_TYPE,
             "storage_endpoint_url": self.STORAGE_ENDPOINT_URL,

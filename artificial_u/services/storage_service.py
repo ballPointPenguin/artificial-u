@@ -7,8 +7,7 @@ to work with either local MinIO (development) or AWS S3 (production).
 
 import io
 import logging
-import os
-from typing import Any, BinaryIO, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 import boto3
 from botocore.client import Config
@@ -155,8 +154,18 @@ class StorageService:
         storage_type = self.settings.STORAGE_TYPE
 
         if storage_type == "minio":
-            # Local MinIO URL
-            return f"{self.settings.STORAGE_PUBLIC_URL}/{bucket}/{object_name}"
+            # Local MinIO URL using the configured endpoint
+            base_url = self.settings.STORAGE_PUBLIC_URL.rstrip("/")
+
+            # Ensure we have a proper URL
+            if not base_url:
+                self.logger.warning(
+                    "STORAGE_PUBLIC_URL not set, using endpoint URL instead"
+                )
+                base_url = self.settings.STORAGE_ENDPOINT_URL
+
+            # Combine all parts to create the full URL
+            return f"{base_url}/{bucket}/{object_name}"
         else:
             # AWS S3 URL
             return f"https://{bucket}.s3.{self.settings.STORAGE_REGION}.amazonaws.com/{object_name}"

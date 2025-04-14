@@ -5,15 +5,18 @@ from typing import Dict
 # System prompts for different content generation tasks
 PROFESSOR_SYSTEM_PROMPT = """You are an expert at creating rich, realistic faculty profiles for an educational content system."""
 
-COURSE_SYSTEM_PROMPT = """You are an expert at creating detailed, professional course syllabi that align with academic standards."""
+COURSE_SYSTEM_PROMPT = """You are an expert at creating detailed, professional course syllabi and curricula for a wide range of academic subjects."""
 
 LECTURE_SYSTEM_PROMPT = """You are an expert educational content creator who specializes in developing university-level lectures that are engaging, informative, and suitable for audio delivery."""
+
+PROFESSOR_PROFILE_SYSTEM_PROMPT = """You are an expert academic profile writer. Create a detailed and realistic professor profile based on the requirements."""
 
 # Dictionary to easily access system prompts by type
 SYSTEM_PROMPTS: Dict[str, str] = {
     "professor": PROFESSOR_SYSTEM_PROMPT,
     "course": COURSE_SYSTEM_PROMPT,
     "lecture": LECTURE_SYSTEM_PROMPT,
+    "professor_profile": PROFESSOR_PROFILE_SYSTEM_PROMPT,
 }
 
 

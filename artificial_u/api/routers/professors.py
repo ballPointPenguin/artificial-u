@@ -114,7 +114,7 @@ async def create_professor(
     - Request body contains all required professor information
     - Returns the created professor with its assigned ID
     """
-    return service.create_professor(professor_data)
+    return await service.create_professor(professor_data)
 
 
 @router.put(
@@ -224,3 +224,50 @@ async def get_professor_lectures(
             detail=f"Professor with ID {professor_id} not found",
         )
     return response
+
+
+@router.post(
+    "/{professor_id}/generate-image",
+    response_model=ProfessorResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Generate professor image",
+    description="Triggers the generation of a profile image for the specified professor.",
+    responses={
+        404: {"description": "Professor not found"},
+        500: {"description": "Image generation failed"},
+    },
+)
+async def generate_professor_image(
+    professor_id: int = Path(
+        ..., description="The ID of the professor to generate an image for"
+    ),
+    service: ProfessorService = Depends(get_professor_service),
+):
+    """
+    Generate a profile image for a specific professor.
+
+    - **professor_id**: The unique identifier of the professor
+    - Triggers an asynchronous image generation process.
+    - Returns the updated professor data with the new image URL if successful.
+    """
+    updated_professor = await service.generate_professor_image(professor_id)
+    if not updated_professor:
+        # Distinguish between professor not found and generation failure if possible
+        # For now, treating failure generally as internal error
+        # Re-fetch professor to check if it exists, if needed for 404 vs 500
+
+        # Check if professor exists first to return 404
+        existing_professor = service.get_professor(professor_id)
+        if not existing_professor:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Professor with ID {professor_id} not found",
+            )
+        else:
+            # Professor exists, but generation failed
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Failed to generate image for professor {professor_id}",
+            )
+
+    return updated_professor

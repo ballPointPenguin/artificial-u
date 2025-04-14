@@ -2,6 +2,7 @@
 Professor service for handling business logic related to professors.
 """
 
+import logging
 from math import ceil
 from typing import Optional
 
@@ -15,32 +16,25 @@ from artificial_u.api.models.professors import (
     ProfessorsListResponse,
     ProfessorUpdate,
 )
-from artificial_u.services.professor_service import (
-    ProfessorService as CoreProfessorService,
-)
+from artificial_u.services import ProfessorService as CoreProfessorService
 from artificial_u.utils.exceptions import DatabaseError, ProfessorNotFoundError
 
 
 class ProfessorService:
     """API Service for professor-related operations."""
 
-    def __init__(self, repository, core_professor_service=None):
+    def __init__(self, repository):
         """
-        Initialize with database repository and core professor service.
+        Initialize with database repository.
 
         Args:
             repository: Database repository factory
-            core_professor_service: Core professor service (will be created if not provided)
         """
         self.repository = repository
+        self.logger = logging.getLogger(__name__)
 
-        # Set up the core professor service if not provided
-        self.core_service = core_professor_service
-        if not self.core_service:
-            self.core_service = CoreProfessorService(
-                repository=repository,
-                content_generator=None,  # API service doesn't need content generation
-            )
+        # Create CoreProfessorService - in a real app this would likely be injected
+        self.core_service = CoreProfessorService(repository=repository)
 
     def get_professors(
         self,
@@ -116,7 +110,9 @@ class ProfessorService:
         except ProfessorNotFoundError:
             return None
 
-    def create_professor(self, professor_data: ProfessorCreate) -> ProfessorResponse:
+    async def create_professor(
+        self, professor_data: ProfessorCreate
+    ) -> ProfessorResponse:
         """
         Create a new professor.
 
@@ -126,14 +122,19 @@ class ProfessorService:
         Returns:
             Created professor with ID
         """
-        # Extract data from the create model
+        # Extract data from create model and pass directly to core service
+        # The core service should handle all business logic including department mapping
         data = professor_data.model_dump()
 
-        # Use the core service to create the professor
-        created_professor = self.core_service.create_professor(**data)
+        try:
+            # Use the core service to create the professor
+            created_professor = await self.core_service.create_professor(**data)
 
-        # Convert to API response model
-        return ProfessorResponse.model_validate(created_professor.model_dump())
+            # Convert to API response model
+            return ProfessorResponse.model_validate(created_professor.model_dump())
+        except Exception as e:
+            self.logger.error(f"Error creating professor: {e}")
+            raise
 
     def update_professor(
         self, professor_id: int, professor_data: ProfessorUpdate
@@ -253,4 +254,40 @@ class ProfessorService:
                 total=len(lecture_briefs),
             )
         except ProfessorNotFoundError:
+            return None
+
+    async def generate_professor_image(
+        self, professor_id: int
+    ) -> Optional[ProfessorResponse]:
+        """
+        Triggers image generation for a professor and returns the updated professor.
+
+        Args:
+            professor_id: The ID of the professor
+
+        Returns:
+            The updated ProfessorResponse if successful, None otherwise
+        """
+        try:
+            # Call the core service method
+            updated_professor = (
+                await self.core_service.generate_and_set_professor_image(
+                    professor_id=str(professor_id)
+                )
+            )
+
+            if updated_professor:
+                return ProfessorResponse.model_validate(updated_professor.model_dump())
+            else:
+                return None
+
+        except ProfessorNotFoundError:
+            return None
+
+        except Exception as e:
+            # Log the exception
+            self.logger.error(
+                f"Error generating image for professor {professor_id}: {e}",
+                exc_info=True,
+            )
             return None

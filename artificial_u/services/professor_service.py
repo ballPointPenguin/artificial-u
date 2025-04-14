@@ -3,9 +3,15 @@ Professor management service for ArtificialU.
 """
 
 import logging
+import re
 from typing import Any, Dict, List, Optional
 
 from artificial_u.models.core import Professor
+from artificial_u.prompts.base import extract_xml_content
+from artificial_u.prompts.professors import get_professor_prompt
+from artificial_u.prompts.system import SYSTEM_PROMPTS
+from artificial_u.services.content_service import ContentService
+from artificial_u.services.image_service import ImageService
 from artificial_u.services.voice_service import VoiceService
 from artificial_u.utils.exceptions import DatabaseError, ProfessorNotFoundError
 from artificial_u.utils.random_generators import RandomGenerators
@@ -17,9 +23,9 @@ class ProfessorService:
     def __init__(
         self,
         repository,
-        content_generator,
-        voice_service=None,
-        elevenlabs_api_key=None,
+        content_service: ContentService,
+        image_service: ImageService,
+        voice_service: Optional[VoiceService] = None,
         logger=None,
     ):
         """
@@ -27,24 +33,18 @@ class ProfessorService:
 
         Args:
             repository: Data repository
-            content_generator: Content generation service
-            audio_processor: Deprecated, use voice_service instead
-            voice_service: Voice service for voice assignment
-            elevenlabs_api_key: API key for ElevenLabs if voice_service not provided
+            content_service: Content generation service
+            image_service: Image generation service
+            voice_service: Voice service for voice assignment (optional)
             logger: Optional logger instance
         """
         self.repository = repository
-        self.content_generator = content_generator
+        self.content_service = content_service
+        self.image_service = image_service
         self.logger = logger or logging.getLogger(__name__)
-
-        # Set up voice service
         self.voice_service = voice_service
-        if not self.voice_service and elevenlabs_api_key:
-            self.voice_service = VoiceService(
-                api_key=elevenlabs_api_key, logger=self.logger
-            )
 
-    def create_professor(
+    async def create_professor(
         self,
         name: Optional[str] = None,
         title: Optional[str] = None,
@@ -59,7 +59,7 @@ class ProfessorService:
         age: Optional[int] = None,
     ) -> Professor:
         """
-        Create a new professor with the given attributes.
+        Create a new professor with the given attributes. Async version.
 
         If parameters are not provided, AI generation or defaults will be used.
 
@@ -79,7 +79,7 @@ class ProfessorService:
         Returns:
             Professor: The created professor object
         """
-        self.logger.info("Creating new professor")
+        self.logger.info("Creating new professor (async)")
 
         # First, ensure we have department and specialization
         department = department or RandomGenerators.generate_department()
@@ -106,14 +106,15 @@ class ProfessorService:
 
         # Try AI generation first
         professor = None
-        if self.content_generator:
+        if self.content_service:
             try:
-                professor = self._create_professor_with_ai(
+                professor = await self._create_professor_with_ai(
                     department, specialization, provided_attrs
                 )
             except Exception as e:
                 self.logger.warning(
-                    f"AI generation failed, falling back to random generation: {e}"
+                    f"AI generation failed, falling back to random generation: {e}",
+                    exc_info=True,
                 )
 
         # If AI generation failed or wasn't attempted, use random generation
@@ -135,38 +136,150 @@ class ProfessorService:
             self.logger.error(error_msg)
             raise DatabaseError(error_msg) from e
 
-    def _create_professor_with_ai(
+    async def _create_professor_with_ai(
         self,
         department: str,
         specialization: str,
         provided_attrs: dict,
     ) -> Professor:
-        """Helper to create professor using AI content generator."""
-        self.logger.info("Using AI to generate professor profile")
+        """Helper to create professor using AI content generator via ContentService."""
+        self.logger.info("Using AI ContentService to generate professor profile")
 
-        # Determine age range string if we have a specific age
+        # --- 1. Prepare Prompt --- #
+        prompt = self._prepare_professor_generation_prompt(
+            department, specialization, provided_attrs
+        )
+
+        # --- 2. Call Content Service --- #
+        try:
+            generated_content = await self.content_service.generate_text(
+                prompt=prompt,
+                model=self._get_model_name(),
+                system_prompt=SYSTEM_PROMPTS["professor_profile"],
+            )
+        except Exception as e:
+            self.logger.error(f"ContentService generation failed: {e}", exc_info=True)
+            raise  # Re-raise to signal failure to the caller
+
+        if not generated_content:
+            self.logger.warning("AI generation returned empty content.")
+            raise ValueError("AI generation returned empty content.")
+
+        # --- 3. Parse Response --- #
+        generated_attrs = self._parse_generated_professor_profile(generated_content)
+
+        # --- 4. Combine Attributes & Create Professor --- #
+        final_attrs = {
+            "department": department,
+            "specialization": specialization,
+            **generated_attrs,  # Use generated attributes first
+            **provided_attrs,  # Overwrite with provided attributes
+        }
+
+        # Ensure required fields have fallbacks if somehow missed
+        final_attrs["name"] = (
+            final_attrs.get("name") or RandomGenerators.generate_professor_name()
+        )
+        final_attrs["title"] = final_attrs.get(
+            "title"
+        ) or RandomGenerators.generate_professor_title(department)
+
+        # Log final attributes being used
+        self.logger.debug(f"Final attributes for professor creation: {final_attrs}")
+
+        # Create professor object
+        professor = Professor(**final_attrs)
+        self.logger.info(
+            f"Successfully generated professor profile using AI: {professor.name}"
+        )
+        return professor
+
+    def _prepare_professor_generation_prompt(
+        self, department: str, specialization: str, provided_attrs: dict
+    ) -> str:
+        """Prepares the prompt string for professor generation."""
         age_range = None
-        age = provided_attrs.get("age")
-        if age:
-            decade = (age // 10) * 10
+        if "age" in provided_attrs:
+            decade = (provided_attrs["age"] // 10) * 10
             age_range = f"{decade}-{decade+10}"
 
-        # Generate professor using AI
-        professor = self.content_generator.create_professor(
+        return get_professor_prompt(
             department=department,
             specialization=specialization,
             gender=provided_attrs.get("gender"),
-            nationality=None,  # Not currently supported in system interface
             age_range=age_range,
             accent=provided_attrs.get("accent"),
         )
 
-        # Override AI-generated attributes with any provided ones
-        for key, value in provided_attrs.items():
-            setattr(professor, key, value)
+    def _parse_generated_professor_profile(
+        self, generated_content: str
+    ) -> Dict[str, Any]:
+        """Parses the AI-generated content to extract professor attributes."""
+        profile_text = extract_xml_content(generated_content, "professor_profile")
 
-        self.logger.info("Successfully created professor using AI")
-        return professor
+        if profile_text:
+            return self._parse_professor_profile_xml(profile_text)
+        else:
+            self.logger.warning(
+                "No structured <professor_profile> found. Attempting fallback parsing."
+            )
+            return self._parse_professor_profile_fallback(generated_content)
+
+    def _parse_professor_profile_xml(self, profile_text: str) -> Dict[str, Any]:
+        """Parses the structured XML profile text."""
+        profile = {}
+        for line in profile_text.strip().split("\n"):
+            if ":" in line:
+                key, value = line.split(":", 1)
+                # Simple normalization of keys
+                norm_key = key.strip().lower().replace(" ", "_")
+                profile[norm_key] = value.strip()
+
+        # Convert age to integer if present and valid
+        generated_age = None
+        if "age" in profile:
+            try:
+                generated_age = int(profile["age"])
+            except (ValueError, TypeError):
+                self.logger.warning(
+                    f"Could not convert generated age '{profile.get('age')}' to integer."
+                )
+
+        # Map normalized keys to Professor model fields
+        return {
+            "name": profile.get("name"),
+            "title": profile.get("title"),
+            "gender": profile.get("gender"),
+            "accent": profile.get("accent"),
+            "description": profile.get("description"),
+            "background": profile.get("background"),
+            "personality": profile.get("personality"),
+            "teaching_style": profile.get("teaching_style"),
+            "age": generated_age,
+        }
+
+    def _parse_professor_profile_fallback(
+        self, generated_content: str
+    ) -> Dict[str, Any]:
+        """Fallback parsing using regex if XML structure is missing."""
+        # Basic fallback: try to extract *something* usable
+        name_match = re.search(
+            r"(?:Name|Professor|Dr\.)[:\s]+([\w\s\.\-]+)",
+            generated_content,
+            re.IGNORECASE,
+        )
+        title_match = re.search(
+            r"Title[:\s]+([\w\s\(\)\,\-]+)", generated_content, re.IGNORECASE
+        )
+        # Add more regex fallbacks if needed for other fields
+
+        generated_attrs = {
+            "name": name_match.group(1).strip() if name_match else None,
+            "title": title_match.group(1).strip() if title_match else None,
+            # Add other fallback fields here
+        }
+        # Clean None values and return
+        return {k: v for k, v in generated_attrs.items() if v is not None}
 
     def _create_professor_with_random(
         self,
@@ -456,3 +569,79 @@ class ProfessorService:
             all_lectures.extend(course_lectures)
 
         return all_lectures
+
+    async def generate_and_set_professor_image(
+        self, professor_id: str, aspect_ratio: str = "1:1"
+    ) -> Optional[Professor]:
+        """
+        Generates an image for the professor and updates their record.
+
+        Args:
+            professor_id: The ID of the professor
+            aspect_ratio: The desired aspect ratio for the image
+
+        Returns:
+            The updated Professor object if successful, None otherwise
+        """
+        self.logger.info(f"Generating image for professor ID: {professor_id}")
+
+        # Get the professor
+        try:
+            professor = self.get_professor(professor_id)
+        except ProfessorNotFoundError:
+            self.logger.error(
+                f"Cannot generate image: Professor {professor_id} not found"
+            )
+            return None
+
+        try:
+            # Generate the image using the image service
+            image_key = await self.image_service.generate_professor_image(
+                professor=professor, aspect_ratio=aspect_ratio
+            )
+
+            if not image_key:
+                self.logger.error(
+                    f"Image generation failed for professor {professor_id}"
+                )
+                return None
+
+            self.logger.info(
+                f"Image generated for professor {professor_id}: {image_key}"
+            )
+
+            # Get the full URL for the image using the storage service
+            bucket = self.image_service.storage_service.images_bucket
+            image_url = self.image_service.storage_service.get_file_url(
+                bucket=bucket, object_name=image_key
+            )
+
+            self.logger.info(f"Image URL: {image_url}")
+
+            # Update the professor record with the new image URL
+            updated_professor = self.update_professor(
+                professor_id=professor_id,
+                attributes={"image_url": image_url},
+            )
+
+            self.logger.info(f"Professor {professor_id} updated with new image URL")
+            return updated_professor
+
+        except Exception as e:
+            self.logger.error(
+                f"Error during image generation or update for professor {professor_id}: {e}",
+                exc_info=True,
+            )
+            return None
+
+    def _get_model_name(self) -> str:
+        """Get the appropriate model name from configuration."""
+        try:
+            from artificial_u.config import get_settings
+
+            settings = get_settings()
+            # Use a direct setting or fallback to default
+            return getattr(settings, "CLAUDE_MODEL", "claude-3-5-sonnet-20240620")
+        except Exception:
+            # Fallback model name if settings unavailable
+            return "claude-3-5-sonnet-20240620"
