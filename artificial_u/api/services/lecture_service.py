@@ -13,9 +13,11 @@ from artificial_u.api.models.lectures import (
     LectureList,
     LectureUpdate,
 )
+from artificial_u.generators.content import ContentGenerator
 from artificial_u.models.repositories import RepositoryFactory
-from artificial_u.services import LectureService as CoreLectureService
-from artificial_u.services.content_service import ContentService
+from artificial_u.services import LectureService
+
+# from artificial_u.services.content_service import ContentService
 from artificial_u.services.course_service import CourseService
 from artificial_u.services.professor_service import ProfessorService
 from artificial_u.services.storage_service import StorageService
@@ -29,7 +31,8 @@ class LectureApiService:
         repository: RepositoryFactory,
         professor_service: ProfessorService,
         course_service: CourseService,
-        content_service: ContentService,
+        content_generator: ContentGenerator,
+        # content_service: ContentService,
         storage_service: StorageService,
         logger=None,
     ):
@@ -47,16 +50,17 @@ class LectureApiService:
         self.logger = logger or logging.getLogger(__name__)
 
         # Initialize core service with dependencies
-        self.core_service = CoreLectureService(
+        self.core_service = LectureService(
             repository=repository,
-            professor_service=professor_service.core_service,
-            course_service=course_service.core_service,
-            content_service=content_service,
+            professor_service=professor_service,
+            course_service=course_service,
+            content_generator=content_generator,
+            # content_service=content_service,
             storage_service=storage_service,
             logger=self.logger,
         )
 
-    def get_lectures(
+    def list_lectures(
         self,
         page: int = 1,
         size: int = 10,
@@ -117,7 +121,7 @@ class LectureApiService:
                 page_size=size,
             )
         except Exception as e:
-            self.logger.error(f"Error getting lectures: {str(e)}")
+            self.logger.error(f"Error listing lectures: {str(e)}")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Failed to retrieve lectures",

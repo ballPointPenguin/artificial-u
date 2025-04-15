@@ -2,14 +2,34 @@
 
 from typing import Dict
 
-# System prompts for different content generation tasks
-PROFESSOR_SYSTEM_PROMPT = """You are an expert at creating rich, realistic faculty profiles for an educational content system."""
+COURSE_SYSTEM_PROMPT = (
+    "You are an expert at creating detailed, professional course syllabi and curricula for a wide range "
+    "of academic subjects."
+)
 
-COURSE_SYSTEM_PROMPT = """You are an expert at creating detailed, professional course syllabi and curricula for a wide range of academic subjects."""
+LECTURE_SYSTEM_PROMPT = (
+    "You are an expert educational content creator who specializes in developing university-level lectures that "
+    "are engaging, informative, and suitable for audio delivery. "
+    "You always respond in valid, indented XML format. "
+    "Do not include any explanations, notes, or text outside the XML block."
+)
 
-LECTURE_SYSTEM_PROMPT = """You are an expert educational content creator who specializes in developing university-level lectures that are engaging, informative, and suitable for audio delivery."""
+GENERIC_XML_SYSTEM_PROMPT = (
+    "You always respond in valid, indented XML format. "
+    "Do not include any explanations, notes, or text outside the XML block."
+)
 
-PROFESSOR_PROFILE_SYSTEM_PROMPT = """You are an expert academic profile writer. Create a detailed and realistic professor profile based on the requirements."""
+PROFESSOR_PROFILE_SYSTEM_PROMPT = (
+    "You are an expert academic profile writer. Create a detailed and realistic professor profile based on the "
+    "requirements. You always respond in valid, indented XML format. "
+    "Do not include any explanations, notes, or text outside the XML block."
+)
+
+PROFESSOR_SYSTEM_PROMPT = (
+    "You are an expert at creating rich, realistic faculty profiles for an educational content system. "
+    "You always respond in valid, indented XML format. "
+    "Do not include any explanations, notes, or text outside the XML block."
+)
 
 # Dictionary to easily access system prompts by type
 SYSTEM_PROMPTS: Dict[str, str] = {

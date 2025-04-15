@@ -3,6 +3,7 @@ Department service for handling business logic related to departments.
 """
 
 import logging
+from datetime import datetime
 from math import ceil
 from typing import Optional
 
@@ -19,7 +20,7 @@ from artificial_u.api.models.departments import (
     ProfessorBrief,
 )
 from artificial_u.models.repositories import RepositoryFactory
-from artificial_u.services import CourseService as CoreCourseService
+from artificial_u.services import CourseService
 from artificial_u.services.department_service import DepartmentService
 from artificial_u.services.professor_service import ProfessorService
 
@@ -31,7 +32,7 @@ class DepartmentApiService:
         self,
         repository: RepositoryFactory,
         professor_service: ProfessorService,
-        course_service: CoreCourseService,
+        course_service: CourseService,
         logger=None,
     ):
         """
@@ -49,8 +50,8 @@ class DepartmentApiService:
         # Initialize core service with dependencies
         self.core_service = DepartmentService(
             repository=repository,
-            professor_service=professor_service.core_service,
-            course_service=course_service.core_service,
+            professor_service=professor_service,
+            course_service=course_service,
             logger=self.logger,
         )
 
@@ -277,3 +278,30 @@ class DepartmentApiService:
             )
         except Exception:
             return None
+
+    async def generate_department(
+        self, department_name: str = None, course_name: str = None
+    ) -> DepartmentResponse:
+        """
+        Generate a department using AI.
+
+        Generate a department using AI based on department_name, course_name, or neither.
+
+        Args:
+            department_name: Optional name of the department to generate
+            course_name: Optional name of the course to generate a department for
+        Returns:
+            DepartmentResponse: The generated department
+        """
+        dept_dict = await self.core_service.generate_department(
+            department_name, course_name
+        )
+        return department_dict_to_response(dept_dict)
+
+
+def department_dict_to_response(dept_dict: dict) -> DepartmentResponse:
+    return DepartmentResponse(
+        id=None,  # Not saved yet, so use 0 or None
+        generated_at=datetime.utcnow(),
+        **dept_dict,
+    )

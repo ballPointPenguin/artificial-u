@@ -506,7 +506,7 @@ class LectureService:
 
         Args:
             course_code: Optional course code to filter lectures
-            model_filter: Optional filter to only show lectures from a specific model (e.g., "tinyllama")
+            model_filter: Optional filter to only show lectures from a specific model (e.g., "phi4-mini")
             limit: Maximum number of lectures to return
 
         Returns:
@@ -644,3 +644,44 @@ class LectureService:
             self.logger.warning(f"Failed to read lecture file {lecture_path}: {str(e)}")
 
         return None
+
+    def list_lectures(
+        self,
+        page: int = 1,
+        size: int = 10,
+        course_id: Optional[int] = None,
+        professor_id: Optional[int] = None,
+        search_query: Optional[str] = None,
+    ) -> List[Lecture]:
+        """
+        List lectures with filtering and pagination.
+
+        Args:
+            page: Page number (1-based)
+            size: Number of items per page
+            course_id: Filter by course ID
+            professor_id: Filter by professor ID
+            search_query: Search query for title/description
+
+        Returns:
+            List of Lecture objects
+        """
+        return self.repository.lecture.list(
+            page=page,
+            size=size,
+            course_id=course_id,
+            professor_id=professor_id,
+            search_query=search_query,
+        )
+
+    def count_lectures(
+        self,
+        course_id: Optional[int] = None,
+        professor_id: Optional[int] = None,
+        search_query: Optional[str] = None,
+    ) -> int:
+        return self.repository.lecture.count(
+            course_id=course_id,
+            professor_id=professor_id,
+            search_query=search_query,
+        )

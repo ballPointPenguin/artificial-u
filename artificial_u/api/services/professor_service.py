@@ -16,7 +16,7 @@ from artificial_u.api.models.professors import (
     ProfessorsListResponse,
     ProfessorUpdate,
 )
-from artificial_u.services import ProfessorService as CoreProfessorService
+from artificial_u.services import ProfessorService
 from artificial_u.services.content_service import ContentService
 from artificial_u.services.image_service import ImageService
 from artificial_u.services.voice_service import VoiceService
@@ -48,7 +48,7 @@ class ProfessorApiService:
         self.logger = logger or logging.getLogger(__name__)
 
         # Initialize core service with all required dependencies
-        self.core_service = CoreProfessorService(
+        self.core_service = ProfessorService(
             repository=repository,
             content_service=content_service,
             image_service=image_service,

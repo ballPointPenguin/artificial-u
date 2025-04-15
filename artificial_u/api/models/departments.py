@@ -36,7 +36,7 @@ class DepartmentUpdate(DepartmentBase):
 class DepartmentResponse(DepartmentBase):
     """Model for department responses."""
 
-    id: int
+    id: Optional[int] = None
     generated_at: datetime
 
     class Config:

@@ -19,7 +19,8 @@ from artificial_u.api.models.courses import (
     ProfessorBrief,
 )
 from artificial_u.models.repositories import RepositoryFactory
-from artificial_u.services import CourseService as CoreCourseService
+from artificial_u.services import CourseService
+from artificial_u.services.content_service import ContentService
 from artificial_u.services.professor_service import ProfessorService
 
 
@@ -29,6 +30,7 @@ class CourseApiService:
     def __init__(
         self,
         repository: RepositoryFactory,
+        content_service: ContentService,
         professor_service: ProfessorService,
         logger=None,
     ):
@@ -43,9 +45,10 @@ class CourseApiService:
         self.logger = logger or logging.getLogger(__name__)
 
         # Initialize core service with dependencies
-        self.core_service = CoreCourseService(
+        self.core_service = CourseService(
             repository=repository,
-            professor_service=professor_service.core_service,
+            content_service=content_service,
+            professor_service=professor_service,
             logger=self.logger,
         )
 

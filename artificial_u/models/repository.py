@@ -142,27 +142,23 @@ class Repository:
         """Get the audio URL for a lecture."""
         return self.factory.lecture.get_audio_url(lecture_id)
 
-    def get_lectures(self, course_id: Optional[int] = None) -> List[Lecture]:
-        """List all lectures for a course."""
-        if course_id:
-            return self.factory.lecture.list_by_course(course_id)
-        return self.factory.lecture.list()
-
-    def list_lectures_by_course(self, course_id: int) -> List[Lecture]:
-        """List all lectures for a specific course."""
-        return self.factory.lecture.list_by_course(course_id)
-
     def list_lectures(
         self,
         page: int = 1,
         size: int = 10,
         course_id: Optional[int] = None,
         professor_id: Optional[int] = None,
-        tags: Optional[List[str]] = None,
         search_query: Optional[str] = None,
     ) -> List[Lecture]:
-        """List lectures with filtering and pagination."""
-        # The new repository doesn't support tags
+        """List lectures with filtering and pagination.
+
+        Args:
+            page: Page number (1-indexed)
+            size: Items per page
+            course_id: Filter by course ID
+            professor_id: Filter by professor ID
+            search_query: Search query for title/description
+        """
         return self.factory.lecture.list(
             page=page,
             size=size,
@@ -175,11 +171,9 @@ class Repository:
         self,
         course_id: Optional[int] = None,
         professor_id: Optional[int] = None,
-        tags: Optional[List[str]] = None,
         search_query: Optional[str] = None,
     ) -> int:
         """Count lectures with filtering."""
-        # The new repository doesn't support tags
         return self.factory.lecture.count(
             course_id=course_id,
             professor_id=professor_id,

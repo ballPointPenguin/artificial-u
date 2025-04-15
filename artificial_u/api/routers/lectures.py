@@ -48,7 +48,7 @@ async def list_lectures(
     - **professor_id**: Filter by professor ID
     - **search**: Search in title and description
     """
-    return lecture_service.get_lectures(
+    return lecture_service.list_lectures(
         page=page,
         size=size,
         course_id=course_id,

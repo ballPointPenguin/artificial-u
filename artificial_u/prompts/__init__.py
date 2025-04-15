@@ -12,4 +12,4 @@ from artificial_u.prompts.base import (
     xml_tag,
 )
 
-from . import courses, images, lectures, professors
+from . import courses, images, lectures, professors, system

@@ -1,8 +1,6 @@
 """Course-related prompt templates."""
 
-from typing import Dict, Optional
-
-from artificial_u.prompts.base import PromptTemplate, StructuredPrompt, xml_tag
+from artificial_u.prompts.base import PromptTemplate
 
 # Course syllabus template
 SYLLABUS_PROMPT = PromptTemplate(
@@ -47,20 +45,23 @@ Make this syllabus clear, professional, and aligned with the professor's teachin
 
 # Course topic generator template
 COURSE_TOPICS_PROMPT = PromptTemplate(
-    template="""Generate a coherent sequence of {num_weeks} weeks of lecture topics for the course "{course_title}" ({course_code}) in the {department} department.
+    template="""Generate a coherent sequence of {num_weeks} weeks of lecture topics for the course
+ "{course_title}" ({course_code}) in the {department} department.
 
 The course is taught by {professor_name}, whose teaching style is: {teaching_style}
 
 The course description is:
 {course_description}
 
-Create a week-by-week breakdown of course topics that build logically on each other and cover the subject matter comprehensively.
+Create a week-by-week breakdown of course topics that build logically on each other and cover the
+ subject matter comprehensively.
 
 <course_topics>
 {topic_format}
 </course_topics>
 
-Ensure the topics follow a logical progression, building in complexity throughout the course, and align with the course description.""",
+Ensure the topics follow a logical progression, building in complexity throughout the course, and
+ align with the course description.""",
     required_vars=[
         "course_title",
         "course_code",

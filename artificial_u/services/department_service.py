@@ -3,9 +3,11 @@ Department management service for ArtificialU.
 """
 
 import logging
+import xml.etree.ElementTree as ET
 from typing import Dict, List, Optional
 
 from artificial_u.models.core import Course, Department, Professor
+from artificial_u.prompts.system import GENERIC_XML_SYSTEM_PROMPT
 from artificial_u.utils.exceptions import (
     DatabaseError,
     DepartmentNotFoundError,
@@ -200,8 +202,8 @@ class DepartmentService:
         """
         self.logger.info(f"Deleting department {department_id}")
 
-        # Check if department exists
-        department = self.get_department(department_id)
+        # TODO: Check if department exists
+        # department = self.get_department(department_id)
 
         # Check for dependencies
         professors = self.repository.professor.list(department_id=department_id)
@@ -282,3 +284,76 @@ class DepartmentService:
             error_msg = f"Failed to get department courses: {str(e)}"
             self.logger.error(error_msg)
             raise DatabaseError(error_msg) from e
+
+    async def generate_department(
+        self, department_name: str = None, course_name: str = None
+    ) -> dict:
+        """
+        Generate a department using AI based on the department name, course_name, or neither.
+        If both department_name and course_name are supplied, department_name takes precedence.
+
+        This function uses the content service with Ollama to generate a department
+        based on the provided name, or invents a new department if no name is given.
+        It uses the GENERIC_XML_SYSTEM_PROMPT and the appropriate prompt to guide the generation.
+
+        Args:
+            department_name: The name of the department to generate (optional)
+            course_name: The name of the course to generate a department for (optional)
+        Returns:
+            dict: The generated department as a dictionary
+        """
+        if department_name:
+            self.logger.info(f"Generating department for: {department_name}")
+            from artificial_u.prompts.department import get_department_prompt
+
+            prompt = get_department_prompt(department_name)
+        elif course_name:
+            self.logger.info(f"Generating department for course: {course_name}")
+            from artificial_u.prompts.department import get_course_department_prompt
+
+            prompt = get_course_department_prompt(course_name)
+        else:
+            self.logger.info(
+                "Generating open-ended department (no name or course supplied)"
+            )
+            from artificial_u.prompts.department import get_open_department_prompt
+
+            prompt = get_open_department_prompt()
+
+        # Use the content service to generate the department
+        from artificial_u.services.content_service import ContentService
+
+        content_service = ContentService(logger=self.logger)
+
+        from artificial_u.config import get_settings
+
+        settings = get_settings()
+        model = getattr(settings, "OPENAI_GPT_MODEL", "gpt-4.1-nano")
+
+        # Generate the department using Ollama
+        response = await content_service.generate_text(
+            prompt=prompt,
+            # model=DEFAULT_OLLAMA_MODEL,
+            model=model,
+            system_prompt=GENERIC_XML_SYSTEM_PROMPT,
+        )
+
+        # Log the response
+        self.logger.info(f"Generated department response: {response[:100]}...")
+
+        return parse_department_xml(response)
+
+
+def parse_department_xml(xml_str: str) -> dict:
+    root = ET.fromstring(xml_str.strip())
+    # Find the <department> element
+    dept = root.find("department") if root.tag != "department" else root
+    if dept is None:
+        raise ValueError("No <department> element found in generated XML.")
+
+    return {
+        "name": dept.findtext("name"),
+        "code": dept.findtext("code"),
+        "faculty": dept.findtext("faculty"),
+        "description": dept.findtext("description"),
+    }

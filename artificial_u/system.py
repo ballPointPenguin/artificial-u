@@ -181,9 +181,9 @@ class UniversitySystem:
         self.lecture_service = LectureService(
             repository=self.repository,
             # Option 1: Use ContentService
-            content_service=self.content_service,  # Requires changing LectureService constructor
+            # content_service=self.content_service,  # Requires changing LectureService constructor
             # Option 2: Keep using old generator
-            # content_generator=self.content_generator,
+            content_generator=self.content_generator,
             professor_service=self.professor_service,
             course_service=self.course_service,
             storage_service=self.storage_service,

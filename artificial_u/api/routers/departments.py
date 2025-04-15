@@ -284,3 +284,29 @@ async def list_department_courses(
     if not courses:
         raise HTTPException(status_code=404, detail="Department not found")
     return courses
+
+
+@router.post(
+    "/generate",
+    summary="Generate department",
+    description="Generate a department using AI.",
+)
+async def generate_department(
+    department_name: Optional[str] = None,
+    course_name: Optional[str] = None,
+    department_service: DepartmentApiService = Depends(get_department_api_service),
+):
+    """
+    Generate a department using AI.
+
+    - If department_name is provided, it is used.
+    - If only course_name is provided, it is used to invent a department.
+    - If neither is provided, the model invents a department.
+
+    Args:
+        department_name: Optional name of the department to generate
+        course_name: Optional name of the course to generate a department for
+    Returns:
+        The generated department XML as a string
+    """
+    return await department_service.generate_department(department_name, course_name)

@@ -21,18 +21,18 @@ from artificial_u.utils.exceptions import (
 class CourseService:
     """Service for managing course entities."""
 
-    def __init__(self, repository, content_generator, professor_service, logger=None):
+    def __init__(self, repository, content_service, professor_service, logger=None):
         """
         Initialize the course service.
 
         Args:
             repository: Data repository
-            content_generator: Content generation service
+            content_service: Content generation service
             professor_service: Professor management service
             logger: Optional logger instance
         """
         self.repository = repository
-        self.content_generator = content_generator
+        self.content_service = content_service
         self.professor_service = professor_service
         self.logger = logger or logging.getLogger(__name__)
 
@@ -184,38 +184,3 @@ class CourseService:
             error_msg = f"Failed to list courses: {str(e)}"
             self.logger.error(error_msg)
             raise DatabaseError(error_msg) from e
-
-    def list_departments(self) -> List[Department]:
-        """
-        List all departments.
-
-        Returns:
-            List[Department]: List of departments
-        """
-        self.logger.debug("Listing departments")
-
-        # In a complete implementation, would retrieve from database
-        # For now, return placeholder data
-        return [
-            Department(
-                id=1,
-                name="Computer Science",
-                code="CS",
-                faculty="Science and Engineering",
-                description="The Computer Science department focuses on the theory and practice of computation.",
-            ),
-            Department(
-                id=2,
-                name="Mathematics",
-                code="MATH",
-                faculty="Science and Engineering",
-                description="The Mathematics department explores pure and applied mathematics.",
-            ),
-            Department(
-                id=3,
-                name="Statistics",
-                code="STAT",
-                faculty="Science and Engineering",
-                description="Focuses on statistical theory and its applications to data analysis.",
-            ),
-        ]
