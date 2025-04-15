@@ -44,6 +44,7 @@ export const ENDPOINTS = {
   departments: {
     list: '/v1/departments',
     detail: (id: number) => `/v1/departments/${String(id)}`,
+    generate: '/v1/departments/generate',
   },
   courses: {
     list: '/v1/courses',

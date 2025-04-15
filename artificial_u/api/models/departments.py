@@ -32,6 +32,13 @@ class DepartmentUpdate(DepartmentBase):
     pass
 
 
+# Department generation model
+class DepartmentGeneration(DepartmentBase):
+    """Model for generating a new department."""
+
+    pass
+
+
 # Department response model
 class DepartmentResponse(DepartmentBase):
     """Model for department responses."""

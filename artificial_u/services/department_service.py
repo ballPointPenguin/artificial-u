@@ -285,28 +285,30 @@ class DepartmentService:
             self.logger.error(error_msg)
             raise DatabaseError(error_msg) from e
 
-    async def generate_department(
-        self, department_name: str = None, course_name: str = None
-    ) -> dict:
+    async def generate_department(self, department_data: dict) -> dict:
         """
         Generate a department using AI based on the department name, course_name, or neither.
-        If both department_name and course_name are supplied, department_name takes precedence.
+        If both name and course_name are supplied, name takes precedence.
 
         This function uses the content service with Ollama to generate a department
         based on the provided name, or invents a new department if no name is given.
         It uses the GENERIC_XML_SYSTEM_PROMPT and the appropriate prompt to guide the generation.
 
         Args:
-            department_name: The name of the department to generate (optional)
+            name: The name of the department to generate (optional)
             course_name: The name of the course to generate a department for (optional)
         Returns:
             dict: The generated department as a dictionary
         """
-        if department_name:
-            self.logger.info(f"Generating department for: {department_name}")
+
+        name = department_data.get("name")
+        course_name = department_data.get("course_name")
+
+        if name:
+            self.logger.info(f"Generating department for: {name}")
             from artificial_u.prompts.department import get_department_prompt
 
-            prompt = get_department_prompt(department_name)
+            prompt = get_department_prompt(name)
         elif course_name:
             self.logger.info(f"Generating department for course: {course_name}")
             from artificial_u.prompts.department import get_course_department_prompt
@@ -319,6 +321,8 @@ class DepartmentService:
             from artificial_u.prompts.department import get_open_department_prompt
 
             prompt = get_open_department_prompt()
+
+        self.logger.info(f"Prompt: {prompt}")
 
         # Use the content service to generate the department
         from artificial_u.services.content_service import ContentService

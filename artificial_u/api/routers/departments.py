@@ -12,6 +12,7 @@ from artificial_u.api.models.courses import CoursesListResponse
 from artificial_u.api.models.departments import (
     DepartmentCoursesResponse,
     DepartmentCreate,
+    DepartmentGeneration,
     DepartmentProfessorsResponse,
     DepartmentResponse,
     DepartmentsListResponse,
@@ -292,21 +293,20 @@ async def list_department_courses(
     description="Generate a department using AI.",
 )
 async def generate_department(
-    department_name: Optional[str] = None,
-    course_name: Optional[str] = None,
+    department_data: DepartmentGeneration,
     department_service: DepartmentApiService = Depends(get_department_api_service),
 ):
     """
     Generate a department using AI.
 
-    - If department_name is provided, it is used.
+    - If name is provided, it is used.
     - If only course_name is provided, it is used to invent a department.
     - If neither is provided, the model invents a department.
 
     Args:
-        department_name: Optional name of the department to generate
+        name: Optional name of the department to generate
         course_name: Optional name of the course to generate a department for
     Returns:
         The generated department XML as a string
     """
-    return await department_service.generate_department(department_name, course_name)
+    return await department_service.generate_department(department_data)

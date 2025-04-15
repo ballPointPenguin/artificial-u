@@ -13,6 +13,7 @@ from artificial_u.api.models.departments import (
     CourseBrief,
     DepartmentCoursesResponse,
     DepartmentCreate,
+    DepartmentGeneration,
     DepartmentProfessorsResponse,
     DepartmentResponse,
     DepartmentsListResponse,
@@ -280,21 +281,20 @@ class DepartmentApiService:
             return None
 
     async def generate_department(
-        self, department_name: str = None, course_name: str = None
+        self, department_data: DepartmentGeneration
     ) -> DepartmentResponse:
         """
         Generate a department using AI.
 
-        Generate a department using AI based on department_name, course_name, or neither.
+        Generate a department using AI based on name, course_name, or neither.
 
         Args:
-            department_name: Optional name of the department to generate
-            course_name: Optional name of the course to generate a department for
+            department_data: optional name or course_name to seed the AI prompt
         Returns:
             DepartmentResponse: The generated department
         """
         dept_dict = await self.core_service.generate_department(
-            department_name, course_name
+            department_data.model_dump()
         )
         return department_dict_to_response(dept_dict)
 

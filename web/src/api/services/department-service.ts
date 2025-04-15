@@ -46,6 +46,15 @@ export async function createDepartment(
 }
 
 /**
+ * Generate a department with AI
+ */
+export async function generateDepartment(
+  data: Omit<Department, 'id' | 'created_at' | 'updated_at'>
+): Promise<Department> {
+  return httpClient.post<Department>(ENDPOINTS.departments.generate, data)
+}
+
+/**
  * Update a department
  */
 export async function updateDepartment(
