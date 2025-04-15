@@ -15,7 +15,7 @@ DEFAULT_TEXT_EXPORT_PATH = "lecture_texts"
 
 # Content generation defaults
 DEFAULT_CONTENT_BACKEND = "anthropic"
-DEFAULT_OLLAMA_MODEL = "tinyllama"
+DEFAULT_OLLAMA_MODEL = "phi4-mini"
 
 # Storage defaults (MinIO/S3)
 DEFAULT_STORAGE_TYPE = "minio"  # "minio" or "s3"

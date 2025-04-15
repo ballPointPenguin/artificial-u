@@ -2,9 +2,9 @@
 Factory functions for creating content generators with different backends.
 """
 
-import os
 from typing import Optional
 
+from artificial_u.config.defaults import DEFAULT_OLLAMA_MODEL
 from artificial_u.generators.content import ContentGenerator
 
 
@@ -30,13 +30,13 @@ def create_default_generator(
 
 
 def create_ollama_generator(
-    model: str = "tinyllama", timeout: int = 60
+    model: str = DEFAULT_OLLAMA_MODEL, timeout: int = 60
 ) -> ContentGenerator:
     """
     Create a ContentGenerator that uses Ollama for local inference.
 
     Args:
-        model: Ollama model to use, defaults to 'tinyllama'
+        model: Ollama model to use, defaults to DEFAULT_OLLAMA_MODEL
         timeout: Timeout in seconds for Ollama requests, defaults to 60
 
     Returns:
@@ -102,7 +102,8 @@ def create_generator(backend: str = "anthropic", **kwargs) -> ContentGenerator:
         )
     elif backend == "ollama":
         return create_ollama_generator(
-            model=kwargs.get("model", "tinyllama"), timeout=kwargs.get("timeout", 60)
+            model=kwargs.get("model", DEFAULT_OLLAMA_MODEL),
+            timeout=kwargs.get("timeout", 60),
         )
     else:
         raise ValueError(f"Unknown backend: {backend}")

@@ -83,7 +83,7 @@ class Settings(BaseSettings):
     # Model names and configurations
     CLAUDE_MODEL: str = "claude-3-5-sonnet-20240620"
     GEMINI_IMAGEN_MODEL: str = "imagen-3.0-generate-002"
-    OPENAI_GPT_MODEL: str = "gpt-4o"
+    OPENAI_GPT_MODEL: str = "gpt-4.1-nano"
 
     # Temporary storage paths
     TEMP_AUDIO_PATH: str = DEFAULT_TEMP_AUDIO_PATH

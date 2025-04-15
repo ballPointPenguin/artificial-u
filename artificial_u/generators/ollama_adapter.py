@@ -8,6 +8,9 @@ from typing import Any, Dict, List, Optional
 
 import ollama
 
+from artificial_u.config.defaults import DEFAULT_OLLAMA_MODEL
+from artificial_u.prompts.system import GENERIC_XML_SYSTEM_PROMPT
+
 
 # Custom timeout exception
 class OllamaTimeoutError(Exception):
@@ -79,10 +82,10 @@ class OllamaClient:
 
     def create(
         self,
-        model: str = "tinyllama",
-        max_tokens: int = 1000,
-        temperature: float = 0.0,
-        system: str = "",
+        model: str = DEFAULT_OLLAMA_MODEL,
+        max_tokens: int = 1024,
+        temperature: float = 0.2,
+        system: str = GENERIC_XML_SYSTEM_PROMPT,
         messages: List[Dict[str, str]] = None,
         timeout: int = 60,  # Default timeout of 60 seconds
     ) -> Any:
@@ -91,7 +94,7 @@ class OllamaClient:
         For testing purposes, this will wrap Ollama's responses in expected XML tags.
 
         Args:
-            model: The Ollama model to use, defaults to "tinyllama"
+            model: The Ollama model to use, defaults to DEFAULT_OLLAMA_MODEL
             max_tokens: Maximum number of tokens in the response
             temperature: Sampling temperature
             system: System prompt
@@ -124,8 +127,8 @@ class OllamaClient:
                 model=model,
                 messages=ollama_messages,
                 options={
-                    "temperature": 0.0,  # Zero temperature = more deterministic, faster
-                    "num_predict": min(100, max_tokens),  # Generate much less text
+                    "temperature": temperature,
+                    "num_predict": max_tokens,
                     # "num_ctx": 256,  # Smaller context window
                     # "num_thread": 2,  # Use fewer threads
                 },

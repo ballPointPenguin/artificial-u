@@ -94,9 +94,11 @@ pytest tests/test_system_integration.py -v
 
 Ollama supports many models. For testing, we recommend smaller models like:
 
-- TinyLlama (1.1B parameters)
-- Mistral (7B parameters)
-- Phi-2 (2.7B parameters)
+- tinyllama (1B parameters)
+- phi4-mini (3.8B parameters)
+- olmo2 (7.3B parameters)
+- dolphin3 (8.0B parameters)
+- mistral-small3.1 (24B parameters)
 
 View available models at [ollama.com/library](https://ollama.com/library).
 

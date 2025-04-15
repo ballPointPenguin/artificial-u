@@ -23,12 +23,14 @@ services:
       - "11434:11434"
     volumes:
       - ollama_data:/root/.ollama
+      - ./ollama-entrypoint.sh:/ollama-entrypoint.sh
     environment:
       - OLLAMA_NUM_THREADS=4
-      - OLLAMA_NUM_GPU=0 # Disable GPU
+      - OLLAMA_NUM_GPU=2
       - OLLAMA_MODEL_PATH=/root/.ollama/models
-    mem_limit: "6g"
+    mem_limit: "8g"
     cpus: 4.0
+    entrypoint: [ "/ollama-entrypoint.sh" ]
 
   minio:
     image: minio/minio:latest
