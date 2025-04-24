@@ -138,3 +138,9 @@ class DepartmentRepository(BaseRepository):
             session.delete(db_department)
             session.commit()
             return True
+
+    def list_department_names(self) -> List[str]:
+        """Return a list of all department names."""
+        with self.get_session() as session:
+            query = session.query(DepartmentModel.name)
+            return [row[0] for row in query.all()]

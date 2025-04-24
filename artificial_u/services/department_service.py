@@ -6,8 +6,15 @@ import logging
 import xml.etree.ElementTree as ET
 from typing import Dict, List, Optional
 
+from artificial_u.config import get_settings
 from artificial_u.models.core import Course, Department, Professor
+from artificial_u.models.repositories.department import DepartmentRepository
+from artificial_u.prompts.department import (
+    get_department_prompt,
+    get_open_department_prompt,
+)
 from artificial_u.prompts.system import GENERIC_XML_SYSTEM_PROMPT
+from artificial_u.services.content_service import ContentService
 from artificial_u.utils.exceptions import (
     DatabaseError,
     DepartmentNotFoundError,
@@ -61,7 +68,6 @@ class DepartmentService:
         Raises:
             DatabaseError: If there's an error saving to the database
         """
-        self.logger.info(f"Creating new department: {code} - {name}")
 
         # Create department object
         department = Department(
@@ -75,7 +81,6 @@ class DepartmentService:
         # Save to database
         try:
             department = self.repository.department.create(department)
-            self.logger.info(f"Department created with ID: {department.id}")
             return department
         except Exception as e:
             error_msg = f"Failed to save department: {str(e)}"
@@ -135,10 +140,6 @@ class DepartmentService:
         Raises:
             DatabaseError: If there's an error retrieving from the database
         """
-        self.logger.info(
-            f"Listing departments{f' for faculty {faculty}' if faculty else ''}"
-        )
-
         try:
             departments = self.repository.department.list(faculty)
             self.logger.debug(f"Found {len(departments)} departments")
@@ -163,8 +164,6 @@ class DepartmentService:
             DepartmentNotFoundError: If department not found
             DatabaseError: If there's an error updating the database
         """
-        self.logger.info(f"Updating department {department_id}")
-
         # Get existing department
         department = self.get_department(department_id)
 
@@ -178,7 +177,6 @@ class DepartmentService:
         # Save changes
         try:
             updated_department = self.repository.department.update(department)
-            self.logger.info(f"Department {department_id} updated successfully")
             return updated_department
         except Exception as e:
             error_msg = f"Failed to update department: {str(e)}"
@@ -200,8 +198,6 @@ class DepartmentService:
             DependencyError: If department has dependencies
             DatabaseError: If there's an error deleting from the database
         """
-        self.logger.info(f"Deleting department {department_id}")
-
         # TODO: Check if department exists
         # department = self.get_department(department_id)
 
@@ -243,8 +239,6 @@ class DepartmentService:
             DepartmentNotFoundError: If department not found
             DatabaseError: If there's an error retrieving from the database
         """
-        self.logger.info(f"Getting professors for department {department_id}")
-
         # Check if department exists
         self.get_department(department_id)
 
@@ -271,8 +265,6 @@ class DepartmentService:
             DepartmentNotFoundError: If department not found
             DatabaseError: If there's an error retrieving from the database
         """
-        self.logger.info(f"Getting courses for department {department_id}")
-
         # Check if department exists
         self.get_department(department_id)
 
@@ -305,31 +297,18 @@ class DepartmentService:
         course_name = department_data.get("course_name")
 
         if name:
-            self.logger.info(f"Generating department for: {name}")
-            from artificial_u.prompts.department import get_department_prompt
-
             prompt = get_department_prompt(name)
         elif course_name:
-            self.logger.info(f"Generating department for course: {course_name}")
-            from artificial_u.prompts.department import get_course_department_prompt
-
-            prompt = get_course_department_prompt(course_name)
+            prompt = get_department_prompt(course_name=course_name)
         else:
-            self.logger.info(
-                "Generating open-ended department (no name or course supplied)"
+            repo = DepartmentRepository()
+            existing_departments = repo.list_department_names()
+            prompt = get_open_department_prompt(
+                existing_departments=existing_departments
             )
-            from artificial_u.prompts.department import get_open_department_prompt
-
-            prompt = get_open_department_prompt()
-
-        self.logger.info(f"Prompt: {prompt}")
 
         # Use the content service to generate the department
-        from artificial_u.services.content_service import ContentService
-
         content_service = ContentService(logger=self.logger)
-
-        from artificial_u.config import get_settings
 
         settings = get_settings()
         model = getattr(settings, "OPENAI_GPT_MODEL", "gpt-4.1-nano")
@@ -341,9 +320,6 @@ class DepartmentService:
             model=model,
             system_prompt=GENERIC_XML_SYSTEM_PROMPT,
         )
-
-        # Log the response
-        self.logger.info(f"Generated department response: {response[:100]}...")
 
         return parse_department_xml(response)
 
