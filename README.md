@@ -42,19 +42,37 @@ python -m venv venv
 source venv/bin/activate  # On Windows, use: venv\\Scripts\\activate
 ```
 
-3. Install dependencies:
+3. Install dependencies and set up your environment:
 
-```bash
-# For production (with exact pinned versions)
-pip install -r requirements.lock
+   First, install the project in editable mode along with the development dependencies (which includes `pip-tools`):
 
-# For development (with exact pinned versions)
-pip install -r requirements-dev.lock
+   ```bash
+   pip install -e ".[dev]"
+   ```
 
-# Or install using pyproject.toml (flexible versions)
-pip install -e .  # For production dependencies
-pip install -e ".[dev]"  # For development dependencies
-```
+4. Generate pinned requirements files (optional but recommended for reproducible environments):
+
+   ```bash
+   # Generate requirements.txt for base dependencies
+   pip-compile pyproject.toml --resolver=backtracking -o requirements.txt
+
+   # Generate requirements-dev.txt for development dependencies
+   pip-compile pyproject.toml --resolver=backtracking --extra dev -o requirements-dev.txt
+   ```
+
+5. Sync your environment using the generated files:
+
+   If you generated the requirements files, you can ensure your environment matches them exactly using `pip-sync`:
+
+   ```bash
+   # Sync using the development requirements file
+   pip-sync requirements-dev.txt
+
+   # Or, sync using only the base requirements file
+   # pip-sync requirements.txt
+   ```
+
+   *Note: Anytime you add/remove dependencies in `pyproject.toml`, regenerate the requirements files (step 4) and re-sync your environment (step 5). Commit the changes to `pyproject.toml` and the generated `requirements*.txt` files.*
 
 4. Create a `.env` file with your API keys:
 
