@@ -1,110 +1,176 @@
 """Professor prompt templates."""
 
-from typing import Optional
+from typing import Any, Dict, List, Optional
 
 from artificial_u.prompts.base import PromptTemplate
 
-# Example professor profiles to use as demonstrations
-EXAMPLE_PROFILES = [
-    """Name: Dr. Eleanor Westfield, Ph.D.
-Title: Associate Professor of Marine Biology
-Gender: Female
-Accent: American (Pacific Northwest)
-Age: 42
-Description: Dr. Westfield has shoulder-length auburn hair usually kept in a practical ponytail during fieldwork. She has sun-weathered skin from years of outdoor research, laugh lines around her green eyes, and typically dresses in smart casual attire paired with a signature jade pendant. Her classroom presence is energetic; she often gestures with her hands when explaining concepts and stands with confident posture developed during years of public speaking.
-Background: Dr. Westfield earned her doctorate from Scripps Institution of Oceanography, focusing on coral reef ecosystems. Before joining academia, she spent five years with the National Oceanic and Atmospheric Administration studying climate change impacts on marine environments.
-Personality: Known for her infectious enthusiasm and approachable demeanor, Dr. Westfield brings passion to every lecture. She uses humor effectively and is patient with students still developing their scientific thinking. Students appreciate her willingness to meet outside office hours.
-Teaching Style: Dr. Westfield emphasizes hands-on learning, frequently incorporating field trips to coastal areas. Her lectures feature stunning visuals from her research expeditions, and she regularly brings artifacts from her collection for students to examine. She uses storytelling to explain complex ecological relationships.""",
-    """Name: Dr. Hiro Tanaka, Ph.D.
-Title: Professor of Theoretical Physics
-Gender: Male
-Accent: Japanese (mild)
-Age: 61
-Description: Dr. Tanaka has salt-and-pepper hair cropped short and meticulously groomed, with a clean-shaven face and rectangular glasses that frame his observant dark eyes. He stands 5'8" with excellent posture and typically wears formal attire—pressed dress shirts, slacks, and occasionally a tweed jacket with leather elbow patches. He moves with deliberate precision, often using his hands to illustrate concepts in space when explaining complex theories. A small analog watch is always visible on his left wrist, which he occasionally glances at while lecturing.
-Background: With degrees from Tokyo University and MIT, Dr. Tanaka worked at CERN before joining the university. His contributions to string theory have been published in Nature and Science, and he maintains research collaborations with physicists worldwide.
-Personality: Methodical and precise, Dr. Tanaka has a quiet intensity that commands attention. Though initially perceived as reserved, students discover his dry wit and deep commitment to their success. He values precision in language and expects rigorous thinking.
-Teaching Style: Dr. Tanaka's lectures are masterclasses in logical progression. He builds complex theories step by step, using elegant derivations rather than memorization. He's known for thought experiments that make abstract concepts tangible and creates custom simulations to visualize quantum phenomena.""",
-]
 
-# Professor generation prompt template
-PROFESSOR_GENERATION_PROMPT = PromptTemplate(
-    template="""Create a detailed profile for a professor in the {department} department, specializing in {specialization}.
+def format_existing_professors_xml(existing_professors: List[Dict[str, str]]) -> str:
+    """Format a list of existing professors (name, specialization) as XML for prompt context."""
+    if not existing_professors:
+        return ""
+    lines = ["<existing_professors>"]
+    for prof in existing_professors:
+        lines.append(
+            f"  <professor><name>{prof.get('name', 'N/A')}</name>"
+            f"<specialization>{prof.get('specialization', 'N/A')}</specialization></professor>"
+        )
+    lines.append("</existing_professors>")
+    return "\n".join(lines)
 
-{gender_text}
-{nationality_text}
-{age_text}
-{accent_text}
 
-Create a rich, realistic faculty profile with the following structure:
+# Base template structure for a professor profile
+PROFESSOR_XML_STRUCTURE = (
+    "<professor>\n"
+    "  <name>[Full name with title, e.g., Dr. Jane Doe, Professor John Smith]</name>\n"
+    "  <title>[Academic title, e.g., Assistant Professor, Full Professor]</title>\n"
+    "  <department_name>[Academic Department, e.g., Computer Science, Philosophy]</department_name>\n"
+    "  <specialization>[Area of expertise, e.g., Quantum Computing, Medieval History]</specialization>\n"
+    "  <gender>[Professor's gender, e.g., Male, Female, Non-binary]</gender>\n"
+    "  <age>[Professor's approximate age as a number, e.g., 45]</age>\n"
+    "  <accent>[Professor's accent or speech pattern, e.g., British RP, Mild Southern Drawl, "
+    "None noticeable]</accent>\n"
+    "  <description>[Detailed physical appearance, clothing style, mannerisms, e.g., Tall, wears tweed jackets, "
+    "gestures often]</description>\n"
+    "  <background>[Educational and professional history, e.g., PhD from MIT, postdoc at CERN, "
+    "worked at Google Research]</background>\n"
+    "  <personality>[Key personality traits relevant to teaching, e.g., Enthusiastic, Patient, "
+    "Demanding but fair]</personality>\n"
+    "  <teaching_style>[Distinctive teaching approach, e.g., Uses Socratic method, Lecture-heavy with multimedia, "
+    "Project-based]</teaching_style>\n"
+    "</professor>"
+)
 
-<professor_profile>
-Name: [Full name with title]
-Title: [Academic title]
-Gender: [Professor's gender]
-Accent: [Professor's accent or speech pattern]
-Age: [Professor's age as a number]
-Description: [Detailed physical appearance, clothing style, mannerisms, and distinctive visual characteristics]
-Background: [Educational and professional background]
-Personality: [Personality traits evident in teaching]
-Teaching Style: [Distinctive teaching approach]
-</professor_profile>
+# Example of a filled profile (concise)
+EXAMPLE_PROFESSOR_1 = (
+    "<professor>\n"
+    "  <name>Dr. Evelyn Reed</name>\n"
+    "  <title>Associate Professor</title>\n"
+    "  <department_name>Comparative Literature</department_name>\n"
+    "  <specialization>20th Century European Fiction</specialization>\n"
+    "  <gender>Female</gender>\n"
+    "  <age>48</age>\n"
+    "  <accent>Standard American</accent>\n"
+    "  <description>Sharp dresser, often in dark colors. Intense gaze, speaks precisely. "
+    "Short, dark hair.</description>\n"
+    "  <background>PhD Yale, Published two monographs.</background>\n"
+    "  <personality>Intellectually rigorous, challenges students, appreciates nuanced arguments.</personality>\n"
+    "  <teaching_style>Seminar-based discussions, close reading of texts, "
+    "high expectations for participation.</teaching_style>\n"
+    "</professor>"
+)
 
-The "Description" should provide a detailed physical appearance including facial features, body language, clothing style, and any distinctive visual characteristics that would help visualize the professor.
+# Prompt for completing a professor profile with partial info (or generating if minimal info)
+PARTIAL_PROFESSOR_PROMPT = PromptTemplate(
+    template=f"""
+Complete the professor profile below.
+Use any provided details. For fields marked with [TODO], generate realistic and consistent values.
 
-Here are two examples of well-crafted professor profiles:
+Existing professors in the university (for context and to avoid repetition):
+{{existing_professors_xml}}
 
-Example 1:
-<professor_profile>
-{example_1}
-</professor_profile>
+Provided details (use these where available, generate for [TODO]):
+{{partial_profile_xml}}
 
-Example 2:
-<professor_profile>
-{example_2}
-</professor_profile>
+Desired complete output format (fill in *all* bracketed placeholders):
+{PROFESSOR_XML_STRUCTURE}
 
-Make this professor feel like a real person with depth. Include educational background, personality traits that show in teaching, and a distinctive teaching style.""",
-    required_vars=["department", "specialization"],
+Example of a filled profile:
+{EXAMPLE_PROFESSOR_1}
+
+Generate the *complete* profile:
+<output>
+""",
+    required_vars=[
+        "existing_professors_xml",
+        "partial_profile_xml",
+    ],
+)
+
+# Prompt for generating a completely new professor, inventing everything
+OPEN_PROFESSOR_PROMPT = PromptTemplate(
+    template=f"""
+Invent a *new*, creative, or typical university professor.
+Generate a detailed profile, including inventing a suitable department name, specialization, and all other details.
+Consider the provided list of existing professors to ensure variety and avoid simple repetition.
+
+Existing professors in the university:
+{{existing_professors_xml}}
+
+Desired output format (fill in the bracketed placeholders):
+{PROFESSOR_XML_STRUCTURE}
+
+Example of a filled profile:
+{EXAMPLE_PROFESSOR_1}
+
+Generate the profile for the newly invented professor:
+<output>
+""",
+    required_vars=["existing_professors_xml"],
 )
 
 
 def get_professor_prompt(
-    department: str,
-    specialization: str,
-    gender: Optional[str] = None,
-    nationality: Optional[str] = None,
-    age_range: Optional[str] = None,
-    accent: Optional[str] = None,
+    existing_professors: Optional[List[Dict[str, str]]] = None,
+    partial_attributes: Optional[Dict[str, Any]] = None,
 ) -> str:
-    """Generate a professor creation prompt.
+    """
+    Get the appropriate professor generation prompt.
+    Uses FULLY_OPEN prompt if no partial attributes are provided,
+    otherwise uses PARTIAL prompt to fill in the blanks.
 
     Args:
-        department: Academic department
-        specialization: Area of expertise
-        gender: Optional gender specification
-        nationality: Optional nationality specification
-        age_range: Optional age range (e.g., "30-40", "50-60")
-        accent: Optional accent specification
+        existing_professors: List of existing professors for context.
+        partial_attributes: Optional dictionary of known attributes.
 
     Returns:
-        str: Formatted prompt string
+        The formatted prompt string ready for the LLM.
     """
-    # Optional context lines
-    gender_text = f"Gender: {gender}" if gender else ""
-    nationality_text = (
-        f"Nationality/cultural background: {nationality}" if nationality else ""
-    )
-    age_text = f"Age range: {age_range}" if age_range else ""
-    accent_text = f"Accent: {accent}" if accent else ""
+    existing_professors = existing_professors or []
+    existing_professors_xml = format_existing_professors_xml(existing_professors)
+    partial_attributes = partial_attributes or {}
 
-    # Format the prompt
-    return PROFESSOR_GENERATION_PROMPT(
-        department=department,
-        specialization=specialization,
-        gender_text=gender_text,
-        nationality_text=nationality_text,
-        age_text=age_text,
-        accent_text=accent_text,
-        example_1=EXAMPLE_PROFILES[0],
-        example_2=EXAMPLE_PROFILES[1],
-    )
+    if not partial_attributes:
+        # Case 1: No partial data provided -> Invent everything
+        return OPEN_PROFESSOR_PROMPT.format(
+            existing_professors_xml=existing_professors_xml
+        )
+    else:
+        # Case 2: Some partial data provided -> Use it and fill in the rest
+        partial_profile_xml = format_partial_attributes_xml(partial_attributes)
+        return PARTIAL_PROFESSOR_PROMPT.format(
+            existing_professors_xml=existing_professors_xml,
+            partial_profile_xml=partial_profile_xml,
+        )
+
+
+# Helper function to format partial attributes into XML, marking missing as [TODO]
+def format_partial_attributes_xml(partial_attrs: Dict[str, Any]) -> str:
+    """Builds the XML string for partial attributes, handling missing fields."""
+    lines = ["<professor>"]
+    # Define all expected fields in the desired order
+    fields = [
+        "name",
+        "title",
+        "department_name",
+        "specialization",
+        "gender",
+        "age",
+        "accent",
+        "description",
+        "background",
+        "personality",
+        "teaching_style",
+    ]
+
+    for field in fields:
+        value = partial_attrs.get(field)
+        # Handle provided attributes, including empty strings if deliberately passed
+        if value is not None:
+            # Ensure age is stringified if it's an int
+            lines.append(f"  <{field}>{str(value)}</{field}>")
+        else:
+            lines.append(f"  <{field}>[TODO]</{field}>")
+
+    lines.append("</professor>")
+    return "\n".join(lines)

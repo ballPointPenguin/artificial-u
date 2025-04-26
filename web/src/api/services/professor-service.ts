@@ -107,3 +107,17 @@ export async function generateProfessorImage(id: number): Promise<Professor> {
     {} // Empty body for this POST request
   )
 }
+
+// Define the input payload type for generation
+interface ProfessorGeneratePayload {
+  partial_attributes?: Record<string, unknown>
+}
+
+/**
+ * Generate a professor profile using AI
+ */
+export async function generateProfessor(
+  data: ProfessorGeneratePayload
+): Promise<Professor> {
+  return httpClient.post<Professor>(ENDPOINTS.professors.generate, data)
+}

@@ -108,6 +108,12 @@ class Settings(BaseSettings):
     # Integration service endpoints
     OLLAMA_HOST: str = "http://localhost:11434"
 
+    # Professor generation model
+    PROFESSOR_GENERATION_MODEL: str = "claude-3-5-haiku-latest"
+
+    # Department generation model
+    DEPARTMENT_GENERATION_MODEL: str = "gpt-4.1-nano"
+
     # Configure Pydantic to use .env files
     model_config = SettingsConfigDict(
         env_file=".env",

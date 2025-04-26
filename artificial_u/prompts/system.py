@@ -19,12 +19,6 @@ GENERIC_XML_SYSTEM_PROMPT = (
     "Do not include any explanations, notes, or text outside the XML block."
 )
 
-PROFESSOR_PROFILE_SYSTEM_PROMPT = (
-    "You are an expert academic profile writer. Create a detailed and realistic professor profile based on the "
-    "requirements. You always respond in valid, indented XML format. "
-    "Do not include any explanations, notes, or text outside the XML block."
-)
-
 PROFESSOR_SYSTEM_PROMPT = (
     "You are an expert at creating rich, realistic faculty profiles for an educational content system. "
     "You always respond in valid, indented XML format. "
@@ -36,7 +30,6 @@ SYSTEM_PROMPTS: Dict[str, str] = {
     "professor": PROFESSOR_SYSTEM_PROMPT,
     "course": COURSE_SYSTEM_PROMPT,
     "lecture": LECTURE_SYSTEM_PROMPT,
-    "professor_profile": PROFESSOR_PROFILE_SYSTEM_PROMPT,
 }
 
 

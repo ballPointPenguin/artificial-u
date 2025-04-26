@@ -40,6 +40,7 @@ export interface Professor {
   description: string | null
   age: number | null
   image_url: string | null
+  department_id: number | null
 }
 
 export type ProfessorsList = PaginatedResponse<Professor>

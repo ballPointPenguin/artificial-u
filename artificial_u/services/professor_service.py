@@ -3,9 +3,10 @@ Professor management service for ArtificialU.
 """
 
 import logging
-import re
+import xml.etree.ElementTree as ET
 from typing import Any, Dict, List, Optional
 
+from artificial_u.config import get_settings
 from artificial_u.models.core import Professor
 from artificial_u.prompts.base import extract_xml_content
 from artificial_u.prompts.professors import get_professor_prompt
@@ -13,8 +14,11 @@ from artificial_u.prompts.system import SYSTEM_PROMPTS
 from artificial_u.services.content_service import ContentService
 from artificial_u.services.image_service import ImageService
 from artificial_u.services.voice_service import VoiceService
-from artificial_u.utils.exceptions import DatabaseError, ProfessorNotFoundError
-from artificial_u.utils.random_generators import RandomGenerators
+from artificial_u.utils.exceptions import (
+    DatabaseError,
+    GenerationError,
+    ProfessorNotFoundError,
+)
 
 
 class ProfessorService:
@@ -44,332 +48,363 @@ class ProfessorService:
         self.logger = logger or logging.getLogger(__name__)
         self.voice_service = voice_service
 
-    async def create_professor(
-        self,
-        name: Optional[str] = None,
-        title: Optional[str] = None,
-        department: Optional[str] = None,
-        specialization: Optional[str] = None,
-        background: Optional[str] = None,
-        teaching_style: Optional[str] = None,
-        personality: Optional[str] = None,
-        gender: Optional[str] = None,
-        accent: Optional[str] = None,
-        description: Optional[str] = None,
-        age: Optional[int] = None,
-    ) -> Professor:
-        """
-        Create a new professor with the given attributes. Async version.
+    # --- Generation Method --- #
 
-        If parameters are not provided, AI generation or defaults will be used.
+    async def generate_professor_profile(
+        self,
+        partial_attributes: Optional[Dict[str, Any]] = None,
+    ) -> Dict[str, Any]:
+        """
+        Generates a professor profile using AI, potentially based on partial attributes.
+        Handles fetching department name from ID if necessary.
 
         Args:
-            name: Professor's name
-            title: Academic title
-            department: Academic department
-            specialization: Research specialization
-            background: Professional background
-            teaching_style: Teaching methodology
-            personality: Personality traits
-            gender: Professor's gender (optional)
-            accent: Professor's accent (optional)
-            description: Physical description of the professor (optional)
-            age: Professor's age (optional)
+            partial_attributes: Optional dictionary of known attributes to guide generation
+                                or fill in the blanks.
 
         Returns:
-            Professor: The created professor object
-        """
-        self.logger.info("Creating new professor (async)")
+            A dictionary containing the complete generated professor attributes.
 
-        # First, ensure we have department and specialization
-        department = department or RandomGenerators.generate_department()
-        specialization = specialization or RandomGenerators.generate_specialization(
-            department
+        Raises:
+            GenerationError: If the AI generation or parsing fails.
+            DatabaseError: If fetching related data (like department name) fails.
+        """
+        partial_attributes = partial_attributes or {}
+        self.logger.info(
+            f"Generating professor profile with partial attributes: {list(partial_attributes.keys())}"
         )
 
-        # Consolidate provided attributes
-        provided_attrs = {
-            k: v
-            for k, v in {
-                "name": name,
-                "title": title,
-                "background": background,
-                "teaching_style": teaching_style,
-                "personality": personality,
-                "gender": gender,
-                "accent": accent,
-                "description": description,
-                "age": age,
-            }.items()
-            if v is not None
+        # --- 1. Resolve Department Name --- #
+        try:
+            resolved_dept_name = self._resolve_department_name(partial_attributes)
+        except DatabaseError as e:
+            raise e
+
+        # --- 2. Prepare Prompt --- #
+        prompt = self._prepare_professor_generation_prompt(
+            department_name=resolved_dept_name,
+            partial_attributes=partial_attributes,
+        )
+
+        # --- 3. Call AI and Parse --- #
+        try:
+            generated_attrs = await self._call_ai_and_parse(prompt)
+        except GenerationError as e:
+            # Propagate generation/parsing errors
+            raise e
+
+        # --- 4. Combine Attributes --- #
+        # Start with generated, overlay with provided, prioritize resolved/input values
+        final_attrs = {
+            **generated_attrs,  # Base: Generated values
+            **partial_attributes,  # Overlay: User-provided specifics
+            # Ensure resolved/input values take final precedence if they exist
+            "department_name": (
+                resolved_dept_name
+                if resolved_dept_name
+                else generated_attrs.get("department_name")
+            ),
         }
 
-        # Try AI generation first
-        professor = None
-        if self.content_service:
-            try:
-                professor = await self._create_professor_with_ai(
-                    department, specialization, provided_attrs
-                )
-            except Exception as e:
-                self.logger.warning(
-                    f"AI generation failed, falling back to random generation: {e}",
-                    exc_info=True,
-                )
-
-        # If AI generation failed or wasn't attempted, use random generation
-        if professor is None:
-            professor = self._create_professor_with_random(
-                department, specialization, provided_attrs
-            )
-
-        # Assign a voice
-        self._assign_voice_to_professor(professor)
-
-        # Save professor to repository
-        try:
-            saved_professor = self.repository.professor.create(professor)
-            self.logger.info(f"Professor created with ID: {saved_professor.id}")
-            return saved_professor
-        except Exception as e:
-            error_msg = f"Failed to save professor: {str(e)}"
-            self.logger.error(error_msg)
-            raise DatabaseError(error_msg) from e
-
-    async def _create_professor_with_ai(
-        self,
-        department: str,
-        specialization: str,
-        provided_attrs: dict,
-    ) -> Professor:
-        """Helper to create professor using AI content generator via ContentService."""
-        self.logger.info("Using AI ContentService to generate professor profile")
-
-        # --- 1. Prepare Prompt --- #
-        prompt = self._prepare_professor_generation_prompt(
-            department, specialization, provided_attrs
+        self.logger.info(
+            f"Successfully generated professor profile data for: {final_attrs.get('name')}"
         )
+        return final_attrs
 
-        # --- 2. Call Content Service --- #
+    async def _call_ai_and_parse(self, prompt: str) -> Dict[str, Any]:
+        """
+        Calls the AI content service with the given prompt and parses the XML response.
+
+        Args:
+            prompt: The prompt string for the AI.
+
+        Returns:
+            A dictionary of attributes parsed from the AI response.
+
+        Raises:
+            GenerationError: If AI call or XML parsing fails.
+        """
+        settings = get_settings()
+        model = settings.PROFESSOR_GENERATION_MODEL
+        self.logger.debug(f"Calling AI model {model} for professor generation.")
+
         try:
             generated_content = await self.content_service.generate_text(
                 prompt=prompt,
-                model=self._get_model_name(),
-                system_prompt=SYSTEM_PROMPTS["professor_profile"],
+                model=model,
+                system_prompt=SYSTEM_PROMPTS["professor"],
             )
         except Exception as e:
-            self.logger.error(f"ContentService generation failed: {e}", exc_info=True)
-            raise  # Re-raise to signal failure to the caller
+            self.logger.error(
+                f"ContentService generation call failed: {e}", exc_info=True
+            )
+            raise GenerationError("AI content generation call failed.") from e
 
         if not generated_content:
-            self.logger.warning("AI generation returned empty content.")
-            raise ValueError("AI generation returned empty content.")
+            self.logger.error("AI generation returned empty content.")
+            raise GenerationError("AI generation returned empty content.")
 
-        # --- 3. Parse Response --- #
-        generated_attrs = self._parse_generated_professor_profile(generated_content)
+        try:
+            parsed_attrs = self._parse_generated_professor_profile(generated_content)
+            self.logger.debug("Successfully parsed AI response.")
+            return parsed_attrs
+        except Exception as e:
+            # _parse_generated_professor_profile already logs details
+            raise GenerationError(
+                "Failed to parse AI-generated professor profile."
+            ) from e
 
-        # --- 4. Combine Attributes & Create Professor --- #
-        final_attrs = {
-            "department": department,
-            "specialization": specialization,
-            **generated_attrs,  # Use generated attributes first
-            **provided_attrs,  # Overwrite with provided attributes
-        }
+    def _resolve_department_name(
+        self, partial_attributes: Dict[str, Any]
+    ) -> Optional[str]:
+        """
+        Resolves the department name from ID if name is not provided.
 
-        # Ensure required fields have fallbacks if somehow missed
-        final_attrs["name"] = (
-            final_attrs.get("name") or RandomGenerators.generate_professor_name()
+        Args:
+            partial_attributes: Dictionary possibly containing department_id or department_name.
+
+        Returns:
+            The resolved or provided department name, or None.
+
+        Raises:
+            DatabaseError: If database lookup fails.
+        """
+        department_name = partial_attributes.get("department_name")
+        department_id = partial_attributes.get("department_id")
+
+        # If name is already provided, use it directly.
+        if department_name:
+            return department_name
+
+        # If no ID is provided (and no name was), there's nothing to resolve.
+        if department_id is None:
+            self.logger.info("No department name or ID provided for resolution.")
+            return None
+
+        # ID provided without name, attempt lookup.
+        self.logger.debug(
+            f"Attempting to resolve department name for ID: {department_id}"
         )
-        final_attrs["title"] = final_attrs.get(
-            "title"
-        ) or RandomGenerators.generate_professor_title(department)
-
-        # Log final attributes being used
-        self.logger.debug(f"Final attributes for professor creation: {final_attrs}")
-
-        # Create professor object
-        professor = Professor(**final_attrs)
-        self.logger.info(
-            f"Successfully generated professor profile using AI: {professor.name}"
-        )
-        return professor
+        try:
+            department = self.repository.department.get(department_id)
+            if department:
+                self.logger.debug(f"Resolved department name: {department.name}")
+                return department.name
+            else:
+                # ID was provided, but not found in DB.
+                self.logger.warning(
+                    f"Department ID {department_id} not found in database during lookup."
+                )
+                return None
+        except Exception as e:
+            self.logger.error(
+                f"Database error fetching department {department_id}: {e}",
+                exc_info=True,
+            )
+            # Re-raise as a specific error type for the caller.
+            raise DatabaseError(
+                f"Failed to look up department name for ID {department_id}."
+            ) from e
 
     def _prepare_professor_generation_prompt(
-        self, department: str, specialization: str, provided_attrs: dict
+        self,
+        department_name: Optional[str],
+        partial_attributes: dict,
     ) -> str:
         """Prepares the prompt string for professor generation."""
-        age_range = None
-        if "age" in provided_attrs:
-            decade = (provided_attrs["age"] // 10) * 10
-            age_range = f"{decade}-{decade+10}"
+        # Fetch existing professors for context to avoid duplicates
+        existing_profs_data = []
+        try:
+            all_professors = self.repository.professor.list()
+            existing_profs_data = [
+                {"name": p.name, "specialization": p.specialization}
+                for p in all_professors
+            ]
+            self.logger.debug(
+                f"Found {len(existing_profs_data)} existing professors for context."
+            )
+        except Exception as e:
+            self.logger.warning(f"Could not fetch existing professors for context: {e}")
 
+        # Combine department_name and partial_attributes into a single dictionary
+        combined_attrs = {**partial_attributes}
+        if department_name is not None:
+            combined_attrs["department_name"] = department_name
+
+        self.logger.debug(f"Combined attributes: {combined_attrs}")
+
+        # Pass potentially None values to the prompt function
         return get_professor_prompt(
-            department=department,
-            specialization=specialization,
-            gender=provided_attrs.get("gender"),
-            age_range=age_range,
-            accent=provided_attrs.get("accent"),
+            existing_professors=existing_profs_data,
+            partial_attributes=combined_attrs,
         )
 
     def _parse_generated_professor_profile(
         self, generated_content: str
     ) -> Dict[str, Any]:
-        """Parses the AI-generated content to extract professor attributes."""
-        profile_text = extract_xml_content(generated_content, "professor_profile")
+        """Parses the AI-generated XML content to extract professor attributes."""
+        self.logger.debug(
+            f"Attempting to parse generated content:\n{generated_content}"
+        )
 
-        if profile_text:
-            return self._parse_professor_profile_xml(profile_text)
-        else:
-            self.logger.warning(
-                "No structured <professor_profile> found. Attempting fallback parsing."
+        # Attempt to extract content within <professor> tags first
+        profile_text = extract_xml_content(generated_content, "professor")
+
+        if not profile_text:
+            # If extraction helper fails, log and raise.
+            # We rely on the LLM adhering to the <professor> tag structure.
+            self.logger.error(
+                f"Could not extract content within <professor> tags. Raw content starts with: "
+                f"{generated_content[:200]}..."
             )
-            return self._parse_professor_profile_fallback(generated_content)
+            raise ValueError(
+                "Could not find expected <professor> XML tag in the generated content."
+            )
 
-    def _parse_professor_profile_xml(self, profile_text: str) -> Dict[str, Any]:
+        self.logger.debug(f"Extracted content block:\n{profile_text}")
+
+        # Ensure the extracted text is wrapped in <professor> tags for the parser
+        # It's possible extract_xml_content returns only the inner content.
+        processed_text = profile_text.strip()
+        if not processed_text.startswith("<professor>"):
+            self.logger.warning(
+                "Extracted text missing root <professor> tag, attempting to wrap."
+            )
+            # Basic check: if it looks like the inner elements, wrap it.
+            # More robust checks might be needed depending on extract_xml_content behavior.
+            if processed_text.startswith("<"):
+                processed_text = f"<professor>\n{processed_text}\n</professor>"
+            else:
+                # If it doesn't even start with a tag, wrapping is unlikely to help.
+                self.logger.error(
+                    f"Extracted text doesn't appear to be valid inner XML: {processed_text[:100]}..."
+                )
+                raise ValueError("Extracted content block is not valid XML.")
+
+        try:
+            # Parse the processed text which should now be a valid XML doc with one root
+            return self._parse_professor_profile_xml(processed_text)
+        except ET.ParseError as e:
+            self.logger.error(
+                f"XML parsing failed: {e}\nProcessed Text:\n{processed_text[:500]}..."
+            )
+            raise ValueError("Generated content contains invalid XML.") from e
+        except Exception as e:
+            self.logger.error(f"Error parsing professor profile XML: {e}")
+            raise ValueError("Failed to extract attributes from professor XML.") from e
+
+    def _parse_professor_profile_xml(self, profile_xml: str) -> Dict[str, Any]:
         """Parses the structured XML profile text."""
+        root = ET.fromstring(profile_xml.strip())  # Use ET for robust parsing
         profile = {}
-        for line in profile_text.strip().split("\n"):
-            if ":" in line:
-                key, value = line.split(":", 1)
-                # Simple normalization of keys
-                norm_key = key.strip().lower().replace(" ", "_")
-                profile[norm_key] = value.strip()
+        expected_tags = [
+            "name",
+            "title",
+            "specialization",
+            "gender",
+            "age",
+            "accent",
+            "description",
+            "background",
+            "personality",
+            "teaching_style",
+        ]
+
+        for tag in expected_tags:
+            element = root.find(tag)
+            if element is not None and element.text:
+                profile[tag] = element.text.strip()
+            else:
+                # Keep field as None if not found or empty in XML
+                profile[tag] = None
+                self.logger.debug(f"Tag '{tag}' not found or empty in generated XML.")
 
         # Convert age to integer if present and valid
-        generated_age = None
-        if "age" in profile:
+        if profile.get("age"):
             try:
-                generated_age = int(profile["age"])
+                profile["age"] = int(profile["age"])
             except (ValueError, TypeError):
                 self.logger.warning(
-                    f"Could not convert generated age '{profile.get('age')}' to integer."
+                    f"Could not convert generated age '{profile.get('age')}' to integer. Setting age to None."
                 )
+                profile["age"] = None  # Set to None if conversion fails
 
-        # Map normalized keys to Professor model fields
-        return {
-            "name": profile.get("name"),
-            "title": profile.get("title"),
-            "gender": profile.get("gender"),
-            "accent": profile.get("accent"),
-            "description": profile.get("description"),
-            "background": profile.get("background"),
-            "personality": profile.get("personality"),
-            "teaching_style": profile.get("teaching_style"),
-            "age": generated_age,
-        }
+        self.logger.debug(f"Parsed professor attributes from XML: {profile}")
+        return profile
 
-    def _parse_professor_profile_fallback(
-        self, generated_content: str
-    ) -> Dict[str, Any]:
-        """Fallback parsing using regex if XML structure is missing."""
-        # Basic fallback: try to extract *something* usable
-        name_match = re.search(
-            r"(?:Name|Professor|Dr\.)[:\s]+([\w\s\.\-]+)",
-            generated_content,
-            re.IGNORECASE,
-        )
-        title_match = re.search(
-            r"Title[:\s]+([\w\s\(\)\,\-]+)", generated_content, re.IGNORECASE
-        )
-        # Add more regex fallbacks if needed for other fields
+    # --- CRUD Methods --- #
 
-        generated_attrs = {
-            "name": name_match.group(1).strip() if name_match else None,
-            "title": title_match.group(1).strip() if title_match else None,
-            # Add other fallback fields here
-        }
-        # Clean None values and return
-        return {k: v for k, v in generated_attrs.items() if v is not None}
+    def create_professor(self, professor: Professor) -> Professor:
+        """
+        Saves a new professor object to the database after assigning a voice.
 
-    def _create_professor_with_random(
-        self,
-        department: str,
-        specialization: str,
-        provided_attrs: dict,
-    ) -> Professor:
-        """Helper to create professor using random generation."""
-        self.logger.info("Using random generation for professor profile")
+        Args:
+            professor: A complete Professor object to be saved.
 
-        # Generate or use provided attributes
-        attrs = {
-            "department": department,
-            "specialization": specialization,
-            "name": (
-                provided_attrs.get("name") or RandomGenerators.generate_professor_name()
-            ),
-            "title": (
-                provided_attrs.get("title")
-                or RandomGenerators.generate_professor_title(department)
-            ),
-            "background": (
-                provided_attrs.get("background")
-                or RandomGenerators.generate_background(specialization)
-            ),
-            "teaching_style": (
-                provided_attrs.get("teaching_style")
-                or RandomGenerators.generate_teaching_style()
-            ),
-            "personality": (
-                provided_attrs.get("personality")
-                or RandomGenerators.generate_personality()
-            ),
-            "gender": (
-                provided_attrs.get("gender") or RandomGenerators.generate_gender()
-            ),
-            "accent": (
-                provided_attrs.get("accent") or RandomGenerators.generate_accent()
-            ),
-            "description": (
-                provided_attrs.get("description")
-                or RandomGenerators.generate_description(provided_attrs.get("gender"))
-            ),
-            "age": (provided_attrs.get("age") or RandomGenerators.generate_age()),
-        }
+        Returns:
+            The saved Professor object with its assigned ID.
 
-        # Log generated/used values
-        for key, value in attrs.items():
-            self.logger.debug(f"Using {key}: {value}")
+        Raises:
+            DatabaseError: If saving to the database fails.
+        """
+        self.logger.info(f"Attempting to save professor: {professor.name}")
 
-        # Create professor object
-        return Professor(**attrs)
+        # Assign a voice before saving
+        self._assign_voice_to_professor(professor)
+
+        # Save professor to repository
+        try:
+            saved_professor = self.repository.professor.create(professor)
+            self.logger.info(
+                f"Professor created successfully with ID: {saved_professor.id}"
+            )
+            return saved_professor
+        except Exception as e:
+            error_msg = f"Failed to save professor '{professor.name}': {str(e)}"
+            self.logger.error(error_msg, exc_info=True)
+            raise DatabaseError(error_msg) from e
 
     def _assign_voice_to_professor(self, professor: Professor) -> None:
         """
-        Assign a voice to a professor.
-
-        Args:
-            professor: Professor object to assign voice to
+        Assign a voice to a professor using the VoiceService.
+        Updates the professor object in place.
         """
+        # If we already have a voice_id, don't override it
+        if professor.voice_id:
+            self.logger.debug(
+                f"Professor {professor.name} already has voice ID {professor.voice_id}. Skipping assignment."
+            )
+            return
+
+        if not self.voice_service:
+            self.logger.warning(
+                f"No voice service configured. Cannot assign voice to professor {professor.name}."
+            )
+            return
+
         try:
-            # If we already have a voice_id, don't override it
-            if professor.voice_id:
-                self.logger.debug(
-                    f"Professor {professor.name} already has voice ID {professor.voice_id}"
+            # Select a voice and update professor record
+            voice_data = self.voice_service.select_voice_for_professor(professor)
+            # Update local professor object
+            if "db_voice_id" in voice_data:
+                professor.voice_id = voice_data["db_voice_id"]
+                self.logger.info(
+                    f"Voice ID {professor.voice_id} assigned to professor {professor.name}"
                 )
-                return
-
-            # Use the voice service
-            if self.voice_service:
-                # Select a voice and update professor record
-                voice_data = self.voice_service.select_voice_for_professor(professor)
-
-                # Update local professor object
-                if "db_voice_id" in voice_data:
-                    professor.voice_id = voice_data["db_voice_id"]
-                    self.logger.debug(
-                        f"Voice ID {voice_data['db_voice_id']} assigned to professor {professor.name}"
-                    )
             else:
                 self.logger.warning(
-                    f"No voice service available to assign voice to professor {professor.name}"
+                    f"Voice selection did not return a db_voice_id for {professor.name}"
                 )
 
         except Exception as e:
-            error_msg = f"Failed to assign voice to professor: {str(e)}"
-            self.logger.warning(error_msg)
-            # Not raising an exception here as this is not critical
+            # Log warning but don't block professor creation
+            self.logger.warning(
+                f"Failed to assign voice to professor {professor.name}: {str(e)}"
+            )
 
-    def get_professor(self, professor_id: str) -> Professor:
+    def get_professor(
+        self, professor_id: int
+    ) -> Professor:  # Assuming ID is int based on repo
         """
         Get a professor by ID.
 
@@ -385,29 +420,9 @@ class ProfessorService:
         professor = self.repository.professor.get(professor_id)
         if not professor:
             error_msg = f"Professor with ID {professor_id} not found"
-            self.logger.error(error_msg)
+            self.logger.warning(error_msg)  # Log as warning, raise specific error
             raise ProfessorNotFoundError(error_msg)
         return professor
-
-    def get_or_create_professor(self, professor_id: Optional[str] = None) -> Professor:
-        """
-        Get an existing professor by ID or create a new one.
-
-        Args:
-            professor_id: ID of the professor to retrieve (optional)
-
-        Returns:
-            Professor: The retrieved or created professor
-
-        Raises:
-            ProfessorNotFoundError: If professor_id is provided but not found
-        """
-        if professor_id:
-            self.logger.debug(f"Retrieving professor with ID: {professor_id}")
-            return self.get_professor(professor_id)
-        else:
-            self.logger.debug("No professor ID provided, creating new professor")
-            return self.create_professor()
 
     def list_professors(
         self,
@@ -426,222 +441,205 @@ class ProfessorService:
         Returns:
             List[Professor]: List of professor objects
         """
-        # Get all professors
-        professors = self.repository.professor.list()
+        # Get all professors from repository
+        try:
+            professors = self.repository.professor.list()
+        except Exception as e:
+            self.logger.error(
+                f"Failed to list professors from repository: {e}", exc_info=True
+            )
+            raise DatabaseError("Failed to retrieve professors.") from e
 
         # Apply filters if provided
         if filters:
-            if filters.get("department_id") is not None:
+            # Assuming filters keys match Professor attribute names
+            # Example: filtering by department_id
+            dept_id = filters.get("department_id")
+            if dept_id is not None:
+                professors = [p for p in professors if p.department_id == dept_id]
+
+            name_filter = filters.get("name")
+            if name_filter:
                 professors = [
-                    p for p in professors if p.department_id == filters["department_id"]
+                    p for p in professors if name_filter.lower() in p.name.lower()
                 ]
-            if filters.get("name"):
-                professors = [
-                    p for p in professors if filters["name"].lower() in p.name.lower()
-                ]
-            if filters.get("specialization"):
+
+            spec_filter = filters.get("specialization")
+            if spec_filter:
                 professors = [
                     p
                     for p in professors
-                    if filters["specialization"].lower() in p.specialization.lower()
+                    if spec_filter.lower() in p.specialization.lower()
                 ]
+            # Add more filters as needed
 
         # Apply pagination if provided
-        if page is not None and size is not None:
+        if page is not None and size is not None and page > 0 and size > 0:
             start_idx = (page - 1) * size
             end_idx = start_idx + size
+            total_items = len(professors)
             professors = professors[start_idx:end_idx]
+            self.logger.debug(
+                f"Pagination applied: page {page}, size {size}. Returning {len(professors)} of {total_items} items."
+            )
+        elif (page is not None and page <= 0) or (size is not None and size <= 0):
+            self.logger.warning(
+                f"Invalid pagination parameters: page={page}, size={size}. Ignoring pagination."
+            )
 
         return professors
 
     def update_professor(
-        self, professor_id: str, attributes: Dict[str, Any]
+        self, professor_id: int, attributes: Dict[str, Any]
     ) -> Professor:
         """
-        Update a professor with specified attributes.
+        Update specific attributes of an existing professor.
 
         Args:
-            professor_id: ID of the professor to update
-            attributes: Dictionary of attributes to update
+            professor_id: ID of the professor to update.
+            attributes: Dictionary of attributes to update.
 
         Returns:
-            Professor: Updated professor
+            The updated Professor object.
 
         Raises:
-            ProfessorNotFoundError: If professor not found
+            ProfessorNotFoundError: If the professor is not found.
+            DatabaseError: If the update fails.
         """
-        # Get existing professor
-        professor = self.get_professor(professor_id)
-
-        # Update fields
-        for key, value in attributes.items():
-            if hasattr(professor, key):
-                setattr(professor, key, value)
-
-        # Save changes
+        self.logger.info(
+            f"Updating professor {professor_id} with attributes: {list(attributes.keys())}"
+        )
+        # Use the repository's update_field method directly for efficiency
         try:
-            updated_professor = self.repository.professor.update(professor)
-            self.logger.info(f"Professor {professor_id} updated successfully")
+            updated_professor = self.repository.professor.update_field(
+                professor_id=professor_id, **attributes
+            )
+            if updated_professor is None:
+                raise ProfessorNotFoundError(
+                    f"Professor with ID {professor_id} not found for update."
+                )
+
+            self.logger.info(f"Professor {professor_id} updated successfully.")
             return updated_professor
+        except ProfessorNotFoundError:  # Re-raise specific error
+            self.logger.warning(f"Update failed: Professor {professor_id} not found.")
+            raise
         except Exception as e:
-            error_msg = f"Failed to update professor: {str(e)}"
-            self.logger.error(error_msg)
+            error_msg = f"Failed to update professor {professor_id}: {str(e)}"
+            self.logger.error(error_msg, exc_info=True)
             raise DatabaseError(error_msg) from e
 
-    def delete_professor(self, professor_id: str) -> bool:
+    def delete_professor(self, professor_id: int) -> bool:
         """
-        Delete a professor.
+        Delete a professor by ID.
 
         Args:
-            professor_id: ID of the professor to delete
+            professor_id: ID of the professor to delete.
 
         Returns:
-            bool: True if deleted successfully
+            True if deletion was successful.
 
         Raises:
-            ProfessorNotFoundError: If professor not found
+            ProfessorNotFoundError: If the professor doesn't exist.
+            DatabaseError: If deletion fails in the database.
+            # Consider adding DependencyError check here if needed
         """
-        # Check if professor exists
-        professor = self.repository.professor.get(professor_id)
-        if not professor:
-            error_msg = f"Professor with ID {professor_id} not found"
-            self.logger.error(error_msg)
-            raise ProfessorNotFoundError(error_msg)
-
-        # Delete the professor
-        success = self.repository.professor.delete(professor_id)
-        if success:
-            self.logger.info(f"Professor {professor_id} deleted successfully")
-        else:
-            error_msg = f"Failed to delete professor {professor_id}"
-            self.logger.error(error_msg)
-            raise DatabaseError(error_msg)
-
-        return success
-
-    def list_professor_courses(self, professor_id: str) -> List:
-        """
-        Get courses taught by a professor.
-
-        Args:
-            professor_id: ID of the professor
-
-        Returns:
-            List: List of courses
-
-        Raises:
-            ProfessorNotFoundError: If professor not found
-        """
-        # Check if professor exists - this will raise an exception if not found
-        self.get_professor(professor_id)
-
-        # Get all courses
-        all_courses = self.repository.course.list()
-
-        # Filter courses by professor_id
-        professor_courses = [c for c in all_courses if c.professor_id == professor_id]
-
-        return professor_courses
-
-    def list_professor_lectures(self, professor_id: str) -> List:
-        """
-        Get lectures by a professor.
-
-        Args:
-            professor_id: ID of the professor
-
-        Returns:
-            List: List of lectures
-
-        Raises:
-            ProfessorNotFoundError: If professor not found
-        """
-        # Check if professor exists - this will raise an exception if not found
-        self.get_professor(professor_id)
-
-        # Get courses taught by the professor
-        professor_courses = self.list_professor_courses(professor_id)
-
-        # Get lectures for all these courses
-        all_lectures = []
-        for course in professor_courses:
-            course_lectures = self.repository.lecture.list_by_course(course.id)
-            all_lectures.extend(course_lectures)
-
-        return all_lectures
+        self.logger.info(f"Attempting to delete professor {professor_id}")
+        # Existence check happens within repository.delete in this refactor
+        try:
+            success = self.repository.professor.delete(professor_id)
+            if success:
+                self.logger.info(f"Professor {professor_id} deleted successfully")
+                return True
+            else:
+                # This case implies the professor wasn't found by the repo method
+                raise ProfessorNotFoundError(
+                    f"Delete failed: Professor {professor_id} not found."
+                )
+        except ProfessorNotFoundError:  # Re-raise specific error
+            self.logger.warning(f"Delete failed: Professor {professor_id} not found.")
+            raise
+        except Exception as e:
+            # Catch potential DB-level errors during delete
+            error_msg = (
+                f"Database error during deletion of professor {professor_id}: {str(e)}"
+            )
+            self.logger.error(error_msg, exc_info=True)
+            raise DatabaseError(error_msg) from e
 
     async def generate_and_set_professor_image(
-        self, professor_id: str, aspect_ratio: str = "1:1"
-    ) -> Optional[Professor]:
+        self, professor_id: int, aspect_ratio: str = "1:1"
+    ) -> Professor:
         """
         Generates an image for the professor and updates their record.
 
         Args:
             professor_id: The ID of the professor
-            aspect_ratio: The desired aspect ratio for the image
+            aspect_ratio: The desired aspect ratio for the image (e.g., "1:1", "16:9")
 
         Returns:
-            The updated Professor object if successful, None otherwise
+            The updated Professor object with the image URL.
+
+        Raises:
+            ProfessorNotFoundError: If the professor doesn't exist.
+            GenerationError: If image generation fails.
+            DatabaseError: If updating the professor record fails.
         """
         self.logger.info(f"Generating image for professor ID: {professor_id}")
 
-        # Get the professor
-        try:
-            professor = self.get_professor(professor_id)
-        except ProfessorNotFoundError:
-            self.logger.error(
-                f"Cannot generate image: Professor {professor_id} not found"
-            )
-            return None
+        # Get the professor (will raise ProfessorNotFoundError if not found)
+        professor = self.get_professor(professor_id)
 
         try:
             # Generate the image using the image service
             image_key = await self.image_service.generate_professor_image(
                 professor=professor, aspect_ratio=aspect_ratio
             )
+        except Exception as e:
+            self.logger.error(
+                f"Image generation step failed for professor {professor_id}: {e}",
+                exc_info=True,
+            )
+            raise GenerationError(
+                f"Failed to generate image for professor {professor_id}"
+            ) from e
 
-            if not image_key:
-                self.logger.error(
-                    f"Image generation failed for professor {professor_id}"
-                )
-                return None
-
-            self.logger.info(
-                f"Image generated for professor {professor_id}: {image_key}"
+        if not image_key:
+            self.logger.error(
+                f"Image generation returned no key for professor {professor_id}"
+            )
+            raise GenerationError(
+                f"Image generation yielded no result for professor {professor_id}"
             )
 
-            # Get the full URL for the image using the storage service
+        self.logger.info(f"Image generated for professor {professor_id}: {image_key}")
+
+        # Get the full URL for the image
+        try:
             bucket = self.image_service.storage_service.images_bucket
             image_url = self.image_service.storage_service.get_file_url(
                 bucket=bucket, object_name=image_key
             )
+            self.logger.info(f"Image URL for professor {professor_id}: {image_url}")
+        except Exception as e:
+            self.logger.error(
+                f"Failed to get image URL for key {image_key}: {e}", exc_info=True
+            )
+            raise GenerationError(
+                f"Failed to construct image URL for professor {professor_id}"
+            ) from e
 
-            self.logger.info(f"Image URL: {image_url}")
-
-            # Update the professor record with the new image URL
+        # Update the professor record with the new image URL
+        try:
             updated_professor = self.update_professor(
                 professor_id=professor_id,
                 attributes={"image_url": image_url},
             )
-
-            self.logger.info(f"Professor {professor_id} updated with new image URL")
+            self.logger.info(f"Professor {professor_id} updated with new image URL.")
             return updated_professor
-
-        except Exception as e:
+        except (ProfessorNotFoundError, DatabaseError) as e:
+            # Re-raise errors from the update step
             self.logger.error(
-                f"Error during image generation or update for professor {professor_id}: {e}",
-                exc_info=True,
+                f"Failed to update professor {professor_id} with image URL: {e}"
             )
-            return None
-
-    def _get_model_name(self) -> str:
-        """Get the appropriate model name from configuration."""
-        try:
-            from artificial_u.config import get_settings
-
-            settings = get_settings()
-            # Use a direct setting or fallback to default
-            return getattr(settings, "CLAUDE_MODEL", "claude-3-5-sonnet-20240620")
-        except Exception:
-            # Fallback model name if settings unavailable
-            return "claude-3-5-sonnet-20240620"
+            raise

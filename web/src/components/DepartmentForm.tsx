@@ -97,12 +97,12 @@ const DepartmentForm = (props: DepartmentFormProps) => {
     try {
       // Validate before sending
       const fakeForm = document.createElement('form')
-      Object.entries(formData()).forEach(([k, v]: [string, string]) => {
+      for (const [k, v] of Object.entries(formData())) {
         const input = document.createElement('input')
         input.name = k
         input.value = v
         fakeForm.appendChild(input)
-      })
+      }
       const generated = await generateDepartment(formData())
       setFormData({
         name: generated.name,
@@ -286,6 +286,7 @@ const DepartmentForm = (props: DepartmentFormProps) => {
                 stroke="currentColor"
                 stroke-width="2"
               >
+                <title>Generate</title>
                 <path
                   stroke-linecap="round"
                   stroke-linejoin="round"
@@ -309,8 +310,8 @@ const DepartmentForm = (props: DepartmentFormProps) => {
           {props.isSubmitting
             ? 'Saving...'
             : props.department !== undefined
-              ? 'Update Department'
-              : 'Create Department'}
+              ? 'Update'
+              : 'Save'}
         </Button>
       </div>
     </form>

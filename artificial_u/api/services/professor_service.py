@@ -6,21 +6,29 @@ import logging
 from math import ceil
 from typing import Optional
 
+from fastapi import HTTPException, status
+
 from artificial_u.api.models.professors import (
     CourseBrief,
     LectureBrief,
     ProfessorCoursesResponse,
     ProfessorCreate,
+    ProfessorGenerate,
     ProfessorLecturesResponse,
     ProfessorResponse,
     ProfessorsListResponse,
     ProfessorUpdate,
 )
+from artificial_u.models.core import Professor
 from artificial_u.services import ProfessorService
 from artificial_u.services.content_service import ContentService
 from artificial_u.services.image_service import ImageService
 from artificial_u.services.voice_service import VoiceService
-from artificial_u.utils.exceptions import DatabaseError, ProfessorNotFoundError
+from artificial_u.utils.exceptions import (
+    DatabaseError,
+    GenerationError,
+    ProfessorNotFoundError,
+)
 
 
 class ProfessorApiService:
@@ -141,20 +149,33 @@ class ProfessorApiService:
 
         Returns:
             Created professor with ID
+
+        Raises:
+             HTTPException: If creation fails.
         """
-        # Extract data from create model and pass directly to core service
-        # The core service should handle all business logic including department mapping
-        data = professor_data.model_dump()
+        # Extract data from the Pydantic model
+        data = professor_data.model_dump(
+            exclude_unset=True
+        )  # Use exclude_unset for partial updates
 
         try:
-            # Use the core service to create the professor
-            created_professor = await self.core_service.create_professor(**data)
+            # Instantiate the core Professor model
+            professor_to_create = Professor(**data)
+
+            # Pass the Professor instance to the core service method
+            # Note: core_service.create_professor is currently sync, but we await it.
+            # This works but might block. Ideally, core service/repo would be async too.
+            created_professor = self.core_service.create_professor(professor_to_create)
 
             # Convert to API response model
             return ProfessorResponse.model_validate(created_professor.model_dump())
-        except Exception as e:
-            self.logger.error(f"Error creating professor: {e}")
-            raise
+        except (DatabaseError, Exception) as e:
+            self.logger.error(f"Error creating professor: {e}", exc_info=True)
+            # Raise a generic 500 error for the API layer
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Failed to create professor: {e}",
+            )
 
     def update_professor(
         self, professor_id: int, professor_data: ProfessorUpdate
@@ -311,3 +332,56 @@ class ProfessorApiService:
                 exc_info=True,
             )
             return None
+
+    async def generate_professor(
+        self, generation_data: ProfessorGenerate
+    ) -> ProfessorResponse:
+        """
+        Generate a professor profile using AI based on provided partial data.
+
+        Args:
+            generation_data: Input data containing optional partial attributes.
+
+        Returns:
+            ProfessorResponse: The generated professor profile (not saved).
+        """
+        from datetime import datetime
+
+        log_attrs = (
+            list(generation_data.partial_attributes.keys())
+            if generation_data.partial_attributes
+            else "None"
+        )
+        self.logger.info(
+            f"Received request to generate professor with partial attributes: {log_attrs}"
+        )
+        try:
+            # Pass the partial attributes dictionary (or empty dict) to the core service
+            partial_attrs = generation_data.partial_attributes or {}
+            generated_dict = await self.core_service.generate_professor_profile(
+                partial_attributes=partial_attrs
+            )
+
+            # Convert the dictionary to the API response model
+            response = ProfessorResponse(
+                generated_at=datetime.utcnow(),
+                **generated_dict,
+            )
+            self.logger.info(f"Successfully generated professor data: {response.name}")
+            return response
+
+        except GenerationError as e:
+            self.logger.error(f"Professor generation failed: {e}", exc_info=True)
+            # Re-raise as HTTPException for the API layer
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Failed to generate professor profile: {e}",
+            )
+        except Exception as e:
+            self.logger.error(
+                f"Unexpected error during professor generation: {e}", exc_info=True
+            )
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=("An unexpected error occurred during profile generation."),
+            )

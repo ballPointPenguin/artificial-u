@@ -2,7 +2,8 @@
 API models for Professor resources.
 """
 
-from typing import List, Optional
+from datetime import datetime
+from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel
 
@@ -40,11 +41,19 @@ class ProfessorUpdate(ProfessorBase):
     pass
 
 
+# Professor generation model
+class ProfessorGenerate(BaseModel):
+    """Model for generating a new professor profile based on partial attributes."""
+
+    partial_attributes: Optional[Dict[str, Any]] = None
+
+
 # Professor response model
 class ProfessorResponse(ProfessorBase):
-    """Model for professor responses."""
+    """Model for professor responses, including generated ones."""
 
-    id: int
+    id: Optional[int] = None  # Make ID optional for generated responses
+    generated_at: Optional[datetime] = None  # Add generated timestamp
 
     class Config:
         from_attributes = True

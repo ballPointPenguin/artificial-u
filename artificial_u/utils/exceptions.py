@@ -61,3 +61,9 @@ class DependencyError(ArtificialUException):
     """Raised when a dependency error occurs."""
 
     pass
+
+
+class GenerationError(ArtificialUException):
+    """Raised when a generation error occurs."""
+
+    pass

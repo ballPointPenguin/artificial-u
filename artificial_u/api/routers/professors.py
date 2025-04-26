@@ -11,6 +11,7 @@ from artificial_u.api.dependencies import get_professor_api_service
 from artificial_u.api.models.professors import (
     ProfessorCoursesResponse,
     ProfessorCreate,
+    ProfessorGenerate,
     ProfessorLecturesResponse,
     ProfessorResponse,
     ProfessorsListResponse,
@@ -259,3 +260,35 @@ async def generate_professor_image(
             )
 
     return updated_professor
+
+
+@router.post(
+    "/generate",
+    response_model=ProfessorResponse,
+    status_code=status.HTTP_200_OK,  # Use 200 as we're returning the generated data, not creating a resource yet
+    summary="Generate professor profile",
+    description="Generates a professor profile using AI based on any provided details.",
+    responses={
+        500: {"description": "Profile generation failed"},
+    },
+)
+async def generate_professor(
+    generation_data: ProfessorGenerate,  # Updated model
+    service: ProfessorApiService = Depends(get_professor_api_service),
+):
+    """
+    Generate a professor profile using AI.
+
+    Accepts an optional dictionary of partial attributes to guide the generation.
+    If no attributes are provided, a completely new profile will be invented.
+    If attributes like `department_id` are provided without `department_name`,
+    the service will attempt to look up the name.
+
+    Args:
+        generation_data: Contains optional `partial_attributes` dictionary.
+
+    Returns:
+        The generated professor profile data (not saved to the database).
+    """
+    # The service method already handles exceptions and converts to HTTPException
+    return await service.generate_professor(generation_data)

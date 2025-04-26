@@ -311,7 +311,8 @@ class DepartmentService:
         content_service = ContentService(logger=self.logger)
 
         settings = get_settings()
-        model = getattr(settings, "OPENAI_GPT_MODEL", "gpt-4.1-nano")
+        # Use the centrally defined setting
+        model = settings.DEPARTMENT_GENERATION_MODEL
 
         # Generate the department using Ollama
         response = await content_service.generate_text(
