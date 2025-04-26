@@ -104,8 +104,8 @@ When using MinIO in development, the following settings are used:
 
 ```python
 STORAGE_TYPE = "minio"
-STORAGE_ENDPOINT_URL = "http://minio:9000"  # For MinIO in Docker network
-STORAGE_PUBLIC_URL = "http://localhost:9000"  # For public access URLs
+STORAGE_ENDPOINT_URL = "http://localhost:9000"
+STORAGE_PUBLIC_URL = "http://localhost:9000"
 STORAGE_ACCESS_KEY = "minioadmin"
 STORAGE_SECRET_KEY = "minioadmin"
 STORAGE_REGION = "us-east-1"
@@ -173,7 +173,7 @@ url = storage.get_file_url(
 | `enable_caching` | Whether to enable caching | `False` |
 | `cache_metrics` | Whether to track cache metrics | `True` |
 | `STORAGE_TYPE` | Storage type ("minio" or "s3") | `minio` |
-| `STORAGE_ENDPOINT_URL` | MinIO endpoint URL | `http://minio:9000` |
+| `STORAGE_ENDPOINT_URL` | MinIO endpoint URL | `http://localhost:9000` |
 | `STORAGE_PUBLIC_URL` | Public URL for MinIO | `http://localhost:9000` |
 | `STORAGE_ACCESS_KEY` | Storage access key | `minioadmin` |
 | `STORAGE_SECRET_KEY` | Storage secret key | `minioadmin` |
