@@ -80,11 +80,6 @@ class Settings(BaseSettings):
     GOOGLE_API_KEY: Optional[str] = None
     OPENAI_API_KEY: Optional[str] = None
 
-    # Model names and configurations
-    CLAUDE_MODEL: str = "claude-3-5-sonnet-20240620"
-    GEMINI_IMAGEN_MODEL: str = "imagen-3.0-generate-002"
-    OPENAI_GPT_MODEL: str = "gpt-4.1-nano"
-
     # Temporary storage paths
     TEMP_AUDIO_PATH: str = DEFAULT_TEMP_AUDIO_PATH
 
@@ -110,9 +105,10 @@ class Settings(BaseSettings):
 
     # Professor generation model
     PROFESSOR_GENERATION_MODEL: str = "claude-3-5-haiku-latest"
-
     # Department generation model
     DEPARTMENT_GENERATION_MODEL: str = "gpt-4.1-nano"
+    # Image generation model
+    IMAGE_GENERATION_MODEL: str = "imagen-3.0-generate-002"
 
     # Configure Pydantic to use .env files
     model_config = SettingsConfigDict(

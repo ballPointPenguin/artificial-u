@@ -104,7 +104,8 @@ export async function deleteProfessor(
 export async function generateProfessorImage(id: number): Promise<Professor> {
   return httpClient.post<Professor>(
     ENDPOINTS.professors.generateImage(id),
-    {} // Empty body for this POST request
+    {}, // Empty body for this POST request
+    { timeout: 120000 } // Add 120 seconds timeout (in milliseconds)
   )
 }
 

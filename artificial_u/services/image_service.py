@@ -1,23 +1,34 @@
+import base64  # Added import
 import logging
 import uuid
 from typing import List, Optional
 
+import httpx  # Added httpx import
+import openai  # Added openai import
 from google.genai import types
 
-from artificial_u.integrations.gemini import gemini_client
+from artificial_u.integrations import gemini_client, openai_client
 from artificial_u.models.core import Professor
 from artificial_u.prompts.images import format_professor_image_prompt
 from artificial_u.services.storage_service import StorageService
 
 logger = logging.getLogger(__name__)
 
+# Mapping for OpenAI DALL-E 3 sizes based on common aspect ratios
+# Add more mappings if other models/ratios are supported
+OPENAI_ASPECT_RATIO_TO_SIZE = {
+    "1:1": "1024x1024",
+    "16:9": "1792x1024",
+    "9:16": "1024x1792",
+}
+
 
 class ImageService:
     """
-    Service for generating images using AI models and storing them.
+    Service for generating images using various AI models and storing them.
 
-    This service handles image generation through Google's Imagen API and
-    stores the resulting images in a configurable storage backend (MinIO/S3).
+    This service handles image generation through configured AI backends (e.g., Google Imagen, OpenAI DALL-E)
+    and stores the resulting images in a configurable storage backend (MinIO/S3).
     """
 
     def __init__(self, storage_service: StorageService):
@@ -29,50 +40,208 @@ class ImageService:
         """
         self.storage_service = storage_service
 
-        # Get model name from settings
+        # Get model name and determine backend from settings
         from artificial_u.config import get_settings
 
         self.settings = get_settings()
-        self.model_name = self.settings.GEMINI_IMAGEN_MODEL
+        self.model_name = self.settings.IMAGE_GENERATION_MODEL
+        self.backend = self._determine_backend(self.model_name)
 
-    async def generate_image(self, prompt: str, aspect_ratio: str = "1:1") -> List[str]:
-        """
-        Generates an image based on the provided prompt using the Google Imagen model.
-
-        Args:
-            prompt: The text prompt to generate the image from
-            aspect_ratio: The desired aspect ratio for the image (default: "1:1")
-
-        Returns:
-            A list of storage keys (object names) for the generated images
-        """
         logger.info(
-            f"Generating image with prompt: '{prompt[:100]}...' (aspect ratio: {aspect_ratio})"
+            f"ImageService initialized with model: {self.model_name} (backend: {self.backend})"
         )
 
+    def _determine_backend(self, model_name: str) -> str:
+        """Determine the backend based on the model name."""
+        if model_name.startswith("imagen-"):
+            return "gemini"
+        elif model_name.startswith("dall-e-") or model_name.startswith(
+            "gpt-"
+        ):  # Added "gpt-" check
+            return "openai"
+        else:
+            # Default or raise error if model is unknown/unsupported
+            logger.error(
+                f"Unknown or unsupported image model prefix for '{model_name}'. "
+                "Cannot determine backend. Please check model name and update _determine_backend."
+            )
+            # Defaulting to Gemini might hide configuration issues, so let's raise an error.
+            # Consider adding a default backend setting if preferred.
+            raise ValueError(f"Unsupported image generation model: {model_name}")
+
+    def _map_aspect_ratio_to_openai_size(self, aspect_ratio: str) -> str:
+        """Maps a common aspect ratio string to OpenAI's required size string."""
+        size = OPENAI_ASPECT_RATIO_TO_SIZE.get(aspect_ratio)
+        if not size:
+            logger.warning(
+                f"Unsupported aspect ratio '{aspect_ratio}' for OpenAI. "
+                f"Defaulting to 1:1 ('{OPENAI_ASPECT_RATIO_TO_SIZE['1:1']}'). "
+                f"Supported ratios: {list(OPENAI_ASPECT_RATIO_TO_SIZE.keys())}"
+            )
+            return OPENAI_ASPECT_RATIO_TO_SIZE["1:1"]
+        return size
+
+    async def _generate_gemini_image(
+        self, prompt: str, aspect_ratio: str
+    ) -> List[bytes]:
+        """Generates image(s) using the Google Gemini (Imagen) backend."""
+        # NOTE: This uses the synchronous SDK call as generate_images_async is not available.
+        # Consider using asyncio.to_thread if this becomes a blocking bottleneck.
         try:
-            # Call the Imagen API
+            # Changed from generate_images_async to generate_images
             response = gemini_client.models.generate_images(
                 model=self.model_name,
                 prompt=prompt,
                 config=types.GenerateImagesConfig(
-                    number_of_images=1,
+                    number_of_images=1,  # Currently generating only 1 image
                     aspect_ratio=aspect_ratio,
                 ),
             )
+            if response.generated_images:
+                return [img.image.image_bytes for img in response.generated_images]
+            else:
+                logger.warning("No images were generated by the Gemini API")
+                return []
+        except Exception as e:
+            logger.error(
+                f"Error calling Gemini image generation API: {e}", exc_info=True
+            )
+            return []  # Indicate failure
 
-            if not response.generated_images:
-                logger.warning("No images were generated by the API")
+    async def _generate_openai_image(
+        self, prompt: str, aspect_ratio: str
+    ) -> List[bytes]:
+        """Generates image(s) using the OpenAI (DALL-E) backend."""
+        try:
+            openai_size = self._map_aspect_ratio_to_openai_size(aspect_ratio)
+            response = await openai_client.images.generate(
+                model=self.model_name,
+                prompt=prompt,
+                n=1,  # Currently generating only 1 image
+                size=openai_size,
+                # quality="standard", # Optional: "hd" for higher quality/cost
+                # style="vivid" # Optional: "natural"
+            )
+
+            image_data_list = []
+            if response.data:
+                async with httpx.AsyncClient() as client:
+                    for item in response.data:
+                        if item.url:
+                            try:
+                                # Fetch the image from the URL
+                                logger.info(
+                                    f"Fetching image from OpenAI URL: {item.url[:100]}..."
+                                )
+                                image_response = await client.get(
+                                    item.url, timeout=30.0
+                                )  # Added timeout
+                                image_response.raise_for_status()  # Raise exception for bad status codes
+
+                                image_bytes = image_response.content
+                                image_data_list.append(image_bytes)
+                                logger.info(
+                                    f"Successfully fetched image data ({len(image_bytes)} bytes)."
+                                )
+
+                            except httpx.RequestError as req_err:
+                                logger.error(
+                                    f"Error fetching image from URL {item.url}: {req_err}"
+                                )
+                            except httpx.HTTPStatusError as status_err:
+                                logger.error(
+                                    f"HTTP error fetching image from URL {item.url}: "
+                                    f"Status {status_err.response.status_code}, Response: {status_err.response.text[:200]}"
+                                )
+                            except Exception as fetch_err:
+                                logger.error(
+                                    f"Unexpected error fetching image from URL {item.url}: {fetch_err}"
+                                )
+                        # Handle b64_json if the API *does* return it unexpectedly or based on model
+                        elif item.b64_json:
+                            logger.warning(
+                                "Received b64_json format unexpectedly, attempting to decode."
+                            )
+                            try:
+                                image_bytes = base64.b64decode(item.b64_json)
+                                image_data_list.append(image_bytes)
+                            except (TypeError, ValueError) as decode_err:
+                                logger.error(
+                                    f"Error decoding base64 image data from OpenAI: {decode_err}"
+                                )
+                        else:
+                            logger.warning(
+                                "OpenAI response item did not contain URL or b64_json data."
+                            )
+            else:
+                logger.warning(
+                    "No image data returned by the OpenAI API in the response.data list."
+                )
+
+            return image_data_list
+
+        except openai.BadRequestError as e:
+            # Specific handling for BadRequestError to log the details
+            logger.error(f"OpenAI API Bad Request Error: {e}", exc_info=True)
+            if e.response:
+                logger.error(f"OpenAI Response Status: {e.response.status_code}")
+                try:
+                    logger.error(f"OpenAI Response Body: {e.response.json()}")
+                except Exception:
+                    logger.error(f"OpenAI Response Body: {e.response.text}")
+            return []  # Indicate failure
+        except Exception as e:
+            # General exception handling
+            logger.error(
+                f"Error calling OpenAI image generation API: {e}", exc_info=True
+            )
+            return []  # Indicate failure
+
+    async def generate_image(self, prompt: str, aspect_ratio: str = "1:1") -> List[str]:
+        """
+        Generates an image based on the provided prompt using the configured AI model.
+
+        Args:
+            prompt: The text prompt to generate the image from
+            aspect_ratio: The desired aspect ratio for the image (default: "1:1").
+                          Supported values depend on the backend model.
+
+        Returns:
+            A list of storage keys (object names) for the generated images. Empty if generation failed.
+        """
+        logger.info(
+            f"Generating image via {self.backend} backend (model: {self.model_name}) "
+            f"with prompt: '{prompt[:100]}...' (aspect ratio: {aspect_ratio})"
+        )
+
+        image_bytes_list: List[bytes] = []
+        try:
+            # --- Dispatch to backend ---
+            if self.backend == "gemini":
+                image_bytes_list = await self._generate_gemini_image(
+                    prompt, aspect_ratio
+                )
+            elif self.backend == "openai":
+                image_bytes_list = await self._generate_openai_image(
+                    prompt, aspect_ratio
+                )
+            else:
+                logger.error(f"Unsupported image generation backend: {self.backend}")
+                return []  # No generation possible
+
+            if not image_bytes_list:
+                logger.warning(f"Backend '{self.backend}' returned no image data.")
                 return []
 
-            # Upload images to storage
+            # --- Upload generated images to storage ---
             uploaded_keys = []
             bucket = self.storage_service.images_bucket
 
-            for generated_image in response.generated_images:
-                image_bytes = generated_image.image.image_bytes
-                # Generate a simple UUID filename (not nested in subdirectories)
-                # for easier direct URL access
+            for image_bytes in image_bytes_list:
+                if not image_bytes:  # Skip if empty bytes received
+                    continue
+
+                # Generate a simple UUID filename
                 file_name = f"{uuid.uuid4()}.png"
 
                 # Upload to storage
@@ -80,20 +249,33 @@ class ImageService:
                     file_data=image_bytes,
                     bucket=bucket,
                     object_name=file_name,
-                    content_type="image/png",
+                    content_type="image/png",  # Assuming PNG for both backends for now
                 )
 
                 if success:
                     uploaded_keys.append(file_name)
                     logger.info(f"Image uploaded to {bucket}/{file_name}, URL: {url}")
                 else:
-                    logger.error(f"Failed to upload image to {bucket}/{file_name}")
+                    logger.error(
+                        f"Failed to upload image {file_name} to bucket {bucket}"
+                    )
 
-            logger.info(f"Successfully uploaded {len(uploaded_keys)} image(s)")
+            if uploaded_keys:
+                logger.info(
+                    f"Successfully generated and uploaded {len(uploaded_keys)} image(s) via {self.backend}."
+                )
+            else:
+                logger.warning(
+                    f"Image generation via {self.backend} succeeded, but upload failed for all images."
+                )
+
             return uploaded_keys
 
         except Exception as e:
-            logger.error(f"Error generating image: {str(e)}", exc_info=True)
+            # Catch potential errors during dispatch or upload logic
+            logger.error(
+                f"Error during image generation/upload process: {str(e)}", exc_info=True
+            )
             return []
 
     async def generate_professor_image(

@@ -95,7 +95,7 @@ class ContentGenerator:
         system_prompt = get_system_prompt("professor")
 
         response = self.client.messages.create(
-            model="claude-3-7-sonnet-20250219",
+            model="claude-3-7-sonnet-latest",
             max_tokens=2000,
             temperature=1,
             system=system_prompt,
@@ -192,7 +192,7 @@ class ContentGenerator:
         system_prompt = get_system_prompt("course")
 
         response = self.client.messages.create(
-            model="claude-3-7-sonnet-20250219",
+            model="claude-3-7-sonnet-latest",
             max_tokens=3000,
             temperature=0.7,
             system=system_prompt,
@@ -257,7 +257,7 @@ class ContentGenerator:
         system_prompt = get_system_prompt("lecture")
 
         response = self.client.messages.create(
-            model="claude-3-7-sonnet-20250219",
+            model="claude-3-7-sonnet-latest",
             max_tokens=8000,
             temperature=0.7,
             system=system_prompt,
@@ -444,7 +444,7 @@ Please prepare your lecture and then write it in <lecture_text> tags.
 
         # Make API call with caching
         response = self.client.messages.create(
-            model="claude-3-7-sonnet-20250219",
+            model="claude-3-7-sonnet-latest",
             max_tokens=8000,
             temperature=0.7,
             system=system,
@@ -688,7 +688,7 @@ Please prepare your lecture and then write it in <lecture_text> tags.
 
             # Make API call with caching
             response = self.client.messages.create(
-                model="claude-3-7-sonnet-20250219",
+                model="claude-3-7-sonnet-latest",
                 max_tokens=8000,
                 temperature=0.7,
                 system=system,
