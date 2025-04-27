@@ -25,6 +25,7 @@ ArtificialU combines the Anthropic Claude API for generating educational content
 - Python 3.9+
 - Anthropic API key
 - ElevenLabs API key
+- [Hatch](https://hatch.pypa.io/latest/) (for environment management)
 
 ## Installation
 
@@ -35,46 +36,48 @@ git clone https://github.com/ballPointPenguin/artificial-u.git
 cd artificial-u
 ```
 
-2. Create and activate a virtual environment:
+2. Install dependencies using Hatch:
 
-```bash
-python -m venv venv
-source venv/bin/activate  # On Windows, use: venv\\Scripts\\activate
-```
-
-3. Install dependencies and set up your environment:
-
-   First, install the project in editable mode along with the development dependencies (which includes `pip-tools`):
+   Hatch automatically manages project environments. To install the project and its dependencies, use the `hatch run` command:
 
    ```bash
-   pip install -e ".[dev]"
+   # Installs the project in editable mode along with 'dev' dependencies
+   hatch run pip install -e ".[dev]"
    ```
 
-4. Generate pinned requirements files (optional but recommended for reproducible environments):
+   To activate the project's managed environment for interactive use (e.g., running commands directly):
+
+   ```bash
+   hatch shell
+   ```
+
+   *(Within the hatch shell, you can run commands like `pip`, `python`, etc., without `hatch run`)*
+
+3. Generate pinned requirements files (optional but recommended for reproducible environments):
 
    ```bash
    # Generate requirements.txt for base dependencies
-   pip-compile pyproject.toml --resolver=backtracking -o requirements.txt
+   hatch run pip-compile pyproject.toml --resolver=backtracking -o requirements.txt
 
    # Generate requirements-dev.txt for development dependencies
-   pip-compile pyproject.toml --resolver=backtracking --extra dev -o requirements-dev.txt
+   hatch run pip-compile pyproject.toml --resolver=backtracking --extra dev -o requirements-dev.txt
    ```
 
-5. Sync your environment using the generated files:
+4. Sync your environment using the generated files:
 
-   If you generated the requirements files, you can ensure your environment matches them exactly using `pip-sync`:
+   If you generated the requirements files, you can ensure your environment matches them exactly using `pip-sync` via `hatch run`:
 
    ```bash
    # Sync using the development requirements file
-   pip-sync requirements-dev.txt
+   hatch run pip-sync requirements-dev.txt
 
    # Or, sync using only the base requirements file
-   # pip-sync requirements.txt
+   # hatch run pip-sync requirements.txt
    ```
 
-   *Note: Anytime you add/remove dependencies in `pyproject.toml`, regenerate the requirements files (step 4) and re-sync your environment (step 5). Commit the changes to `pyproject.toml` and the generated `requirements*.txt` files.*
+   *Note: Anytime you add/remove dependencies in `pyproject.toml`, regenerate the requirements files (step 3) and re-sync your environment (step 4). Commit the changes to `pyproject.toml` and the generated `requirements*.txt` files.*
 
-4. Create a `.env` file with your API keys:
+5. Create a `.env` file with your API keys:
 
 ```bash
 cp .env.example .env
@@ -87,85 +90,62 @@ The project uses a modern `pyproject.toml` file for configuration, following PEP
 
 ## Dependency Management
 
-The project uses a hybrid approach for dependency management with `pyproject.toml` for defining dependencies and pip-tools for generating lockfiles. This ensures reproducible environments across different systems. See [docs/dependency_management.md](docs/dependency_management.md) for details on the approach and workflows.
+The project uses `pyproject.toml` for defining dependencies and [Hatch](https://hatch.pypa.io/latest/) for environment management. Optionally, `pip-tools` can be used to generate lockfiles (`requirements*.txt`) for pinning dependencies and ensuring reproducible environments. See [docs/dependency_management.md](docs/dependency_management.md) for more details on the approach and workflows.
 
 ## Quick Start
 
-Run the sample demonstration (no API keys required):
+Run the sample demonstrations within the hatch environment:
 
 ```bash
+# Activate the environment (if not already active)
+# hatch shell
+
+# Then run the scripts
 python sample_tinyllama.py
+python sample_anthropic.py
 ```
 
-Or, using Anthropic API:
+Or directly using `hatch run`:
 
 ```bash
-python sample_anthropic.py
+hatch run python sample_tinyllama.py
+hatch run python sample_anthropic.py
 ```
 
 This will simulate the creation of a professor, course, lecture, and audio file to demonstrate the system's capabilities.
 
 ## Usage
 
-The CLI interface provides commands for interacting with the system:
-
-### Enable Prompt Caching
-
-You can enable Anthropic's prompt caching feature to reduce token usage and maintain consistent professor personalities across lectures:
+The CLI interface, defined as a script in `pyproject.toml`, can be run using `hatch run`:
 
 ```bash
-./cli.py generate-lecture -c "CS4511" -w 1 -n 1 -t "What is AI?" --enable-caching
-```
+# Example: Create a course
+hatch run artificial-u create-course -d "Computer Science" -t "Introduction to Artificial Intelligence" -c "CS4511"
 
-This feature caches professor profiles and course information, so subsequent lectures by the same professor will maintain a consistent voice and teaching style while potentially reducing API costs by 70-90% for large cached components.
+# Example: Generate a lecture with caching
+hatch run artificial-u generate-lecture -c "CS4511" -w 1 -n 1 -t "What is AI?" --enable-caching
 
-### Create a course
+# Example: Create audio for a lecture
+hatch run artificial-u create-audio -c "CS4511" -w 1 -n 1
 
-```bash
-./cli.py create-course -d "Computer Science" -t "Introduction to Artificial Intelligence" -c "CS4511"
-```
+# Example: List available courses
+hatch run artificial-u list-courses
 
-### Generate a lecture
+# Example: Show course syllabus
+hatch run artificial-u show-syllabus -c "CS4511"
 
-```bash
-./cli.py generate-lecture -c "CS4511" -w 1 -n 1 -t "What is AI? History and Intelligent Agents"
-```
+# Example: Play a lecture (if available)
+hatch run artificial-u play-lecture -c "CS4511" -w 1 -n 1
 
-### Create audio for a lecture
-
-```bash
-./cli.py create-audio -c "CS4511" -w 1 -n 1
-```
-
-### List available courses
-
-```bash
-./cli.py list-courses
-```
-
-### View course syllabus
-
-```bash
-./cli.py show-syllabus -c "CS4511"
-```
-
-### Play a lecture (if available)
-
-```bash
-./cli.py play-lecture -c "CS4511" -w 1 -n 1
-```
-
-You can also display a lecture's content:
-
-```bash
-./cli.py show-lecture -c "CS4511" -w 1 -n 1
+# Example: Show lecture content
+hatch run artificial-u show-lecture -c "CS4511" -w 1 -n 1
 ```
 
 For more details on any command, use the --help option:
 
 ```bash
-./cli.py --help
-./cli.py create-course --help
+hatch run artificial-u --help
+hatch run artificial-u create-course --help
 ```
 
 ## Testing
@@ -173,16 +153,19 @@ For more details on any command, use the --help option:
 The project uses pytest for testing. Tests are organized into several categories:
 
 ```bash
-# Run all automated tests
+# Run all automated tests (uses the hatch environment)
 pytest
 
+# Or explicitly using hatch run
+hatch run pytest
+
 # Run specific test categories
-pytest -m unit          # Unit tests only
-pytest -m integration   # Integration tests only
-pytest -m e2e          # End-to-end tests only
+hatch run pytest -m unit          # Unit tests only
+hatch run pytest -m integration   # Integration tests only
+hatch run pytest -m e2e          # End-to-end tests only
 
 # Run with coverage report
-pytest --cov=artificial_u
+hatch run pytest --cov=artificial_u
 ```
 
 ### Setting Up the Test Database
@@ -194,10 +177,10 @@ Before running integration tests, you need to set up the PostgreSQL test databas
 
 ```bash
 # Create the test database
-python scripts/setup_test_db.py
+hatch run python scripts/setup_test_db.py
 
 # Run integration tests
-pytest tests/integration -v
+hatch run pytest tests/integration -v
 ```
 
 ## Project Structure
@@ -222,13 +205,13 @@ artificial_u/
 
 ## Development with GitHub Codespaces
 
-This repository includes a devcontainer configuration for easy development using GitHub Codespaces:
+This repository includes a devcontainer configuration for easy development using GitHub Codespaces. Hatch is typically pre-installed or easily installable in these environments.
 
 1. Click the "Code" button on the repository
 2. Select the "Codespaces" tab
 3. Click "Create codespace on main"
 4. Once the environment is ready, add your API keys to the `.env` file
-5. Start developing!
+5. Use `hatch shell` or `hatch run` as described in the Installation/Usage sections.
 
 ## Recent Updates
 
@@ -261,10 +244,10 @@ ArtificialU uses PostgreSQL for data storage:
    docker-compose up -d
    ```
 
-2. Initialize the database schema:
+2. Initialize the database schema using Hatch:
 
    ```bash
-   python initialize_db.py
+   hatch run python initialize_db.py
    ```
 
 3. For detailed database information, see [PostgreSQL Setup Guide](docs/POSTGRES.md).
