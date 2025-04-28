@@ -44,7 +44,6 @@ class DepartmentResponse(DepartmentBase):
     """Model for department responses."""
 
     id: Optional[int] = None
-    generated_at: datetime
 
     class Config:
         from_attributes = True

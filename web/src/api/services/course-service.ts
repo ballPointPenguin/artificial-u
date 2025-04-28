@@ -61,7 +61,7 @@ export async function getCourseLectures(id: number): Promise<LecturesList> {
  * Create a new course
  */
 export async function createCourse(
-  data: Omit<Course, 'id' | 'generated_at'>
+  data: Omit<Course, 'id'>
 ): Promise<Course> {
   return httpClient.post<Course>(ENDPOINTS.courses.list, data)
 }

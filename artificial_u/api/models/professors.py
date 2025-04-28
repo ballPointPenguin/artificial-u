@@ -53,7 +53,6 @@ class ProfessorResponse(ProfessorBase):
     """Model for professor responses, including generated ones."""
 
     id: Optional[int] = None  # Make ID optional for generated responses
-    generated_at: Optional[datetime] = None  # Add generated timestamp
 
     class Config:
         from_attributes = True

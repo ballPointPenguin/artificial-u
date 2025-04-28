@@ -97,7 +97,6 @@ class CourseModel(Base):
     lectures_per_week = Column(Integer, nullable=True, default=2)
     total_weeks = Column(Integer, nullable=True, default=14)
     syllabus = Column(Text, nullable=True)
-    generated_at = Column(DateTime, nullable=False, default=datetime.now)
 
     department = relationship("DepartmentModel", back_populates="courses")
     professor = relationship("ProfessorModel", back_populates="courses")
@@ -115,7 +114,6 @@ class LectureModel(Base):
     description = Column(Text, nullable=True)
     content = Column(Text, nullable=True)
     audio_url = Column(String, nullable=True)
-    generated_at = Column(DateTime, nullable=False, default=datetime.now)
 
     course = relationship("CourseModel", back_populates="lectures")
 
@@ -135,5 +133,4 @@ def lecture_model_to_entity(lecture_model: LectureModel) -> Optional[Lecture]:
         description=lecture_model.description,
         content=lecture_model.content,
         audio_url=lecture_model.audio_url,
-        generated_at=lecture_model.generated_at,
     )

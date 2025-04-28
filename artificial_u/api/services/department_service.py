@@ -302,6 +302,5 @@ class DepartmentApiService:
 def department_dict_to_response(dept_dict: dict) -> DepartmentResponse:
     return DepartmentResponse(
         id=None,  # Not saved yet, so use 0 or None
-        generated_at=datetime.utcnow(),
         **dept_dict,
     )

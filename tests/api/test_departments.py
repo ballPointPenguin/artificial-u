@@ -18,7 +18,6 @@ sample_departments_base = [
         code=f"TD{i}",
         faculty=f"Test Faculty {i % 2 + 1}",
         description=f"Description for department {i}",
-        generated_at=datetime.now(),  # Add generated_at for response model
     )
     for i in range(1, 4)
 ]
@@ -50,7 +49,6 @@ sample_courses_base = [
         description=f"Test course description {i}",
         lectures_per_week=2,
         total_weeks=14,
-        generated_at=datetime.now(),  # Add for response model if CourseBrief needs it
         # Add other fields if needed by CourseBrief
     )
     for i in range(1, 5)
@@ -99,8 +97,6 @@ def mock_repository(monkeypatch):
             else 0
         ) + 1
         department.id = new_id
-        if not hasattr(department, "generated_at"):  # Ensure timestamp if not provided
-            department.generated_at = datetime.now()
         local_sample_departments.append(department)
         return department
 

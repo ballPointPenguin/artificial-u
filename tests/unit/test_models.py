@@ -114,7 +114,6 @@ def test_course_creation():
     assert course.credits == 3  # Default value
     assert course.lectures_per_week == 2
     assert course.total_weeks == 14
-    assert isinstance(course.generated_at, datetime)
 
 
 @pytest.mark.unit
@@ -133,7 +132,6 @@ def test_lecture_creation():
     assert lecture.week_number == 1
     assert lecture.order_in_week == 1
     assert lecture.audio_url is None
-    assert isinstance(lecture.generated_at, datetime)
 
 
 @pytest.mark.unit

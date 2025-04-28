@@ -43,7 +43,6 @@ sample_courses_base = [
         description=f"Test course description {i}",
         lectures_per_week=2,
         total_weeks=14,
-        generated_at=datetime.now(),
     )
     for i in range(1, 4)
 ]
@@ -58,7 +57,6 @@ for i in range(1, 7):
         "order_in_week": i,
         "description": f"Test lecture description {i}",
         "content": f"Test lecture content {i}",
-        "generated_at": datetime.now(),
     }
     sample_lectures_data.append(lecture_dict)
 

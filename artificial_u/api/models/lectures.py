@@ -50,7 +50,6 @@ class Lecture(BaseModel):
     )
     content: str = Field(..., description="Full lecture content text")
     audio_url: Optional[str] = Field(None, description="URL to audio file if available")
-    generated_at: datetime = Field(..., description="Creation timestamp")
 
 
 class LectureList(BaseModel):

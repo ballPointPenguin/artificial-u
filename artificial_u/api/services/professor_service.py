@@ -364,7 +364,6 @@ class ProfessorApiService:
 
             # Convert the dictionary to the API response model
             response = ProfessorResponse(
-                generated_at=datetime.utcnow(),
                 **generated_dict,
             )
             self.logger.info(f"Successfully generated professor data: {response.name}")

@@ -23,8 +23,6 @@ sample_courses_base = [
         description=f"Description for course {i}",
         lectures_per_week=2,
         total_weeks=14,
-        # Add generated_at for validation in CourseResponse
-        generated_at=datetime.now(),
     )
     for i in range(1, 4)
 ]
@@ -51,7 +49,6 @@ sample_departments_base = [
         code="CS",
         faculty="Science and Engineering",
         description="The Computer Science department",
-        generated_at=datetime.now(),
     ),
     Department(
         id=2,
@@ -59,7 +56,6 @@ sample_departments_base = [
         code="MATH",
         faculty="Science and Engineering",
         description="The Mathematics department",
-        generated_at=datetime.now(),
     ),
 ]
 
@@ -76,7 +72,6 @@ for i in range(1, 5):  # Create 4 lectures
             "description": f"Description for lecture {i}",
             "content": "Test content",
             "audio_url": None,
-            "generated_at": datetime.now(),
         }
     )
 
@@ -133,8 +128,6 @@ def mock_create_course_impl(local_sample_courses, course):
         max(c.id for c in local_sample_courses) if local_sample_courses else 0
     ) + 1
     course.id = new_id
-    if not hasattr(course, "generated_at"):
-        course.generated_at = datetime.now()
     local_sample_courses.append(course)
     return course
 

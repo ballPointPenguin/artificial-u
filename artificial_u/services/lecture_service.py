@@ -535,9 +535,6 @@ class LectureService:
 
                 lectures.extend(self._get_lectures_for_course(course, model_filter))
 
-            # Sort by most recent first
-            lectures.sort(key=lambda x: x.get("generated_at", ""), reverse=True)
-
             # Limit the results
             return lectures[:limit]
         except Exception as e:
@@ -595,7 +592,6 @@ class LectureService:
                         "content_preview": (
                             lecture.content[:200] + "..." if lecture.content else None
                         ),
-                        "generated_at": lecture.generated_at,
                         "model_used": model_used,
                         "text_file": (
                             lecture_path if os.path.exists(lecture_path) else None

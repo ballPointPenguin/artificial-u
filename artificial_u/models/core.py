@@ -27,7 +27,6 @@ class Department(BaseModel):
     code: str
     faculty: str  # e.g., "Science and Engineering"
     description: str
-    generated_at: datetime = Field(default_factory=datetime.now)
 
 
 class Voice(BaseModel):
@@ -149,7 +148,6 @@ class Course(BaseModel):
     lectures_per_week: int = Field(default=2, gt=0)
     total_weeks: int = Field(default=14, gt=0)
     syllabus: Optional[str] = None
-    generated_at: datetime = Field(default_factory=datetime.now)
 
 
 class Lecture(BaseModel):
@@ -177,4 +175,3 @@ class Lecture(BaseModel):
     description: str
     content: str
     audio_url: Optional[str] = None
-    generated_at: datetime = Field(default_factory=datetime.now)

@@ -10,7 +10,7 @@ from artificial_u.config.defaults import (
     DEFAULT_COURSE_WEEKS,
     DEFAULT_LECTURES_PER_WEEK,
 )
-from artificial_u.models.core import Course, Department, Professor
+from artificial_u.models.core import Course, Professor
 from artificial_u.utils.exceptions import (
     ContentGenerationError,
     CourseNotFoundError,

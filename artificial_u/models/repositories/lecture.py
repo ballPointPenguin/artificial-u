@@ -29,7 +29,6 @@ class LectureRepository(BaseRepository):
                 description=lecture.description,
                 content=lecture.content,
                 audio_url=lecture.audio_url,
-                generated_at=lecture.generated_at,
             )
 
             session.add(db_lecture)
@@ -289,7 +288,6 @@ class LectureRepository(BaseRepository):
             "week_number": lecture.week_number,
             "order_in_week": lecture.order_in_week,
             "description": lecture.description,
-            "created_at": lecture.generated_at,
             "has_audio": bool(lecture.audio_url),
         }
 

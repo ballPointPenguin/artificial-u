@@ -102,7 +102,6 @@ class LectureApiService:
                     week_number=lecture.week_number,
                     order_in_week=lecture.order_in_week,
                     audio_url=lecture.audio_url,
-                    generated_at=lecture.generated_at,
                 )
                 for lecture in lectures
             ]
@@ -151,7 +150,6 @@ class LectureApiService:
                 week_number=lecture.week_number,
                 order_in_week=lecture.order_in_week,
                 audio_url=lecture.audio_url,
-                generated_at=lecture.generated_at,
             )
         except Exception as e:
             self.logger.error(f"Error getting lecture {lecture_id}: {str(e)}")
@@ -194,7 +192,6 @@ class LectureApiService:
                 week_number=lecture.week_number,
                 order_in_week=lecture.order_in_week,
                 audio_url=lecture.audio_url,
-                generated_at=lecture.generated_at,
             )
         except Exception as e:
             self.logger.error(f"Error creating lecture: {str(e)}")
@@ -235,7 +232,6 @@ class LectureApiService:
                 week_number=lecture.week_number,
                 order_in_week=lecture.order_in_week,
                 audio_url=lecture.audio_url,
-                generated_at=lecture.generated_at,
             )
         except Exception as e:
             self.logger.error(f"Error updating lecture: {str(e)}")

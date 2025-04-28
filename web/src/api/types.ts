@@ -110,7 +110,6 @@ export interface Course {
   lectures_per_week: number | null
   total_weeks: number | null
   syllabus: string | null
-  generated_at: string
 }
 
 export type CoursesList = PaginatedResponse<Course>
@@ -134,7 +133,6 @@ export interface Lecture {
   description: string
   content: string
   audio_url: string | null
-  generated_at: string
 }
 
 // Brief Lecture info for nested responses

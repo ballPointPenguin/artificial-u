@@ -2,9 +2,14 @@ import os
 import sys
 from logging.config import fileConfig
 
+from dotenv import load_dotenv
 from sqlalchemy import engine_from_config, pool
 
 from alembic import context
+
+# Import your models here
+# from artificial_u.models import Base
+from artificial_u.models.database import Base
 
 # Add the project root directory to the Python path
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
@@ -18,9 +23,8 @@ config = context.config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-# Import your models here
-# from artificial_u.models import Base
-from artificial_u.models.database import Base
+# Load .env file into environment variables for this process
+load_dotenv()
 
 # Get database URL from environment variable
 url = os.getenv("DATABASE_URL")

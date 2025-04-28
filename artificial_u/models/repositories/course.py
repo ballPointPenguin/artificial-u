@@ -26,7 +26,6 @@ class CourseRepository(BaseRepository):
                 lectures_per_week=course.lectures_per_week,
                 total_weeks=course.total_weeks,
                 syllabus=course.syllabus,
-                generated_at=course.generated_at,
             )
 
             session.add(db_course)
@@ -56,7 +55,6 @@ class CourseRepository(BaseRepository):
                 lectures_per_week=db_course.lectures_per_week,
                 total_weeks=db_course.total_weeks,
                 syllabus=db_course.syllabus,
-                generated_at=db_course.generated_at,
             )
 
     def get_by_code(self, code: str) -> Optional[Course]:
@@ -79,7 +77,6 @@ class CourseRepository(BaseRepository):
                 lectures_per_week=db_course.lectures_per_week,
                 total_weeks=db_course.total_weeks,
                 syllabus=db_course.syllabus,
-                generated_at=db_course.generated_at,
             )
 
     def list(self, department_id: Optional[int] = None) -> List[Course]:
@@ -105,7 +102,6 @@ class CourseRepository(BaseRepository):
                     lectures_per_week=c.lectures_per_week,
                     total_weeks=c.total_weeks,
                     syllabus=c.syllabus,
-                    generated_at=c.generated_at,
                 )
                 for c in db_courses
             ]

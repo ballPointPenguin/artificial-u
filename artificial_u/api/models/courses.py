@@ -2,7 +2,6 @@
 API models for Course resources.
 """
 
-from datetime import datetime
 from typing import List, Optional
 
 from pydantic import BaseModel, Field
@@ -43,7 +42,6 @@ class CourseResponse(CourseBase):
     """Model for course responses."""
 
     id: int
-    generated_at: datetime
 
     class Config:
         from_attributes = True

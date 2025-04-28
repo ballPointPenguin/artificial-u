@@ -29,7 +29,6 @@ sample_lectures_data = [
             else None
         ),
         "created_at": datetime.now(),
-        "generated_at": datetime.now(),  # Ensure generated_at is present
     }
     for i in range(1, 11)
 ]
@@ -120,7 +119,6 @@ def mock_create_lecture(self, lecture_data, *args, **kwargs):
         "content": lecture_data.content,
         "audio_url": lecture_data.audio_url,
         "created_at": datetime.now(),
-        "generated_at": datetime.now(),
     }
     sample_lectures_data.append(new_lecture_dict)
     return Lecture(**new_lecture_dict)
