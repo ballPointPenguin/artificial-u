@@ -8,6 +8,7 @@ from typing import Optional
 from sqlalchemy import JSON, Column, DateTime, ForeignKey, Index, Integer, String, Text
 from sqlalchemy.orm import DeclarativeBase, relationship
 
+from artificial_u.config.defaults import DEFAULT_COURSE_WEEKS, DEFAULT_LECTURES_PER_WEEK
 from artificial_u.models.core import Lecture
 
 
@@ -94,8 +95,10 @@ class CourseModel(Base):
     credits = Column(Integer, nullable=True, default=3)
     professor_id = Column(Integer, ForeignKey("professors.id"), nullable=True)
     description = Column(Text, nullable=True)
-    lectures_per_week = Column(Integer, nullable=True, default=2)
-    total_weeks = Column(Integer, nullable=True, default=14)
+    lectures_per_week = Column(
+        Integer, nullable=True, default=DEFAULT_LECTURES_PER_WEEK
+    )
+    total_weeks = Column(Integer, nullable=True, default=DEFAULT_COURSE_WEEKS)
     syllabus = Column(Text, nullable=True)
 
     department = relationship("DepartmentModel", back_populates="courses")

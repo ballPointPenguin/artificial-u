@@ -1,5 +1,6 @@
 """Course-related prompt templates."""
 
+from artificial_u.config.defaults import DEFAULT_COURSE_WEEKS, DEFAULT_LECTURES_PER_WEEK
 from artificial_u.prompts.base import PromptTemplate
 
 # Course syllabus template
@@ -124,8 +125,8 @@ def get_course_topics_prompt(
     professor_name: str,
     teaching_style: str,
     course_description: str,
-    num_weeks: int = 12,
-    topics_per_week: int = 2,
+    num_weeks: int = DEFAULT_COURSE_WEEKS,
+    topics_per_week: int = DEFAULT_LECTURES_PER_WEEK,
 ) -> str:
     """Generate a course topics prompt.
 

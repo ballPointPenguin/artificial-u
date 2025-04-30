@@ -7,6 +7,8 @@ from typing import Any, Dict, Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from artificial_u.config.defaults import DEFAULT_COURSE_WEEKS, DEFAULT_LECTURES_PER_WEEK
+
 
 class Department(BaseModel):
     """Department model representing an academic department."""
@@ -131,7 +133,7 @@ class Course(BaseModel):
                 "credits": 3,
                 "professor_id": 1,
                 "description": "Foundational concepts and techniques in AI.",
-                "lectures_per_week": 2,
+                "lectures_per_week": 1,
                 "total_weeks": 14,
             }
         }
@@ -145,8 +147,8 @@ class Course(BaseModel):
     credits: int = Field(default=3, ge=0)
     professor_id: Optional[int] = None
     description: str
-    lectures_per_week: int = Field(default=2, gt=0)
-    total_weeks: int = Field(default=14, gt=0)
+    lectures_per_week: int = DEFAULT_LECTURES_PER_WEEK
+    total_weeks: int = DEFAULT_COURSE_WEEKS
     syllabus: Optional[str] = None
 
 

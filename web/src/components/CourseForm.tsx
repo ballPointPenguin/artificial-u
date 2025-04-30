@@ -33,7 +33,7 @@ const defaultFormData: CourseFormData = {
   credits: 3,
   professor_id: 0,
   description: '',
-  lectures_per_week: 2,
+  lectures_per_week: 1,
   total_weeks: 14,
   syllabus: '',
 }
@@ -72,7 +72,7 @@ const CourseForm: Component<CourseFormProps> = (props) => {
         credits: course.credits || 3,
         professor_id: course.professor_id,
         description: course.description || '',
-        lectures_per_week: course.lectures_per_week || 2,
+        lectures_per_week: course.lectures_per_week || 1,
         total_weeks: course.total_weeks || 14,
         syllabus: course.syllabus || null,
       })

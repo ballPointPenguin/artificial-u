@@ -3,10 +3,7 @@
 Sample script to demonstrate generating and viewing lectures with TinyLlama.
 """
 
-import json
-import os
 import sys
-from pathlib import Path
 
 from artificial_u.system import UniversitySystem
 
@@ -65,7 +62,11 @@ def main():
             personality="Passionate and knowledgeable with a sense of humor",
             gender="Female",
             accent="American (Southwestern)",
-            description="Dr. Martinez has curly black hair cut in a modern bob that frames her round face and bright smile. She has warm amber eyes behind stylish rectangular glasses and typically dresses in business casual attire with colorful scarves or statement jewelry. At 5'4\", she moves energetically around the classroom rather than staying behind the podium. She often uses animated hand gestures when explaining concepts and has a habit of pushing her glasses up when deep in thought. Students note her approachable demeanor and the way she makes eye contact with everyone in the room to ensure understanding.",
+            description="Dr. Martinez has curly black hair cut in a modern bob that frames her round face and bright smile. She has warm amber eyes behind "
+            + "stylish rectangular glasses and typically dresses in business casual attire with colorful scarves or statement jewelry. At 5'4\", she moves "
+            + "energetically around the classroom rather than staying behind the podium. She often uses animated hand gestures when explaining concepts and "
+            + "has a habit of pushing her glasses up when deep in thought. Students note her approachable demeanor and the way she makes eye contact with "
+            + "everyone in the room to ensure understanding.",
             age=38,
         )
 
@@ -75,8 +76,8 @@ def main():
             department="Computer Science",
             professor_id=professor.id,
             description="An introductory course on artificial intelligence concepts and applications",
-            weeks=10,
-            lectures_per_week=2,
+            weeks=14,
+            lectures_per_week=1,
         )
         print(f"Created course: {course.title} ({course.code})")
     else:

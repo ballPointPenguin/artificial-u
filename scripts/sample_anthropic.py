@@ -3,10 +3,8 @@
 Sample script to demonstrate generating and viewing lectures with Anthropic's Claude.
 """
 
-import json
 import os
 import sys
-from pathlib import Path
 
 from dotenv import load_dotenv
 
@@ -48,7 +46,11 @@ def main():
             personality="Enthusiastic and inspiring, known for making complex concepts accessible",
             gender="Female",
             accent="Italian",
-            description="Dr. Rossi has shoulder-length dark hair with subtle gray streaks that she often wears loosely styled. She has an olive complexion and expressive brown eyes that light up when discussing complex language models. Standing at 5'6\", she carries herself with confidence and grace. In the classroom, she dresses in elegant but comfortable attire, typically pairing tailored blazers with silk blouses in vibrant colors. She gestures expressively while speaking, using her hands to illustrate abstract concepts, and wears minimal jewelry except for a distinctive silver pendant shaped like a neural network that students recognize as her signature accessory.",
+            description="Dr. Rossi has shoulder-length dark hair with subtle gray streaks that she often wears loosely styled. She has an olive complexion and "
+            + "expressive brown eyes that light up when discussing complex language models. Standing at 5'6\", she carries herself with confidence and grace. "
+            + "In the classroom, she dresses in elegant but comfortable attire, typically pairing tailored blazers with silk blouses in vibrant colors. "
+            + "She gestures expressively while speaking, using her hands to illustrate abstract concepts, and wears minimal jewelry except for a distinctive "
+            + "silver pendant shaped like a neural network that students recognize as her signature accessory.",
             age=45,
         )
 
@@ -58,8 +60,8 @@ def main():
             department="Computer Science",
             professor_id=professor.id,
             description="An advanced course exploring the architecture, capabilities, and implications of large language models",
-            weeks=12,
-            lectures_per_week=2,
+            weeks=14,
+            lectures_per_week=1,
         )
         print(f"Created course: {course.title} ({course.code})")
     else:

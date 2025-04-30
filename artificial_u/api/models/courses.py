@@ -6,6 +6,8 @@ from typing import List, Optional
 
 from pydantic import BaseModel, Field
 
+from artificial_u.config.defaults import DEFAULT_COURSE_WEEKS, DEFAULT_LECTURES_PER_WEEK
+
 
 # Base Course model with common fields
 class CourseBase(BaseModel):
@@ -18,8 +20,8 @@ class CourseBase(BaseModel):
     credits: int = Field(default=3, ge=0)
     professor_id: int
     description: str
-    lectures_per_week: int = Field(default=2, gt=0)
-    total_weeks: int = Field(default=14, gt=0)
+    lectures_per_week: int = DEFAULT_LECTURES_PER_WEEK
+    total_weeks: int = DEFAULT_COURSE_WEEKS
     syllabus: Optional[str] = None
 
 
