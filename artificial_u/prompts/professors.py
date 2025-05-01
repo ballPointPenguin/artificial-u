@@ -2,22 +2,9 @@
 
 from typing import Any, Dict, List, Optional
 
+# Import converters
+from artificial_u.models.converters import partial_professor_to_xml, professors_to_xml
 from artificial_u.prompts.base import PromptTemplate
-
-
-def format_existing_professors_xml(existing_professors: List[Dict[str, str]]) -> str:
-    """Format a list of existing professors (name, specialization) as XML for prompt context."""
-    if not existing_professors:
-        return ""
-    lines = ["<existing_professors>"]
-    for prof in existing_professors:
-        lines.append(
-            f"  <professor><name>{prof.get('name', 'N/A')}</name>"
-            f"<specialization>{prof.get('specialization', 'N/A')}</specialization></professor>"
-        )
-    lines.append("</existing_professors>")
-    return "\n".join(lines)
-
 
 # Base template structure for a professor profile
 PROFESSOR_XML_STRUCTURE = (
@@ -115,62 +102,32 @@ def get_professor_prompt(
     partial_attributes: Optional[Dict[str, Any]] = None,
 ) -> str:
     """
-    Get the appropriate professor generation prompt.
+    Get the appropriate professor generation prompt using converters.
     Uses FULLY_OPEN prompt if no partial attributes are provided,
     otherwise uses PARTIAL prompt to fill in the blanks.
 
     Args:
-        existing_professors: List of existing professors for context.
+        existing_professors: List of existing professors (dicts with name/specialization) for context.
         partial_attributes: Optional dictionary of known attributes.
 
     Returns:
         The formatted prompt string ready for the LLM.
     """
     existing_professors = existing_professors or []
-    existing_professors_xml = format_existing_professors_xml(existing_professors)
+    # Use converter for existing professors
+    existing_professors_xml_str = professors_to_xml(existing_professors)
     partial_attributes = partial_attributes or {}
 
     if not partial_attributes:
         # Case 1: No partial data provided -> Invent everything
         return OPEN_PROFESSOR_PROMPT.format(
-            existing_professors_xml=existing_professors_xml
+            existing_professors_xml=existing_professors_xml_str
         )
     else:
         # Case 2: Some partial data provided -> Use it and fill in the rest
-        partial_profile_xml = format_partial_attributes_xml(partial_attributes)
+        # Use converter for partial profile
+        partial_profile_xml_str = partial_professor_to_xml(partial_attributes)
         return PARTIAL_PROFESSOR_PROMPT.format(
-            existing_professors_xml=existing_professors_xml,
-            partial_profile_xml=partial_profile_xml,
+            existing_professors_xml=existing_professors_xml_str,
+            partial_profile_xml=partial_profile_xml_str,
         )
-
-
-# Helper function to format partial attributes into XML, marking missing as [TODO]
-def format_partial_attributes_xml(partial_attrs: Dict[str, Any]) -> str:
-    """Builds the XML string for partial attributes, handling missing fields."""
-    lines = ["<professor>"]
-    # Define all expected fields in the desired order
-    fields = [
-        "name",
-        "title",
-        "department_name",
-        "specialization",
-        "gender",
-        "age",
-        "accent",
-        "description",
-        "background",
-        "personality",
-        "teaching_style",
-    ]
-
-    for field in fields:
-        value = partial_attrs.get(field)
-        # Handle provided attributes, including empty strings if deliberately passed
-        if value is not None:
-            # Ensure age is stringified if it's an int
-            lines.append(f"  <{field}>{str(value)}</{field}>")
-        else:
-            lines.append(f"  <{field}>[TODO]</{field}>")
-
-    lines.append("</professor>")
-    return "\n".join(lines)

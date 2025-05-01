@@ -3,37 +3,58 @@ Course management service for ArtificialU.
 """
 
 import logging
-import xml.etree.ElementTree as ET
 from typing import Any, Dict, List, Optional, Tuple
 
 from artificial_u.config.defaults import DEFAULT_COURSE_WEEKS, DEFAULT_LECTURES_PER_WEEK
-from artificial_u.models.core import Course, Professor
+from artificial_u.models.converters import (
+    course_model_to_dict,
+    department_model_to_dict,
+    department_to_xml,
+    parse_course_xml,
+    professor_model_to_dict,
+    professor_to_xml,
+)
+from artificial_u.models.database import CourseModel, DepartmentModel, ProfessorModel
+
+# Import the legacy Repository wrapper used by UniversitySystem
+from artificial_u.models.repository import Repository
 from artificial_u.prompts.base import extract_xml_content
-from artificial_u.prompts.courses import get_course_topics_prompt
+from artificial_u.prompts.courses import get_course_prompt
+from artificial_u.prompts.system import get_system_prompt
+from artificial_u.services.content_service import ContentService
+from artificial_u.services.professor_service import ProfessorService
 from artificial_u.utils.exceptions import (
     ContentGenerationError,
     CourseNotFoundError,
     DatabaseError,
+    ProfessorNotFoundError,
 )
 
 
 class CourseService:
     """Service for managing course entities."""
 
-    def __init__(self, repository, content_service, professor_service, logger=None):
+    def __init__(
+        self,
+        repository: Repository,
+        professor_service: ProfessorService,
+        content_service: ContentService,
+        logger=None,
+    ):
         """
         Initialize the course service.
 
         Args:
-            repository: Data repository
-            content_service: Content generation service
-            professor_service: Professor management service
+            repository: Data repository instance (legacy wrapper).
+            professor_service: Service for professor operations.
+            content_service: Service for content generation.
             logger: Optional logger instance
         """
         self.repository = repository
+        self.professor_service = professor_service  # Needed for create_course
         self.content_service = content_service
-        self.professor_service = professor_service
         self.logger = logger or logging.getLogger(__name__)
+        # self.content_service = ContentService(logger=self.logger) # Now passed in
 
     # --- CRUD Methods --- #
 
@@ -49,7 +70,7 @@ class CourseService:
         weeks: int = DEFAULT_COURSE_WEEKS,
         lectures_per_week: int = DEFAULT_LECTURES_PER_WEEK,
         topics: Optional[List[Dict[str, Any]]] = None,
-    ) -> Tuple[Course, Professor]:
+    ) -> Tuple[CourseModel, ProfessorModel]:
         """
         Create a new course without generating content.
 
@@ -70,11 +91,29 @@ class CourseService:
         """
         self.logger.info(f"Creating new course: {code} - {title}")
 
-        # Get or create professor
-        professor = self.professor_service.get_or_create_professor(professor_id)
+        # Get professor (assuming professor_service handles creation/fetching)
+        # This might need adjustment depending on ProfessorService implementation
+        try:
+            # Assuming get_or_create_professor takes an ID and returns a ProfessorModel or raises
+            # We might need a dedicated method in ProfessorService that returns the DB model
+            # or handle the conversion here. Let's assume it returns the DB model for now.
+            professor = self.professor_service.get_professor_db_model(professor_id)
+            if not professor:
+                # Handle case where professor needs creation - this logic might be in professor_service
+                # For now, raise if not found by ID.
+                raise ProfessorNotFoundError(
+                    f"Professor ID {professor_id} not found for course creation."
+                )
 
-        # Create basic course
-        course = Course(
+        except ProfessorNotFoundError as e:
+            self.logger.error(f"Professor not found: {e}")
+            raise
+        except Exception as e:
+            self.logger.error(f"Error getting professor {professor_id}: {e}")
+            raise DatabaseError(f"Error retrieving professor {professor_id}")
+
+        # Create basic course model
+        course = CourseModel(
             code=code,
             title=title,
             department_id=department_id,
@@ -87,17 +126,18 @@ class CourseService:
             topics=topics,
         )
 
-        # Save to database
+        # Save using the repository
         try:
-            course = self.repository.course.create(course)
-            self.logger.info(f"Course created with ID: {course.id}")
-            return course, professor
+            # Use the factory from the legacy repository wrapper
+            created_course = self.repository.factory.course.create(course)
+            self.logger.info(f"Course created with ID: {created_course.id}")
+            return created_course, professor
         except Exception as e:
-            error_msg = f"Failed to save course: {str(e)}"
-            self.logger.error(error_msg)
+            error_msg = f"Failed to save course {code}: {str(e)}"
+            self.logger.error(error_msg, exc_info=True)
             raise DatabaseError(error_msg) from e
 
-    def get_course(self, course_id: str) -> Course:
+    def get_course(self, course_id: int) -> CourseModel:
         """
         Get a course by ID.
 
@@ -110,14 +150,14 @@ class CourseService:
         Raises:
             CourseNotFoundError: If course not found
         """
-        course = self.repository.course.get(course_id)
+        course = self.repository.factory.course.get(course_id)
         if not course:
             error_msg = f"Course with ID {course_id} not found"
             self.logger.error(error_msg)
             raise CourseNotFoundError(error_msg)
         return course
 
-    def get_course_by_code(self, course_code: str) -> Course:
+    def get_course_by_code(self, course_code: str) -> CourseModel:
         """
         Get a course by its code.
 
@@ -130,43 +170,48 @@ class CourseService:
         Raises:
             CourseNotFoundError: If course not found
         """
-        course = self.repository.course.get_by_code(course_code)
+        course = self.repository.factory.course.get_by_code(course_code)
         if not course:
             error_msg = f"Course with code {course_code} not found"
             self.logger.error(error_msg)
             raise CourseNotFoundError(error_msg)
         return course
 
-    def list_courses(self, department: Optional[str] = None) -> List[Dict[str, Any]]:
+    def list_courses(self, department_id: Optional[int] = None) -> List[Dict[str, Any]]:
         """
-        List all courses with professor information.
+        List all courses with professor information, using repository factory.
 
         Args:
-            department: Optional department to filter by
+            department_id: Optional department ID to filter by.
 
         Returns:
-            List[Dict]: List of courses with professor information
+            List[Dict]: List of courses with professor information.
         """
         self.logger.info(
-            f"Listing courses{f' for department {department}' if department else ''}"
+            f"Listing courses{f' for department {department_id}' if department_id else ''}"
         )
 
         try:
-            courses = self.repository.course.list(department)
+            courses = self.repository.factory.course.list(department_id=department_id)
             result = []
-
             for course in courses:
-                professor = self.repository.professor.get(course.professor_id)
-                result.append({"course": course, "professor": professor})
-
+                # Fetch professor using the factory
+                professor = self.repository.factory.professor.get(course.professor_id)
+                result.append(
+                    {
+                        # Convert models to dicts for consistent output?
+                        "course": course_model_to_dict(course),
+                        "professor": professor_model_to_dict(professor),
+                    }
+                )
             self.logger.debug(f"Found {len(result)} courses")
             return result
         except Exception as e:
             error_msg = f"Failed to list courses: {str(e)}"
-            self.logger.error(error_msg)
+            self.logger.error(error_msg, exc_info=True)
             raise DatabaseError(error_msg) from e
 
-    def update_course(self, course_id: str, update_data: Dict[str, Any]) -> Course:
+    def update_course(self, course_id: int, update_data: Dict[str, Any]) -> CourseModel:
         """
         Update a course.
 
@@ -181,26 +226,25 @@ class CourseService:
             CourseNotFoundError: If course not found
             DatabaseError: If there's an error updating the database
         """
-        # Get existing course
+        # Get existing course model
         course = self.get_course(course_id)
-
-        # Update fields
+        # Update fields (simple approach)
         for key, value in update_data.items():
             if hasattr(course, key):
                 setattr(course, key, value)
             else:
-                self.logger.warning(f"Ignoring unknown field: {key}")
+                self.logger.warning(f"Ignoring unknown field during update: {key}")
 
-        # Save changes
+        # Save changes using repository factory
         try:
-            updated_course = self.repository.course.update(course)
+            updated_course = self.repository.factory.course.update(course)
             return updated_course
         except Exception as e:
-            error_msg = f"Failed to update course: {str(e)}"
-            self.logger.error(error_msg)
+            error_msg = f"Failed to update course {course_id}: {str(e)}"
+            self.logger.error(error_msg, exc_info=True)
             raise DatabaseError(error_msg) from e
 
-    def delete_course(self, course_id: str) -> bool:
+    def delete_course(self, course_id: int) -> bool:
         """
         Delete a course.
 
@@ -214,252 +258,256 @@ class CourseService:
             CourseNotFoundError: If course not found
             DatabaseError: If there's an error deleting from the database
         """
-        # Check if course exists
+        # Check existence via get_course
         self.get_course(course_id)
-
-        # Delete the course
+        # Delete using repository factory
         try:
-            result = self.repository.course.delete(course_id)
+            result = self.repository.factory.course.delete(course_id)
             if result:
                 self.logger.info(f"Course {course_id} deleted successfully")
             return result
         except Exception as e:
-            error_msg = f"Failed to delete course: {str(e)}"
-            self.logger.error(error_msg)
+            error_msg = f"Failed to delete course {course_id}: {str(e)}"
+            self.logger.error(error_msg, exc_info=True)
             raise DatabaseError(error_msg) from e
 
     # --- Generation Methods --- #
 
-    async def generate_course_topics(self, course_id: str) -> Course:
+    async def generate_course_content(
+        self,
+        partial_attributes: Optional[Dict[str, Any]] = None,
+    ) -> Dict[str, Any]:
         """
-        Generate topics for an existing course and update the course.
+        Generate a course using centralized converters and repository.
 
         Args:
-            course_id: ID of the course to generate topics for
+            partial_attributes: Optional dictionary of known attributes to guide generation
+                                or fill in the blanks.
 
         Returns:
-            Course: The updated course with generated topics
+            Dict[str, Any]: The generated course attributes (including topics).
 
         Raises:
-            CourseNotFoundError: If course not found
-            ContentGenerationError: If topics generation fails
-            DatabaseError: If there's an error updating the database
+            DatabaseError: If there's an error fetching prerequisites.
+            ContentGenerationError: If content generation or parsing fails.
         """
-        # Get the course
-        course = self.get_course(course_id)
+        partial_attributes = partial_attributes or {}
+        self.logger.info(
+            f"Generating course content with partial attributes: {list(partial_attributes.keys())}"
+        )
 
-        # Get professor if one is assigned, but don't require it
-        professor = None
-        if course.professor_id:
-            professor = self.repository.professor.get(course.professor_id)
-            self.logger.debug(
-                f"Found professor {professor.name} for course {course_id}"
-            )
-        else:
-            self.logger.debug(f"No professor assigned to course {course_id}")
-
+        # --- 1. Get Professor --- #
         try:
-            # Generate topics content
-            topics_content = await self._generate_course_topics_content(
-                course, professor
-            )
-
-            # Parse the topics XML into a structured format
-            parsed_topics = self._parse_topics_xml(
-                topics_content, course.total_weeks, course.lectures_per_week
-            )
-
-            # Update the course with the generated topics
-            updated_course = self.update_course(
-                course_id=course_id, update_data={"topics": parsed_topics}
-            )
-
-            self.logger.info(f"Topics generated and updated for course {course_id}")
-            return updated_course
-        except ContentGenerationError:
-            # Re-raise content generation errors
+            # Use the internal helper which now uses the repository
+            professor_model = await self._get_professor(partial_attributes)
+            professor_dict = professor_model_to_dict(professor_model)
+            professor_xml = professor_to_xml(professor_dict)
+        except DatabaseError as e:
+            self.logger.error(f"Database error fetching professor: {e}", exc_info=True)
             raise
         except Exception as e:
-            error_msg = f"Failed to generate and update course topics: {str(e)}"
-            self.logger.error(error_msg)
-            raise ContentGenerationError(error_msg) from e
+            self.logger.error(f"Error processing professor: {e}", exc_info=True)
+            raise ContentGenerationError(f"Error processing professor data: {e}")
 
-    async def generate_course_content(self, course_id: str) -> Course:
-        """
-        Generate both topics for an existing course.
-
-        Args:
-            course_id: ID of the course to generate content for
-
-        Returns:
-            Course: The updated course with generated content
-
-        Raises:
-            CourseNotFoundError: If course not found
-            ContentGenerationError: If content generation fails
-            DatabaseError: If there's an error updating the database
-        """
-        # Generate topics
-        await self.generate_course_topics(course_id)
-
-    async def _generate_course_topics_content(
-        self, course: Course, professor: Optional[Professor] = None
-    ) -> str:
-        """
-        Generate structured topics XML for a course.
-
-        Args:
-            course: Course object
-            professor: Optional professor object
-
-        Returns:
-            str: The generated topics XML
-
-        Raises:
-            ContentGenerationError: If generation fails
-        """
-        self.logger.debug(f"Generating topics for course {course.code}")
-
+        # --- 2. Get Department --- #
         try:
-            # Prepare the prompt with professor info if available
-            topics_prompt = get_course_topics_prompt(
-                course_title=course.title,
-                course_code=course.code,
-                department=course.department_id,
-                professor_name=professor.name if professor else None,
-                teaching_style=professor.teaching_style if professor else None,
-                course_description=course.description,
-                num_weeks=course.total_weeks,
-                topics_per_week=course.lectures_per_week,
+            # Use the internal helper which now uses the repository
+            department_model = await self._get_department(
+                partial_attributes, professor_model
             )
+            department_dict = department_model_to_dict(department_model)
+            department_xml = department_to_xml(department_dict)
+            if department_model:
+                partial_attributes.setdefault("department_id", department_model.id)
+        except DatabaseError as e:
+            self.logger.error(f"Database error fetching department: {e}", exc_info=True)
+            raise
+        except Exception as e:
+            self.logger.error(f"Error processing department: {e}", exc_info=True)
+            raise ContentGenerationError(f"Error processing department data: {e}")
 
-            # Generate topics XML
-            xml_response = await self.content_service.generate_text(
-                prompt=topics_prompt,
-                system_prompt="You are an expert curriculum designer for higher education.",
+        # --- 3. Get Existing Courses for Department --- #
+        try:
+            # Use the internal helper which now uses the repository
+            existing_courses_models = await self._get_existing_courses(department_model)
+            existing_courses_dicts = []
+            for c in existing_courses_models:
+                course_dict = course_model_to_dict(c)
+                # Extract topic titles for the XML converter's current format
+                # Assumes lectures relationship is loaded by the repository method
+                course_dict["topics"] = (
+                    [t.title for t in c.lectures] if c.lectures else []
+                )
+                existing_courses_dicts.append(course_dict)
+        except DatabaseError as e:
+            self.logger.error(
+                f"Database error fetching existing courses: {e}", exc_info=True
             )
+            raise
+        except Exception as e:
+            self.logger.error(f"Error processing existing courses: {e}", exc_info=True)
+            raise ContentGenerationError(f"Error processing existing course data: {e}")
 
-            # Extract topics from XML
-            topics_xml = extract_xml_content(xml_response, "course_topics")
-            if not topics_xml:
-                raise ValueError("Failed to extract course_topics from response")
+        # --- 4. Prepare and Generate Course Content --- #
+        try:
+            prompt_args = {
+                "course_title": partial_attributes.get("title", "[GENERATE]"),
+                "course_code": partial_attributes.get("code", "[GENERATE]"),
+                "course_description": partial_attributes.get(
+                    "description", "[GENERATE]"
+                ),
+                "course_level": partial_attributes.get("level", "[GENERATE]"),
+                "course_credits": partial_attributes.get("credits", "[GENERATE]"),
+                "lectures_per_week": partial_attributes.get(
+                    "lectures_per_week", DEFAULT_LECTURES_PER_WEEK
+                ),
+                "total_weeks": partial_attributes.get(
+                    "total_weeks", DEFAULT_COURSE_WEEKS
+                ),
+                "department_xml": department_xml,
+                "professor_xml": professor_xml,
+                "existing_courses": existing_courses_dicts,
+                "topics": partial_attributes.get("topics"),
+                "freeform_prompt": partial_attributes.get("freeform_prompt"),
+            }
 
-            return topics_xml
+            course_prompt = get_course_prompt(**prompt_args)
+            system_prompt = get_system_prompt("course")
 
+            self.logger.info("Calling content service to generate course...")
+            raw_response = await self.content_service.generate_text(
+                prompt=course_prompt, system_prompt=system_prompt
+            )
+            self.logger.info("Received response from content service.")
+
+            generated_xml_output = extract_xml_content(raw_response, "output")
+            if not generated_xml_output:
+                generated_xml_output = extract_xml_content(raw_response, "course")
+                if not generated_xml_output:
+                    self.logger.error(
+                        f"Could not extract <output> or <course> tag from response:\n{raw_response}"
+                    )
+                    raise ContentGenerationError(
+                        "AI response missing expected <output> or <course> tag."
+                    )
+                else:
+                    self.logger.warning(
+                        "Extracted <course> tag directly as <output> was missing."
+                    )
+
+            parsed_course_data = parse_course_xml(generated_xml_output)
+
+            final_course_data = {**parsed_course_data, **partial_attributes}
+
+            if professor_model:
+                final_course_data["professor_id"] = professor_model.id
+            if department_model:
+                final_course_data["department_id"] = department_model.id
+
+            final_course_data.pop("freeform_prompt", None)
+
+            self.logger.info(
+                f"Successfully generated and parsed course content for: {final_course_data.get('code')} - {final_course_data.get('title')}"
+            )
+            return final_course_data
+
+        except ValueError as e:
+            self.logger.error(
+                f"Error during course generation or parsing: {e}", exc_info=True
+            )
+            raise ContentGenerationError(f"Error generating/parsing course: {e}")
+        except ContentGenerationError as e:
+            self.logger.error(f"Content generation error: {e}", exc_info=True)
+            raise
         except Exception as e:
             self.logger.error(
-                f"Failed to generate course topics: {str(e)}", exc_info=True
+                f"Unexpected error during course content generation: {e}", exc_info=True
             )
-            raise ContentGenerationError(f"Topics generation failed: {str(e)}") from e
+            raise ContentGenerationError(f"An unexpected error occurred: {e}")
 
-    def _parse_topics_xml(
-        self, topics_xml: str, total_weeks: int, lectures_per_week: int
-    ) -> List[Dict[str, Any]]:
-        """
-        Parse the topics XML into a JSON structure for storage.
+    # --- Helper Methods for Fetching Data (using Repository) --- #
 
-        Args:
-            topics_xml: XML string containing topic structure
-            total_weeks: Expected number of weeks
-            lectures_per_week: Expected lectures per week
-
-        Returns:
-            List of week dictionaries with lecture topics
-        """
+    async def _get_professor(
+        self, partial_attributes: Dict[str, Any]
+    ) -> Optional[ProfessorModel]:
+        """Fetches professor DB model based on ID if provided, using repository."""
+        professor_id = partial_attributes.get("professor_id")
+        if not professor_id:
+            self.logger.warning("No professor_id provided for course generation.")
+            return None
         try:
-            # Parse XML
-            root = ET.fromstring(f"<root>{topics_xml}</root>")
-
-            # Extract weeks and topics
-            weeks_elements = root.findall(".//week")
-
-            result = []
-            for week_elem in weeks_elements:
-                week_num = int(week_elem.get("number", 0))
-                if 1 <= week_num <= total_weeks:
-                    week_data = {"week": week_num, "lectures": []}
-
-                    # Find topic elements directly under this week
-                    topic_elements = week_elem.findall("./topic")
-
-                    # For backwards compatibility with multiple formats
-                    if not topic_elements:
-                        # Try to find lecture elements
-                        lecture_elements = week_elem.findall("./lecture")
-                        for idx, lecture_elem in enumerate(lecture_elements, 1):
-                            title = (
-                                lecture_elem.text.strip()
-                                if lecture_elem.text
-                                else f"Week {week_num}, Lecture {idx}"
-                            )
-                            week_data["lectures"].append(
-                                {"number": idx, "title": title}
-                            )
-                    else:
-                        # Process topic elements directly
-                        for idx, topic_elem in enumerate(topic_elements, 1):
-                            if idx <= lectures_per_week:
-                                title = (
-                                    topic_elem.text.strip()
-                                    if topic_elem.text
-                                    else f"Week {week_num}, Lecture {idx}"
-                                )
-                                week_data["lectures"].append(
-                                    {"number": idx, "title": title}
-                                )
-
-                    # Ensure we have the right number of lectures per week
-                    while len(week_data["lectures"]) < lectures_per_week:
-                        idx = len(week_data["lectures"]) + 1
-                        week_data["lectures"].append(
-                            {"number": idx, "title": f"Week {week_num}, Lecture {idx}"}
-                        )
-
-                    # Only keep the expected number of lectures per week
-                    week_data["lectures"] = week_data["lectures"][:lectures_per_week]
-
-                    result.append(week_data)
-
-            # Ensure we have entries for all weeks
-            existing_weeks = {w["week"] for w in result}
-            for week_num in range(1, total_weeks + 1):
-                if week_num not in existing_weeks:
-                    week_data = {"week": week_num, "lectures": []}
-                    for idx in range(1, lectures_per_week + 1):
-                        week_data["lectures"].append(
-                            {"number": idx, "title": f"Week {week_num}, Lecture {idx}"}
-                        )
-                    result.append(week_data)
-
-            # Sort by week number
-            result.sort(key=lambda w: w["week"])
-
-            return result
-
-        except Exception as e:
-            self.logger.error(f"Failed to parse topics XML: {str(e)}", exc_info=True)
-            # Return default structure if parsing fails
-            return self._generate_default_topics(total_weeks, lectures_per_week)
-
-    def _generate_default_topics(
-        self, total_weeks: int, lectures_per_week: int
-    ) -> List[Dict[str, Any]]:
-        """
-        Generate a default topic structure if parsing fails.
-
-        Args:
-            total_weeks: Number of weeks in the course
-            lectures_per_week: Number of lectures per week
-
-        Returns:
-            Default topic structure
-        """
-        result = []
-        for week in range(1, total_weeks + 1):
-            week_data = {"week": week, "lectures": []}
-            for lecture in range(1, lectures_per_week + 1):
-                week_data["lectures"].append(
-                    {"number": lecture, "title": f"Week {week}, Lecture {lecture}"}
+            # Use the factory from the legacy repository wrapper
+            professor = self.repository.factory.professor.get(professor_id)
+            if not professor:
+                self.logger.error(
+                    f"Professor with ID {professor_id} not found via repository."
                 )
-            result.append(week_data)
-        return result
+                # Raise DatabaseError or ProfessorNotFound? Let's stick to DatabaseError for lookup failures.
+                raise DatabaseError(f"Professor with ID {professor_id} not found.")
+            return professor
+        except Exception as e:
+            self.logger.error(
+                f"Repository error fetching professor {professor_id}: {e}",
+                exc_info=True,
+            )
+            # Propagate as DatabaseError
+            raise DatabaseError(
+                f"Error fetching professor {professor_id} from repository."
+            ) from e
+
+    async def _get_department(
+        self,
+        partial_attributes: Dict[str, Any],
+        professor: Optional[ProfessorModel] = None,
+    ) -> Optional[DepartmentModel]:
+        """Fetches department DB model based on ID or professor's department, using repository."""
+        department_id = partial_attributes.get("department_id")
+
+        if not department_id and professor and professor.department_id:
+            department_id = professor.department_id
+            self.logger.info(
+                f"Using department ID {department_id} from professor {professor.id}"
+            )
+        elif not department_id:
+            self.logger.warning(
+                "No department_id provided or derivable for course generation."
+            )
+            return None
+
+        try:
+            # Use the factory from the legacy repository wrapper
+            department = self.repository.factory.department.get(department_id)
+            if not department:
+                self.logger.error(
+                    f"Department with ID {department_id} not found via repository."
+                )
+                raise DatabaseError(f"Department with ID {department_id} not found.")
+            return department
+        except Exception as e:
+            self.logger.error(
+                f"Repository error fetching department {department_id}: {e}",
+                exc_info=True,
+            )
+            raise DatabaseError(
+                f"Error fetching department {department_id} from repository."
+            ) from e
+
+    async def _get_existing_courses(
+        self, department: Optional[DepartmentModel]
+    ) -> List[CourseModel]:
+        """Fetches existing courses for a given department using the repository."""
+        if not department:
+            return []
+        try:
+            # Use the factory from the legacy repository wrapper
+            # Assumes CourseRepository.list handles potential None department_id if department is None
+            # and eager loads lectures as needed by generate_course_content
+            return self.repository.factory.course.list(department_id=department.id)
+        except Exception as e:
+            self.logger.error(
+                f"Repository error fetching courses for department {department.id}: {e}",
+                exc_info=True,
+            )
+            raise DatabaseError(
+                f"Error fetching courses for department {department.id} from repository."
+            ) from e

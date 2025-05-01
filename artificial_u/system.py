@@ -166,18 +166,17 @@ class UniversitySystem:
             logger=logging.getLogger("artificial_u.services.professor_service"),
         )
 
-        # Initialize CourseService (Decide: use content_service or content_generator?)
+        # Initialize CourseService (Using new __init__ signature)
         self.course_service = CourseService(
             repository=self.repository,
-            # Option 1: Use ContentService
-            content_service=self.content_service,  # Requires changing CourseService constructor
-            # Option 2: Keep using old generator (if it still exists/is needed)
-            # content_generator=self.content_generator,
             professor_service=self.professor_service,
+            content_service=self.content_service,  # Pass ContentService
             logger=logging.getLogger("artificial_u.services.course_service"),
         )
 
         # Initialize LectureService (Decide: use content_service or content_generator?)
+        # Assuming it might also need refactoring similar to CourseService later.
+        # For now, it still takes content_generator.
         self.lecture_service = LectureService(
             repository=self.repository,
             # Option 1: Use ContentService

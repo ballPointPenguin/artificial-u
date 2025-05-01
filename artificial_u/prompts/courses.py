@@ -1,6 +1,14 @@
 """Course-related prompt templates."""
 
-from artificial_u.config.defaults import DEFAULT_COURSE_WEEKS, DEFAULT_LECTURES_PER_WEEK
+from typing import Any, Dict, List, Optional
+
+# Import converters instead of defining formatters here
+from artificial_u.models.converters import (
+    courses_to_xml,
+    department_to_xml,
+    partial_course_to_xml,
+    professor_to_xml,
+)
 from artificial_u.prompts.base import PromptTemplate
 
 # XML structure for course topics
@@ -138,144 +146,49 @@ Wrap your answer in <output> tags, providing only the <course> element:
 )
 
 
-def format_existing_courses_xml(existing_courses):
-    """Format a list of existing courses as XML for context."""
-    if not existing_courses:
-        return "<no_existing_courses />"
-
-    lines = ["<existing_courses>"]
-    for course in existing_courses:
-        lines.append("  <course>")
-        lines.append(f"    <code>{course.get('code', 'N/A')}</code>")
-        lines.append(f"    <title>{course.get('title', 'N/A')}</title>")
-        lines.append(
-            f"    <description>{course.get('description', 'N/A')}</description>"
-        )
-
-        # Add topic overview if available
-        if course.get("topics"):
-            lines.append("    <topics_overview>")
-            for topic in course.get("topics", [])[
-                :5
-            ]:  # Limit to first 5 topics for brevity
-                lines.append(f"      <topic>{topic}</topic>")
-            if len(course.get("topics", [])) > 5:
-                lines.append(
-                    f"      <additional_topics_count>{len(course.get('topics', [])) - 5}</additional_topics_count>"
-                )
-            lines.append("    </topics_overview>")
-
-        lines.append("  </course>")
-    lines.append("</existing_courses>")
-    return "\n".join(lines)
-
-
-def format_partial_course_xml(partial_attrs: dict) -> str:
-    """Builds the XML string for partial course attributes, marking missing fields as [GENERATE]."""
-    lines = ["<course>"]
-    # Define all expected fields in the desired order
-    fields = [
-        "code",
-        "title",
-        "description",
-        "level",
-        "credits",
-        "lectures_per_week",
-        "total_weeks",
-    ]
-
-    for field in fields:
-        value = partial_attrs.get(field)
-        # Handle provided attributes
-        if value is not None and value != "[GENERATE]":
-            lines.append(f"  <{field}>{str(value)}</{field}>")
-        else:
-            lines.append(f"  <{field}>[GENERATE]</{field}>")
-
-    # If topics are provided, add them
-    if "topics" in partial_attrs and partial_attrs["topics"]:
-        lines.append("  <topics>")
-        for topic in partial_attrs["topics"]:
-            week = topic.get("week", "[GENERATE]")
-            lecture = topic.get("lecture", 1)
-            topic_text = topic.get("topic", "[GENERATE]")
-            lines.append(f'    <week number="{week}">')
-            lines.append(f'      <lecture number="{lecture}">')
-            lines.append(f"        <topic>{topic_text}</topic>")
-            lines.append("      </lecture>")
-            lines.append("    </week>")
-        lines.append("  </topics>")
-    else:
-        lines.append("  <topics>[GENERATE]</topics>")
-
-    lines.append("</course>")
-    return "\n".join(lines)
-
-
 def get_course_prompt(
-    course_title: str = "[GENERATE]",
-    course_code: str = "[GENERATE]",
-    course_description: str = "[GENERATE]",
-    course_level: str = "[GENERATE]",
-    course_credits: str = "[GENERATE]",
-    lectures_per_week: int = DEFAULT_LECTURES_PER_WEEK,
-    total_weeks: int = DEFAULT_COURSE_WEEKS,
-    department_xml: str = None,
-    professor_xml: str = None,
-    existing_courses: list = None,
-    topics: list = None,
-    freeform_prompt: str = None,
+    department_data: Dict[str, Any],
+    professor_data: Dict[str, Any],
+    existing_courses: List[Dict[str, Any]],
+    partial_course_attrs: Dict[str, Any],
+    freeform_prompt: Optional[str] = None,
 ) -> str:
-    """Generate a course topics prompt with optional prepopulated fields.
+    """Generate a course topics prompt using centralized converters.
 
     Args:
-        course_title: Course title or [GENERATE] to have the model generate it
-        course_code: Course code or [GENERATE] to have the model generate it
-        course_description: Course description or [GENERATE] to have the model generate it
-        course_level: Course level or [GENERATE] to have the model generate it
-        course_credits: Course credits or [GENERATE] to have the model generate it
-        lectures_per_week: Number of lectures per week
-        total_weeks: Total number of weeks in the course
-        department_xml: Required XML representation of the department
-        professor_xml: Required XML representation of the professor
-        existing_courses: Optional list of existing courses for context
-        topics: Optional list of predefined topics as {"week": w, "lecture": l, "topic": t}
-        freeform_prompt: Optional freeform text to provide additional context
+        department_data: Dictionary of department attributes.
+        professor_data: Dictionary of professor attributes.
+        existing_courses: List of existing course attribute dictionaries.
+        partial_course_attrs: Dictionary of known/partial course attributes.
+        freeform_prompt: Optional freeform text context.
 
     Returns:
-        Formatted prompt string
+        Formatted prompt string.
     """
-    if department_xml is None or professor_xml is None:
-        raise ValueError("Both department_xml and professor_xml are required")
-
-    # Format existing courses as XML if provided
-    existing_courses_xml = format_existing_courses_xml(existing_courses or [])
-
-    # Build partial course XML from provided attributes
-    partial_attrs = {
-        "code": course_code,
-        "title": course_title,
-        "description": course_description,
-        "level": course_level,
-        "credits": course_credits,
-        "lectures_per_week": lectures_per_week,
-        "total_weeks": total_weeks,
-        "topics": topics,
-    }
-
-    partial_course_xml = format_partial_course_xml(partial_attrs)
+    # Use converters to generate XML sections
+    department_xml_str = department_to_xml(department_data)
+    professor_xml_str = professor_to_xml(professor_data)
+    # courses_to_xml expects list of dicts, which is what course_service provides
+    existing_courses_xml_str = courses_to_xml(existing_courses)
+    # partial_course_to_xml expects dict of partial attributes
+    partial_course_xml_str = partial_course_to_xml(partial_course_attrs)
 
     # Format freeform prompt if provided
-    freeform_prompt_text = ""
-    if freeform_prompt:
-        freeform_prompt_text = "Additional context/ideas for the course:\n{}\n".format(
-            freeform_prompt
-        )
-
-    return COURSE_PROMPT.format(
-        existing_courses_xml=existing_courses_xml,
-        partial_course_xml=partial_course_xml,
-        professor_xml=professor_xml,
-        department_xml=department_xml,
-        freeform_prompt_text=freeform_prompt_text,
+    freeform_prompt_text = (
+        f"Additional context/ideas for the course:\n{freeform_prompt}\n"
+        if freeform_prompt
+        else ""
     )
+
+    # Format the main prompt template
+    try:
+        return COURSE_PROMPT.format(
+            existing_courses_xml=existing_courses_xml_str,
+            partial_course_xml=partial_course_xml_str,
+            professor_xml=professor_xml_str,
+            department_xml=department_xml_str,
+            freeform_prompt_text=freeform_prompt_text,
+        )
+    except ValueError as e:
+        # Re-raise or handle missing required variables if COURSE_PROMPT definition changes
+        raise ValueError(f"Error formatting COURSE_PROMPT: {e}")
