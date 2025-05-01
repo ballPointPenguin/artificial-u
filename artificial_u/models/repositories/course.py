@@ -25,7 +25,7 @@ class CourseRepository(BaseRepository):
                 description=course.description,
                 lectures_per_week=course.lectures_per_week,
                 total_weeks=course.total_weeks,
-                syllabus=course.syllabus,
+                topics=course.topics,
             )
 
             session.add(db_course)
@@ -33,6 +33,7 @@ class CourseRepository(BaseRepository):
             session.refresh(db_course)
 
             course.id = db_course.id
+            course.topics = db_course.topics
             return course
 
     def get(self, course_id: int) -> Optional[Course]:
@@ -54,7 +55,7 @@ class CourseRepository(BaseRepository):
                 description=db_course.description,
                 lectures_per_week=db_course.lectures_per_week,
                 total_weeks=db_course.total_weeks,
-                syllabus=db_course.syllabus,
+                topics=db_course.topics,
             )
 
     def get_by_code(self, code: str) -> Optional[Course]:
@@ -76,7 +77,7 @@ class CourseRepository(BaseRepository):
                 description=db_course.description,
                 lectures_per_week=db_course.lectures_per_week,
                 total_weeks=db_course.total_weeks,
-                syllabus=db_course.syllabus,
+                topics=db_course.topics,
             )
 
     def list(self, department_id: Optional[int] = None) -> List[Course]:
@@ -101,7 +102,7 @@ class CourseRepository(BaseRepository):
                     description=c.description,
                     lectures_per_week=c.lectures_per_week,
                     total_weeks=c.total_weeks,
-                    syllabus=c.syllabus,
+                    topics=c.topics,
                 )
                 for c in db_courses
             ]
@@ -124,9 +125,10 @@ class CourseRepository(BaseRepository):
             db_course.description = course.description
             db_course.lectures_per_week = course.lectures_per_week
             db_course.total_weeks = course.total_weeks
-            db_course.syllabus = course.syllabus
+            db_course.topics = course.topics
 
             session.commit()
+            course.topics = db_course.topics
             return course
 
     def delete(self, course_id: int) -> bool:

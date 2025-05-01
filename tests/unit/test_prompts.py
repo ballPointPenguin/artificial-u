@@ -8,7 +8,6 @@ from artificial_u.prompts.base import (
     extract_xml_content,
     xml_tag,
 )
-from artificial_u.prompts.courses import get_syllabus_prompt
 from artificial_u.prompts.lectures import StructuredLecturePrompt, get_lecture_prompt
 from artificial_u.prompts.professors import get_professor_prompt
 from artificial_u.prompts.system import get_system_prompt
@@ -108,25 +107,6 @@ class TestPromptModules:
         assert "<professor_profile>" in prompt
 
     @pytest.mark.unit
-    def test_syllabus_prompt(self):
-        """Test the syllabus prompt generator."""
-        prompt = get_syllabus_prompt(
-            course_code="CS101",
-            course_title="Introduction to Programming",
-            department="Computer Science",
-            professor_name="Dr. Smith",
-            professor_title="Associate Professor",
-            teaching_style="Interactive and hands-on",
-        )
-
-        # Check that required elements are in the prompt
-        assert "CS101: Introduction to Programming" in prompt
-        assert "Department: Computer Science" in prompt
-        assert "Professor: Dr. Smith (Associate Professor)" in prompt
-        assert "Teaching Style: Interactive and hands-on" in prompt
-        assert "<syllabus>" in prompt
-
-    @pytest.mark.unit
     def test_lecture_prompt(self):
         """Test the lecture prompt generator."""
         prompt = get_lecture_prompt(
@@ -205,7 +185,7 @@ class TestPromptModules:
         assert "faculty profiles" in prompt
 
         prompt = get_system_prompt("course")
-        assert "course syllabi" in prompt
+        assert "course topics" in prompt
 
         prompt = get_system_prompt("lecture")
         assert "educational content creator" in prompt

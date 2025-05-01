@@ -3,7 +3,7 @@
 from typing import Dict
 
 COURSE_SYSTEM_PROMPT = (
-    "You are an expert at creating detailed, professional course syllabi and curricula for a wide range "
+    "You are an expert at creating detailed, professional course topics and curricula for a wide range "
     "of academic subjects."
 )
 

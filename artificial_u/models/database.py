@@ -99,7 +99,7 @@ class CourseModel(Base):
         Integer, nullable=True, default=DEFAULT_LECTURES_PER_WEEK
     )
     total_weeks = Column(Integer, nullable=True, default=DEFAULT_COURSE_WEEKS)
-    syllabus = Column(Text, nullable=True)
+    topics = Column(JSON, nullable=True)
 
     department = relationship("DepartmentModel", back_populates="courses")
     professor = relationship("ProfessorModel", back_populates="courses")

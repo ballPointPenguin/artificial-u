@@ -21,7 +21,6 @@ This document outlines the planned development phases and features for the Artif
 
 - [ ] Refine prompts for professor persona generation
 - [ ] Enhance lecture generation to maintain consistent professor voice
-- [ ] Implement syllabus parsing for topic extraction
 - [ ] Add support for different course types and structures
 - [ ] Create specialized lecture templates for different subjects
 - [ ] Implement cross-referencing between related lectures

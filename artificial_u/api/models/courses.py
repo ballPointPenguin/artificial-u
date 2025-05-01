@@ -22,7 +22,6 @@ class CourseBase(BaseModel):
     description: str
     lectures_per_week: int = DEFAULT_LECTURES_PER_WEEK
     total_weeks: int = DEFAULT_COURSE_WEEKS
-    syllabus: Optional[str] = None
 
 
 # Course creation model

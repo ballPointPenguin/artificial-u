@@ -31,9 +31,6 @@ def mock_system():
 
         # Set up mock content generator
         mock_content_generator = MagicMock()
-        mock_content_generator.create_course_syllabus.return_value = (
-            "Mock syllabus content"
-        )
         mock_content_generator.create_lecture.return_value = Lecture(
             title="Mock Lecture",
             course_id=123,
@@ -93,7 +90,6 @@ def mock_system():
             department_id=c.department_id,
             level=c.level,
             description=c.description,
-            syllabus=c.syllabus,
             professor_id=c.professor_id,
             total_weeks=c.total_weeks,
             lectures_per_week=c.lectures_per_week,
@@ -120,7 +116,6 @@ def mock_system():
             department_id=1,
             level="Undergraduate",
             description="A basic course in CS",
-            syllabus="Mock syllabus",
             professor_id=123,
             total_weeks=14,
             lectures_per_week=2,
@@ -216,7 +211,6 @@ def setup_common_repository_patterns(mock_repository):
             department="Computer Science",
             level="Undergraduate",
             description="A basic course in CS",
-            syllabus="Mock syllabus",
             professor_id=123,
             total_weeks=14,
             lectures_per_week=2,
@@ -252,7 +246,6 @@ def test_course_creation_flow(mock_system):
     assert course.id == 123
     assert course.title == "Test Course"
     assert course.code == "TEST101"
-    assert course.syllabus == "Mock syllabus content"
     assert professor.id == 123
 
 

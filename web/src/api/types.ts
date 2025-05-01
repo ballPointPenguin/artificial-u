@@ -109,7 +109,6 @@ export interface Course {
   description: string | null
   lectures_per_week: number | null
   total_weeks: number | null
-  syllabus: string | null
 }
 
 export type CoursesList = PaginatedResponse<Course>

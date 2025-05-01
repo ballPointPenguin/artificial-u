@@ -78,7 +78,7 @@ def cli():
 def create_course(
     department, title, code, professor_id, weeks, lectures_per_week, description
 ):
-    """Create a new course with syllabus."""
+    """Create a new course."""
     try:
         system = get_system()
 
@@ -103,9 +103,7 @@ def create_course(
             TextColumn("[bold blue]{task.description}"),
             console=console,
         ) as progress:
-            task = progress.add_task(
-                "Creating course and generating syllabus...", total=None
-            )
+            task = progress.add_task("Creating course...", total=None)
 
             # Create the course
             course, professor = system.create_course(
@@ -160,38 +158,6 @@ def list_courses(department):
 
     except Exception as e:
         console.print(f"[red]Error listing courses:[/red] {str(e)}")
-
-
-@cli.command()
-@click.option("--course-code", "-c", required=True, help="Course code")
-def show_syllabus(course_code):
-    """Display a course syllabus."""
-    try:
-        system = get_system()
-        course = system.repository.course.get_by_code(course_code)
-        if not course:
-            console.print(f"[red]Course {course_code} not found[/red]")
-            return
-
-        professor = system.repository.professor.get(course.professor_id)
-
-        # Display syllabus
-        if course.syllabus:
-            title = (
-                f"# {course.title} ({course.code})\n\n## Professor: {professor.name}"
-            )
-
-            if not course.syllabus.startswith("#"):
-                formatted_syllabus = f"{title}\n\n{course.syllabus}"
-            else:
-                formatted_syllabus = course.syllabus
-
-            console.print(Markdown(formatted_syllabus))
-        else:
-            console.print("[yellow]No syllabus available for this course.[/yellow]")
-
-    except Exception as e:
-        console.print(f"[red]Error:[/red] {str(e)}")
 
 
 @cli.command()
@@ -294,9 +260,7 @@ def create_professor(
 @click.option(
     "--number", "-n", default=1, type=int, help="Lecture number within the week"
 )
-@click.option(
-    "--topic", "-t", help="Lecture topic (uses syllabus topic if not specified)"
-)
+@click.option("--topic", "-t", help="Lecture topic")
 @click.option("--word-count", default=2500, type=int, help="Target word count")
 @click.option(
     "--enable-caching/--no-caching",

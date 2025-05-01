@@ -71,7 +71,7 @@ Once connected, you can use these common commands:
 ArtificialU uses these main tables:
 
 - **professors**: Stores professor information including personalities
-- **courses**: Stores course details and syllabi
+- **courses**: Stores course details and topics
 - **lectures**: Stores lecture content and links to audio files
 - **departments**: Stores academic department information
 

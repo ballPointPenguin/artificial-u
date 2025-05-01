@@ -22,7 +22,6 @@ export interface CourseFormData {
   description: string
   lectures_per_week: number
   total_weeks: number
-  syllabus: string | null
 }
 
 const defaultFormData: CourseFormData = {
@@ -35,7 +34,6 @@ const defaultFormData: CourseFormData = {
   description: '',
   lectures_per_week: 1,
   total_weeks: 14,
-  syllabus: '',
 }
 
 interface CourseFormProps {
@@ -74,7 +72,6 @@ const CourseForm: Component<CourseFormProps> = (props) => {
         description: course.description || '',
         lectures_per_week: course.lectures_per_week || 1,
         total_weeks: course.total_weeks || 14,
-        syllabus: course.syllabus || null,
       })
     }
   })
@@ -390,25 +387,6 @@ const CourseForm: Component<CourseFormProps> = (props) => {
             {validationErrors().description}
           </p>
         </Show>
-      </div>
-
-      <div>
-        <label
-          for="syllabus"
-          class="block text-sm font-medium mb-1 text-parchment-300"
-        >
-          Syllabus URL
-        </label>
-        <input
-          id="syllabus"
-          name="syllabus"
-          type="url"
-          value={formData().syllabus || ''}
-          onInput={handleChange}
-          placeholder="https://example.com/syllabus.pdf"
-          class="arcane-input"
-          disabled={props.isSubmitting}
-        />
       </div>
 
       <Show when={props.error}>

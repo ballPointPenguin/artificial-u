@@ -166,11 +166,6 @@ def apply_monkey_patches(system):
         lambda professor: setattr(professor, "voice_id", None) or professor
     )
 
-    # Monkey patch content generator method
-    system.content_generator.create_course_syllabus = (
-        lambda course, professor: f"Mock syllabus for {course.code} taught by {professor.name}"
-    )
-
     # Monkey patch legacy repository interface calls
     def new_create_professor(**kwargs):
         from artificial_u.models.core import Professor

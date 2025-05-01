@@ -22,7 +22,7 @@ The `UniversitySystem` class acts as the central orchestrator, integrating the o
 The `ContentGenerator` handles all interactions with the Anthropic Claude API. It is responsible for:
 
 - Creating professor profiles with consistent personalities
-- Generating course syllabi tailored to professor teaching styles
+- Generating course topics tailored to professor teaching styles
 - Creating engaging lectures that maintain the professor's voice and perspective
 - Ensuring continuity between lectures in a series
 
@@ -58,7 +58,7 @@ The CLI provides a user-friendly way to interact with the system through the ter
 The core domain model consists of these primary entities:
 
 - **Professor** - A virtual faculty member with a unique personality and teaching style
-- **Course** - An academic course with a syllabus and series of lectures
+- **Course** - An academic course a series of topics
 - **Lecture** - A single class session with content and optional audio
 - **Department** - An academic department containing related courses
 
@@ -68,8 +68,8 @@ The core domain model consists of these primary entities:
 
 1. User provides course details (title, code, department)
 2. System creates or assigns a professor with appropriate expertise
-3. ContentGenerator creates a syllabus tailored to the professor's style
-4. Repository stores the course and syllabus
+3. ContentGenerator creates course topics
+4. Repository stores the course and topics
 
 ### Generating a Lecture
 

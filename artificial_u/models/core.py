@@ -135,6 +135,19 @@ class Course(BaseModel):
                 "description": "Foundational concepts and techniques in AI.",
                 "lectures_per_week": 1,
                 "total_weeks": 14,
+                "topics": [
+                    {
+                        "week": 1,
+                        "lectures": [
+                            {"number": 1, "title": "Introduction to AI"},
+                            {"number": 2, "title": "History of AI"},
+                        ],
+                    },
+                    {
+                        "week": 2,
+                        "lectures": [{"number": 1, "title": "Search Algorithms"}],
+                    },
+                ],
             }
         }
     )
@@ -149,7 +162,7 @@ class Course(BaseModel):
     description: str
     lectures_per_week: int = DEFAULT_LECTURES_PER_WEEK
     total_weeks: int = DEFAULT_COURSE_WEEKS
-    syllabus: Optional[str] = None
+    topics: Optional[list[dict]] = None
 
 
 class Lecture(BaseModel):

@@ -8,7 +8,7 @@ ArtificialU combines the Anthropic Claude API for generating educational content
 
 ## Key Features
 
-- **Course Generation**: Create full academic courses with syllabi and lecture content
+- **Course Generation**: Create full academic courses with topics and lecture content
 - **Professor Profiles**: Generate diverse, detailed professor personas
 - **Text-to-Speech**: Convert lecture content to audio using ElevenLabs voices
 - **Smart Voice Selection**: Automatically match professors to appropriate ElevenLabs voices based on gender, nationality, accent, and age
@@ -130,9 +130,6 @@ hatch run artificial-u create-audio -c "CS4511" -w 1 -n 1
 
 # Example: List available courses
 hatch run artificial-u list-courses
-
-# Example: Show course syllabus
-hatch run artificial-u show-syllabus -c "CS4511"
 
 # Example: Play a lecture (if available)
 hatch run artificial-u play-lecture -c "CS4511" -w 1 -n 1

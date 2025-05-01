@@ -8,7 +8,6 @@ from artificial_u.config.config_manager import ConfigManager
 # Re-export defaults for direct import from artificial_u.config
 from artificial_u.config.defaults import (
     DEFAULT_CONTENT_BACKEND,
-    DEFAULT_COURSE_LEVEL,
     DEFAULT_COURSE_WEEKS,
     DEFAULT_DB_URL,
     DEFAULT_LECTURE_WORD_COUNT,
@@ -52,7 +51,6 @@ __all__ = [
     "DEFAULT_STORAGE_LECTURES_BUCKET",
     "DEFAULT_STORAGE_IMAGES_BUCKET",
     "DEPARTMENTS",
-    "DEFAULT_COURSE_LEVEL",
     "DEFAULT_COURSE_WEEKS",
     "DEFAULT_LECTURES_PER_WEEK",
     "DEFAULT_LECTURE_WORD_COUNT",

@@ -236,19 +236,6 @@ const CourseDetail: Component = () => {
                             {course().total_weeks}
                           </span>
                         </p>
-                        {course().syllabus && (
-                          <p>
-                            <span class="text-parchment-300">Syllabus:</span>{' '}
-                            <a
-                              href={course().syllabus ?? ''}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              class="text-mystic-400 hover:text-mystic-300 transition-colors"
-                            >
-                              View Syllabus
-                            </a>
-                          </p>
-                        )}
                       </div>
                     </div>
 

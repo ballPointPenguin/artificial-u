@@ -83,7 +83,7 @@ class LectureService:
             course_code: Course code
             week: Week number
             number: Lecture number within the week
-            topic: Lecture topic (if None, will be derived from syllabus)
+            topic: Lecture topic
             word_count: Word count for the lecture
 
         Returns:

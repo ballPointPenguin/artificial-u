@@ -209,7 +209,7 @@ class UniversitySystem:
     # === Course Methods ===
 
     def create_course(self, **kwargs) -> Tuple[Course, Professor]:
-        """Create a new course with syllabus."""
+        """Create a new course with topics."""
         return self.course_service.create_course(**kwargs)
 
     def list_departments(self) -> List[Department]:

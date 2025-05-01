@@ -29,7 +29,7 @@ Create a services directory with dedicated modules:
 `artificial_u/services/course_service.py`
 
 - Course creation
-- Syllabus generation
+- Course topics generation
 
 `artificial_u/services/lecture_service.py`
 

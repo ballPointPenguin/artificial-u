@@ -4,7 +4,6 @@ Content generator for ArtificialU using either Anthropic Claude API or alternati
 
 import logging
 import os
-import re
 import time
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -12,9 +11,7 @@ import anthropic
 
 from artificial_u.models.core import Course, Lecture, Professor
 from artificial_u.prompts.base import extract_xml_content
-from artificial_u.prompts.courses import get_syllabus_prompt
 from artificial_u.prompts.lectures import get_lecture_prompt
-from artificial_u.prompts.professors import get_professor_prompt
 from artificial_u.prompts.system import get_system_prompt
 
 
@@ -57,161 +54,6 @@ class ContentGenerator:
                     "Anthropic API key is required when not providing a client"
                 )
             self.client = anthropic.Client(api_key=self.api_key)
-
-    def create_professor(
-        self,
-        department: str,
-        specialization: str,
-        gender: Optional[str] = None,
-        nationality: Optional[str] = None,
-        age_range: Optional[str] = None,
-        accent: Optional[str] = None,
-    ) -> Professor:
-        """
-        Generate a professor profile with a consistent personality and background.
-
-        Args:
-            department: Academic department
-            specialization: Area of expertise
-            gender: Optional gender specification
-            nationality: Optional nationality specification
-            age_range: Optional age range (e.g., "30-40", "50-60")
-            accent: Optional accent specification
-
-        Returns:
-            Professor: Generated professor profile
-        """
-        # Get the professor prompt using the prompt module
-        prompt = get_professor_prompt(
-            department=department,
-            specialization=specialization,
-            gender=gender,
-            nationality=nationality,
-            age_range=age_range,
-            accent=accent,
-        )
-
-        # Get the system prompt
-        system_prompt = get_system_prompt("professor")
-
-        response = self.client.messages.create(
-            model="claude-3-7-sonnet-latest",
-            max_tokens=2000,
-            temperature=1,
-            system=system_prompt,
-            messages=[{"role": "user", "content": [{"type": "text", "text": prompt}]}],
-        )
-
-        # Extract the profile content
-        content = response.content[0].text
-        profile_text = extract_xml_content(content, "professor_profile")
-
-        if not profile_text:
-            # Don't throw error, create a basic professor with required fields
-            self.logger.warning(
-                "No structured professor profile found. Creating basic profile."
-            )
-
-            # Try to extract a name from the content as a fallback
-            name_match = re.search(r"Dr\.\s+[\w\s]+|Professor\s+[\w\s]+", content)
-            name = (
-                name_match.group(0)
-                if name_match
-                else f"Dr. {specialization.title()} Expert"
-            )
-
-            # Create basic professor with required fields and empty optional fields
-            return Professor(
-                name=name,
-                title=f"Professor of {specialization.title()}",
-                department=department,
-                specialization=specialization,
-                background=f"Expert in {specialization} within the {department} department.",
-                personality="Professional and knowledgeable.",
-                teaching_style="Structured and clear.",
-                gender=gender,
-                accent=accent,
-                description=f"A professor specializing in {specialization}.",
-                age=None,
-            )
-
-        # Parse the profile text into a dictionary
-        profile = {}
-        for line in profile_text.split("\n"):
-            if ":" in line:
-                key, value = line.split(":", 1)
-                profile[key.strip()] = value.strip()
-
-        # Convert age to integer if present
-        age = None
-        if "Age" in profile:
-            try:
-                age = int(profile["Age"])
-            except ValueError:
-                # If age can't be converted to int, leave it as None
-                self.logger.warning(
-                    f"Could not convert age value to integer: {profile.get('Age')}"
-                )
-
-        return Professor(
-            name=profile.get("Name", ""),
-            title=profile.get("Title", ""),
-            department=department,
-            specialization=specialization,
-            background=profile.get("Background", ""),
-            personality=profile.get("Personality", ""),
-            teaching_style=profile.get("Teaching Style", ""),
-            gender=profile.get("Gender"),
-            accent=profile.get("Accent"),
-            description=profile.get("Description"),
-            age=age,
-        )
-
-    def create_course_syllabus(self, course: Course, professor: Professor) -> str:
-        """
-        Generate a course syllabus based on the course and professor details.
-
-        Args:
-            course: Course object with details
-            professor: Professor teaching the course
-
-        Returns:
-            str: Generated course syllabus
-        """
-        # Get the syllabus prompt using the prompt module
-        prompt = get_syllabus_prompt(
-            course_code=course.code,
-            course_title=course.title,
-            department=course.department,
-            professor_name=professor.name,
-            professor_title=professor.title,
-            teaching_style=professor.teaching_style,
-        )
-
-        # Get the system prompt
-        system_prompt = get_system_prompt("course")
-
-        response = self.client.messages.create(
-            model="claude-3-7-sonnet-latest",
-            max_tokens=3000,
-            temperature=0.7,
-            system=system_prompt,
-            messages=[{"role": "user", "content": [{"type": "text", "text": prompt}]}],
-        )
-
-        # Extract the syllabus content
-        content = response.content[0].text
-        syllabus = extract_xml_content(content, "syllabus")
-
-        if syllabus:
-            # If we find the tags, use the content inside them
-            return syllabus
-        elif content.strip():
-            # If no tags but content exists, use the whole response
-            return content.strip()
-        else:
-            # Only raise error if truly empty
-            raise ValueError("No syllabus found in response")
 
     def create_lecture(
         self,
