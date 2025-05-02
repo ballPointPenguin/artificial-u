@@ -17,7 +17,7 @@ services:
       retries: 5
 
   ollama:
-    image: ollama/ollama
+    image: ollama/ollama:latest
     container_name: artificial_u_ollama
     ports:
       - "11434:11434"
@@ -52,7 +52,7 @@ services:
 
   # MinIO client for bucket setup
   mc:
-    image: minio/mc
+    image: minio/mc:latest
     container_name: artificial_u_mc
     depends_on:
       - minio
