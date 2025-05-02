@@ -80,18 +80,18 @@ class ElevenLabsClient:
             "Accept": "application/json",
         }
 
-    def get_el_voice(self, el_voice_id: str) -> Optional[Dict[str, Any]]:
+    def get_voice(self, voice_id: str) -> Optional[Dict[str, Any]]:
         """
         Get details of a specific voice.
 
         Args:
-            el_voice_id: ElevenLabs Voice ID of the voice to retrieve
+            voice_id: ElevenLabs Voice ID of the voice to retrieve
 
         Returns:
             Voice details or None if not found
         """
         try:
-            response = self.client.voices.get(voice_id=el_voice_id)
+            response = self.client.voices.get(voice_id=voice_id)
 
             voice_data = {
                 "el_voice_id": response.voice_id,
@@ -106,8 +106,46 @@ class ElevenLabsClient:
 
             return voice_data
         except Exception as e:
-            self.logger.error(f"Error retrieving ElevenLabs voice {el_voice_id}: {e}")
+            self.logger.error(f"Error retrieving ElevenLabs voice {voice_id}: {e}")
             return None
+
+    def get_all_voices(self) -> List[Dict[str, Any]]:
+        """
+        Get all available voices.
+
+        Returns:
+            List of voice data dictionaries
+        """
+        try:
+            response = self.client.voices.get_all()
+            return [
+                {
+                    "el_voice_id": voice.voice_id,
+                    "name": voice.name,
+                    "category": getattr(voice, "category", "premade"),
+                    "gender": (
+                        getattr(voice.labels, "gender", "neutral")
+                        if hasattr(voice, "labels")
+                        else "neutral"
+                    ),
+                    "accent": (
+                        getattr(voice.labels, "accent", "american")
+                        if hasattr(voice, "labels")
+                        else "american"
+                    ),
+                    "age": (
+                        getattr(voice.labels, "age", "middle_aged")
+                        if hasattr(voice, "labels")
+                        else "middle_aged"
+                    ),
+                    "description": getattr(voice, "description", ""),
+                    "preview_url": getattr(voice, "preview_url", ""),
+                }
+                for voice in response.voices
+            ]
+        except Exception as e:
+            self.logger.error(f"Error retrieving all voices: {e}")
+            return []
 
     def get_shared_voices(
         self,
@@ -142,96 +180,55 @@ class ElevenLabsClient:
         Returns:
             Tuple of (list of voice data, has_more flag)
         """
-        # Call the client library method
-        response = self.client.voices.get_shared(
-            page_size=min(page_size, 100),
-            page=page,
-            gender=gender,
-            accent=accent,
-            age=age,
-            language=language,
-            use_cases=use_case,
-            category=category,
-            search=search,
-            min_notice_period_days=min_notice_period_days,
-            featured=featured,
-        )
-
-        # Extract data from response
-        el_voices = response.voices
-        has_more = getattr(response, "has_more", False)
-
-        # Format the voice data to standardized format
-        formatted_voices = []
-        for el_voice in el_voices:
-            formatted_voices.append(
-                {
-                    "el_voice_id": el_voice.voice_id,
-                    "name": el_voice.name,
-                    "gender": getattr(el_voice, "gender", None),
-                    "accent": getattr(el_voice, "accent", None),
-                    "age": getattr(el_voice, "age", None),
-                    "descriptive": getattr(el_voice, "descriptive", None),
-                    "use_case": getattr(el_voice, "use_case", None),
-                    "category": getattr(el_voice, "category", None),
-                    "language": getattr(el_voice, "language", None),
-                    "locale": getattr(el_voice, "locale", None),
-                    "description": getattr(el_voice, "description", ""),
-                    "preview_url": getattr(el_voice, "preview_url", ""),
-                    "verified_languages": getattr(el_voice, "verified_languages", []),
-                    "cloned_by_count": getattr(el_voice, "cloned_by_count", 0),
-                    "usage_character_count_1y": getattr(
-                        el_voice, "usage_character_count_1y", 0
-                    ),
-                }
+        try:
+            # Call the client library method
+            response = self.client.voices.get_shared(
+                page_size=min(page_size, 100),
+                page=page,
+                gender=gender,
+                accent=accent,
+                age=age,
+                language=language,
+                use_cases=use_case,
+                category=category,
+                search=search,
+                min_notice_period_days=min_notice_period_days,
+                featured=featured,
             )
 
-        return formatted_voices, has_more
+            # Extract data from response
+            voices = response.voices
+            has_more = getattr(response, "has_more", False)
 
-    def _format_shared_voice(self, voice_data: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Format shared voice data into a standardized structure.
+            # Format the voice data to standardized format
+            formatted_voices = []
+            for voice in voices:
+                formatted_voices.append(
+                    {
+                        "voice_id": voice.voice_id,
+                        "name": voice.name,
+                        "gender": getattr(voice, "gender", None),
+                        "accent": getattr(voice, "accent", None),
+                        "age": getattr(voice, "age", None),
+                        "descriptive": getattr(voice, "descriptive", None),
+                        "use_case": getattr(voice, "use_case", None),
+                        "category": getattr(voice, "category", None),
+                        "language": getattr(voice, "language", None),
+                        "locale": getattr(voice, "locale", None),
+                        "description": getattr(voice, "description", ""),
+                        "preview_url": getattr(voice, "preview_url", ""),
+                        "verified_languages": getattr(voice, "verified_languages", []),
+                        "cloned_by_count": getattr(voice, "cloned_by_count", 0),
+                        "usage_character_count_1y": getattr(
+                            voice, "usage_character_count_1y", 0
+                        ),
+                    }
+                )
 
-        Args:
-            voice_data: Raw voice data from the API
-
-        Returns:
-            Formatted voice information
-        """
-        # Calculate quality score
-        quality_score = 0.5
-
-        # Adjust based on category
-        if voice_data.get("category") == "high_quality":
-            quality_score += 0.3
-        elif voice_data.get("category") == "professional":
-            quality_score += 0.25
-
-        # Usage stats indicate popularity and likely quality
-        if "cloned_by_count" in voice_data and voice_data["cloned_by_count"] > 1000:
-            quality_score += min(0.2, voice_data["cloned_by_count"] / 100000)
-
-        # Use data typically has better voices
-        if voice_data.get("use_case") == "informative_educational":
-            quality_score += 0.1
-
-        # Cap at 1.0
-        quality_score = min(1.0, quality_score)
-
-        return {
-            "el_voice_id": voice_data.get("voice_id", ""),
-            "name": voice_data.get("name", "Unknown"),
-            "gender": voice_data.get("gender", "neutral"),
-            "accent": voice_data.get("accent", "american"),
-            "age": voice_data.get("age", "middle_aged"),
-            "category": voice_data.get("category", ""),
-            "language": voice_data.get("language", "en"),
-            "description": voice_data.get("description", ""),
-            "preview_url": voice_data.get("preview_url", ""),
-            "quality_score": quality_score,
-            "cloned_by_count": voice_data.get("cloned_by_count", 0),
-            "usage_character_count": voice_data.get("usage_character_count_1y", 0),
-        }
+            return formatted_voices, has_more
+        except Exception as e:
+            self.logger.error(f"Error retrieving shared voices: {e}")
+            return [], False
 
     def test_connection(self) -> Dict[str, Any]:
         """
@@ -265,7 +262,7 @@ class ElevenLabsClient:
     def text_to_speech(
         self,
         text: str,
-        el_voice_id: str,
+        voice_id: str,
         model_id: Optional[str] = None,
         voice_settings: Optional[Dict[str, float]] = None,
     ) -> bytes:
@@ -274,7 +271,7 @@ class ElevenLabsClient:
 
         Args:
             text: Text to convert to speech
-            el_voice_id: ElevenLabs Voice ID to use
+            voice_id: ElevenLabs Voice ID to use
             model_id: Model ID to use (defaults to eleven_flash_v2_5)
             voice_settings: Voice settings (stability, clarity, etc.)
 
@@ -298,7 +295,7 @@ class ElevenLabsClient:
                 # Get audio stream from the API
                 audio_stream = self.client.text_to_speech.convert(
                     text=text,
-                    voice_id=el_voice_id,
+                    voice_id=voice_id,
                     model_id=model_id,
                     voice_settings=voice_settings,
                 )

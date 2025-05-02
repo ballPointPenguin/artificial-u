@@ -11,10 +11,11 @@ ArtificialU combines the Anthropic Claude API for generating educational content
 - **Course Generation**: Create full academic courses with topics and lecture content
 - **Professor Profiles**: Generate diverse, detailed professor personas
 - **Text-to-Speech**: Convert lecture content to audio using ElevenLabs voices
-- **Smart Voice Selection**: Automatically match professors to appropriate ElevenLabs voices based on gender, nationality, accent, and age
+- **Modular Audio Architecture**: Clean separation between text processing, voice selection, and TTS conversion
+- **Smart Voice Selection**: Automatically match professors to appropriate ElevenLabs voices based on gender, accent, and age
+- **Speech Enhancement**: Intelligently process academic text for optimal TTS quality, including handling of technical terms and mathematical notation
 - **CLI Interface**: Easy-to-use command line interface for generating content
 - Course and lecture generation with consistent professor personas
-- Text-to-speech conversion with appropriate voices for each professor
 - Prompt caching for more efficient API usage and consistent personalities
 - Direct access to audio file paths in lecture previews
 - Local storage of course materials and audio files
@@ -195,9 +196,18 @@ artificial_u/
 ├── generators/            # Content generation
 │   ├── __init__.py
 │   └── content.py         # Claude API integration for content
-└── audio/                 # Audio processing
+├── audio/                 # Audio processing
+│   ├── __init__.py
+│   ├── speech_processor.py # Text processing for optimal TTS quality
+│   └── voice_selector.py  # Voice selection based on professor attributes
+└── integrations/          # External API integrations
+    └── elevenlabs/        # ElevenLabs API integration
+        ├── __init__.py
+        └── client.py      # Low-level client for ElevenLabs API
+├── services/              # Service layer components
     ├── __init__.py
-    └── processor.py       # ElevenLabs API integration
+    ├── audio_service.py   # High-level audio service
+    └── tts_service.py     # Text-to-speech service
 ```
 
 ## Development with GitHub Codespaces
@@ -214,6 +224,8 @@ This repository includes a devcontainer configuration for easy development using
 
 - Streamlined CLI interface for audio playback
 - Improved error handling for missing audio files
+- Refactored audio processing into modular components for improved maintainability
+- Enhanced text processing for better speech quality with technical terms
 
 ## Future Enhancements
 

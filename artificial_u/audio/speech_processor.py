@@ -254,15 +254,12 @@ class SpeechProcessor:
 
         return text
 
-    def split_lecture_into_chunks(
-        self, text: str, max_chunk_size: int = 4000
-    ) -> List[str]:
+    def split_into_chunks(self, text: str, max_chunk_size: int = 4000) -> List[str]:
         """
-        Split a long lecture into smaller chunks for processing.
-        Preserves stage directions and ensures proper paragraph breaks.
+        Split text into smaller chunks for processing.
 
         Args:
-            text: The lecture text to split
+            text: The text to split
             max_chunk_size: Maximum characters per chunk
 
         Returns:
@@ -272,61 +269,28 @@ class SpeechProcessor:
         if len(text) <= max_chunk_size:
             return [text]
 
+        # Split by paragraphs first
         chunks = []
-
-        # First split text into paragraphs
-        # Preserve markdown formatting (at least two newlines)
         paragraphs = re.split(r"(\n\s*\n)", text)
 
-        # Handle the case where the split results in separator parts that need to be reattached
-        # Every odd index element is a separator that we need to reattach to the previous content
-        combined_paragraphs = []
-        current = ""
-
-        for i, part in enumerate(paragraphs):
-            if i % 2 == 0:  # Content
-                current = part
-            else:  # Separator
-                current += part
-                combined_paragraphs.append(current)
-                current = ""
-
-        # If we have a remaining part, add it
-        if current:
-            combined_paragraphs.append(current)
-
-        # If combined_paragraphs is empty, use the original split
-        if not combined_paragraphs and paragraphs:
-            combined_paragraphs = paragraphs
-
-        # Now process the paragraphs
         current_chunk = ""
 
-        for paragraph in combined_paragraphs:
-            # If adding this paragraph would exceed the chunk size and we already have content,
-            # save the current chunk and start a new one
+        for i, paragraph in enumerate(paragraphs):
+            # If adding this paragraph would exceed the chunk size and we already have content
             if len(current_chunk) + len(paragraph) > max_chunk_size and current_chunk:
                 chunks.append(current_chunk)
                 current_chunk = paragraph
             else:
-                # For first paragraph in chunk, don't add extra newlines
-                if not current_chunk:
-                    current_chunk = paragraph
-                else:
-                    # Preserve paragraph breaks
-                    current_chunk += paragraph
+                current_chunk += paragraph
 
         # Add the last chunk if it has content
         if current_chunk:
             chunks.append(current_chunk)
 
-        # Check if any chunk is still too large (e.g., a single paragraph > max_chunk_size)
+        # Check if any chunk is still too large
         final_chunks = []
         for chunk in chunks:
             if len(chunk) > max_chunk_size:
-                self.logger.info(
-                    f"Chunk of size {len(chunk)} exceeds max size, splitting by sentences"
-                )
                 # Split by sentences
                 final_chunks.extend(self._split_by_sentences(chunk, max_chunk_size))
             else:
@@ -337,7 +301,6 @@ class SpeechProcessor:
     def _split_by_sentences(self, text: str, max_chunk_size: int) -> List[str]:
         """
         Split text by sentences for more precise chunk sizing.
-        Preserves stage directions and avoids breaking in the middle of them.
 
         Args:
             text: The text to split
@@ -346,8 +309,7 @@ class SpeechProcessor:
         Returns:
             List of text chunks
         """
-        # Simple sentence splitter using regex that preserves stage directions
-        # Look for sentence endings but not within square brackets
+        # Split by sentence endings but preserve stage directions
         sentence_pattern = r"(?<=[.!?])\s+(?![^\[]*\])"
         sentences = re.split(sentence_pattern, text)
 
@@ -358,13 +320,11 @@ class SpeechProcessor:
             # If this sentence would push us over the limit
             if len(current_chunk) + len(sentence) > max_chunk_size and current_chunk:
                 chunks.append(current_chunk)
-                current_chunk = ""
-
-            # Add a space if this isn't the first content in the chunk
-            if current_chunk and not current_chunk.endswith(" "):
-                current_chunk += " "
-
-            current_chunk += sentence
+                current_chunk = sentence
+            else:
+                if current_chunk and not current_chunk.endswith(" "):
+                    current_chunk += " "
+                current_chunk += sentence
 
         # Add the last chunk if it has content
         if current_chunk:
@@ -374,21 +334,20 @@ class SpeechProcessor:
 
     def is_valid_chunk(self, chunk: str) -> bool:
         """
-        Validates if a text chunk is suitable for text-to-speech conversion.
+        Check if a text chunk is suitable for TTS conversion.
 
         Args:
             chunk: The text chunk to validate
 
         Returns:
-            bool: True if valid, False otherwise
+            True if the chunk is valid for TTS
         """
         # Check if chunk is empty or only whitespace
         if not chunk or chunk.isspace():
             return False
 
         # Check if chunk is too short (less than 3 words)
-        words = chunk.split()
-        if len(words) < 3:
+        if len(chunk.split()) < 3:
             return False
 
         # Check if chunk contains any alphanumeric characters

@@ -5,10 +5,11 @@ This service handles converting text to speech using ElevenLabs.
 """
 
 import logging
+import os
 from typing import Any, Dict, Optional, Tuple, Union
 
-from artificial_u.audio.audio_utils import AudioUtils
 from artificial_u.audio.speech_processor import SpeechProcessor
+from artificial_u.audio.voice_selector import VoiceSelector
 from artificial_u.integrations.elevenlabs.client import ElevenLabsClient
 from artificial_u.models.core import Lecture, Professor
 from artificial_u.utils.exceptions import AudioProcessingError
@@ -33,7 +34,7 @@ class TTSService:
         audio_path: Optional[str] = None,
         client: Optional[ElevenLabsClient] = None,
         speech_processor: Optional[SpeechProcessor] = None,
-        audio_utils: Optional[AudioUtils] = None,
+        voice_selector: Optional[VoiceSelector] = None,
         logger=None,
     ):
         """
@@ -44,18 +45,18 @@ class TTSService:
             audio_path: Optional base path for audio files
             client: Optional ElevenLabs client instance
             speech_processor: Optional speech processor instance
-            audio_utils: Optional audio utilities instance
+            voice_selector: Optional voice selector instance
             logger: Optional logger instance
         """
         self.logger = logger or logging.getLogger(__name__)
+        self.audio_path = audio_path
 
         # Initialize components
         self.client = client or ElevenLabsClient(api_key=api_key)
         self.speech_processor = speech_processor or SpeechProcessor(logger=self.logger)
-        self.audio_utils = audio_utils or AudioUtils(
-            base_audio_path=audio_path, logger=self.logger
+        self.voice_selector = voice_selector or VoiceSelector(
+            client=self.client, logger=self.logger
         )
-        self.audio_path = audio_path
 
     def convert_text_to_speech(
         self,
@@ -85,7 +86,7 @@ class TTSService:
         enhanced_text = self.speech_processor.enhance_speech_markup(text)
 
         # Split text into chunks if necessary
-        chunks = self.speech_processor.split_lecture_into_chunks(
+        chunks = self.speech_processor.split_into_chunks(
             enhanced_text, max_chunk_size=chunk_size
         )
 
@@ -111,7 +112,7 @@ class TTSService:
             try:
                 audio_data = self.client.text_to_speech(
                     text=chunk,
-                    el_voice_id=el_voice_id,
+                    voice_id=el_voice_id,
                     model_id=model_id,
                     voice_settings=voice_settings,
                 )
@@ -125,14 +126,10 @@ class TTSService:
                 )
 
         # Combine audio segments
-        if len(audio_segments) > 1:
-            self.logger.info(f"Combining {len(audio_segments)} audio segments")
-            audio = b"".join(audio_segments)
-        elif audio_segments:
-            audio = audio_segments[0]
-        else:
+        if not audio_segments:
             raise AudioProcessingError("No audio segments were generated")
 
+        audio = b"".join(audio_segments)
         return audio
 
     def generate_lecture_audio(
@@ -140,7 +137,6 @@ class TTSService:
         lecture: Lecture,
         professor: Professor,
         el_voice_id: Optional[str] = None,
-        model_id: Optional[str] = None,
         save_to_file: bool = True,
     ) -> Tuple[str, bytes]:
         """
@@ -149,78 +145,86 @@ class TTSService:
         Args:
             lecture: Lecture to generate audio for
             professor: Professor delivering the lecture
-            el_voice_id: Optional ElevenLabs Voice ID
-            model_id: Optional model ID
+            el_voice_id: Optional ElevenLabs voice ID (will be selected if not provided)
             save_to_file: Whether to save audio to file
 
         Returns:
             Tuple of (file path or empty string, audio data)
         """
-        # Get voice ID from professor if not specified
+        # Get ElevenLabs voice ID if not specified
         if not el_voice_id:
-            if professor.voice_id:
-                # Look up the voice in the database
-                voice = self.repository.get_voice(professor.voice_id)
-                if voice:
-                    el_voice_id = voice.el_voice_id
-                else:
-                    raise ValueError("No voice ID specified or found for professor")
-                # TODO: Maybe use select_voice_for_professor here?
-            else:
-                raise ValueError("No voice ID specified or found for professor")
+            voice_data = self.voice_selector.select_voice(professor)
+            el_voice_id = voice_data["el_voice_id"]
+            self.logger.info(f"Selected voice: {voice_data['name']} ({el_voice_id})")
 
         # Generate the audio
         try:
             audio_data = self.convert_text_to_speech(
                 text=lecture.content,
                 el_voice_id=el_voice_id,
-                model_id=model_id,
             )
         except Exception as e:
             raise AudioProcessingError(f"Failed to generate lecture audio: {e}")
 
         # Save to file if requested
         file_path = ""
-        if save_to_file:
-            file_path = self.audio_utils.get_lecture_audio_path(
-                course_id=lecture.course_id,
-                week_number=lecture.week_number,
-                lecture_order=lecture.order_in_week,
-            )
-
-            try:
-                self.audio_utils.save_audio_file(file_path, audio_data)
-                self.logger.info(f"Audio saved to file: {file_path}")
-            except Exception as e:
-                self.logger.error(f"Failed to save audio file: {e}")
-                # Continue without saving
+        if save_to_file and self.audio_path:
+            file_path = self._get_lecture_file_path(lecture)
+            self._save_audio_file(file_path, audio_data)
 
         return file_path, audio_data
 
+    def _get_lecture_file_path(self, lecture: Lecture) -> str:
+        """Get the file path for a lecture audio file."""
+        if not self.audio_path:
+            raise ValueError("Audio path not specified")
+
+        # Create directories if needed
+        course_dir = os.path.join(self.audio_path, lecture.course_id)
+        os.makedirs(course_dir, exist_ok=True)
+
+        week_dir = os.path.join(course_dir, f"week{lecture.week_number}")
+        os.makedirs(week_dir, exist_ok=True)
+
+        # Return full path
+        return os.path.join(week_dir, f"lecture{lecture.order_in_week}.mp3")
+
+    def _save_audio_file(self, file_path: str, audio_data: bytes) -> None:
+        """Save audio data to a file."""
+        try:
+            with open(file_path, "wb") as f:
+                f.write(audio_data)
+            self.logger.info(f"Audio saved to {file_path}")
+        except Exception as e:
+            self.logger.error(f"Failed to save audio file: {e}")
+            raise AudioProcessingError(f"Failed to save audio file: {e}")
+
     def play_audio(self, audio_source: Union[bytes, str]) -> None:
         """
-        Play audio data or a *local* audio file.
+        Play audio data or a file.
 
         Args:
-            audio_source: Audio data as bytes or path to a local audio file
+            audio_source: Audio data as bytes or path to an audio file
         """
-        audio_data_bytes: bytes
         # If audio_source is a file path, read the file
-        if isinstance(audio_source, str):
+        if isinstance(audio_source, str) and os.path.exists(audio_source):
             try:
-                audio_data_bytes = self.audio_utils.read_audio_file(audio_source)
+                with open(audio_source, "rb") as f:
+                    audio_data = f.read()
             except Exception as e:
                 raise AudioProcessingError(
                     f"Failed to read audio file {audio_source}: {e}"
                 )
         elif isinstance(audio_source, bytes):
-            audio_data_bytes = audio_source
+            audio_data = audio_source
         else:
-            raise TypeError("audio_source must be bytes or a string path")
+            raise TypeError(
+                "audio_source must be bytes or a string path to an existing file"
+            )
 
         # Play the audio
         try:
-            self.client.play_audio(audio_data_bytes)
+            self.client.play_audio(audio_data)
         except Exception as e:
             raise AudioProcessingError(f"Failed to play audio: {e}")
 

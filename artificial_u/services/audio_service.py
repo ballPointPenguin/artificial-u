@@ -7,10 +7,9 @@ import os
 import urllib.parse
 from typing import Any, Dict, List, Optional, Tuple
 
-from artificial_u.models.core import Lecture, Professor
+from artificial_u.models.core import Lecture
 from artificial_u.services.storage_service import StorageService
 from artificial_u.services.tts_service import TTSService
-from artificial_u.services.voice_service import VoiceService
 from artificial_u.utils.exceptions import AudioProcessingError
 
 
@@ -21,7 +20,6 @@ class AudioService:
         self,
         repository,
         api_key: Optional[str] = None,
-        voice_service: Optional[VoiceService] = None,
         tts_service: Optional[TTSService] = None,
         storage_service: Optional[StorageService] = None,
         logger=None,
@@ -32,7 +30,6 @@ class AudioService:
         Args:
             repository: Data repository
             api_key: Optional ElevenLabs API key
-            voice_service: Optional voice service instance
             tts_service: Optional TTS service instance
             storage_service: Optional storage service instance
             logger: Optional logger instance
@@ -40,14 +37,10 @@ class AudioService:
         self.logger = logger or logging.getLogger(__name__)
         self.repository = repository
 
-        # Initialize services (TTS service still needs temp path)
-        # Get temp path from storage service's settings
+        # Initialize services
         storage_settings = (storage_service or StorageService()).settings
         temp_audio_path = storage_settings.TEMP_AUDIO_PATH
 
-        self.voice_service = voice_service or VoiceService(
-            api_key=api_key, logger=self.logger
-        )
         self.tts_service = tts_service or TTSService(
             api_key=api_key, audio_path=temp_audio_path, logger=self.logger
         )
@@ -94,17 +87,24 @@ class AudioService:
             self.logger.error(error_msg)
             raise ValueError(error_msg)
 
-        # Get voice ID
-        el_voice_id = self._get_professor_voice_id(professor)
+        # Check if professor has a voice_id (database ID)
+        el_voice_id = None
+        if professor.voice_id:
+            # Get the ElevenLabs voice ID from the database
+            voice_record = self.repository.voice.get(professor.voice_id)
+            if voice_record:
+                el_voice_id = voice_record.el_voice_id
+                self.logger.info(
+                    f"Using voice from database: {voice_record.name} ({el_voice_id})"
+                )
 
         # Generate audio
         try:
             # Generate audio using TTS service
-            # The TTS service might still use a local temp file, but we get the bytes
             _, audio_data = self.tts_service.generate_lecture_audio(
                 lecture=lecture,
                 professor=professor,
-                el_voice_id=el_voice_id,
+                el_voice_id=el_voice_id,  # Pass the ElevenLabs voice ID if available
             )
 
             # Upload to storage service (MinIO/S3)
@@ -123,7 +123,6 @@ class AudioService:
 
             # Set the audio url to the storage URL
             audio_url = storage_url
-
             self.logger.info(f"Audio uploaded to storage at {storage_url}")
 
         except Exception as e:
@@ -133,15 +132,13 @@ class AudioService:
 
         # Update lecture with audio url
         try:
-            # Get the lecture first
+            # Get the lecture
             lecture_to_update = self.repository.lecture.get(lecture.id)
             if not lecture_to_update:
                 raise ValueError(f"Lecture with ID {lecture.id} not found")
 
             # Update the audio path
-            lecture_to_update.audio_url = audio_url  # Renamed from audio_path
-
-            # Use the general update_lecture method
+            lecture_to_update.audio_url = audio_url
             lecture = self.repository.lecture.update(lecture_to_update)
             self.logger.debug(f"Lecture updated with audio url: {audio_url}")
         except Exception as e:
@@ -150,26 +147,6 @@ class AudioService:
             raise ValueError(error_msg) from e
 
         return audio_url, lecture
-
-    def _get_professor_voice_id(self, professor: Professor) -> str:
-        """Get the ElevenLabs voice ID for a professor, assigning if necessary."""
-        if not professor.voice_id:
-            # Select a voice and update professor record
-            voice_data = self.voice_service.select_voice_for_professor(professor)
-
-            # Update local professor object with the db voice ID
-            if "db_voice_id" in voice_data:
-                professor.voice_id = voice_data["db_voice_id"]
-                # Return the ElevenLabs voice ID
-                return voice_data["el_voice_id"]  # Use el_voice_id from select method
-            else:
-                raise ValueError("Failed to assign voice to professor")
-        else:
-            # Use professor.voice_id to get the voice record from db, use its el_voice_id
-            voice_record = self.repository.voice.get(professor.voice_id)
-            if not voice_record:
-                raise ValueError(f"Voice with ID {professor.voice_id} not found")
-            return voice_record.el_voice_id
 
     def list_available_voices(self, **filters) -> List[Dict[str, Any]]:
         """
@@ -181,7 +158,15 @@ class AudioService:
         Returns:
             List of voices
         """
-        return self.voice_service.list_available_voices(**filters)
+        client = self.tts_service.client
+        voices, _ = client.get_shared_voices(**filters)
+
+        # Map voice_id to el_voice_id to match database schema
+        for voice in voices:
+            if "voice_id" in voice and "el_voice_id" not in voice:
+                voice["el_voice_id"] = voice["voice_id"]
+
+        return voices
 
     def test_tts_connection(self) -> Dict[str, Any]:
         """

@@ -26,14 +26,50 @@ The `ContentGenerator` handles all interactions with the Anthropic Claude API. I
 - Creating engaging lectures that maintain the professor's voice and perspective
 - Ensuring continuity between lectures in a series
 
-### AudioProcessor
+### Audio Processing Components
 
-The `AudioProcessor` manages text-to-speech conversion using the ElevenLabs API. It:
+The audio processing layer has been modularized into several specialized components:
 
-- Selects appropriate voices based on professor characteristics
-- Processes lecture text to handle stage directions and special formatting
-- Manages audio file storage and organization
-- Provides playback capabilities
+#### SpeechProcessor
+
+The `SpeechProcessor` prepares text for optimal speech synthesis by:
+
+- Enhancing text with speech markup for pronunciation of technical terms
+- Handling mathematical notation and special characters
+- Adding discipline-specific enhancements based on professor's department
+- Splitting text into appropriately sized chunks for processing
+
+#### VoiceSelector
+
+The `VoiceSelector` matches professor profiles to appropriate ElevenLabs voices:
+
+- Maps professor attributes (gender, accent, age) to ElevenLabs voice categories
+- Selects voices based on quality and appropriate characteristics
+- Provides fallback mechanisms when ideal voice matches aren't available
+
+#### ElevenLabsClient
+
+The `ElevenLabsClient` provides low-level access to the ElevenLabs API:
+
+- Retrieves available voices and voice details
+- Performs text-to-speech conversion
+- Handles API authentication, retries, and error handling
+
+#### TTSService
+
+The `TTSService` orchestrates the text-to-speech process by:
+
+- Coordinating between SpeechProcessor, VoiceSelector, and ElevenLabsClient
+- Managing audio file storage and organization
+- Providing playback capabilities
+
+#### AudioService
+
+The `AudioService` provides high-level audio functionality to the application:
+
+- Creates audio for lectures based on repository data
+- Handles storage and playback of audio files
+- Provides voice listing and selection capabilities
 
 ### Repository
 
@@ -61,6 +97,7 @@ The core domain model consists of these primary entities:
 - **Course** - An academic course a series of topics
 - **Lecture** - A single class session with content and optional audio
 - **Department** - An academic department containing related courses
+- **Voice** - Represents an ElevenLabs voice with attributes and mapping to professors
 
 ## Workflow Examples
 
@@ -82,9 +119,11 @@ The core domain model consists of these primary entities:
 
 1. User selects a lecture to convert to audio
 2. System retrieves lecture content and professor information
-3. AudioProcessor selects an appropriate voice for the professor
-4. AudioProcessor converts text to speech and saves the audio file
-5. Repository updates the lecture with the audio file path
+3. VoiceSelector selects an appropriate voice for the professor
+4. SpeechProcessor prepares the text for optimal speech conversion
+5. TTSService converts text to speech using ElevenLabsClient
+6. AudioService stores the audio file and updates the lecture record
+7. Repository updates the lecture with the audio URL
 
 ## Future Architecture Enhancements
 
