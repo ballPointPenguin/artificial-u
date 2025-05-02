@@ -271,6 +271,27 @@ def _process_topic_elements(topics_elem: Optional[ET.Element]) -> List[Dict[str,
     return topics_data
 
 
+def _parse_text_field(element: Optional[ET.Element]) -> Optional[str]:
+    """Parse a simple text field from an Element."""
+    if element is not None and element.text:
+        value = element.text.strip()
+        return None if "[GENERATE]" in value else value
+    return None
+
+
+def _parse_numeric_field(element: Optional[ET.Element]) -> Optional[int]:
+    """Parse a numeric field from an Element."""
+    if element is not None and element.text:
+        value = element.text.strip()
+        if "[GENERATE]" in value:
+            return None
+        try:
+            return int(value)
+        except ValueError:
+            return None
+    return None
+
+
 def parse_course_xml(course_xml: str) -> Dict[str, Any]:
     """Parse course XML from LLM response into a dictionary.
     Simplified and direct parsing assuming standard format.
@@ -279,35 +300,16 @@ def parse_course_xml(course_xml: str) -> Dict[str, Any]:
         root = ET.fromstring(course_xml)
         course_data = {}
 
-        # Process simple fields with common logic
+        # Process simple text fields
         for field in ["code", "title", "description", "level"]:
-            element = root.find(field)
-            if element is not None and element.text:
-                value = element.text.strip()
-                # Treat [GENERATE] marker as null
-                course_data[field] = None if "[GENERATE]" in value else value
-            else:
-                course_data[field] = None
+            course_data[field] = _parse_text_field(root.find(field))
 
         # Process numeric fields
         for field in ["credits", "lectures_per_week", "total_weeks"]:
-            element = root.find(field)
-            try:
-                if element is not None and element.text:
-                    value = element.text.strip()
-                    # Treat [GENERATE] marker as null
-                    course_data[field] = None if "[GENERATE]" in value else int(value)
-                else:
-                    course_data[field] = None
-            except (ValueError, AttributeError):
-                course_data[field] = None
+            course_data[field] = _parse_numeric_field(root.find(field))
 
-        # Process topics using helper function
-        try:
-            course_data["topics"] = _process_topic_elements(root.find("topics"))
-        except Exception:
-            # Fallback to empty list if topic parsing fails
-            course_data["topics"] = []
+        # Process topics
+        course_data["topics"] = _process_topic_elements(root.find("topics"))
 
         return course_data
 

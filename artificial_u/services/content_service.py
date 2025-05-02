@@ -29,6 +29,33 @@ class ContentService:
             f"default model: {self.default_model}"
         )
 
+    def _determine_backend(self, model: str) -> str:
+        """
+        Determine the appropriate backend based on the model name.
+
+        Args:
+            model: The model name to analyze
+
+        Returns:
+            The determined backend name as a string
+
+        Raises:
+            ValueError: If the model is not suitable for text generation
+        """
+        if model.startswith("claude-"):
+            return "anthropic"
+        elif model.startswith("gpt-"):
+            return "openai"
+        elif model.startswith("gemini-"):
+            return "gemini"
+        elif model.startswith("imagen-"):
+            self.logger.error(
+                f"Model '{model}' is an image model, not suitable for text generation."
+            )
+            raise ValueError(f"Model '{model}' is for image generation.")
+        else:
+            return "ollama"  # Default assumption, adjust as needed
+
     async def generate_text(
         self,
         prompt: str,
@@ -64,43 +91,29 @@ class ContentService:
             f"Generating text for prompt: '{prompt[:1500]}...' using model: {target_model}"
         )
 
-        # Determine backend based on model name (this might need refinement)
-        if target_model.startswith("claude-"):
-            backend = "anthropic"
-        elif target_model.startswith("gpt-"):
-            backend = "openai"
-        elif target_model.startswith("gemini-"):
-            backend = "gemini"
-        elif target_model.startswith("imagen-"):
+        # Determine backend based on model name
+        backend = self._determine_backend(target_model)
+
+        # Map backends to their respective generation methods
+        backend_methods = {
+            "anthropic": self._generate_anthropic,
+            "openai": self._generate_openai,
+            "gemini": self._generate_gemini,
+            "ollama": self._generate_ollama,
+        }
+
+        # Get the appropriate generation method
+        if backend not in backend_methods:
             self.logger.error(
-                f"Model '{target_model}' is an image model, not suitable for text generation."
+                f"Unsupported backend: {backend} for model {target_model}"
             )
-            raise ValueError(f"Model '{target_model}' is for image generation.")
-        else:
-            backend = "ollama"  # Default assumption, adjust as needed
+            raise NotImplementedError(f"Backend '{backend}' is not implemented.")
 
         try:
-            if backend == "anthropic":
-                return await self._generate_anthropic(
-                    prompt, target_model, system_prompt, temperature, max_tokens
-                )
-            elif backend == "openai":
-                return await self._generate_openai(
-                    prompt, target_model, system_prompt, temperature, max_tokens
-                )
-            elif backend == "gemini":
-                return await self._generate_gemini(
-                    prompt, target_model, system_prompt, temperature, max_tokens
-                )
-            elif backend == "ollama":
-                return await self._generate_ollama(
-                    prompt, target_model, system_prompt, temperature, max_tokens
-                )
-            else:
-                self.logger.error(
-                    f"Unsupported backend: {backend} for model {target_model}"
-                )
-                raise NotImplementedError(f"Backend '{backend}' is not implemented.")
+            generation_method = backend_methods[backend]
+            return await generation_method(
+                prompt, target_model, system_prompt, temperature, max_tokens
+            )
         except Exception as e:
             self.logger.error(
                 f"Error generating text with model {target_model} (backend {backend}): {e}",

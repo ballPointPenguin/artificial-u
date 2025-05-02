@@ -46,24 +46,15 @@ class AudioService:
         )
         self.storage_service = storage_service or StorageService(logger=self.logger)
 
-    async def create_lecture_audio(
-        self, course_code: str, week: int, number: int = 1
-    ) -> Tuple[str, Lecture]:
+    async def _get_lecture_entities(
+        self, course_code: str, week: int, number: int
+    ) -> Tuple[Any, Lecture, Any]:
         """
-        Create audio for a lecture.
-
-        Args:
-            course_code: Course code
-            week: Week number
-            number: Lecture number within the week
+        Get course, lecture, and professor entities needed for audio creation.
 
         Returns:
-            Tuple: (audio_url, lecture) - URL to the audio file and the lecture
+            Tuple of (course, lecture, professor)
         """
-        self.logger.info(
-            f"Creating audio for course {course_code}, week {week}, number {number}"
-        )
-
         # Get course
         course = self.repository.course.get_by_code(course_code)
         if not course:
@@ -87,66 +78,109 @@ class AudioService:
             self.logger.error(error_msg)
             raise ValueError(error_msg)
 
-        # Check if professor has a voice_id (database ID)
-        el_voice_id = None
-        if professor.voice_id:
-            # Get the ElevenLabs voice ID from the database
-            voice_record = self.repository.voice.get(professor.voice_id)
-            if voice_record:
-                el_voice_id = voice_record.el_voice_id
-                self.logger.info(
-                    f"Using voice from database: {voice_record.name} ({el_voice_id})"
-                )
+        return course, lecture, professor
 
-        # Generate audio
+    def _get_professor_voice_id(self, professor) -> Optional[str]:
+        """Get ElevenLabs voice ID for the professor if available."""
+        if not professor.voice_id:
+            return None
+
+        voice_record = self.repository.voice.get(professor.voice_id)
+        if not voice_record:
+            return None
+
+        el_voice_id = voice_record.el_voice_id
+        self.logger.info(
+            f"Using voice from database: {voice_record.name} ({el_voice_id})"
+        )
+        return el_voice_id
+
+    async def _generate_and_store_audio(
+        self,
+        lecture,
+        professor,
+        course_code: str,
+        week: int,
+        number: int,
+        el_voice_id: Optional[str],
+    ) -> str:
+        """Generate audio using TTS and store it. Returns storage URL."""
+        # Generate audio using TTS service
+        _, audio_data = self.tts_service.generate_lecture_audio(
+            lecture=lecture,
+            professor=professor,
+            el_voice_id=el_voice_id,
+        )
+
+        # Upload to storage service (MinIO/S3)
+        storage_key = self.storage_service.generate_audio_key(
+            course_id=course_code, week_number=week, lecture_order=number
+        )
+
+        success, storage_url = await self.storage_service.upload_audio_file(
+            file_data=audio_data, object_name=storage_key, content_type="audio/mpeg"
+        )
+
+        if not success:
+            error_msg = "Failed to upload audio to storage"
+            self.logger.error(error_msg)
+            raise AudioProcessingError(error_msg)
+
+        self.logger.info(f"Audio uploaded to storage at {storage_url}")
+        return storage_url
+
+    def _update_lecture_audio_url(self, lecture, audio_url: str) -> Lecture:
+        """Update lecture with audio URL and return updated lecture."""
+        lecture_to_update = self.repository.lecture.get(lecture.id)
+        if not lecture_to_update:
+            raise ValueError(f"Lecture with ID {lecture.id} not found")
+
+        lecture_to_update.audio_url = audio_url
+        updated_lecture = self.repository.lecture.update(lecture_to_update)
+        self.logger.debug(f"Lecture updated with audio url: {audio_url}")
+        return updated_lecture
+
+    async def create_lecture_audio(
+        self, course_code: str, week: int, number: int = 1
+    ) -> Tuple[str, Lecture]:
+        """
+        Create audio for a lecture.
+
+        Args:
+            course_code: Course code
+            week: Week number
+            number: Lecture number within the week
+
+        Returns:
+            Tuple: (audio_url, lecture) - URL to the audio file and the lecture
+        """
+        self.logger.info(
+            f"Creating audio for course {course_code}, week {week}, number {number}"
+        )
+
         try:
-            # Generate audio using TTS service
-            _, audio_data = self.tts_service.generate_lecture_audio(
-                lecture=lecture,
-                professor=professor,
-                el_voice_id=el_voice_id,  # Pass the ElevenLabs voice ID if available
+            # Get required entities
+            course, lecture, professor = await self._get_lecture_entities(
+                course_code, week, number
             )
 
-            # Upload to storage service (MinIO/S3)
-            storage_key = self.storage_service.generate_audio_key(
-                course_id=course_code, week_number=week, lecture_order=number
+            # Get voice ID if available
+            el_voice_id = self._get_professor_voice_id(professor)
+
+            # Generate and store audio
+            audio_url = await self._generate_and_store_audio(
+                lecture, professor, course_code, week, number, el_voice_id
             )
 
-            success, storage_url = await self.storage_service.upload_audio_file(
-                file_data=audio_data, object_name=storage_key, content_type="audio/mpeg"
-            )
+            # Update lecture with audio URL
+            lecture = self._update_lecture_audio_url(lecture, audio_url)
 
-            if not success:
-                error_msg = "Failed to upload audio to storage"
-                self.logger.error(error_msg)
-                raise AudioProcessingError(error_msg)
-
-            # Set the audio url to the storage URL
-            audio_url = storage_url
-            self.logger.info(f"Audio uploaded to storage at {storage_url}")
+            return audio_url, lecture
 
         except Exception as e:
-            error_msg = f"Failed to generate audio: {str(e)}"
+            error_msg = f"Failed to create lecture audio: {str(e)}"
             self.logger.error(error_msg)
             raise AudioProcessingError(error_msg) from e
-
-        # Update lecture with audio url
-        try:
-            # Get the lecture
-            lecture_to_update = self.repository.lecture.get(lecture.id)
-            if not lecture_to_update:
-                raise ValueError(f"Lecture with ID {lecture.id} not found")
-
-            # Update the audio path
-            lecture_to_update.audio_url = audio_url
-            lecture = self.repository.lecture.update(lecture_to_update)
-            self.logger.debug(f"Lecture updated with audio url: {audio_url}")
-        except Exception as e:
-            error_msg = f"Failed to update lecture with audio url: {str(e)}"
-            self.logger.error(error_msg)
-            raise ValueError(error_msg) from e
-
-        return audio_url, lecture
 
     def list_available_voices(self, **filters) -> List[Dict[str, Any]]:
         """
