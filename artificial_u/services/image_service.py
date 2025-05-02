@@ -211,7 +211,7 @@ class ImageService:
         """
         logger.info(
             f"Generating image via {self.backend} backend (model: {self.model_name}) "
-            f"with prompt: '{prompt[:100]}...' (aspect ratio: {aspect_ratio})"
+            f"with prompt: '{prompt[:1000]}...' (aspect ratio: {aspect_ratio})"
         )
 
         image_bytes_list: List[bytes] = []

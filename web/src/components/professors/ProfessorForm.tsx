@@ -1,9 +1,9 @@
-import type { Component, JSX } from 'solid-js';
-import { For, Show, createEffect, createResource, createSignal } from 'solid-js';
-import { getDepartments } from '../../api/services/department-service'; // Import department service
-import { generateProfessor } from '../../api/services/professor-service'; // Import professor generate service
-import type { Department, Professor } from '../../api/types';
-import { Button } from '../ui/Button';
+import type { Component, JSX } from 'solid-js'
+import { For, Show, createEffect, createResource, createSignal } from 'solid-js'
+import { getDepartments } from '../../api/services/department-service' // Import department service
+import { generateProfessor } from '../../api/services/professor-service' // Import professor generate service
+import type { Department, Professor } from '../../api/types'
+import { Button } from '../ui/Button'
 
 // Form data interface matching the API model
 export interface ProfessorFormData {
@@ -14,7 +14,7 @@ export interface ProfessorFormData {
   gender: string
   accent: string
   age: number | null
-  department_id: number | null // Add department ID
+  department_id: number | null
   specialization?: string
   background?: string
   personality?: string
@@ -80,20 +80,30 @@ const ProfessorForm: Component<ProfessorFormProps> = (props) => {
       // Optionally set an error state for the form
       if (props.setError) {
         // Check if error is an instance of Error before accessing message
-        const errorMessage = error instanceof Error ? error.message : String(error);
+        const errorMessage = error instanceof Error ? error.message : String(error)
         props.setError(`Failed to load departments: ${errorMessage}`)
       }
       return [] // Return empty array on error
     }
   })
 
-  const handleInput: JSX.EventHandler<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement, InputEvent> = (e) => {
-    const { name, value, type } = e.currentTarget;
-    setFormData(prev => ({
+  const handleInput: JSX.EventHandler<
+    HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement,
+    InputEvent
+  > = (e) => {
+    const { name, value, type } = e.currentTarget
+    setFormData((prev) => ({
       ...prev,
-      [name]: type === 'number' ? (value === '' ? null : Number(value)) : type === 'select-one' && value === '' ? null : value,
-    }));
-  };
+      [name]:
+        type === 'number'
+          ? value === ''
+            ? null
+            : Number(value)
+          : type === 'select-one' && value === ''
+            ? null
+            : value,
+    }))
+  }
 
   const handleSubmit = (e: SubmitEvent) => {
     e.preventDefault()
@@ -116,6 +126,7 @@ const ProfessorForm: Component<ProfessorFormProps> = (props) => {
     if (formData().accent) partialAttributes.accent = formData().accent
     if (formData().age) partialAttributes.age = formData().age
     if (formData().background) partialAttributes.background = formData().background
+    if (formData().department_id) partialAttributes.department_id = formData().department_id
     if (formData().description) partialAttributes.description = formData().description
     if (formData().gender) partialAttributes.gender = formData().gender
     if (formData().name) partialAttributes.name = formData().name
@@ -126,11 +137,12 @@ const ProfessorForm: Component<ProfessorFormProps> = (props) => {
 
     try {
       const generated = await generateProfessor({
-        partial_attributes: Object.keys(partialAttributes).length > 0 ? partialAttributes : undefined,
+        partial_attributes:
+          Object.keys(partialAttributes).length > 0 ? partialAttributes : undefined,
       })
 
       // Update form state with generated data, keeping existing ID if editing
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev, // Keep existing fields like ID if they were there
         accent: generated.accent || prev.accent,
         age: generated.age ?? prev.age,
@@ -167,10 +179,7 @@ const ProfessorForm: Component<ProfessorFormProps> = (props) => {
   return (
     <form onSubmit={handleSubmit} class="space-y-6">
       <div>
-        <label
-          for="name"
-          class="block text-sm font-medium mb-1 text-parchment-300"
-        >
+        <label for="name" class="block text-sm font-medium mb-1 text-parchment-300">
           Professor Name
         </label>
         <input
@@ -185,10 +194,7 @@ const ProfessorForm: Component<ProfessorFormProps> = (props) => {
       </div>
 
       <div>
-        <label
-          for="title"
-          class="block text-sm font-medium mb-1 text-parchment-300"
-        >
+        <label for="title" class="block text-sm font-medium mb-1 text-parchment-300">
           Title
         </label>
         <input
@@ -203,10 +209,7 @@ const ProfessorForm: Component<ProfessorFormProps> = (props) => {
       </div>
 
       <div>
-        <label
-          for="department_id"
-          class="block text-sm font-medium mb-1 text-parchment-300"
-        >
+        <label for="department_id" class="block text-sm font-medium mb-1 text-parchment-300">
           Department (Required for Generate)
         </label>
         <select
@@ -223,22 +226,23 @@ const ProfessorForm: Component<ProfessorFormProps> = (props) => {
             fallback={<option disabled>Loading departments...</option>}
           >
             {/* Check if the resource data is an array before mapping */}
-            <For each={Array.isArray(departmentsResource()) ? departmentsResource() : []}>{(dept: Department) =>
-              <option value={dept.id}>{dept.name} ({dept.code})</option>
-            }</For>
+            <For each={Array.isArray(departmentsResource()) ? departmentsResource() : []}>
+              {(dept: Department) => (
+                <option value={dept.id}>
+                  {dept.name} ({dept.code})
+                </option>
+              )}
+            </For>
           </Show>
         </select>
         {/* Explicitly check if error is truthy */}
         <Show when={!!departmentsResource.error}>
-            <p class="mt-1 text-sm text-red-600">Failed to load departments.</p>
+          <p class="mt-1 text-sm text-red-600">Failed to load departments.</p>
         </Show>
       </div>
 
       <div>
-        <label
-          for="specialization"
-          class="block text-sm font-medium mb-1 text-parchment-300"
-        >
+        <label for="specialization" class="block text-sm font-medium mb-1 text-parchment-300">
           Specialization (Required for Generate)
         </label>
         <input
@@ -253,10 +257,7 @@ const ProfessorForm: Component<ProfessorFormProps> = (props) => {
       </div>
 
       <div>
-        <label
-          for="description"
-          class="block text-sm font-medium mb-1 text-parchment-300"
-        >
+        <label for="description" class="block text-sm font-medium mb-1 text-parchment-300">
           Description
         </label>
         <textarea
@@ -271,10 +272,7 @@ const ProfessorForm: Component<ProfessorFormProps> = (props) => {
       </div>
 
       <div>
-        <label
-          for="background"
-          class="block text-sm font-medium mb-1 text-parchment-300"
-        >
+        <label for="background" class="block text-sm font-medium mb-1 text-parchment-300">
           Background
         </label>
         <textarea
@@ -289,10 +287,7 @@ const ProfessorForm: Component<ProfessorFormProps> = (props) => {
       </div>
 
       <div>
-        <label
-          for="personality"
-          class="block text-sm font-medium mb-1 text-parchment-300"
-        >
+        <label for="personality" class="block text-sm font-medium mb-1 text-parchment-300">
           Personality
         </label>
         <input
@@ -307,10 +302,7 @@ const ProfessorForm: Component<ProfessorFormProps> = (props) => {
       </div>
 
       <div>
-        <label
-          for="teaching_style"
-          class="block text-sm font-medium mb-1 text-parchment-300"
-        >
+        <label for="teaching_style" class="block text-sm font-medium mb-1 text-parchment-300">
           Teaching Style
         </label>
         <input
@@ -325,10 +317,7 @@ const ProfessorForm: Component<ProfessorFormProps> = (props) => {
       </div>
 
       <div>
-        <label
-          for="gender"
-          class="block text-sm font-medium mb-1 text-parchment-300"
-        >
+        <label for="gender" class="block text-sm font-medium mb-1 text-parchment-300">
           Gender
         </label>
         <input
@@ -343,10 +332,7 @@ const ProfessorForm: Component<ProfessorFormProps> = (props) => {
       </div>
 
       <div>
-        <label
-          for="accent"
-          class="block text-sm font-medium mb-1 text-parchment-300"
-        >
+        <label for="accent" class="block text-sm font-medium mb-1 text-parchment-300">
           Accent
         </label>
         <input
@@ -361,10 +347,7 @@ const ProfessorForm: Component<ProfessorFormProps> = (props) => {
       </div>
 
       <div>
-        <label
-          for="age"
-          class="block text-sm font-medium mb-1 text-parchment-300"
-        >
+        <label for="age" class="block text-sm font-medium mb-1 text-parchment-300">
           Age
         </label>
         <input
@@ -391,19 +374,16 @@ const ProfessorForm: Component<ProfessorFormProps> = (props) => {
       </Show>
 
       <div class="flex justify-end space-x-3">
-        <Button
-          type="button"
-          variant="outline"
-          onClick={props.onCancel}
-          disabled={isDisabled()}
-        >
+        <Button type="button" variant="outline" onClick={props.onCancel} disabled={isDisabled()}>
           Cancel
         </Button>
         {/* Generate Button */}
         <Button
           type="button"
           variant="secondary"
-          onClick={() => { void handleGenerate() }}
+          onClick={() => {
+            void handleGenerate()
+          }}
           disabled={isDisabled()}
         >
           <span class="flex items-center gap-2">
@@ -417,7 +397,7 @@ const ProfessorForm: Component<ProfessorFormProps> = (props) => {
                 stroke="currentColor"
                 stroke-width="2"
               >
-                <title>Generate</title> { /* Added title for accessibility */ }
+                <title>Generate</title> {/* Added title for accessibility */}
                 <path
                   stroke-linecap="round"
                   stroke-linejoin="round"
@@ -438,11 +418,7 @@ const ProfessorForm: Component<ProfessorFormProps> = (props) => {
           </span>
         </Button>
         <Button type="submit" variant="primary" disabled={isDisabled()}>
-          {props.isSubmitting
-            ? 'Saving...'
-            : props.professor !== undefined
-              ? 'Update'
-              : 'Save'}
+          {props.isSubmitting ? 'Saving...' : props.professor !== undefined ? 'Update' : 'Save'}
         </Button>
       </div>
     </form>

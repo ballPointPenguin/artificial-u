@@ -4,7 +4,9 @@ from typing import Dict
 
 COURSE_SYSTEM_PROMPT = (
     "You are an expert at creating detailed, professional course topics and curricula for a wide range "
-    "of academic subjects."
+    "of academic subjects. "
+    "You always respond in valid, indented XML format. "
+    "Do not include any explanations, notes, or text outside the XML block."
 )
 
 LECTURE_SYSTEM_PROMPT = (

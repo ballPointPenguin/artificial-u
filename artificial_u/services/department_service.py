@@ -317,7 +317,6 @@ class DepartmentService:
         # Generate the department using Ollama
         response = await content_service.generate_text(
             prompt=prompt,
-            # model=DEFAULT_OLLAMA_MODEL,
             model=model,
             system_prompt=GENERIC_XML_SYSTEM_PROMPT,
         )

@@ -14,30 +14,35 @@ def format_professor_image_prompt(professor, aspect_ratio="1:1") -> str:
     Returns:
         A formatted prompt string for the image generation API
     """
-    # Basic professor attributes
     name = professor.name
-    gender = professor.gender or "unspecified"
-    age = professor.age or "middle-aged"
 
-    # Use description if available, otherwise create a basic description
+    # Build description string from available attributes
+    description_parts = []
+    if professor.gender:
+        description_parts.append(f"Gender: {professor.gender}")
+    if professor.age:
+        description_parts.append(f"Age: {professor.age}")
     if professor.description:
-        description = professor.description
-    else:
-        description = f"A {gender} professor"
-        if isinstance(age, int):
-            description += f" in their {(age // 10) * 10}s"
+        description_parts.append(professor.description)
+    if professor.specialization:
+        description_parts.append(f"Specialization: {professor.specialization}")
+
+    description_text = "\n".join(description_parts)
 
     # Format the final prompt with consistent instructions for quality
     prompt = f"""
-    A realistic portrait photograph of a university professor named {name}.
+A realistic, captivating portrait photograph of a university professor named {name}.
 
-    {description}
+{description_text}
 
-    Professional attire, soft studio lighting, high-quality, photorealistic,
-    detailed facial features, academic setting, neutral background.
-    The image should be high-resolution and suitable for a professional academic profile.
+Demeanor is professional yet characterful.
+Lighting is soft, possibly with gentle shadows, evoking a thoughtful or
+slightly enchanting atmosphere. Background suggests a modern academic setting,
+subtly blurred. High-quality, photorealistic, detailed facial features, engaging expression.
+The image should be high-resolution and suitable for an intriguing academic profile,
+with a slight aura of otherworldliness.
 
-    Do not include text or watermarks in the image. Aspect ratio {aspect_ratio}.
+Do not include text or watermarks in the image. Aspect ratio {aspect_ratio}.
     """
 
     return prompt.strip()

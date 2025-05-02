@@ -345,8 +345,6 @@ class ProfessorApiService:
         Returns:
             ProfessorResponse: The generated professor profile (not saved).
         """
-        from datetime import datetime
-
         log_attrs = (
             list(generation_data.partial_attributes.keys())
             if generation_data.partial_attributes

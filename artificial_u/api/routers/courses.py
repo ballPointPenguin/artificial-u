@@ -17,16 +17,14 @@ from artificial_u.api.models.courses import (
     DepartmentBrief,
     ProfessorBrief,
 )
-from artificial_u.api.models.lectures import LectureList
-from artificial_u.api.models.professors import ProfessorsListResponse
 from artificial_u.api.services.course_service import CourseApiService
 
-# Create the router with dependencies that will be applied to all routes
+# Create the router
 router = APIRouter(
     prefix="/courses",
     tags=["courses"],
     responses={404: {"description": "Not found"}},
-    dependencies=[Depends(get_course_api_service)],
+    # Dependency injection handled per route for clarity now
 )
 
 
@@ -47,14 +45,8 @@ async def list_courses(
 ):
     """
     Get a paginated list of courses with filtering options.
-
-    - **page**: Page number (starting from 1)
-    - **size**: Number of items per page (1-100)
-    - **department_id**: Filter by department ID
-    - **professor_id**: Filter by professor ID
-    - **level**: Filter by course level (e.g., 'Undergraduate', 'Graduate')
-    - **title**: Filter by course title (partial match)
     """
+    # The service handles the logic and potential exceptions
     return course_service.get_courses(
         page=page,
         size=size,
@@ -74,20 +66,13 @@ async def list_courses(
 )
 async def get_course(
     course_id: int = Path(..., description="The ID of the course to retrieve"),
+    course_service: CourseApiService = Depends(get_course_api_service),
 ):
     """
     Get detailed information about a specific course.
-
-    - **course_id**: The unique identifier of the course
     """
-    course_service = router.dependencies[0]
-    course = course_service.get_course(course_id)
-    if not course:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Course with ID {course_id} not found",
-        )
-    return course
+    # Service raises HTTPException on not found or errors
+    return course_service.get_course(course_id)
 
 
 @router.get(
@@ -99,20 +84,13 @@ async def get_course(
 )
 async def get_course_by_code(
     code: str = Path(..., description="The code of the course to retrieve"),
+    course_service: CourseApiService = Depends(get_course_api_service),
 ):
     """
     Get detailed information about a specific course by its code.
-
-    - **code**: The unique code of the course
     """
-    course_service = router.dependencies[0]
-    course = course_service.get_course_by_code(code)
-    if not course:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Course with code {code} not found",
-        )
-    return course
+    # Service raises HTTPException on not found or errors
+    return course_service.get_course_by_code(code)
 
 
 @router.post(
@@ -121,17 +99,20 @@ async def get_course_by_code(
     status_code=status.HTTP_201_CREATED,
     summary="Create course",
     description="Create a new course.",
+    responses={  # Add specific error responses
+        404: {"description": "Professor or Department not found"},
+        500: {"description": "Internal server error during creation"},
+    },
 )
 async def create_course(
     course_data: CourseCreate,
+    course_service: CourseApiService = Depends(get_course_api_service),
 ):
     """
     Create a new course.
-
-    - Request body contains all required course information
-    - Returns the created course with its assigned ID
+    The service handles looking up dependencies and potential errors.
     """
-    course_service = router.dependencies[0]
+    # Service handles creation logic and raises HTTPException on errors
     return course_service.create_course(course_data)
 
 
@@ -140,27 +121,23 @@ async def create_course(
     response_model=CourseResponse,
     summary="Update course",
     description="Update an existing course.",
-    responses={404: {"description": "Course not found"}},
+    responses={
+        404: {"description": "Course or referenced Professor not found"},
+        400: {"description": "Invalid update data (e.g., bad foreign key)"},
+        500: {"description": "Internal server error during update"},
+    },
 )
 async def update_course(
     course_data: CourseUpdate,
     course_id: int = Path(..., description="The ID of the course to update"),
+    course_service: CourseApiService = Depends(get_course_api_service),
 ):
     """
     Update an existing course.
-
-    - **course_id**: The unique identifier of the course to update
-    - Request body contains the updated course information
-    - Returns the updated course
+    The service handles the update logic and potential errors.
     """
-    course_service = router.dependencies[0]
-    updated_course = course_service.update_course(course_id, course_data)
-    if not updated_course:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Course with ID {course_id} not found",
-        )
-    return updated_course
+    # Service handles update logic and raises HTTPException on errors
+    return course_service.update_course(course_id, course_data)
 
 
 @router.delete(
@@ -170,25 +147,29 @@ async def update_course(
     description="Delete a course.",
     responses={
         404: {"description": "Course not found"},
-        409: {"description": "Cannot delete course with associated lectures"},
+        409: {
+            "description": "Cannot delete course with associated resources (e.g., lectures)"
+        },
+        500: {"description": "Internal server error during deletion"},
     },
 )
 async def delete_course(
     course_id: int = Path(..., description="The ID of the course to delete"),
+    course_service: CourseApiService = Depends(get_course_api_service),
 ):
     """
     Delete a course.
-
-    - **course_id**: The unique identifier of the course to delete
-    - Returns no content on successful deletion
+    The service handles deletion and raises specific exceptions for 404/409/500.
     """
-    course_service = router.dependencies[0]
     success = course_service.delete_course(course_id)
+    # The service now returns False only if not found (after attempting delete)
+    # It raises HTTPException for 409 or 500 errors.
     if not success:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Course with ID {course_id} not found",
+            detail=f"Course with ID {course_id} not found for deletion.",
         )
+    # If service returns True, return 204
     return JSONResponse(status_code=status.HTTP_204_NO_CONTENT, content=None)
 
 
@@ -197,25 +178,20 @@ async def delete_course(
     response_model=ProfessorBrief,
     summary="Get course professor",
     description="Get information about the professor teaching a specific course.",
-    responses={404: {"description": "Course or professor not found"}},
+    responses={
+        404: {"description": "Course or its associated Professor not found"},
+        500: {"description": "Internal server error"},
+    },
 )
 async def get_course_professor(
     course_id: int = Path(..., description="The ID of the course"),
+    course_service: CourseApiService = Depends(get_course_api_service),
 ):
     """
     Get information about the professor teaching a specific course.
-
-    - **course_id**: The unique identifier of the course
-    - Returns brief information about the professor
     """
-    course_service = router.dependencies[0]
-    professor = course_service.get_course_professor(course_id)
-    if not professor:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Course with ID {course_id} or its professor not found",
-        )
-    return professor
+    # Service handles lookup and raises HTTPException on errors
+    return course_service.get_course_professor(course_id)
 
 
 @router.get(
@@ -223,25 +199,20 @@ async def get_course_professor(
     response_model=DepartmentBrief,
     summary="Get course department",
     description="Get information about the department offering a specific course.",
-    responses={404: {"description": "Course or department not found"}},
+    responses={
+        404: {"description": "Course or its associated Department not found"},
+        500: {"description": "Internal server error"},
+    },
 )
 async def get_course_department(
     course_id: int = Path(..., description="The ID of the course"),
+    course_service: CourseApiService = Depends(get_course_api_service),
 ):
     """
     Get information about the department offering a specific course.
-
-    - **course_id**: The unique identifier of the course
-    - Returns brief information about the department
     """
-    course_service = router.dependencies[0]
-    department = course_service.get_course_department(course_id)
-    if not department:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Course with ID {course_id} or its department not found",
-        )
-    return department
+    # Service handles lookup and raises HTTPException on errors
+    return course_service.get_course_department(course_id)
 
 
 @router.get(
@@ -249,68 +220,17 @@ async def get_course_department(
     response_model=CourseLecturesResponse,
     summary="Get course lectures",
     description="Get lectures for a specific course.",
-    responses={404: {"description": "Course not found"}},
+    responses={
+        404: {"description": "Course not found"},
+        500: {"description": "Internal server error"},
+    },
 )
 async def get_course_lectures(
     course_id: int = Path(..., description="The ID of the course"),
+    course_service: CourseApiService = Depends(get_course_api_service),
 ):
     """
     Get lectures for a specific course.
-
-    - **course_id**: The unique identifier of the course
-    - Returns a list of lectures for the course
     """
-    course_service = router.dependencies[0]
-    response = course_service.get_course_lectures(course_id)
-    if not response:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Course with ID {course_id} not found",
-        )
-    return response
-
-
-@router.get("/{course_id}/professors", response_model=ProfessorsListResponse)
-async def list_course_professors(
-    course_id: int,
-):
-    """
-    List professors for a course.
-
-    Args:
-        course_id: Course ID
-
-    Returns:
-        List of professors
-
-    Raises:
-        HTTPException: If course not found
-    """
-    course_service = router.dependencies[0]
-    professors = course_service.get_course_professors(course_id)
-    if not professors:
-        raise HTTPException(status_code=404, detail="Course not found")
-    return professors
-
-
-@router.get("/{course_id}/lectures", response_model=LectureList)
-async def list_course_lectures(
-    course_id: int,
-):
-    """
-    List lectures for a course.
-
-    Args:
-        course_id: Course ID
-
-    Returns:
-        List of lectures
-
-    Raises:
-        HTTPException: If course not found
-    """
-    course_service = router.dependencies[0]
-    lectures = course_service.get_course_lectures(course_id)
-    if not lectures:
-        raise HTTPException(status_code=404, detail="Course not found")
-    return lectures
+    # Service handles lookup and raises HTTPException on errors
+    return course_service.get_course_lectures(course_id)

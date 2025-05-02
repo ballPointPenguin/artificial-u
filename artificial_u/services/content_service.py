@@ -61,7 +61,7 @@ class ContentService:
             raise ValueError("No model specified and no default model configured.")
 
         self.logger.info(
-            f"Generating text for prompt (first 50 chars): '{prompt[:50]}...' using model: {target_model}"
+            f"Generating text for prompt: '{prompt[:1500]}...' using model: {target_model}"
         )
 
         # Determine backend based on model name (this might need refinement)

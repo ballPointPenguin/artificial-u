@@ -103,10 +103,12 @@ class Settings(BaseSettings):
     # Integration service endpoints
     OLLAMA_HOST: str = "http://localhost:11434"
 
-    # Professor generation model
-    PROFESSOR_GENERATION_MODEL: str = "claude-3-5-haiku-latest"
+    # Course generation model
+    COURSE_GENERATION_MODEL: str = "claude-3-7-sonnet-latest"
     # Department generation model
     DEPARTMENT_GENERATION_MODEL: str = "gpt-4.1-nano"
+    # Professor generation model
+    PROFESSOR_GENERATION_MODEL: str = "claude-3-5-haiku-latest"
     # Image generation model
     IMAGE_GENERATION_MODEL: str = "imagen-3.0-generate-002"
 

@@ -5,6 +5,7 @@ Course management service for ArtificialU.
 import logging
 from typing import Any, Dict, List, Optional, Tuple
 
+from artificial_u.config import settings
 from artificial_u.config.defaults import DEFAULT_COURSE_WEEKS, DEFAULT_LECTURES_PER_WEEK
 from artificial_u.models.converters import (
     course_model_to_dict,
@@ -54,7 +55,6 @@ class CourseService:
         self.professor_service = professor_service  # Needed for create_course
         self.content_service = content_service
         self.logger = logger or logging.getLogger(__name__)
-        # self.content_service = ContentService(logger=self.logger) # Now passed in
 
     # --- CRUD Methods --- #
 
@@ -128,8 +128,8 @@ class CourseService:
 
         # Save using the repository
         try:
-            # Use the factory from the legacy repository wrapper
-            created_course = self.repository.factory.course.create(course)
+            # Use the repository directly
+            created_course = self.repository.course.create(course)
             self.logger.info(f"Course created with ID: {created_course.id}")
             return created_course, professor
         except Exception as e:
@@ -150,7 +150,7 @@ class CourseService:
         Raises:
             CourseNotFoundError: If course not found
         """
-        course = self.repository.factory.course.get(course_id)
+        course = self.repository.course.get(course_id)
         if not course:
             error_msg = f"Course with ID {course_id} not found"
             self.logger.error(error_msg)
@@ -170,7 +170,7 @@ class CourseService:
         Raises:
             CourseNotFoundError: If course not found
         """
-        course = self.repository.factory.course.get_by_code(course_code)
+        course = self.repository.course.get_by_code(course_code)
         if not course:
             error_msg = f"Course with code {course_code} not found"
             self.logger.error(error_msg)
@@ -192,11 +192,11 @@ class CourseService:
         )
 
         try:
-            courses = self.repository.factory.course.list(department_id=department_id)
+            courses = self.repository.course.list(department_id=department_id)
             result = []
             for course in courses:
-                # Fetch professor using the factory
-                professor = self.repository.factory.professor.get(course.professor_id)
+                # Fetch professor using the repository directly
+                professor = self.repository.professor.get(course.professor_id)
                 result.append(
                     {
                         # Convert models to dicts for consistent output?
@@ -235,9 +235,9 @@ class CourseService:
             else:
                 self.logger.warning(f"Ignoring unknown field during update: {key}")
 
-        # Save changes using repository factory
+        # Save changes using repository
         try:
-            updated_course = self.repository.factory.course.update(course)
+            updated_course = self.repository.course.update(course)
             return updated_course
         except Exception as e:
             error_msg = f"Failed to update course {course_id}: {str(e)}"
@@ -260,9 +260,9 @@ class CourseService:
         """
         # Check existence via get_course
         self.get_course(course_id)
-        # Delete using repository factory
+        # Delete using repository
         try:
-            result = self.repository.factory.course.delete(course_id)
+            result = self.repository.course.delete(course_id)
             if result:
                 self.logger.info(f"Course {course_id} deleted successfully")
             return result
@@ -298,7 +298,7 @@ class CourseService:
 
         # --- 1. Get Professor --- #
         try:
-            # Use the internal helper which now uses the repository
+            # Use the repository directly
             professor_model = await self._get_professor(partial_attributes)
             professor_dict = professor_model_to_dict(professor_model)
             professor_xml = professor_to_xml(professor_dict)
@@ -311,7 +311,7 @@ class CourseService:
 
         # --- 2. Get Department --- #
         try:
-            # Use the internal helper which now uses the repository
+            # Use the repository directly
             department_model = await self._get_department(
                 partial_attributes, professor_model
             )
@@ -328,7 +328,7 @@ class CourseService:
 
         # --- 3. Get Existing Courses for Department --- #
         try:
-            # Use the internal helper which now uses the repository
+            # Use the repository directly
             existing_courses_models = await self._get_existing_courses(department_model)
             existing_courses_dicts = []
             for c in existing_courses_models:
@@ -376,7 +376,9 @@ class CourseService:
 
             self.logger.info("Calling content service to generate course...")
             raw_response = await self.content_service.generate_text(
-                prompt=course_prompt, system_prompt=system_prompt
+                model=settings.COURSE_GENERATION_MODEL,
+                prompt=course_prompt,
+                system_prompt=system_prompt,
             )
             self.logger.info("Received response from content service.")
 
@@ -436,8 +438,8 @@ class CourseService:
             self.logger.warning("No professor_id provided for course generation.")
             return None
         try:
-            # Use the factory from the legacy repository wrapper
-            professor = self.repository.factory.professor.get(professor_id)
+            # Use the repository directly
+            professor = self.repository.professor.get(professor_id)
             if not professor:
                 self.logger.error(
                     f"Professor with ID {professor_id} not found via repository."
@@ -475,8 +477,8 @@ class CourseService:
             return None
 
         try:
-            # Use the factory from the legacy repository wrapper
-            department = self.repository.factory.department.get(department_id)
+            # Use the repository directly
+            department = self.repository.department.get(department_id)
             if not department:
                 self.logger.error(
                     f"Department with ID {department_id} not found via repository."
@@ -499,10 +501,10 @@ class CourseService:
         if not department:
             return []
         try:
-            # Use the factory from the legacy repository wrapper
+            # Use the repository directly
             # Assumes CourseRepository.list handles potential None department_id if department is None
             # and eager loads lectures as needed by generate_course_content
-            return self.repository.factory.course.list(department_id=department.id)
+            return self.repository.course.list(department_id=department.id)
         except Exception as e:
             self.logger.error(
                 f"Repository error fetching courses for department {department.id}: {e}",
