@@ -17,8 +17,8 @@ from artificial_u.models.converters import (
 )
 from artificial_u.models.database import CourseModel, DepartmentModel, ProfessorModel
 
-# Import the legacy Repository wrapper used by UniversitySystem
-from artificial_u.models.repository import Repository
+# Import RepositoryFactory directly instead of legacy Repository wrapper
+from artificial_u.models.repositories.factory import RepositoryFactory
 from artificial_u.prompts.base import extract_xml_content
 from artificial_u.prompts.courses import get_course_prompt
 from artificial_u.prompts.system import get_system_prompt
@@ -37,7 +37,7 @@ class CourseService:
 
     def __init__(
         self,
-        repository: Repository,
+        repository_factory: RepositoryFactory,
         professor_service: ProfessorService,
         content_service: ContentService,
         logger=None,
@@ -46,12 +46,12 @@ class CourseService:
         Initialize the course service.
 
         Args:
-            repository: Data repository instance (legacy wrapper).
-            professor_service: Service for professor operations.
-            content_service: Service for content generation.
+            repository_factory: Repository factory instance
+            professor_service: Service for professor operations
+            content_service: Service for content generation
             logger: Optional logger instance
         """
-        self.repository = repository
+        self.repository_factory = repository_factory
         self.professor_service = professor_service  # Needed for create_course
         self.content_service = content_service
         self.logger = logger or logging.getLogger(__name__)
@@ -126,10 +126,10 @@ class CourseService:
             topics=topics,
         )
 
-        # Save using the repository
+        # Save using the repository factory
         try:
-            # Use the repository directly
-            created_course = self.repository.course.create(course)
+            # Use the course repository directly
+            created_course = self.repository_factory.course.create(course)
             self.logger.info(f"Course created with ID: {created_course.id}")
             return created_course, professor
         except Exception as e:
@@ -150,7 +150,7 @@ class CourseService:
         Raises:
             CourseNotFoundError: If course not found
         """
-        course = self.repository.course.get(course_id)
+        course = self.repository_factory.course.get(course_id)
         if not course:
             error_msg = f"Course with ID {course_id} not found"
             self.logger.error(error_msg)
@@ -170,7 +170,7 @@ class CourseService:
         Raises:
             CourseNotFoundError: If course not found
         """
-        course = self.repository.course.get_by_code(course_code)
+        course = self.repository_factory.course.get_by_code(course_code)
         if not course:
             error_msg = f"Course with code {course_code} not found"
             self.logger.error(error_msg)
@@ -192,11 +192,11 @@ class CourseService:
         )
 
         try:
-            courses = self.repository.course.list(department_id=department_id)
+            courses = self.repository_factory.course.list(department_id=department_id)
             result = []
             for course in courses:
                 # Fetch professor using the repository directly
-                professor = self.repository.professor.get(course.professor_id)
+                professor = self.repository_factory.professor.get(course.professor_id)
                 result.append(
                     {
                         # Convert models to dicts for consistent output?
@@ -237,7 +237,7 @@ class CourseService:
 
         # Save changes using repository
         try:
-            updated_course = self.repository.course.update(course)
+            updated_course = self.repository_factory.course.update(course)
             return updated_course
         except Exception as e:
             error_msg = f"Failed to update course {course_id}: {str(e)}"
@@ -262,7 +262,7 @@ class CourseService:
         self.get_course(course_id)
         # Delete using repository
         try:
-            result = self.repository.course.delete(course_id)
+            result = self.repository_factory.course.delete(course_id)
             if result:
                 self.logger.info(f"Course {course_id} deleted successfully")
             return result
@@ -458,7 +458,7 @@ class CourseService:
             return None
         try:
             # Use the repository directly
-            professor = self.repository.professor.get(professor_id)
+            professor = self.repository_factory.professor.get(professor_id)
             if not professor:
                 self.logger.error(
                     f"Professor with ID {professor_id} not found via repository."
@@ -497,7 +497,7 @@ class CourseService:
 
         try:
             # Use the repository directly
-            department = self.repository.department.get(department_id)
+            department = self.repository_factory.department.get(department_id)
             if not department:
                 self.logger.error(
                     f"Department with ID {department_id} not found via repository."
@@ -523,7 +523,7 @@ class CourseService:
             # Use the repository directly
             # Assumes CourseRepository.list handles potential None department_id if department is None
             # and eager loads lectures as needed by generate_course_content
-            return self.repository.course.list(department_id=department.id)
+            return self.repository_factory.course.list(department_id=department.id)
         except Exception as e:
             self.logger.error(
                 f"Repository error fetching courses for department {department.id}: {e}",

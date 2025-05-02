@@ -147,8 +147,10 @@ class UniversitySystem:
                 backend=self.settings.content_backend, **backend_kwargs
             )
 
-            # Initialize repository
-            self.repository = RepositoryFactory(db_url=self.settings.DATABASE_URL)
+            # Initialize repository factory directly
+            self.repository_factory = RepositoryFactory(
+                db_url=self.settings.DATABASE_URL
+            )
 
             # Initialize audio components
             self.elevenlabs_client = ElevenLabsClient(
@@ -197,7 +199,7 @@ class UniversitySystem:
 
         # Initialize ProfessorService
         self.professor_service = ProfessorService(
-            repository=self.repository,
+            repository_factory=self.repository_factory,
             content_service=self.content_service,
             image_service=self.image_service,
             voice_selector=self.voice_selector,
@@ -206,7 +208,7 @@ class UniversitySystem:
 
         # Initialize CourseService
         self.course_service = CourseService(
-            repository=self.repository,
+            repository_factory=self.repository_factory,
             professor_service=self.professor_service,
             content_service=self.content_service,
             logger=logging.getLogger("artificial_u.services.course_service"),
@@ -214,7 +216,7 @@ class UniversitySystem:
 
         # Initialize LectureService
         self.lecture_service = LectureService(
-            repository=self.repository,
+            repository_factory=self.repository_factory,
             content_generator=self.content_generator,  # Still using this for now
             professor_service=self.professor_service,
             course_service=self.course_service,
@@ -224,7 +226,7 @@ class UniversitySystem:
 
         # Initialize AudioService
         self.audio_service = AudioService(
-            repository=self.repository,
+            repository_factory=self.repository_factory,
             api_key=self.settings.ELEVENLABS_API_KEY,
             tts_service=self.tts_service,
             storage_service=self.storage_service,

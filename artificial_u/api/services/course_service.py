@@ -20,8 +20,8 @@ from artificial_u.api.models.courses import (
 )
 from artificial_u.models.database import LectureModel
 
-# Import the legacy Repository wrapper
-from artificial_u.models.repository import Repository
+# Import RepositoryFactory directly instead of legacy Repository wrapper
+from artificial_u.models.repositories.factory import RepositoryFactory
 from artificial_u.services import CourseService
 from artificial_u.services.content_service import ContentService
 from artificial_u.services.professor_service import ProfessorService
@@ -38,32 +38,31 @@ class CourseApiService:
 
     def __init__(
         self,
-        repository: Repository,  # Use the legacy Repository wrapper
+        repository_factory: RepositoryFactory,
         content_service: ContentService,
-        professor_service: ProfessorService,  # Core ProfessorService
+        professor_service: ProfessorService,
         logger=None,
     ):
         """
-        Initialize with required services and the legacy repository wrapper.
+        Initialize with required services and the repository factory.
 
         Args:
-            repository: Legacy Repository wrapper instance.
+            repository_factory: RepositoryFactory instance.
             content_service: Content generation service instance.
             professor_service: Core ProfessorService instance.
             logger: Optional logger instance.
         """
-        self.repository = repository  # Store the repository wrapper
+        self.repository_factory = repository_factory
         self.logger = logger or logging.getLogger(__name__)
 
-        # Initialize core service with dependencies, including the legacy repository
+        # Initialize core service with dependencies
         self.core_service = CourseService(
-            repository=repository,
+            repository_factory=repository_factory,
             content_service=content_service,
-            professor_service=professor_service,  # Core service dependency
+            professor_service=professor_service,
             logger=self.logger,
         )
         # Keep reference to core professor service if needed for direct lookups
-        # (though preferably core CourseService handles this)
         self.professor_service = professor_service
 
     def get_courses(
@@ -355,8 +354,7 @@ class CourseApiService:
             course = self.core_service.get_course(course_id)
 
             # Get the professor using the repository factory directly
-            # (as core_service doesn't have a dedicated method for this)
-            professor = self.repository.factory.professor.get(course.professor_id)
+            professor = self.repository_factory.professor.get(course.professor_id)
             if not professor:
                 # This case implies data inconsistency if course exists but professor doesn't
                 self.logger.error(
@@ -418,7 +416,7 @@ class CourseApiService:
                 )
 
             # Get the department using the repository factory directly
-            department = self.repository.factory.department.get(course.department_id)
+            department = self.repository_factory.department.get(course.department_id)
             if not department:
                 # This case implies data inconsistency
                 self.logger.error(
@@ -469,8 +467,7 @@ class CourseApiService:
             self.core_service.get_course(course_id)
 
             # Get lectures for the course using the repository factory
-            # Assuming LectureRepository has a list method filtering by course_id
-            lectures: List[LectureModel] = self.repository.factory.lecture.list(
+            lectures: List[LectureModel] = self.repository_factory.lecture.list(
                 course_id=course_id
             )
 
