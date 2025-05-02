@@ -1,22 +1,15 @@
 import { A } from '@solidjs/router'
 import { For, Show, createResource, createSignal } from 'solid-js'
-import {
-  createDepartment,
-  getDepartments,
-} from '../api/services/department-service'
+import { createDepartment, getDepartments } from '../api/services/department-service'
 import type { Department } from '../api/types'
-import DepartmentForm from '../components/DepartmentForm'
+import DepartmentForm from '../components/departments/DepartmentForm'
 import { Button } from '../components/ui/Button'
 
 const DepartmentCard = (props: { department: Department }) => {
   return (
     <div class="arcane-card h-full flex flex-col">
-      <h3 class="text-xl font-semibold mb-2 text-parchment-100">
-        {props.department.name}
-      </h3>
-      <p class="text-parchment-300 mb-4 line-clamp-3 flex-grow">
-        {props.department.description}
-      </p>
+      <h3 class="text-xl font-semibold mb-2 text-parchment-100">{props.department.name}</h3>
+      <p class="text-parchment-300 mb-4 line-clamp-3 flex-grow">{props.department.description}</p>
       <A
         href={`/academics/departments/${String(props.department.id)}`}
         class="text-mystic-500 hover:text-mystic-300 font-medium mt-auto"
@@ -64,9 +57,7 @@ const DepartmentsPage = () => {
       setShowCreateForm(false)
       void refetch()
     } catch (error) {
-      setFormError(
-        error instanceof Error ? error.message : 'Failed to create department'
-      )
+      setFormError(error instanceof Error ? error.message : 'Failed to create department')
     } finally {
       setSubmitting(false)
     }
@@ -83,9 +74,7 @@ const DepartmentsPage = () => {
 
       <Show when={showCreateForm()}>
         <div class="arcane-card p-6 mb-8">
-          <h2 class="text-xl font-semibold mb-4 text-parchment-100">
-            Create New Department
-          </h2>
+          <h2 class="text-xl font-semibold mb-4 text-parchment-100">Create New Department</h2>
           <DepartmentForm
             onSubmit={(formData) => void handleSubmitCreate(formData)}
             onCancel={() => setShowCreateForm(false)}
@@ -119,8 +108,7 @@ const DepartmentsPage = () => {
           when={!departments.error}
           fallback={
             <div class="text-red-500">
-              Error loading departments:{' '}
-              {(departments.error as Error).message || 'Unknown error'}
+              Error loading departments: {(departments.error as Error).message || 'Unknown error'}
             </div>
           }
         >

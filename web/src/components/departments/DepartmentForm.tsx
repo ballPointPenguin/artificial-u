@@ -1,7 +1,7 @@
 import { type JSX, Show, createEffect, createSignal } from 'solid-js'
-import { generateDepartment } from '../api/services/department-service'
-import type { Department } from '../api/types'
-import { Button } from './ui/Button'
+import { generateDepartment } from '../../api/services/department-service'
+import type { Department } from '../../api/types'
+import { Button, MagicButton } from '../ui'
 
 // Form data interface matching the API model
 interface DepartmentFormData {
@@ -20,9 +20,7 @@ interface DepartmentFormProps {
 }
 
 const DepartmentForm = (props: DepartmentFormProps) => {
-  const [validationErrors, setValidationErrors] = createSignal<
-    Record<string, string>
-  >({})
+  const [validationErrors, setValidationErrors] = createSignal<Record<string, string>>({})
   const [isGenerating, setIsGenerating] = createSignal(false)
   const [generateError, setGenerateError] = createSignal<string | null>(null)
   const [formData, setFormData] = createSignal<DepartmentFormData>({
@@ -78,9 +76,7 @@ const DepartmentForm = (props: DepartmentFormProps) => {
     setFormData({ ...formData(), [target.name]: target.value })
   }
 
-  const handleSubmit: JSX.EventHandler<HTMLFormElement, SubmitEvent> = (
-    event
-  ) => {
+  const handleSubmit: JSX.EventHandler<HTMLFormElement, SubmitEvent> = (event) => {
     event.preventDefault()
     const form = event.currentTarget
 
@@ -100,7 +96,7 @@ const DepartmentForm = (props: DepartmentFormProps) => {
       for (const [k, v] of Object.entries(formData())) {
         const input = document.createElement('input')
         input.name = k
-        input.value = v
+        input.value = v as string // Type assertion to fix the unsafe assignment
         fakeForm.appendChild(input)
       }
       const generated = await generateDepartment(formData())
@@ -142,10 +138,7 @@ const DepartmentForm = (props: DepartmentFormProps) => {
   return (
     <form onSubmit={handleSubmit} class="space-y-6">
       <div>
-        <label
-          for="name"
-          class="block text-sm font-medium mb-1 text-parchment-300"
-        >
+        <label for="name" class="block text-sm font-medium mb-1 text-parchment-300">
           Department Name
         </label>
         <input
@@ -166,10 +159,7 @@ const DepartmentForm = (props: DepartmentFormProps) => {
       </div>
 
       <div>
-        <label
-          for="code"
-          class="block text-sm font-medium mb-1 text-parchment-300"
-        >
+        <label for="code" class="block text-sm font-medium mb-1 text-parchment-300">
           Department Code
         </label>
         <input
@@ -190,10 +180,7 @@ const DepartmentForm = (props: DepartmentFormProps) => {
       </div>
 
       <div>
-        <label
-          for="faculty"
-          class="block text-sm font-medium mb-1 text-parchment-300"
-        >
+        <label for="faculty" class="block text-sm font-medium mb-1 text-parchment-300">
           Faculty
         </label>
         <input
@@ -214,10 +201,7 @@ const DepartmentForm = (props: DepartmentFormProps) => {
       </div>
 
       <div>
-        <label
-          for="description"
-          class="block text-sm font-medium mb-1 text-parchment-300"
-        >
+        <label for="description" class="block text-sm font-medium mb-1 text-parchment-300">
           Description
         </label>
         <textarea
@@ -233,9 +217,7 @@ const DepartmentForm = (props: DepartmentFormProps) => {
           disabled={isDisabled()}
         />
         <Show when={validationErrors().description}>
-          <p class="mt-1 text-sm text-red-600">
-            {validationErrors().description}
-          </p>
+          <p class="mt-1 text-sm text-red-600">{validationErrors().description}</p>
         </Show>
       </div>
 
@@ -251,67 +233,26 @@ const DepartmentForm = (props: DepartmentFormProps) => {
       </Show>
 
       <div class="flex justify-end space-x-3">
-        <Button
-          type="button"
-          variant="outline"
-          onClick={props.onCancel}
-          disabled={isDisabled()}
-        >
+        <Button type="button" variant="outline" onClick={props.onCancel} disabled={isDisabled()}>
           Cancel
         </Button>
-        <Button
-          type="button"
-          variant="outline"
-          onClick={handleClear}
-          disabled={isDisabled()}
-        >
+        <Button type="button" variant="outline" onClick={handleClear} disabled={isDisabled()}>
           Clear
         </Button>
-        <Button
+        <MagicButton
           type="button"
           variant="secondary"
           onClick={() => {
             void handleGenerate()
           }}
           disabled={isDisabled()}
+          isLoading={isGenerating()}
+          loadingText="Generating..."
         >
-          <span class="flex items-center gap-2">
-            <span class="inline-block align-middle">
-              {/* Magic wand SVG icon */}
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                class="w-5 h-5 text-mystic-300"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                stroke-width="2"
-              >
-                <title>Generate</title>
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  d="M15.5 8.5l-8 8m0 0L3 21l4.5-4.5m0 0l8-8M19 5l.01-.01M15 3l.01-.01M21 9l.01-.01M17 13l.01-.01"
-                />
-              </svg>
-            </span>
-            <span>
-              {isGenerating() ? (
-                <span class="flex items-center gap-1">
-                  <span class="inline-block w-4 h-4 border-2 border-mystic-300 border-t-transparent rounded-full animate-spin" />
-                  Generating...
-                </span>
-              ) : (
-                'Generate'
-              )}
-            </span>
-          </span>
-        </Button>
+          Generate
+        </MagicButton>
         <Button type="submit" variant="primary" disabled={isDisabled()}>
-          {props.isSubmitting
-            ? 'Saving...'
-            : props.department !== undefined
-              ? 'Update'
-              : 'Save'}
+          {props.isSubmitting ? 'Saving...' : props.department !== undefined ? 'Update' : 'Save'}
         </Button>
       </div>
     </form>

@@ -1,15 +1,8 @@
-import {
-  type Component,
-  For,
-  Show,
-  createEffect,
-  createResource,
-  createSignal,
-} from 'solid-js'
-import { getDepartments } from '../api/services/department-service'
-import { getProfessors } from '../api/services/professor-service'
-import type { Course } from '../api/types'
-import { Button } from './ui/Button'
+import { type Component, For, Show, createEffect, createResource, createSignal } from 'solid-js'
+import { getDepartments } from '../../api/services/department-service'
+import { getProfessors } from '../../api/services/professor-service'
+import type { Course } from '../../api/types'
+import { Button } from '../ui/Button'
 
 // Form data interface matching the API model
 export interface CourseFormData {
@@ -45,9 +38,7 @@ interface CourseFormProps {
 }
 
 const CourseForm: Component<CourseFormProps> = (props) => {
-  const [validationErrors, setValidationErrors] = createSignal<
-    Record<string, string>
-  >({})
+  const [validationErrors, setValidationErrors] = createSignal<Record<string, string>>({})
 
   const [formData, setFormData] = createSignal<CourseFormData>(defaultFormData)
 
@@ -129,10 +120,7 @@ const CourseForm: Component<CourseFormProps> = (props) => {
     <form onSubmit={handleSubmit} class="space-y-4">
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <label
-            for="code"
-            class="block text-sm font-medium mb-1 text-parchment-300"
-          >
+          <label for="code" class="block text-sm font-medium mb-1 text-parchment-300">
             Course Code*
           </label>
           <input
@@ -155,10 +143,7 @@ const CourseForm: Component<CourseFormProps> = (props) => {
         </div>
 
         <div>
-          <label
-            for="title"
-            class="block text-sm font-medium mb-1 text-parchment-300"
-          >
+          <label for="title" class="block text-sm font-medium mb-1 text-parchment-300">
             Course Title*
           </label>
           <input
@@ -181,10 +166,7 @@ const CourseForm: Component<CourseFormProps> = (props) => {
         </div>
 
         <div>
-          <label
-            for="department_id"
-            class="block text-sm font-medium mb-1 text-parchment-300"
-          >
+          <label for="department_id" class="block text-sm font-medium mb-1 text-parchment-300">
             Department*
           </label>
           <select
@@ -217,22 +199,15 @@ const CourseForm: Component<CourseFormProps> = (props) => {
             </Show>
           </select>
           <Show when={departments.loading}>
-            <p class="text-parchment-400 text-sm mt-1">
-              Loading departments...
-            </p>
+            <p class="text-parchment-400 text-sm mt-1">Loading departments...</p>
           </Show>
           <Show when={validationErrors().department_id}>
-            <p class="mt-1 text-sm text-red-600">
-              {validationErrors().department_id}
-            </p>
+            <p class="mt-1 text-sm text-red-600">{validationErrors().department_id}</p>
           </Show>
         </div>
 
         <div>
-          <label
-            for="professor_id"
-            class="block text-sm font-medium mb-1 text-parchment-300"
-          >
+          <label for="professor_id" class="block text-sm font-medium mb-1 text-parchment-300">
             Professor*
           </label>
           <select
@@ -268,17 +243,12 @@ const CourseForm: Component<CourseFormProps> = (props) => {
             <p class="text-parchment-400 text-sm mt-1">Loading professors...</p>
           </Show>
           <Show when={validationErrors().professor_id}>
-            <p class="mt-1 text-sm text-red-600">
-              {validationErrors().professor_id}
-            </p>
+            <p class="mt-1 text-sm text-red-600">{validationErrors().professor_id}</p>
           </Show>
         </div>
 
         <div>
-          <label
-            for="level"
-            class="block text-sm font-medium mb-1 text-parchment-300"
-          >
+          <label for="level" class="block text-sm font-medium mb-1 text-parchment-300">
             Level*
           </label>
           <select
@@ -298,10 +268,7 @@ const CourseForm: Component<CourseFormProps> = (props) => {
         </div>
 
         <div>
-          <label
-            for="credits"
-            class="block text-sm font-medium mb-1 text-parchment-300"
-          >
+          <label for="credits" class="block text-sm font-medium mb-1 text-parchment-300">
             Credits*
           </label>
           <input
@@ -319,10 +286,7 @@ const CourseForm: Component<CourseFormProps> = (props) => {
         </div>
 
         <div>
-          <label
-            for="lectures_per_week"
-            class="block text-sm font-medium mb-1 text-parchment-300"
-          >
+          <label for="lectures_per_week" class="block text-sm font-medium mb-1 text-parchment-300">
             Lectures Per Week*
           </label>
           <input
@@ -340,10 +304,7 @@ const CourseForm: Component<CourseFormProps> = (props) => {
         </div>
 
         <div>
-          <label
-            for="total_weeks"
-            class="block text-sm font-medium mb-1 text-parchment-300"
-          >
+          <label for="total_weeks" class="block text-sm font-medium mb-1 text-parchment-300">
             Total Weeks*
           </label>
           <input
@@ -362,10 +323,7 @@ const CourseForm: Component<CourseFormProps> = (props) => {
       </div>
 
       <div>
-        <label
-          for="description"
-          class="block text-sm font-medium mb-1 text-parchment-300"
-        >
+        <label for="description" class="block text-sm font-medium mb-1 text-parchment-300">
           Description*
         </label>
         <textarea
@@ -383,9 +341,7 @@ const CourseForm: Component<CourseFormProps> = (props) => {
           disabled={props.isSubmitting}
         />
         <Show when={validationErrors().description}>
-          <p class="mt-1 text-sm text-red-600">
-            {validationErrors().description}
-          </p>
+          <p class="mt-1 text-sm text-red-600">{validationErrors().description}</p>
         </Show>
       </div>
 

@@ -3,7 +3,7 @@ import { For, Show, createEffect, createResource, createSignal } from 'solid-js'
 import { getDepartments } from '../../api/services/department-service' // Import department service
 import { generateProfessor } from '../../api/services/professor-service' // Import professor generate service
 import type { Department, Professor } from '../../api/types'
-import { Button } from '../ui/Button'
+import { Button, MagicButton } from '../ui'
 
 // Form data interface matching the API model
 export interface ProfessorFormData {
@@ -171,6 +171,24 @@ const ProfessorForm: Component<ProfessorFormProps> = (props) => {
     } finally {
       setIsGenerating(false)
     }
+  }
+
+  // Add handleClear function
+  const handleClear = () => {
+    setFormData({
+      name: '',
+      title: '',
+      description: '',
+      teaching_style: '',
+      gender: '',
+      accent: '',
+      age: null,
+      department_id: null,
+      specialization: '',
+      background: '',
+      personality: '',
+    })
+    setGenerateError(null)
   }
 
   // Helper to disable inputs/buttons during submission or generation
@@ -377,46 +395,22 @@ const ProfessorForm: Component<ProfessorFormProps> = (props) => {
         <Button type="button" variant="outline" onClick={props.onCancel} disabled={isDisabled()}>
           Cancel
         </Button>
+        <Button type="button" variant="outline" onClick={handleClear} disabled={isDisabled()}>
+          Clear
+        </Button>
         {/* Generate Button */}
-        <Button
+        <MagicButton
           type="button"
           variant="secondary"
           onClick={() => {
             void handleGenerate()
           }}
           disabled={isDisabled()}
+          isLoading={isGenerating()}
+          loadingText="Generating..."
         >
-          <span class="flex items-center gap-2">
-            <span class="inline-block align-middle">
-              {/* Magic wand SVG icon */}
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                class="w-5 h-5 text-mystic-300"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                stroke-width="2"
-              >
-                <title>Generate</title> {/* Added title for accessibility */}
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  d="M15.5 8.5l-8 8m0 0L3 21l4.5-4.5m0 0l8-8M19 5l.01-.01M15 3l.01-.01M21 9l.01-.01M17 13l.01-.01"
-                />
-              </svg>
-            </span>
-            <span>
-              {isGenerating() ? (
-                <span class="flex items-center gap-1">
-                  <span class="inline-block w-4 h-4 border-2 border-mystic-300 border-t-transparent rounded-full animate-spin" />
-                  Generating...
-                </span>
-              ) : (
-                'Generate'
-              )}
-            </span>
-          </span>
-        </Button>
+          Generate
+        </MagicButton>
         <Button type="submit" variant="primary" disabled={isDisabled()}>
           {props.isSubmitting ? 'Saving...' : props.professor !== undefined ? 'Update' : 'Save'}
         </Button>

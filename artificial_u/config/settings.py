@@ -65,6 +65,7 @@ class Settings(BaseSettings):
             "http://localhost:5173",
             "https://artificial-u.example.com",
             "https://*.artificial-u.example.com",
+            "https://aliencyborg.share.zrok.io",
         ]
     )
 

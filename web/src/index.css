@@ -127,10 +127,20 @@
     }
   }
 
+  @keyframes shimmer {
+    0% {
+      background-position: -200% 0;
+    }
+    100% {
+      background-position: 200% 0;
+    }
+  }
+
   /* Animation properties */
   --animation-wisps: wisps 8s ease infinite;
   --animation-glow: glow 3s ease-in-out infinite alternate;
   --animation-float: float 6s ease-in-out infinite;
+  --animation-shimmer: shimmer 3s linear infinite;
 }
 
 /* Theme variant variables */
@@ -256,14 +266,14 @@
   }
 
   .btn-arcane {
-    @apply px-6 py-3 rounded border border-parchment-400 text-parchment-100 
-           bg-arcanum-900/50 hover:bg-arcanum-800/50 
+    @apply px-6 py-3 rounded border border-parchment-400 text-parchment-100
+           bg-arcanum-900/50 hover:bg-arcanum-800/50
            transition-colors duration-300 font-serif tracking-wider;
   }
 
   .btn-arcane-primary {
-    @apply px-6 py-3 rounded bg-gradient-to-r from-parchment-700/50 to-mystic-800/50 
-           text-parchment-100 font-display tracking-wider border border-parchment-500/50 
+    @apply px-6 py-3 rounded bg-gradient-to-r from-parchment-700/50 to-mystic-800/50
+           text-parchment-100 font-display tracking-wider border border-parchment-500/50
            shadow-arcane hover:shadow-glow transition-all duration-300;
   }
 
@@ -280,13 +290,13 @@
   }
 
   .arcane-input {
-    @apply w-full px-4 py-2 bg-arcanum-800 border border-parchment-700/30 
-           rounded-sm text-parchment-100 placeholder:text-parchment-500 
+    @apply w-full px-4 py-2 bg-arcanum-800 border border-parchment-700/30
+           rounded-sm text-parchment-100 placeholder:text-parchment-500
            focus:outline-none focus:border-mystic-500 transition-colors duration-200;
   }
 
   .nav-link {
-    @apply text-parchment-200 hover:text-parchment-100 tracking-wide 
+    @apply text-parchment-200 hover:text-parchment-100 tracking-wide
            font-serif uppercase text-sm text-shadow-golden;
   }
 
@@ -324,5 +334,25 @@
 
   .animate-float {
     animation: var(--animation-float);
+  }
+
+  .animate-shimmer {
+    animation: var(--animation-shimmer);
+    background-size: 200% 100%;
+    background-image: linear-gradient(
+      to right,
+      transparent,
+      rgba(134, 86, 255, 0.2),
+      transparent
+    );
+  }
+
+  /* Magic button specific styles */
+  .magic-button:hover {
+    box-shadow: 0 0 15px rgba(138, 43, 226, 0.5), 0 0 30px rgba(138, 43, 226, 0.2) inset;
+  }
+
+  .magic-button:hover .magic-icon {
+    filter: drop-shadow(0 0 3px rgba(186, 104, 200, 0.6));
   }
 }

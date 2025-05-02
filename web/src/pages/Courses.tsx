@@ -1,14 +1,8 @@
 import { A } from '@solidjs/router'
-import {
-  type Component,
-  For,
-  Show,
-  createResource,
-  createSignal,
-} from 'solid-js'
+import { type Component, For, Show, createResource, createSignal } from 'solid-js'
 import { createCourse, getCourses } from '../api/services/course-service'
 import type { Course, CoursesList } from '../api/types'
-import CourseForm, { type CourseFormData } from '../components/CourseForm'
+import CourseForm, { type CourseFormData } from '../components/courses/CourseForm'
 import { Button } from '../components/ui/Button'
 
 const Courses: Component = () => {
@@ -57,9 +51,7 @@ const Courses: Component = () => {
       setShowCreateForm(false)
       void refetch()
     } catch (error) {
-      setFormError(
-        error instanceof Error ? error.message : 'Failed to create course'
-      )
+      setFormError(error instanceof Error ? error.message : 'Failed to create course')
     } finally {
       setSubmitting(false)
     }
@@ -68,9 +60,7 @@ const Courses: Component = () => {
   return (
     <div class="container mx-auto p-6">
       <div class="flex justify-between items-center mb-6">
-        <h1 class="text-3xl font-display text-parchment-100 mb-6">
-          Academic Courses
-        </h1>
+        <h1 class="text-3xl font-display text-parchment-100 mb-6">Academic Courses</h1>
         <Button variant="primary" onClick={() => setShowCreateForm(true)}>
           Add Course
         </Button>
@@ -78,9 +68,7 @@ const Courses: Component = () => {
 
       <Show when={showCreateForm()}>
         <div class="arcane-card p-6 mb-8">
-          <h2 class="text-xl font-semibold mb-4 text-parchment-100">
-            Create New Course
-          </h2>
+          <h2 class="text-xl font-semibold mb-4 text-parchment-100">Create New Course</h2>
           <CourseForm
             onSubmit={handleSubmitCreate}
             onCancel={() => setShowCreateForm(false)}
@@ -92,55 +80,31 @@ const Courses: Component = () => {
 
       <Show
         when={!coursesData.loading}
-        fallback={
-          <div class="text-parchment-200 font-serif p-4">
-            Loading courses...
-          </div>
-        }
+        fallback={<div class="text-parchment-200 font-serif p-4">Loading courses...</div>}
       >
         <Show
           when={hasCourses()}
-          fallback={
-            <div class="arcane-card p-6 text-center">No courses found.</div>
-          }
+          fallback={<div class="arcane-card p-6 text-center">No courses found.</div>}
         >
           <div class="arcane-card mb-6">
             <table class="min-w-full">
               <thead>
                 <tr class="border-b border-parchment-800/30">
-                  <th class="py-3 px-4 text-left font-display text-parchment-200">
-                    Code
-                  </th>
-                  <th class="py-3 px-4 text-left font-display text-parchment-200">
-                    Title
-                  </th>
-                  <th class="py-3 px-4 text-left font-display text-parchment-200">
-                    Level
-                  </th>
-                  <th class="py-3 px-4 text-left font-display text-parchment-200">
-                    Credits
-                  </th>
-                  <th class="py-3 px-4 text-left font-display text-parchment-200">
-                    Actions
-                  </th>
+                  <th class="py-3 px-4 text-left font-display text-parchment-200">Code</th>
+                  <th class="py-3 px-4 text-left font-display text-parchment-200">Title</th>
+                  <th class="py-3 px-4 text-left font-display text-parchment-200">Level</th>
+                  <th class="py-3 px-4 text-left font-display text-parchment-200">Credits</th>
+                  <th class="py-3 px-4 text-left font-display text-parchment-200">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 <For each={(coursesData() as CoursesList).items}>
                   {(course: Course) => (
                     <tr class="border-b border-parchment-800/20 hover:bg-arcanum-800/50 transition-colors">
-                      <td class="py-3 px-4 text-parchment-100">
-                        {course.code}
-                      </td>
-                      <td class="py-3 px-4 text-parchment-100">
-                        {course.title}
-                      </td>
-                      <td class="py-3 px-4 text-parchment-100">
-                        {course.level}
-                      </td>
-                      <td class="py-3 px-4 text-parchment-100">
-                        {course.credits}
-                      </td>
+                      <td class="py-3 px-4 text-parchment-100">{course.code}</td>
+                      <td class="py-3 px-4 text-parchment-100">{course.title}</td>
+                      <td class="py-3 px-4 text-parchment-100">{course.level}</td>
+                      <td class="py-3 px-4 text-parchment-100">{course.credits}</td>
                       <td class="py-3 px-4">
                         <A
                           href={`/academics/courses/${String(course.id)}`}

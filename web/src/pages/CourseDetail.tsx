@@ -1,11 +1,5 @@
 import { A, useNavigate, useParams } from '@solidjs/router'
-import {
-  type Component,
-  For,
-  Show,
-  createResource,
-  createSignal,
-} from 'solid-js'
+import { type Component, For, Show, createResource, createSignal } from 'solid-js'
 import {
   deleteCourse,
   getCourse,
@@ -15,7 +9,7 @@ import {
   updateCourse,
 } from '../api/services/course-service'
 import type { LectureBrief, LecturesList } from '../api/types'
-import CourseForm, { type CourseFormData } from '../components/CourseForm'
+import CourseForm, { type CourseFormData } from '../components/courses/CourseForm'
 import { Button } from '../components/ui/Button'
 
 const CourseDetail: Component = () => {
@@ -38,18 +32,9 @@ const CourseDetail: Component = () => {
     () => (isValidId ? courseId : null), // Pass null if ID is invalid
     getCourse
   )
-  const [professorData] = createResource(
-    () => (isValidId ? courseId : null),
-    getCourseProfessor
-  )
-  const [departmentData] = createResource(
-    () => (isValidId ? courseId : null),
-    getCourseDepartment
-  )
-  const [lecturesData] = createResource(
-    () => (isValidId ? courseId : null),
-    getCourseLectures
-  )
+  const [professorData] = createResource(() => (isValidId ? courseId : null), getCourseProfessor)
+  const [departmentData] = createResource(() => (isValidId ? courseId : null), getCourseDepartment)
+  const [lecturesData] = createResource(() => (isValidId ? courseId : null), getCourseLectures)
 
   // Helper function to safely check if lectures exist
   const hasLectures = () => {
@@ -103,23 +88,14 @@ const CourseDetail: Component = () => {
 
   return (
     <div class="container mx-auto p-6">
-      <Show
-        when={isValidId}
-        fallback={<div class="text-parchment-100">Invalid Course ID.</div>}
-      >
+      <Show when={isValidId} fallback={<div class="text-parchment-100">Invalid Course ID.</div>}>
         <Show
           when={!courseData.loading}
-          fallback={
-            <div class="text-parchment-200 font-serif p-4">
-              Loading course details...
-            </div>
-          }
+          fallback={<div class="text-parchment-200 font-serif p-4">Loading course details...</div>}
         >
           <Show
             when={courseData()}
-            fallback={
-              <div class="arcane-card p-6 text-center">Course not found.</div>
-            }
+            fallback={<div class="arcane-card p-6 text-center">Course not found.</div>}
           >
             {(course) => (
               <div>
@@ -132,16 +108,10 @@ const CourseDetail: Component = () => {
                   </A>
                   <Show when={!isEditing()}>
                     <div class="flex gap-2">
-                      <Button
-                        variant="primary"
-                        onClick={() => setIsEditing(true)}
-                      >
+                      <Button variant="primary" onClick={() => setIsEditing(true)}>
                         Edit Course
                       </Button>
-                      <Button
-                        variant="secondary"
-                        onClick={() => setShowDeleteConfirm(true)}
-                      >
+                      <Button variant="secondary" onClick={() => setShowDeleteConfirm(true)}>
                         Delete
                       </Button>
                     </div>
@@ -156,8 +126,7 @@ const CourseDetail: Component = () => {
                         Confirm Deletion
                       </h2>
                       <p class="text-parchment-200 mb-6">
-                        Are you sure you want to delete this course? This action
-                        cannot be undone.
+                        Are you sure you want to delete this course? This action cannot be undone.
                       </p>
                       <div class="flex justify-end gap-3">
                         <Button
@@ -183,9 +152,7 @@ const CourseDetail: Component = () => {
                   when={!isEditing()}
                   fallback={
                     <div class="arcane-card p-6 mb-8">
-                      <h2 class="text-xl font-semibold mb-4 text-parchment-100">
-                        Edit Course
-                      </h2>
+                      <h2 class="text-xl font-semibold mb-4 text-parchment-100">Edit Course</h2>
                       <CourseForm
                         course={course()}
                         onSubmit={handleUpdateCourse}
@@ -199,9 +166,7 @@ const CourseDetail: Component = () => {
                   <h1 class="text-3xl font-display text-parchment-100 mb-3">
                     {course().code}: {course().title}
                   </h1>
-                  <p class="text-xl text-parchment-200 mb-6 font-serif">
-                    {course().description}
-                  </p>
+                  <p class="text-xl text-parchment-200 mb-6 font-serif">{course().description}</p>
 
                   <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
                     {/* Course Details Section */}
@@ -212,29 +177,19 @@ const CourseDetail: Component = () => {
                       <div class="space-y-3 font-serif">
                         <p>
                           <span class="text-parchment-300">Level:</span>{' '}
-                          <span class="text-parchment-100">
-                            {course().level}
-                          </span>
+                          <span class="text-parchment-100">{course().level}</span>
                         </p>
                         <p>
                           <span class="text-parchment-300">Credits:</span>{' '}
-                          <span class="text-parchment-100">
-                            {course().credits}
-                          </span>
+                          <span class="text-parchment-100">{course().credits}</span>
                         </p>
                         <p>
-                          <span class="text-parchment-300">
-                            Lectures per week:
-                          </span>{' '}
-                          <span class="text-parchment-100">
-                            {course().lectures_per_week}
-                          </span>
+                          <span class="text-parchment-300">Lectures per week:</span>{' '}
+                          <span class="text-parchment-100">{course().lectures_per_week}</span>
                         </p>
                         <p>
                           <span class="text-parchment-300">Total weeks:</span>{' '}
-                          <span class="text-parchment-100">
-                            {course().total_weeks}
-                          </span>
+                          <span class="text-parchment-100">{course().total_weeks}</span>
                         </p>
                       </div>
                     </div>
@@ -249,9 +204,7 @@ const CourseDetail: Component = () => {
                         <Show
                           when={!departmentData.loading}
                           fallback={
-                            <div class="text-parchment-400 font-serif">
-                              Loading department...
-                            </div>
+                            <div class="text-parchment-400 font-serif">Loading department...</div>
                           }
                         >
                           <Show
@@ -290,9 +243,7 @@ const CourseDetail: Component = () => {
                         <Show
                           when={!professorData.loading}
                           fallback={
-                            <div class="text-parchment-400 font-serif">
-                              Loading professor...
-                            </div>
+                            <div class="text-parchment-400 font-serif">Loading professor...</div>
                           }
                         >
                           <Show
@@ -313,9 +264,7 @@ const CourseDetail: Component = () => {
                                   >
                                     {professor.name}
                                   </A>
-                                  <p class="text-parchment-300 mt-1">
-                                    {professor.title}
-                                  </p>
+                                  <p class="text-parchment-300 mt-1">{professor.title}</p>
                                   <p class="text-parchment-400 mt-2 text-sm">
                                     Specialization: {professor.specialization}
                                   </p>
@@ -330,15 +279,11 @@ const CourseDetail: Component = () => {
 
                   {/* Lectures Section */}
                   <div class="mt-8">
-                    <h2 class="text-2xl font-display text-parchment-100 mb-5">
-                      Course Lectures
-                    </h2>
+                    <h2 class="text-2xl font-display text-parchment-100 mb-5">Course Lectures</h2>
                     <Show
                       when={!lecturesData.loading}
                       fallback={
-                        <div class="text-parchment-200 font-serif p-4">
-                          Loading lectures...
-                        </div>
+                        <div class="text-parchment-200 font-serif p-4">Loading lectures...</div>
                       }
                     >
                       <Show
@@ -354,22 +299,17 @@ const CourseDetail: Component = () => {
                             {(lecture: LectureBrief) => (
                               <li class="arcane-card hover:shadow-arcane transition-all">
                                 <h3 class="text-lg font-display text-parchment-100 mb-2">
-                                  Week {lecture.week_number}.
-                                  {lecture.order_in_week}: {lecture.title}
+                                  Week {lecture.week_number}.{lecture.order_in_week}:{' '}
+                                  {lecture.title}
                                 </h3>
                                 <p class="text-parchment-300 font-serif mb-3">
                                   {lecture.description}
                                 </p>
                                 {lecture.audio_url && (
                                   <div class="mt-4">
-                                    <audio
-                                      controls
-                                      src={lecture.audio_url}
-                                      class="w-full"
-                                    >
+                                    <audio controls src={lecture.audio_url} class="w-full">
                                       <track kind="captions" />
-                                      Your browser does not support the audio
-                                      element.
+                                      Your browser does not support the audio element.
                                     </audio>
                                   </div>
                                 )}

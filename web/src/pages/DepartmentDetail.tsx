@@ -7,7 +7,7 @@ import {
 } from '../api/services/department-service'
 import type { Department } from '../api/types'
 import ConfirmationModal from '../components/ConfirmationModal'
-import DepartmentForm from '../components/DepartmentForm'
+import DepartmentForm from '../components/departments/DepartmentForm'
 import { Button } from '../components/ui/Button'
 
 const DepartmentDetail = () => {
@@ -48,9 +48,7 @@ const DepartmentDetail = () => {
       setIsEditing(false)
       void refetch()
     } catch (error) {
-      setError(
-        error instanceof Error ? error.message : 'Failed to update department'
-      )
+      setError(error instanceof Error ? error.message : 'Failed to update department')
     } finally {
       setIsSubmitting(false)
     }
@@ -70,9 +68,7 @@ const DepartmentDetail = () => {
       // Navigate back to departments list after deletion
       navigate('/academics/departments')
     } catch (error) {
-      setError(
-        error instanceof Error ? error.message : 'Failed to delete department'
-      )
+      setError(error instanceof Error ? error.message : 'Failed to delete department')
       setIsDeleting(false)
     } finally {
       setIsSubmitting(false)
@@ -83,10 +79,7 @@ const DepartmentDetail = () => {
     <div class="container mx-auto px-4 py-8">
       {/* Breadcrumb navigation - Use theme colors */}
       <div class="mb-6">
-        <A
-          href="/academics/departments"
-          class="text-mystic-500 hover:text-mystic-300"
-        >
+        <A href="/academics/departments" class="text-mystic-500 hover:text-mystic-300">
           ← Back to Departments
         </A>
       </div>
@@ -95,9 +88,7 @@ const DepartmentDetail = () => {
       <Show
         when={!department.loading}
         fallback={
-          <div class="text-center py-8 text-parchment-300">
-            Loading department information...
-          </div>
+          <div class="text-center py-8 text-parchment-300">Loading department information...</div>
         }
       >
         <Show
@@ -142,11 +133,7 @@ const DepartmentDetail = () => {
                 <div class="flex justify-between items-center mb-4">
                   <h1 class="text-3xl font-bold">{department()?.name}</h1>
                   <div class="flex space-x-2">
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      onClick={() => setIsEditing(true)}
-                    >
+                    <Button variant="secondary" size="sm" onClick={() => setIsEditing(true)}>
                       Edit
                     </Button>
                     <Button
@@ -161,19 +148,13 @@ const DepartmentDetail = () => {
                 </div>
 
                 <div class="mb-6">
-                  <h2 class="text-xl font-semibold mb-2 text-parchment-100">
-                    Description
-                  </h2>
-                  <p class="text-parchment-200 whitespace-pre-line">
-                    {department()?.description}
-                  </p>
+                  <h2 class="text-xl font-semibold mb-2 text-parchment-100">Description</h2>
+                  <p class="text-parchment-200 whitespace-pre-line">{department()?.description}</p>
                 </div>
 
                 <div class="grid grid-cols-2 gap-4 mb-6">
                   <div>
-                    <h3 class="font-medium text-parchment-400">
-                      Department Code
-                    </h3>
+                    <h3 class="font-medium text-parchment-400">Department Code</h3>
                     <p>{department()?.code}</p>
                   </div>
                   <div>
