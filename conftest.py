@@ -46,5 +46,13 @@ def verify_test_environment():
         assert (
             settings.ANTHROPIC_API_KEY == "test_anthropic_key"
         ), "Using incorrect Anthropic key"
+    if settings.GOOGLE_API_KEY:
+        assert (
+            settings.GOOGLE_API_KEY == "test_google_key"
+        ), "Using incorrect Google key"
+    if settings.OPENAI_API_KEY:
+        assert (
+            settings.OPENAI_API_KEY == "test_openai_key"
+        ), "Using incorrect OpenAI key"
 
     yield

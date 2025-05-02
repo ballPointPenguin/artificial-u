@@ -43,11 +43,15 @@ def get_system():
         # Get API keys from environment
         anthropic_key = os.environ.get("ANTHROPIC_API_KEY")
         elevenlabs_key = os.environ.get("ELEVENLABS_API_KEY")
+        google_key = os.environ.get("GOOGLE_API_KEY")
+        openai_key = os.environ.get("OPENAI_API_KEY")
 
         # Initialize system (Removed audio_path, text_export_path)
         university_system = UniversitySystem(
             anthropic_api_key=anthropic_key,
             elevenlabs_api_key=elevenlabs_key,
+            google_api_key=google_key,
+            openai_api_key=openai_key,
             db_url=os.environ.get("DATABASE_URL"),
             content_backend=os.environ.get("CONTENT_BACKEND"),
             content_model=os.environ.get("CONTENT_MODEL"),
@@ -262,12 +266,7 @@ def create_professor(
 )
 @click.option("--topic", "-t", help="Lecture topic")
 @click.option("--word-count", default=2500, type=int, help="Target word count")
-@click.option(
-    "--enable-caching/--no-caching",
-    default=False,
-    help="Enable prompt caching to reduce token usage and maintain consistent style (Anthropic only)",
-)
-def generate_lecture(course_code, week, number, topic, word_count, enable_caching):
+def generate_lecture(course_code, week, number, topic, word_count):
     """Generate a lecture for a course."""
     try:
         system = get_system()
@@ -278,10 +277,6 @@ def generate_lecture(course_code, week, number, topic, word_count, enable_cachin
                 subtitle=f"Week {week}, Lecture {number}",
             )
         )
-
-        # Modify system's caching setting if needed
-        if enable_caching:
-            system.config.enable_caching = True
 
         with Progress(
             SpinnerColumn(),
@@ -567,19 +562,12 @@ def show_lecture(course_code, week, number):
 @click.option(
     "--word-count", default=2500, type=int, help="Target word count per lecture"
 )
-@click.option(
-    "--enable-caching/--no-caching",
-    default=True,
-    help="Enable prompt caching for consistency and reduced token usage (Anthropic only)",
-)
-def generate_lecture_series(
-    course_code, topics, starting_week, word_count, enable_caching
-):
+def generate_lecture_series(course_code, topics, starting_week, word_count):
     """Generate a series of related lectures for a course.
 
     This command creates multiple lectures in sequence, maintaining the professor's
     voice and teaching style across all lectures. It's more efficient than creating
-    lectures one-by-one as it leverages prompt caching for reduced token usage.
+    lectures one-by-one.
 
     Example:
         ./cli.py generate-lecture-series CS101 "Introduction to Programming" "Variables and Data Types" "Control Flow"
@@ -600,10 +588,6 @@ def generate_lecture_series(
                 subtitle=f"Starting from week {starting_week}, {len(topics)} lectures",
             )
         )
-
-        # Modify system's caching setting if needed
-        if enable_caching:
-            system.config.enable_caching = True
 
         # Define function to update progress
         def update_progress():

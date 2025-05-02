@@ -14,4 +14,4 @@ exclude =
     web
 per-file-ignores =
     __init__.py: F401
-max-complexity = 20
+max-complexity = 10

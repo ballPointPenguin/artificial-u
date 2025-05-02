@@ -66,22 +66,12 @@ def test_create_generator_factory():
         "artificial_u.generators.factory.create_default_generator"
     ) as mock_default:
         create_generator(backend="anthropic", api_key="test_key")
-        mock_default.assert_called_once_with(
-            api_key="test_key", enable_caching=False, cache_metrics=True
-        )
+        mock_default.assert_called_once_with(api_key="test_key")
 
         mock_default.reset_mock()
 
-        # Test with caching enabled
-        create_generator(
-            backend="anthropic",
-            api_key="test_key",
-            enable_caching=True,
-            cache_metrics=False,
-        )
-        mock_default.assert_called_once_with(
-            api_key="test_key", enable_caching=True, cache_metrics=False
-        )
+        create_generator(backend="anthropic", api_key="test_key")
+        mock_default.assert_called_once_with(api_key="test_key")
 
     with patch(
         "artificial_u.generators.factory.create_ollama_generator"

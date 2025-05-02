@@ -16,7 +16,6 @@ ArtificialU combines the Anthropic Claude API for generating educational content
 - **Speech Enhancement**: Intelligently process academic text for optimal TTS quality, including handling of technical terms and mathematical notation
 - **CLI Interface**: Easy-to-use command line interface for generating content
 - Course and lecture generation with consistent professor personas
-- Prompt caching for more efficient API usage and consistent personalities
 - Direct access to audio file paths in lecture previews
 - Local storage of course materials and audio files
 - Faculty directory with professor information
@@ -122,9 +121,6 @@ The CLI interface, defined as a script in `pyproject.toml`, can be run using `ha
 ```bash
 # Example: Create a course
 hatch run artificial-u create-course -d "Computer Science" -t "Introduction to Artificial Intelligence" -c "CS4511"
-
-# Example: Generate a lecture with caching
-hatch run artificial-u generate-lecture -c "CS4511" -w 1 -n 1 -t "What is AI?" --enable-caching
 
 # Example: Create audio for a lecture
 hatch run artificial-u create-audio -c "CS4511" -w 1 -n 1

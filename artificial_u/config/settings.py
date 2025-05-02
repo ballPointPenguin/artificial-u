@@ -97,8 +97,6 @@ class Settings(BaseSettings):
     # Content generation settings
     content_backend: str = DEFAULT_CONTENT_BACKEND
     content_model: Optional[str] = None
-    enable_caching: bool = False
-    cache_metrics: bool = True
 
     # Integration service endpoints
     OLLAMA_HOST: str = "http://localhost:11434"
@@ -188,8 +186,6 @@ class Settings(BaseSettings):
             "db_url": self.DATABASE_URL,
             "content_backend": self.content_backend,
             "content_model": self.content_model,
-            "enable_caching": self.enable_caching,
-            "cache_metrics": self.cache_metrics,
             "temp_audio_path": self.TEMP_AUDIO_PATH,
             "anthropic_api_key": self.ANTHROPIC_API_KEY,
             "elevenlabs_api_key": self.ELEVENLABS_API_KEY,
@@ -212,7 +208,6 @@ class Settings(BaseSettings):
         logger.info(f"Content backend: {self.content_backend}")
         if self.content_model:
             logger.info(f"Content model: {self.content_model}")
-        logger.info(f"Caching enabled: {self.enable_caching}")
         logger.info(f"Temporary audio path: {self.TEMP_AUDIO_PATH}")
         logger.info(f"Storage type: {self.STORAGE_TYPE}")
         if self.STORAGE_TYPE == "minio":

@@ -2,9 +2,6 @@
 Configuration modules for the ArtificialU system.
 """
 
-# For backwards compatibility, ensure ConfigManager is available
-from artificial_u.config.config_manager import ConfigManager
-
 # Re-export defaults for direct import from artificial_u.config
 from artificial_u.config.defaults import (
     DEFAULT_CONTENT_BACKEND,
@@ -27,7 +24,7 @@ from artificial_u.config.defaults import (
     DEPARTMENTS,
 )
 
-# Export the new consolidated settings functionality
+# Export the consolidated settings functionality
 from artificial_u.config.settings import Environment, Settings, get_settings
 
 __all__ = [
@@ -35,7 +32,6 @@ __all__ = [
     "Settings",
     "get_settings",
     "Environment",
-    "ConfigManager",
     # Default constants
     "DEFAULT_DB_URL",
     "DEFAULT_TEXT_EXPORT_PATH",

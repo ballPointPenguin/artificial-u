@@ -7,9 +7,10 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from artificial_u.audio.audio_utils import AudioUtils
 from artificial_u.audio.speech_processor import SpeechProcessor
-from artificial_u.config.config_manager import ConfigManager
+from artificial_u.config import get_settings
 from artificial_u.generators.factory import create_generator
 from artificial_u.integrations.elevenlabs.client import ElevenLabsClient
+from artificial_u.integrations.elevenlabs.voice_mapper import VoiceMapper
 from artificial_u.models.core import Course, Department, Lecture, Professor
 from artificial_u.models.repositories import RepositoryFactory
 from artificial_u.services.audio_service import AudioService
@@ -34,12 +35,12 @@ class UniversitySystem:
         self,
         anthropic_api_key: Optional[str] = None,
         elevenlabs_api_key: Optional[str] = None,
+        google_api_key: Optional[str] = None,
+        openai_api_key: Optional[str] = None,
         db_url: Optional[str] = None,
         content_backend: Optional[str] = None,
         content_model: Optional[str] = None,
         log_level: Optional[str] = None,
-        enable_caching: Optional[bool] = None,
-        cache_metrics: Optional[bool] = None,
         storage_type: Optional[str] = None,
         storage_endpoint_url: Optional[str] = None,
         storage_public_url: Optional[str] = None,
@@ -50,30 +51,30 @@ class UniversitySystem:
         Args:
             anthropic_api_key: API key for Anthropic
             elevenlabs_api_key: API key for ElevenLabs
+            google_api_key: API key for Google
+            openai_api_key: API key for OpenAI
             db_url: PostgreSQL database URL
             content_backend: Backend to use for content generation ('anthropic' or 'ollama')
             content_model: Model to use with the chosen backend
             log_level: Logging level
-            enable_caching: Whether to enable prompt caching
-            cache_metrics: Whether to track cache metrics
             storage_type: Storage type ('minio' or 's3')
             storage_endpoint_url: URL for MinIO/S3 endpoint
             storage_public_url: Public URL for MinIO
         """
-        # Initialize configuration manager
-        self.config = ConfigManager(
-            anthropic_api_key=anthropic_api_key,
-            elevenlabs_api_key=elevenlabs_api_key,
-            db_url=db_url,
-            content_backend=content_backend,
-            content_model=content_model,
-            log_level=log_level,
-            enable_caching=enable_caching,
-            cache_metrics=cache_metrics,
-            storage_type=storage_type,
-            storage_endpoint_url=storage_endpoint_url,
-            storage_public_url=storage_public_url,
+        # Initialize settings
+        self.settings = get_settings()
+
+        # Configure all settings
+        self._configure_api_keys(
+            anthropic_api_key, elevenlabs_api_key, google_api_key, openai_api_key
         )
+        self._configure_database(db_url)
+        self._configure_content(content_backend, content_model)
+        self._configure_storage(storage_type, storage_endpoint_url, storage_public_url)
+
+        # Set log level if provided
+        if log_level:
+            self.settings.LOG_LEVEL = log_level
 
         # Get logger
         self.logger = logging.getLogger(__name__)
@@ -86,33 +87,87 @@ class UniversitySystem:
 
         self.logger.info("University system initialized")
 
+    def _configure_api_keys(
+        self,
+        anthropic_api_key: Optional[str],
+        elevenlabs_api_key: Optional[str],
+        google_api_key: Optional[str],
+        openai_api_key: Optional[str],
+    ):
+        """Configure API keys"""
+        if anthropic_api_key:
+            self.settings.ANTHROPIC_API_KEY = anthropic_api_key
+        if elevenlabs_api_key:
+            self.settings.ELEVENLABS_API_KEY = elevenlabs_api_key
+        if google_api_key:
+            self.settings.GOOGLE_API_KEY = google_api_key
+        if openai_api_key:
+            self.settings.OPENAI_API_KEY = openai_api_key
+
+    def _configure_database(self, db_url: Optional[str]):
+        """Configure database settings"""
+        if db_url:
+            self.settings.DATABASE_URL = db_url
+
+    def _configure_content(
+        self,
+        content_backend: Optional[str],
+        content_model: Optional[str],
+    ):
+        """Configure content generation settings"""
+        if content_backend:
+            self.settings.content_backend = content_backend
+        if content_model:
+            self.settings.content_model = content_model
+
+    def _configure_storage(
+        self,
+        storage_type: Optional[str],
+        storage_endpoint_url: Optional[str],
+        storage_public_url: Optional[str],
+    ):
+        """Configure storage settings"""
+        if storage_type:
+            self.settings.STORAGE_TYPE = storage_type
+        if storage_endpoint_url:
+            self.settings.STORAGE_ENDPOINT_URL = storage_endpoint_url
+        if storage_public_url:
+            self.settings.STORAGE_PUBLIC_URL = storage_public_url
+
     def _init_core_components(self):
         """Initialize core system components."""
         try:
             # Initialize content generator
-            config = self.config.get_config_dict()
             backend_kwargs = {}
 
-            if config["content_backend"] == "anthropic":
-                backend_kwargs["api_key"] = config["anthropic_api_key"]
-                backend_kwargs["enable_caching"] = config["enable_caching"]
-                backend_kwargs["cache_metrics"] = config["cache_metrics"]
-            elif config["content_backend"] == "ollama":
-                backend_kwargs["model"] = config["content_model"]
+            if self.settings.content_backend == "anthropic":
+                backend_kwargs["api_key"] = self.settings.ANTHROPIC_API_KEY
+            elif self.settings.content_backend == "ollama":
+                backend_kwargs["model"] = self.settings.content_model
 
             self.content_generator = create_generator(
-                backend=config["content_backend"], **backend_kwargs
+                backend=self.settings.content_backend, **backend_kwargs
             )
 
             # Initialize repository
-            self.repository = RepositoryFactory(db_url=config["db_url"])
+            self.repository = RepositoryFactory(db_url=self.settings.DATABASE_URL)
 
             # Initialize audio components
             self.elevenlabs_client = ElevenLabsClient(
-                api_key=config["elevenlabs_api_key"]
+                api_key=self.settings.ELEVENLABS_API_KEY
             )
             self.speech_processor = SpeechProcessor()
-            self.audio_utils = AudioUtils(base_audio_path=config["temp_audio_path"])
+            self.audio_utils = AudioUtils(base_audio_path=self.settings.TEMP_AUDIO_PATH)
+
+            # Initialize voice components
+            self.voice_mapper = VoiceMapper()
+            self.voice_service = VoiceService(
+                api_key=self.settings.ELEVENLABS_API_KEY,
+                client=self.elevenlabs_client,
+                mapper=self.voice_mapper,
+                repository=self.repository,
+                logger=logging.getLogger("artificial_u.services.voice_service"),
+            )
 
             # Initialize storage service
             self.storage_service = StorageService(
@@ -125,8 +180,6 @@ class UniversitySystem:
 
     def _init_services(self):
         """Initialize service layer components."""
-        config = self.config.get_config_dict()
-
         # --- Instantiate services needed by others first ---
 
         # Initialize ContentService (assuming it configures itself from settings)
@@ -137,18 +190,10 @@ class UniversitySystem:
         # Initialize ImageService
         self.image_service = ImageService(storage_service=self.storage_service)
 
-        # Initialize VoiceService (needs storage_service)
-        self.voice_service = VoiceService(
-            api_key=config["elevenlabs_api_key"],
-            client=self.elevenlabs_client,
-            logger=logging.getLogger("artificial_u.services.voice_service"),
-            storage_service=self.storage_service,
-        )
-
         # Initialize TTS service
         self.tts_service = TTSService(
-            api_key=config["elevenlabs_api_key"],
-            audio_path=config["temp_audio_path"],
+            api_key=self.settings.ELEVENLABS_API_KEY,
+            audio_path=self.settings.TEMP_AUDIO_PATH,
             client=self.elevenlabs_client,
             speech_processor=self.speech_processor,
             audio_utils=self.audio_utils,
@@ -192,7 +237,7 @@ class UniversitySystem:
         # Initialize AudioService (Uses storage, voice, tts)
         self.audio_service = AudioService(
             repository=self.repository,
-            api_key=config["elevenlabs_api_key"],
+            api_key=self.settings.ELEVENLABS_API_KEY,
             voice_service=self.voice_service,
             tts_service=self.tts_service,
             storage_service=self.storage_service,

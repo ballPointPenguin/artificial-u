@@ -130,4 +130,6 @@ def mock_system() -> UniversitySystem:
     return UniversitySystem(
         anthropic_api_key=settings.ANTHROPIC_API_KEY or "mock_anthropic_key",
         elevenlabs_api_key=settings.ELEVENLABS_API_KEY or "mock_elevenlabs_key",
+        google_api_key=settings.GOOGLE_API_KEY or "mock_google_key",
+        openai_api_key=settings.OPENAI_API_KEY or "mock_openai_key",
     )
