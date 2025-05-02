@@ -21,6 +21,7 @@ from artificial_u.api.models.professors import (
 )
 from artificial_u.audio.voice_selector import VoiceSelector
 from artificial_u.models.core import Professor
+from artificial_u.models.repositories.factory import RepositoryFactory
 from artificial_u.services import ProfessorService
 from artificial_u.services.content_service import ContentService
 from artificial_u.services.image_service import ImageService
@@ -36,7 +37,7 @@ class ProfessorApiService:
 
     def __init__(
         self,
-        repository,
+        repository_factory: RepositoryFactory,
         content_service: ContentService,
         image_service: ImageService,
         voice_selector: Optional[VoiceSelector] = None,
@@ -46,18 +47,18 @@ class ProfessorApiService:
         Initialize with all required services.
 
         Args:
-            repository: Database repository factory
+            repository_factory: Repository factory instance
             content_service: Content generation service
             image_service: Image generation service
             voice_selector: Voice selection component (optional)
             logger: Optional logger instance
         """
-        self.repository = repository
+        self.repository_factory = repository_factory
         self.logger = logger or logging.getLogger(__name__)
 
         # Initialize core service with all required dependencies
         self.core_service = ProfessorService(
-            repository=repository,
+            repository_factory=repository_factory,
             content_service=content_service,
             image_service=image_service,
             voice_selector=voice_selector,

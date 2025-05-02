@@ -104,7 +104,12 @@ Once all references to the legacy `Repository` have been migrated:
 |-----------|--------|-------|
 | CourseService | ✅ Completed | Direct use of RepositoryFactory |
 | CourseApiService | ✅ Completed | Updated to use RepositoryFactory |
-| ProfessorService | ⏳ Pending | |
+| API Dependencies | ✅ Completed | Updated dependency injection in dependencies.py |
+| UniversitySystem | ✅ Completed | Updated system initialization |
+| ProfessorService | ✅ Completed | Updated to use RepositoryFactory |
+| ProfessorApiService | ✅ Completed | Updated to use RepositoryFactory |
+| DepartmentService | ✅ Completed | Updated to use RepositoryFactory |
+| DepartmentApiService | ✅ Completed | Updated to use RepositoryFactory |
 | LectureService | ⏳ Pending | |
 | AudioService | ⏳ Pending | |
 | ... | | |

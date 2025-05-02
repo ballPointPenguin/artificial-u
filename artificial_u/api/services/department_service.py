@@ -30,7 +30,7 @@ class DepartmentApiService:
 
     def __init__(
         self,
-        repository: RepositoryFactory,
+        repository_factory: RepositoryFactory,
         professor_service: ProfessorService,
         course_service: CourseService,
         logger=None,
@@ -39,17 +39,17 @@ class DepartmentApiService:
         Initialize with required services.
 
         Args:
-            repository: Database repository factory
+            repository_factory: Repository factory instance
             professor_service: Professor service for professor-related operations
             course_service: Course service for course-related operations
             logger: Optional logger instance
         """
-        self.repository = repository
+        self.repository_factory = repository_factory
         self.logger = logger or logging.getLogger(__name__)
 
         # Initialize core service with dependencies
         self.core_service = DepartmentService(
-            repository=repository,
+            repository_factory=repository_factory,
             professor_service=professor_service,
             course_service=course_service,
             logger=self.logger,

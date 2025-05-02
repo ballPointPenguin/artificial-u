@@ -29,7 +29,7 @@ from artificial_u.services.professor_service import ProfessorService
 from artificial_u.services.storage_service import StorageService
 
 
-def get_repository() -> RepositoryFactory:
+def get_repository_factory() -> RepositoryFactory:
     """
     Get a repository factory instance.
 
@@ -129,7 +129,7 @@ def get_voice_selector(
 
 
 def get_professor_service(
-    repository: RepositoryFactory = Depends(get_repository),
+    repository_factory: RepositoryFactory = Depends(get_repository_factory),
     content_service: ContentService = Depends(get_content_service),
     image_service: ImageService = Depends(get_image_service),
     voice_selector: Optional[VoiceSelector] = Depends(get_voice_selector),
@@ -138,7 +138,7 @@ def get_professor_service(
     Get a professor service instance.
 
     Args:
-        repository: Repository factory
+        repository_factory: Repository factory
         content_service: Content service
         image_service: Image service
         voice_selector: Voice selector (optional)
@@ -147,7 +147,7 @@ def get_professor_service(
         ProfessorService instance
     """
     return ProfessorService(
-        repository=repository,
+        repository_factory=repository_factory,
         content_service=content_service,
         image_service=image_service,
         voice_selector=voice_selector,
@@ -156,7 +156,7 @@ def get_professor_service(
 
 
 def get_course_service(
-    repository: RepositoryFactory = Depends(get_repository),
+    repository_factory: RepositoryFactory = Depends(get_repository_factory),
     content_service: ContentService = Depends(get_content_service),
     professor_service: ProfessorService = Depends(get_professor_service),
 ) -> CourseService:
@@ -164,7 +164,7 @@ def get_course_service(
     Get a course service instance.
 
     Args:
-        repository: Repository factory
+        repository_factory: Repository factory
         content_service: Content service
         professor_service: Professor service
 
@@ -172,7 +172,7 @@ def get_course_service(
         CourseService instance
     """
     return CourseService(
-        repository=repository,
+        repository_factory=repository_factory,
         content_service=content_service,
         professor_service=professor_service,
         logger=logging.getLogger("artificial_u.services.course_service"),
@@ -180,7 +180,7 @@ def get_course_service(
 
 
 def get_department_service(
-    repository: RepositoryFactory = Depends(get_repository),
+    repository_factory: RepositoryFactory = Depends(get_repository_factory),
     professor_service: ProfessorService = Depends(get_professor_service),
     course_service: CourseService = Depends(get_course_service),
 ) -> DepartmentService:
@@ -188,7 +188,7 @@ def get_department_service(
     Get a department service instance.
 
     Args:
-        repository: Repository factory
+        repository_factory: Repository factory
         professor_service: Professor service
         course_service: Course service
 
@@ -196,7 +196,7 @@ def get_department_service(
         DepartmentService instance
     """
     return DepartmentService(
-        repository=repository,
+        repository_factory=repository_factory,
         professor_service=professor_service,
         course_service=course_service,
         logger=logging.getLogger("artificial_u.services.department_service"),
@@ -204,7 +204,7 @@ def get_department_service(
 
 
 def get_lecture_service(
-    repository: RepositoryFactory = Depends(get_repository),
+    repository_factory: RepositoryFactory = Depends(get_repository_factory),
     professor_service: ProfessorService = Depends(get_professor_service),
     course_service: CourseService = Depends(get_course_service),
     content_service: ContentService = Depends(get_content_service),
@@ -215,7 +215,7 @@ def get_lecture_service(
     Get a lecture service instance.
 
     Args:
-        repository: Repository factory
+        repository_factory: Repository factory
         professor_service: Professor service
         course_service: Course service
         content_service: Content service
@@ -225,7 +225,7 @@ def get_lecture_service(
         LectureService instance
     """
     return LectureService(
-        repository=repository,
+        repository_factory=repository_factory,
         professor_service=professor_service,
         course_service=course_service,
         # content_service=content_service,
@@ -236,7 +236,7 @@ def get_lecture_service(
 
 
 def get_professor_api_service(
-    repository: RepositoryFactory = Depends(get_repository),
+    repository_factory: RepositoryFactory = Depends(get_repository_factory),
     content_service: ContentService = Depends(get_content_service),
     image_service: ImageService = Depends(get_image_service),
     voice_selector: Optional[VoiceSelector] = Depends(get_voice_selector),
@@ -245,7 +245,7 @@ def get_professor_api_service(
     Get a professor API service instance.
 
     Args:
-        repository: Repository factory
+        repository_factory: Repository factory
         content_service: Content service
         image_service: Image service
         voice_selector: Voice selector (optional)
@@ -254,7 +254,7 @@ def get_professor_api_service(
         ProfessorApiService instance
     """
     return ProfessorApiService(
-        repository=repository,
+        repository_factory=repository_factory,
         content_service=content_service,
         image_service=image_service,
         voice_selector=voice_selector,
@@ -263,7 +263,7 @@ def get_professor_api_service(
 
 
 def get_course_api_service(
-    repository: RepositoryFactory = Depends(get_repository),
+    repository_factory: RepositoryFactory = Depends(get_repository_factory),
     content_service: ContentService = Depends(get_content_service),
     professor_service: ProfessorService = Depends(get_professor_service),
 ) -> CourseApiService:
@@ -271,14 +271,14 @@ def get_course_api_service(
     Get a course API service instance.
 
     Args:
-        repository: Repository factory
+        repository_factory: Repository factory
         professor_service: Professor service
 
     Returns:
         CourseApiService instance
     """
     return CourseApiService(
-        repository=repository,
+        repository_factory=repository_factory,
         content_service=content_service,
         professor_service=professor_service,
         logger=logging.getLogger("artificial_u.api.services.course_service"),
@@ -286,7 +286,7 @@ def get_course_api_service(
 
 
 def get_department_api_service(
-    repository: RepositoryFactory = Depends(get_repository),
+    repository_factory: RepositoryFactory = Depends(get_repository_factory),
     professor_service: ProfessorService = Depends(get_professor_service),
     course_service: CourseService = Depends(get_course_service),
 ) -> DepartmentApiService:
@@ -294,7 +294,7 @@ def get_department_api_service(
     Get a department API service instance.
 
     Args:
-        repository: Repository factory
+        repository_factory: Repository factory
         professor_service: Professor service
         course_service: Course service
 
@@ -302,7 +302,7 @@ def get_department_api_service(
         DepartmentApiService instance
     """
     return DepartmentApiService(
-        repository=repository,
+        repository_factory=repository_factory,
         professor_service=professor_service,
         course_service=course_service,
         logger=logging.getLogger("artificial_u.api.services.department_service"),
@@ -310,7 +310,7 @@ def get_department_api_service(
 
 
 def get_lecture_api_service(
-    repository: RepositoryFactory = Depends(get_repository),
+    repository_factory: RepositoryFactory = Depends(get_repository_factory),
     professor_service: ProfessorService = Depends(get_professor_service),
     course_service: CourseService = Depends(get_course_service),
     content_generator: ContentGenerator = Depends(get_content_generator),
@@ -320,7 +320,7 @@ def get_lecture_api_service(
     Get a lecture API service instance.
 
     Args:
-        repository: Repository factory
+        repository_factory: Repository factory
         professor_service: Professor service
         content_generator: Content generator
         # course_service: Course service
@@ -331,7 +331,7 @@ def get_lecture_api_service(
         LectureApiService instance
     """
     return LectureApiService(
-        repository=repository,
+        repository_factory=repository_factory,
         professor_service=professor_service,
         course_service=course_service,
         content_generator=content_generator,

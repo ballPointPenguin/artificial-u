@@ -54,9 +54,7 @@ class ImageService:
         """Determine the backend based on the model name."""
         if model_name.startswith("imagen-"):
             return "gemini"
-        elif model_name.startswith("dall-e-") or model_name.startswith(
-            "gpt-"
-        ):  # Added "gpt-" check
+        elif model_name.startswith("dall-e-") or model_name.startswith("gpt-"):
             return "openai"
         else:
             # Default or raise error if model is unknown/unsupported
@@ -137,6 +135,35 @@ class ImageService:
             )
             return None
 
+    def _extract_image_data(self, item) -> Optional[tuple]:
+        """
+        Extract image data from response item, supporting various formats.
+
+        Returns:
+            tuple: (method, data) where method is 'url' or 'base64' and data is the
+                  corresponding URL or base64 string, or None if no data found
+        """
+        # Try different possible field names that OpenAI might use for URLs
+        if hasattr(item, "url") and item.url:
+            return ("url", item.url)
+        elif hasattr(item, "image_url") and item.image_url:
+            return ("url", item.image_url)
+        elif hasattr(item, "b64_json") and item.b64_json:
+            return ("base64", item.b64_json)
+
+        # Try to extract URL from item attributes
+        if hasattr(item, "__dict__"):
+            item_dict = item.__dict__
+            for key, value in item_dict.items():
+                if (
+                    "url" in key.lower()
+                    and isinstance(value, str)
+                    and value.startswith("http")
+                ):
+                    return ("url", value)
+
+        return None
+
     async def _fetch_image_from_url(self, url: str) -> Optional[bytes]:
         """Fetches image data from a URL."""
         try:
@@ -176,14 +203,29 @@ class ImageService:
         # Step 2: Process the response data
         image_data_list = []
         for item in response.data:
-            if not item.url:
-                logger.warning("OpenAI response item did not contain URL data.")
+            # Extract data using helper method
+            result = self._extract_image_data(item)
+
+            if not result:
+                logger.warning("Could not extract image data from response item.")
                 continue
 
-            # Step 3: Fetch the image from the URL
-            image_bytes = await self._fetch_image_from_url(item.url)
-            if image_bytes:
-                image_data_list.append(image_bytes)
+            method, data = result
+
+            if method == "url":
+                # Fetch image from URL
+                image_bytes = await self._fetch_image_from_url(data)
+                if image_bytes:
+                    image_data_list.append(image_bytes)
+            elif method == "base64":
+                # Decode base64 data
+                try:
+                    import base64
+
+                    image_bytes = base64.b64decode(data)
+                    image_data_list.append(image_bytes)
+                except Exception as e:
+                    logger.error(f"Failed to decode base64 image data: {e}")
 
         return image_data_list
 

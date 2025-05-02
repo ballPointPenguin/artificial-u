@@ -9,6 +9,7 @@ from typing import Any, Dict, List, Optional
 from artificial_u.audio.voice_selector import VoiceSelector
 from artificial_u.config import get_settings
 from artificial_u.models.core import Professor
+from artificial_u.models.repositories.factory import RepositoryFactory
 from artificial_u.prompts.base import extract_xml_content
 from artificial_u.prompts.professors import get_professor_prompt
 from artificial_u.prompts.system import SYSTEM_PROMPTS
@@ -26,7 +27,7 @@ class ProfessorService:
 
     def __init__(
         self,
-        repository,
+        repository_factory: RepositoryFactory,
         content_service: ContentService,
         image_service: ImageService,
         voice_selector: Optional[VoiceSelector] = None,
@@ -36,13 +37,13 @@ class ProfessorService:
         Initialize the professor service.
 
         Args:
-            repository: Data repository
+            repository_factory: Repository factory instance
             content_service: Content generation service
             image_service: Image generation service
             voice_selector: Voice selection component (optional)
             logger: Optional logger instance
         """
-        self.repository = repository
+        self.repository_factory = repository_factory
         self.content_service = content_service
         self.image_service = image_service
         self.logger = logger or logging.getLogger(__name__)
@@ -186,7 +187,7 @@ class ProfessorService:
             f"Attempting to resolve department name for ID: {department_id}"
         )
         try:
-            department = self.repository.department.get(department_id)
+            department = self.repository_factory.department.get(department_id)
             if department:
                 self.logger.debug(f"Resolved department name: {department.name}")
                 return department.name
@@ -215,7 +216,7 @@ class ProfessorService:
         # Fetch existing professors for context to avoid duplicates
         existing_profs_data = []
         try:
-            all_professors = self.repository.professor.list()
+            all_professors = self.repository_factory.professor.list()
             existing_profs_data = [
                 {"name": p.name, "specialization": p.specialization}
                 for p in all_professors
@@ -354,7 +355,7 @@ class ProfessorService:
 
         # Save professor to repository
         try:
-            saved_professor = self.repository.professor.create(professor)
+            saved_professor = self.repository_factory.professor.create(professor)
             self.logger.info(
                 f"Professor created successfully with ID: {saved_professor.id}"
             )
@@ -391,7 +392,7 @@ class ProfessorService:
                 # Save voice to database and get the voice_id
                 try:
                     # Create the voice record in the database
-                    voice = self.repository.voice.create_from_elevenlabs_id(
+                    voice = self.repository_factory.voice.create_from_elevenlabs_id(
                         el_voice_id=el_voice_id,
                         name=voice_data.get("name", "Unknown Voice"),
                         gender=self.voice_selector._map_gender(professor),
@@ -433,7 +434,7 @@ class ProfessorService:
         Raises:
             ProfessorNotFoundError: If professor not found
         """
-        professor = self.repository.professor.get(professor_id)
+        professor = self.repository_factory.professor.get(professor_id)
         if not professor:
             error_msg = f"Professor with ID {professor_id} not found"
             self.logger.warning(error_msg)  # Log as warning, raise specific error
@@ -459,7 +460,7 @@ class ProfessorService:
         """
         # Get all professors from repository
         try:
-            professors = self.repository.professor.list()
+            professors = self.repository_factory.professor.list()
         except Exception as e:
             self.logger.error(
                 f"Failed to list professors from repository: {e}", exc_info=True
@@ -527,7 +528,7 @@ class ProfessorService:
         )
         # Use the repository's update_field method directly for efficiency
         try:
-            updated_professor = self.repository.professor.update_field(
+            updated_professor = self.repository_factory.professor.update_field(
                 professor_id=professor_id, **attributes
             )
             if updated_professor is None:
@@ -563,7 +564,7 @@ class ProfessorService:
         self.logger.info(f"Attempting to delete professor {professor_id}")
         # Existence check happens within repository.delete in this refactor
         try:
-            success = self.repository.professor.delete(professor_id)
+            success = self.repository_factory.professor.delete(professor_id)
             if success:
                 self.logger.info(f"Professor {professor_id} deleted successfully")
                 return True

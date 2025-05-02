@@ -8,7 +8,7 @@ from typing import Dict, List, Optional
 
 from artificial_u.config import get_settings
 from artificial_u.models.core import Course, Department, Professor
-from artificial_u.models.repositories.department import DepartmentRepository
+from artificial_u.models.repositories.factory import RepositoryFactory
 from artificial_u.prompts.department import (
     get_department_prompt,
     get_open_department_prompt,
@@ -27,7 +27,7 @@ class DepartmentService:
 
     def __init__(
         self,
-        repository,
+        repository_factory: RepositoryFactory,
         professor_service,
         course_service,
         logger=None,
@@ -36,12 +36,12 @@ class DepartmentService:
         Initialize the department service.
 
         Args:
-            repository: Data repository
+            repository_factory: Repository factory instance
             professor_service: Professor management service
             course_service: Course management service
             logger: Optional logger instance
         """
-        self.repository = repository
+        self.repository_factory = repository_factory
         self.professor_service = professor_service
         self.course_service = course_service
         self.logger = logger or logging.getLogger(__name__)
@@ -80,7 +80,7 @@ class DepartmentService:
 
         # Save to database
         try:
-            department = self.repository.department.create(department)
+            department = self.repository_factory.department.create(department)
             return department
         except Exception as e:
             error_msg = f"Failed to save department: {str(e)}"
@@ -100,7 +100,7 @@ class DepartmentService:
         Raises:
             DepartmentNotFoundError: If department not found
         """
-        department = self.repository.department.get(department_id)
+        department = self.repository_factory.department.get(department_id)
         if not department:
             error_msg = f"Department with ID {department_id} not found"
             self.logger.error(error_msg)
@@ -120,7 +120,7 @@ class DepartmentService:
         Raises:
             DepartmentNotFoundError: If department not found
         """
-        department = self.repository.department.get_by_code(code)
+        department = self.repository_factory.department.get_by_code(code)
         if not department:
             error_msg = f"Department with code {code} not found"
             self.logger.error(error_msg)
@@ -141,7 +141,7 @@ class DepartmentService:
             DatabaseError: If there's an error retrieving from the database
         """
         try:
-            departments = self.repository.department.list(faculty)
+            departments = self.repository_factory.department.list(faculty)
             self.logger.debug(f"Found {len(departments)} departments")
             return departments
         except Exception as e:
@@ -176,7 +176,7 @@ class DepartmentService:
 
         # Save changes
         try:
-            updated_department = self.repository.department.update(department)
+            updated_department = self.repository_factory.department.update(department)
             return updated_department
         except Exception as e:
             error_msg = f"Failed to update department: {str(e)}"
@@ -202,13 +202,13 @@ class DepartmentService:
         # department = self.get_department(department_id)
 
         # Check for dependencies
-        professors = self.repository.professor.list(department_id=department_id)
+        professors = self.repository_factory.professor.list(department_id=department_id)
         if professors:
             error_msg = f"Cannot delete department with {len(professors)} professors"
             self.logger.error(error_msg)
             raise DependencyError(error_msg)
 
-        courses = self.repository.course.list(department_id=department_id)
+        courses = self.repository_factory.course.list(department_id=department_id)
         if courses:
             error_msg = f"Cannot delete department with {len(courses)} courses"
             self.logger.error(error_msg)
@@ -216,7 +216,7 @@ class DepartmentService:
 
         # Delete the department
         try:
-            result = self.repository.department.delete(department_id)
+            result = self.repository_factory.department.delete(department_id)
             if result:
                 self.logger.info(f"Department {department_id} deleted successfully")
             return result
@@ -243,7 +243,9 @@ class DepartmentService:
         self.get_department(department_id)
 
         try:
-            professors = self.repository.professor.list(department_id=department_id)
+            professors = self.repository_factory.professor.list(
+                department_id=department_id
+            )
             self.logger.debug(f"Found {len(professors)} professors")
             return professors
         except Exception as e:
@@ -269,7 +271,7 @@ class DepartmentService:
         self.get_department(department_id)
 
         try:
-            courses = self.repository.course.list(department_id=department_id)
+            courses = self.repository_factory.course.list(department_id=department_id)
             self.logger.debug(f"Found {len(courses)} courses")
             return courses
         except Exception as e:
@@ -301,8 +303,10 @@ class DepartmentService:
         elif course_name:
             prompt = get_department_prompt(course_name=course_name)
         else:
-            repo = DepartmentRepository()
-            existing_departments = repo.list_department_names()
+            # Use the existing repository_factory instead of creating a new repository
+            existing_departments = (
+                self.repository_factory.department.list_department_names()
+            )
             prompt = get_open_department_prompt(
                 existing_departments=existing_departments
             )
