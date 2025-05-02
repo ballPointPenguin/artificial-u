@@ -7,7 +7,7 @@ This module provides utilities for audio file handling, playback, and management
 import logging
 import os
 from pathlib import Path
-from typing import Optional, Tuple
+from typing import Optional
 
 
 class AudioUtils:

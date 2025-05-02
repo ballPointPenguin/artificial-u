@@ -608,7 +608,6 @@ def generate_lecture_series(
         # Define function to update progress
         def update_progress():
             """Track progress for the lecture series generation."""
-            nonlocal task, progress
             progress.update(task, advance=1)
 
         with Progress(

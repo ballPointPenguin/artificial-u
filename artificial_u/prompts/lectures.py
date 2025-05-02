@@ -2,11 +2,14 @@
 
 from typing import Optional
 
-from artificial_u.prompts.base import PromptTemplate, StructuredPrompt, xml_tag
+from artificial_u.prompts.base import PromptTemplate, StructuredPrompt
 
 # Basic lecture generation template
 LECTURE_PROMPT = PromptTemplate(
-    template="""You are an AI assistant tasked with generating engaging university lecture texts for various courses. These lectures will be used in a text-to-speech engine, so it's crucial to create content that works well in spoken form. Your goal is to produce a lecture that is approximately {word_count} words long, narrative in style, and infused with the personality of the lecturer.
+    template="""
+You are an AI assistant tasked with generating engaging university lecture texts for various courses. These lectures will be used in a
+text-to-speech engine, so it's crucial to create content that works well in spoken form. Your goal is to produce a lecture that is
+approximately {word_count} words long, narrative in style, and infused with the personality of the lecturer.
 
 Course: {course_title} ({course_code})
 Lecture Topic: {topic}
@@ -86,7 +89,10 @@ class StructuredLecturePrompt(StructuredPrompt):
         # Add default sections
         self.add_section(
             "introduction",
-            """You are an AI assistant tasked with generating engaging university lecture texts for various courses. These lectures will be used in a text-to-speech engine, so it's crucial to create content that works well in spoken form. Your goal is to produce a lecture that is approximately {word_count} words long, narrative in style, and infused with the personality of the lecturer.""",
+            """
+You are an AI assistant tasked with generating engaging university lecture texts for various courses. These lectures will
+be used in a text-to-speech engine, so it's crucial to create content that works well in spoken form. Your goal is to produce
+a lecture that is approximately {word_count} words long, narrative in style, and infused with the personality of the lecturer.""",
         )
 
         self.add_section(

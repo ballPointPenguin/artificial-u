@@ -5,10 +5,9 @@ Provides helpers for common error handling patterns and exception creation.
 
 from typing import Any, Dict, List, Optional, Type
 
-from fastapi import Request
 from pydantic import ValidationError as PydanticValidationError
 
-from artificial_u.api.models.error_codes import ErrorCode, get_error_description
+from artificial_u.api.models.error_codes import ErrorCode
 from artificial_u.api.utils.exceptions import (
     APIError,
     BadRequestError,

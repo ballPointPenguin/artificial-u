@@ -42,6 +42,167 @@ class VoiceService:
         self.mapper = mapper or VoiceMapper(logger=self.logger)
         self.repository = repository
 
+    def _find_voices_in_db(self, attributes: Dict[str, Any]) -> List[Dict[str, Any]]:
+        """
+        Attempt to find matching voices in the database.
+
+        Args:
+            attributes: Professor attributes for voice matching
+
+        Returns:
+            List of voice dictionaries
+        """
+        if not self.repository:
+            return []
+
+        voices = self.repository.list_voices(
+            gender=attributes.get("gender"),
+            accent=attributes.get("accent"),
+            age=attributes.get("age"),
+            language=attributes.get("language", "en"),
+            use_case=attributes.get("use_case"),
+            category=attributes.get("category"),
+        )
+
+        if voices:
+            self.logger.info(f"Found {len(voices)} voices in database")
+            return [v.dict() for v in voices]
+
+        return []
+
+    def _fetch_voices_from_api(
+        self,
+        gender: Optional[str] = None,
+        accent: Optional[str] = None,
+        age: Optional[str] = None,
+        language: str = "en",
+        use_case: Optional[str] = None,
+        category: Optional[str] = None,
+    ) -> List[Dict[str, Any]]:
+        """
+        Fetch voices from ElevenLabs API.
+
+        Args:
+            gender: Optional filter by gender
+            accent: Optional filter by accent
+            age: Optional filter by age
+            language: Language filter (default: 'en')
+            use_case: Optional filter by use case
+            category: Optional filter by category
+
+        Returns:
+            List of voice dictionaries from API
+        """
+        self.logger.info("Fetching voices from API for selection")
+
+        # Get first page of results
+        voices_page, has_more = self.client.get_shared_voices(
+            gender=gender,
+            accent=accent,
+            age=age,
+            language=language,
+            use_case=use_case,
+            category=category,
+        )
+        voices = voices_page
+
+        # Get additional pages if needed (limit to 3 pages)
+        page = 1
+        while has_more and page < 3:
+            more_voices, has_more = self.client.get_shared_voices(
+                gender=gender,
+                accent=accent,
+                age=age,
+                language=language,
+                use_case=use_case,
+                category=category,
+                page=page,
+            )
+            voices.extend(more_voices)
+            page += 1
+
+        # Save to database if repository available
+        if self.repository:
+            for voice_data in voices:
+                self._save_voice_to_db(voice_data)
+
+        return voices
+
+    def _find_voices_with_relaxed_criteria(
+        self, attributes: Dict[str, Any]
+    ) -> List[Dict[str, Any]]:
+        """
+        Find voices with relaxed search criteria when strict criteria yield no results.
+
+        Args:
+            attributes: Professor attributes for voice matching
+
+        Returns:
+            List of voice dictionaries
+        """
+        self.logger.warning(
+            "No voices found with initial criteria, relaxing constraints"
+        )
+        voices = []
+
+        # Try with just gender if available
+        if attributes.get("gender"):
+            if self.repository:
+                db_voices = self.repository.list_voices(
+                    gender=attributes.get("gender"), language="en"
+                )
+                if db_voices:
+                    return [v.dict() for v in db_voices]
+
+            # If DB search with gender failed, try API with gender only
+            voices = self._fetch_voices_from_api(
+                gender=attributes.get("gender"), language="en"
+            )
+            if voices:
+                return voices
+
+        # If still no voices, get any voices with language='en'
+        if self.repository:
+            db_voices = self.repository.list_voices(language="en")
+            if db_voices:
+                return [v.dict() for v in db_voices]
+
+        # Last resort: get any English voices from API
+        return self._fetch_voices_from_api(language="en")
+
+    def _find_or_create_db_voice(self, selected_voice: Dict[str, Any]) -> Voice:
+        """
+        Find or create a voice record in the database.
+
+        Args:
+            selected_voice: Selected voice data
+
+        Returns:
+            Voice database record
+        """
+        if not self.repository:
+            raise ValueError("Repository not available")
+
+        voice_db = self.repository.get_voice_by_elevenlabs_id(
+            selected_voice["voice_id"]
+        )
+
+        if not voice_db:
+            # Create a new voice record
+            voice = Voice(
+                el_voice_id=selected_voice["voice_id"],
+                name=selected_voice["name"],
+                gender=selected_voice.get("gender"),
+                accent=selected_voice.get("accent"),
+                age=selected_voice.get("age"),
+                descriptive=selected_voice.get("descriptive"),
+                use_case=selected_voice.get("use_case"),
+                category=selected_voice.get("category"),
+            )
+            voice_db = self.repository.upsert_voice(voice)
+
+        return voice_db
+
     def select_voice_for_professor(
         self,
         professor: Professor,
@@ -60,10 +221,12 @@ class VoiceService:
         # Extract professor attributes for voice matching
         attributes = self.mapper.extract_profile_attributes(professor)
 
-        # Check if we can find voices in the database first
-        voices = []
-        if self.repository:
-            voices = self.repository.list_voices(
+        # Step 1: Try to find suitable voices
+        voices = self._find_voices_in_db(attributes)
+
+        # Step 2: If no voices found in DB, fetch from API
+        if not voices:
+            voices = self._fetch_voices_from_api(
                 gender=attributes.get("gender"),
                 accent=attributes.get("accent"),
                 age=attributes.get("age"),
@@ -72,123 +235,27 @@ class VoiceService:
                 category=attributes.get("category"),
             )
 
-            if voices:
-                # Convert to dict format for compatibility
-                voices = [v.dict() for v in voices]
-                self.logger.info(f"Found {len(voices)} voices in database")
-
-        # If still no voices or refresh requested, get voices from API
+        # Step 3: If still no voices, try with relaxed criteria
         if not voices:
-            # Get voices from API
-            self.logger.info("Fetching voices from API for selection")
-            gender = attributes.get("gender")
-            accent = attributes.get("accent")
-            age = attributes.get("age")
-            language = attributes.get("language", "en")
-            use_case = attributes.get("use_case")
-            category = attributes.get("category")
+            voices = self._find_voices_with_relaxed_criteria(attributes)
 
-            # Get first page of results
-            voices_page, has_more = self.client.get_shared_voices(
-                gender=gender,
-                accent=accent,
-                age=age,
-                language=language,
-                use_case=use_case,
-                category=category,
-            )
-            voices = voices_page
-
-            # Get additional pages if needed
-            page = 1
-            while (
-                has_more and page < 3
-            ):  # Limit to 3 pages to avoid excessive API calls
-                more_voices, has_more = self.client.get_shared_voices(
-                    gender=gender,
-                    accent=accent,
-                    age=age,
-                    language=language,
-                    use_case=use_case,
-                    category=category,
-                    page=page,
-                )
-                voices.extend(more_voices)
-                page += 1
-
-            # Save to database if repository available
-            if self.repository:
-                for voice_data in voices:
-                    self._save_voice_to_db(voice_data)
-
-        # If still no voices found, try with less restrictive criteria
-        if not voices:
-            self.logger.warning(
-                "No voices found with initial criteria, relaxing constraints"
-            )
-
-            # Try with just gender
-            if attributes.get("gender"):
-                # First try database
-                if self.repository:
-                    db_voices = self.repository.list_voices(
-                        gender=attributes.get("gender"), language="en"
-                    )
-                    if db_voices:
-                        voices = [v.dict() for v in db_voices]
-
-            # If still no voices, get any voices
-            if not voices:
-                self.logger.warning("No voices found with gender, getting any voices")
-
-                # Try database first
-                if self.repository:
-                    db_voices = self.repository.list_voices(language="en")
-                    if db_voices:
-                        voices = [v.dict() for v in db_voices]
-
-                # If still no voices, try API
-                if not voices:
-                    voices_page, _ = self.client.get_shared_voices(language="en")
-                    voices = voices_page
-
-                    # Save to database
-                    if self.repository:
-                        for voice_data in voices:
-                            self._save_voice_to_db(voice_data)
-
-        # Rank the voices based on match criteria
+        # Step 4: Rank the voices based on match criteria
         ranked_voices = self.mapper.rank_voices(voices, attributes)
 
-        # Select voice using the specified strategy
+        # Step 5: Select voice using the specified strategy
         selected_voice = self.mapper.select_voice(ranked_voices, selection_strategy)
 
         if not selected_voice:
             raise ValueError("No suitable voice found for professor")
 
-        # Add the db voice record if we have a repository
+        # Step 6: Add the db voice record if we have a repository
         if self.repository:
-            # Find or create the voice record in db
-            voice_db = self.repository.get_voice_by_elevenlabs_id(
-                selected_voice["voice_id"]
-            )
-            if not voice_db:
-                # Create a new voice record
-                voice = Voice(
-                    el_voice_id=selected_voice["voice_id"],
-                    name=selected_voice["name"],
-                    gender=selected_voice.get("gender"),
-                    accent=selected_voice.get("accent"),
-                    age=selected_voice.get("age"),
-                    descriptive=selected_voice.get("descriptive"),
-                    use_case=selected_voice.get("use_case"),
-                    category=selected_voice.get("category"),
-                )
-                voice_db = self.repository.upsert_voice(voice)
+            voice_db = self._find_or_create_db_voice(selected_voice)
 
             # Update the selected_voice with the db id
             selected_voice["db_voice_id"] = voice_db.id
 
+            # Update professor's voice_id if professor has an id
             if professor.id:
                 self.repository.update_professor_field(
                     professor.id, voice_id=voice_db.id

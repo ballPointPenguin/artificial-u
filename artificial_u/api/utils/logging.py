@@ -2,9 +2,8 @@ import json
 import logging
 import os
 import sys
-from datetime import datetime
 from logging.handlers import RotatingFileHandler
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
 from artificial_u.api.config import Settings
 

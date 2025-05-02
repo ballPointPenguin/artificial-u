@@ -3,7 +3,6 @@ Department service for handling business logic related to departments.
 """
 
 import logging
-from datetime import datetime
 from math import ceil
 from typing import Optional
 

@@ -7,7 +7,7 @@ including special handling for technical terms, stage directions, and mathematic
 
 import logging
 import re
-from typing import Any, Dict, List, Optional
+from typing import List, Optional
 
 from artificial_u.models.core import Professor
 

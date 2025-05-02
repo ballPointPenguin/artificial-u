@@ -2,7 +2,7 @@ import logging
 import time
 import uuid
 
-from fastapi import Request, Response
+from fastapi import Request
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.types import ASGIApp
 

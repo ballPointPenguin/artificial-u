@@ -229,7 +229,7 @@ class VoiceSelectionManager:
 
     def get_voice_by_el_id(self, el_voice_id: str) -> Optional[Dict[str, Any]]:
         """
-        Get a specific voice by ElevenLabs voice ID.
+        Get a specific voice by ElevenLabs voice ID using the standard client.
 
         Args:
             el_voice_id: The ID of the voice to retrieve
@@ -238,48 +238,41 @@ class VoiceSelectionManager:
             Optional[Dict[str, Any]]: Voice information or None if not found
         """
         try:
-            # If using regular voices (not shared), use the client API
-            try:
-                response = self.client.voices.get(voice_id=el_voice_id)
-                voice_data = {
-                    "el_voice_id": response.voice_id,
-                    "name": response.name,
-                    "category": getattr(response, "category", "premade"),
-                    "gender": getattr(response, "labels", {}).get("gender", "neutral"),
-                    "accent": getattr(response, "labels", {}).get("accent", "american"),
-                    "age": getattr(response, "labels", {}).get("age", "middle_aged"),
-                    "description": getattr(response, "description", ""),
-                    "preview_url": getattr(response, "preview_url", ""),
-                    "quality_score": 0.8,  # Premade voices are usually high quality
-                }
-                return voice_data
-            except:
-                # If not found in regular voices, try shared voices
-                # We need to search for it as there's no direct endpoint
-                pass
-
-            # Search in shared voices
-            params = {"page_size": 1, "voice_id": el_voice_id}
-
-            response = requests.get(
-                self.SHARED_VOICES_URL, headers=self.headers, params=params
-            )
-
-            if response.status_code != 200:
-                return None
-
-            data = response.json()
-            voices = data.get("voices", [])
-
-            if not voices:
-                return None
-
-            voice_data = self._format_voice_data(voices[0])
-
+            response = self.client.voices.get(voice_id=el_voice_id)
+            # Format the response, using None for missing optional attributes
+            voice_data = {
+                "el_voice_id": response.voice_id,
+                "name": response.name,
+                "category": getattr(
+                    response, "category", None
+                ),  # Premade, cloned, professional, generated
+                "gender": (
+                    getattr(response.labels, "gender", None)
+                    if response.labels
+                    else None
+                ),
+                "accent": (
+                    getattr(response.labels, "accent", None)
+                    if response.labels
+                    else None
+                ),
+                "age": (
+                    getattr(response.labels, "age", None) if response.labels else None
+                ),
+                "description": (
+                    getattr(response.labels, "description", None)
+                    if response.labels
+                    else None
+                ),
+                "preview_url": getattr(response, "preview_url", None),
+            }
             return voice_data
-
-        except Exception as e:
-            logger.error(f"Error retrieving voice {el_voice_id}: {e}")
+        except (
+            Exception
+        ) as e:  # Catch specific exceptions if known, e.g., elevenlabs.ApiException
+            logger.warning(
+                f"Could not retrieve voice {el_voice_id} using standard client: {e}"
+            )
             return None
 
     def filter_voices(self, **criteria) -> List[Dict[str, Any]]:
@@ -370,11 +363,6 @@ class VoiceSelectionManager:
                 # Remove gender filter
                 criteria.pop("gender")
                 el_voices = self.filter_voices(**criteria)
-
-        # Sort by quality score
-        sorted_voices = sorted(
-            el_voices, key=lambda v: v.get("quality_score", 0), reverse=True
-        )
 
         # Sample voices, prioritizing higher quality
         if len(el_voices) <= count:
