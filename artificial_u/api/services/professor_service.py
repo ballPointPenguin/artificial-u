@@ -19,11 +19,11 @@ from artificial_u.api.models.professors import (
     ProfessorsListResponse,
     ProfessorUpdate,
 )
+from artificial_u.audio.voice_selector import VoiceSelector
 from artificial_u.models.core import Professor
 from artificial_u.services import ProfessorService
 from artificial_u.services.content_service import ContentService
 from artificial_u.services.image_service import ImageService
-from artificial_u.services.voice_service import VoiceService
 from artificial_u.utils.exceptions import (
     DatabaseError,
     GenerationError,
@@ -39,7 +39,7 @@ class ProfessorApiService:
         repository,
         content_service: ContentService,
         image_service: ImageService,
-        voice_service: Optional[VoiceService] = None,
+        voice_selector: Optional[VoiceSelector] = None,
         logger=None,
     ):
         """
@@ -49,7 +49,7 @@ class ProfessorApiService:
             repository: Database repository factory
             content_service: Content generation service
             image_service: Image generation service
-            voice_service: Voice service for voice assignment (optional)
+            voice_selector: Voice selection component (optional)
             logger: Optional logger instance
         """
         self.repository = repository
@@ -60,7 +60,7 @@ class ProfessorApiService:
             repository=repository,
             content_service=content_service,
             image_service=image_service,
-            voice_service=voice_service,
+            voice_selector=voice_selector,
             logger=self.logger,
         )
 

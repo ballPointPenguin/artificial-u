@@ -5,12 +5,11 @@ Main system class for ArtificialU.
 import logging
 from typing import Any, Dict, List, Optional, Tuple
 
-from artificial_u.audio.audio_utils import AudioUtils
 from artificial_u.audio.speech_processor import SpeechProcessor
+from artificial_u.audio.voice_selector import VoiceSelector
 from artificial_u.config import get_settings
 from artificial_u.generators.factory import create_generator
 from artificial_u.integrations.elevenlabs.client import ElevenLabsClient
-from artificial_u.integrations.elevenlabs.voice_mapper import VoiceMapper
 from artificial_u.models.core import Course, Department, Lecture, Professor
 from artificial_u.models.repositories import RepositoryFactory
 from artificial_u.services.audio_service import AudioService
@@ -21,7 +20,6 @@ from artificial_u.services.lecture_service import LectureService
 from artificial_u.services.professor_service import ProfessorService
 from artificial_u.services.storage_service import StorageService
 from artificial_u.services.tts_service import TTSService
-from artificial_u.services.voice_service import VoiceService
 from artificial_u.utils.exceptions import ConfigurationError
 
 
@@ -157,16 +155,11 @@ class UniversitySystem:
                 api_key=self.settings.ELEVENLABS_API_KEY
             )
             self.speech_processor = SpeechProcessor()
-            self.audio_utils = AudioUtils(base_audio_path=self.settings.TEMP_AUDIO_PATH)
 
-            # Initialize voice components
-            self.voice_mapper = VoiceMapper()
-            self.voice_service = VoiceService(
-                api_key=self.settings.ELEVENLABS_API_KEY,
+            # Initialize voice selector
+            self.voice_selector = VoiceSelector(
                 client=self.elevenlabs_client,
-                mapper=self.voice_mapper,
-                repository=self.repository,
-                logger=logging.getLogger("artificial_u.services.voice_service"),
+                logger=logging.getLogger("artificial_u.audio.voice_selector"),
             )
 
             # Initialize storage service
@@ -196,49 +189,43 @@ class UniversitySystem:
             audio_path=self.settings.TEMP_AUDIO_PATH,
             client=self.elevenlabs_client,
             speech_processor=self.speech_processor,
-            audio_utils=self.audio_utils,
+            voice_selector=self.voice_selector,
             logger=logging.getLogger("artificial_u.services.tts_service"),
         )
 
         # --- Instantiate services that depend on the above ---
 
-        # Initialize ProfessorService (Uses new signature)
+        # Initialize ProfessorService
         self.professor_service = ProfessorService(
             repository=self.repository,
             content_service=self.content_service,
             image_service=self.image_service,
-            voice_service=self.voice_service,
+            voice_selector=self.voice_selector,
             logger=logging.getLogger("artificial_u.services.professor_service"),
         )
 
-        # Initialize CourseService (Using new __init__ signature)
+        # Initialize CourseService
         self.course_service = CourseService(
             repository=self.repository,
             professor_service=self.professor_service,
-            content_service=self.content_service,  # Pass ContentService
+            content_service=self.content_service,
             logger=logging.getLogger("artificial_u.services.course_service"),
         )
 
-        # Initialize LectureService (Decide: use content_service or content_generator?)
-        # Assuming it might also need refactoring similar to CourseService later.
-        # For now, it still takes content_generator.
+        # Initialize LectureService
         self.lecture_service = LectureService(
             repository=self.repository,
-            # Option 1: Use ContentService
-            # content_service=self.content_service,  # Requires changing LectureService constructor
-            # Option 2: Keep using old generator
-            content_generator=self.content_generator,
+            content_generator=self.content_generator,  # Still using this for now
             professor_service=self.professor_service,
             course_service=self.course_service,
             storage_service=self.storage_service,
             logger=logging.getLogger("artificial_u.services.lecture_service"),
         )
 
-        # Initialize AudioService (Uses storage, voice, tts)
+        # Initialize AudioService
         self.audio_service = AudioService(
             repository=self.repository,
             api_key=self.settings.ELEVENLABS_API_KEY,
-            voice_service=self.voice_service,
             tts_service=self.tts_service,
             storage_service=self.storage_service,
             logger=logging.getLogger("artificial_u.services.audio_service"),
