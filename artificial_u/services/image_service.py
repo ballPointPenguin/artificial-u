@@ -1,4 +1,3 @@
-import base64  # Added import
 import logging
 import uuid
 from typing import List, Optional
@@ -108,10 +107,10 @@ class ImageService:
             )
             return []  # Indicate failure
 
-    async def _generate_openai_image(
+    async def _call_openai_api(
         self, prompt: str, aspect_ratio: str
-    ) -> List[bytes]:
-        """Generates image(s) using the OpenAI (DALL-E) backend."""
+    ) -> Optional[openai.types.images_response.ImagesResponse]:
+        """Makes the API call to OpenAI's image generation service."""
         try:
             openai_size = self._map_aspect_ratio_to_openai_size(aspect_ratio)
             response = await openai_client.images.generate(
@@ -122,66 +121,8 @@ class ImageService:
                 # quality="standard", # Optional: "hd" for higher quality/cost
                 # style="vivid" # Optional: "natural"
             )
-
-            image_data_list = []
-            if response.data:
-                async with httpx.AsyncClient() as client:
-                    for item in response.data:
-                        if item.url:
-                            try:
-                                # Fetch the image from the URL
-                                logger.info(
-                                    f"Fetching image from OpenAI URL: {item.url[:100]}..."
-                                )
-                                image_response = await client.get(
-                                    item.url, timeout=30.0
-                                )  # Added timeout
-                                image_response.raise_for_status()  # Raise exception for bad status codes
-
-                                image_bytes = image_response.content
-                                image_data_list.append(image_bytes)
-                                logger.info(
-                                    f"Successfully fetched image data ({len(image_bytes)} bytes)."
-                                )
-
-                            except httpx.RequestError as req_err:
-                                logger.error(
-                                    f"Error fetching image from URL {item.url}: {req_err}"
-                                )
-                            except httpx.HTTPStatusError as status_err:
-                                logger.error(
-                                    f"HTTP error fetching image from URL {item.url}: "
-                                    f"Status {status_err.response.status_code}, Response: {status_err.response.text[:200]}"
-                                )
-                            except Exception as fetch_err:
-                                logger.error(
-                                    f"Unexpected error fetching image from URL {item.url}: {fetch_err}"
-                                )
-                        # Handle b64_json if the API *does* return it unexpectedly or based on model
-                        elif item.b64_json:
-                            logger.warning(
-                                "Received b64_json format unexpectedly, attempting to decode."
-                            )
-                            try:
-                                image_bytes = base64.b64decode(item.b64_json)
-                                image_data_list.append(image_bytes)
-                            except (TypeError, ValueError) as decode_err:
-                                logger.error(
-                                    f"Error decoding base64 image data from OpenAI: {decode_err}"
-                                )
-                        else:
-                            logger.warning(
-                                "OpenAI response item did not contain URL or b64_json data."
-                            )
-            else:
-                logger.warning(
-                    "No image data returned by the OpenAI API in the response.data list."
-                )
-
-            return image_data_list
-
+            return response
         except openai.BadRequestError as e:
-            # Specific handling for BadRequestError to log the details
             logger.error(f"OpenAI API Bad Request Error: {e}", exc_info=True)
             if e.response:
                 logger.error(f"OpenAI Response Status: {e.response.status_code}")
@@ -189,13 +130,62 @@ class ImageService:
                     logger.error(f"OpenAI Response Body: {e.response.json()}")
                 except Exception:
                     logger.error(f"OpenAI Response Body: {e.response.text}")
-            return []  # Indicate failure
+            return None
         except Exception as e:
-            # General exception handling
             logger.error(
                 f"Error calling OpenAI image generation API: {e}", exc_info=True
             )
-            return []  # Indicate failure
+            return None
+
+    async def _fetch_image_from_url(self, url: str) -> Optional[bytes]:
+        """Fetches image data from a URL."""
+        try:
+            logger.info(f"Fetching image from OpenAI URL: {url[:100]}...")
+            async with httpx.AsyncClient() as client:
+                image_response = await client.get(url, timeout=30.0)
+                image_response.raise_for_status()
+
+                image_bytes = image_response.content
+                logger.info(
+                    f"Successfully fetched image data ({len(image_bytes)} bytes)."
+                )
+                return image_bytes
+
+        except httpx.RequestError as req_err:
+            logger.error(f"Error fetching image from URL {url}: {req_err}")
+        except httpx.HTTPStatusError as status_err:
+            logger.error(
+                f"HTTP error fetching image from URL {url}: "
+                f"Status {status_err.response.status_code}, Response: {status_err.response.text[:200]}"
+            )
+        except Exception as fetch_err:
+            logger.error(f"Unexpected error fetching image from URL {url}: {fetch_err}")
+
+        return None
+
+    async def _generate_openai_image(
+        self, prompt: str, aspect_ratio: str
+    ) -> List[bytes]:
+        """Generates image(s) using the OpenAI (DALL-E) backend."""
+        # Step 1: Call the OpenAI API
+        response = await self._call_openai_api(prompt, aspect_ratio)
+        if not response or not response.data:
+            logger.warning("No image data returned by the OpenAI API.")
+            return []
+
+        # Step 2: Process the response data
+        image_data_list = []
+        for item in response.data:
+            if not item.url:
+                logger.warning("OpenAI response item did not contain URL data.")
+                continue
+
+            # Step 3: Fetch the image from the URL
+            image_bytes = await self._fetch_image_from_url(item.url)
+            if image_bytes:
+                image_data_list.append(image_bytes)
+
+        return image_data_list
 
     async def generate_image(self, prompt: str, aspect_ratio: str = "1:1") -> List[str]:
         """

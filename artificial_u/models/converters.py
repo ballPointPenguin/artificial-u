@@ -68,9 +68,7 @@ def course_model_to_dict(course: Optional[CourseModel]) -> Dict[str, Any]:
 # --- XML Formatting Functions (mostly for prompts) --- #
 
 
-def professor_to_xml(
-    professor_data: dict, missing_marker: str = "[GENERATE IF NEEDED]"
-) -> str:
+def professor_to_xml(professor_data: dict, missing_marker: str = "[GENERATE]") -> str:
     """Format professor data (dict) into XML for prompts."""
     if not professor_data:
         # Consistent with format_professor_xml in prompts/courses.py for now
@@ -89,7 +87,7 @@ def professor_to_xml(
 
 
 def partial_professor_to_xml(
-    partial_attrs: Dict[str, Any], missing_marker: str = "[TODO]"
+    partial_attrs: Dict[str, Any], missing_marker: str = "[GENERATE]"
 ) -> str:
     """Builds the XML string for partial professor attributes (dict), marking missing fields."""
     lines = ["<professor>"]
@@ -131,7 +129,7 @@ def professors_to_xml(existing_professors: List[Dict[str, str]]) -> str:
     return "\n".join(lines)
 
 
-def department_to_xml(department_data: dict, missing_marker: str = "[MISSING]") -> str:
+def department_to_xml(department_data: dict, missing_marker: str = "[GENERATE]") -> str:
     """Format department data (dict) into XML for prompts."""
     if not department_data:
         # Consistent with format_department_xml in prompts/courses.py
@@ -247,92 +245,76 @@ def partial_course_to_xml(
 # --- XML Parsing Functions --- #
 
 
+def _process_topic_elements(topics_elem: Optional[ET.Element]) -> List[Dict[str, Any]]:
+    """Process topic elements with minimal error handling."""
+    if topics_elem is None:
+        return []
+
+    topics_data = []
+    # Process all topic elements
+    for week_elem in topics_elem.findall("week"):
+        week_num = int(week_elem.get("number", 0))
+        for lecture_elem in week_elem.findall("lecture"):
+            lecture_num = int(lecture_elem.get("number", 1))
+            topic_elem = lecture_elem.find("topic")
+            if topic_elem is not None and topic_elem.text:
+                topic_text = topic_elem.text.strip()
+                # Skip placeholder content
+                if topic_text and "[GENERATE]" not in topic_text:
+                    topics_data.append(
+                        {
+                            "week_number": week_num,
+                            "order_in_week": lecture_num,
+                            "title": topic_text,
+                        }
+                    )
+    return topics_data
+
+
 def parse_course_xml(course_xml: str) -> Dict[str, Any]:
-    """Parse course XML (typically from LLM response) into a dictionary."""
+    """Parse course XML from LLM response into a dictionary.
+    Simplified and direct parsing assuming standard format.
+    """
     try:
         root = ET.fromstring(course_xml)
         course_data = {}
-        # Extract simple fields
-        for field in [
-            "code",
-            "title",
-            "description",
-            "level",
-            "credits",
-            "lectures_per_week",
-            "total_weeks",
-        ]:
+
+        # Process simple fields with common logic
+        for field in ["code", "title", "description", "level"]:
             element = root.find(field)
-            if element is not None and element.text and element.text.strip():
-                text_content = element.text.strip()
-                if (
-                    "[GENERATE]" in text_content
-                    or "[TODO]" in text_content
-                    or "[MISSING]" in text_content
-                ):
-                    course_data[field] = None  # Treat markers as null
-                else:
-                    # Handle potential type conversions
-                    if field in ["credits", "lectures_per_week", "total_weeks"]:
-                        try:
-                            course_data[field] = int(text_content)
-                        except (ValueError, TypeError):
-                            # Log warning? Decide on handling invalid numbers
-                            course_data[field] = None
-                    else:
-                        course_data[field] = text_content
+            if element is not None and element.text:
+                value = element.text.strip()
+                # Treat [GENERATE] marker as null
+                course_data[field] = None if "[GENERATE]" in value else value
             else:
                 course_data[field] = None
 
-        # Extract topics
-        topics_data = []
-        topics_root = root.find("topics")
-        if topics_root is not None:
-            for week_elem in topics_root.findall("week"):
-                week_num_str = week_elem.get("number")
-                try:
-                    week_num = (
-                        int(week_num_str)
-                        if week_num_str and week_num_str.isdigit()
-                        else None
-                    )
-                except ValueError:
-                    week_num = None
+        # Process numeric fields
+        for field in ["credits", "lectures_per_week", "total_weeks"]:
+            element = root.find(field)
+            try:
+                if element is not None and element.text:
+                    value = element.text.strip()
+                    # Treat [GENERATE] marker as null
+                    course_data[field] = None if "[GENERATE]" in value else int(value)
+                else:
+                    course_data[field] = None
+            except (ValueError, AttributeError):
+                course_data[field] = None
 
-                if week_num is not None:
-                    for lecture_elem in week_elem.findall("lecture"):
-                        lecture_num_str = lecture_elem.get("number")
-                        topic_elem = lecture_elem.find("topic")
-                        try:
-                            lecture_num = (
-                                int(lecture_num_str)
-                                if lecture_num_str and lecture_num_str.isdigit()
-                                else 1
-                            )
-                        except ValueError:
-                            lecture_num = 1
-
-                        if topic_elem is not None and topic_elem.text:
-                            topic_text = topic_elem.text.strip()
-                            if (
-                                topic_text
-                                and "[GENERATE]" not in topic_text
-                                and "[TODO]" not in topic_text
-                            ):
-                                topics_data.append(
-                                    {
-                                        "week_number": week_num,
-                                        "order_in_week": lecture_num,
-                                        "title": topic_text,
-                                    }
-                                )
-        course_data["topics"] = topics_data
+        # Process topics using helper function
+        try:
+            course_data["topics"] = _process_topic_elements(root.find("topics"))
+        except Exception:
+            # Fallback to empty list if topic parsing fails
+            course_data["topics"] = []
 
         return course_data
+
     except ET.ParseError as e:
-        # Consider logging here instead of raising immediately
-        # Or re-raise a specific parsing error
         raise ValueError(f"Failed to parse course XML: {e}")
+    except Exception as e:
+        raise ValueError(f"Error processing course data: {e}")
 
 
 # TODO: Implement parse_professor_xml, if needed

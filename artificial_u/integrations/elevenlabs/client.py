@@ -11,7 +11,6 @@ import time
 from typing import Any, Dict, List, Optional, Tuple
 from unittest.mock import MagicMock
 
-import requests
 from elevenlabs import play
 from elevenlabs.client import ElevenLabs
 
@@ -143,115 +142,51 @@ class ElevenLabsClient:
         Returns:
             Tuple of (list of voice data, has_more flag)
         """
-        try:
-            # Try to use the new client method if available
-            if hasattr(self.client.voices, "get_shared"):
-                response = self.client.voices.get_shared(
-                    page_size=min(page_size, 100),
-                    page=page,
-                    gender=gender,
-                    accent=accent,
-                    age=age,
-                    language=language,
-                    use_cases=use_case,
-                    category=category,
-                    search=search,
-                    min_notice_period_days=min_notice_period_days,
-                    featured=featured,
-                )
+        # Call the client library method
+        response = self.client.voices.get_shared(
+            page_size=min(page_size, 100),
+            page=page,
+            gender=gender,
+            accent=accent,
+            age=age,
+            language=language,
+            use_cases=use_case,
+            category=category,
+            search=search,
+            min_notice_period_days=min_notice_period_days,
+            featured=featured,
+        )
 
-                # Response is a typed object, not a dictionary
-                # Extract the voices and has_more attributes
-                try:
-                    el_voices = response.voices
-                    has_more = getattr(response, "has_more", False)
+        # Extract data from response
+        el_voices = response.voices
+        has_more = getattr(response, "has_more", False)
 
-                    # Format the voice data
-                    formatted_voices = []
-                    for el_voice in el_voices:
-                        # Convert voice object to dictionary
-                        el_voice_dict = {
-                            "el_voice_id": el_voice.voice_id,
-                            "name": el_voice.name,
-                            "gender": getattr(el_voice, "gender", None),
-                            "accent": getattr(el_voice, "accent", None),
-                            "age": getattr(el_voice, "age", None),
-                            "descriptive": getattr(el_voice, "descriptive", None),
-                            "use_case": getattr(el_voice, "use_case", None),
-                            "category": getattr(el_voice, "category", None),
-                            "language": getattr(el_voice, "language", None),
-                            "locale": getattr(el_voice, "locale", None),
-                            "description": getattr(el_voice, "description", ""),
-                            "preview_url": getattr(el_voice, "preview_url", ""),
-                            "verified_languages": getattr(
-                                el_voice, "verified_languages", []
-                            ),
-                            "cloned_by_count": getattr(el_voice, "cloned_by_count", 0),
-                            "usage_character_count_1y": getattr(
-                                el_voice, "usage_character_count_1y", 0
-                            ),
-                        }
-                        formatted_voices.append(el_voice_dict)
-
-                    return formatted_voices, has_more
-                except Exception as e:
-                    self.logger.warning(
-                        f"Error parsing client.voices.get_shared response: {e}"
-                    )
-
-        except Exception as e:
-            self.logger.warning(
-                f"Error using client.voices.get_shared: {e}. Falling back to API call."
+        # Format the voice data to standardized format
+        formatted_voices = []
+        for el_voice in el_voices:
+            formatted_voices.append(
+                {
+                    "el_voice_id": el_voice.voice_id,
+                    "name": el_voice.name,
+                    "gender": getattr(el_voice, "gender", None),
+                    "accent": getattr(el_voice, "accent", None),
+                    "age": getattr(el_voice, "age", None),
+                    "descriptive": getattr(el_voice, "descriptive", None),
+                    "use_case": getattr(el_voice, "use_case", None),
+                    "category": getattr(el_voice, "category", None),
+                    "language": getattr(el_voice, "language", None),
+                    "locale": getattr(el_voice, "locale", None),
+                    "description": getattr(el_voice, "description", ""),
+                    "preview_url": getattr(el_voice, "preview_url", ""),
+                    "verified_languages": getattr(el_voice, "verified_languages", []),
+                    "cloned_by_count": getattr(el_voice, "cloned_by_count", 0),
+                    "usage_character_count_1y": getattr(
+                        el_voice, "usage_character_count_1y", 0
+                    ),
+                }
             )
 
-        # Fall back to direct API call
-        params = {
-            "page_size": min(page_size, 100),
-            "page": page,
-            "language": language,
-        }
-
-        # Add optional filters
-        if gender:
-            params["gender"] = gender
-        if accent:
-            params["accent"] = accent
-        if age:
-            params["age"] = age
-        if use_case:
-            params["use_cases"] = use_case
-        if category:
-            params["category"] = category
-        if search:
-            params["search"] = search
-        if min_notice_period_days is not None:
-            params["min_notice_period_days"] = min_notice_period_days
-        if featured is not None:
-            params["featured"] = featured
-
-        try:
-            response = requests.get(
-                self.SHARED_VOICES_URL, headers=self.headers, params=params
-            )
-
-            if response.status_code != 200:
-                self.logger.error(
-                    f"API error: {response.status_code} - {response.text}"
-                )
-                return [], False
-
-            data = response.json()
-            voices = data.get("voices", [])
-            has_more = data.get("has_more", False)
-
-            # Format the voice data
-            formatted_voices = [self._format_shared_voice(voice) for voice in voices]
-
-            return formatted_voices, has_more
-
-        except Exception as e:
-            self.logger.error(f"Error retrieving shared voices: {e}")
-            return [], False
+        return formatted_voices, has_more
 
     def _format_shared_voice(self, voice_data: Dict[str, Any]) -> Dict[str, Any]:
         """

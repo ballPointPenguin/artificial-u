@@ -273,6 +273,103 @@ class CourseService:
 
     # --- Generation Methods --- #
 
+    async def _prepare_prompt_arguments(
+        self,
+        partial_attributes: Dict[str, Any],
+        professor_xml: str,
+        department_xml: str,
+        existing_courses_dicts: List[Dict[str, Any]],
+    ) -> Dict[str, Any]:
+        """Prepare arguments for the course generation prompt."""
+        return {
+            "course_title": partial_attributes.get("title", "[GENERATE]"),
+            "course_code": partial_attributes.get("code", "[GENERATE]"),
+            "course_description": partial_attributes.get("description", "[GENERATE]"),
+            "course_level": partial_attributes.get("level", "[GENERATE]"),
+            "course_credits": partial_attributes.get("credits", "[GENERATE]"),
+            "lectures_per_week": partial_attributes.get(
+                "lectures_per_week", DEFAULT_LECTURES_PER_WEEK
+            ),
+            "total_weeks": partial_attributes.get("total_weeks", DEFAULT_COURSE_WEEKS),
+            "department_xml": department_xml,
+            "professor_xml": professor_xml,
+            "existing_courses": existing_courses_dicts,
+            "topics": partial_attributes.get("topics"),
+            "freeform_prompt": partial_attributes.get("freeform_prompt"),
+        }
+
+    async def _generate_and_parse_content(self, prompt_args: Dict[str, Any]) -> str:
+        """Generate course content and parse the XML response."""
+        course_prompt = get_course_prompt(**prompt_args)
+        system_prompt = get_system_prompt("course")
+
+        self.logger.info("Calling content service to generate course...")
+        raw_response = await self.content_service.generate_text(
+            model=settings.COURSE_GENERATION_MODEL,
+            prompt=course_prompt,
+            system_prompt=system_prompt,
+        )
+        self.logger.info("Received response from content service.")
+
+        # Extract XML content
+        generated_xml_output = extract_xml_content(raw_response, "output")
+        if not generated_xml_output:
+            generated_xml_output = extract_xml_content(raw_response, "course")
+            if not generated_xml_output:
+                self.logger.error(
+                    f"Could not extract <output> or <course> tag from response:\n{raw_response}"
+                )
+                raise ContentGenerationError(
+                    "AI response missing expected <output> or <course> tag."
+                )
+            else:
+                self.logger.warning(
+                    "Extracted <course> tag directly as <output> was missing."
+                )
+
+        return generated_xml_output
+
+    async def _process_models_for_generation(
+        self, partial_attributes: Dict[str, Any]
+    ) -> Tuple[
+        Optional[ProfessorModel], Optional[DepartmentModel], List[Dict[str, Any]]
+    ]:
+        """Process professor, department, and existing courses for generation."""
+        # 1. Get Professor
+        professor_model = await self._get_professor(partial_attributes)
+        professor_dict = (
+            professor_model_to_dict(professor_model) if professor_model else {}
+        )
+        professor_xml = professor_to_xml(professor_dict)
+
+        # 2. Get Department
+        department_model = await self._get_department(
+            partial_attributes, professor_model
+        )
+        department_dict = (
+            department_model_to_dict(department_model) if department_model else {}
+        )
+        department_xml = department_to_xml(department_dict)
+        if department_model:
+            partial_attributes.setdefault("department_id", department_model.id)
+
+        # 3. Get Existing Courses
+        existing_courses_models = await self._get_existing_courses(department_model)
+        existing_courses_dicts = []
+        for c in existing_courses_models:
+            course_dict = course_model_to_dict(c)
+            # Extract topic titles for the XML converter's current format
+            course_dict["topics"] = [t.title for t in c.lectures] if c.lectures else []
+            existing_courses_dicts.append(course_dict)
+
+        return (
+            professor_model,
+            department_model,
+            professor_xml,
+            department_xml,
+            existing_courses_dicts,
+        )
+
     async def generate_course_content(
         self,
         partial_attributes: Optional[Dict[str, Any]] = None,
@@ -296,134 +393,56 @@ class CourseService:
             f"Generating course content with partial attributes: {list(partial_attributes.keys())}"
         )
 
-        # --- 1. Get Professor --- #
         try:
-            # Use the repository directly
-            professor_model = await self._get_professor(partial_attributes)
-            professor_dict = professor_model_to_dict(professor_model)
-            professor_xml = professor_to_xml(professor_dict)
-        except DatabaseError as e:
-            self.logger.error(f"Database error fetching professor: {e}", exc_info=True)
-            raise
-        except Exception as e:
-            self.logger.error(f"Error processing professor: {e}", exc_info=True)
-            raise ContentGenerationError(f"Error processing professor data: {e}")
+            # Process models and prepare data for generation
+            (
+                professor_model,
+                department_model,
+                professor_xml,
+                department_xml,
+                existing_courses_dicts,
+            ) = await self._process_models_for_generation(partial_attributes)
 
-        # --- 2. Get Department --- #
-        try:
-            # Use the repository directly
-            department_model = await self._get_department(
-                partial_attributes, professor_model
+            # Prepare prompt arguments
+            prompt_args = self._prepare_prompt_arguments(
+                partial_attributes,
+                professor_xml,
+                department_xml,
+                existing_courses_dicts,
             )
-            department_dict = department_model_to_dict(department_model)
-            department_xml = department_to_xml(department_dict)
-            if department_model:
-                partial_attributes.setdefault("department_id", department_model.id)
-        except DatabaseError as e:
-            self.logger.error(f"Database error fetching department: {e}", exc_info=True)
-            raise
-        except Exception as e:
-            self.logger.error(f"Error processing department: {e}", exc_info=True)
-            raise ContentGenerationError(f"Error processing department data: {e}")
 
-        # --- 3. Get Existing Courses for Department --- #
-        try:
-            # Use the repository directly
-            existing_courses_models = await self._get_existing_courses(department_model)
-            existing_courses_dicts = []
-            for c in existing_courses_models:
-                course_dict = course_model_to_dict(c)
-                # Extract topic titles for the XML converter's current format
-                # Assumes lectures relationship is loaded by the repository method
-                course_dict["topics"] = (
-                    [t.title for t in c.lectures] if c.lectures else []
-                )
-                existing_courses_dicts.append(course_dict)
-        except DatabaseError as e:
-            self.logger.error(
-                f"Database error fetching existing courses: {e}", exc_info=True
-            )
-            raise
-        except Exception as e:
-            self.logger.error(f"Error processing existing courses: {e}", exc_info=True)
-            raise ContentGenerationError(f"Error processing existing course data: {e}")
+            # Generate and parse content
+            generated_xml_output = await self._generate_and_parse_content(prompt_args)
 
-        # --- 4. Prepare and Generate Course Content --- #
-        try:
-            prompt_args = {
-                "course_title": partial_attributes.get("title", "[GENERATE]"),
-                "course_code": partial_attributes.get("code", "[GENERATE]"),
-                "course_description": partial_attributes.get(
-                    "description", "[GENERATE]"
-                ),
-                "course_level": partial_attributes.get("level", "[GENERATE]"),
-                "course_credits": partial_attributes.get("credits", "[GENERATE]"),
-                "lectures_per_week": partial_attributes.get(
-                    "lectures_per_week", DEFAULT_LECTURES_PER_WEEK
-                ),
-                "total_weeks": partial_attributes.get(
-                    "total_weeks", DEFAULT_COURSE_WEEKS
-                ),
-                "department_xml": department_xml,
-                "professor_xml": professor_xml,
-                "existing_courses": existing_courses_dicts,
-                "topics": partial_attributes.get("topics"),
-                "freeform_prompt": partial_attributes.get("freeform_prompt"),
-            }
-
-            course_prompt = get_course_prompt(**prompt_args)
-            system_prompt = get_system_prompt("course")
-
-            self.logger.info("Calling content service to generate course...")
-            raw_response = await self.content_service.generate_text(
-                model=settings.COURSE_GENERATION_MODEL,
-                prompt=course_prompt,
-                system_prompt=system_prompt,
-            )
-            self.logger.info("Received response from content service.")
-
-            generated_xml_output = extract_xml_content(raw_response, "output")
-            if not generated_xml_output:
-                generated_xml_output = extract_xml_content(raw_response, "course")
-                if not generated_xml_output:
-                    self.logger.error(
-                        f"Could not extract <output> or <course> tag from response:\n{raw_response}"
-                    )
-                    raise ContentGenerationError(
-                        "AI response missing expected <output> or <course> tag."
-                    )
-                else:
-                    self.logger.warning(
-                        "Extracted <course> tag directly as <output> was missing."
-                    )
-
+            # Parse XML and combine with partial attributes
             parsed_course_data = parse_course_xml(generated_xml_output)
-
             final_course_data = {**parsed_course_data, **partial_attributes}
 
+            # Add IDs from models
             if professor_model:
                 final_course_data["professor_id"] = professor_model.id
             if department_model:
                 final_course_data["department_id"] = department_model.id
 
+            # Remove non-course fields
             final_course_data.pop("freeform_prompt", None)
 
             self.logger.info(
-                f"Successfully generated and parsed course content for: {final_course_data.get('code')} - {final_course_data.get('title')}"
+                f"Successfully generated course: {final_course_data.get('code')} - {final_course_data.get('title')}"
             )
             return final_course_data
 
-        except ValueError as e:
-            self.logger.error(
-                f"Error during course generation or parsing: {e}", exc_info=True
-            )
-            raise ContentGenerationError(f"Error generating/parsing course: {e}")
-        except ContentGenerationError as e:
-            self.logger.error(f"Content generation error: {e}", exc_info=True)
+        except DatabaseError:
+            # Let database errors propagate up
             raise
+        except ContentGenerationError:
+            # Let content generation errors propagate up
+            raise
+        except ValueError as e:
+            raise ContentGenerationError(f"Error generating/parsing course: {e}")
         except Exception as e:
             self.logger.error(
-                f"Unexpected error during course content generation: {e}", exc_info=True
+                f"Unexpected error during course generation: {e}", exc_info=True
             )
             raise ContentGenerationError(f"An unexpected error occurred: {e}")
 

@@ -412,6 +412,94 @@ class AudioProcessor:
 
         return True
 
+    def _process_text_chunk(
+        self,
+        chunk: str,
+        el_voice_id: str,
+        voice_settings: Dict[str, float],
+        chunk_index: int,
+        total_chunks: int,
+    ) -> Optional[bytes]:
+        """Process a single text chunk and convert it to audio."""
+        chunk_size = len(chunk)
+        word_count = len(chunk.split())
+        self.logger.info(
+            f"Processing chunk {chunk_index+1}/{total_chunks} ({chunk_size} chars, {word_count} words)"
+        )
+
+        # Skip invalid chunks
+        if not self.is_valid_chunk(chunk):
+            self.logger.warning(
+                f"Skipping invalid chunk {chunk_index+1}: too short or empty"
+            )
+            return None
+
+        # Try multiple times if needed
+        for attempt in range(self.MAX_RETRIES):
+            try:
+                self.logger.debug(f"Attempt {attempt+1} for chunk {chunk_index+1}")
+
+                # Get audio stream from the API
+                audio_stream = self.client.text_to_speech.convert(
+                    text=chunk,
+                    el_voice_id=el_voice_id,
+                    model_id=self.DEFAULT_MODEL,
+                    voice_settings=voice_settings,
+                )
+
+                # Handle different types of responses
+                if hasattr(audio_stream, "__iter__") and not isinstance(
+                    audio_stream, bytes
+                ):
+                    self.logger.debug(
+                        f"Chunk {chunk_index+1}: Audio stream is a generator, consuming it"
+                    )
+                    audio_segment = b"".join(
+                        chunk for chunk in audio_stream if isinstance(chunk, bytes)
+                    )
+                else:
+                    self.logger.debug(
+                        f"Chunk {chunk_index+1}: Audio stream is bytes data"
+                    )
+                    audio_segment = audio_stream
+
+                self.logger.info(f"Successfully processed chunk {chunk_index+1}")
+                return audio_segment
+
+            except Exception as e:
+                self.logger.error(
+                    f"Error converting chunk {chunk_index+1} to speech: {str(e)}"
+                )
+                if attempt < self.MAX_RETRIES - 1:
+                    self.logger.info(f"Waiting {self.RETRY_WAIT}s before retry...")
+                    time.sleep(self.RETRY_WAIT)
+                else:
+                    self.logger.error(
+                        f"Failed to process chunk {chunk_index+1} after {self.MAX_RETRIES} attempts"
+                    )
+                    raise
+
+        return None
+
+    def _save_audio_file(self, audio: bytes, lecture: Lecture) -> str:
+        """Save audio data to a file and return the file path."""
+        # Create file path
+        course_dir = Path(self.audio_path) / lecture.course_id
+        course_dir.mkdir(parents=True, exist_ok=True)
+
+        week_dir = course_dir / f"week{lecture.week_number}"
+        week_dir.mkdir(exist_ok=True)
+
+        file_name = f"lecture{lecture.order_in_week}.mp3"
+        file_path = str(week_dir / file_name)
+
+        # Save audio file
+        with open(file_path, "wb") as f:
+            f.write(audio)
+
+        self.logger.info(f"Audio saved to {file_path}")
+        return file_path
+
     def text_to_speech(
         self, lecture: Lecture, professor: Professor
     ) -> Tuple[str, bytes]:
@@ -426,7 +514,7 @@ class AudioProcessor:
             Tuple[str, bytes]: File path and audio data
         """
         try:
-            # Test API connection first
+            # Test API connection
             connection_status = self.test_connection()
             if connection_status.get("status") != "connected":
                 self.logger.error(
@@ -434,124 +522,44 @@ class AudioProcessor:
                 )
                 raise AudioProcessorError("Failed to connect to ElevenLabs API")
 
-            # Enhance text with minimal speech markup
+            # Process text and get voice
             processed_text = self.enhance_speech_markup(lecture.content)
-
-            # Get appropriate voice ID
             el_voice_id = self.get_voice_for_professor(professor)
             self.logger.info(f"Using el_voice_id: {el_voice_id}")
 
-            # Validate voice and model
+            # Validate voice
             if not self.validate_voice_and_model(el_voice_id, self.DEFAULT_MODEL):
                 self.logger.warning("Falling back to default voice")
                 el_voice_id = self.voice_mapping["default"]
 
-            # Set up voice settings, starting with reasonable defaults
+            # Voice settings
             voice_settings = {"stability": 0.5, "clarity": 0.8, "style": 0.0}
 
-            # Use default chunk size - ElevenLabs can handle larger chunks
-            # with the minimal processing we're now doing
-            chunk_size = self.DEFAULT_CHUNK_SIZE
-
-            # Split into manageable chunks
+            # Split text into chunks
             chunks = self.split_lecture_into_chunks(
-                processed_text, max_chunk_size=chunk_size
+                processed_text, max_chunk_size=self.DEFAULT_CHUNK_SIZE
             )
+            self.logger.info(f"Converting lecture to speech in {len(chunks)} chunks")
 
-            # Generate audio for each chunk
+            # Process each chunk
             audio_segments = []
-            total_chunks = len(chunks)
-
-            self.logger.info(f"Converting lecture to speech in {total_chunks} chunks")
-            self.logger.info(f"Using model: {self.DEFAULT_MODEL}")
-
             for i, chunk in enumerate(chunks):
-                chunk_size = len(chunk)
-                word_count = len(chunk.split())
-                self.logger.info(
-                    f"Processing chunk {i+1}/{total_chunks} ({chunk_size} chars, {word_count} words)"
+                audio_segment = self._process_text_chunk(
+                    chunk, el_voice_id, voice_settings, i, len(chunks)
+                )
+                if audio_segment:
+                    audio_segments.append(audio_segment)
+
+            # Combine audio segments
+            if not audio_segments:
+                raise AudioProcessorError(
+                    "No audio segments were successfully generated"
                 )
 
-                # Skip invalid chunks
-                if not self.is_valid_chunk(chunk):
-                    self.logger.warning(
-                        f"Skipping invalid chunk {i+1}: too short or empty"
-                    )
-                    continue
+            audio = b"".join(audio_segments)
 
-                # Generate audio with retry mechanism
-                for attempt in range(self.MAX_RETRIES):
-                    try:
-                        self.logger.debug(f"Attempt {attempt+1} for chunk {i+1}")
-
-                        # Get audio stream from the API
-                        audio_stream = self.client.text_to_speech.convert(
-                            text=chunk,
-                            el_voice_id=el_voice_id,
-                            model_id=self.DEFAULT_MODEL,
-                            voice_settings=voice_settings,
-                        )
-
-                        # Consume the generator if it's a generator (new API behavior)
-                        if hasattr(audio_stream, "__iter__") and not isinstance(
-                            audio_stream, bytes
-                        ):
-                            self.logger.debug(
-                                f"Chunk {i+1}: Audio stream is a generator, consuming it"
-                            )
-                            audio_segment = b"".join(
-                                chunk
-                                for chunk in audio_stream
-                                if isinstance(chunk, bytes)
-                            )
-                        else:
-                            # Handle the case where it's already bytes (old API behavior)
-                            self.logger.debug(
-                                f"Chunk {i+1}: Audio stream is bytes data"
-                            )
-                            audio_segment = audio_stream
-
-                        audio_segments.append(audio_segment)
-                        self.logger.info(f"Successfully processed chunk {i+1}")
-                        break
-                    except Exception as e:
-                        self.logger.error(
-                            f"Error converting chunk {i+1} to speech: {str(e)}"
-                        )
-                        if attempt < self.MAX_RETRIES - 1:
-                            self.logger.info(
-                                f"Waiting {self.RETRY_WAIT}s before retry..."
-                            )
-                            time.sleep(self.RETRY_WAIT)
-                        else:
-                            self.logger.error(
-                                f"Failed to process chunk {i+1} after {self.MAX_RETRIES} attempts"
-                            )
-                            raise
-
-            # Combine audio segments (if more than one)
-            if len(audio_segments) > 1:
-                # Simple concatenation - in a full implementation you might
-                # want to use a library like pydub to properly merge audio files
-                audio = b"".join(audio_segments)
-            else:
-                audio = audio_segments[0]
-
-            # Create file path
-            course_dir = Path(self.audio_path) / lecture.course_id
-            course_dir.mkdir(parents=True, exist_ok=True)
-
-            week_dir = course_dir / f"week{lecture.week_number}"
-            week_dir.mkdir(exist_ok=True)
-
-            file_name = f"lecture{lecture.order_in_week}.mp3"
-            file_path = str(week_dir / file_name)
-
-            # Save audio file
-            with open(file_path, "wb") as f:
-                f.write(audio)
-
-            self.logger.info(f"Audio saved to {file_path}")
+            # Save to file
+            file_path = self._save_audio_file(audio, lecture)
 
             return file_path, audio
 

@@ -51,12 +51,12 @@ EXAMPLE_PROFESSOR_1 = (
 PARTIAL_PROFESSOR_PROMPT = PromptTemplate(
     template=f"""
 Complete the professor profile below.
-Use any provided details. For fields marked with [TODO], generate realistic and consistent values.
+Use any provided details. For fields marked with [GENERATE], generate realistic and consistent values.
 
 Existing professors in the university (for context and to avoid repetition):
 {{existing_professors_xml}}
 
-Provided details (use these where available, generate for [TODO]):
+Provided details (use these where available, generate for [GENERATE]):
 {{partial_profile_xml}}
 
 Desired complete output format (fill in *all* bracketed placeholders):

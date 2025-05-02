@@ -32,7 +32,6 @@ class LectureService:
         text_export_path=None,
         content_backend=None,
         content_model=None,
-        enable_caching=False,
         storage_service=None,
         logger=None,
     ):
@@ -48,7 +47,6 @@ class LectureService:
             text_export_path: Directory for exporting lecture text
             content_backend: Name of content backend being used
             content_model: Name of content model being used
-            enable_caching: Whether caching is enabled
             storage_service: Optional storage service for file operations
             logger: Optional logger instance
         """
@@ -60,7 +58,6 @@ class LectureService:
         self.text_export_path = text_export_path
         self.content_backend = content_backend
         self.content_model = content_model
-        self.enable_caching = enable_caching
         self.storage_service = storage_service or StorageService(logger=logger)
         self.logger = logger or logging.getLogger(__name__)
 
@@ -220,43 +217,18 @@ class LectureService:
         previous_content = previous_lecture.content if previous_lecture else None
 
         try:
-            # Use cached lecture generation if enabled for Anthropic
-            if self.enable_caching and self.content_backend == "anthropic":
-                self.logger.info(
-                    f"Generating lecture for {course.code} Week {week_number}, Lecture {order_in_week} with caching"
-                )
-                lecture, cache_metrics = (
-                    self.content_generator.create_lecture_with_caching(
-                        course=course,
-                        professor=professor,
-                        topic=topic,
-                        week_number=week_number,
-                        order_in_week=order_in_week,
-                        previous_lecture_content=previous_content,
-                        word_count=word_count,
-                    )
-                )
-
-                # Log cache metrics
-                if cache_metrics.get("cached", False):
-                    self.logger.info(
-                        f"Cache metrics - Tokens saved: {cache_metrics.get('estimated_tokens_saved', 0)}, "
-                        f"Response time: {cache_metrics.get('response_time_seconds', 0):.2f}s"
-                    )
-            else:
-                # Use standard generation without caching
-                self.logger.info(
-                    f"Generating lecture for {course.code} Week {week_number}, Lecture {order_in_week}"
-                )
-                lecture = self.content_generator.create_lecture(
-                    course=course,
-                    professor=professor,
-                    topic=topic,
-                    week_number=week_number,
-                    order_in_week=order_in_week,
-                    previous_lecture_content=previous_content,
-                    word_count=word_count,
-                )
+            self.logger.info(
+                f"Generating lecture for {course.code} Week {week_number}, Lecture {order_in_week}"
+            )
+            lecture = self.content_generator.create_lecture(
+                course=course,
+                professor=professor,
+                topic=topic,
+                week_number=week_number,
+                order_in_week=order_in_week,
+                previous_lecture_content=previous_content,
+                word_count=word_count,
+            )
 
             return lecture
 
@@ -399,12 +371,11 @@ class LectureService:
         word_count: int = DEFAULT_LECTURE_WORD_COUNT,
     ) -> List[Lecture]:
         """
-        Generate a series of related lectures for a course using prompt caching.
+        Generate a series of related lectures for a course.
 
         This method creates multiple lectures in sequence, maintaining the professor's
         voice and teaching style across all lectures, while building continuity
-        between the content. This is more efficient than creating lectures one-by-one
-        as it leverages prompt caching for reduced token usage.
+        between the content.
 
         Args:
             course_code: Code for the course to create lectures for
@@ -420,76 +391,30 @@ class LectureService:
         professor = self.professor_service.get_professor(course.professor_id)
 
         try:
-            # Check if we can use caching
-            if self.enable_caching and self.content_backend == "anthropic":
-                self.logger.info(
-                    f"Generating lecture series for {course.code} with {len(topics)} lectures using caching"
+            lectures = []
+            previous_lecture = None
+
+            for i, topic in enumerate(topics):
+                week_number = starting_week + (i // course.lectures_per_week)
+                order_in_week = (i % course.lectures_per_week) + 1
+
+                # Create the lecture
+                lecture = self._create_lecture_content(
+                    course=course,
+                    professor=professor,
+                    topic=topic,
+                    week_number=week_number,
+                    order_in_week=order_in_week,
+                    previous_lecture=previous_lecture,
+                    word_count=word_count,
                 )
 
-                # Use the lecture series caching method
-                lecture_results = (
-                    self.content_generator.create_lecture_series_with_caching(
-                        course=course,
-                        professor=professor,
-                        topics=topics,
-                        starting_week=starting_week,
-                        word_count=word_count,
-                    )
-                )
+                # Save the lecture to the database
+                lecture = self.repository.lecture.create(lecture)
+                lectures.append(lecture)
 
-                # Store lectures in the database
-                lectures = []
-                total_tokens_saved = 0
-
-                for lecture_tuple in lecture_results:
-                    lecture, metrics = lecture_tuple
-
-                    # Save the lecture to the database
-                    lecture = self.repository.lecture.create(lecture)
-                    lectures.append(lecture)
-
-                    # Track token savings
-                    total_tokens_saved += metrics.get("estimated_tokens_saved", 0)
-
-                # Log total savings
-                if total_tokens_saved > 0:
-                    self.logger.info(
-                        f"Total tokens saved across series: {total_tokens_saved}"
-                    )
-
-                return lectures
-
-            else:
-                # Use individual lecture creation if caching is not available
-                self.logger.info(
-                    f"Generating lecture series for {course.code} without caching "
-                    f"(not using Anthropic or caching disabled)"
-                )
-
-                lectures = []
-                previous_lecture = None
-
-                for i, topic in enumerate(topics):
-                    week_number = starting_week + (i // course.lectures_per_week)
-                    order_in_week = (i % course.lectures_per_week) + 1
-
-                    # Create the lecture
-                    lecture = self._create_lecture_content(
-                        course=course,
-                        professor=professor,
-                        topic=topic,
-                        week_number=week_number,
-                        order_in_week=order_in_week,
-                        previous_lecture=previous_lecture,
-                        word_count=word_count,
-                    )
-
-                    # Save the lecture to the database
-                    lecture = self.repository.lecture.create(lecture)
-                    lectures.append(lecture)
-
-                    # Update previous lecture for the next iteration
-                    previous_lecture = lecture
+                # Update previous lecture for the next iteration
+                previous_lecture = lecture
 
                 return lectures
 
