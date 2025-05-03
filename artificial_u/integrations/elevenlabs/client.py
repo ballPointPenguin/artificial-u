@@ -109,44 +109,6 @@ class ElevenLabsClient:
             self.logger.error(f"Error retrieving ElevenLabs voice {voice_id}: {e}")
             return None
 
-    def get_all_voices(self) -> List[Dict[str, Any]]:
-        """
-        Get all available voices.
-
-        Returns:
-            List of voice data dictionaries
-        """
-        try:
-            response = self.client.voices.get_all()
-            return [
-                {
-                    "el_voice_id": voice.voice_id,
-                    "name": voice.name,
-                    "category": getattr(voice, "category", "premade"),
-                    "gender": (
-                        getattr(voice.labels, "gender", "neutral")
-                        if hasattr(voice, "labels")
-                        else "neutral"
-                    ),
-                    "accent": (
-                        getattr(voice.labels, "accent", "american")
-                        if hasattr(voice, "labels")
-                        else "american"
-                    ),
-                    "age": (
-                        getattr(voice.labels, "age", "middle_aged")
-                        if hasattr(voice, "labels")
-                        else "middle_aged"
-                    ),
-                    "description": getattr(voice, "description", ""),
-                    "preview_url": getattr(voice, "preview_url", ""),
-                }
-                for voice in response.voices
-            ]
-        except Exception as e:
-            self.logger.error(f"Error retrieving all voices: {e}")
-            return []
-
     def get_shared_voices(
         self,
         page_size: int = 100,

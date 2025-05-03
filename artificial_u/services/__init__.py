@@ -8,8 +8,8 @@ import logging
 import os
 import sys
 
-from artificial_u.audio.voice_selector import VoiceSelector
 from artificial_u.integrations.elevenlabs.client import ElevenLabsClient
+from artificial_u.integrations.elevenlabs.voice_mapper import VoiceMapper
 from artificial_u.services.audio_service import AudioService
 from artificial_u.services.content_service import ContentService
 from artificial_u.services.course_service import CourseService
@@ -28,7 +28,7 @@ __all__ = [
     "StorageService",
     "ImageService",
     "ContentService",
-    "VoiceSelector",
+    "VoiceMapper",
     "ElevenLabsClient",
 ]
 
@@ -50,17 +50,17 @@ if not is_test_environment():
         # Initialize basic components
         db_repository = RepositoryFactory()
 
-        # Initialize elevenlabs client and voice selector
+        # Initialize elevenlabs client and voice mapper
         elevenlabs_client = ElevenLabsClient()
-        voice_selector = VoiceSelector(client=elevenlabs_client)
+        voice_mapper = VoiceMapper(client=elevenlabs_client)
 
         logger.info("Initialized production services")
     except Exception as e:
         logger.warning(f"Error initializing services: {e}")
         db_repository = None
-        voice_selector = None
+        voice_mapper = None
 else:
     # In test environment, don't initialize real services
     logger.info("In test environment - not initializing real services")
     db_repository = None
-    voice_selector = None
+    voice_mapper = None

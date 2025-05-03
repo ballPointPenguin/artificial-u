@@ -39,9 +39,9 @@ The `SpeechProcessor` prepares text for optimal speech synthesis by:
 - Adding discipline-specific enhancements based on professor's department
 - Splitting text into appropriately sized chunks for processing
 
-#### VoiceSelector
+#### VoiceMapper
 
-The `VoiceSelector` matches professor profiles to appropriate ElevenLabs voices:
+The `VoiceMapper` matches professor profiles to appropriate ElevenLabs voices:
 
 - Maps professor attributes (gender, accent, age) to ElevenLabs voice categories
 - Selects voices based on quality and appropriate characteristics
@@ -59,7 +59,7 @@ The `ElevenLabsClient` provides low-level access to the ElevenLabs API:
 
 The `TTSService` orchestrates the text-to-speech process by:
 
-- Coordinating between SpeechProcessor, VoiceSelector, and ElevenLabsClient
+- Coordinating between SpeechProcessor, VoiceMapper, and ElevenLabsClient
 - Managing audio file storage and organization
 - Providing playback capabilities
 
@@ -70,6 +70,16 @@ The `AudioService` provides high-level audio functionality to the application:
 - Creates audio for lectures based on repository data
 - Handles storage and playback of audio files
 - Provides voice listing and selection capabilities
+
+#### VoiceService
+
+The `VoiceService` integrates voices from ElevenLabs and the database:
+
+- Calls the ElevenLabsClient to get voices
+- Searches the database for matching voices
+- Updates the database with new voices
+- Calls the VoiceMapper to map voices to professors
+- Updates the professor with the voice ID
 
 ### Repository
 
@@ -119,11 +129,12 @@ The core domain model consists of these primary entities:
 
 1. User selects a lecture to convert to audio
 2. System retrieves lecture content and professor information
-3. VoiceSelector selects an appropriate voice for the professor
-4. SpeechProcessor prepares the text for optimal speech conversion
-5. TTSService converts text to speech using ElevenLabsClient
-6. AudioService stores the audio file and updates the lecture record
-7. Repository updates the lecture with the audio URL
+3. VoiceMapper selects an appropriate voice for the professor
+4. VoiceService updates the professor with the voice ID
+5. SpeechProcessor prepares the text for optimal speech conversion
+6. TTSService converts text to speech using ElevenLabsClient
+7. AudioService stores the audio file and updates the lecture record
+8. Repository updates the lecture with the audio URL
 
 ## Future Architecture Enhancements
 

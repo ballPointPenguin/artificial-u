@@ -5,7 +5,7 @@ Audio processing service for ArtificialU.
 import logging
 import os
 import urllib.parse
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, Optional, Tuple
 
 from artificial_u.models.core import Lecture
 from artificial_u.services.storage_service import StorageService
@@ -181,26 +181,6 @@ class AudioService:
             error_msg = f"Failed to create lecture audio: {str(e)}"
             self.logger.error(error_msg)
             raise AudioProcessingError(error_msg) from e
-
-    def list_available_voices(self, **filters) -> List[Dict[str, Any]]:
-        """
-        List available voices with optional filtering.
-
-        Args:
-            **filters: Filter parameters (gender, accent, age)
-
-        Returns:
-            List of voices
-        """
-        client = self.tts_service.client
-        voices, _ = client.get_shared_voices(**filters)
-
-        # Map voice_id to el_voice_id to match database schema
-        for voice in voices:
-            if "voice_id" in voice and "el_voice_id" not in voice:
-                voice["el_voice_id"] = voice["voice_id"]
-
-        return voices
 
     def test_tts_connection(self) -> Dict[str, Any]:
         """

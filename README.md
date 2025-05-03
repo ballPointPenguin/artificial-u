@@ -189,21 +189,26 @@ artificial_u/
 │   ├── __init__.py
 │   ├── core.py            # Core data models using Pydantic
 │   └── database.py        # SQLAlchemy models and repository
-├── generators/            # Content generation
-│   ├── __init__.py
-│   └── content.py         # Claude API integration for content
 ├── audio/                 # Audio processing
 │   ├── __init__.py
 │   ├── speech_processor.py # Text processing for optimal TTS quality
-│   └── voice_selector.py  # Voice selection based on professor attributes
 └── integrations/          # External API integrations
     └── elevenlabs/        # ElevenLabs API integration
         ├── __init__.py
         └── client.py      # Low-level client for ElevenLabs API
+        └── voice_mapper.py # Voice mapping for matching professor attributes to ElevenLabs voices
 ├── services/              # Service layer components
     ├── __init__.py
     ├── audio_service.py   # High-level audio service
-    └── tts_service.py     # Text-to-speech service
+    ├── content_service.py # Content generation service
+    ├── course_service.py  # Course management service
+    ├── department_service.py # Department management service
+    ├── image_service.py     # Image generation service
+    ├── lecture_service.py   # Lecture management service
+    ├── professor_service.py # Professor management service
+    ├── storage_service.py   # Storage service
+    ├── tts_service.py       # Text-to-speech service
+    └── voice_service.py     # Voice selection service
 ```
 
 ## Development with GitHub Codespaces

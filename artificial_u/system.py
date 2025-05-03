@@ -6,10 +6,10 @@ import logging
 from typing import Any, Dict, List, Optional, Tuple
 
 from artificial_u.audio.speech_processor import SpeechProcessor
-from artificial_u.audio.voice_selector import VoiceSelector
 from artificial_u.config import get_settings
 from artificial_u.generators.factory import create_generator
 from artificial_u.integrations.elevenlabs.client import ElevenLabsClient
+from artificial_u.integrations.elevenlabs.voice_mapper import VoiceMapper
 from artificial_u.models.core import Course, Department, Lecture, Professor
 from artificial_u.models.repositories import RepositoryFactory
 from artificial_u.services.audio_service import AudioService
@@ -20,6 +20,7 @@ from artificial_u.services.lecture_service import LectureService
 from artificial_u.services.professor_service import ProfessorService
 from artificial_u.services.storage_service import StorageService
 from artificial_u.services.tts_service import TTSService
+from artificial_u.services.voice_service import VoiceService
 from artificial_u.utils.exceptions import ConfigurationError
 
 
@@ -158,10 +159,12 @@ class UniversitySystem:
             )
             self.speech_processor = SpeechProcessor()
 
-            # Initialize voice selector
-            self.voice_selector = VoiceSelector(
+            # Initialize voice mapper
+            self.voice_mapper = VoiceMapper(
                 client=self.elevenlabs_client,
-                logger=logging.getLogger("artificial_u.audio.voice_selector"),
+                logger=logging.getLogger(
+                    "artificial_u.integrations.elevenlabs.voice_mapper"
+                ),
             )
 
             # Initialize storage service
@@ -191,7 +194,7 @@ class UniversitySystem:
             audio_path=self.settings.TEMP_AUDIO_PATH,
             client=self.elevenlabs_client,
             speech_processor=self.speech_processor,
-            voice_selector=self.voice_selector,
+            voice_mapper=self.voice_mapper,
             logger=logging.getLogger("artificial_u.services.tts_service"),
         )
 
@@ -202,7 +205,7 @@ class UniversitySystem:
             repository_factory=self.repository_factory,
             content_service=self.content_service,
             image_service=self.image_service,
-            voice_selector=self.voice_selector,
+            voice_mapper=self.voice_mapper,
             logger=logging.getLogger("artificial_u.services.professor_service"),
         )
 
@@ -231,6 +234,13 @@ class UniversitySystem:
             tts_service=self.tts_service,
             storage_service=self.storage_service,
             logger=logging.getLogger("artificial_u.services.audio_service"),
+        )
+
+        # Initialize VoiceService
+        self.voice_service = VoiceService(
+            repository_factory=self.repository_factory,
+            client=self.elevenlabs_client,
+            logger=logging.getLogger("artificial_u.services.voice_service"),
         )
 
     # === Professor Methods ===
@@ -285,10 +295,6 @@ class UniversitySystem:
         """Create audio for a lecture."""
         return await self.audio_service.create_lecture_audio(**kwargs)
 
-    def list_available_voices(self, **kwargs) -> List[Dict[str, Any]]:
-        """List available voices with optional filtering."""
-        return self.audio_service.list_available_voices(**kwargs)
-
     def test_audio_connection(self) -> Dict[str, Any]:
         """Test connection to the TTS service."""
         return self.audio_service.test_tts_connection()
@@ -296,6 +302,18 @@ class UniversitySystem:
     async def play_audio(self, audio_data_or_path):
         """Play audio from data or file path."""
         await self.audio_service.play_audio(audio_data_or_path)
+
+    # === Voice Methods ===
+
+    def list_available_voices(self, **kwargs) -> List[Dict[str, Any]]:
+        """List available voices with optional filtering."""
+        return self.voice_service.list_available_voices(**kwargs)
+
+    def select_voice_for_professor(
+        self, professor: Professor, **kwargs
+    ) -> Dict[str, Any]:
+        """Select a voice for a professor."""
+        return self.voice_service.select_voice_for_professor(professor, **kwargs)
 
     # === Other Methods ===
 

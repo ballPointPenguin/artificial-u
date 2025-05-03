@@ -85,7 +85,7 @@ class VoiceMapper:
         """
         self.logger = logger or logging.getLogger(__name__)
 
-    def extract_gender(self, professor: Professor) -> Optional[str]:
+    def _extract_gender(self, professor: Professor) -> Optional[str]:
         """
         Extract gender information from professor profile.
 
@@ -162,7 +162,7 @@ class VoiceMapper:
         )
         return None
 
-    def extract_accent(self, professor: Professor) -> Optional[str]:
+    def _extract_accent(self, professor: Professor) -> Optional[str]:
         """
         Extract accent/nationality information from professor profile.
 
@@ -209,7 +209,7 @@ class VoiceMapper:
         # No clear accent detected
         return None
 
-    def extract_age(self, professor: Professor) -> str:
+    def _extract_age(self, professor: Professor) -> str:
         """
         Extract age information from professor profile.
 
@@ -255,6 +255,31 @@ class VoiceMapper:
         # Default to middle-aged for professors
         return "middle_aged"
 
+    def _calculate_quality_score(self, voice: Dict[str, Any]) -> float:
+        """
+        Calculate a quality score for a voice based on its attributes.
+        """
+        quality_score = 0.5
+
+        # Adjust based on category
+        if voice.get("category") == "high_quality":
+            quality_score += 0.3
+        elif voice.get("category") == "professional":
+            quality_score += 0.25
+
+        # Usage stats indicate popularity and likely quality
+        if "cloned_by_count" in voice and voice["cloned_by_count"] > 1000:
+            quality_score += min(0.2, voice["cloned_by_count"] / 100000)
+
+        # Use data typically has better voices
+        if voice.get("use_case") == "informative_educational":
+            quality_score += 0.1
+
+        # Cap at 1.0
+        quality_score = min(1.0, quality_score)
+
+        return quality_score
+
     def extract_profile_attributes(self, professor: Professor) -> Dict[str, Any]:
         """
         Extract all relevant attributes from a professor profile for voice matching.
@@ -266,15 +291,16 @@ class VoiceMapper:
             Dict of attributes for voice matching
         """
         # Basic attributes directly from professor fields
-        gender = self.extract_gender(professor)
-        accent = self.extract_accent(professor)
-        age = self.extract_age(professor)
+        gender = self._extract_gender(professor)
+        accent = self._extract_accent(professor)
+        age = self._extract_age(professor)
 
         # Build attributes dictionary
         attributes = {
             "language": "en",  # Default to English
             "use_case": "informative_educational",  # Educational content
         }
+        # TODO: Consider including 'category' here
 
         # Only add attributes if they have values
         if gender:
@@ -304,7 +330,7 @@ class VoiceMapper:
 
         # Calculate match score for each voice
         for voice in voices:
-            score = voice.get("quality_score", 0.5)  # Start with quality score
+            score = self._calculate_quality_score(voice)  # Start with quality score
 
             # Gender match is important
             if criteria.get("gender") and voice.get("gender") == criteria["gender"]:

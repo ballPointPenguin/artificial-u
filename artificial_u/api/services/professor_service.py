@@ -19,7 +19,7 @@ from artificial_u.api.models.professors import (
     ProfessorsListResponse,
     ProfessorUpdate,
 )
-from artificial_u.audio.voice_selector import VoiceSelector
+from artificial_u.integrations.elevenlabs.voice_mapper import VoiceMapper
 from artificial_u.models.core import Professor
 from artificial_u.models.repositories.factory import RepositoryFactory
 from artificial_u.services import ProfessorService
@@ -40,7 +40,7 @@ class ProfessorApiService:
         repository_factory: RepositoryFactory,
         content_service: ContentService,
         image_service: ImageService,
-        voice_selector: Optional[VoiceSelector] = None,
+        voice_mapper: Optional[VoiceMapper] = None,
         logger=None,
     ):
         """
@@ -50,7 +50,7 @@ class ProfessorApiService:
             repository_factory: Repository factory instance
             content_service: Content generation service
             image_service: Image generation service
-            voice_selector: Voice selection component (optional)
+            voice_mapper: Voice mapper (optional)
             logger: Optional logger instance
         """
         self.repository_factory = repository_factory
@@ -61,7 +61,7 @@ class ProfessorApiService:
             repository_factory=repository_factory,
             content_service=content_service,
             image_service=image_service,
-            voice_selector=voice_selector,
+            voice_mapper=voice_mapper,
             logger=self.logger,
         )
 

@@ -16,9 +16,9 @@ from artificial_u.api.services.course_service import CourseApiService
 from artificial_u.api.services.department_service import DepartmentApiService
 from artificial_u.api.services.lecture_service import LectureApiService
 from artificial_u.api.services.professor_service import ProfessorApiService
-from artificial_u.audio.voice_selector import VoiceSelector
 from artificial_u.generators.content import ContentGenerator
 from artificial_u.integrations.elevenlabs.client import ElevenLabsClient
+from artificial_u.integrations.elevenlabs.voice_mapper import VoiceMapper
 from artificial_u.models.repositories import RepositoryFactory
 from artificial_u.services.content_service import ContentService
 from artificial_u.services.course_service import CourseService
@@ -107,24 +107,24 @@ def get_elevenlabs_client() -> Optional[ElevenLabsClient]:
     )
 
 
-def get_voice_selector(
+def get_voice_mapper(
     elevenlabs_client: Optional[ElevenLabsClient] = Depends(get_elevenlabs_client),
-) -> Optional[VoiceSelector]:
+) -> Optional[VoiceMapper]:
     """
-    Get a voice selector instance if ElevenLabs is configured.
+    Get a voice mapper instance if ElevenLabs is configured.
 
     Args:
         elevenlabs_client: ElevenLabs client
 
     Returns:
-        VoiceSelector instance if configured, None otherwise
+        VoiceMapper instance if configured, None otherwise
     """
     if not elevenlabs_client:
         return None
 
-    return VoiceSelector(
+    return VoiceMapper(
         client=elevenlabs_client,
-        logger=logging.getLogger("artificial_u.audio.voice_selector"),
+        logger=logging.getLogger("artificial_u.integrations.elevenlabs.voice_mapper"),
     )
 
 
@@ -132,7 +132,7 @@ def get_professor_service(
     repository_factory: RepositoryFactory = Depends(get_repository_factory),
     content_service: ContentService = Depends(get_content_service),
     image_service: ImageService = Depends(get_image_service),
-    voice_selector: Optional[VoiceSelector] = Depends(get_voice_selector),
+    voice_mapper: Optional[VoiceMapper] = Depends(get_voice_mapper),
 ) -> ProfessorService:
     """
     Get a professor service instance.
@@ -141,7 +141,7 @@ def get_professor_service(
         repository_factory: Repository factory
         content_service: Content service
         image_service: Image service
-        voice_selector: Voice selector (optional)
+        voice_mapper: Voice mapper (optional)
 
     Returns:
         ProfessorService instance
@@ -150,7 +150,7 @@ def get_professor_service(
         repository_factory=repository_factory,
         content_service=content_service,
         image_service=image_service,
-        voice_selector=voice_selector,
+        voice_mapper=voice_mapper,
         logger=logging.getLogger("artificial_u.services.professor_service"),
     )
 
@@ -239,7 +239,7 @@ def get_professor_api_service(
     repository_factory: RepositoryFactory = Depends(get_repository_factory),
     content_service: ContentService = Depends(get_content_service),
     image_service: ImageService = Depends(get_image_service),
-    voice_selector: Optional[VoiceSelector] = Depends(get_voice_selector),
+    voice_mapper: Optional[VoiceMapper] = Depends(get_voice_mapper),
 ) -> ProfessorApiService:
     """
     Get a professor API service instance.
@@ -248,7 +248,7 @@ def get_professor_api_service(
         repository_factory: Repository factory
         content_service: Content service
         image_service: Image service
-        voice_selector: Voice selector (optional)
+        voice_mapper: Voice mapper (optional)
 
     Returns:
         ProfessorApiService instance
@@ -257,7 +257,7 @@ def get_professor_api_service(
         repository_factory=repository_factory,
         content_service=content_service,
         image_service=image_service,
-        voice_selector=voice_selector,
+        voice_mapper=voice_mapper,
         logger=logging.getLogger("artificial_u.api.services.professor_service"),
     )
 

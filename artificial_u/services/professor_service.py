@@ -6,7 +6,6 @@ import logging
 import xml.etree.ElementTree as ET
 from typing import Any, Dict, List, Optional
 
-from artificial_u.audio.voice_selector import VoiceSelector
 from artificial_u.config import get_settings
 from artificial_u.models.core import Professor
 from artificial_u.models.repositories.factory import RepositoryFactory
@@ -15,6 +14,7 @@ from artificial_u.prompts.professors import get_professor_prompt
 from artificial_u.prompts.system import SYSTEM_PROMPTS
 from artificial_u.services.content_service import ContentService
 from artificial_u.services.image_service import ImageService
+from artificial_u.services.voice_service import VoiceService
 from artificial_u.utils.exceptions import (
     DatabaseError,
     GenerationError,
@@ -30,7 +30,7 @@ class ProfessorService:
         repository_factory: RepositoryFactory,
         content_service: ContentService,
         image_service: ImageService,
-        voice_selector: Optional[VoiceSelector] = None,
+        voice_service: VoiceService,
         logger=None,
     ):
         """
@@ -40,14 +40,14 @@ class ProfessorService:
             repository_factory: Repository factory instance
             content_service: Content generation service
             image_service: Image generation service
-            voice_selector: Voice selection component (optional)
+            voice_service: Voice service
             logger: Optional logger instance
         """
         self.repository_factory = repository_factory
         self.content_service = content_service
         self.image_service = image_service
         self.logger = logger or logging.getLogger(__name__)
-        self.voice_selector = voice_selector
+        self.voice_service = voice_service
 
     # --- Generation Method --- #
 
@@ -367,7 +367,7 @@ class ProfessorService:
 
     def _assign_voice_to_professor(self, professor: Professor) -> None:
         """
-        Assign a voice to a professor using the VoiceSelector.
+        Assign a voice to a professor using the VoiceService.
         Updates the professor object in place with a voice_id if possible.
         """
         # If we already have a voice_id, don't override it
@@ -377,40 +377,13 @@ class ProfessorService:
             )
             return
 
-        if not self.voice_selector:
-            self.logger.warning(
-                f"No voice selector configured. Cannot assign voice to professor {professor.name}."
-            )
-            return
-
         try:
-            # Select a voice using VoiceSelector
-            voice_data = self.voice_selector.select_voice(professor)
-            el_voice_id = voice_data.get("el_voice_id")
+            # Select a voice using VoiceService
+            selected_voice = self.voice_service.select_voice_for_professor(professor)
 
-            if el_voice_id:
-                # Save voice to database and get the voice_id
-                try:
-                    # Create the voice record in the database
-                    voice = self.repository_factory.voice.create_from_elevenlabs_id(
-                        el_voice_id=el_voice_id,
-                        name=voice_data.get("name", "Unknown Voice"),
-                        gender=self.voice_selector._map_gender(professor),
-                        accent=self.voice_selector._map_accent(professor),
-                        age=self.voice_selector._map_age(professor),
-                    )
-                    # Update the professor object with the voice_id
-                    professor.voice_id = voice.id
-                    self.logger.info(
-                        f"Voice ID {voice.id} (ElevenLabs: {el_voice_id}) assigned to professor {professor.name}"
-                    )
-                except Exception as db_error:
-                    self.logger.warning(
-                        f"Failed to create voice record in database: {str(db_error)}"
-                    )
-            else:
+            if not selected_voice:
                 self.logger.warning(
-                    f"Voice selection did not return a valid el_voice_id for {professor.name}"
+                    f"Voice selection did not return a valid voice for {professor.name}"
                 )
 
         except Exception as e:

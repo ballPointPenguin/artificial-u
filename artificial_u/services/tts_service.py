@@ -9,8 +9,8 @@ import os
 from typing import Any, Dict, Optional, Tuple, Union
 
 from artificial_u.audio.speech_processor import SpeechProcessor
-from artificial_u.audio.voice_selector import VoiceSelector
 from artificial_u.integrations.elevenlabs.client import ElevenLabsClient
+from artificial_u.integrations.elevenlabs.voice_mapper import VoiceMapper
 from artificial_u.models.core import Lecture, Professor
 from artificial_u.utils.exceptions import AudioProcessingError
 
@@ -34,7 +34,7 @@ class TTSService:
         audio_path: Optional[str] = None,
         client: Optional[ElevenLabsClient] = None,
         speech_processor: Optional[SpeechProcessor] = None,
-        voice_selector: Optional[VoiceSelector] = None,
+        voice_mapper: Optional[VoiceMapper] = None,
         logger=None,
     ):
         """
@@ -45,7 +45,7 @@ class TTSService:
             audio_path: Optional base path for audio files
             client: Optional ElevenLabs client instance
             speech_processor: Optional speech processor instance
-            voice_selector: Optional voice selector instance
+            voice_mapper: Optional voice mapper instance
             logger: Optional logger instance
         """
         self.logger = logger or logging.getLogger(__name__)
@@ -54,9 +54,7 @@ class TTSService:
         # Initialize components
         self.client = client or ElevenLabsClient(api_key=api_key)
         self.speech_processor = speech_processor or SpeechProcessor(logger=self.logger)
-        self.voice_selector = voice_selector or VoiceSelector(
-            client=self.client, logger=self.logger
-        )
+        self.voice_mapper = voice_mapper or VoiceMapper(logger=self.logger)
 
     def convert_text_to_speech(
         self,
@@ -137,6 +135,7 @@ class TTSService:
         lecture: Lecture,
         professor: Professor,
         el_voice_id: Optional[str] = None,
+        model_id: Optional[str] = None,
         save_to_file: bool = True,
     ) -> Tuple[str, bytes]:
         """
@@ -146,22 +145,31 @@ class TTSService:
             lecture: Lecture to generate audio for
             professor: Professor delivering the lecture
             el_voice_id: Optional ElevenLabs voice ID (will be selected if not provided)
+            model_id: Optional ElevenLabs model ID
             save_to_file: Whether to save audio to file
 
         Returns:
             Tuple of (file path or empty string, audio data)
         """
-        # Get ElevenLabs voice ID if not specified
+        # Get voice ID from professor if not specified
         if not el_voice_id:
-            voice_data = self.voice_selector.select_voice(professor)
-            el_voice_id = voice_data["el_voice_id"]
-            self.logger.info(f"Selected voice: {voice_data['name']} ({el_voice_id})")
+            if professor.voice_id:
+                # Look up the voice in the database
+                voice = self.repository.get_voice(professor.voice_id)
+                if voice:
+                    el_voice_id = voice.el_voice_id
+                else:
+                    raise ValueError("No voice ID specified or found for professor")
+                # TODO: Maybe use select_voice_for_professor here?
+            else:
+                raise ValueError("No voice ID specified or found for professor")
 
         # Generate the audio
         try:
             audio_data = self.convert_text_to_speech(
                 text=lecture.content,
                 el_voice_id=el_voice_id,
+                model_id=model_id,
             )
         except Exception as e:
             raise AudioProcessingError(f"Failed to generate lecture audio: {e}")

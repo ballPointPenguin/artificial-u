@@ -7,9 +7,7 @@ including special handling for technical terms, stage directions, and mathematic
 
 import logging
 import re
-from typing import List, Optional
-
-from artificial_u.models.core import Professor
+from typing import List
 
 
 class SpeechProcessor:
@@ -71,15 +69,12 @@ class SpeechProcessor:
         """
         self.logger = logger or logging.getLogger(__name__)
 
-    def enhance_speech_markup(
-        self, text: str, professor: Optional[Professor] = None
-    ) -> str:
+    def enhance_speech_markup(self, text: str) -> str:
         """
         Enhance text with speech markup for better pronunciation.
 
         Args:
             text: The text to enhance
-            professor: Optional professor for subject-specific enhancements
 
         Returns:
             Enhanced text with speech markup
@@ -104,47 +99,11 @@ class SpeechProcessor:
         for symbol, spoken_form in self.MATH_NOTATION.items():
             enhanced_text = enhanced_text.replace(symbol, spoken_form)
 
-        # If professor is provided, we could add discipline-specific enhancements
-        if professor and hasattr(professor, "department"):
-            enhanced_text = self._add_discipline_specific_enhancements(
-                enhanced_text, professor
-            )
+        enhanced_text = self._enhance_code_syntax(enhanced_text)
+        enhanced_text = self._enhance_equations(enhanced_text)
+        enhanced_text = self._enhance_scientific_notation(enhanced_text)
 
         return enhanced_text
-
-    def _add_discipline_specific_enhancements(
-        self, text: str, professor: Professor
-    ) -> str:
-        """
-        Add discipline-specific speech enhancements based on professor's department.
-
-        Args:
-            text: The text to enhance
-            professor: The professor with department information
-
-        Returns:
-            Enhanced text with discipline-specific markup
-        """
-        department = professor.department.lower()
-
-        # Computer Science specific enhancements
-        if any(
-            term in department for term in ["computer", "computing", "cs", "software"]
-        ):
-            # Enhance code syntax
-            text = self._enhance_code_syntax(text)
-
-        # Mathematics specific enhancements
-        elif any(term in department for term in ["math", "mathematics", "statistics"]):
-            # Enhance equations
-            text = self._enhance_equations(text)
-
-        # Chemistry/Physics specific enhancements
-        elif any(term in department for term in ["chemistry", "physics"]):
-            # Enhance chemical formulas and units
-            text = self._enhance_scientific_notation(text)
-
-        return text
 
     def _enhance_code_syntax(self, text: str) -> str:
         """
