@@ -19,28 +19,24 @@ class VoiceService:
 
     def __init__(
         self,
-        api_key: str,
-        client: ElevenLabsClient,
-        mapper: VoiceMapper,
-        repository: RepositoryFactory,
+        repository_factory: RepositoryFactory,
+        client: Optional[ElevenLabsClient] = None,
         logger=None,
     ):
         """
         Initialize the voice service.
 
         Args:
-            api_key: ElevenLabs API key
-            client: ElevenLabs client instance
-            mapper: voice mapper instance
-            repository: database repository instance
-            logger: logger instance
+            repository_factory: Repository factory instance
+            client: ElevenLabs client instance (optional)
+            logger: Optional logger instance
         """
         self.logger = logger or logging.getLogger(__name__)
 
         # Initialize client and components
-        self.client = client or ElevenLabsClient(api_key=api_key)
-        self.mapper = mapper or VoiceMapper(logger=self.logger)
-        self.repository = repository
+        self.repository_factory = repository_factory
+        self.client = client or ElevenLabsClient()
+        self.mapper = VoiceMapper(logger=self.logger)
 
     def _find_voices_in_db(self, attributes: Dict[str, Any]) -> List[Dict[str, Any]]:
         """
@@ -52,7 +48,7 @@ class VoiceService:
         Returns:
             List of voice dictionaries
         """
-        voices = self.repository.list_voices(
+        voices = self.repository_factory.list_voices(
             gender=attributes.get("gender"),
             accent=attributes.get("accent"),
             age=attributes.get("age"),
@@ -141,7 +137,9 @@ class VoiceService:
 
         # Try with just gender if available
         if attributes.get("gender"):
-            db_voices = self.repository.list_voices(gender=attributes.get("gender"), language="en")
+            db_voices = self.repository_factory.list_voices(
+                gender=attributes.get("gender"), language="en"
+            )
             if db_voices:
                 return [v.dict() for v in db_voices]
 
@@ -151,7 +149,7 @@ class VoiceService:
                 return voices
 
         # If still no voices, get any voices with language='en'
-        db_voices = self.repository.list_voices(language="en")
+        db_voices = self.repository_factory.list_voices(language="en")
         if db_voices:
             return [v.dict() for v in db_voices]
 
@@ -168,7 +166,7 @@ class VoiceService:
         Returns:
             Voice database record
         """
-        voice_db = self.repository.get_voice_by_elevenlabs_id(selected_voice["voice_id"])
+        voice_db = self.repository_factory.get_voice_by_elevenlabs_id(selected_voice["voice_id"])
 
         if not voice_db:
             # Create a new voice record
@@ -182,7 +180,7 @@ class VoiceService:
                 use_case=selected_voice.get("use_case"),
                 category=selected_voice.get("category"),
             )
-            voice_db = self.repository.upsert_voice(voice)
+            voice_db = self.repository_factory.upsert_voice(voice)
 
         return voice_db
 
@@ -239,7 +237,7 @@ class VoiceService:
 
         # Update professor's voice_id if professor has an id
         if professor.id:
-            self.repository.update_professor_field(professor.id, voice_id=voice_db.id)
+            self.repository_factory.update_professor_field(professor.id, voice_id=voice_db.id)
             self.logger.info(f"Updated professor {professor.id} with voice ID {voice_db.id}")
 
         return selected_voice
@@ -273,7 +271,7 @@ class VoiceService:
 
         # Upsert to database
         try:
-            self.repository.upsert_voice(voice)
+            self.repository_factory.upsert_voice(voice)
         except Exception as e:
             self.logger.error(f"Error saving voice to database: {e}")
 
@@ -291,7 +289,7 @@ class VoiceService:
             Voice data dictionary or None if not found
         """
         # Try to get from database first
-        db_voice = self.repository.get_voice_by_elevenlabs_id(el_voice_id)
+        db_voice = self.repository_factory.get_voice_by_elevenlabs_id(el_voice_id)
         if db_voice:
             return db_voice.dict()
 
@@ -317,16 +315,16 @@ class VoiceService:
             raise ValueError(f"Voice with ID {el_voice_id} not found")
 
         # Find or Create DB Voice record with el_voice_id
-        voice = self.repository.get_voice_by_elevenlabs_id(el_voice_id)
+        voice = self.repository_factory.get_voice_by_elevenlabs_id(el_voice_id)
         if not voice:
             voice = Voice(
                 el_voice_id=el_voice_id,
                 name=voice_data["name"],
             )
-            self.repository.upsert_voice(voice)
+            self.repository_factory.upsert_voice(voice)
 
         # Update professor with voice ID
-        self.repository.update_professor_field(professor_id, voice_id=voice.id)
+        self.repository_factory.update_professor_field(professor_id, voice_id=voice.id)
 
         self.logger.info(f"Manually assigned voice {el_voice_id} to professor {professor_id}")
 
@@ -360,7 +358,7 @@ class VoiceService:
             List of voice dictionaries
         """
         # Try database first
-        voices = self.repository.list_voices(
+        voices = self.repository_factory.list_voices(
             gender=gender,
             accent=accent,
             age=age,

@@ -157,8 +157,7 @@ class UniversitySystem:
 
             # Initialize voice mapper
             self.voice_mapper = VoiceMapper(
-                client=self.elevenlabs_client,
-                logger=logging.getLogger("artificial_u.integrations.elevenlabs.voice_mapper"),
+                logger=logging.getLogger("artificial_u.integrations.elevenlabs.voice_mapper")
             )
 
             # Initialize storage service
@@ -188,18 +187,25 @@ class UniversitySystem:
             audio_path=self.settings.TEMP_AUDIO_PATH,
             client=self.elevenlabs_client,
             speech_processor=self.speech_processor,
-            voice_mapper=self.voice_mapper,
+            repository_factory=self.repository_factory,
             logger=logging.getLogger("artificial_u.services.tts_service"),
         )
 
         # --- Instantiate services that depend on the above ---
+
+        # Initialize VoiceService
+        self.voice_service = VoiceService(
+            repository_factory=self.repository_factory,
+            client=self.elevenlabs_client,
+            logger=logging.getLogger("artificial_u.services.voice_service"),
+        )
 
         # Initialize ProfessorService
         self.professor_service = ProfessorService(
             repository_factory=self.repository_factory,
             content_service=self.content_service,
             image_service=self.image_service,
-            voice_mapper=self.voice_mapper,
+            voice_service=self.voice_service,
             logger=logging.getLogger("artificial_u.services.professor_service"),
         )
 
@@ -228,13 +234,6 @@ class UniversitySystem:
             tts_service=self.tts_service,
             storage_service=self.storage_service,
             logger=logging.getLogger("artificial_u.services.audio_service"),
-        )
-
-        # Initialize VoiceService
-        self.voice_service = VoiceService(
-            repository_factory=self.repository_factory,
-            client=self.elevenlabs_client,
-            logger=logging.getLogger("artificial_u.services.voice_service"),
         )
 
     # === Professor Methods ===

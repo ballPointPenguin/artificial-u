@@ -19,12 +19,12 @@ from artificial_u.api.models.professors import (
     ProfessorsListResponse,
     ProfessorUpdate,
 )
-from artificial_u.integrations.elevenlabs.voice_mapper import VoiceMapper
 from artificial_u.models.core import Professor
 from artificial_u.models.repositories.factory import RepositoryFactory
 from artificial_u.services import ProfessorService
 from artificial_u.services.content_service import ContentService
 from artificial_u.services.image_service import ImageService
+from artificial_u.services.voice_service import VoiceService
 from artificial_u.utils.exceptions import DatabaseError, GenerationError, ProfessorNotFoundError
 
 
@@ -36,7 +36,7 @@ class ProfessorApiService:
         repository_factory: RepositoryFactory,
         content_service: ContentService,
         image_service: ImageService,
-        voice_mapper: Optional[VoiceMapper] = None,
+        voice_service: VoiceService,
         logger=None,
     ):
         """
@@ -46,7 +46,7 @@ class ProfessorApiService:
             repository_factory: Repository factory instance
             content_service: Content generation service
             image_service: Image generation service
-            voice_mapper: Voice mapper (optional)
+            voice_service: Voice service
             logger: Optional logger instance
         """
         self.repository_factory = repository_factory
@@ -57,7 +57,7 @@ class ProfessorApiService:
             repository_factory=repository_factory,
             content_service=content_service,
             image_service=image_service,
-            voice_mapper=voice_mapper,
+            voice_service=voice_service,
             logger=self.logger,
         )
 

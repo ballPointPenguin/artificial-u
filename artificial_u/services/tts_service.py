@@ -10,7 +10,6 @@ from typing import Any, Dict, Optional, Tuple, Union
 
 from artificial_u.audio.speech_processor import SpeechProcessor
 from artificial_u.integrations.elevenlabs.client import ElevenLabsClient
-from artificial_u.integrations.elevenlabs.voice_mapper import VoiceMapper
 from artificial_u.models.core import Lecture, Professor
 from artificial_u.utils.exceptions import AudioProcessingError
 
@@ -34,7 +33,7 @@ class TTSService:
         audio_path: Optional[str] = None,
         client: Optional[ElevenLabsClient] = None,
         speech_processor: Optional[SpeechProcessor] = None,
-        voice_mapper: Optional[VoiceMapper] = None,
+        repository_factory=None,
         logger=None,
     ):
         """
@@ -45,16 +44,16 @@ class TTSService:
             audio_path: Optional base path for audio files
             client: Optional ElevenLabs client instance
             speech_processor: Optional speech processor instance
-            voice_mapper: Optional voice mapper instance
+            repository_factory: Optional repository factory instance
             logger: Optional logger instance
         """
         self.logger = logger or logging.getLogger(__name__)
         self.audio_path = audio_path
+        self.repository_factory = repository_factory
 
         # Initialize components
         self.client = client or ElevenLabsClient(api_key=api_key)
         self.speech_processor = speech_processor or SpeechProcessor(logger=self.logger)
-        self.voice_mapper = voice_mapper or VoiceMapper(logger=self.logger)
 
     def convert_text_to_speech(
         self,
@@ -149,9 +148,13 @@ class TTSService:
         """
         # Get voice ID from professor if not specified
         if not el_voice_id:
-            if professor.voice_id:
+            if (
+                professor.voice_id
+                and hasattr(self, "repository_factory")
+                and self.repository_factory
+            ):
                 # Look up the voice in the database
-                voice = self.repository.get_voice(professor.voice_id)
+                voice = self.repository_factory.voice.get(professor.voice_id)
                 if voice:
                     el_voice_id = voice.el_voice_id
                 else:

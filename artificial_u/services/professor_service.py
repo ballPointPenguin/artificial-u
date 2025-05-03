@@ -36,14 +36,14 @@ class ProfessorService:
             repository_factory: Repository factory instance
             content_service: Content generation service
             image_service: Image generation service
-            voice_service: Voice service
+            voice_service: Voice selection service
             logger: Optional logger instance
         """
         self.repository_factory = repository_factory
         self.content_service = content_service
         self.image_service = image_service
-        self.logger = logger or logging.getLogger(__name__)
         self.voice_service = voice_service
+        self.logger = logger or logging.getLogger(__name__)
 
     # --- Generation Method --- #
 

@@ -18,7 +18,7 @@ class AudioService:
 
     def __init__(
         self,
-        repository,
+        repository_factory,
         api_key: Optional[str] = None,
         tts_service: Optional[TTSService] = None,
         storage_service: Optional[StorageService] = None,
@@ -28,21 +28,24 @@ class AudioService:
         Initialize the audio service.
 
         Args:
-            repository: Data repository
+            repository_factory: Repository factory instance
             api_key: Optional ElevenLabs API key
             tts_service: Optional TTS service instance
             storage_service: Optional storage service instance
             logger: Optional logger instance
         """
         self.logger = logger or logging.getLogger(__name__)
-        self.repository = repository
+        self.repository_factory = repository_factory
 
         # Initialize services
         storage_settings = (storage_service or StorageService()).settings
         temp_audio_path = storage_settings.TEMP_AUDIO_PATH
 
         self.tts_service = tts_service or TTSService(
-            api_key=api_key, audio_path=temp_audio_path, logger=self.logger
+            api_key=api_key,
+            audio_path=temp_audio_path,
+            repository_factory=self.repository_factory,
+            logger=self.logger,
         )
         self.storage_service = storage_service or StorageService(logger=self.logger)
 
@@ -56,14 +59,14 @@ class AudioService:
             Tuple of (course, lecture, professor)
         """
         # Get course
-        course = self.repository.course.get_by_code(course_code)
+        course = self.repository_factory.course.get_by_code(course_code)
         if not course:
             error_msg = f"Course with code {course_code} not found"
             self.logger.error(error_msg)
             raise ValueError(error_msg)
 
         # Get lecture
-        lecture = self.repository.lecture.get_by_course_week_order(
+        lecture = self.repository_factory.lecture.get_by_course_week_order(
             course_id=course.id, week_number=week, order_in_week=number
         )
         if not lecture:
@@ -72,7 +75,7 @@ class AudioService:
             raise ValueError(error_msg)
 
         # Get professor
-        professor = self.repository.professor.get(course.professor_id)
+        professor = self.repository_factory.professor.get(course.professor_id)
         if not professor:
             error_msg = f"Professor with ID {course.professor_id} not found"
             self.logger.error(error_msg)
@@ -85,7 +88,7 @@ class AudioService:
         if not professor.voice_id:
             return None
 
-        voice_record = self.repository.voice.get(professor.voice_id)
+        voice_record = self.repository_factory.voice.get(professor.voice_id)
         if not voice_record:
             return None
 
@@ -129,12 +132,12 @@ class AudioService:
 
     def _update_lecture_audio_url(self, lecture, audio_url: str) -> Lecture:
         """Update lecture with audio URL and return updated lecture."""
-        lecture_to_update = self.repository.lecture.get(lecture.id)
+        lecture_to_update = self.repository_factory.lecture.get(lecture.id)
         if not lecture_to_update:
             raise ValueError(f"Lecture with ID {lecture.id} not found")
 
         lecture_to_update.audio_url = audio_url
-        updated_lecture = self.repository.lecture.update(lecture_to_update)
+        updated_lecture = self.repository_factory.lecture.update(lecture_to_update)
         self.logger.debug(f"Lecture updated with audio url: {audio_url}")
         return updated_lecture
 

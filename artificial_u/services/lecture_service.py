@@ -24,7 +24,7 @@ class LectureService:
 
     def __init__(
         self,
-        repository,
+        repository_factory,
         content_generator,
         professor_service,
         course_service,
@@ -39,7 +39,7 @@ class LectureService:
         Initialize the lecture service.
 
         Args:
-            repository: Data repository
+            repository_factory: Repository factory instance
             content_generator: Content generation service
             professor_service: Professor management service
             course_service: Course management service
@@ -50,7 +50,7 @@ class LectureService:
             storage_service: Optional storage service for file operations
             logger: Optional logger instance
         """
-        self.repository = repository
+        self.repository_factory = repository_factory
         self.content_generator = content_generator
         self.professor_service = professor_service
         self.course_service = course_service
@@ -109,7 +109,7 @@ class LectureService:
 
         # Save lecture to database
         try:
-            lecture = self.repository.lecture.create(lecture)
+            lecture = self.repository_factory.lecture.create(lecture)
             self.logger.info(f"Lecture created with ID: {lecture.id}")
         except Exception as e:
             error_msg = f"Failed to save lecture: {str(e)}"
@@ -165,7 +165,7 @@ class LectureService:
             prev_number = course.lectures_per_week
 
         try:
-            previous_lecture = self.repository.lecture.get_by_course_week_order(
+            previous_lecture = self.repository_factory.lecture.get_by_course_week_order(
                 course_id=course.id, week_number=prev_week, order_in_week=prev_number
             )
             if previous_lecture:
@@ -330,7 +330,7 @@ class LectureService:
         Raises:
             LectureNotFoundError: If lecture not found
         """
-        lecture = self.repository.lecture.get_by_course_week_order(
+        lecture = self.repository_factory.lecture.get_by_course_week_order(
             course_id=course_id, week_number=week_number, order_in_week=order_in_week
         )
         if not lecture:
@@ -407,7 +407,7 @@ class LectureService:
                 )
 
                 # Save the lecture to the database
-                lecture = self.repository.lecture.create(lecture)
+                lecture = self.repository_factory.lecture.create(lecture)
                 lectures.append(lecture)
 
                 # Update previous lecture for the next iteration
@@ -445,7 +445,7 @@ class LectureService:
         lectures = []
 
         try:
-            courses = self.repository.course.list()
+            courses = self.repository_factory.course.list()
 
             for course in courses:
                 # Handle either format - dict with "course" key or direct Course object
@@ -481,12 +481,12 @@ class LectureService:
         lectures = []
 
         try:
-            professor = self.repository.professor.get(course.professor_id)
+            professor = self.repository_factory.professor.get(course.professor_id)
             if not professor:
                 self.logger.warning(f"Professor not found for course {course.code}, skipping")
                 return []
 
-            course_lectures = self.repository.lecture.list_by_course(course.id)
+            course_lectures = self.repository_factory.lecture.list_by_course(course.id)
 
             for lecture in course_lectures:
                 # Get model information and skip if it doesn't match the filter
@@ -575,7 +575,7 @@ class LectureService:
         Returns:
             List of Lecture objects
         """
-        return self.repository.lecture.list(
+        return self.repository_factory.lecture.list(
             page=page,
             size=size,
             course_id=course_id,
@@ -589,7 +589,7 @@ class LectureService:
         professor_id: Optional[int] = None,
         search_query: Optional[str] = None,
     ) -> int:
-        return self.repository.lecture.count(
+        return self.repository_factory.lecture.count(
             course_id=course_id,
             professor_id=professor_id,
             search_query=search_query,

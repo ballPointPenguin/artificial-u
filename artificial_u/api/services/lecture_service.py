@@ -23,7 +23,7 @@ class LectureApiService:
 
     def __init__(
         self,
-        repository: RepositoryFactory,
+        repository_factory: RepositoryFactory,
         professor_service: ProfessorService,
         course_service: CourseService,
         content_generator: ContentGenerator,
@@ -35,10 +35,10 @@ class LectureApiService:
         Initialize with required services.
 
         Args:
-            repository: Database repository factory
+            repository_factory: Repository factory instance
             professor_service: Professor service for professor-related operations
             course_service: Course service for course-related operations
-            content_service: Content generation service
+            content_generator: Content generator service
             storage_service: Storage service for file operations
             logger: Optional logger instance
         """
@@ -46,7 +46,7 @@ class LectureApiService:
 
         # Initialize core service with dependencies
         self.core_service = LectureService(
-            repository=repository,
+            repository_factory=repository_factory,
             professor_service=professor_service,
             course_service=course_service,
             content_generator=content_generator,
