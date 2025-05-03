@@ -7,11 +7,7 @@ from typing import List, Optional
 from sqlalchemy import func, or_
 
 from artificial_u.models.core import Lecture
-from artificial_u.models.database import (
-    CourseModel,
-    LectureModel,
-    lecture_model_to_entity,
-)
+from artificial_u.models.database import CourseModel, LectureModel, lecture_model_to_entity
 from artificial_u.models.repositories.base import BaseRepository
 
 
@@ -149,9 +145,7 @@ class LectureRepository(BaseRepository):
 
             if professor_id is not None:
                 # Join with CourseModel to filter by professor_id
-                query = query.join(CourseModel).filter(
-                    CourseModel.professor_id == professor_id
-                )
+                query = query.join(CourseModel).filter(CourseModel.professor_id == professor_id)
 
             if search_query:
                 # Search in title and description
@@ -197,9 +191,7 @@ class LectureRepository(BaseRepository):
 
             if professor_id is not None:
                 # Join with CourseModel to filter by professor_id
-                query = query.join(CourseModel).filter(
-                    CourseModel.professor_id == professor_id
-                )
+                query = query.join(CourseModel).filter(CourseModel.professor_id == professor_id)
 
             if search_query:
                 # Search in title and description
@@ -310,11 +302,7 @@ class LectureRepository(BaseRepository):
 
         if professor_id:
             with self.get_session() as session:
-                professor = (
-                    session.query(CourseModel.professor)
-                    .filter_by(id=professor_id)
-                    .first()
-                )
+                professor = session.query(CourseModel.professor).filter_by(id=professor_id).first()
                 if professor:
                     professor_name = professor.name
 

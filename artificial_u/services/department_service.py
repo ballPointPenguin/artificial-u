@@ -9,17 +9,10 @@ from typing import Dict, List, Optional
 from artificial_u.config import get_settings
 from artificial_u.models.core import Course, Department, Professor
 from artificial_u.models.repositories.factory import RepositoryFactory
-from artificial_u.prompts.department import (
-    get_department_prompt,
-    get_open_department_prompt,
-)
+from artificial_u.prompts.department import get_department_prompt, get_open_department_prompt
 from artificial_u.prompts.system import GENERIC_XML_SYSTEM_PROMPT
 from artificial_u.services.content_service import ContentService
-from artificial_u.utils.exceptions import (
-    DatabaseError,
-    DepartmentNotFoundError,
-    DependencyError,
-)
+from artificial_u.utils.exceptions import DatabaseError, DepartmentNotFoundError, DependencyError
 
 
 class DepartmentService:
@@ -74,8 +67,7 @@ class DepartmentService:
             name=name,
             code=code,
             faculty=faculty,
-            description=description
-            or f"The {name} department in the {faculty} faculty.",
+            description=description or f"The {name} department in the {faculty} faculty.",
         )
 
         # Save to database
@@ -243,9 +235,7 @@ class DepartmentService:
         self.get_department(department_id)
 
         try:
-            professors = self.repository_factory.professor.list(
-                department_id=department_id
-            )
+            professors = self.repository_factory.professor.list(department_id=department_id)
             self.logger.debug(f"Found {len(professors)} professors")
             return professors
         except Exception as e:
@@ -304,12 +294,8 @@ class DepartmentService:
             prompt = get_department_prompt(course_name=course_name)
         else:
             # Use the existing repository_factory instead of creating a new repository
-            existing_departments = (
-                self.repository_factory.department.list_department_names()
-            )
-            prompt = get_open_department_prompt(
-                existing_departments=existing_departments
-            )
+            existing_departments = self.repository_factory.department.list_department_names()
+            prompt = get_open_department_prompt(existing_departments=existing_departments)
 
         # Use the content service to generate the department
         content_service = ContentService(logger=self.logger)

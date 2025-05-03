@@ -73,9 +73,7 @@ def setup_logging(settings: Settings) -> None:
         api_logger.handlers.clear()
 
     # Create standard formatter
-    std_formatter = logging.Formatter(
-        "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-    )
+    std_formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 
     # Console handler
     console_handler = logging.StreamHandler(sys.stdout)

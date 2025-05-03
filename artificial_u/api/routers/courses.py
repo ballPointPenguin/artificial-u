@@ -147,9 +147,7 @@ async def update_course(
     description="Delete a course.",
     responses={
         404: {"description": "Course not found"},
-        409: {
-            "description": "Cannot delete course with associated resources (e.g., lectures)"
-        },
+        409: {"description": "Cannot delete course with associated resources (e.g., lectures)"},
         500: {"description": "Internal server error during deletion"},
     },
 )

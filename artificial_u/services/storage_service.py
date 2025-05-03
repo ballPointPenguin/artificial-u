@@ -92,9 +92,7 @@ class StorageService:
                 extra_args["ContentType"] = content_type
 
             # Upload to S3/MinIO
-            self.client.upload_fileobj(
-                file_obj, bucket, object_name, ExtraArgs=extra_args
-            )
+            self.client.upload_fileobj(file_obj, bucket, object_name, ExtraArgs=extra_args)
 
             # Generate URL
             url = self.get_file_url(bucket, object_name)
@@ -159,9 +157,7 @@ class StorageService:
 
             # Ensure we have a proper URL
             if not base_url:
-                self.logger.warning(
-                    "STORAGE_PUBLIC_URL not set, using endpoint URL instead"
-                )
+                self.logger.warning("STORAGE_PUBLIC_URL not set, using endpoint URL instead")
                 base_url = self.settings.STORAGE_ENDPOINT_URL
 
             # Combine all parts to create the full URL
@@ -207,9 +203,7 @@ class StorageService:
             self.logger.error(f"Error downloading file: {str(e)}")
             return None, None
 
-    async def download_audio_file(
-        self, object_name: str
-    ) -> Tuple[Optional[bytes], Optional[str]]:
+    async def download_audio_file(self, object_name: str) -> Tuple[Optional[bytes], Optional[str]]:
         """
         Download an audio file from storage.
 
@@ -289,9 +283,7 @@ class StorageService:
                             "key": obj["Key"],
                             "size": obj["Size"],
                             "last_modified": obj["LastModified"],
-                            "content_type": head.get(
-                                "ContentType", "application/octet-stream"
-                            ),
+                            "content_type": head.get("ContentType", "application/octet-stream"),
                             "url": self.get_file_url(bucket, obj["Key"]),
                         }
                     )

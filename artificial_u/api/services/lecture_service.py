@@ -7,12 +7,7 @@ from typing import Optional
 
 from fastapi import HTTPException, status
 
-from artificial_u.api.models.lectures import (
-    Lecture,
-    LectureCreate,
-    LectureList,
-    LectureUpdate,
-)
+from artificial_u.api.models.lectures import Lecture, LectureCreate, LectureList, LectureUpdate
 from artificial_u.generators.content import ContentGenerator
 from artificial_u.models.repositories import RepositoryFactory
 from artificial_u.services import LectureService
@@ -200,9 +195,7 @@ class LectureApiService:
                 detail=str(e),
             )
 
-    def update_lecture(
-        self, lecture_id: int, lecture_data: LectureUpdate
-    ) -> Optional[Lecture]:
+    def update_lecture(self, lecture_id: int, lecture_data: LectureUpdate) -> Optional[Lecture]:
         """
         Update an existing lecture with new information.
 

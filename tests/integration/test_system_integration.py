@@ -88,9 +88,7 @@ def apply_monkey_patches(system):
 
         system.content_generator.client.create = create_with_timeout
     else:
-        print(
-            "Warning: Could not set Ollama timeout for tests due to changed client structure."
-        )
+        print("Warning: Could not set Ollama timeout for tests due to changed client structure.")
 
     # Assign voice_service to professor_service
     system.professor_service.voice_service = system.voice_service
@@ -106,16 +104,12 @@ def apply_monkey_patches(system):
     system.tts_service.generate_audio = lambda: b"mock audio data"
 
     # Monkey patch audio_service.create_lecture_audio to skip actual processing
-    def mock_create_lecture_audio(
-        lecture_id=None, course_code=None, week=None, number=None
-    ):
+    def mock_create_lecture_audio(lecture_id=None, course_code=None, week=None, number=None):
         if lecture_id:
             lecture = system.repository.lecture.get(lecture_id)
         else:
             course = system.repository.course.get_by_code(course_code)
-            lecture = system.repository.lecture.get_by_course_week_order(
-                course.id, week, number
-            )
+            lecture = system.repository.lecture.get_by_course_week_order(course.id, week, number)
         audio_url = f"mock_storage://{course_code}/week{week}/lecture{number}.mp3"
         lecture_to_update = system.repository.lecture.get(lecture.id)
         lecture_to_update.audio_url = audio_url
@@ -137,9 +131,7 @@ def apply_monkey_patches(system):
         ],
         False,
     )
-    system.elevenlabs_client.get_shared_voices = (
-        system.voice_service.client.get_shared_voices
-    )
+    system.elevenlabs_client.get_shared_voices = system.voice_service.client.get_shared_voices
 
     system.voice_service.client.get_el_voice = lambda *args, **kwargs: {
         "el_voice_id": "test_voice_id",
@@ -152,13 +144,9 @@ def apply_monkey_patches(system):
         "status": "success",
         "test": True,
     }
-    system.voice_service.client.text_to_speech = (
-        lambda *args, **kwargs: b"mock audio data"
-    )
+    system.voice_service.client.text_to_speech = lambda *args, **kwargs: b"mock audio data"
     system.elevenlabs_client.get_el_voice = system.voice_service.client.get_el_voice
-    system.elevenlabs_client.test_connection = (
-        system.voice_service.client.test_connection
-    )
+    system.elevenlabs_client.test_connection = system.voice_service.client.test_connection
     system.elevenlabs_client.text_to_speech = system.voice_service.client.text_to_speech
 
     # Simplify _assign_voice_to_professor monkey patch

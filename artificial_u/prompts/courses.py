@@ -68,8 +68,8 @@ EXAMPLE_COURSE_1 = """<course>
 EXAMPLE_COURSE_2 = """<course>
   <code>HIST220</code>
   <title>Medieval European History</title>
-  <description>An exploration of European history from the fall of Rome to the Renaissance, examining
-  social, political, and cultural developments.</description>
+  <description>An exploration of European history from the fall of Rome to the Renaissance,
+  examining social, political, and cultural developments.</description>
   <level>Undergraduate</level>
   <credits>4</credits>
   <lectures_per_week>3</lectures_per_week>
@@ -105,7 +105,8 @@ EXAMPLE_COURSE_2 = """<course>
 COURSE_PROMPT = PromptTemplate(
     template=f"""
 Generate a course with a nested sequence of lecture topics in XML format.
-Use the structure below; fill in all bracketed placeholders with either provided values or generated ones if marked as [GENERATE].
+Use the structure below; fill in all bracketed placeholders with either provided values
+or generated ones if marked as [GENERATE].
 
 XML Structure:
 {COURSE_XML_STRUCTURE}
@@ -131,7 +132,8 @@ Example 1:
 Example 2:
 {EXAMPLE_COURSE_2}
 
-IMPORTANT: Make sure that the number of lectures per week in your response matches the specified lectures_per_week value.
+IMPORTANT: Make sure that the number of lectures per week in your response matches the
+specified lectures_per_week value.
 For each week, generate exactly the number of lectures specified in lectures_per_week.
 
 Wrap your answer in <output> tags, providing only the <course> element:
@@ -175,9 +177,7 @@ def get_course_prompt(
 
     # Format freeform prompt if provided
     freeform_prompt_text = (
-        f"Additional context/ideas for the course:\n{freeform_prompt}\n"
-        if freeform_prompt
-        else ""
+        f"Additional context/ideas for the course:\n{freeform_prompt}\n" if freeform_prompt else ""
     )
 
     # Format the main prompt template

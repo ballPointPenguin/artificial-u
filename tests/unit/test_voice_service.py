@@ -139,9 +139,7 @@ class TestVoiceService:
         )
 
         # Mock select_voice_for_professor
-        service.select_voice_for_professor = MagicMock(
-            return_value={"el_voice_id": "test-voice-1"}
-        )
+        service.select_voice_for_professor = MagicMock(return_value={"el_voice_id": "test-voice-1"})
 
         # Call the method
         result = service.select_voice_for_professor(sample_professor)

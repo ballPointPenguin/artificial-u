@@ -7,9 +7,11 @@ from artificial_u.prompts.base import PromptTemplate, StructuredPrompt
 # Basic lecture generation template
 LECTURE_PROMPT = PromptTemplate(
     template="""
-You are an AI assistant tasked with generating engaging university lecture texts for various courses. These lectures will be used in a
-text-to-speech engine, so it's crucial to create content that works well in spoken form. Your goal is to produce a lecture that is
-approximately {word_count} words long, narrative in style, and infused with the personality of the lecturer.
+You are an AI assistant tasked with generating engaging university lecture texts for various
+courses. These lectures will be used in a text-to-speech engine, so it's crucial to create
+content that works well in spoken form. Your goal is to produce a lecture that is
+approximately {word_count} words long, narrative in style, and infused with the personality
+of the lecturer.
 
 Course: {course_title} ({course_code})
 Lecture Topic: {topic}
@@ -23,7 +25,8 @@ Professor Details:
 
 {continuity_context}
 
-Before writing the lecture, please plan your approach inside <lecture_preparation> tags. In your preparation:
+Before writing the lecture, please plan your approach inside <lecture_preparation> tags.
+In your preparation:
 
 1. Consider how to structure the lecture for optimal audio delivery:
    - Plan clear transitions between main points
@@ -90,9 +93,11 @@ class StructuredLecturePrompt(StructuredPrompt):
         self.add_section(
             "introduction",
             """
-You are an AI assistant tasked with generating engaging university lecture texts for various courses. These lectures will
-be used in a text-to-speech engine, so it's crucial to create content that works well in spoken form. Your goal is to produce
-a lecture that is approximately {word_count} words long, narrative in style, and infused with the personality of the lecturer.""",
+You are an AI assistant tasked with generating engaging university lecture texts for various
+courses. These lectures will be used in a text-to-speech engine, so it's crucial to create
+content that works well in spoken form. Your goal is to produce a lecture that is
+approximately {word_count} words long, narrative in style, and infused with the personality
+of the lecturer.""",
         )
 
         self.add_section(
@@ -115,7 +120,8 @@ Week: {week_number}, Lecture: {order_in_week}""",
 
         self.add_section(
             "preparation_instructions",
-            """Before writing the lecture, please plan your approach inside <lecture_preparation> tags. In your preparation:
+            """Before writing the lecture, please plan your approach inside
+<lecture_preparation> tags. In your preparation:
 
 1. Consider how to structure the lecture for optimal audio delivery:
    - Plan clear transitions between main points
@@ -136,7 +142,9 @@ Week: {week_number}, Lecture: {order_in_week}""",
 
         self.add_section(
             "writing_instructions",
-            """After your preparation, write the lecture as a continuous text, following these guidelines:
+            """
+After your preparation, write the lecture as a continuous text,
+following these guidelines:
 
 1. Begin with a vivid introduction that sets the scene and introduces the lecturer
 2. Write in a conversational, engaging style that reflects the lecturer's personality

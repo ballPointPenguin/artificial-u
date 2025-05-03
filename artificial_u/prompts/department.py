@@ -55,9 +55,7 @@ def get_department_prompt(
     elif course_name:
         return COURSE_DEPARTMENT_PROMPT.format(course_name=course_name)
     else:
-        return OPEN_DEPARTMENT_PROMPT.format(
-            existing_departments=existing_departments_xml_str
-        )
+        return OPEN_DEPARTMENT_PROMPT.format(existing_departments=existing_departments_xml_str)
 
 
 def get_open_department_prompt(existing_departments: Optional[List[str]] = None) -> str:
@@ -99,7 +97,8 @@ OPEN_DEPARTMENT_PROMPT = PromptTemplate(
     </output>
   </example>
 </examples>
-Invent a new, typical, or creative department and generate an XML entry for it. Do not duplicate any department listed in <existing_departments>:
+Invent a new, typical, or creative department and generate an XML entry for it.
+Do not duplicate any department listed in <existing_departments>:
 <output>
 """,
     required_vars=["existing_departments"],

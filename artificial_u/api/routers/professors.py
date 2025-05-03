@@ -227,9 +227,7 @@ async def get_professor_lectures(
     },
 )
 async def generate_professor_image(
-    professor_id: int = Path(
-        ..., description="The ID of the professor to generate an image for"
-    ),
+    professor_id: int = Path(..., description="The ID of the professor to generate an image for"),
     service: ProfessorApiService = Depends(get_professor_api_service),
 ):
     """
@@ -265,7 +263,8 @@ async def generate_professor_image(
 @router.post(
     "/generate",
     response_model=ProfessorResponse,
-    status_code=status.HTTP_200_OK,  # Use 200 as we're returning the generated data, not creating a resource yet
+    # Use 200 as we're returning the generated data, not creating a resource yet
+    status_code=status.HTTP_200_OK,
     summary="Generate professor profile",
     description="Generates a professor profile using AI based on any provided details.",
     responses={

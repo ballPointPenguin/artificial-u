@@ -14,13 +14,7 @@ from dotenv import load_dotenv
 from rich.console import Console
 from rich.markdown import Markdown
 from rich.panel import Panel
-from rich.progress import (
-    BarColumn,
-    Progress,
-    SpinnerColumn,
-    TextColumn,
-    TimeElapsedColumn,
-)
+from rich.progress import BarColumn, Progress, SpinnerColumn, TextColumn, TimeElapsedColumn
 from rich.prompt import Confirm
 from rich.table import Table
 
@@ -71,17 +65,11 @@ def cli():
 @click.option("--department", "-d", required=True, help="Department name")
 @click.option("--title", "-t", required=True, help="Course title")
 @click.option("--code", "-c", required=True, help="Course code")
-@click.option(
-    "--professor-id", "-p", help="Specify professor ID (creates new if not specified)"
-)
+@click.option("--professor-id", "-p", help="Specify professor ID (creates new if not specified)")
 @click.option("--weeks", default=14, type=int, help="Number of weeks")
 @click.option("--lectures-per-week", default=1, type=int, help="Lectures per week")
-@click.option(
-    "--description", help="Course description (auto-generated if not provided)"
-)
-def create_course(
-    department, title, code, professor_id, weeks, lectures_per_week, description
-):
+@click.option("--description", help="Course description (auto-generated if not provided)")
+def create_course(department, title, code, professor_id, weeks, lectures_per_week, description):
     """Create a new course."""
     try:
         system = get_system()
@@ -196,25 +184,24 @@ def list_professors():
 @cli.command()
 @click.option("--name", help="Professor name (AI-generated if not provided)")
 @click.option("--department", "-d", help="Department (AI-generated if not provided)")
-@click.option(
-    "--specialization", "-s", help="Specialization (AI-generated if not provided)"
-)
+@click.option("--specialization", "-s", help="Specialization (AI-generated if not provided)")
 @click.option("--gender", "-g", help="Gender (AI-generated if not provided)")
 @click.option("--accent", "-a", help="Accent (AI-generated if not provided)")
 @click.option("--age", type=int, help="Age (AI-generated if not provided)")
 @click.option("--title", "-t", help="Academic title (AI-generated if not provided)")
 @click.option("--background", "-b", help="Background (AI-generated if not provided)")
-def create_professor(
-    name, department, specialization, gender, accent, age, title, background
-):
+def create_professor(name, department, specialization, gender, accent, age, title, background):
     """Create a new professor with AI-generated attributes."""
     try:
         system = get_system()
 
         console.print(
             Panel(
-                f"Creating professor with AI{f': [bold]{name}[/bold]' if name else ''}",
-                subtitle=f"{department or 'AI-generated dept.'} - {specialization or 'AI-generated spec.'}",
+                f"Creating professor with AI" f"{f': [bold]{name}[/bold]' if name else ''}",
+                subtitle=(
+                    f"{department or 'AI-generated dept.'} - "
+                    f"{specialization or 'AI-generated spec.'}"
+                ),
             )
         )
 
@@ -261,9 +248,7 @@ def create_professor(
 @cli.command()
 @click.option("--course-code", "-c", required=True, help="Course code")
 @click.option("--week", "-w", required=True, type=int, help="Week number")
-@click.option(
-    "--number", "-n", default=1, type=int, help="Lecture number within the week"
-)
+@click.option("--number", "-n", default=1, type=int, help="Lecture number within the week")
 @click.option("--topic", "-t", help="Lecture topic")
 @click.option("--word-count", default=2500, type=int, help="Target word count")
 def generate_lecture(course_code, week, number, topic, word_count):
@@ -328,9 +313,7 @@ def generate_lecture(course_code, week, number, topic, word_count):
         if Confirm.ask("Generate audio for this lecture?"):
             loop = asyncio.get_event_loop()
             audio_url, _ = loop.run_until_complete(
-                system.create_lecture_audio(
-                    course_code=course_code, week=week, number=number
-                )
+                system.create_lecture_audio(course_code=course_code, week=week, number=number)
             )
             console.print(f"[green]Audio created at URL:[/green] {audio_url}")
 
@@ -341,9 +324,7 @@ def generate_lecture(course_code, week, number, topic, word_count):
 @cli.command()
 @click.option("--course-code", "-c", required=True, help="Course code")
 @click.option("--week", "-w", required=True, type=int, help="Week number")
-@click.option(
-    "--number", "-n", default=1, type=int, help="Lecture number within the week"
-)
+@click.option("--number", "-n", default=1, type=int, help="Lecture number within the week")
 def create_audio(course_code, week, number):
     """Convert a lecture to audio using ElevenLabs API."""
     try:
@@ -368,9 +349,7 @@ def create_audio(course_code, week, number):
             # Create the audio
             loop = asyncio.get_event_loop()
             audio_url, lecture = loop.run_until_complete(
-                system.create_lecture_audio(
-                    course_code=course_code, week=week, number=number
-                )
+                system.create_lecture_audio(course_code=course_code, week=week, number=number)
             )
 
             progress.update(task, advance=1)
@@ -416,8 +395,7 @@ def list_lectures(course_code, limit, model):
         console.print(
             Panel(
                 "Recent Lectures",
-                subtitle=f"{course_code or 'All courses'}"
-                + (f" - {model} model" if model else ""),
+                subtitle=f"{course_code or 'All courses'}" + (f" - {model} model" if model else ""),
             )
         )
         console.print(table)
@@ -429,9 +407,7 @@ def list_lectures(course_code, limit, model):
 @cli.command()
 @click.option("--course-code", "-c", required=True, help="Course code")
 @click.option("--week", "-w", required=True, type=int, help="Week number")
-@click.option(
-    "--number", "-n", default=1, type=int, help="Lecture number within the week"
-)
+@click.option("--number", "-n", default=1, type=int, help="Lecture number within the week")
 def play_lecture(course_code, week, number):
     """Play audio for an existing lecture."""
     try:
@@ -452,7 +428,8 @@ def play_lecture(course_code, week, number):
 
         if not lecture:
             console.print(
-                f"[red]Lecture for {course_code}, week {week}, number {number} not found.[/red]"
+                f"[red]Error:[/red] Lecture not found for "
+                f"{course_code}, Week {week}, Number {number}"
             )
             return
 
@@ -513,9 +490,7 @@ def play_lecture(course_code, week, number):
 @cli.command()
 @click.option("--course-code", "-c", required=True, help="Course code")
 @click.option("--week", "-w", required=True, type=int, help="Week number")
-@click.option(
-    "--number", "-n", default=1, type=int, help="Lecture number within the week"
-)
+@click.option("--number", "-n", default=1, type=int, help="Lecture number within the week")
 def show_lecture(course_code, week, number):
     """Display a generated lecture content."""
     try:
@@ -532,7 +507,8 @@ def show_lecture(course_code, week, number):
 
         if not lecture:
             console.print(
-                f"[red]Error:[/red] Lecture not found for {course_code}, Week {week}, Number {number}"
+                f"[red]Error:[/red] Lecture not found for "
+                f"{course_code}, Week {week}, Number {number}"
             )
             console.print(
                 "Try generating the lecture first with [bold]generate-lecture[/bold] command"
@@ -544,9 +520,7 @@ def show_lecture(course_code, week, number):
 
         # Show audio status
         if lecture.audio_url:
-            console.print(
-                f"\n[green]Audio available at URL:[/green] {lecture.audio_url}"
-            )
+            console.print(f"\n[green]Audio available at URL:[/green] {lecture.audio_url}")
         else:
             console.print("\n[yellow]No audio available.[/yellow]")
             console.print("Generate audio with [bold]create-audio[/bold] command")
@@ -559,9 +533,7 @@ def show_lecture(course_code, week, number):
 @click.argument("course-code")
 @click.argument("topics", nargs=-1, required=True)
 @click.option("--starting-week", "-w", default=1, type=int, help="Starting week number")
-@click.option(
-    "--word-count", default=2500, type=int, help="Target word count per lecture"
-)
+@click.option("--word-count", default=2500, type=int, help="Target word count per lecture")
 def generate_lecture_series(course_code, topics, starting_week, word_count):
     """Generate a series of related lectures for a course.
 
@@ -570,7 +542,8 @@ def generate_lecture_series(course_code, topics, starting_week, word_count):
     lectures one-by-one.
 
     Example:
-        ./cli.py generate-lecture-series CS101 "Introduction to Programming" "Variables and Data Types" "Control Flow"
+        ./cli.py generate-lecture-series CS101 "Introduction to Programming" \
+            "Variables and Data Types" "Control Flow"
     """
     try:
         system = get_system()

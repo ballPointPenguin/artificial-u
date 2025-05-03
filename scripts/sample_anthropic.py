@@ -85,9 +85,7 @@ def main():
         )
 
         print(f"Generated lecture: {lecture.title}")
-        print(
-            f"Exported to: {system.get_lecture_export_path(course.code, week, lecture_num)}"
-        )
+        print(f"Exported to: {system.get_lecture_export_path(course.code, week, lecture_num)}")
 
     # Show a preview of lectures
     print("\nLecture Previews (Claude-generated):")

@@ -136,23 +136,17 @@ class VoiceService:
         Returns:
             List of voice dictionaries
         """
-        self.logger.warning(
-            "No voices found with initial criteria, relaxing constraints"
-        )
+        self.logger.warning("No voices found with initial criteria, relaxing constraints")
         voices = []
 
         # Try with just gender if available
         if attributes.get("gender"):
-            db_voices = self.repository.list_voices(
-                gender=attributes.get("gender"), language="en"
-            )
+            db_voices = self.repository.list_voices(gender=attributes.get("gender"), language="en")
             if db_voices:
                 return [v.dict() for v in db_voices]
 
             # If DB search with gender failed, try API with gender only
-            voices = self._fetch_voices_from_api(
-                gender=attributes.get("gender"), language="en"
-            )
+            voices = self._fetch_voices_from_api(gender=attributes.get("gender"), language="en")
             if voices:
                 return voices
 
@@ -174,9 +168,7 @@ class VoiceService:
         Returns:
             Voice database record
         """
-        voice_db = self.repository.get_voice_by_elevenlabs_id(
-            selected_voice["voice_id"]
-        )
+        voice_db = self.repository.get_voice_by_elevenlabs_id(selected_voice["voice_id"])
 
         if not voice_db:
             # Create a new voice record
@@ -248,9 +240,7 @@ class VoiceService:
         # Update professor's voice_id if professor has an id
         if professor.id:
             self.repository.update_professor_field(professor.id, voice_id=voice_db.id)
-            self.logger.info(
-                f"Updated professor {professor.id} with voice ID {voice_db.id}"
-            )
+            self.logger.info(f"Updated professor {professor.id} with voice ID {voice_db.id}")
 
         return selected_voice
 
@@ -338,9 +328,7 @@ class VoiceService:
         # Update professor with voice ID
         self.repository.update_professor_field(professor_id, voice_id=voice.id)
 
-        self.logger.info(
-            f"Manually assigned voice {el_voice_id} to professor {professor_id}"
-        )
+        self.logger.info(f"Manually assigned voice {el_voice_id} to professor {professor_id}")
 
     def list_available_voices(
         self,

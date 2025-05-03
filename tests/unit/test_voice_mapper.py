@@ -70,9 +70,7 @@ def test_extract_gender_female_variations(voice_mapper):
         )
 
         gender = voice_mapper.extract_gender(prof)
-        assert (
-            gender == "female"
-        ), f"Failed to extract 'female' from gender string '{term}'"
+        assert gender == "female", f"Failed to extract 'female' from gender string '{term}'"
 
 
 @pytest.mark.unit
@@ -111,9 +109,7 @@ def test_extract_gender_nonbinary_variations(voice_mapper):
         )
 
         gender = voice_mapper.extract_gender(prof)
-        assert (
-            gender is None
-        ), f"Should return None for nonbinary term '{term}', got '{gender}'"
+        assert gender is None, f"Should return None for nonbinary term '{term}', got '{gender}'"
 
 
 @pytest.mark.unit
@@ -157,9 +153,7 @@ def test_extract_gender_unknown_strings(voice_mapper):
         )
 
         gender = voice_mapper.extract_gender(prof)
-        assert (
-            gender is None
-        ), f"Should return None for unknown term '{term}', got '{gender}'"
+        assert gender is None, f"Should return None for unknown term '{term}', got '{gender}'"
 
 
 @pytest.mark.unit
@@ -167,15 +161,9 @@ def test_extract_profile_attributes(voice_mapper):
     """Test that extract_profile_attributes correctly builds attribute dictionary."""
     # Setup
     with (
-        patch.object(
-            voice_mapper, "extract_gender", return_value="male"
-        ) as mock_gender,
-        patch.object(
-            voice_mapper, "extract_accent", return_value="british"
-        ) as mock_accent,
-        patch.object(
-            voice_mapper, "extract_age", return_value="middle_aged"
-        ) as mock_age,
+        patch.object(voice_mapper, "extract_gender", return_value="male") as mock_gender,
+        patch.object(voice_mapper, "extract_accent", return_value="british") as mock_accent,
+        patch.object(voice_mapper, "extract_age", return_value="middle_aged") as mock_age,
     ):
 
         prof = Professor(

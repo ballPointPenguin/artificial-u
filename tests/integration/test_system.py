@@ -127,19 +127,13 @@ def mock_system():
             title=lecture.title if hasattr(lecture, "title") else "Mock Lecture Title",
             course_id=lecture.course_id if hasattr(lecture, "course_id") else 123,
             week_number=lecture.week_number if hasattr(lecture, "week_number") else 1,
-            order_in_week=(
-                lecture.order_in_week if hasattr(lecture, "order_in_week") else 1
-            ),
+            order_in_week=(lecture.order_in_week if hasattr(lecture, "order_in_week") else 1),
             description=(
                 lecture.description
                 if hasattr(lecture, "description")
                 else "Mock lecture description"
             ),
-            content=(
-                lecture.content
-                if hasattr(lecture, "content")
-                else "Mock lecture content"
-            ),
+            content=(lecture.content if hasattr(lecture, "content") else "Mock lecture content"),
             audio_url=lecture.audio_url if hasattr(lecture, "audio_url") else None,
         )
 
@@ -309,9 +303,7 @@ async def test_error_handling(mock_system):
         with pytest.raises(
             ValueError, match="Lecture for course CS101, week 999, number 999 not found"
         ):
-            await mock_system.create_lecture_audio(
-                course_code="CS101", week=999, number=999
-            )
+            await mock_system.create_lecture_audio(course_code="CS101", week=999, number=999)
 
     # Test content generation error
     with patch.object(

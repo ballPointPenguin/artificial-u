@@ -99,7 +99,8 @@ class CourseService:
             # or handle the conversion here. Let's assume it returns the DB model for now.
             professor = self.professor_service.get_professor_db_model(professor_id)
             if not professor:
-                # Handle case where professor needs creation - this logic might be in professor_service
+                # Handle case where professor needs creation - this logic might be in
+                # professor_service
                 # For now, raise if not found by ID.
                 raise ProfessorNotFoundError(
                     f"Professor ID {professor_id} not found for course creation."
@@ -323,32 +324,22 @@ class CourseService:
                     "AI response missing expected <output> or <course> tag."
                 )
             else:
-                self.logger.warning(
-                    "Extracted <course> tag directly as <output> was missing."
-                )
+                self.logger.warning("Extracted <course> tag directly as <output> was missing.")
 
         return generated_xml_output
 
     async def _process_models_for_generation(
         self, partial_attributes: Dict[str, Any]
-    ) -> Tuple[
-        Optional[ProfessorModel], Optional[DepartmentModel], List[Dict[str, Any]]
-    ]:
+    ) -> Tuple[Optional[ProfessorModel], Optional[DepartmentModel], List[Dict[str, Any]]]:
         """Process professor, department, and existing courses for generation."""
         # 1. Get Professor
         professor_model = await self._get_professor(partial_attributes)
-        professor_dict = (
-            professor_model_to_dict(professor_model) if professor_model else {}
-        )
+        professor_dict = professor_model_to_dict(professor_model) if professor_model else {}
         professor_xml = professor_to_xml(professor_dict)
 
         # 2. Get Department
-        department_model = await self._get_department(
-            partial_attributes, professor_model
-        )
-        department_dict = (
-            department_model_to_dict(department_model) if department_model else {}
-        )
+        department_model = await self._get_department(partial_attributes, professor_model)
+        department_dict = department_model_to_dict(department_model) if department_model else {}
         department_xml = department_to_xml(department_dict)
         if department_model:
             partial_attributes.setdefault("department_id", department_model.id)
@@ -428,7 +419,8 @@ class CourseService:
             final_course_data.pop("freeform_prompt", None)
 
             self.logger.info(
-                f"Successfully generated course: {final_course_data.get('code')} - {final_course_data.get('title')}"
+                f"Successfully generated course: "
+                f"{final_course_data.get('code')} - {final_course_data.get('title')}"
             )
             return final_course_data
 
@@ -441,16 +433,12 @@ class CourseService:
         except ValueError as e:
             raise ContentGenerationError(f"Error generating/parsing course: {e}")
         except Exception as e:
-            self.logger.error(
-                f"Unexpected error during course generation: {e}", exc_info=True
-            )
+            self.logger.error(f"Unexpected error during course generation: {e}", exc_info=True)
             raise ContentGenerationError(f"An unexpected error occurred: {e}")
 
     # --- Helper Methods for Fetching Data (using Repository) --- #
 
-    async def _get_professor(
-        self, partial_attributes: Dict[str, Any]
-    ) -> Optional[ProfessorModel]:
+    async def _get_professor(self, partial_attributes: Dict[str, Any]) -> Optional[ProfessorModel]:
         """Fetches professor DB model based on ID if provided, using repository."""
         professor_id = partial_attributes.get("professor_id")
         if not professor_id:
@@ -460,10 +448,9 @@ class CourseService:
             # Use the repository directly
             professor = self.repository_factory.professor.get(professor_id)
             if not professor:
-                self.logger.error(
-                    f"Professor with ID {professor_id} not found via repository."
-                )
-                # Raise DatabaseError or ProfessorNotFound? Let's stick to DatabaseError for lookup failures.
+                self.logger.error(f"Professor with ID {professor_id} not found via repository.")
+                # Raise DatabaseError or ProfessorNotFound? Let's stick to DatabaseError
+                # for lookup failures.
                 raise DatabaseError(f"Professor with ID {professor_id} not found.")
             return professor
         except Exception as e:
@@ -472,9 +459,7 @@ class CourseService:
                 exc_info=True,
             )
             # Propagate as DatabaseError
-            raise DatabaseError(
-                f"Error fetching professor {professor_id} from repository."
-            ) from e
+            raise DatabaseError(f"Error fetching professor {professor_id} from repository.") from e
 
     async def _get_department(
         self,
@@ -486,22 +471,16 @@ class CourseService:
 
         if not department_id and professor and professor.department_id:
             department_id = professor.department_id
-            self.logger.info(
-                f"Using department ID {department_id} from professor {professor.id}"
-            )
+            self.logger.info(f"Using department ID {department_id} from professor {professor.id}")
         elif not department_id:
-            self.logger.warning(
-                "No department_id provided or derivable for course generation."
-            )
+            self.logger.warning("No department_id provided or derivable for course generation.")
             return None
 
         try:
             # Use the repository directly
             department = self.repository_factory.department.get(department_id)
             if not department:
-                self.logger.error(
-                    f"Department with ID {department_id} not found via repository."
-                )
+                self.logger.error(f"Department with ID {department_id} not found via repository.")
                 raise DatabaseError(f"Department with ID {department_id} not found.")
             return department
         except Exception as e:
@@ -521,8 +500,8 @@ class CourseService:
             return []
         try:
             # Use the repository directly
-            # Assumes CourseRepository.list handles potential None department_id if department is None
-            # and eager loads lectures as needed by generate_course_content
+            # Assumes CourseRepository.list handles potential None department_id
+            # if department is None and eager loads lectures as needed
             return self.repository_factory.course.list(department_id=department.id)
         except Exception as e:
             self.logger.error(

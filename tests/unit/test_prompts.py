@@ -2,12 +2,7 @@
 
 import pytest
 
-from artificial_u.prompts.base import (
-    PromptTemplate,
-    StructuredPrompt,
-    extract_xml_content,
-    xml_tag,
-)
+from artificial_u.prompts.base import PromptTemplate, StructuredPrompt, extract_xml_content, xml_tag
 from artificial_u.prompts.lectures import StructuredLecturePrompt, get_lecture_prompt
 from artificial_u.prompts.professors import get_professor_prompt
 from artificial_u.prompts.system import get_system_prompt
@@ -173,10 +168,7 @@ class TestPromptModules:
             professor_personality="Thoughtful and challenging",
         )
 
-        assert (
-            "Consider how to structure the lecture for optimal audio delivery"
-            not in formatted
-        )
+        assert "Consider how to structure the lecture for optimal audio delivery" not in formatted
 
     @pytest.mark.unit
     def test_system_prompt(self):

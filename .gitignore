@@ -43,15 +43,12 @@ venv/
 audio_files/
 exports/
 lecture_texts/
+temp_audio/
 
 # Test files
 .coverage
 .pytest_cache/
 htmlcov/
-test_audio_files/
-test_exports/
-test_lectures/
-test_university.db
 
 # Pip-tools
 .pip-tools-cache/

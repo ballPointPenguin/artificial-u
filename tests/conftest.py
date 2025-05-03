@@ -80,9 +80,7 @@ def verify_test_environment():
     """
     settings = get_settings()
     assert settings.testing is True, "Settings should be in test mode"
-    assert (
-        settings.environment.value == "testing"
-    ), "Environment should be set to testing"
+    assert settings.environment.value == "testing", "Environment should be set to testing"
     yield
 
 
@@ -97,12 +95,6 @@ def test_db_url() -> str:
         pytest.skip("Test database does not exist")
 
     return db_url
-
-
-@pytest.fixture(scope="session")
-def test_audio_path(tmp_path_factory) -> Path:
-    """Provide temporary directory for test audio files."""
-    return tmp_path_factory.mktemp("test_audio")
 
 
 @pytest.fixture

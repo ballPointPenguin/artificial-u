@@ -11,20 +11,23 @@ PROFESSOR_XML_STRUCTURE = (
     "<professor>\n"
     "  <name>[Full name with title, e.g., Dr. Jane Doe, Professor John Smith]</name>\n"
     "  <title>[Academic title, e.g., Assistant Professor, Full Professor]</title>\n"
-    "  <department_name>[Academic Department, e.g., Computer Science, Philosophy]</department_name>\n"
-    "  <specialization>[Area of expertise, e.g., Quantum Computing, Medieval History]</specialization>\n"
+    "  <department_name>[Academic Department, e.g., Computer Science, "
+    "Philosophy]</department_name>\n"
+    "  <specialization>[Area of expertise, e.g., Quantum Computing, "
+    "Medieval History]</specialization>\n"
     "  <gender>[Professor's gender, e.g., Male, Female, Non-binary]</gender>\n"
     "  <age>[Professor's approximate age as a number, e.g., 45]</age>\n"
-    "  <accent>[Professor's accent or speech pattern, e.g., British RP, Mild Southern Drawl, "
-    "None noticeable]</accent>\n"
-    "  <description>[Detailed physical appearance, clothing style, mannerisms, e.g., Tall, wears tweed jackets, "
-    "gestures often]</description>\n"
-    "  <background>[Educational and professional history, e.g., PhD from MIT, postdoc at CERN, "
-    "worked at Google Research]</background>\n"
-    "  <personality>[Key personality traits relevant to teaching, e.g., Enthusiastic, Patient, "
-    "Demanding but fair]</personality>\n"
-    "  <teaching_style>[Distinctive teaching approach, e.g., Uses Socratic method, Lecture-heavy with multimedia, "
-    "Project-based]</teaching_style>\n"
+    "  <accent>[Professor's accent or speech pattern, e.g., British RP, "
+    "Mild Southern Drawl, None noticeable]</accent>\n"
+    "  <description>[Detailed physical appearance, clothing style, "
+    "mannerisms, e.g., Tall, wears tweed jackets, gestures often]</description>\n"
+    "  <background>[Educational and professional history, e.g., PhD from MIT, "
+    "postdoc at CERN, worked at Google Research]</background>\n"
+    "  <personality>Intellectually rigorous, "
+    "challenges students, "
+    "appreciates nuanced arguments.</personality>\n"
+    "  <teaching_style>[Distinctive teaching approach, e.g., Uses Socratic "
+    "method, Lecture-heavy with multimedia, Project-based]</teaching_style>\n"
     "</professor>"
 )
 
@@ -41,7 +44,8 @@ EXAMPLE_PROFESSOR_1 = (
     "  <description>Sharp dresser, often in dark colors. Intense gaze, speaks precisely. "
     "Short, dark hair.</description>\n"
     "  <background>PhD Yale, Published two monographs.</background>\n"
-    "  <personality>Intellectually rigorous, challenges students, appreciates nuanced arguments.</personality>\n"
+    "  <personality>Intellectually rigorous, challenges students, appreciates nuanced arguments."
+    "  </personality>\n"
     "  <teaching_style>Seminar-based discussions, close reading of texts, "
     "high expectations for participation.</teaching_style>\n"
     "</professor>"
@@ -51,7 +55,8 @@ EXAMPLE_PROFESSOR_1 = (
 PARTIAL_PROFESSOR_PROMPT = PromptTemplate(
     template=f"""
 Complete the professor profile below.
-Use any provided details. For fields marked with [GENERATE], generate realistic and consistent values.
+Use any provided details. For fields marked with [GENERATE], generate realistic and "
+    "consistent values.
 
 Existing professors in the university (for context and to avoid repetition):
 {{existing_professors_xml}}
@@ -78,8 +83,10 @@ Generate the *complete* profile:
 OPEN_PROFESSOR_PROMPT = PromptTemplate(
     template=f"""
 Invent a *new*, creative, or typical university professor.
-Generate a detailed profile, including inventing a suitable department name, specialization, and all other details.
-Consider the provided list of existing professors to ensure variety and avoid simple repetition.
+Generate a detailed profile, including inventing a suitable department name, "
+    "specialization, and all other details.
+Consider the provided list of existing professors to ensure variety and avoid "
+    "simple repetition.
 
 Existing professors in the university:
 {{existing_professors_xml}}
@@ -107,7 +114,8 @@ def get_professor_prompt(
     otherwise uses PARTIAL prompt to fill in the blanks.
 
     Args:
-        existing_professors: List of existing professors (dicts with name/specialization) for context.
+        existing_professors: List of existing professors (dicts with name/"
+    "specialization) for context.
         partial_attributes: Optional dictionary of known attributes.
 
     Returns:
@@ -120,9 +128,7 @@ def get_professor_prompt(
 
     if not partial_attributes:
         # Case 1: No partial data provided -> Invent everything
-        return OPEN_PROFESSOR_PROMPT.format(
-            existing_professors_xml=existing_professors_xml_str
-        )
+        return OPEN_PROFESSOR_PROMPT.format(existing_professors_xml=existing_professors_xml_str)
     else:
         # Case 2: Some partial data provided -> Use it and fill in the rest
         # Use converter for partial profile

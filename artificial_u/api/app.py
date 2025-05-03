@@ -28,7 +28,9 @@ def create_application() -> FastAPI:
 
     app = FastAPI(
         title="Artificial University API",
-        description="API for Artificial University, managing audio generations and model interactions",
+        description="""
+        API for Artificial University, managing audio generations and model interactions
+        """,
         version="0.1.0",
         docs_url="/api/docs",
         redoc_url="/api/redoc",

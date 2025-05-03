@@ -23,6 +23,8 @@ async def index(settings: Settings = Depends(get_settings)):
     return {
         "name": "Artificial University API",
         "version": "v1",
-        "description": "API for Artificial University, managing audio generations and model interactions",
+        "description": """
+        API for Artificial University, managing audio generations and model interactions
+        """,
         "docs_url": "/api/docs",
     }

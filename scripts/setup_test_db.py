@@ -15,9 +15,7 @@ from dotenv import load_dotenv
 from sqlalchemy import text
 
 # Configure logging
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
-)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
 # Get the project root directory
@@ -99,9 +97,7 @@ def drop_database(db_url):
             conn.execution_options(isolation_level="AUTOCOMMIT")
 
             # Check if database exists
-            result = conn.execute(
-                text(f"SELECT 1 FROM pg_database WHERE datname = '{db_name}'")
-            )
+            result = conn.execute(text(f"SELECT 1 FROM pg_database WHERE datname = '{db_name}'"))
             exists = result.scalar() == 1
 
             if exists:

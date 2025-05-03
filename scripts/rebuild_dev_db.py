@@ -17,9 +17,7 @@ from dotenv import load_dotenv
 from sqlalchemy import text
 
 # Configure logging
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
-)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
 # Get the project root directory
@@ -33,9 +31,7 @@ def parse_args():
         description="Rebuild development database and recreate initial migration"
     )
     parser.add_argument("--db-url", help="PostgreSQL connection URL")
-    parser.add_argument(
-        "--yes", "-y", action="store_true", help="Skip confirmation prompt"
-    )
+    parser.add_argument("--yes", "-y", action="store_true", help="Skip confirmation prompt")
     return parser.parse_args()
 
 
@@ -64,9 +60,7 @@ def drop_database(db_url, logger):
             conn.execution_options(isolation_level="AUTOCOMMIT")
 
             # Check if database exists
-            result = conn.execute(
-                text(f"SELECT 1 FROM pg_database WHERE datname = '{db_name}'")
-            )
+            result = conn.execute(text(f"SELECT 1 FROM pg_database WHERE datname = '{db_name}'"))
             exists = result.scalar() == 1
 
             if exists:
@@ -184,18 +178,14 @@ def main():
     # Get database URL
     db_url = args.db_url or os.environ.get("DATABASE_URL")
     if not db_url:
-        logger.error(
-            "PostgreSQL connection URL not provided. Set DATABASE_URL or use --db-url"
-        )
+        logger.error("PostgreSQL connection URL not provided. Set DATABASE_URL or use --db-url")
         sys.exit(1)
 
     # Show warning and confirm
     if not args.yes:
         print("\n*** WARNING: This will completely reset your development database ***")
         print(f"Database: {db_url}")
-        print(
-            "All data will be lost, and Alembic migrations will be recreated from scratch."
-        )
+        print("All data will be lost, and Alembic migrations will be recreated from scratch.")
         print("This should ONLY be used during greenfield development.")
         response = input("\nContinue? (y/n): ")
 

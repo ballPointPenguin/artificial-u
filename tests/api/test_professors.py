@@ -72,9 +72,7 @@ def mock_repository(monkeypatch):
     """Mock repository with encapsulated state for testing professor API."""
 
     # --- State local to this fixture instance ---
-    local_sample_professors = [
-        Professor(**p.model_dump()) for p in sample_professors_base
-    ]
+    local_sample_professors = [Professor(**p.model_dump()) for p in sample_professors_base]
     local_sample_courses = [Course(**c.model_dump()) for c in sample_courses_base]
     local_sample_lectures = [Lecture(**lec_dict) for lec_dict in sample_lectures_data]
     # --- End Local State ---
@@ -100,9 +98,7 @@ def mock_get_professor(local_sample_professors, professor_id, *args, **kwargs):
 
 
 def mock_create_professor_impl(local_sample_professors, professor):
-    new_id = (
-        max(p.id for p in local_sample_professors) if local_sample_professors else 0
-    ) + 1
+    new_id = (max(p.id for p in local_sample_professors) if local_sample_professors else 0) + 1
     professor.id = new_id
     local_sample_professors.append(professor)
     return professor
@@ -167,9 +163,7 @@ def _patch_prof_dependent_repo_methods(monkeypatch, local_state):
     )
     monkeypatch.setattr(
         "artificial_u.models.repositories.lecture.LectureRepository.list_by_course",
-        lambda self, cid, **kwargs: mock_list_lectures_by_course(
-            local_lecs, cid, **kwargs
-        ),
+        lambda self, cid, **kwargs: mock_list_lectures_by_course(local_lecs, cid, **kwargs),
     )
 
 

@@ -62,9 +62,7 @@ def test_create_ollama_generator():
 @pytest.mark.integration
 def test_create_generator_factory():
     """Test the main factory function."""
-    with patch(
-        "artificial_u.generators.factory.create_default_generator"
-    ) as mock_default:
+    with patch("artificial_u.generators.factory.create_default_generator") as mock_default:
         create_generator(backend="anthropic", api_key="test_key")
         mock_default.assert_called_once_with(api_key="test_key")
 
@@ -73,9 +71,7 @@ def test_create_generator_factory():
         create_generator(backend="anthropic", api_key="test_key")
         mock_default.assert_called_once_with(api_key="test_key")
 
-    with patch(
-        "artificial_u.generators.factory.create_ollama_generator"
-    ) as mock_ollama:
+    with patch("artificial_u.generators.factory.create_ollama_generator") as mock_ollama:
         create_generator(backend="ollama", model="tinyllama")
         # Use a more flexible assertion that checks if the function was called with the model parameter
         # but allows other parameters like timeout to be present

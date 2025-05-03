@@ -15,11 +15,7 @@ from artificial_u.prompts.system import SYSTEM_PROMPTS
 from artificial_u.services.content_service import ContentService
 from artificial_u.services.image_service import ImageService
 from artificial_u.services.voice_service import VoiceService
-from artificial_u.utils.exceptions import (
-    DatabaseError,
-    GenerationError,
-    ProfessorNotFoundError,
-)
+from artificial_u.utils.exceptions import DatabaseError, GenerationError, ProfessorNotFoundError
 
 
 class ProfessorService:
@@ -72,7 +68,8 @@ class ProfessorService:
         """
         partial_attributes = partial_attributes or {}
         self.logger.info(
-            f"Generating professor profile with partial attributes: {list(partial_attributes.keys())}"
+            f"Generating professor profile with partial attributes: "
+            f"{list(partial_attributes.keys())}"
         )
 
         # --- 1. Resolve Department Name --- #
@@ -101,9 +98,7 @@ class ProfessorService:
             **partial_attributes,  # Overlay: User-provided specifics
             # Ensure resolved/input values take final precedence if they exist
             "department_name": (
-                resolved_dept_name
-                if resolved_dept_name
-                else generated_attrs.get("department_name")
+                resolved_dept_name if resolved_dept_name else generated_attrs.get("department_name")
             ),
         }
 
@@ -136,9 +131,7 @@ class ProfessorService:
                 system_prompt=SYSTEM_PROMPTS["professor"],
             )
         except Exception as e:
-            self.logger.error(
-                f"ContentService generation call failed: {e}", exc_info=True
-            )
+            self.logger.error(f"ContentService generation call failed: {e}", exc_info=True)
             raise GenerationError("AI content generation call failed.") from e
 
         if not generated_content:
@@ -151,13 +144,9 @@ class ProfessorService:
             return parsed_attrs
         except Exception as e:
             # _parse_generated_professor_profile already logs details
-            raise GenerationError(
-                "Failed to parse AI-generated professor profile."
-            ) from e
+            raise GenerationError("Failed to parse AI-generated professor profile.") from e
 
-    def _resolve_department_name(
-        self, partial_attributes: Dict[str, Any]
-    ) -> Optional[str]:
+    def _resolve_department_name(self, partial_attributes: Dict[str, Any]) -> Optional[str]:
         """
         Resolves the department name from ID if name is not provided.
 
@@ -183,9 +172,7 @@ class ProfessorService:
             return None
 
         # ID provided without name, attempt lookup.
-        self.logger.debug(
-            f"Attempting to resolve department name for ID: {department_id}"
-        )
+        self.logger.debug(f"Attempting to resolve department name for ID: {department_id}")
         try:
             department = self.repository_factory.department.get(department_id)
             if department:
@@ -203,9 +190,7 @@ class ProfessorService:
                 exc_info=True,
             )
             # Re-raise as a specific error type for the caller.
-            raise DatabaseError(
-                f"Failed to look up department name for ID {department_id}."
-            ) from e
+            raise DatabaseError(f"Failed to look up department name for ID {department_id}.") from e
 
     def _prepare_professor_generation_prompt(
         self,
@@ -218,12 +203,9 @@ class ProfessorService:
         try:
             all_professors = self.repository_factory.professor.list()
             existing_profs_data = [
-                {"name": p.name, "specialization": p.specialization}
-                for p in all_professors
+                {"name": p.name, "specialization": p.specialization} for p in all_professors
             ]
-            self.logger.debug(
-                f"Found {len(existing_profs_data)} existing professors for context."
-            )
+            self.logger.debug(f"Found {len(existing_profs_data)} existing professors for context.")
         except Exception as e:
             self.logger.warning(f"Could not fetch existing professors for context: {e}")
 
@@ -240,13 +222,9 @@ class ProfessorService:
             partial_attributes=combined_attrs,
         )
 
-    def _parse_generated_professor_profile(
-        self, generated_content: str
-    ) -> Dict[str, Any]:
+    def _parse_generated_professor_profile(self, generated_content: str) -> Dict[str, Any]:
         """Parses the AI-generated XML content to extract professor attributes."""
-        self.logger.debug(
-            f"Attempting to parse generated content:\n{generated_content}"
-        )
+        self.logger.debug(f"Attempting to parse generated content:\n{generated_content}")
 
         # Attempt to extract content within <professor> tags first
         profile_text = extract_xml_content(generated_content, "professor")
@@ -268,9 +246,7 @@ class ProfessorService:
         # It's possible extract_xml_content returns only the inner content.
         processed_text = profile_text.strip()
         if not processed_text.startswith("<professor>"):
-            self.logger.warning(
-                "Extracted text missing root <professor> tag, attempting to wrap."
-            )
+            self.logger.warning("Extracted text missing root <professor> tag, attempting to wrap.")
             # Basic check: if it looks like the inner elements, wrap it.
             # More robust checks might be needed depending on extract_xml_content behavior.
             if processed_text.startswith("<"):
@@ -278,7 +254,8 @@ class ProfessorService:
             else:
                 # If it doesn't even start with a tag, wrapping is unlikely to help.
                 self.logger.error(
-                    f"Extracted text doesn't appear to be valid inner XML: {processed_text[:100]}..."
+                    f"Extracted text doesn't appear to be valid inner XML: "
+                    f"{processed_text[:100]}..."
                 )
                 raise ValueError("Extracted content block is not valid XML.")
 
@@ -326,7 +303,8 @@ class ProfessorService:
                 profile["age"] = int(profile["age"])
             except (ValueError, TypeError):
                 self.logger.warning(
-                    f"Could not convert generated age '{profile.get('age')}' to integer. Setting age to None."
+                    f"Could not convert generated age '{profile.get('age')}' to integer. "
+                    f"Setting age to None."
                 )
                 profile["age"] = None  # Set to None if conversion fails
 
@@ -356,9 +334,7 @@ class ProfessorService:
         # Save professor to repository
         try:
             saved_professor = self.repository_factory.professor.create(professor)
-            self.logger.info(
-                f"Professor created successfully with ID: {saved_professor.id}"
-            )
+            self.logger.info(f"Professor created successfully with ID: {saved_professor.id}")
             return saved_professor
         except Exception as e:
             error_msg = f"Failed to save professor '{professor.name}': {str(e)}"
@@ -373,7 +349,8 @@ class ProfessorService:
         # If we already have a voice_id, don't override it
         if professor.voice_id:
             self.logger.debug(
-                f"Professor {professor.name} already has voice ID {professor.voice_id}. Skipping assignment."
+                f"Professor {professor.name} already has voice ID {professor.voice_id}. "
+                f"Skipping assignment."
             )
             return
 
@@ -388,13 +365,9 @@ class ProfessorService:
 
         except Exception as e:
             # Log warning but don't block professor creation
-            self.logger.warning(
-                f"Failed to assign voice to professor {professor.name}: {str(e)}"
-            )
+            self.logger.warning(f"Failed to assign voice to professor {professor.name}: {str(e)}")
 
-    def get_professor(
-        self, professor_id: int
-    ) -> Professor:  # Assuming ID is int based on repo
+    def get_professor(self, professor_id: int) -> Professor:  # Assuming ID is int based on repo
         """
         Get a professor by ID.
 
@@ -435,9 +408,7 @@ class ProfessorService:
         try:
             professors = self.repository_factory.professor.list()
         except Exception as e:
-            self.logger.error(
-                f"Failed to list professors from repository: {e}", exc_info=True
-            )
+            self.logger.error(f"Failed to list professors from repository: {e}", exc_info=True)
             raise DatabaseError("Failed to retrieve professors.") from e
 
         # Apply filters if provided
@@ -450,16 +421,12 @@ class ProfessorService:
 
             name_filter = filters.get("name")
             if name_filter:
-                professors = [
-                    p for p in professors if name_filter.lower() in p.name.lower()
-                ]
+                professors = [p for p in professors if name_filter.lower() in p.name.lower()]
 
             spec_filter = filters.get("specialization")
             if spec_filter:
                 professors = [
-                    p
-                    for p in professors
-                    if spec_filter.lower() in p.specialization.lower()
+                    p for p in professors if spec_filter.lower() in p.specialization.lower()
                 ]
             # Add more filters as needed
 
@@ -470,7 +437,8 @@ class ProfessorService:
             total_items = len(professors)
             professors = professors[start_idx:end_idx]
             self.logger.debug(
-                f"Pagination applied: page {page}, size {size}. Returning {len(professors)} of {total_items} items."
+                f"Pagination applied: page {page}, size {size}. "
+                f"Returning {len(professors)} of {total_items} items."
             )
         elif (page is not None and page <= 0) or (size is not None and size <= 0):
             self.logger.warning(
@@ -479,9 +447,7 @@ class ProfessorService:
 
         return professors
 
-    def update_professor(
-        self, professor_id: int, attributes: Dict[str, Any]
-    ) -> Professor:
+    def update_professor(self, professor_id: int, attributes: Dict[str, Any]) -> Professor:
         """
         Update specific attributes of an existing professor.
 
@@ -543,17 +509,13 @@ class ProfessorService:
                 return True
             else:
                 # This case implies the professor wasn't found by the repo method
-                raise ProfessorNotFoundError(
-                    f"Delete failed: Professor {professor_id} not found."
-                )
+                raise ProfessorNotFoundError(f"Delete failed: Professor {professor_id} not found.")
         except ProfessorNotFoundError:  # Re-raise specific error
             self.logger.warning(f"Delete failed: Professor {professor_id} not found.")
             raise
         except Exception as e:
             # Catch potential DB-level errors during delete
-            error_msg = (
-                f"Database error during deletion of professor {professor_id}: {str(e)}"
-            )
+            error_msg = f"Database error during deletion of professor {professor_id}: {str(e)}"
             self.logger.error(error_msg, exc_info=True)
             raise DatabaseError(error_msg) from e
 
@@ -590,14 +552,10 @@ class ProfessorService:
                 f"Image generation step failed for professor {professor_id}: {e}",
                 exc_info=True,
             )
-            raise GenerationError(
-                f"Failed to generate image for professor {professor_id}"
-            ) from e
+            raise GenerationError(f"Failed to generate image for professor {professor_id}") from e
 
         if not image_key:
-            self.logger.error(
-                f"Image generation returned no key for professor {professor_id}"
-            )
+            self.logger.error(f"Image generation returned no key for professor {professor_id}")
             raise GenerationError(
                 f"Image generation yielded no result for professor {professor_id}"
             )
@@ -612,9 +570,7 @@ class ProfessorService:
             )
             self.logger.info(f"Image URL for professor {professor_id}: {image_url}")
         except Exception as e:
-            self.logger.error(
-                f"Failed to get image URL for key {image_key}: {e}", exc_info=True
-            )
+            self.logger.error(f"Failed to get image URL for key {image_key}: {e}", exc_info=True)
             raise GenerationError(
                 f"Failed to construct image URL for professor {professor_id}"
             ) from e
@@ -629,7 +585,5 @@ class ProfessorService:
             return updated_professor
         except (ProfessorNotFoundError, DatabaseError) as e:
             # Re-raise errors from the update step
-            self.logger.error(
-                f"Failed to update professor {professor_id} with image URL: {e}"
-            )
+            self.logger.error(f"Failed to update professor {professor_id} with image URL: {e}")
             raise

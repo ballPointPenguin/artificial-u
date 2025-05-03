@@ -94,8 +94,7 @@ class DepartmentApiService:
 
         # Convert to response models
         department_responses = [
-            DepartmentResponse.model_validate(d.model_dump())
-            for d in paginated_departments
+            DepartmentResponse.model_validate(d.model_dump()) for d in paginated_departments
         ]
 
         return DepartmentsListResponse(
@@ -138,9 +137,7 @@ class DepartmentApiService:
         except Exception:
             return None
 
-    def create_department(
-        self, department_data: DepartmentCreate
-    ) -> DepartmentResponse:
+    def create_department(self, department_data: DepartmentCreate) -> DepartmentResponse:
         """
         Create a new department.
 
@@ -242,9 +239,7 @@ class DepartmentApiService:
         except Exception:
             return None
 
-    def get_department_courses(
-        self, department_id: int
-    ) -> Optional[DepartmentCoursesResponse]:
+    def get_department_courses(self, department_id: int) -> Optional[DepartmentCoursesResponse]:
         """
         Get courses in a department.
 
@@ -292,9 +287,7 @@ class DepartmentApiService:
         Returns:
             DepartmentResponse: The generated department
         """
-        dept_dict = await self.core_service.generate_department(
-            department_data.model_dump()
-        )
+        dept_dict = await self.core_service.generate_department(department_data.model_dump())
         return department_dict_to_response(dept_dict)
 
 

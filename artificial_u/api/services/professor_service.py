@@ -25,11 +25,7 @@ from artificial_u.models.repositories.factory import RepositoryFactory
 from artificial_u.services import ProfessorService
 from artificial_u.services.content_service import ContentService
 from artificial_u.services.image_service import ImageService
-from artificial_u.utils.exceptions import (
-    DatabaseError,
-    GenerationError,
-    ProfessorNotFoundError,
-)
+from artificial_u.utils.exceptions import DatabaseError, GenerationError, ProfessorNotFoundError
 
 
 class ProfessorApiService:
@@ -111,8 +107,7 @@ class ProfessorApiService:
 
         # Convert to response models
         professor_responses = [
-            ProfessorResponse.model_validate(p.model_dump())
-            for p in paginated_professors
+            ProfessorResponse.model_validate(p.model_dump()) for p in paginated_professors
         ]
 
         return ProfessorsListResponse(
@@ -139,9 +134,7 @@ class ProfessorApiService:
         except ProfessorNotFoundError:
             return None
 
-    async def create_professor(
-        self, professor_data: ProfessorCreate
-    ) -> ProfessorResponse:
+    async def create_professor(self, professor_data: ProfessorCreate) -> ProfessorResponse:
         """
         Create a new professor.
 
@@ -193,14 +186,10 @@ class ProfessorApiService:
         """
         try:
             # Extract non-None values for update
-            update_data = {
-                k: v for k, v in professor_data.model_dump().items() if v is not None
-            }
+            update_data = {k: v for k, v in professor_data.model_dump().items() if v is not None}
 
             # Use core service to update
-            updated_professor = self.core_service.update_professor(
-                str(professor_id), update_data
-            )
+            updated_professor = self.core_service.update_professor(str(professor_id), update_data)
 
             # Convert to response model
             return ProfessorResponse.model_validate(updated_professor.model_dump())
@@ -224,9 +213,7 @@ class ProfessorApiService:
         except (ProfessorNotFoundError, DatabaseError):
             return False
 
-    def get_professor_courses(
-        self, professor_id: int
-    ) -> Optional[ProfessorCoursesResponse]:
+    def get_professor_courses(self, professor_id: int) -> Optional[ProfessorCoursesResponse]:
         """
         Get courses taught by a professor.
 
@@ -261,9 +248,7 @@ class ProfessorApiService:
         except ProfessorNotFoundError:
             return None
 
-    def get_professor_lectures(
-        self, professor_id: int
-    ) -> Optional[ProfessorLecturesResponse]:
+    def get_professor_lectures(self, professor_id: int) -> Optional[ProfessorLecturesResponse]:
         """
         Get lectures by a professor.
 
@@ -298,9 +283,7 @@ class ProfessorApiService:
         except ProfessorNotFoundError:
             return None
 
-    async def generate_professor_image(
-        self, professor_id: int
-    ) -> Optional[ProfessorResponse]:
+    async def generate_professor_image(self, professor_id: int) -> Optional[ProfessorResponse]:
         """
         Triggers image generation for a professor and returns the updated professor.
 
@@ -312,10 +295,8 @@ class ProfessorApiService:
         """
         try:
             # Call the core service method
-            updated_professor = (
-                await self.core_service.generate_and_set_professor_image(
-                    professor_id=str(professor_id)
-                )
+            updated_professor = await self.core_service.generate_and_set_professor_image(
+                professor_id=str(professor_id)
             )
 
             if updated_professor:
@@ -334,9 +315,7 @@ class ProfessorApiService:
             )
             return None
 
-    async def generate_professor(
-        self, generation_data: ProfessorGenerate
-    ) -> ProfessorResponse:
+    async def generate_professor(self, generation_data: ProfessorGenerate) -> ProfessorResponse:
         """
         Generate a professor profile using AI based on provided partial data.
 
@@ -376,9 +355,7 @@ class ProfessorApiService:
                 detail=f"Failed to generate professor profile: {e}",
             )
         except Exception as e:
-            self.logger.error(
-                f"Unexpected error during professor generation: {e}", exc_info=True
-            )
+            self.logger.error(f"Unexpected error during professor generation: {e}", exc_info=True)
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=("An unexpected error occurred during profile generation."),

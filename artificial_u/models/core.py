@@ -19,7 +19,8 @@ class Department(BaseModel):
                 "name": "Computer Science",
                 "code": "CS",
                 "faculty": "Science and Engineering",
-                "description": "The Computer Science department focuses on the theory and practice of computation.",
+                "description": "The Computer Science department focuses on the theory and "
+                "practice of computation.",
             }
         }
     )
@@ -47,8 +48,10 @@ class Voice(BaseModel):
                 "category": "high_quality",
                 "language": "hi",
                 "locale": "hi-IN",
-                "description": "Devi is the pen name of a young Indian female artist with clear Hindi instructions.",
-                "preview_url": "https://storage.googleapis.com/eleven-public-prod/voices/example.mp3",
+                "description": "Devi is the pen name of a young Indian female artist with "
+                "clear Hindi instructions.",
+                "preview_url": "https://storage.googleapis.com/eleven-public-prod/voices/"
+                "example.mp3",
                 "verified_languages": {
                     "languages": [
                         {
@@ -94,10 +97,12 @@ class Professor(BaseModel):
                 "specialization": "Artificial Intelligence",
                 "background": "58-year-old Russian-American CS professor (Moscow State, Bell Labs)",
                 "personality": "Methodical, philosophical, occasional dry humor",
-                "teaching_style": "Combines methodical explanations with philosophical perspectives",
+                "teaching_style": "Combines methodical explanations with philosophical "
+                "perspectives",
                 "gender": "Male",
                 "accent": "Russian",
-                "description": "Distinguished, salt-and-pepper hair, mustache, glasses. Formal wear, bow tie.",
+                "description": "Distinguished, salt-and-pepper hair, mustache, glasses. "
+                "Formal wear, bow tie.",
                 "age": 58,
                 "voice_id": 1,
             }

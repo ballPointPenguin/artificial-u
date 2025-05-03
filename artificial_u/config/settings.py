@@ -49,9 +49,7 @@ class Settings(BaseSettings):
 
     # Environment identification
     environment: Environment = Environment.DEVELOPMENT
-    testing: bool = Field(
-        default=False, description="Flag indicating whether app is in test mode"
-    )
+    testing: bool = Field(default=False, description="Flag indicating whether app is in test mode")
 
     # API settings
     api_prefix: str = "/api/v1"
@@ -226,9 +224,7 @@ def get_settings() -> Settings:
     env_file = ".env"
 
     # Check if we're in a test environment
-    if "pytest" in sys.modules or any(
-        arg in sys.argv for arg in ["-m", "pytest", "test"]
-    ):
+    if "pytest" in sys.modules or any(arg in sys.argv for arg in ["-m", "pytest", "test"]):
         # For tests, prefer the test environment configuration
         if os.path.exists(".env.test"):
             env_file = ".env.test"

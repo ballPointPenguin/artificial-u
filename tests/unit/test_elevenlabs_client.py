@@ -78,9 +78,7 @@ class TestElevenLabsClient:
         """Test getting shared voices from the API."""
         # Create client and call method
         client = ElevenLabsClient(api_key="test_key")
-        el_voices, has_more = client.get_shared_voices(
-            gender="female", accent="american"
-        )
+        el_voices, has_more = client.get_shared_voices(gender="female", accent="american")
 
         # Verify results
         assert len(el_voices) == 1
@@ -103,9 +101,7 @@ class TestElevenLabsClient:
 
         # Mock the convert method to return our test data
         mock_audio_data = b"test audio data"
-        tts_mock.convert.return_value = [
-            mock_audio_data
-        ]  # Return a list as if it's a generator
+        tts_mock.convert.return_value = [mock_audio_data]  # Return a list as if it's a generator
         client_mock.text_to_speech = tts_mock
 
         # Create the client and set the testing mode
@@ -122,9 +118,7 @@ class TestElevenLabsClient:
             text = "Hello world"
 
             # Test method that now returns mocked data
-            result = client.text_to_speech(
-                text=text, el_voice_id=el_voice_id, model_id=model_id
-            )
+            result = client.text_to_speech(text=text, el_voice_id=el_voice_id, model_id=model_id)
 
             # The result should be our mock audio data
             assert result == mock_audio_data

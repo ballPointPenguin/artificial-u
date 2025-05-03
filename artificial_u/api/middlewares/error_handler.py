@@ -79,9 +79,7 @@ def add_error_handlers(app: FastAPI) -> None:
         )
 
     @app.exception_handler(HTTPException)
-    async def handle_http_exception(
-        request: Request, exc: HTTPException
-    ) -> JSONResponse:
+    async def handle_http_exception(request: Request, exc: HTTPException) -> JSONResponse:
         """Handler for HTTP exceptions"""
         logger.error(
             f"HTTP Exception: {exc.detail} - Status: {exc.status_code}",
@@ -103,9 +101,7 @@ def add_error_handlers(app: FastAPI) -> None:
         )
 
     @app.exception_handler(Exception)
-    async def handle_general_exception(
-        request: Request, exc: Exception
-    ) -> JSONResponse:
+    async def handle_general_exception(request: Request, exc: Exception) -> JSONResponse:
         """Fallback handler for unhandled exceptions"""
         logger.exception(
             f"Unexpected error occurred: {str(exc)}",

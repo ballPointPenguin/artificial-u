@@ -32,9 +32,7 @@ class DepartmentRepository(BaseRepository):
     def get(self, department_id: int) -> Optional[Department]:
         """Get a department by ID."""
         with self.get_session() as session:
-            db_department = (
-                session.query(DepartmentModel).filter_by(id=department_id).first()
-            )
+            db_department = session.query(DepartmentModel).filter_by(id=department_id).first()
 
             if not db_department:
                 return None
@@ -87,9 +85,7 @@ class DepartmentRepository(BaseRepository):
     def update(self, department: Department) -> Department:
         """Update a department."""
         with self.get_session() as session:
-            db_department = (
-                session.query(DepartmentModel).filter_by(id=department.id).first()
-            )
+            db_department = session.query(DepartmentModel).filter_by(id=department.id).first()
 
             if not db_department:
                 raise ValueError(f"Department with ID {department.id} not found")
@@ -117,9 +113,7 @@ class DepartmentRepository(BaseRepository):
         """
         with self.get_session() as session:
             # Check if department exists
-            db_department = (
-                session.query(DepartmentModel).filter_by(id=department_id).first()
-            )
+            db_department = session.query(DepartmentModel).filter_by(id=department_id).first()
 
             if not db_department:
                 return False

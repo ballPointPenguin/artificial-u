@@ -62,9 +62,7 @@ def test_cors_from_disallowed_origin():
     client = TestClient(app)
 
     # Test with a domain not in the allowlist
-    response = client.get(
-        "/api/v1/health", headers={"Origin": "http://malicious-site.com"}
-    )
+    response = client.get("/api/v1/health", headers={"Origin": "http://malicious-site.com"})
 
     assert response.status_code == 200
     assert "Access-Control-Allow-Origin" not in response.headers

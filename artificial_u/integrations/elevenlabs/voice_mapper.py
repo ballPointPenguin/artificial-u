@@ -345,10 +345,7 @@ class VoiceMapper:
                 score += 0.1
 
             # Use case match
-            if (
-                criteria.get("use_case")
-                and voice.get("use_case") == criteria["use_case"]
-            ):
+            if criteria.get("use_case") and voice.get("use_case") == criteria["use_case"]:
                 score += 0.1
 
             # Store the match score

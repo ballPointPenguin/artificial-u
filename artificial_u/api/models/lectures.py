@@ -13,12 +13,8 @@ class LectureCreate(BaseModel):
     title: str = Field(..., description="Lecture title")
     course_id: int = Field(..., description="ID of the course this lecture belongs to")
     week_number: int = Field(..., ge=1, description="Week number in the course")
-    order_in_week: int = Field(
-        1, ge=1, description="Order of this lecture within the week"
-    )
-    description: str = Field(
-        ..., description="Brief description of the lecture content"
-    )
+    order_in_week: int = Field(1, ge=1, description="Order of this lecture within the week")
+    description: str = Field(..., description="Brief description of the lecture content")
     content: str = Field(..., description="Full lecture content text")
     audio_url: Optional[str] = Field(None, description="URL to audio file if available")
 
@@ -30,9 +26,7 @@ class LectureUpdate(BaseModel):
     description: Optional[str] = Field(None, description="Updated lecture description")
     content: Optional[str] = Field(None, description="Updated lecture content text")
     week_number: Optional[int] = Field(None, ge=1, description="Updated week number")
-    order_in_week: Optional[int] = Field(
-        None, ge=1, description="Updated order in week"
-    )
+    order_in_week: Optional[int] = Field(None, ge=1, description="Updated order in week")
     audio_url: Optional[str] = Field(None, description="Updated audio URL")
 
 
@@ -44,9 +38,7 @@ class Lecture(BaseModel):
     course_id: int = Field(..., description="ID of the course this lecture belongs to")
     week_number: int = Field(..., description="Week number in the course")
     order_in_week: int = Field(..., description="Order of this lecture within the week")
-    description: str = Field(
-        ..., description="Brief description of the lecture content"
-    )
+    description: str = Field(..., description="Brief description of the lecture content")
     content: str = Field(..., description="Full lecture content text")
     audio_url: Optional[str] = Field(None, description="URL to audio file if available")
 

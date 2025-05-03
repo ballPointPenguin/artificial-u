@@ -28,7 +28,8 @@ class ContentGenerator:
         Initialize the content generator.
 
         Args:
-            api_key: Anthropic API key. If not provided, will use ANTHROPIC_API_KEY environment variable.
+            api_key: Anthropic API key. If not provided, will use
+                ANTHROPIC_API_KEY environment variable.
             client: Optional pre-configured client (for testing or alternative models)
         """
         self.api_key = api_key or os.environ.get("ANTHROPIC_API_KEY")
@@ -40,9 +41,7 @@ class ContentGenerator:
             self.client = client
         else:
             if not self.api_key:
-                raise ValueError(
-                    "Anthropic API key is required when not providing a client"
-                )
+                raise ValueError("Anthropic API key is required when not providing a client")
             self.client = anthropic.Client(api_key=self.api_key)
 
     def create_lecture(
@@ -119,13 +118,12 @@ class ContentGenerator:
         # Create a title from the topic, potentially trying to extract a title from the first line
         title = topic
         if lecture_text:
-            first_lines = lecture_text.split("\n")[
-                :3
-            ]  # Check first 3 lines for a good title
+            first_lines = lecture_text.split("\n")[:3]  # Check first 3 lines for a good title
 
             for line in first_lines:
                 clean_line = line.strip().strip("# []").strip()
-                # Good title criteria: not too short, not too long, doesn't contain common instruction text
+                # Good title criteria: not too short, not too long,
+                # doesn't contain common instruction text
                 if (
                     len(clean_line) > 5
                     and len(clean_line) < 100

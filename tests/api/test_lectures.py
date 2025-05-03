@@ -24,9 +24,7 @@ sample_lectures_data = [
         "description": f"Description for lecture {i}",
         "content": f"Full content for lecture {i}. This is a test lecture content.",
         "audio_url": (
-            f"mock_storage://audio_files/course_{i % 3 + 1}/lecture_{i}.mp3"
-            if i % 2 == 0
-            else None
+            f"mock_storage://audio_files/course_{i % 3 + 1}/lecture_{i}.mp3" if i % 2 == 0 else None
         ),
         "created_at": datetime.now(),
     }
@@ -66,9 +64,7 @@ def mock_list_lectures(
         lecture_course_id = lecture_dict.get("course_id")
         if course_id is not None and lecture_course_id != course_id:
             continue
-        course = next(
-            (c for c in sample_courses_data if c.id == lecture_course_id), None
-        )
+        course = next((c for c in sample_courses_data if c.id == lecture_course_id), None)
         if not course:
             continue
         if professor_id is not None and course.professor_id != professor_id:
@@ -76,8 +72,7 @@ def mock_list_lectures(
         if search_query is not None:
             if (
                 search_query.lower() not in lecture_dict.get("title", "").lower()
-                and search_query.lower()
-                not in lecture_dict.get("description", "").lower()
+                and search_query.lower() not in lecture_dict.get("description", "").lower()
             ):
                 continue
         filtered.append(Lecture(**lecture_dict))
@@ -139,9 +134,7 @@ def mock_delete_lecture(self, lecture_id, *args, **kwargs):
     global sample_lectures_data
     initial_len = len(sample_lectures_data)
     sample_lectures_data = [
-        lec_dict
-        for lec_dict in sample_lectures_data
-        if lec_dict.get("id") != lecture_id
+        lec_dict for lec_dict in sample_lectures_data if lec_dict.get("id") != lecture_id
     ]
     return len(sample_lectures_data) < initial_len
 
@@ -161,9 +154,7 @@ def mock_count_lectures(
         lecture_course_id = lecture_dict.get("course_id")
         if course_id is not None and lecture_course_id != course_id:
             continue
-        course = next(
-            (c for c in sample_courses_data if c.id == lecture_course_id), None
-        )
+        course = next((c for c in sample_courses_data if c.id == lecture_course_id), None)
         if not course:
             continue
         if professor_id is not None and course.professor_id != professor_id:
@@ -171,8 +162,7 @@ def mock_count_lectures(
         if search_query is not None:
             if (
                 search_query.lower() not in lecture_dict.get("title", "").lower()
-                and search_query.lower()
-                not in lecture_dict.get("description", "").lower()
+                and search_query.lower() not in lecture_dict.get("description", "").lower()
             ):
                 continue
         filtered.append(Lecture(**lecture_dict))
@@ -373,18 +363,14 @@ def test_download_lecture_content(client, mock_repository):
 def test_get_lecture_audio(client, mock_repository):
     """Test getting lecture audio."""
     # Find a lecture with audio path that's a URL
-    lecture_with_audio = next(
-        (lecture for lecture in mock_repository if lecture["id"] == 2), None
-    )
+    lecture_with_audio = next((lecture for lecture in mock_repository if lecture["id"] == 2), None)
     if lecture_with_audio:
         # Set the audio path to be a URL
         lecture_with_audio["audio_url"] = "https://example.com/storage/lecture_2.mp3"
     else:
         # If lecture 2 doesn't exist, find any lecture and set its audio path
         lecture_with_audio = next((lecture for lecture in mock_repository), None)
-        lecture_with_audio["audio_url"] = (
-            "https://example.com/storage/lecture_audio.mp3"
-        )
+        lecture_with_audio["audio_url"] = "https://example.com/storage/lecture_audio.mp3"
 
     # Test with lecture that has audio
     response = client.get(

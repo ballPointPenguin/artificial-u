@@ -66,12 +66,8 @@ def mock_repository(monkeypatch):
     """Mock repository with encapsulated state for testing department API."""
 
     # --- State local to this fixture instance ---
-    local_sample_departments = [
-        Department(**d.model_dump()) for d in sample_departments_base
-    ]
-    local_sample_professors = [
-        Professor(**p.model_dump()) for p in sample_professors_base
-    ]
+    local_sample_departments = [Department(**d.model_dump()) for d in sample_departments_base]
+    local_sample_professors = [Professor(**p.model_dump()) for p in sample_professors_base]
     local_sample_courses = [Course(**c.model_dump()) for c in sample_courses_base]
     # --- End Local State ---
 
@@ -82,9 +78,7 @@ def mock_repository(monkeypatch):
         return local_sample_departments
 
     def mock_get_department(self, department_id, *args, **kwargs):
-        return next(
-            (d for d in local_sample_departments if d.id == department_id), None
-        )
+        return next((d for d in local_sample_departments if d.id == department_id), None)
 
     def mock_get_department_by_code(self, code, *args, **kwargs):
         return next((d for d in local_sample_departments if d.code == code), None)
@@ -92,9 +86,7 @@ def mock_repository(monkeypatch):
     def mock_create_department(self, department, *args, **kwargs):
         # Use max ID from LOCAL list + 1
         new_id = (
-            max(d.id for d in local_sample_departments)
-            if local_sample_departments
-            else 0
+            max(d.id for d in local_sample_departments) if local_sample_departments else 0
         ) + 1
         department.id = new_id
         local_sample_departments.append(department)
@@ -111,9 +103,7 @@ def mock_repository(monkeypatch):
         nonlocal local_sample_departments  # Modify the fixture's local list
         initial_len = len(local_sample_departments)
         # Check LOCAL lists for dependencies
-        has_professors = any(
-            p.department_id == dept_id for p in local_sample_professors
-        )
+        has_professors = any(p.department_id == dept_id for p in local_sample_professors)
         has_courses = any(c.department_id == dept_id for c in local_sample_courses)
 
         if has_professors or has_courses:
@@ -128,22 +118,14 @@ def mock_repository(monkeypatch):
         department_id_filter = kwargs.get("department_id")
         if department_id_filter is not None:
             # Filter LOCAL list
-            return [
-                p
-                for p in local_sample_professors
-                if p.department_id == department_id_filter
-            ]
+            return [p for p in local_sample_professors if p.department_id == department_id_filter]
         return local_sample_professors
 
     def mock_list_courses(self, *args, **kwargs):
         department_id_filter = kwargs.get("department_id")
         if department_id_filter is not None:
             # Filter LOCAL list
-            return [
-                c
-                for c in local_sample_courses
-                if c.department_id == department_id_filter
-            ]
+            return [c for c in local_sample_courses if c.department_id == department_id_filter]
         return local_sample_courses
 
     # --- End Mock Functions ---
@@ -211,9 +193,7 @@ def test_filter_departments_by_faculty(client, mock_repository):
     data = response.json()
     assert len(data["items"]) > 0
     # Calculate expected count from base data
-    expected_count = sum(
-        1 for d in sample_departments_base if d.faculty == "Test Faculty 1"
-    )
+    expected_count = sum(1 for d in sample_departments_base if d.faculty == "Test Faculty 1")
     assert len(data["items"]) == expected_count
     assert data["total"] == expected_count
     for item in data["items"]:
@@ -321,12 +301,8 @@ def test_update_department(client, mock_repository):
 def test_get_department_professors(client, mock_repository):
     """Test getting professors in a department."""
     # Calculate expected counts from base data
-    expected_dept1_profs = sum(
-        1 for p in sample_professors_base if p.department_id == 1
-    )
-    expected_dept2_profs = sum(
-        1 for p in sample_professors_base if p.department_id == 2
-    )
+    expected_dept1_profs = sum(1 for p in sample_professors_base if p.department_id == 1)
+    expected_dept2_profs = sum(1 for p in sample_professors_base if p.department_id == 2)
 
     # Test with valid ID for Test Department 1
     response = client.get("/api/v1/departments/1/professors")

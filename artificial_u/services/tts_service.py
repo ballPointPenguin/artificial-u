@@ -84,9 +84,7 @@ class TTSService:
         enhanced_text = self.speech_processor.enhance_speech_markup(text)
 
         # Split text into chunks if necessary
-        chunks = self.speech_processor.split_into_chunks(
-            enhanced_text, max_chunk_size=chunk_size
-        )
+        chunks = self.speech_processor.split_into_chunks(enhanced_text, max_chunk_size=chunk_size)
 
         # Generate audio for each chunk
         audio_segments = []
@@ -119,9 +117,7 @@ class TTSService:
                 self.logger.info(f"Successfully processed chunk {i+1}")
             except Exception as e:
                 self.logger.error(f"Error processing chunk {i+1}: {e}")
-                raise AudioProcessingError(
-                    f"Failed to convert chunk {i+1} to speech: {e}"
-                )
+                raise AudioProcessingError(f"Failed to convert chunk {i+1} to speech: {e}")
 
         # Combine audio segments
         if not audio_segments:
@@ -220,15 +216,11 @@ class TTSService:
                 with open(audio_source, "rb") as f:
                     audio_data = f.read()
             except Exception as e:
-                raise AudioProcessingError(
-                    f"Failed to read audio file {audio_source}: {e}"
-                )
+                raise AudioProcessingError(f"Failed to read audio file {audio_source}: {e}")
         elif isinstance(audio_source, bytes):
             audio_data = audio_source
         else:
-            raise TypeError(
-                "audio_source must be bytes or a string path to an existing file"
-            )
+            raise TypeError("audio_source must be bytes or a string path to an existing file")
 
         # Play the audio
         try:

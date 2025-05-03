@@ -41,9 +41,7 @@ class ProfessorRepository(BaseRepository):
     def get(self, professor_id: int) -> Optional[Professor]:
         """Get a professor by ID."""
         with self.get_session() as session:
-            db_professor = (
-                session.query(ProfessorModel).filter_by(id=professor_id).first()
-            )
+            db_professor = session.query(ProfessorModel).filter_by(id=professor_id).first()
 
             if not db_professor:
                 return None
@@ -93,9 +91,7 @@ class ProfessorRepository(BaseRepository):
     def update(self, professor: Professor) -> Professor:
         """Update an existing professor."""
         with self.get_session() as session:
-            db_professor = (
-                session.query(ProfessorModel).filter_by(id=professor.id).first()
-            )
+            db_professor = session.query(ProfessorModel).filter_by(id=professor.id).first()
 
             if not db_professor:
                 raise ValueError(f"Professor with ID {professor.id} not found")
@@ -129,9 +125,7 @@ class ProfessorRepository(BaseRepository):
             Updated professor or None if not found
         """
         with self.get_session() as session:
-            db_professor = (
-                session.query(ProfessorModel).filter_by(id=professor_id).first()
-            )
+            db_professor = session.query(ProfessorModel).filter_by(id=professor_id).first()
 
             if not db_professor:
                 return None
@@ -173,9 +167,7 @@ class ProfessorRepository(BaseRepository):
             True if deleted successfully, False if professor not found
         """
         with self.get_session() as session:
-            db_professor = (
-                session.query(ProfessorModel).filter_by(id=professor_id).first()
-            )
+            db_professor = session.query(ProfessorModel).filter_by(id=professor_id).first()
 
             if not db_professor:
                 return False

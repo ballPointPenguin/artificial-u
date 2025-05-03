@@ -149,22 +149,16 @@ class UniversitySystem:
             )
 
             # Initialize repository factory directly
-            self.repository_factory = RepositoryFactory(
-                db_url=self.settings.DATABASE_URL
-            )
+            self.repository_factory = RepositoryFactory(db_url=self.settings.DATABASE_URL)
 
             # Initialize audio components
-            self.elevenlabs_client = ElevenLabsClient(
-                api_key=self.settings.ELEVENLABS_API_KEY
-            )
+            self.elevenlabs_client = ElevenLabsClient(api_key=self.settings.ELEVENLABS_API_KEY)
             self.speech_processor = SpeechProcessor()
 
             # Initialize voice mapper
             self.voice_mapper = VoiceMapper(
                 client=self.elevenlabs_client,
-                logger=logging.getLogger(
-                    "artificial_u.integrations.elevenlabs.voice_mapper"
-                ),
+                logger=logging.getLogger("artificial_u.integrations.elevenlabs.voice_mapper"),
             )
 
             # Initialize storage service
@@ -273,9 +267,7 @@ class UniversitySystem:
         self, lecture: Lecture, course: Course, professor: Professor
     ) -> str:
         """Export lecture content to a text file in storage."""
-        return await self.lecture_service.export_lecture_text(
-            lecture, course, professor
-        )
+        return await self.lecture_service.export_lecture_text(lecture, course, professor)
 
     def create_lecture_series(self, **kwargs) -> List[Lecture]:
         """Generate a series of related lectures for a course."""
@@ -309,9 +301,7 @@ class UniversitySystem:
         """List available voices with optional filtering."""
         return self.voice_service.list_available_voices(**kwargs)
 
-    def select_voice_for_professor(
-        self, professor: Professor, **kwargs
-    ) -> Dict[str, Any]:
+    def select_voice_for_professor(self, professor: Professor, **kwargs) -> Dict[str, Any]:
         """Select a voice for a professor."""
         return self.voice_service.select_voice_for_professor(professor, **kwargs)
 

@@ -4,12 +4,7 @@ from typing import Optional
 from google.genai import types
 
 from artificial_u.config import get_settings
-from artificial_u.integrations import (
-    anthropic_client,
-    gemini_client,
-    ollama_client,
-    openai_client,
-)
+from artificial_u.integrations import anthropic_client, gemini_client, ollama_client, openai_client
 
 
 class ContentService:
@@ -69,11 +64,12 @@ class ContentService:
 
         Args:
             prompt: The main text prompt for generation.
-            model: The specific model name to use (e.g., 'claude-3-opus-20240229', 'gpt-4', 'gemini-1.5-pro').
-                   If None, uses the default model from settings.
+            model: The specific model name to use (e.g., 'claude-3-opus-20240229',
+            'gpt-4', 'gemini-1.5-pro'). If None, uses the default model from settings.
             system_prompt: An optional system prompt or instruction for the model.
             temperature: Optional temperature for sampling (model-dependent, default varies).
-            max_tokens: Optional maximum number of tokens to generate (model-dependent, default varies).
+            max_tokens: Optional maximum number of tokens to generate
+            (model-dependent, default varies).
 
         Returns:
             The generated text content as a string.
@@ -104,9 +100,7 @@ class ContentService:
 
         # Get the appropriate generation method
         if backend not in backend_methods:
-            self.logger.error(
-                f"Unsupported backend: {backend} for model {target_model}"
-            )
+            self.logger.error(f"Unsupported backend: {backend} for model {target_model}")
             raise NotImplementedError(f"Backend '{backend}' is not implemented.")
 
         try:
@@ -121,9 +115,7 @@ class ContentService:
             )
             raise
 
-    async def _generate_anthropic(
-        self, prompt, model, system_prompt, temperature, max_tokens
-    ):
+    async def _generate_anthropic(self, prompt, model, system_prompt, temperature, max_tokens):
         messages = []
         if system_prompt:
             pass  # Anthropic uses 'system' parameter outside messages
@@ -137,9 +129,7 @@ class ContentService:
         )
         return response.content[0].text
 
-    async def _generate_openai(
-        self, prompt, model, system_prompt, temperature, max_tokens
-    ):
+    async def _generate_openai(self, prompt, model, system_prompt, temperature, max_tokens):
         messages = []
         if system_prompt:
             messages.append({"role": "system", "content": system_prompt})
@@ -152,9 +142,7 @@ class ContentService:
         )
         return response.choices[0].message.content
 
-    async def _generate_gemini(
-        self, prompt, model, system_prompt, temperature, max_tokens
-    ):
+    async def _generate_gemini(self, prompt, model, system_prompt, temperature, max_tokens):
         contents = [types.Content(parts=[types.Part.from_text(prompt)])]
         generation_config = types.GenerationConfig(
             temperature=temperature if temperature is not None else 0.7,
@@ -173,9 +161,7 @@ class ContentService:
             self.logger.warning("No content generated from Gemini model")
             return ""
 
-    async def _generate_ollama(
-        self, prompt, model, system_prompt, temperature, max_tokens
-    ):
+    async def _generate_ollama(self, prompt, model, system_prompt, temperature, max_tokens):
         messages = []
         if system_prompt:
             messages.append({"role": "system", "content": system_prompt})

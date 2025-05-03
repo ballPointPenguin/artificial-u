@@ -90,9 +90,7 @@ class SpeechProcessor:
         for term, pronunciation in self.PRONUNCIATION_DICT.items():
             # Only replace whole words (not substrings)
             pattern = r"\b" + re.escape(term) + r"\b"
-            replacement = (
-                f'<phoneme alphabet="ipa" ph="{pronunciation}">{term}</phoneme>'
-            )
+            replacement = f'<phoneme alphabet="ipa" ph="{pronunciation}">{term}</phoneme>'
             enhanced_text = re.sub(pattern, replacement, enhanced_text)
 
         # Handle mathematical notation

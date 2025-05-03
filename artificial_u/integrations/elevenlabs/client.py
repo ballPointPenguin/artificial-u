@@ -41,7 +41,8 @@ class ElevenLabsClient:
         Initialize the ElevenLabs client.
 
         Args:
-            api_key: ElevenLabs API key. If not provided, will use ELEVENLABS_API_KEY environment variable.
+            api_key: ElevenLabs API key. If not provided, will use
+                ELEVENLABS_API_KEY environment variable.
         """
         self.logger = logging.getLogger(__name__)
 
@@ -64,9 +65,7 @@ class ElevenLabsClient:
             self.logger.debug("Successfully initialized ElevenLabs client")
         except Exception as e:
             if in_test_env:
-                self.logger.info(
-                    f"Test environment: Mocking ElevenLabs client due to error: {e}"
-                )
+                self.logger.info(f"Test environment: Mocking ElevenLabs client due to error: {e}")
                 # Create a dummy client for testing
                 self.client = MagicMock()
             else:
@@ -181,9 +180,7 @@ class ElevenLabsClient:
                         "preview_url": getattr(voice, "preview_url", ""),
                         "verified_languages": getattr(voice, "verified_languages", []),
                         "cloned_by_count": getattr(voice, "cloned_by_count", 0),
-                        "usage_character_count_1y": getattr(
-                            voice, "usage_character_count_1y", 0
-                        ),
+                        "usage_character_count_1y": getattr(voice, "usage_character_count_1y", 0),
                     }
                 )
 
@@ -250,9 +247,7 @@ class ElevenLabsClient:
         # Retry logic for API calls
         for attempt in range(self.MAX_RETRIES):
             try:
-                self.logger.debug(
-                    f"TTS attempt {attempt+1} for text of length {len(text)}"
-                )
+                self.logger.debug(f"TTS attempt {attempt+1} for text of length {len(text)}")
 
                 # Get audio stream from the API
                 audio_stream = self.client.text_to_speech.convert(
@@ -263,9 +258,7 @@ class ElevenLabsClient:
                 )
 
                 # Consume the generator if it's a generator (new API behavior)
-                if hasattr(audio_stream, "__iter__") and not isinstance(
-                    audio_stream, bytes
-                ):
+                if hasattr(audio_stream, "__iter__") and not isinstance(audio_stream, bytes):
                     self.logger.debug("Audio stream is a generator, consuming it")
                     audio_data = b"".join(
                         chunk for chunk in audio_stream if isinstance(chunk, bytes)
@@ -297,11 +290,7 @@ class ElevenLabsClient:
             user = self.client.user.get()
 
             return {
-                "tier": (
-                    user.subscription.tier
-                    if hasattr(user, "subscription")
-                    else "unknown"
-                ),
+                "tier": (user.subscription.tier if hasattr(user, "subscription") else "unknown"),
                 "character_limit": getattr(user.subscription, "character_limit", 0),
                 "character_count": getattr(user.subscription, "character_count", 0),
                 "available_characters": getattr(user.subscription, "character_limit", 0)

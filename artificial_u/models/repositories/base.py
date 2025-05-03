@@ -31,9 +31,7 @@ class BaseRepository:
         self.db_url = db_url or os.environ.get("DATABASE_URL")
 
         if not self.db_url:
-            raise ValueError(
-                "Database URL not provided. Set DATABASE_URL environment variable."
-            )
+            raise ValueError("Database URL not provided. Set DATABASE_URL environment variable.")
 
         self.engine = create_engine(self.db_url)
         self.logger.info(f"Using database URL: {self.db_url}")

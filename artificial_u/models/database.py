@@ -95,9 +95,7 @@ class CourseModel(Base):
     credits = Column(Integer, nullable=True, default=3)
     professor_id = Column(Integer, ForeignKey("professors.id"), nullable=True)
     description = Column(Text, nullable=True)
-    lectures_per_week = Column(
-        Integer, nullable=True, default=DEFAULT_LECTURES_PER_WEEK
-    )
+    lectures_per_week = Column(Integer, nullable=True, default=DEFAULT_LECTURES_PER_WEEK)
     total_weeks = Column(Integer, nullable=True, default=DEFAULT_COURSE_WEEKS)
     topics = Column(JSON, nullable=True)
 

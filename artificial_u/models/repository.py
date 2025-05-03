@@ -37,9 +37,7 @@ class Repository:
         self.db_url = db_url or os.environ.get("DATABASE_URL")
 
         if not self.db_url:
-            raise ValueError(
-                "Database URL not provided. Set DATABASE_URL environment variable."
-            )
+            raise ValueError("Database URL not provided. Set DATABASE_URL environment variable.")
 
         self.factory = RepositoryFactory(db_url=self.db_url)
         self.logger.info(f"Using database URL: {self.db_url}")
@@ -89,9 +87,7 @@ class Repository:
         """Update an existing professor."""
         return self.factory.professor.update(professor)
 
-    def update_professor_field(
-        self, professor_id: int, **fields
-    ) -> Optional[Professor]:
+    def update_professor_field(self, professor_id: int, **fields) -> Optional[Professor]:
         """Update specific fields of a professor."""
         return self.factory.professor.update_field(professor_id, **fields)
 
@@ -130,9 +126,7 @@ class Repository:
         self, course_id: int, week_number: int, order_in_week: int
     ) -> Optional[Lecture]:
         """Get a lecture by course ID, week number, and order in week."""
-        return self.factory.lecture.get_by_course_week_order(
-            course_id, week_number, order_in_week
-        )
+        return self.factory.lecture.get_by_course_week_order(course_id, week_number, order_in_week)
 
     def get_lecture_content(self, lecture_id: int) -> Optional[str]:
         """Get the content of a lecture by ID."""
@@ -199,15 +193,9 @@ class Repository:
         # Extract fields from lecture object or dict
         lecture_id = lecture.id if hasattr(lecture, "id") else lecture.get("id")
         title = lecture.title if hasattr(lecture, "title") else lecture.get("title")
-        course_id = (
-            lecture.course_id
-            if hasattr(lecture, "course_id")
-            else lecture.get("course_id")
-        )
+        course_id = lecture.course_id if hasattr(lecture, "course_id") else lecture.get("course_id")
         week_number = (
-            lecture.week_number
-            if hasattr(lecture, "week_number")
-            else lecture.get("week_number")
+            lecture.week_number if hasattr(lecture, "week_number") else lecture.get("week_number")
         )
         order_in_week = (
             lecture.order_in_week
@@ -215,15 +203,9 @@ class Repository:
             else lecture.get("order_in_week")
         )
         description = (
-            lecture.description
-            if hasattr(lecture, "description")
-            else lecture.get("description")
+            lecture.description if hasattr(lecture, "description") else lecture.get("description")
         )
-        audio_url = (
-            lecture.audio_url
-            if hasattr(lecture, "audio_url")
-            else lecture.get("audio_url")
-        )
+        audio_url = lecture.audio_url if hasattr(lecture, "audio_url") else lecture.get("audio_url")
 
         # Get course and professor information
         course_title = "Unknown Course"
@@ -258,14 +240,8 @@ class Repository:
         summary = self._build_lecture_summary(lecture, courses, professors)
 
         # Extract additional fields
-        content = (
-            lecture.content if hasattr(lecture, "content") else lecture.get("content")
-        )
-        audio_url = (
-            lecture.audio_url
-            if hasattr(lecture, "audio_url")
-            else lecture.get("audio_url")
-        )
+        content = lecture.content if hasattr(lecture, "content") else lecture.get("content")
+        audio_url = lecture.audio_url if hasattr(lecture, "audio_url") else lecture.get("audio_url")
 
         # Get professor information
         professor_name = "Unknown Professor"

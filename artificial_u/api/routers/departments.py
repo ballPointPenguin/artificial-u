@@ -123,9 +123,7 @@ async def update_department(
     - Request body contains the updated department information
     - Returns the updated department
     """
-    updated_department = department_service.update_department(
-        department_id, department_data
-    )
+    updated_department = department_service.update_department(department_id, department_data)
     if not updated_department:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

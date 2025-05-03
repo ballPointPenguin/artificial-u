@@ -12,9 +12,7 @@ from sqlalchemy.exc import OperationalError
 # Create a pytest marker for tests that require a database
 def pytest_configure(config):
     """Configure pytest with custom markers."""
-    config.addinivalue_line(
-        "markers", "requires_db: mark tests that require database connectivity"
-    )
+    config.addinivalue_line("markers", "requires_db: mark tests that require database connectivity")
 
 
 # Create a fixture that checks database connectivity

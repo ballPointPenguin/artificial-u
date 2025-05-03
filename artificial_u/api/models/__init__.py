@@ -25,9 +25,7 @@ from artificial_u.api.models.departments import (
     DepartmentsListResponse,
     DepartmentUpdate,
 )
-from artificial_u.api.models.departments import (
-    ProfessorBrief as DepartmentProfessorBrief,
-)
+from artificial_u.api.models.departments import ProfessorBrief as DepartmentProfessorBrief
 from artificial_u.api.models.error_codes import ErrorCode, get_error_description
 from artificial_u.api.models.errors import ErrorDetail, ErrorResponse
 

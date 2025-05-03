@@ -25,13 +25,9 @@ def setup_logging():
 
 def parse_args():
     """Parse command line arguments."""
-    parser = argparse.ArgumentParser(
-        description="Initialize PostgreSQL database for ArtificialU"
-    )
+    parser = argparse.ArgumentParser(description="Initialize PostgreSQL database for ArtificialU")
     parser.add_argument("--db-url", help="PostgreSQL connection URL")
-    parser.add_argument(
-        "--yes", "-y", action="store_true", help="Skip confirmation prompt"
-    )
+    parser.add_argument("--yes", "-y", action="store_true", help="Skip confirmation prompt")
     return parser.parse_args()
 
 
@@ -113,9 +109,7 @@ def main():
     db_url = args.db_url or os.environ.get("DATABASE_URL")
 
     if not db_url:
-        logger.error(
-            "PostgreSQL connection URL not provided. Set DATABASE_URL or use --db-url"
-        )
+        logger.error("PostgreSQL connection URL not provided. Set DATABASE_URL or use --db-url")
         sys.exit(1)
 
     # Confirm with user

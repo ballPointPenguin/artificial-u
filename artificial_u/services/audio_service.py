@@ -90,9 +90,7 @@ class AudioService:
             return None
 
         el_voice_id = voice_record.el_voice_id
-        self.logger.info(
-            f"Using voice from database: {voice_record.name} ({el_voice_id})"
-        )
+        self.logger.info(f"Using voice from database: {voice_record.name} ({el_voice_id})")
         return el_voice_id
 
     async def _generate_and_store_audio(
@@ -154,15 +152,11 @@ class AudioService:
         Returns:
             Tuple: (audio_url, lecture) - URL to the audio file and the lecture
         """
-        self.logger.info(
-            f"Creating audio for course {course_code}, week {week}, number {number}"
-        )
+        self.logger.info(f"Creating audio for course {course_code}, week {week}, number {number}")
 
         try:
             # Get required entities
-            course, lecture, professor = await self._get_lecture_entities(
-                course_code, week, number
-            )
+            course, lecture, professor = await self._get_lecture_entities(course_code, week, number)
 
             # Get voice ID if available
             el_voice_id = self._get_professor_voice_id(professor)
@@ -206,7 +200,9 @@ class AudioService:
                 self.tts_service.play_audio(audio_url)
                 return
             else:
-                error_msg = f"Invalid audio source: {audio_url}. Expected a URL or an existing local path."
+                error_msg = (
+                    f"Invalid audio source: {audio_url}. Expected a URL or an existing local path."
+                )
                 self.logger.error(error_msg)
                 raise AudioProcessingError(error_msg)
 
@@ -220,12 +216,11 @@ class AudioService:
                 object_name = path_parts[1]
 
                 self.logger.info(
-                    f"Attempting to download audio from storage: bucket='{bucket}', key='{object_name}'"
+                    f"Attempting to download audio from storage: "
+                    f"bucket='{bucket}', key='{object_name}'"
                 )
                 # Download from storage
-                audio_data, _ = await self.storage_service.download_file(
-                    bucket, object_name
-                )
+                audio_data, _ = await self.storage_service.download_file(bucket, object_name)
                 if audio_data:
                     self.logger.info("Audio downloaded successfully, playing...")
                     self.tts_service.play_audio(audio_data)

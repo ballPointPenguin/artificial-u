@@ -22,82 +22,65 @@ ArtificialU combines the Anthropic Claude API for generating educational content
 
 ## Prerequisites
 
-- Python 3.9+
+- Python 3.13+
 - Anthropic API key
 - ElevenLabs API key
 - [Hatch](https://hatch.pypa.io/latest/) (for environment management)
 
-## Installation
+## Installation & Setup
 
-1. Clone the repository:
+This project uses [Hatch](https://hatch.pypa.io/latest/) for managing Python environments and dependencies.
 
-```bash
-git clone https://github.com/ballPointPenguin/artificial-u.git
-cd artificial-u
-```
+1. **Clone the repository:**
 
-2. Install dependencies using Hatch:
+    ```bash
+    git clone https://github.com/ballPointPenguin/artificial-u.git
+    cd artificial-u
+    ```
 
-   Hatch automatically manages project environments. To install the project and its dependencies, use the `hatch run` command:
+2. **Install Project & Dependencies:**
+    Hatch automatically manages project environments. Use `hatch run` to execute commands within the managed environment.
 
-   ```bash
-   # Installs the project in editable mode along with 'dev' dependencies
-   hatch run pip install -e ".[dev]"
-   ```
+    ```bash
+    # Installs the project in editable mode along with 'dev' dependencies
+    hatch run pip install -e ".[dev]"
+    ```
 
-   To activate the project's managed environment for interactive use (e.g., running commands directly):
+    To activate the environment for interactive use (e.g., running `python`, `pip`, `pytest` directly):
 
-   ```bash
-   hatch shell
-   ```
+    ```bash
+    hatch shell
+    ```
 
-   *(Within the hatch shell, you can run commands like `pip`, `python`, etc., without `hatch run`)*
+3. **Configure API Keys:**
+    Create a `.env` file from the example and add your API keys:
 
-3. Generate pinned requirements files (optional but recommended for reproducible environments):
+    ```bash
+    cp .env.example .env
+    # Edit .env and add your Anthropic and ElevenLabs keys
+    ```
 
-   ```bash
-   # Generate requirements.txt for base dependencies
-   hatch run pip-compile pyproject.toml --resolver=backtracking -o requirements.txt
+4. **Database Setup:**
+    ArtificialU uses PostgreSQL. See the [PostgreSQL Setup Guide](docs/POSTGRES.md) for details on setting up the database container and initializing the schema.
 
-   # Generate requirements-dev.txt for development dependencies
-   hatch run pip-compile pyproject.toml --resolver=backtracking --extra dev -o requirements-dev.txt
-   ```
+### Optional: Lockfiles for Reproducibility
 
-4. Sync your environment using the generated files:
+For ensuring identical environments across different machines or CI/CD, you can generate pinned `requirements.txt` files using `pip-tools`. See the [Development Environment Guide](docs/development.md#optional-generating-lockfiles-with-pip-tools) for details.
 
-   If you generated the requirements files, you can ensure your environment matches them exactly using `pip-sync` via `hatch run`:
+### Development Environment Details
 
-   ```bash
-   # Sync using the development requirements file
-   hatch run pip-sync requirements-dev.txt
+For a comprehensive guide on the development environment, including dependency management philosophy, code quality tools (linters, formatters, pre-commit hooks), and `pyproject.toml` usage, see [docs/development.md](docs/development.md).
 
-   # Or, sync using only the base requirements file
-   # hatch run pip-sync requirements.txt
-   ```
+### GitHub Codespaces
 
-   *Note: Anytime you add/remove dependencies in `pyproject.toml`, regenerate the requirements files (step 3) and re-sync your environment (step 4). Commit the changes to `pyproject.toml` and the generated `requirements*.txt` files.*
-
-5. Create a `.env` file with your API keys:
-
-```bash
-cp .env.example .env
-# Edit .env file to add your API keys
-```
-
-## Project Configuration
-
-The project uses a modern `pyproject.toml` file for configuration, following PEP 518 and PEP 621 standards. This file centralizes build settings, project metadata, and tool configurations. See [docs/pyproject_usage.md](docs/pyproject_usage.md) for details.
-
-## Dependency Management
-
-The project uses `pyproject.toml` for defining dependencies and [Hatch](https://hatch.pypa.io/latest/) for environment management. Optionally, `pip-tools` can be used to generate lockfiles (`requirements*.txt`) for pinning dependencies and ensuring reproducible environments. See [docs/dependency_management.md](docs/dependency_management.md) for more details on the approach and workflows.
+This repository is configured for [GitHub Codespaces](https://github.com/features/codespaces). Simply open a Codespace, add your API keys to `.env`, and use `hatch run` or `hatch shell` as described above. The environment and database setup are handled automatically.
 
 ## Quick Start
 
 Run the sample demonstrations within the hatch environment:
 
 ```bash
-# Activate the environment (if not already active)
+# Activate the environment first (if not already active)
 # hatch shell
 
 # Then run the scripts
@@ -112,7 +95,7 @@ hatch run python sample_tinyllama.py
 hatch run python sample_anthropic.py
 ```
 
-This will simulate the creation of a professor, course, lecture, and audio file to demonstrate the system's capabilities.
+This will simulate the creation of a professor, course, lecture, and audio file.
 
 ## Usage
 
@@ -135,7 +118,7 @@ hatch run artificial-u play-lecture -c "CS4511" -w 1 -n 1
 hatch run artificial-u show-lecture -c "CS4511" -w 1 -n 1
 ```
 
-For more details on any command, use the --help option:
+For more details on any command, use the `--help` option:
 
 ```bash
 hatch run artificial-u --help
@@ -144,13 +127,10 @@ hatch run artificial-u create-course --help
 
 ## Testing
 
-The project uses pytest for testing. Tests are organized into several categories:
+The project uses pytest for testing. Tests are organized into several categories and can be run using `hatch run`:
 
 ```bash
-# Run all automated tests (uses the hatch environment)
-pytest
-
-# Or explicitly using hatch run
+# Run all automated tests
 hatch run pytest
 
 # Run specific test categories
@@ -162,20 +142,19 @@ hatch run pytest -m e2e          # End-to-end tests only
 hatch run pytest --cov=artificial_u
 ```
 
-### Setting Up the Test Database
+### Test Database Setup
 
-Before running integration tests, you need to set up the PostgreSQL test database:
-
-1. Make sure PostgreSQL is running
-2. Run the setup script:
+Integration tests require a PostgreSQL test database. Ensure PostgreSQL is running and then set up the test database:
 
 ```bash
-# Create the test database
+# Create the test database (run once)
 hatch run python scripts/setup_test_db.py
 
 # Run integration tests
 hatch run pytest tests/integration -v
 ```
+
+See the [PostgreSQL Setup Guide](docs/POSTGRES.md) for more database details.
 
 ## Project Structure
 
@@ -184,57 +163,43 @@ artificial_u/
 ├── __init__.py            # Package initialization
 ├── __main__.py            # Entry point for command-line execution
 ├── cli.py                 # CLI interface using Click
-├── system.py              # Main system integration class - includes lecture preview functionality
-├── models/                # Data models and database
-│   ├── __init__.py
-│   ├── core.py            # Core data models using Pydantic
-│   └── database.py        # SQLAlchemy models and repository
-├── audio/                 # Audio processing
-│   ├── __init__.py
-│   ├── speech_processor.py # Text processing for optimal TTS quality
-└── integrations/          # External API integrations
-    └── elevenlabs/        # ElevenLabs API integration
-        ├── __init__.py
-        └── client.py      # Low-level client for ElevenLabs API
-        └── voice_mapper.py # Voice mapping for matching professor attributes to ElevenLabs voices
-├── services/              # Service layer components
-    ├── __init__.py
-    ├── audio_service.py   # High-level audio service
-    ├── content_service.py # Content generation service
-    ├── course_service.py  # Course management service
-    ├── department_service.py # Department management service
-    ├── image_service.py     # Image generation service
-    ├── lecture_service.py   # Lecture management service
-    ├── professor_service.py # Professor management service
-    ├── storage_service.py   # Storage service
-    ├── tts_service.py       # Text-to-speech service
-    └── voice_service.py     # Voice selection service
+├── system.py              # Main system integration class
+├── models/                # Data models and database (SQLAlchemy, Pydantic)
+├── audio/                 # Audio processing (TTS, speech enhancement)
+├── integrations/          # External API integrations (Anthropic, ElevenLabs)
+├── services/              # Business logic layer
+└── ... (other components)
+
+docs/
+├── development.md         # Development environment, tooling, dependencies
+├── CONTRIBUTING.md        # Contribution guidelines and workflow
+├── POSTGRES.md            # PostgreSQL setup details
+└── ... (other docs)
+
+tests/
+├── unit/
+├── integration/
+└── e2e/
+
+scripts/                   # Utility scripts (DB setup, etc.)
+
+.env.example               # Example environment variables
+.flake8                    # Flake8 configuration
+.gitignore                 # Git ignore patterns
+.pre-commit-config.yaml    # Pre-commit hook configuration
+LICENSE                    # Project license
+Makefile                   # Optional: Common development tasks
+pyproject.toml             # Project metadata, dependencies, tool config
+README.md                  # This file
+requirements.txt           # Optional: Pinned production dependencies
+requirements-dev.txt       # Optional: Pinned development dependencies
 ```
 
-## Development with GitHub Codespaces
+*(This is a simplified overview. See the respective directories for more detail.)*
 
-This repository includes a devcontainer configuration for easy development using GitHub Codespaces. Hatch is typically pre-installed or easily installable in these environments.
+## Contributing
 
-1. Click the "Code" button on the repository
-2. Select the "Codespaces" tab
-3. Click "Create codespace on main"
-4. Once the environment is ready, add your API keys to the `.env` file
-5. Use `hatch shell` or `hatch run` as described in the Installation/Usage sections.
-
-## Recent Updates
-
-- Streamlined CLI interface for audio playback
-- Improved error handling for missing audio files
-- Refactored audio processing into modular components for improved maintainability
-- Enhanced text processing for better speech quality with technical terms
-
-## Future Enhancements
-
-- Web interface with Flask/FastAPI
-- Faculty visualization using AI-generated images
-- Interactive Q&A with professors
-- Homework generation and assessment
-- Improved voice customization for professors
+Contributions are welcome! Please see the [Contributing Guidelines](CONTRIBUTING.md) for details on the development workflow, coding standards, and how to submit changes.
 
 ## Project Status
 
@@ -243,21 +208,3 @@ This project is in early development as a personal learning tool.
 ## License
 
 [AGPL-3.0 License](LICENSE)
-
-## Database Setup
-
-ArtificialU uses PostgreSQL for data storage:
-
-1. Start the PostgreSQL container:
-
-   ```bash
-   docker-compose up -d
-   ```
-
-2. Initialize the database schema using Hatch:
-
-   ```bash
-   hatch run python initialize_db.py
-   ```
-
-3. For detailed database information, see [PostgreSQL Setup Guide](docs/POSTGRES.md).

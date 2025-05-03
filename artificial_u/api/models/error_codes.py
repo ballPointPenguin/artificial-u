@@ -76,6 +76,4 @@ def get_error_description(error_code: str) -> str:
     Returns:
         The description for the error code, or a generic message if not found
     """
-    return ERROR_CODE_DESCRIPTIONS.get(
-        error_code, "An error occurred with code: " + error_code
-    )
+    return ERROR_CODE_DESCRIPTIONS.get(error_code, "An error occurred with code: " + error_code)

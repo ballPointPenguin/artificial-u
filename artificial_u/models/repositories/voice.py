@@ -71,9 +71,7 @@ class VoiceRepository(BaseRepository):
     def get_by_elevenlabs_id(self, elevenlabs_id: str) -> Optional[Voice]:
         """Get a voice by ElevenLabs voice ID."""
         with self.get_session() as session:
-            db_voice = (
-                session.query(VoiceModel).filter_by(el_voice_id=elevenlabs_id).first()
-            )
+            db_voice = session.query(VoiceModel).filter_by(el_voice_id=elevenlabs_id).first()
 
             if not db_voice:
                 return None
@@ -128,10 +126,7 @@ class VoiceRepository(BaseRepository):
 
             # Apply pagination
             voices = (
-                query.order_by(VoiceModel.popularity_score.desc())
-                .limit(limit)
-                .offset(offset)
-                .all()
+                query.order_by(VoiceModel.popularity_score.desc()).limit(limit).offset(offset).all()
             )
 
             return [

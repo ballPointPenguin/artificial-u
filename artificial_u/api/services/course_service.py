@@ -82,9 +82,7 @@ class CourseApiService:
             # Get courses from core service (only filters by department_id)
             # Core service returns List[Dict[str, Any]] with 'course' and 'professor' keys
             # The 'course' value is a dict representation from course_model_to_dict
-            core_courses_list = self.core_service.list_courses(
-                department_id=department_id
-            )
+            core_courses_list = self.core_service.list_courses(department_id=department_id)
 
             filtered_courses = core_courses_list
 
@@ -152,26 +150,20 @@ class CourseApiService:
         """
         try:
             course_model = self.core_service.get_course(course_id)
-            return CourseResponse.model_validate(
-                course_model
-            )  # Core returns CourseModel
+            return CourseResponse.model_validate(course_model)  # Core returns CourseModel
         except CourseNotFoundError:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Course with ID {course_id} not found",
             )
         except DatabaseError as e:
-            self.logger.error(
-                f"Database error getting course {course_id}: {e}", exc_info=True
-            )
+            self.logger.error(f"Database error getting course {course_id}: {e}", exc_info=True)
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Database error retrieving course {course_id}.",
             )
         except Exception as e:
-            self.logger.error(
-                f"Unexpected error getting course {course_id}: {e}", exc_info=True
-            )
+            self.logger.error(f"Unexpected error getting course {course_id}: {e}", exc_info=True)
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"An unexpected error occurred retrieving course {course_id}.",
@@ -183,26 +175,20 @@ class CourseApiService:
         """
         try:
             course_model = self.core_service.get_course_by_code(code)
-            return CourseResponse.model_validate(
-                course_model
-            )  # Core returns CourseModel
+            return CourseResponse.model_validate(course_model)  # Core returns CourseModel
         except CourseNotFoundError:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Course with code '{code}' not found",
             )
         except DatabaseError as e:
-            self.logger.error(
-                f"Database error getting course by code {code}: {e}", exc_info=True
-            )
+            self.logger.error(f"Database error getting course by code {code}: {e}", exc_info=True)
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Database error retrieving course code '{code}'.",
             )
         except Exception as e:
-            self.logger.error(
-                f"Unexpected error getting course by code {code}: {e}", exc_info=True
-            )
+            self.logger.error(f"Unexpected error getting course by code {code}: {e}", exc_info=True)
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"An unexpected error occurred retrieving course code '{code}'.",
@@ -249,9 +235,7 @@ class CourseApiService:
                 detail=f"An unexpected error occurred creating the course: {e}",
             )
 
-    def update_course(
-        self, course_id: int, course_data: CourseUpdate
-    ) -> CourseResponse:
+    def update_course(self, course_id: int, course_data: CourseUpdate) -> CourseResponse:
         """
         Update an existing course using the core service.
         """
@@ -265,9 +249,7 @@ class CourseApiService:
             if "professor_id" in update_data:
                 update_data["professor_id"] = str(update_data["professor_id"])
 
-            updated_course_model = self.core_service.update_course(
-                course_id, update_data
-            )
+            updated_course_model = self.core_service.update_course(course_id, update_data)
 
             # Convert the returned CourseModel to the API response model
             return CourseResponse.model_validate(updated_course_model)
@@ -284,17 +266,13 @@ class CourseApiService:
                 detail="Professor specified in update not found.",
             )
         except DatabaseError as e:
-            self.logger.error(
-                f"Database error updating course {course_id}: {e}", exc_info=True
-            )
+            self.logger.error(f"Database error updating course {course_id}: {e}", exc_info=True)
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Database error updating course {course_id}.",
             )
         except Exception as e:
-            self.logger.error(
-                f"Unexpected error updating course {course_id}: {e}", exc_info=True
-            )
+            self.logger.error(f"Unexpected error updating course {course_id}: {e}", exc_info=True)
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"An unexpected error occurred updating course {course_id}.",
@@ -307,9 +285,7 @@ class CourseApiService:
         try:
             # Core service returns True on success
             deleted = self.core_service.delete_course(course_id)
-            if (
-                not deleted
-            ):  # Should not happen if core raises CourseNotFound, but check anyway
+            if not deleted:  # Should not happen if core raises CourseNotFound, but check anyway
                 raise CourseNotFoundError(
                     f"Course {course_id} not found for deletion (core returned False)."
                 )
@@ -320,25 +296,22 @@ class CourseApiService:
         except DatabaseError as e:
             # Check for dependency errors if applicable
             if "foreign key constraint" in str(e).lower():
-                self.logger.warning(
-                    f"Cannot delete course {course_id} due to dependencies: {e}"
-                )
+                self.logger.warning(f"Cannot delete course {course_id} due to dependencies: {e}")
                 raise HTTPException(
                     status_code=status.HTTP_409_CONFLICT,
-                    detail=f"Cannot delete course {course_id} as it has associated resources (e.g., lectures).",
+                    detail=(
+                        f"Cannot delete course {course_id} as it has "
+                        "associated resources (e.g., lectures)."
+                    ),
                 )
             else:
-                self.logger.error(
-                    f"Database error deleting course {course_id}: {e}", exc_info=True
-                )
+                self.logger.error(f"Database error deleting course {course_id}: {e}", exc_info=True)
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                     detail=f"Database error deleting course {course_id}.",
                 )
         except Exception as e:
-            self.logger.error(
-                f"Unexpected error deleting course {course_id}: {e}", exc_info=True
-            )
+            self.logger.error(f"Unexpected error deleting course {course_id}: {e}", exc_info=True)
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"An unexpected error occurred deleting course {course_id}.",
@@ -407,9 +380,7 @@ class CourseApiService:
             course = self.core_service.get_course(course_id)
 
             if not course.department_id:
-                self.logger.warning(
-                    f"Course {course_id} has no associated department ID."
-                )
+                self.logger.warning(f"Course {course_id} has no associated department ID.")
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,
                     detail=f"Department information not available for course {course_id}.",
@@ -455,7 +426,10 @@ class CourseApiService:
             )
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"An unexpected error occurred retrieving department for course {course_id}.",
+                detail=(
+                    f"An unexpected error occurred retrieving "
+                    f"department for course {course_id}."
+                ),
             )
 
     def get_course_lectures(self, course_id: int) -> CourseLecturesResponse:
@@ -467,9 +441,7 @@ class CourseApiService:
             self.core_service.get_course(course_id)
 
             # Get lectures for the course using the repository factory
-            lectures: List[LectureModel] = self.repository_factory.lecture.list(
-                course_id=course_id
-            )
+            lectures: List[LectureModel] = self.repository_factory.lecture.list(course_id=course_id)
 
             # Convert LectureModel instances to LectureBrief API models
             lecture_briefs = [
@@ -498,9 +470,7 @@ class CourseApiService:
             # This scenario (course exists but no lectures found) is not an error
             # The repository should return an empty list in this case.
             # If LectureNotFoundError means the *repository itself* failed, handle as DB error.
-            self.logger.warning(
-                f"Lecture lookup failed unexpectedly for course {course_id}"
-            )
+            self.logger.warning(f"Lecture lookup failed unexpectedly for course {course_id}")
             # Treat as empty list for now, repository should handle this gracefully.
             return CourseLecturesResponse(course_id=course_id, lectures=[], total=0)
         except DatabaseError as e:

@@ -31,6 +31,4 @@ def test_environment_variables_are_set():
     ), "OpenAI API key not set to test value"
 
     # Verify we're in a test environment
-    assert (
-        os.environ.get("TESTING") == "true"
-    ), "TESTING environment variable should be 'true'"
+    assert os.environ.get("TESTING") == "true", "TESTING environment variable should be 'true'"

@@ -84,7 +84,8 @@ class LectureService:
             word_count: Word count for the lecture
 
         Returns:
-            Tuple: (Lecture, Course, Professor) - The generated lecture with its course and professor
+            Tuple: (Lecture, Course, Professor) - The generated lecture with its
+            course and professor
         """
         self.logger.info(
             f"Generating lecture for course {course_code}, week {week}, number {number}"
@@ -127,29 +128,21 @@ class LectureService:
                 if loop.is_running():
                     # We're in an async context (e.g., in a test with pytest-asyncio)
                     # Schedule the task without waiting for it
-                    asyncio.create_task(
-                        self.export_lecture_text(lecture, course, professor)
-                    )
+                    asyncio.create_task(self.export_lecture_text(lecture, course, professor))
                 else:
                     # We're not in an async context, run the coroutine to completion
-                    loop.run_until_complete(
-                        self.export_lecture_text(lecture, course, professor)
-                    )
+                    loop.run_until_complete(self.export_lecture_text(lecture, course, professor))
             except RuntimeError:
                 # No event loop in this thread, create a new one
                 loop = asyncio.new_event_loop()
                 try:
-                    loop.run_until_complete(
-                        self.export_lecture_text(lecture, course, professor)
-                    )
+                    loop.run_until_complete(self.export_lecture_text(lecture, course, professor))
                 finally:
                     loop.close()
 
         return lecture, course, professor
 
-    def _get_previous_lecture(
-        self, course: Course, week: int, number: int
-    ) -> Optional[Lecture]:
+    def _get_previous_lecture(self, course: Course, week: int, number: int) -> Optional[Lecture]:
         """
         Get previous lecture for continuity if available.
 
@@ -182,7 +175,8 @@ class LectureService:
             return previous_lecture
         except Exception as e:
             self.logger.warning(
-                f"Failed to retrieve previous lecture: {str(e)}. Continuing without previous content."
+                f"Failed to retrieve previous lecture: {str(e)}. "
+                f"Continuing without previous content."
             )
             return None
 
@@ -340,7 +334,10 @@ class LectureService:
             course_id=course_id, week_number=week_number, order_in_week=order_in_week
         )
         if not lecture:
-            error_msg = f"Lecture for course {course_id}, week {week_number}, number {order_in_week} not found"
+            error_msg = (
+                f"Lecture for course {course_id}, week {week_number}, "
+                f"number {order_in_week} not found"
+            )
             self.logger.error(error_msg)
             raise LectureNotFoundError(error_msg)
         return lecture
@@ -431,7 +428,8 @@ class LectureService:
 
         Args:
             course_code: Optional course code to filter lectures
-            model_filter: Optional filter to only show lectures from a specific model (e.g., "phi4-mini")
+            model_filter: Optional filter to only show lectures from a specific model
+            (e.g., "phi4-mini")
             limit: Maximum number of lectures to return
 
         Returns:
@@ -485,9 +483,7 @@ class LectureService:
         try:
             professor = self.repository.professor.get(course.professor_id)
             if not professor:
-                self.logger.warning(
-                    f"Professor not found for course {course.code}, skipping"
-                )
+                self.logger.warning(f"Professor not found for course {course.code}, skipping")
                 return []
 
             course_lectures = self.repository.lecture.list_by_course(course.id)
@@ -518,23 +514,17 @@ class LectureService:
                             lecture.content[:200] + "..." if lecture.content else None
                         ),
                         "model_used": model_used,
-                        "text_file": (
-                            lecture_path if os.path.exists(lecture_path) else None
-                        ),
+                        "text_file": (lecture_path if os.path.exists(lecture_path) else None),
                         "audio_url": lecture.audio_url,
                     }
                 )
 
             return lectures
         except Exception as e:
-            self.logger.warning(
-                f"Error getting lectures for course {course.code}: {str(e)}"
-            )
+            self.logger.warning(f"Error getting lectures for course {course.code}: {str(e)}")
             return []
 
-    def _get_lecture_model_info(
-        self, course_code: str, lecture: Lecture
-    ) -> Optional[str]:
+    def _get_lecture_model_info(self, course_code: str, lecture: Lecture) -> Optional[str]:
         """
         Extract model information from a lecture file.
 
@@ -556,9 +546,7 @@ class LectureService:
             with open(lecture_path, "r", encoding="utf-8") as f:
                 content = f.read()
                 # Look for the model info in the header
-                model_lines = [
-                    line for line in content.split("\n") if "Generated with:" in line
-                ]
+                model_lines = [line for line in content.split("\n") if "Generated with:" in line]
                 if model_lines:
                     return model_lines[0].replace("## Generated with:", "").strip()
         except Exception as e:

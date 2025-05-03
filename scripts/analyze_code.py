@@ -26,9 +26,7 @@ def analyze_file(file_path):
         # Extract function info
         functions = []
         for node in ast.walk(tree):
-            if isinstance(node, ast.FunctionDef) or isinstance(
-                node, ast.AsyncFunctionDef
-            ):
+            if isinstance(node, ast.FunctionDef) or isinstance(node, ast.AsyncFunctionDef):
                 func_name = node.name
                 start_line = node.lineno
 
@@ -45,8 +43,7 @@ def analyze_file(file_path):
                         current_line == len(lines) - 1
                         or (
                             re.match(r"^\s*", lines[current_line]).group()
-                            and len(re.match(r"^\s*", lines[current_line]).group())
-                            <= indent_level
+                            and len(re.match(r"^\s*", lines[current_line]).group()) <= indent_level
                             and lines[current_line].strip()
                         )
                     ):
@@ -114,9 +111,7 @@ def main():
             if stats["file_size"] >= 1024
             else f"{stats['file_size']} bytes"
         )
-        print(
-            f"{i}. {stats['file_path']} - {readable_size}, {stats['line_count']} lines"
-        )
+        print(f"{i}. {stats['file_path']} - {readable_size}, {stats['line_count']} lines")
 
     # Collect all functions
     all_functions = []

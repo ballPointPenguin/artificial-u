@@ -68,9 +68,7 @@ class OllamaClient:
                 if content_item.get("type") == "text" and content_item.get("text"):
                     text = content_item.get("text", "")
                     first_line = text.split("\n")[0]
-                    return first_line[:length] + (
-                        "..." if len(first_line) > length else ""
-                    )
+                    return first_line[:length] + ("..." if len(first_line) > length else "")
 
         # Handle simple string content
         elif isinstance(msg.get("content"), str):
@@ -141,7 +139,10 @@ class OllamaClient:
             return OllamaContent(
                 content=[
                     OllamaMessage(
-                        text="Request timed out. Please try again with a simpler query or smaller model."
+                        text=(
+                            "Request timed out. Please try again with a "
+                            "simpler query or smaller model."
+                        )
                     )
                 ]
             )
@@ -150,9 +151,7 @@ class OllamaClient:
             signal.alarm(0)
             # Return a simplified error response
             return OllamaContent(
-                content=[
-                    OllamaMessage(text=f"Error communicating with Ollama: {str(e)}")
-                ]
+                content=[OllamaMessage(text=f"Error communicating with Ollama: {str(e)}")]
             )
 
         # Get the raw response text

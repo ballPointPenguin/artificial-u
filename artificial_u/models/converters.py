@@ -116,7 +116,8 @@ def partial_professor_to_xml(
 
 
 def professors_to_xml(existing_professors: List[Dict[str, str]]) -> str:
-    """Format a list of existing professors (dicts with name, specialization) as XML for prompt context."""
+    # Format a list of existing professors (dicts with name, specialization)
+    # as XML for prompt context.
     if not existing_professors:
         return ""
     lines = ["<existing_professors>"]
@@ -152,9 +153,7 @@ def departments_to_xml(existing_departments: list[str]) -> str:
     if not existing_departments:
         return ""
     # Assumes list of names based on prompts/department.py
-    return "\n".join(
-        f"  <department>{name}</department>" for name in existing_departments
-    )
+    return "\n".join(f"  <department>{name}</department>" for name in existing_departments)
 
 
 def courses_to_xml(
@@ -171,9 +170,7 @@ def courses_to_xml(
         lines.append("  <course>")
         lines.append(f"    <code>{course.get('code', 'N/A')}</code>")
         lines.append(f"    <title>{course.get('title', 'N/A')}</title>")
-        lines.append(
-            f"    <description>{course.get('description', 'N/A')}</description>"
-        )
+        lines.append(f"    <description>{course.get('description', 'N/A')}</description>")
 
         # Add topic overview if available and requested
         course_topics = course.get("topics", [])
@@ -185,7 +182,9 @@ def courses_to_xml(
                 lines.append(f"      <topic>{topic}</topic>")
             if len(course_topics) > max_topics:
                 lines.append(
-                    f"      <additional_topics_count>{len(course_topics) - max_topics}</additional_topics_count>"
+                    f"      <additional_topics_count>"
+                    f"        {len(course_topics) - max_topics}"
+                    f"      </additional_topics_count>"
                 )
             lines.append("    </topics_overview>")
 
