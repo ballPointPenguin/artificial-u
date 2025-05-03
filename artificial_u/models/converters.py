@@ -115,13 +115,13 @@ def partial_professor_to_xml(
     return "\n".join(lines)
 
 
-def professors_to_xml(existing_professors: List[Dict[str, str]]) -> str:
-    # Format a list of existing professors (dicts with name, specialization)
+def professors_to_xml(professors: List[Dict[str, str]]) -> str:
+    # Format a list of professors (dicts with name, specialization)
     # as XML for prompt context.
-    if not existing_professors:
+    if not professors:
         return ""
     lines = ["<existing_professors>"]
-    for prof in existing_professors:
+    for prof in professors:
         lines.append(
             f"  <professor><name>{prof.get('name', 'N/A')}</name>"
             f"<specialization>{prof.get('specialization', 'N/A')}</specialization></professor>"
@@ -148,25 +148,25 @@ def department_to_xml(department_data: dict, missing_marker: str = "[GENERATE]")
     return "\n".join(lines)
 
 
-def departments_to_xml(existing_departments: list[str]) -> str:
+def departments_to_xml(departments: list[str]) -> str:
     """Format a list of department names as XML for prompt context."""
-    if not existing_departments:
+    if not departments:
         return ""
     # Assumes list of names based on prompts/department.py
-    return "\n".join(f"  <department>{name}</department>" for name in existing_departments)
+    return "\n".join(f"<department>{name}</department>" for name in departments)
 
 
 def courses_to_xml(
-    existing_courses: List[Dict[str, Any]],
+    courses: List[Dict[str, Any]],
     include_topics: bool = True,
     max_topics: int = 5,
 ) -> str:
-    """Format a list of existing courses (dicts) as XML for context."""
-    if not existing_courses:
+    """Format a list of courses (dicts) as XML for context."""
+    if not courses:
         return "<no_existing_courses />"
 
     lines = ["<existing_courses>"]
-    for course in existing_courses:
+    for course in courses:
         lines.append("  <course>")
         lines.append(f"    <code>{course.get('code', 'N/A')}</code>")
         lines.append(f"    <title>{course.get('title', 'N/A')}</title>")
