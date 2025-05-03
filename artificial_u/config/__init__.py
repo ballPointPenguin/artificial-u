@@ -20,7 +20,6 @@ from artificial_u.config.defaults import (
     DEFAULT_STORAGE_REGION,
     DEFAULT_STORAGE_SECRET_KEY,
     DEFAULT_STORAGE_TYPE,
-    DEFAULT_TEXT_EXPORT_PATH,
     DEPARTMENTS,
 )
 
@@ -34,7 +33,6 @@ __all__ = [
     "Environment",
     # Default constants
     "DEFAULT_DB_URL",
-    "DEFAULT_TEXT_EXPORT_PATH",
     "DEFAULT_CONTENT_BACKEND",
     "DEFAULT_OLLAMA_MODEL",
     "DEFAULT_STORAGE_TYPE",

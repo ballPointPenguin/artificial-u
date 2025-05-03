@@ -1,334 +1,179 @@
 """Lecture-related prompt templates."""
 
-from typing import Optional
+from typing import Any, Dict, List, Optional
 
-from artificial_u.prompts.base import PromptTemplate, StructuredPrompt
+from artificial_u.models.converters import (
+    lectures_to_xml,
+    partial_lecture_to_xml,
+    professor_to_xml,
+)
+from artificial_u.prompts.base import PromptTemplate
 
-# Basic lecture generation template
+# XML structure for lecture content
+LECTURE_XML_STRUCTURE = """<lecture>
+  <title>[Lecture title]</title>
+  <week_number>[Week number in course]</week_number>
+  <order_in_week>[Order in week]</order_in_week>
+  <description>[Brief description of lecture content]</description>
+  <content>
+    [Full lecture content, including:
+    - Introduction and scene setting
+    - Main points and explanations
+    - Student interactions and questions
+    - Examples and analogies
+    - Stage directions in [brackets]
+    - Natural transitions between topics
+    - Conclusion and preview of next lecture]
+  </content>
+</lecture>"""
+
+# Example of a filled lecture
+EXAMPLE_LECTURE_1 = """<lecture>
+  <title>Introduction to Quantum Computing</title>
+  <week_number>1</week_number>
+  <order_in_week>1</order_in_week>
+  <description>An engaging introduction to quantum computing fundamentals.</description>
+  <content>
+    [Professor enters, adjusting her glasses with a smile]
+
+    Good morning, everyone! I'm Dr. Sarah Chen, and I'm thrilled to begin our journey into the
+    fascinating world of quantum computing. Before we dive in, let me share a story that I think
+    perfectly illustrates why this field is so exciting...
+
+    [Walks to the whiteboard, drawing a simple diagram]
+
+    You see, classical computers, the ones we use every day, are like trying to read a book in a
+    dark room with just one flashlight. You can only see one page at a time. But quantum computers?
+    They're like suddenly turning on all the lights in the room. You can see every page at once!
+
+    [Pauses, looking around the room]
+
+    I see some skeptical faces. Good! That skepticism is exactly where we need to begin. Let's break
+    this down into something more tangible...
+
+    [Continues with main lecture content, including student interactions, examples, and transitions]
+
+    And that brings us to our conclusion for today. Next time, we'll build on these foundational
+    concepts to explore quantum superposition in more detail. Any final questions?
+  </content>
+</lecture>"""
+
+# Example of a filled lecture with different style
+EXAMPLE_LECTURE_2 = """<lecture>
+  <title>The French Revolution: Causes and Catalysts</title>
+  <week_number>1</week_number>
+  <order_in_week>1</order_in_week>
+  <description>Examining the social, political, and economic factors of the French
+  Revolution.</description>
+  <content>
+    [Professor strides in, carrying a worn leather briefcase]
+
+    Bonjour, class! Professor Martin here. Today we begin our exploration of one of history's most
+    pivotal moments - the French Revolution. But before we discuss the storming of the Bastille or
+    the Reign of Terror, we need to understand why France was ripe for revolution in the first
+    place.
+
+    [Opens briefcase, pulls out a replica of an 18th-century French coin]
+
+    Take a look at this. This simple coin tells us so much about pre-revolutionary France...
+
+    [Passes coin around while continuing lecture]
+
+    The story of the French Revolution is not just about kings and queens, but about ordinary people
+    facing extraordinary circumstances. Let's examine the three estates system...
+
+    [Continues with engaging narrative, weaving together social, economic, and political factors]
+
+    Next time, we'll see how these tensions finally boiled over in 1789. Remember, revolutions don't
+    just happen - they brew over time, like a pot slowly coming to boil.
+  </content>
+</lecture>"""
+
+# Unified lecture prompt that handles both structured and freeform inputs
 LECTURE_PROMPT = PromptTemplate(
-    template="""
-You are an AI assistant tasked with generating engaging university lecture texts for various
-courses. These lectures will be used in a text-to-speech engine, so it's crucial to create
-content that works well in spoken form. Your goal is to produce a lecture that is
-approximately {word_count} words long, narrative in style, and infused with the personality
-of the lecturer.
+    template=f"""
+Generate a university lecture in XML format.
+Use the structure below; fill in all bracketed placeholders with either provided values
+or generated ones if marked as [GENERATE].
 
-Course: {course_title} ({course_code})
-Lecture Topic: {topic}
-Week: {week_number}, Lecture: {order_in_week}
+XML Structure:
+{LECTURE_XML_STRUCTURE}
 
-Professor Details:
-- Name: {professor_name}
-- Background: {professor_background}
-- Teaching Style: {teaching_style}
-- Personality: {professor_personality}
+Previous lectures in this course (for context and continuity):
+{{existing_lectures_xml}}
 
-{continuity_context}
+Professor Information:
+{{professor_xml}}
 
-Before writing the lecture, please plan your approach inside <lecture_preparation> tags.
-In your preparation:
+Partial Lecture Details:
+{{partial_lecture_xml}}
 
-1. Consider how to structure the lecture for optimal audio delivery:
-   - Plan clear transitions between main points
-   - Note places where pauses or changes in tone might be effective
-   - Consider how to naturally incorporate student interactions
+{{freeform_prompt_text}}
 
-2. Outline 5-7 main points for the lecture:
-   - For each point, note key information to cover
-   - Consider how each point builds on the previous one
-   - Break down technical concepts into simpler components
-   - Prepare analogies or real-world examples
+Examples of properly formatted lectures:
+Example 1:
+{EXAMPLE_LECTURE_1}
 
-3. Plan the pacing of the lecture:
-   - Estimate how long to spend on each main point
-   - Note where to place breaks or moments of levity
-   - Consider places for student interaction
+Example 2:
+{EXAMPLE_LECTURE_2}
 
-After your preparation, write the lecture as a continuous text, following these guidelines:
+IMPORTANT:
+- Write in a conversational style that matches the professor's personality
+- Include stage directions in [brackets] to bring the scene to life
+- Avoid complex mathematical formulas - express them in spoken language
+- Create a narrative flow rather than just presenting facts
+- Include natural student interactions and engagement
+- Aim for approximately {{word_count}} words in the lecture content
 
-1. Begin with a vivid introduction that sets the scene and introduces the lecturer
-2. Write in a conversational, engaging style that reflects the lecturer's personality
-3. Avoid complex mathematical formulas - express them in spoken language
-4. Include stage directions in [brackets] to bring the scene to life
-5. Focus on creating a narrative flow rather than presenting dry facts
-6. Aim for approximately {word_count} words in length
-
-Your output should follow this structure:
-
-<lecture_preparation>
-[Your detailed lecture plan here]
-</lecture_preparation>
-
-<lecture_text>
-[The complete lecture text here, ready for text-to-speech]
-</lecture_text>""",
+Wrap your answer in <o> tags, providing only the <lecture> element:
+<o>
+""",
     required_vars=[
-        "course_title",
-        "course_code",
-        "topic",
-        "week_number",
-        "order_in_week",
-        "professor_name",
-        "professor_background",
-        "teaching_style",
-        "professor_personality",
+        "existing_lectures_xml",
+        "partial_lecture_xml",
+        "professor_xml",
         "word_count",
     ],
 )
 
 
-# Structured version of the lecture prompt for more flexibility
-class StructuredLecturePrompt(StructuredPrompt):
-    """A structured prompt for generating lectures with configurable sections."""
-
-    def __init__(self, word_count: int = 2500):
-        """Initialize a structured lecture prompt.
-
-        Args:
-            word_count: Target word count for the lecture
-        """
-        super().__init__()
-
-        # Add default sections
-        self.add_section(
-            "introduction",
-            """
-You are an AI assistant tasked with generating engaging university lecture texts for various
-courses. These lectures will be used in a text-to-speech engine, so it's crucial to create
-content that works well in spoken form. Your goal is to produce a lecture that is
-approximately {word_count} words long, narrative in style, and infused with the personality
-of the lecturer.""",
-        )
-
-        self.add_section(
-            "course_info",
-            """Course: {course_title} ({course_code})
-Lecture Topic: {topic}
-Week: {week_number}, Lecture: {order_in_week}""",
-        )
-
-        self.add_section(
-            "professor_info",
-            """Professor Details:
-- Name: {professor_name}
-- Background: {professor_background}
-- Teaching Style: {teaching_style}
-- Personality: {professor_personality}""",
-        )
-
-        self.add_section("continuity", "{continuity_context}")
-
-        self.add_section(
-            "preparation_instructions",
-            """Before writing the lecture, please plan your approach inside
-<lecture_preparation> tags. In your preparation:
-
-1. Consider how to structure the lecture for optimal audio delivery:
-   - Plan clear transitions between main points
-   - Note places where pauses or changes in tone might be effective
-   - Consider how to naturally incorporate student interactions
-
-2. Outline 5-7 main points for the lecture:
-   - For each point, note key information to cover
-   - Consider how each point builds on the previous one
-   - Break down technical concepts into simpler components
-   - Prepare analogies or real-world examples
-
-3. Plan the pacing of the lecture:
-   - Estimate how long to spend on each main point
-   - Note where to place breaks or moments of levity
-   - Consider places for student interaction""",
-        )
-
-        self.add_section(
-            "writing_instructions",
-            """
-After your preparation, write the lecture as a continuous text,
-following these guidelines:
-
-1. Begin with a vivid introduction that sets the scene and introduces the lecturer
-2. Write in a conversational, engaging style that reflects the lecturer's personality
-3. Avoid complex mathematical formulas - express them in spoken language
-4. Include stage directions in [brackets] to bring the scene to life
-5. Focus on creating a narrative flow rather than presenting dry facts
-6. Aim for approximately {word_count} words in length""",
-        )
-
-        self.add_section(
-            "output_format",
-            """Your output should follow this structure:
-
-<lecture_preparation>
-[Your detailed lecture plan here]
-</lecture_preparation>
-
-<lecture_text>
-[The complete lecture text here, ready for text-to-speech]
-</lecture_text>""",
-        )
-
-        # Store word count
-        self.word_count = word_count
-
-    def format(self, **kwargs) -> str:
-        """Format the prompt with the provided variables."""
-        # Ensure word count is included
-        if "word_count" not in kwargs:
-            kwargs["word_count"] = self.word_count
-
-        # Format continuity context if provided
-        if "previous_lecture_content" in kwargs and kwargs["previous_lecture_content"]:
-            kwargs[
-                "continuity_context"
-            ] = f"""Previous lecture summary:
-{kwargs['previous_lecture_content'][:500]}...
-
-Build on these concepts appropriately."""
-        else:
-            kwargs["continuity_context"] = ""
-
-        # Format each section
-        for name in self.order:
-            section = self.sections.get(name)
-            if section and section["enabled"]:
-                section["content"] = section["content"].format(**kwargs)
-
-        # Render the complete prompt
-        return self.render()
-
-
 def get_lecture_prompt(
-    course_title: str,
-    course_code: str,
-    topic: str,
-    week_number: int,
-    order_in_week: int,
-    professor_name: str,
-    professor_background: str,
-    teaching_style: str,
-    professor_personality: str,
-    previous_lecture_content: Optional[str] = None,
+    professor_data: Dict[str, Any],
+    existing_lectures: List[Dict[str, Any]],
+    partial_lecture_attrs: Dict[str, Any],
+    freeform_prompt: Optional[str] = None,
     word_count: int = 2500,
 ) -> str:
-    """Generate a lecture prompt.
+    """Generate a lecture prompt using centralized converters.
 
     Args:
-        course_title: Course title
-        course_code: Course code
-        topic: Lecture topic
-        week_number: Week number in the course
-        order_in_week: Order of this lecture within the week
-        professor_name: Name of the professor
-        professor_background: Background of the professor
-        teaching_style: Professor's teaching style
-        professor_personality: Professor's personality traits
-        previous_lecture_content: Optional content from previous lecture for continuity
-        word_count: Word count for the lecture
+        professor_data: Dictionary of professor attributes
+        existing_lectures: List of existing lecture attribute dictionaries
+        partial_lecture_attrs: Dictionary of known/partial lecture attributes
+        freeform_prompt: Optional freeform text context
+        word_count: Target word count for the lecture
 
     Returns:
-        str: Formatted lecture prompt
+        Formatted prompt string
     """
-    # Format continuity context if provided
-    continuity_context = ""
-    if previous_lecture_content:
-        continuity_context = f"""<previous_lecture>
-{previous_lecture_content[:500]}...
-</previous_lecture>
+    # Use converters to generate XML sections
+    professor_xml_str = professor_to_xml(professor_data)
+    existing_lectures_xml_str = lectures_to_xml(existing_lectures)
+    partial_lecture_xml_str = partial_lecture_to_xml(partial_lecture_attrs)
 
-Build on these concepts appropriately."""
-
-    return LECTURE_PROMPT(
-        course_title=course_title,
-        course_code=course_code,
-        topic=topic,
-        week_number=week_number,
-        order_in_week=order_in_week,
-        professor_name=professor_name,
-        professor_background=professor_background,
-        teaching_style=teaching_style,
-        professor_personality=professor_personality,
-        continuity_context=continuity_context,
-        word_count=word_count,
+    # Format freeform prompt if provided
+    freeform_prompt_text = (
+        f"Additional context/ideas for the lecture:\n{freeform_prompt}\n" if freeform_prompt else ""
     )
 
-
-def get_structured_xml_lecture_prompt(
-    course_title: str,
-    course_code: str,
-    topic: str,
-    week_number: int,
-    order_in_week: int,
-    professor_name: str,
-    professor_title: str,
-    professor_background: str,
-    teaching_style: str,
-    professor_personality: str,
-    previous_lecture_content: Optional[str] = None,
-    word_count: int = 2500,
-) -> str:
-    """Generate a lecture prompt with enhanced XML structure.
-
-    This version uses a clearer XML tag structure with distinct sections
-    for instructions, course info, professor profile, and output format.
-
-    Args:
-        course_title: Course title
-        course_code: Course code
-        topic: Lecture topic
-        week_number: Week number in the course
-        order_in_week: Order of this lecture within the week
-        professor_name: Name of the professor
-        professor_title: Academic title of the professor
-        professor_background: Background of the professor
-        teaching_style: Professor's teaching style
-        professor_personality: Professor's personality traits
-        previous_lecture_content: Optional content from previous lecture for continuity
-        word_count: Word count for the lecture
-
-    Returns:
-        str: Formatted lecture prompt with XML structure
-    """
-    # Format continuity context if provided
-    continuity_context = ""
-    if previous_lecture_content:
-        continuity_context = f"""<previous_lecture>
-{previous_lecture_content[:500]}...
-</previous_lecture>
-
-Build on these concepts appropriately."""
-
-    prompt = f"""<instructions>
-You are creating an engaging university lecture for a course.
-The lecture should be approximately {word_count} words long, narrative in style,
-and infused with the personality of the lecturer.
-</instructions>
-
-<course_info>
-Course: {course_title} ({course_code})
-Department: {course_title.split(':')[0] if ':' in course_title else course_code[:2]}
-Lecture Topic: {topic}
-Week: {week_number}, Lecture: {order_in_week}
-</course_info>
-
-<professor_profile>
-Name: {professor_name}
-Title: {professor_title}
-Background: {professor_background}
-Teaching Style: {teaching_style}
-Personality: {professor_personality}
-</professor_profile>
-
-{continuity_context}
-
-<output_instructions>
-1. First, develop a lecture preparation plan in <lecture_preparation></lecture_preparation> tags
-2. Then write the full lecture in <lecture_text></lecture_text> tags, following these guidelines:
-   - Begin with a vivid introduction that sets the scene
-   - Write in a conversational style reflecting the professor's personality
-   - Avoid complex mathematical formulas - express them in spoken language
-   - Include stage directions in [brackets] to bring the scene to life
-   - Focus on creating a narrative flow rather than presenting dry facts
-   - Aim for approximately {word_count} words in length
-</output_instructions>"""
-
-    return prompt
+    # Format the main prompt template
+    try:
+        return LECTURE_PROMPT.format(
+            existing_lectures_xml=existing_lectures_xml_str,
+            partial_lecture_xml=partial_lecture_xml_str,
+            professor_xml=professor_xml_str,
+            word_count=word_count,
+            freeform_prompt_text=freeform_prompt_text,
+        )
+    except ValueError as e:
+        raise ValueError(f"Error formatting LECTURE_PROMPT: {e}")

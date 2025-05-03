@@ -6,7 +6,7 @@ This document provides an overview of the ArtificialU system architecture, expla
 
 ArtificialU is designed with a modular architecture that separates concerns into distinct components:
 
-1. **Content Generation Layer** - Creates educational content using the Anthropic Claude API
+1. **Content Generation Layer** - Creates educational content using a variety of models
 2. **Audio Processing Layer** - Converts lecture text to speech using the ElevenLabs API
 3. **Data Layer** - Manages persistence of professors, courses, lectures, and other entities
 4. **User Interface Layer** - Provides interfaces for interacting with the system (CLI and future web interface)
@@ -16,15 +16,6 @@ ArtificialU is designed with a modular architecture that separates concerns into
 ### UniversitySystem
 
 The `UniversitySystem` class acts as the central orchestrator, integrating the other components and providing a unified API for application features. It coordinates the workflow between content generation, audio processing, and data storage.
-
-### ContentGenerator
-
-The `ContentGenerator` handles all interactions with the Anthropic Claude API. It is responsible for:
-
-- Creating professor profiles with consistent personalities
-- Generating course topics tailored to professor teaching styles
-- Creating engaging lectures that maintain the professor's voice and perspective
-- Ensuring continuity between lectures in a series
 
 ### Audio Processing Components
 
@@ -115,14 +106,14 @@ The core domain model consists of these primary entities:
 
 1. User provides course details (title, code, department)
 2. System creates or assigns a professor with appropriate expertise
-3. ContentGenerator creates course topics
+3. ContentService creates course topics
 4. Repository stores the course and topics
 
 ### Generating a Lecture
 
 1. User selects a course and lecture topic
 2. System retrieves course and professor information
-3. ContentGenerator creates lecture content in the professor's style
+3. ContentService creates lecture content in the professor's style
 4. Repository stores the lecture text
 
 ### Converting a Lecture to Audio

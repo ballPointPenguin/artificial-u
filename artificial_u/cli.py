@@ -20,7 +20,6 @@ from rich.table import Table
 
 from artificial_u.config.defaults import DEPARTMENTS
 from artificial_u.system import UniversitySystem
-from artificial_u.utils.exceptions import ContentGenerationError
 
 # Load environment variables
 load_dotenv()
@@ -40,7 +39,6 @@ def get_system():
         google_key = os.environ.get("GOOGLE_API_KEY")
         openai_key = os.environ.get("OPENAI_API_KEY")
 
-        # Initialize system (Removed audio_path, text_export_path)
         university_system = UniversitySystem(
             anthropic_api_key=anthropic_key,
             elevenlabs_api_key=elevenlabs_key,
@@ -246,123 +244,6 @@ def create_professor(name, department, specialization, gender, accent, age, titl
 
 
 @cli.command()
-@click.option("--course-code", "-c", required=True, help="Course code")
-@click.option("--week", "-w", required=True, type=int, help="Week number")
-@click.option("--number", "-n", default=1, type=int, help="Lecture number within the week")
-@click.option("--topic", "-t", help="Lecture topic")
-@click.option("--word-count", default=2500, type=int, help="Target word count")
-def generate_lecture(course_code, week, number, topic, word_count):
-    """Generate a lecture for a course."""
-    try:
-        system = get_system()
-
-        console.print(
-            Panel(
-                f"Generating lecture for [bold]{course_code}[/bold]",
-                subtitle=f"Week {week}, Lecture {number}",
-            )
-        )
-
-        with Progress(
-            SpinnerColumn(),
-            TextColumn("[bold blue]{task.description}"),
-            BarColumn(),
-            TimeElapsedColumn(),
-            console=console,
-        ) as progress:
-            task1 = progress.add_task("Generating lecture content...", total=1)
-
-            # Generate the lecture
-            lecture, course, professor = system.generate_lecture(
-                course_code=course_code,
-                week=week,
-                number=number,
-                topic=topic,
-                word_count=word_count,
-            )
-
-            progress.update(task1, advance=1)
-            task2 = progress.add_task("Exporting lecture text...", total=1)
-
-            # Export the lecture text
-            loop = asyncio.get_event_loop()
-            export_path = loop.run_until_complete(
-                system.export_lecture_text(lecture, course, professor)
-            )
-
-            progress.update(task2, advance=1)
-
-        # Show success message
-        console.print("[green]Lecture generated successfully![/green]")
-        console.print(f"Title: {lecture.title}")
-        console.print(f"Word count: ~{len(lecture.content.split())} words")
-        console.print(f"Text exported to: {export_path}")
-
-        # Ask if user wants to view the lecture
-        if Confirm.ask("View lecture now?"):
-            console.print("\n")
-            console.print(
-                Panel(
-                    f"[bold]{lecture.title}[/bold]",
-                    subtitle=f"{course_code} - {professor.name}",
-                )
-            )
-            console.print(Markdown(lecture.content))
-
-        # Ask if user wants to generate audio
-        if Confirm.ask("Generate audio for this lecture?"):
-            loop = asyncio.get_event_loop()
-            audio_url, _ = loop.run_until_complete(
-                system.create_lecture_audio(course_code=course_code, week=week, number=number)
-            )
-            console.print(f"[green]Audio created at URL:[/green] {audio_url}")
-
-    except Exception as e:
-        console.print(f"[red]Error generating lecture:[/red] {str(e)}")
-
-
-@cli.command()
-@click.option("--course-code", "-c", required=True, help="Course code")
-@click.option("--week", "-w", required=True, type=int, help="Week number")
-@click.option("--number", "-n", default=1, type=int, help="Lecture number within the week")
-def create_audio(course_code, week, number):
-    """Convert a lecture to audio using ElevenLabs API."""
-    try:
-        system = get_system()
-
-        console.print(
-            Panel(
-                f"Creating audio for [bold]{course_code}[/bold]",
-                subtitle=f"Week {week}, Lecture {number}",
-            )
-        )
-
-        with Progress(
-            SpinnerColumn(),
-            TextColumn("[bold blue]{task.description}"),
-            BarColumn(),
-            TimeElapsedColumn(),
-            console=console,
-        ) as progress:
-            task = progress.add_task("Generating audio...", total=1)
-
-            # Create the audio
-            loop = asyncio.get_event_loop()
-            audio_url, lecture = loop.run_until_complete(
-                system.create_lecture_audio(course_code=course_code, week=week, number=number)
-            )
-
-            progress.update(task, advance=1)
-
-        # Show success message
-        console.print("[green]Audio created successfully![/green]")
-        console.print(f"Saved to URL: {audio_url}")
-
-    except Exception as e:
-        console.print(f"[red]Error creating audio:[/red] {str(e)}")
-
-
-@cli.command()
 @click.option("--course-code", "-c", help="Filter by course code")
 @click.option("--limit", "-l", default=5, help="Maximum number of lectures to show")
 @click.option("--model", "-m", help="Filter by model (e.g., 'tinyllama')")
@@ -482,8 +363,6 @@ def play_lecture(course_code, week, number):
 
     except Exception as e:
         console.print(f"[red]Error:[/red] {str(e)}")
-        import traceback
-
         traceback.print_exc()
 
 
@@ -527,90 +406,6 @@ def show_lecture(course_code, week, number):
 
     except Exception as e:
         console.print(f"[red]Error displaying lecture:[/red] {str(e)}")
-
-
-@cli.command()
-@click.argument("course-code")
-@click.argument("topics", nargs=-1, required=True)
-@click.option("--starting-week", "-w", default=1, type=int, help="Starting week number")
-@click.option("--word-count", default=2500, type=int, help="Target word count per lecture")
-def generate_lecture_series(course_code, topics, starting_week, word_count):
-    """Generate a series of related lectures for a course.
-
-    This command creates multiple lectures in sequence, maintaining the professor's
-    voice and teaching style across all lectures. It's more efficient than creating
-    lectures one-by-one.
-
-    Example:
-        ./cli.py generate-lecture-series CS101 "Introduction to Programming" \
-            "Variables and Data Types" "Control Flow"
-    """
-    try:
-        system = get_system()
-
-        # Check if course exists
-        courses = system.list_courses()
-        course = next((c for c in courses if c["code"] == course_code), None)
-        if not course:
-            console.print(f"[red]Course with code {course_code} not found.[/red]")
-            return
-
-        console.print(
-            Panel(
-                f"Generating lecture series for [bold]{course['title']}[/bold] ({course_code})",
-                subtitle=f"Starting from week {starting_week}, {len(topics)} lectures",
-            )
-        )
-
-        # Define function to update progress
-        def update_progress():
-            """Track progress for the lecture series generation."""
-            progress.update(task, advance=1)
-
-        with Progress(
-            SpinnerColumn(),
-            TextColumn("[bold blue]{task.description}"),
-            BarColumn(),
-            TimeElapsedColumn(),
-            console=console,
-        ) as progress:
-            task = progress.add_task("Generating lecture series...", total=len(topics))
-
-            # Generate the lecture series
-            lecture_series = system.create_lecture_series(
-                course_code=course_code,
-                topics=topics,
-                starting_week=starting_week,
-                word_count=word_count,
-                progress_callback=update_progress,
-            )
-
-        # Show success message
-        console.print("[green]Lecture series generated successfully![/green]")
-
-        # Create table
-        table = Table(title=f"Generated Lectures for {course_code}")
-        table.add_column("Week", style="green")
-        table.add_column("Number", style="green")
-        table.add_column("Title", style="blue")
-        table.add_column("Word Count", style="yellow")
-
-        # Add lectures to table
-        for lecture in lecture_series:
-            table.add_row(
-                str(lecture.week_number),
-                str(lecture.order_in_week),
-                lecture.title,
-                str(len(lecture.content.split())),
-            )
-
-        console.print(table)
-
-    except ContentGenerationError as e:
-        console.print(f"[red]Error generating lectures:[/red] {str(e)}")
-    except Exception as e:
-        console.print(f"[red]Unexpected error:[/red] {str(e)}")
-        console.print(traceback.format_exc())
 
 
 if __name__ == "__main__":

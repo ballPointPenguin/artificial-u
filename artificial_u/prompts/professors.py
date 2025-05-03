@@ -9,25 +9,17 @@ from artificial_u.prompts.base import PromptTemplate
 # Base template structure for a professor profile
 PROFESSOR_XML_STRUCTURE = (
     "<professor>\n"
-    "  <name>[Full name with title, e.g., Dr. Jane Doe, Professor John Smith]</name>\n"
-    "  <title>[Academic title, e.g., Assistant Professor, Full Professor]</title>\n"
-    "  <department_name>[Academic Department, e.g., Computer Science, "
-    "Philosophy]</department_name>\n"
-    "  <specialization>[Area of expertise, e.g., Quantum Computing, "
-    "Medieval History]</specialization>\n"
-    "  <gender>[Professor's gender, e.g., Male, Female, Non-binary]</gender>\n"
-    "  <age>[Professor's approximate age as a number, e.g., 45]</age>\n"
-    "  <accent>[Professor's accent or speech pattern, e.g., British RP, "
-    "Mild Southern Drawl, None noticeable]</accent>\n"
-    "  <description>[Detailed physical appearance, clothing style, "
-    "mannerisms, e.g., Tall, wears tweed jackets, gestures often]</description>\n"
-    "  <background>[Educational and professional history, e.g., PhD from MIT, "
-    "postdoc at CERN, worked at Google Research]</background>\n"
-    "  <personality>Intellectually rigorous, "
-    "challenges students, "
-    "appreciates nuanced arguments.</personality>\n"
-    "  <teaching_style>[Distinctive teaching approach, e.g., Uses Socratic "
-    "method, Lecture-heavy with multimedia, Project-based]</teaching_style>\n"
+    "  <name>[GENERATE]</name>\n"
+    "  <title>[GENERATE]</title>\n"
+    "  <department_name>[GENERATE]</department_name>\n"
+    "  <specialization>[GENERATE]</specialization>\n"
+    "  <gender>[GENERATE]</gender>\n"
+    "  <age>[GENERATE]</age>\n"
+    "  <accent>[GENERATE]</accent>\n"
+    "  <description>[GENERATE]</description>\n"
+    "  <background>[GENERATE]</background>\n"
+    "  <personality>[GENERATE]</personality>\n"
+    "  <teaching_style>[GENERATE]</teaching_style>\n"
     "</professor>"
 )
 
@@ -88,7 +80,7 @@ Generate a detailed profile, including inventing a suitable department name, "
 Consider the provided list of existing professors to ensure variety and avoid "
     "simple repetition.
 
-Existing professors in the university:
+Existing professors in the same department:
 {{existing_professors_xml}}
 
 Desired output format (fill in the bracketed placeholders):

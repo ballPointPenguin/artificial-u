@@ -19,9 +19,11 @@ from artificial_u.models.database import CourseModel, DepartmentModel, Professor
 
 # Import RepositoryFactory directly instead of legacy Repository wrapper
 from artificial_u.models.repositories.factory import RepositoryFactory
-from artificial_u.prompts.base import extract_xml_content
-from artificial_u.prompts.courses import get_course_prompt
-from artificial_u.prompts.system import get_system_prompt
+from artificial_u.prompts import (
+    extract_xml_content,
+    get_course_prompt,
+    get_system_prompt,
+)
 from artificial_u.services.content_service import ContentService
 from artificial_u.services.professor_service import ProfessorService
 from artificial_u.utils.exceptions import (

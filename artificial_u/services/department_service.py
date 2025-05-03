@@ -9,8 +9,11 @@ from typing import Dict, List, Optional
 from artificial_u.config import get_settings
 from artificial_u.models.core import Course, Department, Professor
 from artificial_u.models.repositories.factory import RepositoryFactory
-from artificial_u.prompts.department import get_department_prompt, get_open_department_prompt
-from artificial_u.prompts.system import GENERIC_XML_SYSTEM_PROMPT
+from artificial_u.prompts import (
+    get_department_prompt,
+    get_open_department_prompt,
+    get_system_prompt,
+)
 from artificial_u.services.content_service import ContentService
 from artificial_u.utils.exceptions import DatabaseError, DepartmentNotFoundError, DependencyError
 
@@ -310,7 +313,7 @@ class DepartmentService:
         response = await content_service.generate_text(
             prompt=prompt,
             model=model,
-            system_prompt=GENERIC_XML_SYSTEM_PROMPT,
+            system_prompt=get_system_prompt("department"),
         )
 
         return parse_department_xml(response)

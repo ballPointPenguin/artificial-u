@@ -119,7 +119,7 @@ def professors_to_xml(professors: List[Dict[str, str]]) -> str:
     # Format a list of professors (dicts with name, specialization)
     # as XML for prompt context.
     if not professors:
-        return ""
+        return "<no_existing_professors />"
     lines = ["<existing_professors>"]
     for prof in professors:
         lines.append(
@@ -320,3 +320,85 @@ def parse_course_xml(course_xml: str) -> Dict[str, Any]:
 
 # TODO: Implement parse_professor_xml, if needed
 # TODO: Implement parse_department_xml, if needed
+
+
+def lecture_to_xml(lecture_data: dict, missing_marker: str = "[GENERATE]") -> str:
+    """Format lecture data (dict) into XML for prompts."""
+    if not lecture_data:
+        return "<lecture>[GENERATE]</lecture>"
+    lines = ["<lecture>"]
+    fields = ["title", "content", "description"]
+    for field in fields:
+        value = lecture_data.get(field)
+        if value:
+            lines.append(f"  <{field}>{value}</{field}>")
+        else:
+            lines.append(f"  <{field}>{missing_marker}</{field}>")
+    lines.append("</lecture>")
+    return "\n".join(lines)
+
+
+def lectures_to_xml(lectures: List[Dict[str, Any]], max_lectures: int = 5) -> str:
+    """Format a list of lectures as XML for context."""
+    if not lectures:
+        return "<no_existing_lectures />"
+
+    lines = ["<existing_lectures>"]
+    for lecture in lectures[:max_lectures]:
+        lines.append("  <lecture>")
+        lines.append(f"    <title>{lecture.get('title', 'N/A')}</title>")
+        if lecture.get("description"):
+            lines.append(f"    <description>{lecture.get('description')}</description>")
+        if lecture.get("week_number") is not None:
+            lines.append(f"    <week_number>{lecture.get('week_number')}</week_number>")
+        if lecture.get("order_in_week") is not None:
+            lines.append(f"    <order_in_week>{lecture.get('order_in_week')}</order_in_week>")
+        lines.append("  </lecture>")
+
+    if len(lectures) > max_lectures:
+        lines.append(
+            f"  <additional_lectures_count>"
+            f"    {len(lectures) - max_lectures}"
+            f"  </additional_lectures_count>"
+        )
+
+    lines.append("</existing_lectures>")
+    return "\n".join(lines)
+
+
+def partial_lecture_to_xml(
+    partial_attrs: Dict[str, Any], generate_marker: str = "[GENERATE]"
+) -> str:
+    """Builds the XML string for partial lecture attributes (dict), marking missing fields."""
+    lines = ["<lecture>"]
+    fields = ["title", "week_number", "order_in_week", "description", "content"]
+    for field in fields:
+        value = partial_attrs.get(field)
+        if value is not None and value != generate_marker:
+            lines.append(f"  <{field}>{str(value)}</{field}>")
+        else:
+            lines.append(f"  <{field}>{generate_marker}</{field}>")
+    lines.append("</lecture>")
+    return "\n".join(lines)
+
+
+def parse_lecture_xml(lecture_xml: str) -> Dict[str, Any]:
+    """Parse lecture XML from LLM response into a dictionary."""
+    try:
+        root = ET.fromstring(lecture_xml)
+        lecture_data = {}
+
+        # Process simple text fields
+        for field in ["title", "description", "content"]:
+            lecture_data[field] = _parse_text_field(root.find(field))
+
+        # Process numeric fields
+        for field in ["week_number", "order_in_week"]:
+            lecture_data[field] = _parse_numeric_field(root.find(field))
+
+        return lecture_data
+
+    except ET.ParseError as e:
+        raise ValueError(f"Failed to parse lecture XML: {e}")
+    except Exception as e:
+        raise ValueError(f"Error processing lecture data: {e}")

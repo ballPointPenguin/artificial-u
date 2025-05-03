@@ -7,7 +7,6 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from artificial_u.audio.speech_processor import SpeechProcessor
 from artificial_u.config import get_settings
-from artificial_u.generators.factory import create_generator
 from artificial_u.integrations.elevenlabs.client import ElevenLabsClient
 from artificial_u.integrations.elevenlabs.voice_mapper import VoiceMapper
 from artificial_u.models.core import Course, Department, Lecture, Professor
@@ -136,18 +135,6 @@ class UniversitySystem:
     def _init_core_components(self):
         """Initialize core system components."""
         try:
-            # Initialize content generator
-            backend_kwargs = {}
-
-            if self.settings.content_backend == "anthropic":
-                backend_kwargs["api_key"] = self.settings.ANTHROPIC_API_KEY
-            elif self.settings.content_backend == "ollama":
-                backend_kwargs["model"] = self.settings.content_model
-
-            self.content_generator = create_generator(
-                backend=self.settings.content_backend, **backend_kwargs
-            )
-
             # Initialize repository factory directly
             self.repository_factory = RepositoryFactory(db_url=self.settings.DATABASE_URL)
 
@@ -220,7 +207,7 @@ class UniversitySystem:
         # Initialize LectureService
         self.lecture_service = LectureService(
             repository_factory=self.repository_factory,
-            content_generator=self.content_generator,  # Still using this for now
+            content_service=self.content_service,
             professor_service=self.professor_service,
             course_service=self.course_service,
             storage_service=self.storage_service,
@@ -276,19 +263,11 @@ class UniversitySystem:
         """Get a preview of lectures with relevant metadata."""
         return self.lecture_service.get_lecture_preview(**kwargs)
 
-    def get_lecture_export_path(self, course_code: str, week: int, number: int) -> str:
-        """Get the storage URL for the exported lecture file."""
-        return self.lecture_service.get_lecture_export_path(course_code, week, number)
-
     # === Audio Methods ===
 
     async def create_lecture_audio(self, **kwargs) -> Tuple[str, Lecture]:
         """Create audio for a lecture."""
         return await self.audio_service.create_lecture_audio(**kwargs)
-
-    def test_audio_connection(self) -> Dict[str, Any]:
-        """Test connection to the TTS service."""
-        return self.audio_service.test_tts_connection()
 
     async def play_audio(self, audio_data_or_path):
         """Play audio from data or file path."""
@@ -296,32 +275,6 @@ class UniversitySystem:
 
     # === Voice Methods ===
 
-    def list_available_voices(self, **kwargs) -> List[Dict[str, Any]]:
-        """List available voices with optional filtering."""
-        return self.voice_service.list_available_voices(**kwargs)
-
     def select_voice_for_professor(self, professor: Professor, **kwargs) -> Dict[str, Any]:
         """Select a voice for a professor."""
         return self.voice_service.select_voice_for_professor(professor, **kwargs)
-
-    # === Other Methods ===
-
-    def get_sample_lecture(self) -> str:
-        """
-        Get sample lecture content for testing.
-
-        Returns:
-            str: Sample lecture content
-        """
-        self.logger.debug("Retrieving sample lecture content")
-
-        # Simple sample lecture content
-        return """
-        # Introduction to Neural Networks
-
-        *[Professor enters the lecture hall]*
-
-        Good morning, everyone. Today we'll be discussing the fundamentals of neural networks...
-
-        *[The rest of the lecture would go here]*
-        """

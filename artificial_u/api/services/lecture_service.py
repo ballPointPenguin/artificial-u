@@ -8,11 +8,9 @@ from typing import Optional
 from fastapi import HTTPException, status
 
 from artificial_u.api.models.lectures import Lecture, LectureCreate, LectureList, LectureUpdate
-from artificial_u.generators.content import ContentGenerator
 from artificial_u.models.repositories import RepositoryFactory
 from artificial_u.services import LectureService
-
-# from artificial_u.services.content_service import ContentService
+from artificial_u.services.content_service import ContentService
 from artificial_u.services.course_service import CourseService
 from artificial_u.services.professor_service import ProfessorService
 from artificial_u.services.storage_service import StorageService
@@ -26,8 +24,7 @@ class LectureApiService:
         repository_factory: RepositoryFactory,
         professor_service: ProfessorService,
         course_service: CourseService,
-        content_generator: ContentGenerator,
-        # content_service: ContentService,
+        content_service: ContentService,
         storage_service: StorageService,
         logger=None,
     ):
@@ -38,7 +35,7 @@ class LectureApiService:
             repository_factory: Repository factory instance
             professor_service: Professor service for professor-related operations
             course_service: Course service for course-related operations
-            content_generator: Content generator service
+            content_service: Content service for content-related operations
             storage_service: Storage service for file operations
             logger: Optional logger instance
         """
@@ -49,8 +46,7 @@ class LectureApiService:
             repository_factory=repository_factory,
             professor_service=professor_service,
             course_service=course_service,
-            content_generator=content_generator,
-            # content_service=content_service,
+            content_service=content_service,
             storage_service=storage_service,
             logger=self.logger,
         )

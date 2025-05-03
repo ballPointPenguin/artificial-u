@@ -18,14 +18,23 @@ def format_professor_image_prompt(professor, aspect_ratio="1:1") -> str:
 
     # Build description string from available attributes
     description_parts = []
-    if professor.gender:
-        description_parts.append(f"Gender: {professor.gender}")
-    if professor.age:
-        description_parts.append(f"Age: {professor.age}")
-    if professor.description:
-        description_parts.append(professor.description)
-    if professor.specialization:
-        description_parts.append(f"Specialization: {professor.specialization}")
+
+    # Safely get attributes with defaults
+    gender = getattr(professor, "gender", None)
+    if gender:
+        description_parts.append(f"Gender: {gender}")
+
+    age = getattr(professor, "age", None)
+    if age:
+        description_parts.append(f"Age: {age}")
+
+    description = getattr(professor, "description", None)
+    if description:
+        description_parts.append(description)
+
+    specialization = getattr(professor, "specialization", None)
+    if specialization:
+        description_parts.append(f"Specialization: {specialization}")
 
     description_text = "\n".join(description_parts)
 

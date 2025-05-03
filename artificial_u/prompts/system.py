@@ -1,6 +1,11 @@
-"""System prompts shared across generators."""
+"""System prompts shared across services."""
 
 from typing import Dict
+
+GENERIC_XML_SYSTEM_PROMPT = (
+    "You always respond in valid, indented XML format. "
+    "Do not include any explanations, notes, or text outside the XML block."
+)
 
 COURSE_SYSTEM_PROMPT = (
     "You are an expert at creating detailed, professional course topics and "
@@ -9,15 +14,17 @@ COURSE_SYSTEM_PROMPT = (
     "Do not include any explanations, notes, or text outside the XML block."
 )
 
-LECTURE_SYSTEM_PROMPT = (
-    "You are an expert educational content creator who specializes in developing "
-    "university-level lectures that are engaging, informative, and suitable for "
-    "audio delivery. "
+DEPARTMENT_SYSTEM_PROMPT = (
+    "You are an expert at creating detailed, professional department profiles for an "
+    "educational content system. "
     "You always respond in valid, indented XML format. "
     "Do not include any explanations, notes, or text outside the XML block."
 )
 
-GENERIC_XML_SYSTEM_PROMPT = (
+LECTURE_SYSTEM_PROMPT = (
+    "You are an expert educational content creator who specializes in developing "
+    "university-level lectures that are engaging, informative, and suitable for "
+    "audio delivery. "
     "You always respond in valid, indented XML format. "
     "Do not include any explanations, notes, or text outside the XML block."
 )
@@ -31,9 +38,11 @@ PROFESSOR_SYSTEM_PROMPT = (
 
 # Dictionary to easily access system prompts by type
 SYSTEM_PROMPTS: Dict[str, str] = {
-    "professor": PROFESSOR_SYSTEM_PROMPT,
+    "generic": GENERIC_XML_SYSTEM_PROMPT,
     "course": COURSE_SYSTEM_PROMPT,
+    "department": DEPARTMENT_SYSTEM_PROMPT,
     "lecture": LECTURE_SYSTEM_PROMPT,
+    "professor": PROFESSOR_SYSTEM_PROMPT,
 }
 
 

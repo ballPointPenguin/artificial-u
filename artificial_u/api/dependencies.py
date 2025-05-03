@@ -16,7 +16,6 @@ from artificial_u.api.services.course_service import CourseApiService
 from artificial_u.api.services.department_service import DepartmentApiService
 from artificial_u.api.services.lecture_service import LectureApiService
 from artificial_u.api.services.professor_service import ProfessorApiService
-from artificial_u.generators.content import ContentGenerator
 from artificial_u.integrations.elevenlabs.client import ElevenLabsClient
 from artificial_u.integrations.elevenlabs.voice_mapper import VoiceMapper
 from artificial_u.models.repositories import RepositoryFactory
@@ -39,16 +38,6 @@ def get_repository_factory() -> RepositoryFactory:
     """
     settings = get_settings()
     return RepositoryFactory(db_url=settings.DATABASE_URL)
-
-
-def get_content_generator() -> ContentGenerator:
-    """
-    Get a content generator instance.
-
-    Returns:
-        ContentGenerator instance
-    """
-    return ContentGenerator()
 
 
 def get_content_service() -> ContentService:
@@ -221,7 +210,6 @@ def get_lecture_service(
     professor_service: ProfessorService = Depends(get_professor_service),
     course_service: CourseService = Depends(get_course_service),
     content_service: ContentService = Depends(get_content_service),
-    content_generator: ContentGenerator = Depends(get_content_generator),
     storage_service: StorageService = Depends(get_storage_service),
 ) -> LectureService:
     """
@@ -241,8 +229,7 @@ def get_lecture_service(
         repository_factory=repository_factory,
         professor_service=professor_service,
         course_service=course_service,
-        # content_service=content_service,
-        content_generator=content_generator,
+        content_service=content_service,
         storage_service=storage_service,
         logger=logging.getLogger("artificial_u.services.lecture_service"),
     )
@@ -326,7 +313,7 @@ def get_lecture_api_service(
     repository_factory: RepositoryFactory = Depends(get_repository_factory),
     professor_service: ProfessorService = Depends(get_professor_service),
     course_service: CourseService = Depends(get_course_service),
-    content_generator: ContentGenerator = Depends(get_content_generator),
+    content_service: ContentService = Depends(get_content_service),
     storage_service: StorageService = Depends(get_storage_service),
 ) -> LectureApiService:
     """
@@ -335,9 +322,8 @@ def get_lecture_api_service(
     Args:
         repository_factory: Repository factory
         professor_service: Professor service
-        content_generator: Content generator
-        # course_service: Course service
         content_service: Content service
+        course_service: Course service
         storage_service: Storage service
 
     Returns:
@@ -347,8 +333,7 @@ def get_lecture_api_service(
         repository_factory=repository_factory,
         professor_service=professor_service,
         course_service=course_service,
-        content_generator=content_generator,
-        # content_service=content_service,
+        content_service=content_service,
         storage_service=storage_service,
         logger=logging.getLogger("artificial_u.api.services.lecture_service"),
     )
