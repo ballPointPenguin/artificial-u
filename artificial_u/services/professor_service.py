@@ -7,10 +7,10 @@ import xml.etree.ElementTree as ET
 from typing import Any, Dict, List, Optional
 
 from artificial_u.config import get_settings
+from artificial_u.models.converters import extract_xml_content
 from artificial_u.models.core import Professor
 from artificial_u.models.repositories.factory import RepositoryFactory
 from artificial_u.prompts import (
-    extract_xml_content,
     get_professor_prompt,
     get_system_prompt,
 )
@@ -18,6 +18,7 @@ from artificial_u.services.content_service import ContentService
 from artificial_u.services.image_service import ImageService
 from artificial_u.services.voice_service import VoiceService
 from artificial_u.utils import (
+    ContentGenerationError,
     DatabaseError,
     GenerationError,
     ProfessorNotFoundError,
@@ -127,13 +128,11 @@ class ProfessorService:
             GenerationError: If AI call or XML parsing fails.
         """
         settings = get_settings()
-        model = settings.PROFESSOR_GENERATION_MODEL
-        self.logger.debug(f"Calling AI model {model} for professor generation.")
 
         try:
             generated_content = await self.content_service.generate_text(
                 prompt=prompt,
-                model=model,
+                model=settings.PROFESSOR_GENERATION_MODEL,
                 system_prompt=get_system_prompt("professor"),
             )
         except Exception as e:
@@ -232,45 +231,32 @@ class ProfessorService:
         """Parses the AI-generated XML content to extract professor attributes."""
         self.logger.debug(f"Attempting to parse generated content:\n{generated_content}")
 
-        # Attempt to extract content within <professor> tags first
-        profile_text = extract_xml_content(generated_content, "professor")
-
-        if not profile_text:
-            # If extraction helper fails, log and raise.
-            # We rely on the LLM adhering to the <professor> tag structure.
-            self.logger.error(
-                f"Could not extract content within <professor> tags. Raw content starts with: "
-                f"{generated_content[:200]}..."
-            )
-            raise ValueError(
-                "Could not find expected <professor> XML tag in the generated content."
-            )
-
-        self.logger.debug(f"Extracted content block:\n{profile_text}")
-
-        # Ensure the extracted text is wrapped in <professor> tags for the parser
-        # It's possible extract_xml_content returns only the inner content.
-        processed_text = profile_text.strip()
-        if not processed_text.startswith("<professor>"):
-            self.logger.warning("Extracted text missing root <professor> tag, attempting to wrap.")
-            # Basic check: if it looks like the inner elements, wrap it.
-            # More robust checks might be needed depending on extract_xml_content behavior.
-            if processed_text.startswith("<"):
-                processed_text = f"<professor>\n{processed_text}\n</professor>"
-            else:
-                # If it doesn't even start with a tag, wrapping is unlikely to help.
-                self.logger.error(
-                    f"Extracted text doesn't appear to be valid inner XML: "
-                    f"{processed_text[:100]}..."
+        # Extract XML content
+        generated_xml_output = extract_xml_content(generated_content, "output")
+        if not generated_xml_output:
+            # Try to extract just the professor tag content
+            self.logger.info("Trying to extract <professor> tag...")
+            generated_xml_output = extract_xml_content(generated_content, "professor")
+            if not generated_xml_output:
+                error_msg = (
+                    "Could not extract <output> or <professor> tag from response:\n"
+                    f"{generated_content}"
                 )
-                raise ValueError("Extracted content block is not valid XML.")
+                self.logger.error(error_msg)
+                raise ContentGenerationError(error_msg)
+            else:
+                self.logger.warning("Extracted <professor> tag directly as <output> was missing.")
+
+        # Wrap the content in professor tags if it's not already wrapped
+        if not generated_xml_output.strip().startswith("<professor>"):
+            generated_xml_output = f"<professor>\n{generated_xml_output}\n</professor>"
 
         try:
             # Parse the processed text which should now be a valid XML doc with one root
-            return self._parse_professor_profile_xml(processed_text)
+            return self._parse_professor_profile_xml(generated_xml_output)
         except ET.ParseError as e:
             self.logger.error(
-                f"XML parsing failed: {e}\nProcessed Text:\n{processed_text[:500]}..."
+                f"XML parsing failed: {e}\nProcessed Text:\n{generated_xml_output[:500]}..."
             )
             raise ValueError("Generated content contains invalid XML.") from e
         except Exception as e:

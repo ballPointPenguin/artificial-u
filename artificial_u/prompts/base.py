@@ -1,7 +1,6 @@
 """Base prompt utilities for Artificial-U."""
 
-import re
-from typing import List, Optional
+from typing import List
 
 
 class PromptTemplate:
@@ -30,20 +29,3 @@ class PromptTemplate:
     def __call__(self, **kwargs) -> str:
         """Allow calling the template as a function."""
         return self.format(**kwargs)
-
-
-# XML Utilities
-def extract_xml_content(text: str, tag_name: str) -> Optional[str]:
-    """Extract content from XML tags.
-
-    Args:
-        text: Text containing XML tags
-        tag_name: The name of the XML tag to extract
-
-    Returns:
-        Optional[str]: Extracted content or None if not found
-    """
-    pattern = rf"<{tag_name}>\s*(.*?)\s*</{tag_name}>"
-    match = re.search(pattern, text, re.DOTALL)
-
-    return match.group(1).strip() if match else None

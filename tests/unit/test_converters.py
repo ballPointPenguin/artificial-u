@@ -12,6 +12,7 @@ from artificial_u.models.converters import (
     department_model_to_dict,
     department_to_xml,
     departments_to_xml,
+    extract_xml_content,
     lecture_to_xml,
     lectures_to_xml,
     parse_course_xml,
@@ -589,3 +590,20 @@ def test_parse_lecture_xml():
     # Test error handling
     with pytest.raises(ValueError):
         parse_lecture_xml("<invalid>XML</with>")
+
+
+@pytest.mark.unit
+def test_extract_xml_content():
+    # Test the extract_xml_content function
+    text = "<test>content</test>"
+    result = extract_xml_content(text, "test")
+    assert result == "content"
+
+    # Test with nested tags
+    text = "<outer><inner>content</inner></outer>"
+    result = extract_xml_content(text, "outer")
+    assert result == "<inner>content</inner>"
+
+    # Test with no match
+    result = extract_xml_content(text, "nonexistent")
+    assert result is None

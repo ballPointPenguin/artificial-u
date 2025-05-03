@@ -2,6 +2,7 @@
 Functions for converting between database models, dictionaries, and XML formats.
 """
 
+import re
 import xml.etree.ElementTree as ET
 from typing import Any, Dict, List, Optional
 
@@ -244,6 +245,22 @@ def partial_course_to_xml(
 # --- XML Parsing Functions --- #
 
 
+def extract_xml_content(text: str, tag_name: str) -> Optional[str]:
+    """Extract content from XML tags.
+
+    Args:
+        text: Text containing XML tags
+        tag_name: The name of the XML tag to extract
+
+    Returns:
+        Optional[str]: Extracted content or None if not found
+    """
+    pattern = rf"<{tag_name}>\s*(.*?)\s*</{tag_name}>"
+    match = re.search(pattern, text, re.DOTALL)
+
+    return match.group(1).strip() if match else None
+
+
 def _process_topic_elements(topics_elem: Optional[ET.Element]) -> List[Dict[str, Any]]:
     """Process topic elements with minimal error handling."""
     if topics_elem is None:
@@ -318,10 +335,6 @@ def parse_course_xml(course_xml: str) -> Dict[str, Any]:
         raise ValueError(f"Error processing course data: {e}")
 
 
-# TODO: Implement parse_professor_xml, if needed
-# TODO: Implement parse_department_xml, if needed
-
-
 def lecture_to_xml(lecture_data: dict, missing_marker: str = "[GENERATE]") -> str:
     """Format lecture data (dict) into XML for prompts."""
     if not lecture_data:
@@ -385,6 +398,13 @@ def partial_lecture_to_xml(
 def parse_lecture_xml(lecture_xml: str) -> Dict[str, Any]:
     """Parse lecture XML from LLM response into a dictionary."""
     try:
+        # If the XML doesn't start with a root element, wrap it
+        # if not lecture_xml.strip().startswith("<lecture>"):
+        #     lecture_xml = f"<lecture>\n{lecture_xml}\n</lecture>"
+
+        # Clean up any extra whitespace
+        lecture_xml = "\n".join(line.strip() for line in lecture_xml.splitlines())
+
         root = ET.fromstring(lecture_xml)
         lecture_data = {}
 

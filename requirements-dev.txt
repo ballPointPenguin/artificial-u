@@ -176,11 +176,17 @@ pyproject-hooks==1.2.0
 pytest==8.3.5
     # via
     #   artificial-u (pyproject.toml)
+    #   pytest-asyncio
     #   pytest-cov
     #   pytest-env
+    #   pytest-mock
+pytest-asyncio==0.26.0
+    # via artificial-u (pyproject.toml)
 pytest-cov==6.1.1
     # via artificial-u (pyproject.toml)
 pytest-env==1.1.5
+    # via artificial-u (pyproject.toml)
+pytest-mock==3.14.0
     # via artificial-u (pyproject.toml)
 python-dateutil==2.9.0.post0
     # via botocore

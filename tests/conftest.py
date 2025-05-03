@@ -20,6 +20,7 @@ def pytest_configure(config):
     """Configure pytest with custom markers."""
     config.addinivalue_line("markers", "unit: mark test as a unit test")
     config.addinivalue_line("markers", "integration: mark test as an integration test")
+    config.addinivalue_line("markers", "asyncio: mark test as an async test")
 
 
 def pytest_sessionstart(session):

@@ -310,13 +310,11 @@ class DepartmentService:
         content_service = ContentService(logger=self.logger)
 
         settings = get_settings()
-        # Use the centrally defined setting
-        model = settings.DEPARTMENT_GENERATION_MODEL
 
         # Generate the department using Ollama
         response = await content_service.generate_text(
             prompt=prompt,
-            model=model,
+            model=settings.DEPARTMENT_GENERATION_MODEL,
             system_prompt=get_system_prompt("department"),
         )
 

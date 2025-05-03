@@ -10,16 +10,14 @@ from artificial_u.models.converters import (
     course_model_to_dict,
     department_model_to_dict,
     department_to_xml,
+    extract_xml_content,
     parse_course_xml,
     professor_model_to_dict,
     professor_to_xml,
 )
 from artificial_u.models.database import CourseModel, DepartmentModel, ProfessorModel
-
-# Import RepositoryFactory directly instead of legacy Repository wrapper
 from artificial_u.models.repositories.factory import RepositoryFactory
 from artificial_u.prompts import (
-    extract_xml_content,
     get_course_prompt,
     get_system_prompt,
 )

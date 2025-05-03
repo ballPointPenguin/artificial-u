@@ -106,16 +106,19 @@ ArtificialU allows configuration of different AI models for various services:
 
 ```python
 # Course generation model
-COURSE_GENERATION_MODEL=claude-3-7-sonnet-latest
+COURSE_GENERATION_MODEL=gpt-4.1-nano
 
 # Department generation model
 DEPARTMENT_GENERATION_MODEL=gpt-4.1-nano
 
+# Lecture generation model
+LECTURE_GENERATION_MODEL=claude-3.7-sonnet-latest
+
 # Professor generation model
-PROFESSOR_GENERATION_MODEL=claude-3-5-haiku-latest
+PROFESSOR_GENERATION_MODEL=gpt-4.1-nano
 
 # Image generation model
-IMAGE_GENERATION_MODEL=imagen-3.0-generate-002
+IMAGE_GENERATION_MODEL=gpt-image-1
 ```
 
 ## Logging Configuration

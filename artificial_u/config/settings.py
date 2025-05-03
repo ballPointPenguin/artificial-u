@@ -101,13 +101,15 @@ class Settings(BaseSettings):
     OLLAMA_HOST: str = "http://localhost:11434"
 
     # Course generation model
-    COURSE_GENERATION_MODEL: str = "claude-3-7-sonnet-latest"
+    COURSE_GENERATION_MODEL: str = "gpt-4.1-nano"
     # Department generation model
     DEPARTMENT_GENERATION_MODEL: str = "gpt-4.1-nano"
+    # Lecture generation model
+    LECTURE_GENERATION_MODEL: str = "claude-3.7-sonnet-latest"
     # Professor generation model
-    PROFESSOR_GENERATION_MODEL: str = "claude-3-5-haiku-latest"
+    PROFESSOR_GENERATION_MODEL: str = "gpt-4.1-nano"
     # Image generation model
-    IMAGE_GENERATION_MODEL: str = "imagen-3.0-generate-002"
+    IMAGE_GENERATION_MODEL: str = "gpt-image-1"
 
     # Configure Pydantic to use .env files
     model_config = SettingsConfigDict(

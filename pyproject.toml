@@ -10,7 +10,7 @@ readme = "README.md"
 requires-python = ">=3.13"
 license = {text = "AGPL-3.0"}
 authors = [
-    {name = "Ben Goldberg", email = "ben@ballpointpenguin.com"},
+    {name = "Bennie Rosas", email = "ben@aliencyb.org"},
 ]
 classifiers = [
     "Development Status :: 3 - Alpha",
@@ -44,22 +44,26 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
-    "ollama>=0.4.0",
-    "pytest>=7.0.0",
-    "pytest-cov>=4.0.0",
-    "pytest-env>=1.0.0",
     "black>=23.3.0",
+    "flake8>=7.0.0",
     "isort>=5.12.0",
     "mypy>=1.5.1",
-    "flake8>=7.0.0",
+    "ollama>=0.4.0",
     "pip-tools>=7.4.1",
     "pre-commit>=4.2.0",
+    "pytest>=7.0.0",
+    "pytest-asyncio>=0.26.0",
+    "pytest-cov>=4.0.0",
+    "pytest-env>=1.0.0",
+    "pytest-mock>=3.14.0",
 ]
 test = [
     "ollama>=0.4.0",
     "pytest>=7.0.0",
+    "pytest-asyncio>=0.26.0",
     "pytest-cov>=4.0.0",
     "pytest-env>=1.0.0",
+    "pytest-mock>=3.14.0",
 ]
 
 [project.urls]

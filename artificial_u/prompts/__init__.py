@@ -4,10 +4,7 @@ This module contains template classes and utilities for managing prompts
 used across the Artificial-U system.
 """
 
-from artificial_u.prompts.base import (
-    PromptTemplate,
-    extract_xml_content,
-)
+from artificial_u.prompts.base import PromptTemplate
 from artificial_u.prompts.courses import get_course_prompt
 from artificial_u.prompts.department import (
     get_department_prompt,
@@ -21,7 +18,6 @@ from artificial_u.prompts.system import get_system_prompt
 __all__ = [
     # Base utilities
     "PromptTemplate",
-    "extract_xml_content",
     # Course prompts
     "get_course_prompt",
     # Department prompts
