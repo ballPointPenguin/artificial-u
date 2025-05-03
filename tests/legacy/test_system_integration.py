@@ -97,7 +97,7 @@ def apply_monkey_patches(system):
     system.voice_service.select_voice_for_professor = lambda *args, **kwargs: {
         "el_voice_id": "test_voice_id",
         "name": "Test Voice",
-        "db_voice_id": 1,
+        "voice_id": 1,
     }
 
     # Monkey patch tts_service.generate_audio to return mock audio data

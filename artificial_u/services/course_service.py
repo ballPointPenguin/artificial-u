@@ -91,17 +91,9 @@ class CourseService:
         """
         self.logger.info(f"Creating new course: {code} - {title}")
 
-        # Get professor (assuming professor_service handles creation/fetching)
-        # This might need adjustment depending on ProfessorService implementation
         try:
-            # Assuming get_or_create_professor takes an ID and returns a ProfessorModel or raises
-            # We might need a dedicated method in ProfessorService that returns the DB model
-            # or handle the conversion here. Let's assume it returns the DB model for now.
-            professor = self.professor_service.get_professor_db_model(professor_id)
+            professor = self.professor_service.get_professor(professor_id)
             if not professor:
-                # Handle case where professor needs creation - this logic might be in
-                # professor_service
-                # For now, raise if not found by ID.
                 raise ProfessorNotFoundError(
                     f"Professor ID {professor_id} not found for course creation."
                 )

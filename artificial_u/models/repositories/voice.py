@@ -112,17 +112,17 @@ class VoiceRepository(BaseRepository):
 
             # Apply filters
             if gender:
-                query = query.filter(VoiceModel.gender == gender)
+                query = query.filter(VoiceModel.gender.ilike(f"%{gender}%"))
             if accent:
-                query = query.filter(VoiceModel.accent == accent)
+                query = query.filter(VoiceModel.accent.ilike(f"%{accent}%"))
             if age:
-                query = query.filter(VoiceModel.age == age)
+                query = query.filter(VoiceModel.age.ilike(f"%{age}%"))
             if language:
-                query = query.filter(VoiceModel.language == language)
+                query = query.filter(VoiceModel.language.ilike(f"%{language}%"))
             if use_case:
-                query = query.filter(VoiceModel.use_case == use_case)
+                query = query.filter(VoiceModel.use_case.ilike(f"%{use_case}%"))
             if category:
-                query = query.filter(VoiceModel.category == category)
+                query = query.filter(VoiceModel.category.ilike(f"%{category}%"))
 
             # Apply pagination
             voices = (

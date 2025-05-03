@@ -34,7 +34,6 @@ class BaseRepository:
             raise ValueError("Database URL not provided. Set DATABASE_URL environment variable.")
 
         self.engine = create_engine(self.db_url)
-        self.logger.info(f"Using database URL: {self.db_url}")
 
     def get_session(self) -> Session:
         """

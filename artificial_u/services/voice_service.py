@@ -42,13 +42,17 @@ class VoiceService:
         """
         Attempt to find matching voices in the database.
 
+        First tries with strict matching on all attributes, then falls back to matching
+        only on core attributes (gender, age, language) if no results are found.
+
         Args:
             attributes: Professor attributes for voice matching
 
         Returns:
             List of voice dictionaries
         """
-        voices = self.repository_factory.list_voices(
+        # Try strict matching first
+        voices = self.repository_factory.voice.list(
             gender=attributes.get("gender"),
             accent=attributes.get("accent"),
             age=attributes.get("age"),
@@ -58,8 +62,19 @@ class VoiceService:
         )
 
         if voices:
-            self.logger.info(f"Found {len(voices)} voices in database")
-            return [v.dict() for v in voices]
+            self.logger.info(f"Found {len(voices)} voices in database with strict matching")
+            return [v.model_dump() for v in voices]
+
+        # If no results, try more relaxed matching (omitting accent, use_case, category)
+        voices = self.repository_factory.voice.list(
+            gender=attributes.get("gender"),
+            age=attributes.get("age"),
+            language=attributes.get("language"),
+        )
+
+        if voices:
+            self.logger.info(f"Found {len(voices)} voices in database with relaxed matching")
+            return [v.model_dump() for v in voices]
 
         return []
 
@@ -137,11 +152,11 @@ class VoiceService:
 
         # Try with just gender if available
         if attributes.get("gender"):
-            db_voices = self.repository_factory.list_voices(
+            db_voices = self.repository_factory.voice.list(
                 gender=attributes.get("gender"), language="en"
             )
             if db_voices:
-                return [v.dict() for v in db_voices]
+                return [v.model_dump() for v in db_voices]
 
             # If DB search with gender failed, try API with gender only
             voices = self._fetch_voices_from_api(gender=attributes.get("gender"), language="en")
@@ -149,9 +164,9 @@ class VoiceService:
                 return voices
 
         # If still no voices, get any voices with language='en'
-        db_voices = self.repository_factory.list_voices(language="en")
+        db_voices = self.repository_factory.voice.list(language="en")
         if db_voices:
-            return [v.dict() for v in db_voices]
+            return [v.model_dump() for v in db_voices]
 
         # Last resort: get any English voices from API
         return self._fetch_voices_from_api(language="en")
@@ -166,12 +181,12 @@ class VoiceService:
         Returns:
             Voice database record
         """
-        voice_db = self.repository_factory.get_voice_by_elevenlabs_id(selected_voice["voice_id"])
+        voice_db = self.repository_factory.voice.get_by_elevenlabs_id(selected_voice["el_voice_id"])
 
         if not voice_db:
             # Create a new voice record
             voice = Voice(
-                el_voice_id=selected_voice["voice_id"],
+                el_voice_id=selected_voice["el_voice_id"],
                 name=selected_voice["name"],
                 gender=selected_voice.get("gender"),
                 accent=selected_voice.get("accent"),
@@ -180,7 +195,7 @@ class VoiceService:
                 use_case=selected_voice.get("use_case"),
                 category=selected_voice.get("category"),
             )
-            voice_db = self.repository_factory.upsert_voice(voice)
+            voice_db = self.repository_factory.voice.upsert(voice)
 
         return voice_db
 
@@ -232,12 +247,9 @@ class VoiceService:
         # Step 6: Add the db voice record
         voice_db = self._find_or_create_db_voice(selected_voice)
 
-        # Update the selected_voice with the db id
-        selected_voice["db_voice_id"] = voice_db.id
-
         # Update professor's voice_id if professor has an id
         if professor.id:
-            self.repository_factory.update_professor_field(professor.id, voice_id=voice_db.id)
+            self.repository_factory.professor.update_field(professor.id, voice_id=voice_db.id)
             self.logger.info(f"Updated professor {professor.id} with voice ID {voice_db.id}")
 
         return selected_voice
@@ -252,7 +264,7 @@ class VoiceService:
 
         # Create Voice model
         voice = Voice(
-            el_voice_id=el_voice_data["voice_id"],
+            el_voice_id=el_voice_data["el_voice_id"],
             name=el_voice_data["name"],
             accent=el_voice_data.get("accent"),
             gender=el_voice_data.get("gender"),
@@ -271,27 +283,24 @@ class VoiceService:
 
         # Upsert to database
         try:
-            self.repository_factory.upsert_voice(voice)
+            self.repository_factory.voice.upsert(voice)
         except Exception as e:
             self.logger.error(f"Error saving voice to database: {e}")
 
-    def get_voice_by_el_id(
-        self, el_voice_id: str, refresh: bool = False
-    ) -> Optional[Dict[str, Any]]:
+    def get_voice_by_el_id(self, el_voice_id: str) -> Optional[Dict[str, Any]]:
         """
         Get voice data by ElevenLabs voice ID.
 
         Args:
             el_voice_id: ElevenLabs voice ID to look up
-            refresh: Whether to force refresh from API
 
         Returns:
             Voice data dictionary or None if not found
         """
         # Try to get from database first
-        db_voice = self.repository_factory.get_voice_by_elevenlabs_id(el_voice_id)
+        db_voice = self.repository_factory.voice.get_by_elevenlabs_id(el_voice_id)
         if db_voice:
-            return db_voice.dict()
+            return db_voice.model_dump()
 
         # Fall back to API
         el_voice_data = self.client.get_el_voice(el_voice_id)
@@ -315,16 +324,16 @@ class VoiceService:
             raise ValueError(f"Voice with ID {el_voice_id} not found")
 
         # Find or Create DB Voice record with el_voice_id
-        voice = self.repository_factory.get_voice_by_elevenlabs_id(el_voice_id)
+        voice = self.repository_factory.voice.get_by_elevenlabs_id(el_voice_id)
         if not voice:
             voice = Voice(
                 el_voice_id=el_voice_id,
                 name=voice_data["name"],
             )
-            self.repository_factory.upsert_voice(voice)
+            self.repository_factory.voice.upsert(voice)
 
         # Update professor with voice ID
-        self.repository_factory.update_professor_field(professor_id, voice_id=voice.id)
+        self.repository_factory.professor.update_field(professor_id, voice_id=voice.id)
 
         self.logger.info(f"Manually assigned voice {el_voice_id} to professor {professor_id}")
 
@@ -333,10 +342,9 @@ class VoiceService:
         gender: Optional[str] = None,
         accent: Optional[str] = None,
         age: Optional[str] = None,
-        language: Optional[str] = "en",
+        language: Optional[str] = None,
         use_case: Optional[str] = None,
         category: Optional[str] = None,
-        refresh: bool = False,
         limit: int = 100,
         offset: int = 0,
     ) -> List[Dict[str, Any]]:
@@ -350,7 +358,6 @@ class VoiceService:
             language: Optional filter by language (default: 'en')
             use_case: Optional filter by use case
             category: Optional filter by category
-            refresh: Whether to force refresh from API
             limit: Maximum number of results (for DB/API pagination)
             offset: Offset for pagination
 
@@ -358,7 +365,7 @@ class VoiceService:
             List of voice dictionaries
         """
         # Try database first
-        voices = self.repository_factory.list_voices(
+        voices = self.repository_factory.voice.list(
             gender=gender,
             accent=accent,
             age=age,
@@ -370,7 +377,7 @@ class VoiceService:
         )
 
         if voices:
-            return [v.dict() for v in voices]
+            return [v.model_dump() for v in voices]
 
         # Get from API
         voices_page, _ = self.client.get_shared_voices(
