@@ -38,9 +38,6 @@ class MockSession:
 class TestCourseRepository:
     """Test the CourseRepository class."""
 
-    @patch.dict(
-        "artificial_u.models.repositories.base.os.environ", {"DATABASE_URL": "sqlite:///:memory:"}
-    )
     @patch("artificial_u.models.repositories.course.CourseRepository.get_session")
     def test_create(self, mock_get_session):
         """Test creating a course."""
@@ -89,9 +86,6 @@ class TestCourseRepository:
         assert result.total_weeks == 14
         assert result.topics == [{"name": "Topic 1"}, {"name": "Topic 2"}]
 
-    @patch.dict(
-        "artificial_u.models.repositories.base.os.environ", {"DATABASE_URL": "sqlite:///:memory:"}
-    )
     @patch("artificial_u.models.repositories.course.CourseRepository.get_session")
     def test_get(self, mock_get_session):
         """Test getting a course by ID."""
@@ -134,9 +128,6 @@ class TestCourseRepository:
         assert result.total_weeks == 14
         assert result.topics == [{"name": "Topic 1"}, {"name": "Topic 2"}]
 
-    @patch.dict(
-        "artificial_u.models.repositories.base.os.environ", {"DATABASE_URL": "sqlite:///:memory:"}
-    )
     @patch("artificial_u.models.repositories.course.CourseRepository.get_session")
     def test_get_not_found(self, mock_get_session):
         """Test getting a non-existent course returns None."""
@@ -152,9 +143,6 @@ class TestCourseRepository:
         # Verify
         assert result is None
 
-    @patch.dict(
-        "artificial_u.models.repositories.base.os.environ", {"DATABASE_URL": "sqlite:///:memory:"}
-    )
     @patch("artificial_u.models.repositories.course.CourseRepository.get_session")
     def test_get_by_code(self, mock_get_session):
         """Test getting a course by code."""
@@ -188,9 +176,6 @@ class TestCourseRepository:
         assert result.id == 1
         assert result.code == "CS101"
 
-    @patch.dict(
-        "artificial_u.models.repositories.base.os.environ", {"DATABASE_URL": "sqlite:///:memory:"}
-    )
     @patch("artificial_u.models.repositories.course.CourseRepository.get_session")
     def test_list(self, mock_get_session):
         """Test listing courses."""
@@ -239,9 +224,6 @@ class TestCourseRepository:
         assert result[1].id == 2
         assert result[1].code == "CS201"
 
-    @patch.dict(
-        "artificial_u.models.repositories.base.os.environ", {"DATABASE_URL": "sqlite:///:memory:"}
-    )
     @patch("artificial_u.models.repositories.course.CourseRepository.get_session")
     def test_list_with_department_filter(self, mock_get_session):
         """Test listing courses with department filter."""
@@ -276,9 +258,6 @@ class TestCourseRepository:
         assert result[0].id == 1
         assert result[0].department_id == 1
 
-    @patch.dict(
-        "artificial_u.models.repositories.base.os.environ", {"DATABASE_URL": "sqlite:///:memory:"}
-    )
     @patch("artificial_u.models.repositories.course.CourseRepository.get_session")
     def test_update(self, mock_get_session):
         """Test updating a course."""
@@ -344,9 +323,6 @@ class TestCourseRepository:
         assert result.total_weeks == 15
         assert result.topics == [{"name": "Updated Topic 1"}, {"name": "Updated Topic 2"}]
 
-    @patch.dict(
-        "artificial_u.models.repositories.base.os.environ", {"DATABASE_URL": "sqlite:///:memory:"}
-    )
     @patch("artificial_u.models.repositories.course.CourseRepository.get_session")
     def test_update_not_found(self, mock_get_session):
         """Test updating a non-existent course raises an error."""
@@ -375,9 +351,6 @@ class TestCourseRepository:
         with pytest.raises(ValueError, match="Course with ID 999 not found"):
             repo.update(course)
 
-    @patch.dict(
-        "artificial_u.models.repositories.base.os.environ", {"DATABASE_URL": "sqlite:///:memory:"}
-    )
     @patch("artificial_u.models.repositories.course.CourseRepository.get_session")
     def test_delete(self, mock_get_session):
         """Test deleting a course."""
@@ -401,9 +374,6 @@ class TestCourseRepository:
         mock_session.commit.assert_called_once()
         assert result is True
 
-    @patch.dict(
-        "artificial_u.models.repositories.base.os.environ", {"DATABASE_URL": "sqlite:///:memory:"}
-    )
     @patch("artificial_u.models.repositories.course.CourseRepository.get_session")
     def test_delete_not_found(self, mock_get_session):
         """Test deleting a non-existent course returns False."""

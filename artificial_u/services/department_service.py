@@ -194,7 +194,7 @@ class DepartmentService:
         # department = self.get_department(department_id)
 
         # Check for dependencies
-        professors = self.repository_factory.professor.list(department_id=department_id)
+        professors = self.repository_factory.professor.list_by_department(department_id)
         if professors:
             error_msg = f"Cannot delete department with {len(professors)} professors"
             self.logger.error(error_msg)
@@ -235,7 +235,9 @@ class DepartmentService:
         self.get_department(department_id)
 
         try:
-            professors = self.repository_factory.professor.list(department_id=department_id)
+            professors = self.repository_factory.professor.list_by_department(
+                department_id=department_id
+            )
             self.logger.debug(f"Found {len(professors)} professors")
             return professors
         except Exception as e:

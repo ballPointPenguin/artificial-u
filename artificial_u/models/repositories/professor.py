@@ -175,3 +175,34 @@ class ProfessorRepository(BaseRepository):
             session.delete(db_professor)
             session.commit()
             return True
+
+    def list_by_department(self, department_id: int) -> List[Professor]:
+        """List all professors in a specific department."""
+        with self.get_session() as session:
+            db_professors = (
+                session.query(ProfessorModel).filter_by(department_id=department_id).all()
+            )
+
+            return [
+                Professor(
+                    **{
+                        # Required fields
+                        "id": p.id,
+                        "name": p.name or "",
+                        # Optional fields with defaults
+                        "department_id": getattr(p, "department_id", None),
+                        "title": getattr(p, "title", None),
+                        "specialization": getattr(p, "specialization", None),
+                        "background": getattr(p, "background", None),
+                        "personality": getattr(p, "personality", None),
+                        "teaching_style": getattr(p, "teaching_style", None),
+                        "gender": getattr(p, "gender", None),
+                        "accent": getattr(p, "accent", None),
+                        "description": getattr(p, "description", None),
+                        "age": getattr(p, "age", None),
+                        "voice_id": getattr(p, "voice_id", None),
+                        "image_url": getattr(p, "image_url", None),
+                    }
+                )
+                for p in db_professors
+            ]

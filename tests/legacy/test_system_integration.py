@@ -235,7 +235,6 @@ def test_system(db_available):
 @requires_tinyllama
 @pytest.mark.skip
 # @pytest.mark.integration
-@pytest.mark.requires_db
 def test_create_professor_with_ollama(test_system):
     """Test creating a professor using Ollama for content generation."""
     # Create a professor
@@ -262,7 +261,6 @@ def test_create_professor_with_ollama(test_system):
 @requires_tinyllama
 @pytest.mark.skip
 # @pytest.mark.integration
-@pytest.mark.requires_db
 def test_create_course_with_ollama(test_system):
     """Test creating a course using Ollama for content generation."""
     # Create a professor first
@@ -305,7 +303,6 @@ def test_create_course_with_ollama(test_system):
 @requires_tinyllama
 @pytest.mark.skip
 # @pytest.mark.integration
-@pytest.mark.requires_db
 def test_generate_lecture_with_ollama(test_system):
     """Test generating a lecture using Ollama."""
     # Create dependencies

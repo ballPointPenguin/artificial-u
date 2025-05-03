@@ -38,9 +38,6 @@ class MockSession:
 class TestProfessorRepository:
     """Test the ProfessorRepository class."""
 
-    @patch.dict(
-        "artificial_u.models.repositories.base.os.environ", {"DATABASE_URL": "sqlite:///:memory:"}
-    )
     @patch("artificial_u.models.repositories.professor.ProfessorRepository.get_session")
     def test_create(self, mock_get_session):
         """Test creating a professor."""
@@ -94,9 +91,6 @@ class TestProfessorRepository:
         assert result.voice_id == 1
         assert result.image_url == "https://example.com/smith.jpg"
 
-    @patch.dict(
-        "artificial_u.models.repositories.base.os.environ", {"DATABASE_URL": "sqlite:///:memory:"}
-    )
     @patch("artificial_u.models.repositories.professor.ProfessorRepository.get_session")
     def test_get(self, mock_get_session):
         """Test getting a professor by ID."""
@@ -145,9 +139,6 @@ class TestProfessorRepository:
         assert result.voice_id == 1
         assert result.image_url == "https://example.com/smith.jpg"
 
-    @patch.dict(
-        "artificial_u.models.repositories.base.os.environ", {"DATABASE_URL": "sqlite:///:memory:"}
-    )
     @patch("artificial_u.models.repositories.professor.ProfessorRepository.get_session")
     def test_get_not_found(self, mock_get_session):
         """Test getting a non-existent professor returns None."""
@@ -163,9 +154,6 @@ class TestProfessorRepository:
         # Verify
         assert result is None
 
-    @patch.dict(
-        "artificial_u.models.repositories.base.os.environ", {"DATABASE_URL": "sqlite:///:memory:"}
-    )
     @patch("artificial_u.models.repositories.professor.ProfessorRepository.get_session")
     def test_list(self, mock_get_session):
         """Test listing professors."""
@@ -220,9 +208,6 @@ class TestProfessorRepository:
         assert result[1].id == 2
         assert result[1].name == "Dr. John Doe"
 
-    @patch.dict(
-        "artificial_u.models.repositories.base.os.environ", {"DATABASE_URL": "sqlite:///:memory:"}
-    )
     @patch("artificial_u.models.repositories.professor.ProfessorRepository.get_session")
     def test_update(self, mock_get_session):
         """Test updating a professor."""
@@ -293,9 +278,6 @@ class TestProfessorRepository:
         assert result.voice_id == 2
         assert result.image_url == "https://example.com/smith-updated.jpg"
 
-    @patch.dict(
-        "artificial_u.models.repositories.base.os.environ", {"DATABASE_URL": "sqlite:///:memory:"}
-    )
     @patch("artificial_u.models.repositories.professor.ProfessorRepository.get_session")
     def test_update_not_found(self, mock_get_session):
         """Test updating a non-existent professor raises an error."""
@@ -321,9 +303,6 @@ class TestProfessorRepository:
         with pytest.raises(ValueError, match="Professor with ID 999 not found"):
             repo.update(professor)
 
-    @patch.dict(
-        "artificial_u.models.repositories.base.os.environ", {"DATABASE_URL": "sqlite:///:memory:"}
-    )
     @patch("artificial_u.models.repositories.professor.ProfessorRepository.get_session")
     def test_update_field(self, mock_get_session):
         """Test updating specific fields of a professor."""
@@ -373,9 +352,6 @@ class TestProfessorRepository:
         assert result.title == "Full Professor"
         assert result.specialization == "Deep Learning"
 
-    @patch.dict(
-        "artificial_u.models.repositories.base.os.environ", {"DATABASE_URL": "sqlite:///:memory:"}
-    )
     @patch("artificial_u.models.repositories.professor.ProfessorRepository.get_session")
     def test_update_field_not_found(self, mock_get_session):
         """Test updating fields of a non-existent professor returns None."""
@@ -392,9 +368,6 @@ class TestProfessorRepository:
         assert result is None
         mock_session.commit.assert_not_called()
 
-    @patch.dict(
-        "artificial_u.models.repositories.base.os.environ", {"DATABASE_URL": "sqlite:///:memory:"}
-    )
     @patch("artificial_u.models.repositories.professor.ProfessorRepository.get_session")
     def test_delete(self, mock_get_session):
         """Test deleting a professor."""
@@ -418,9 +391,6 @@ class TestProfessorRepository:
         mock_session.commit.assert_called_once()
         assert result is True
 
-    @patch.dict(
-        "artificial_u.models.repositories.base.os.environ", {"DATABASE_URL": "sqlite:///:memory:"}
-    )
     @patch("artificial_u.models.repositories.professor.ProfessorRepository.get_session")
     def test_delete_not_found(self, mock_get_session):
         """Test deleting a non-existent professor returns False."""
@@ -436,3 +406,41 @@ class TestProfessorRepository:
         # Verify
         assert result is False
         mock_session.delete.assert_not_called()
+
+    @patch("artificial_u.models.repositories.professor.ProfessorRepository.get_session")
+    def test_list_by_department(self, mock_get_session):
+        """Test listing professors by department."""
+        # Setup
+        mock_session = MockSession()
+        mock_get_session.return_value = mock_session
+
+        # Create mock professor models
+        mock_prof1 = MagicMock(spec=ProfessorModel)
+        mock_prof1.id = 1
+        mock_prof1.name = "Dr. Jane Smith"
+        mock_prof1.title = "Associate Professor"
+        mock_prof1.department_id = 1
+        mock_prof1.specialization = "Machine Learning"
+        mock_prof1.background = "PhD from Stanford"
+        mock_prof1.personality = "Engaging and enthusiastic"
+        mock_prof1.teaching_style = "Interactive with hands-on examples"
+        mock_prof1.gender = "Female"
+        mock_prof1.accent = "American"
+        mock_prof1.description = "Expert in machine learning"
+        mock_prof1.age = 35
+        mock_prof1.voice_id = 1
+        mock_prof1.image_url = "https://example.com/smith.jpg"
+
+        mock_session.all.return_value = [mock_prof1]
+
+        # Exercise
+        repo = ProfessorRepository()
+        result = repo.list_by_department(department_id=1)
+
+        # Verify
+        mock_session.query.assert_called_once_with(ProfessorModel)
+        mock_session.filter_by.assert_called_once_with(department_id=1)
+        assert len(result) == 1
+        assert result[0].id == 1
+        assert result[0].name == "Dr. Jane Smith"
+        assert result[0].department_id == 1

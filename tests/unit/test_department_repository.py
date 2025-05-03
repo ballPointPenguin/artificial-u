@@ -38,7 +38,6 @@ class MockSession:
 class TestDepartmentRepository:
     """Test the DepartmentRepository class."""
 
-    @patch.dict("os.environ", {"DATABASE_URL": "sqlite:///:memory:"})
     @patch("artificial_u.models.repositories.department.DepartmentRepository.get_session")
     def test_create(self, mock_get_session):
         """Test creating a department."""
@@ -82,7 +81,6 @@ class TestDepartmentRepository:
         assert result.faculty == "Engineering"
         assert result.description == "Study of computers"
 
-    @patch.dict("os.environ", {"DATABASE_URL": "sqlite:///:memory:"})
     @patch("artificial_u.models.repositories.department.DepartmentRepository.get_session")
     def test_get(self, mock_get_session):
         """Test getting a department by ID."""
@@ -113,7 +111,6 @@ class TestDepartmentRepository:
         assert result.faculty == "Engineering"
         assert result.description == "Study of computers"
 
-    @patch.dict("os.environ", {"DATABASE_URL": "sqlite:///:memory:"})
     @patch("artificial_u.models.repositories.department.DepartmentRepository.get_session")
     def test_get_not_found(self, mock_get_session):
         """Test getting a non-existent department returns None."""
@@ -129,7 +126,6 @@ class TestDepartmentRepository:
         # Verify
         assert result is None
 
-    @patch.dict("os.environ", {"DATABASE_URL": "sqlite:///:memory:"})
     @patch("artificial_u.models.repositories.department.DepartmentRepository.get_session")
     def test_get_by_code(self, mock_get_session):
         """Test getting a department by code."""
@@ -158,7 +154,6 @@ class TestDepartmentRepository:
         assert result.name == "Computer Science"
         assert result.code == "CS"
 
-    @patch.dict("os.environ", {"DATABASE_URL": "sqlite:///:memory:"})
     @patch("artificial_u.models.repositories.department.DepartmentRepository.get_session")
     def test_list(self, mock_get_session):
         """Test listing departments."""
@@ -195,7 +190,6 @@ class TestDepartmentRepository:
         assert result[1].id == 2
         assert result[1].name == "Mathematics"
 
-    @patch.dict("os.environ", {"DATABASE_URL": "sqlite:///:memory:"})
     @patch("artificial_u.models.repositories.department.DepartmentRepository.get_session")
     def test_list_with_faculty_filter(self, mock_get_session):
         """Test listing departments with faculty filter."""
@@ -224,7 +218,6 @@ class TestDepartmentRepository:
         assert result[0].id == 1
         assert result[0].faculty == "Engineering"
 
-    @patch.dict("os.environ", {"DATABASE_URL": "sqlite:///:memory:"})
     @patch("artificial_u.models.repositories.department.DepartmentRepository.get_session")
     def test_update(self, mock_get_session):
         """Test updating a department."""
@@ -268,7 +261,6 @@ class TestDepartmentRepository:
         assert result.faculty == "Updated Engineering"
         assert result.description == "Updated description"
 
-    @patch.dict("os.environ", {"DATABASE_URL": "sqlite:///:memory:"})
     @patch("artificial_u.models.repositories.department.DepartmentRepository.get_session")
     def test_update_not_found(self, mock_get_session):
         """Test updating a non-existent department raises an error."""
@@ -291,7 +283,6 @@ class TestDepartmentRepository:
         with pytest.raises(ValueError, match="Department with ID 999 not found"):
             repo.update(dept)
 
-    @patch.dict("os.environ", {"DATABASE_URL": "sqlite:///:memory:"})
     @patch("artificial_u.models.repositories.department.DepartmentRepository.get_session")
     def test_delete(self, mock_get_session):
         """Test deleting a department."""
@@ -329,7 +320,6 @@ class TestDepartmentRepository:
         mock_session.commit.assert_called_once()
         assert result is True
 
-    @patch.dict("os.environ", {"DATABASE_URL": "sqlite:///:memory:"})
     @patch("artificial_u.models.repositories.department.DepartmentRepository.get_session")
     def test_delete_not_found(self, mock_get_session):
         """Test deleting a non-existent department returns False."""
@@ -346,7 +336,6 @@ class TestDepartmentRepository:
         assert result is False
         mock_session.delete.assert_not_called()
 
-    @patch.dict("os.environ", {"DATABASE_URL": "sqlite:///:memory:"})
     @patch("artificial_u.models.repositories.department.DepartmentRepository.get_session")
     def test_list_department_names(self, mock_get_session):
         """Test listing department names."""

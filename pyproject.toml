@@ -80,7 +80,6 @@ markers = [
     "e2e: End-to-end tests",
     "slow: Tests that take a long time to run",
     "demo: Demonstration tests",
-    "requires_db: Tests that require a database connection",
     "api: Tests for the API endpoints",
 ]
 filterwarnings = [

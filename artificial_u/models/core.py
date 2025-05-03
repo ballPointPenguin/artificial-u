@@ -28,8 +28,8 @@ class Department(BaseModel):
     id: Optional[int] = None
     name: str
     code: str
-    faculty: str  # e.g., "Science and Engineering"
-    description: str
+    faculty: Optional[str] = None  # e.g., "Science and Engineering"
+    description: Optional[str] = None
 
 
 class Voice(BaseModel):
@@ -69,7 +69,7 @@ class Voice(BaseModel):
 
     id: Optional[int] = None
     el_voice_id: str
-    name: str
+    name: Optional[str] = None
     accent: Optional[str] = None
     gender: Optional[str] = None
     age: Optional[str] = None
@@ -111,12 +111,12 @@ class Professor(BaseModel):
 
     id: Optional[int] = None
     name: str
-    title: str
+    title: Optional[str] = None
     department_id: Optional[int] = None
-    specialization: str
-    background: str
-    personality: str
-    teaching_style: str
+    specialization: Optional[str] = None
+    background: Optional[str] = None
+    personality: Optional[str] = None
+    teaching_style: Optional[str] = None
     gender: Optional[str] = None
     accent: Optional[str] = None
     description: Optional[str] = None
@@ -161,10 +161,10 @@ class Course(BaseModel):
     code: str
     title: str
     department_id: Optional[int] = None
-    level: str  # Undergraduate, Graduate, etc.
+    level: Optional[str] = None
     credits: int = Field(default=3, ge=0)
     professor_id: Optional[int] = None
-    description: str
+    description: Optional[str] = None
     lectures_per_week: int = DEFAULT_LECTURES_PER_WEEK
     total_weeks: int = DEFAULT_COURSE_WEEKS
     topics: Optional[list[dict]] = None
@@ -192,6 +192,6 @@ class Lecture(BaseModel):
     course_id: int
     week_number: int = Field(gt=0)
     order_in_week: int = Field(default=1, gt=0)
-    description: str
-    content: str
+    description: Optional[str] = None
+    content: Optional[str] = None
     audio_url: Optional[str] = None

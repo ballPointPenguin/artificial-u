@@ -14,9 +14,6 @@ from artificial_u.models.repositories.base import BaseRepository
 class TestBaseRepository:
     """Test the BaseRepository class."""
 
-    @patch.dict(
-        "artificial_u.models.repositories.base.os.environ", {"DATABASE_URL": "sqlite:///:memory:"}
-    )
     def test_init_with_db_url(self):
         """Test initializing with a database URL."""
         repo = BaseRepository(db_url="sqlite:///test.db")
@@ -54,9 +51,6 @@ class TestBaseRepository:
         assert repo.engine == mock_engine
 
     @patch("artificial_u.models.repositories.base.Session")
-    @patch.dict(
-        "artificial_u.models.repositories.base.os.environ", {"DATABASE_URL": "sqlite:///:memory:"}
-    )
     def test_get_session(self, mock_session_class):
         """Test getting a database session."""
         mock_session = MagicMock(spec=Session)
@@ -68,9 +62,6 @@ class TestBaseRepository:
         assert session == mock_session
 
     @patch("artificial_u.models.database.Base.metadata.create_all")
-    @patch.dict(
-        "artificial_u.models.repositories.base.os.environ", {"DATABASE_URL": "sqlite:///:memory:"}
-    )
     def test_create_tables(self, mock_create_all):
         """Test creating database tables."""
         repo = BaseRepository()

@@ -9,12 +9,6 @@ from sqlalchemy import create_engine
 from sqlalchemy.exc import OperationalError
 
 
-# Create a pytest marker for tests that require a database
-def pytest_configure(config):
-    """Configure pytest with custom markers."""
-    config.addinivalue_line("markers", "requires_db: mark tests that require database connectivity")
-
-
 # Create a fixture that checks database connectivity
 @pytest.fixture(scope="session")
 def db_available():
@@ -35,9 +29,10 @@ def db_available():
         return False
 
 
-# Create an autouse fixture that will skip tests marked with requires_db if the database is not available
+# Create an autouse fixture that will skip tests marked with integration if the
+# database is not available
 @pytest.fixture(autouse=True)
 def skip_if_no_db(request, db_available):
     """Skip tests that require a database if the database is not available."""
-    if request.node.get_closest_marker("requires_db") and not db_available:
+    if request.node.get_closest_marker("integration") and not db_available:
         pytest.skip("Database not available")

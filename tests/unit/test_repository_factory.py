@@ -28,9 +28,6 @@ class TestRepositoryFactory:
         factory = RepositoryFactory()
         assert factory.db_url is None
 
-    @patch.dict(
-        "artificial_u.models.repositories.base.os.environ", {"DATABASE_URL": "sqlite:///:memory:"}
-    )
     def test_get_repository(self):
         """Test getting a repository instance."""
         factory = RepositoryFactory()
@@ -41,49 +38,31 @@ class TestRepositoryFactory:
         repo2 = factory.get_repository(DepartmentRepository)
         assert repo is repo2  # Same instance
 
-    @patch.dict(
-        "artificial_u.models.repositories.base.os.environ", {"DATABASE_URL": "sqlite:///:memory:"}
-    )
     def test_department_property(self):
         """Test the department property."""
         factory = RepositoryFactory()
         assert isinstance(factory.department, DepartmentRepository)
 
-    @patch.dict(
-        "artificial_u.models.repositories.base.os.environ", {"DATABASE_URL": "sqlite:///:memory:"}
-    )
     def test_professor_property(self):
         """Test the professor property."""
         factory = RepositoryFactory()
         assert isinstance(factory.professor, ProfessorRepository)
 
-    @patch.dict(
-        "artificial_u.models.repositories.base.os.environ", {"DATABASE_URL": "sqlite:///:memory:"}
-    )
     def test_course_property(self):
         """Test the course property."""
         factory = RepositoryFactory()
         assert isinstance(factory.course, CourseRepository)
 
-    @patch.dict(
-        "artificial_u.models.repositories.base.os.environ", {"DATABASE_URL": "sqlite:///:memory:"}
-    )
     def test_lecture_property(self):
         """Test the lecture property."""
         factory = RepositoryFactory()
         assert isinstance(factory.lecture, LectureRepository)
 
-    @patch.dict(
-        "artificial_u.models.repositories.base.os.environ", {"DATABASE_URL": "sqlite:///:memory:"}
-    )
     def test_voice_property(self):
         """Test the voice property."""
         factory = RepositoryFactory()
         assert isinstance(factory.voice, VoiceRepository)
 
-    @patch.dict(
-        "artificial_u.models.repositories.base.os.environ", {"DATABASE_URL": "sqlite:///:memory:"}
-    )
     @patch("artificial_u.models.repositories.base.BaseRepository.create_tables")
     def test_create_tables(self, mock_create_tables):
         """Test creating tables."""

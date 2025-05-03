@@ -2,8 +2,6 @@
 Tests for the department API endpoints.
 """
 
-from datetime import datetime
-
 import pytest
 from fastapi.testclient import TestClient
 

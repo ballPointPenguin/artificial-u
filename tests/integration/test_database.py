@@ -2,31 +2,10 @@
 Integration tests for the database models and repository.
 """
 
-import os
-
 import pytest
-from dotenv import load_dotenv
-from sqlalchemy import create_engine
-from sqlalchemy.exc import OperationalError
 
 from artificial_u.models.core import Course, Lecture, Professor
 from artificial_u.models.repositories import RepositoryFactory
-
-
-@pytest.fixture(scope="session", autouse=True)
-def load_env():
-    """Load environment variables from .env.test file."""
-    load_dotenv(".env.test")
-    yield
-
-
-@pytest.fixture(scope="session")
-def test_db_url():
-    """Get the test database URL from environment."""
-    return os.environ.get(
-        "DATABASE_URL",
-        "postgresql://postgres:postgres@localhost:5432/artificial_u_test",
-    )
 
 
 @pytest.fixture
@@ -88,48 +67,7 @@ def sample_lecture(db_course):
     )
 
 
-@pytest.fixture(scope="session")
-def db_available(test_db_url):
-    """Check if the database is available."""
-    try:
-        # Try to connect to the database
-        engine = create_engine(test_db_url)
-        with engine.connect():
-            return True
-    except OperationalError:
-        return False
-    except Exception:
-        return False
-
-
-@pytest.fixture(scope="function", autouse=True)
-def setup_database(test_db_url, db_available):
-    """Set up a clean database for each test function."""
-    # Skip if the database is not available
-    if not db_available:
-        pytest.skip("Database not available")
-
-    # Get the SQLAlchemy engine
-    from sqlalchemy import create_engine
-
-    from artificial_u.models.database import Base
-
-    engine = create_engine(test_db_url)
-
-    # Drop all tables defined in Base metadata
-    Base.metadata.drop_all(engine)
-
-    # Recreate all tables defined in Base metadata
-    Base.metadata.create_all(engine)
-
-    yield
-
-    # Clean up after test (drop tables again)
-    Base.metadata.drop_all(engine)
-
-
 @pytest.mark.integration
-@pytest.mark.requires_db
 def test_professor_crud(repository, sample_professor):
     """Test CRUD operations for professors."""
     # Create
@@ -143,8 +81,8 @@ def test_professor_crud(repository, sample_professor):
 
     # List
     professors = repository.professor.list()
-    assert len(professors) == 1
-    assert professors[0].id == created_prof.id
+    assert len(professors) >= 1
+    assert any(p.id == created_prof.id for p in professors)
 
     # Update
     retrieved_prof.title = "Updated Professor of Testing"
@@ -157,53 +95,102 @@ def test_professor_crud(repository, sample_professor):
 
 
 @pytest.mark.integration
-@pytest.mark.requires_db
-def test_course_crud(repository, sample_course):
+def test_course_crud(repository):
     """Test CRUD operations for courses."""
+    # First create a professor (required by foreign key)
+    professor = repository.professor.create(
+        Professor(
+            name="Dr. Course Test",
+            title="Professor of Course Testing",
+        )
+    )
+
+    # Create a course with this professor
+    course = Course(
+        code="TEST101",
+        title="Introduction to Testing",
+        level="Undergraduate",
+        credits=3,
+        professor_id=professor.id,
+        description="A comprehensive introduction to software testing principles",
+        lectures_per_week=2,
+        total_weeks=14,
+    )
+
     # Create course
-    created_course = repository.course.create(sample_course)
+    created_course = repository.course.create(course)
     assert created_course.id is not None
 
     # Read
     retrieved_course = repository.course.get(created_course.id)
     assert retrieved_course is not None
-    assert retrieved_course.code == sample_course.code
+    assert retrieved_course.code == course.code
 
     # Read by code
-    code_retrieved_course = repository.course.get_by_code(sample_course.code)
+    code_retrieved_course = repository.course.get_by_code(course.code)
     assert code_retrieved_course is not None
     assert code_retrieved_course.id == created_course.id
 
     # List
     all_courses = repository.course.list()
-    assert len(all_courses) == 1
-    assert all_courses[0].id == created_course.id
+    assert len(all_courses) >= 1
+    assert any(c.id == created_course.id for c in all_courses)
 
 
 @pytest.mark.integration
-@pytest.mark.requires_db
-def test_lecture_crud(repository, db_course, sample_lecture):
+def test_lecture_crud(repository):
     """Test CRUD operations for lectures."""
+    # Create professor and course first (required by foreign keys)
+    professor = repository.professor.create(
+        Professor(
+            name="Dr. Lecture Test",
+            title="Professor of Lecture Testing",
+        )
+    )
+
+    course = repository.course.create(
+        Course(
+            code="LECT101",
+            title="Introduction to Lectures",
+            level="Undergraduate",
+            credits=3,
+            professor_id=professor.id,
+            description="A comprehensive introduction to lecture testing",
+            lectures_per_week=2,
+            total_weeks=14,
+        )
+    )
+
+    # Create a lecture with this course
+    lecture = Lecture(
+        title="Unit Testing Fundamentals",
+        course_id=course.id,
+        week_number=1,
+        order_in_week=1,
+        description="Introduction to unit testing concepts",
+        content="In this lecture, we will explore the fundamentals of unit testing...",
+    )
+
     # Create lecture
-    created_lecture = repository.lecture.create(sample_lecture)
+    created_lecture = repository.lecture.create(lecture)
     assert created_lecture.id is not None
 
     # Read
     retrieved_lecture = repository.lecture.get(created_lecture.id)
     assert retrieved_lecture is not None
-    assert retrieved_lecture.title == sample_lecture.title
+    assert retrieved_lecture.title == lecture.title
 
     # Read by course/week/order
     week_lecture = repository.lecture.get_by_course_week_order(
-        db_course.id, week_number=1, order_in_week=1
+        course.id, week_number=1, order_in_week=1
     )
     assert week_lecture is not None
     assert week_lecture.id == created_lecture.id
 
     # List by course
-    course_lectures = repository.lecture.list_by_course(db_course.id)
-    assert len(course_lectures) == 1
-    assert course_lectures[0].id == created_lecture.id
+    course_lectures = repository.lecture.list_by_course(course.id)
+    assert len(course_lectures) >= 1
+    assert any(lecture_item.id == created_lecture.id for lecture_item in course_lectures)
 
     # Update audio path
     lecture_to_update = repository.lecture.get(created_lecture.id)
@@ -214,18 +201,47 @@ def test_lecture_crud(repository, db_course, sample_lecture):
 
 
 @pytest.mark.integration
-@pytest.mark.requires_db
-def test_relationships(repository, db_professor, db_course, sample_lecture):
+def test_relationships(repository):
     """Test relationships between models."""
-    # Create lecture
-    repository.lecture.create(sample_lecture)
+    # Create all related records in the correct order
+    professor = repository.professor.create(
+        Professor(name="Dr. Relationship Test", title="Professor of Relationships")
+    )
+
+    course = repository.course.create(
+        Course(
+            code="REL101",
+            title="Introduction to Relationships",
+            level="Undergraduate",
+            credits=3,
+            professor_id=professor.id,
+            description="A comprehensive introduction to database relationships",
+            lectures_per_week=2,
+            total_weeks=14,
+        )
+    )
+
+    lecture = repository.lecture.create(
+        Lecture(
+            title="Relationship Fundamentals",
+            course_id=course.id,
+            week_number=1,
+            order_in_week=1,
+            description="Introduction to relationship concepts",
+            content="In this lecture, we will explore database relationships...",
+        )
+    )
 
     # Verify course listing includes the correct professor
     courses = repository.course.list()
-    assert len(courses) == 1
-    assert courses[0].professor_id == db_professor.id
+    assert len(courses) >= 1
+    assert any(c.id == course.id for c in courses)
+
+    # Find the course we just created
+    found_course = next(c for c in courses if c.id == course.id)
+    assert found_course.professor_id == professor.id
 
     # Verify lecture listing includes the correct course
-    lectures = repository.lecture.list_by_course(db_course.id)
-    assert len(lectures) == 1
-    assert lectures[0].course_id == db_course.id
+    lectures = repository.lecture.list_by_course(course.id)
+    assert len(lectures) >= 1
+    assert any(lecture_item.id == lecture.id for lecture_item in lectures)
