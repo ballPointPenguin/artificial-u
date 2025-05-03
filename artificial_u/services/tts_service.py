@@ -9,9 +9,9 @@ import os
 from typing import Any, Dict, Optional, Tuple, Union
 
 from artificial_u.audio.speech_processor import SpeechProcessor
-from artificial_u.integrations.elevenlabs.client import ElevenLabsClient
+from artificial_u.integrations import elevenlabs
 from artificial_u.models.core import Lecture, Professor
-from artificial_u.utils.exceptions import AudioProcessingError
+from artificial_u.utils import AudioProcessingError
 
 
 class TTSService:
@@ -31,7 +31,7 @@ class TTSService:
         self,
         api_key: Optional[str] = None,
         audio_path: Optional[str] = None,
-        client: Optional[ElevenLabsClient] = None,
+        client: Optional[elevenlabs.ElevenLabsClient] = None,
         speech_processor: Optional[SpeechProcessor] = None,
         repository_factory=None,
         logger=None,
@@ -52,7 +52,7 @@ class TTSService:
         self.repository_factory = repository_factory
 
         # Initialize components
-        self.client = client or ElevenLabsClient(api_key=api_key)
+        self.client = client or elevenlabs.ElevenLabsClient(api_key=api_key)
         self.speech_processor = speech_processor or SpeechProcessor(logger=self.logger)
 
     def convert_text_to_speech(

@@ -7,9 +7,9 @@ from unittest.mock import MagicMock
 import pytest
 
 from artificial_u.models.core import Course, Professor
-from artificial_u.models.repositories.factory import RepositoryFactory
-from artificial_u.services.department_service import DepartmentService
-from artificial_u.utils.exceptions import DepartmentNotFoundError, DependencyError
+from artificial_u.models.repositories import RepositoryFactory
+from artificial_u.services import DepartmentService
+from artificial_u.utils import DepartmentNotFoundError, DependencyError
 
 
 @pytest.fixture

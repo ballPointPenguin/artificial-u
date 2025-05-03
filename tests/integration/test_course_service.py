@@ -8,9 +8,7 @@ import pytest
 
 from artificial_u.models.core import Professor
 from artificial_u.models.repositories.factory import RepositoryFactory
-from artificial_u.services.course_service import CourseService
-from artificial_u.services.department_service import DepartmentService
-from artificial_u.services.professor_service import ProfessorService
+from artificial_u.services import CourseService, DepartmentService, ProfessorService
 from artificial_u.utils.exceptions import CourseNotFoundError
 
 

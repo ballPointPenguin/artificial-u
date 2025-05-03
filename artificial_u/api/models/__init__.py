@@ -3,6 +3,7 @@ API data models for serialization and validation.
 These models define the structure of request and response data.
 """
 
+# Course model
 from artificial_u.api.models.courses import (
     CourseBase,
     CourseCreate,
@@ -10,10 +11,12 @@ from artificial_u.api.models.courses import (
     CourseResponse,
     CoursesListResponse,
     CourseUpdate,
-    DepartmentBrief,
-    LectureBrief,
-    ProfessorBrief,
 )
+from artificial_u.api.models.courses import DepartmentBrief as CourseDepartmentBrief
+from artificial_u.api.models.courses import LectureBrief as CourseLectureBrief
+from artificial_u.api.models.courses import ProfessorBrief as CourseProfessorBrief
+
+# Department model
 from artificial_u.api.models.departments import CourseBrief as DepartmentCourseBrief
 from artificial_u.api.models.departments import (
     DepartmentBase,
@@ -26,16 +29,33 @@ from artificial_u.api.models.departments import (
     DepartmentUpdate,
 )
 from artificial_u.api.models.departments import ProfessorBrief as DepartmentProfessorBrief
-from artificial_u.api.models.error_codes import ErrorCode, get_error_description
-from artificial_u.api.models.errors import ErrorDetail, ErrorResponse
+from artificial_u.api.models.error_codes import (
+    ErrorCode,
+    get_error_description,
+)
 
-# Re-export models for easier imports
+# Error model
+from artificial_u.api.models.errors import (
+    ErrorDetail,
+    ErrorResponse,
+)
+
+# Lecture model
+from artificial_u.api.models.lectures import (
+    Lecture,
+    LectureCreate,
+    LectureList,
+    LectureUpdate,
+)
+
+# Professor model
 from artificial_u.api.models.professors import CourseBrief as ProfessorCourseBrief
 from artificial_u.api.models.professors import LectureBrief as ProfessorLectureBrief
 from artificial_u.api.models.professors import (
     ProfessorBase,
     ProfessorCoursesResponse,
     ProfessorCreate,
+    ProfessorGenerate,
     ProfessorLecturesResponse,
     ProfessorResponse,
     ProfessorsListResponse,
@@ -44,17 +64,17 @@ from artificial_u.api.models.professors import (
 
 # All models that should be available for import
 __all__ = [
-    # Professor models
-    "ProfessorBase",
-    "ProfessorCreate",
-    "ProfessorUpdate",
-    "ProfessorResponse",
-    "ProfessorsListResponse",
-    "ProfessorCourseBrief",
-    "ProfessorLectureBrief",
-    "ProfessorCoursesResponse",
-    "ProfessorLecturesResponse",
-    # Department models
+    # Course model
+    "CourseBase",
+    "CourseCreate",
+    "CourseUpdate",
+    "CourseResponse",
+    "CoursesListResponse",
+    "CourseProfessorBrief",
+    "CourseLectureBrief",
+    "CourseDepartmentBrief",
+    "CourseLecturesResponse",
+    # Department model
     "DepartmentBase",
     "DepartmentCreate",
     "DepartmentUpdate",
@@ -65,17 +85,23 @@ __all__ = [
     "DepartmentCourseBrief",
     "DepartmentProfessorsResponse",
     "DepartmentCoursesResponse",
-    # Course models
-    "CourseBase",
-    "CourseCreate",
-    "CourseUpdate",
-    "CourseResponse",
-    "CoursesListResponse",
-    "ProfessorBrief",
-    "LectureBrief",
-    "DepartmentBrief",
-    "CourseLecturesResponse",
-    # Errors
+    # Professor model
+    "ProfessorBase",
+    "ProfessorCreate",
+    "ProfessorUpdate",
+    "ProfessorGenerate",
+    "ProfessorResponse",
+    "ProfessorsListResponse",
+    "ProfessorCourseBrief",
+    "ProfessorLectureBrief",
+    "ProfessorCoursesResponse",
+    "ProfessorLecturesResponse",
+    # Lecture model
+    "LectureCreate",
+    "LectureUpdate",
+    "Lecture",
+    "LectureList",
+    # Error codes
     "ErrorDetail",
     "ErrorResponse",
     "ErrorCode",

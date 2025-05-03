@@ -5,8 +5,7 @@ Course management service for ArtificialU.
 import logging
 from typing import Any, Dict, List, Optional, Tuple
 
-from artificial_u.config import settings
-from artificial_u.config.defaults import DEFAULT_COURSE_WEEKS, DEFAULT_LECTURES_PER_WEEK
+from artificial_u.config import DEFAULT_COURSE_WEEKS, DEFAULT_LECTURES_PER_WEEK, settings
 from artificial_u.models.converters import (
     course_model_to_dict,
     department_model_to_dict,
@@ -26,7 +25,7 @@ from artificial_u.prompts import (
 )
 from artificial_u.services.content_service import ContentService
 from artificial_u.services.professor_service import ProfessorService
-from artificial_u.utils.exceptions import (
+from artificial_u.utils import (
     ContentGenerationError,
     CourseNotFoundError,
     DatabaseError,

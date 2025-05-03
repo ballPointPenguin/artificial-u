@@ -7,20 +7,21 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from artificial_u.audio.speech_processor import SpeechProcessor
 from artificial_u.config import get_settings
-from artificial_u.integrations.elevenlabs.client import ElevenLabsClient
-from artificial_u.integrations.elevenlabs.voice_mapper import VoiceMapper
+from artificial_u.integrations import elevenlabs
 from artificial_u.models.core import Course, Department, Lecture, Professor
 from artificial_u.models.repositories import RepositoryFactory
-from artificial_u.services.audio_service import AudioService
-from artificial_u.services.content_service import ContentService
-from artificial_u.services.course_service import CourseService
-from artificial_u.services.image_service import ImageService
-from artificial_u.services.lecture_service import LectureService
-from artificial_u.services.professor_service import ProfessorService
-from artificial_u.services.storage_service import StorageService
-from artificial_u.services.tts_service import TTSService
-from artificial_u.services.voice_service import VoiceService
-from artificial_u.utils.exceptions import ConfigurationError
+from artificial_u.services import (
+    AudioService,
+    ContentService,
+    CourseService,
+    ImageService,
+    LectureService,
+    ProfessorService,
+    StorageService,
+    TTSService,
+    VoiceService,
+)
+from artificial_u.utils import ConfigurationError
 
 
 class UniversitySystem:
@@ -139,11 +140,13 @@ class UniversitySystem:
             self.repository_factory = RepositoryFactory(db_url=self.settings.DATABASE_URL)
 
             # Initialize audio components
-            self.elevenlabs_client = ElevenLabsClient(api_key=self.settings.ELEVENLABS_API_KEY)
+            self.elevenlabs_client = elevenlabs.ElevenLabsClient(
+                api_key=self.settings.ELEVENLABS_API_KEY
+            )
             self.speech_processor = SpeechProcessor()
 
             # Initialize voice mapper
-            self.voice_mapper = VoiceMapper(
+            self.voice_mapper = elevenlabs.VoiceMapper(
                 logger=logging.getLogger("artificial_u.integrations.elevenlabs.voice_mapper")
             )
 

@@ -15,7 +15,11 @@ from artificial_u.prompts import (
     get_system_prompt,
 )
 from artificial_u.services.content_service import ContentService
-from artificial_u.utils.exceptions import DatabaseError, DepartmentNotFoundError, DependencyError
+from artificial_u.utils import (
+    DatabaseError,
+    DepartmentNotFoundError,
+    DependencyError,
+)
 
 
 class DepartmentService:

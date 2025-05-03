@@ -10,7 +10,7 @@ from typing import Any, Dict, Optional, Tuple
 from artificial_u.models.core import Lecture
 from artificial_u.services.storage_service import StorageService
 from artificial_u.services.tts_service import TTSService
-from artificial_u.utils.exceptions import AudioProcessingError
+from artificial_u.utils import AudioProcessingError
 
 
 class AudioService:

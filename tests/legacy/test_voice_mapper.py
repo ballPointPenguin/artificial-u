@@ -2,13 +2,13 @@ from unittest.mock import patch
 
 import pytest
 
-from artificial_u.integrations.elevenlabs.voice_mapper import VoiceMapper
+from artificial_u.integrations import elevenlabs
 from artificial_u.models.core import Professor
 
 
 @pytest.fixture
 def voice_mapper():
-    return VoiceMapper()
+    return elevenlabs.VoiceMapper()
 
 
 @pytest.mark.skip

@@ -20,9 +20,7 @@ from artificial_u.api.models.departments import (
     ProfessorBrief,
 )
 from artificial_u.models.repositories import RepositoryFactory
-from artificial_u.services import CourseService
-from artificial_u.services.department_service import DepartmentService
-from artificial_u.services.professor_service import ProfessorService
+from artificial_u.services import CourseService, DepartmentService, ProfessorService
 
 
 class DepartmentApiService:

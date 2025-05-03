@@ -9,17 +9,23 @@ from artificial_u.utils.exceptions import (
     ContentGenerationError,
     CourseNotFoundError,
     DatabaseError,
+    DepartmentNotFoundError,
+    DependencyError,
+    GenerationError,
     LectureNotFoundError,
     ProfessorNotFoundError,
 )
 
 __all__ = [
     "ArtificialUException",
-    "ProfessorNotFoundError",
-    "CourseNotFoundError",
-    "LectureNotFoundError",
-    "ContentGenerationError",
     "AudioProcessingError",
-    "DatabaseError",
     "ConfigurationError",
+    "ContentGenerationError",
+    "CourseNotFoundError",
+    "DatabaseError",
+    "DepartmentNotFoundError",
+    "DependencyError",
+    "GenerationError",
+    "LectureNotFoundError",
+    "ProfessorNotFoundError",
 ]

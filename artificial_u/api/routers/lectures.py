@@ -8,13 +8,13 @@ from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
 from fastapi.responses import JSONResponse
 
 from artificial_u.api.dependencies import get_lecture_api_service
-from artificial_u.api.models.lectures import (
+from artificial_u.api.models import (
     Lecture,
     LectureCreate,
     LectureList,
     LectureUpdate,
 )
-from artificial_u.api.services.lecture_service import LectureApiService
+from artificial_u.api.services import LectureApiService
 
 # Create the router with dependencies that will be applied to all routes
 router = APIRouter(

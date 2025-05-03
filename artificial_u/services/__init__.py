@@ -7,8 +7,6 @@ service connections. Services should be instantiated through the dependency
 injection system rather than using global state.
 """
 
-from artificial_u.integrations.elevenlabs.client import ElevenLabsClient
-from artificial_u.integrations.elevenlabs.voice_mapper import VoiceMapper
 from artificial_u.services.audio_service import AudioService
 from artificial_u.services.content_service import ContentService
 from artificial_u.services.course_service import CourseService
@@ -21,16 +19,17 @@ from artificial_u.services.tts_service import TTSService
 from artificial_u.services.voice_service import VoiceService
 
 __all__ = [
-    "ProfessorService",
+    # Content generation services
+    "ContentService",
+    "ImageService",
+    "TTSService",
+    "VoiceService",
+    # Domain services
     "CourseService",
     "DepartmentService",
     "LectureService",
+    "ProfessorService",
+    # Infrastructure services
     "AudioService",
-    "TTSService",
     "StorageService",
-    "ImageService",
-    "ContentService",
-    "VoiceService",
-    "VoiceMapper",
-    "ElevenLabsClient",
 ]

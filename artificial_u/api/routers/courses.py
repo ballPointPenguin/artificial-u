@@ -8,16 +8,16 @@ from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
 from fastapi.responses import JSONResponse
 
 from artificial_u.api.dependencies import get_course_api_service
-from artificial_u.api.models.courses import (
+from artificial_u.api.models import (
     CourseCreate,
+    CourseDepartmentBrief,
     CourseLecturesResponse,
+    CourseProfessorBrief,
     CourseResponse,
     CoursesListResponse,
     CourseUpdate,
-    DepartmentBrief,
-    ProfessorBrief,
 )
-from artificial_u.api.services.course_service import CourseApiService
+from artificial_u.api.services import CourseApiService
 
 # Create the router
 router = APIRouter(
@@ -173,7 +173,7 @@ async def delete_course(
 
 @router.get(
     "/{course_id}/professor",
-    response_model=ProfessorBrief,
+    response_model=CourseProfessorBrief,
     summary="Get course professor",
     description="Get information about the professor teaching a specific course.",
     responses={
@@ -194,7 +194,7 @@ async def get_course_professor(
 
 @router.get(
     "/{course_id}/department",
-    response_model=DepartmentBrief,
+    response_model=CourseDepartmentBrief,
     summary="Get course department",
     description="Get information about the department offering a specific course.",
     responses={

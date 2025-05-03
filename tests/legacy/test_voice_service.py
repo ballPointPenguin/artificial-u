@@ -9,17 +9,16 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from artificial_u.integrations.elevenlabs.client import ElevenLabsClient
-from artificial_u.integrations.elevenlabs.voice_mapper import VoiceMapper
+from artificial_u.integrations import elevenlabs
 from artificial_u.models.core import Professor
-from artificial_u.services.voice_service import VoiceService
+from artificial_u.services import VoiceService
 
 
 @pytest.fixture
 def mock_client():
     """Create a mock ElevenLabsClient."""
     with patch("artificial_u.integrations.elevenlabs.client.ElevenLabsClient") as mock:
-        client = MagicMock(spec=ElevenLabsClient)
+        client = MagicMock(spec=elevenlabs.ElevenLabsClient)
         mock.return_value = client
 
         # Set up common method returns
@@ -52,7 +51,7 @@ def mock_client():
 @pytest.fixture
 def mock_mapper():
     """Create a mock VoiceMapper."""
-    mapper = MagicMock(spec=VoiceMapper)
+    mapper = MagicMock(spec=elevenlabs.VoiceMapper)
 
     # Set up common method returns
     mapper.extract_profile_attributes.return_value = {

@@ -9,20 +9,14 @@ class ArtificialUException(Exception):
     pass
 
 
-class ProfessorNotFoundError(ArtificialUException):
-    """Raised when a professor cannot be found."""
+class AudioProcessingError(ArtificialUException):
+    """Raised when audio processing fails."""
 
     pass
 
 
-class CourseNotFoundError(ArtificialUException):
-    """Raised when a course cannot be found."""
-
-    pass
-
-
-class LectureNotFoundError(ArtificialUException):
-    """Raised when a lecture cannot be found."""
+class ConfigurationError(ArtificialUException):
+    """Raised when there is a configuration error."""
 
     pass
 
@@ -33,20 +27,14 @@ class ContentGenerationError(ArtificialUException):
     pass
 
 
-class AudioProcessingError(ArtificialUException):
-    """Raised when audio processing fails."""
+class CourseNotFoundError(ArtificialUException):
+    """Raised when a course cannot be found."""
 
     pass
 
 
 class DatabaseError(ArtificialUException):
     """Raised when a database operation fails."""
-
-    pass
-
-
-class ConfigurationError(ArtificialUException):
-    """Raised when there is a configuration error."""
 
     pass
 
@@ -65,5 +53,17 @@ class DependencyError(ArtificialUException):
 
 class GenerationError(ArtificialUException):
     """Raised when a generation error occurs."""
+
+    pass
+
+
+class LectureNotFoundError(ArtificialUException):
+    """Raised when a lecture cannot be found."""
+
+    pass
+
+
+class ProfessorNotFoundError(ArtificialUException):
+    """Raised when a professor cannot be found."""
 
     pass

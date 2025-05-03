@@ -11,11 +11,11 @@ from artificial_u.models.repositories.professor import ProfessorRepository
 from artificial_u.models.repositories.voice import VoiceRepository
 
 __all__ = [
-    "RepositoryFactory",
     "BaseRepository",
-    "DepartmentRepository",
-    "ProfessorRepository",
     "CourseRepository",
+    "DepartmentRepository",
     "LectureRepository",
+    "ProfessorRepository",
+    "RepositoryFactory",
     "VoiceRepository",
 ]

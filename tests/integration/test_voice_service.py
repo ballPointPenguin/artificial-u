@@ -8,8 +8,8 @@ from unittest.mock import MagicMock
 import pytest
 
 from artificial_u.models.core import Professor, Voice
-from artificial_u.models.repositories.factory import RepositoryFactory
-from artificial_u.services.voice_service import VoiceService
+from artificial_u.models.repositories import RepositoryFactory
+from artificial_u.services import VoiceService
 
 
 @pytest.fixture

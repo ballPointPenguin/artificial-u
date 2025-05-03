@@ -256,7 +256,7 @@ def mock_repository(monkeypatch, temp_assets_dir):
     )
 
     # Patch service methods related to file handling
-    from artificial_u.api.services.lecture_service import LectureApiService
+    from artificial_u.api.services import LectureApiService
 
     # Use lambda to pass temp_assets_dir to the mock functions
     monkeypatch.setattr(

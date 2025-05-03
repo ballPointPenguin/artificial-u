@@ -12,21 +12,24 @@ from typing import Optional
 from fastapi import Depends
 
 from artificial_u.api.config import get_settings
-from artificial_u.api.services.course_service import CourseApiService
-from artificial_u.api.services.department_service import DepartmentApiService
-from artificial_u.api.services.lecture_service import LectureApiService
-from artificial_u.api.services.professor_service import ProfessorApiService
-from artificial_u.integrations.elevenlabs.client import ElevenLabsClient
-from artificial_u.integrations.elevenlabs.voice_mapper import VoiceMapper
+from artificial_u.api.services import (
+    CourseApiService,
+    DepartmentApiService,
+    LectureApiService,
+    ProfessorApiService,
+)
+from artificial_u.integrations import elevenlabs
 from artificial_u.models.repositories import RepositoryFactory
-from artificial_u.services.content_service import ContentService
-from artificial_u.services.course_service import CourseService
-from artificial_u.services.department_service import DepartmentService
-from artificial_u.services.image_service import ImageService
-from artificial_u.services.lecture_service import LectureService
-from artificial_u.services.professor_service import ProfessorService
-from artificial_u.services.storage_service import StorageService
-from artificial_u.services.voice_service import VoiceService
+from artificial_u.services import (
+    ContentService,
+    CourseService,
+    DepartmentService,
+    ImageService,
+    LectureService,
+    ProfessorService,
+    StorageService,
+    VoiceService,
+)
 
 
 def get_repository_factory() -> RepositoryFactory:
@@ -81,7 +84,7 @@ def get_image_service(
     )
 
 
-def get_elevenlabs_client() -> Optional[ElevenLabsClient]:
+def get_elevenlabs_client() -> Optional[elevenlabs.ElevenLabsClient]:
     """
     Get an ElevenLabs client instance if configured.
 
@@ -92,26 +95,26 @@ def get_elevenlabs_client() -> Optional[ElevenLabsClient]:
     if not settings.ELEVENLABS_API_KEY:
         return None
 
-    return ElevenLabsClient(
+    return elevenlabs.ElevenLabsClient(
         api_key=settings.ELEVENLABS_API_KEY,
     )
 
 
-def get_voice_mapper() -> VoiceMapper:
+def get_voice_mapper() -> elevenlabs.VoiceMapper:
     """
     Get a voice mapper instance
 
     Returns:
         VoiceMapper instance
     """
-    return VoiceMapper(
+    return elevenlabs.VoiceMapper(
         logger=logging.getLogger("artificial_u.integrations.elevenlabs.voice_mapper"),
     )
 
 
 def get_voice_service(
     repository_factory: RepositoryFactory = Depends(get_repository_factory),
-    elevenlabs_client: Optional[ElevenLabsClient] = Depends(get_elevenlabs_client),
+    elevenlabs_client: Optional[elevenlabs.ElevenLabsClient] = Depends(get_elevenlabs_client),
 ) -> VoiceService:
     """
     Get a voice service instance.

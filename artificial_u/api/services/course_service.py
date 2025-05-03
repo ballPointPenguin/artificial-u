@@ -21,11 +21,13 @@ from artificial_u.api.models.courses import (
 from artificial_u.models.database import LectureModel
 
 # Import RepositoryFactory directly instead of legacy Repository wrapper
-from artificial_u.models.repositories.factory import RepositoryFactory
-from artificial_u.services import CourseService
-from artificial_u.services.content_service import ContentService
-from artificial_u.services.professor_service import ProfessorService
-from artificial_u.utils.exceptions import (
+from artificial_u.models.repositories import RepositoryFactory
+from artificial_u.services import (
+    ContentService,
+    CourseService,
+    ProfessorService,
+)
+from artificial_u.utils import (
     CourseNotFoundError,
     DatabaseError,
     LectureNotFoundError,

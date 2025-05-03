@@ -9,13 +9,19 @@ from typing import Any, Dict, List, Optional
 from artificial_u.config import get_settings
 from artificial_u.models.core import Professor
 from artificial_u.models.repositories.factory import RepositoryFactory
-from artificial_u.prompts.base import extract_xml_content
-from artificial_u.prompts.professors import get_professor_prompt
-from artificial_u.prompts.system import SYSTEM_PROMPTS
+from artificial_u.prompts import (
+    extract_xml_content,
+    get_professor_prompt,
+    get_system_prompt,
+)
 from artificial_u.services.content_service import ContentService
 from artificial_u.services.image_service import ImageService
 from artificial_u.services.voice_service import VoiceService
-from artificial_u.utils.exceptions import DatabaseError, GenerationError, ProfessorNotFoundError
+from artificial_u.utils import (
+    DatabaseError,
+    GenerationError,
+    ProfessorNotFoundError,
+)
 
 
 class ProfessorService:
@@ -128,7 +134,7 @@ class ProfessorService:
             generated_content = await self.content_service.generate_text(
                 prompt=prompt,
                 model=model,
-                system_prompt=SYSTEM_PROMPTS["professor"],
+                system_prompt=get_system_prompt("professor"),
             )
         except Exception as e:
             self.logger.error(f"ContentService generation call failed: {e}", exc_info=True)

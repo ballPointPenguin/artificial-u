@@ -10,13 +10,13 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from artificial_u.integrations.elevenlabs.client import ElevenLabsClient
+from artificial_u.integrations import elevenlabs
 
 
 @pytest.fixture
 def mock_elevenlabs():
     """Mock the ElevenLabs class."""
-    with patch("elevenlabs.client.ElevenLabs") as mock_elevenlabs:
+    with patch("artificial_u.integrations.elevenlabs.ElevenLabs") as mock_elevenlabs:
         mock_client = MagicMock()
         mock_elevenlabs.return_value = mock_client
         yield mock_client
@@ -60,7 +60,7 @@ class TestElevenLabsClient:
             os.environ["TESTING"] = "true"
 
             # Create client with the test key from environment
-            client = ElevenLabsClient()
+            client = elevenlabs.ElevenLabsClient()
 
             # Verify the key was correctly set
             assert client.api_key == "test_elevenlabs_key"
@@ -75,7 +75,7 @@ class TestElevenLabsClient:
     def test_get_shared_voices(self, mock_requests):
         """Test getting shared voices from the API."""
         # Create client and call method
-        client = ElevenLabsClient(api_key="test_key")
+        client = elevenlabs.ElevenLabsClient(api_key="test_key")
         el_voices, has_more = client.get_shared_voices(gender="female", accent="american")
 
         # Verify results
@@ -102,9 +102,9 @@ class TestElevenLabsClient:
         client_mock.text_to_speech = tts_mock
 
         # Create the client and set the testing mode
-        with patch("elevenlabs.client.ElevenLabs", return_value=client_mock):
+        with patch("artificial_u.integrations.elevenlabs.ElevenLabs", return_value=client_mock):
             os.environ["TESTING"] = "true"
-            client = ElevenLabsClient(api_key="test_key")
+            client = elevenlabs.ElevenLabsClient(api_key="test_key")
 
             # Replace the client's client with our mock
             client.client = client_mock

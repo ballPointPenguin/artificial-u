@@ -8,8 +8,7 @@ import logging
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
-from artificial_u.integrations.elevenlabs.client import ElevenLabsClient
-from artificial_u.integrations.elevenlabs.voice_mapper import VoiceMapper
+from artificial_u.integrations import elevenlabs
 from artificial_u.models.core import Professor, Voice
 from artificial_u.models.repositories import RepositoryFactory
 
@@ -20,7 +19,7 @@ class VoiceService:
     def __init__(
         self,
         repository_factory: RepositoryFactory,
-        client: Optional[ElevenLabsClient] = None,
+        client: Optional[elevenlabs.ElevenLabsClient] = None,
         logger=None,
     ):
         """
@@ -35,8 +34,8 @@ class VoiceService:
 
         # Initialize client and components
         self.repository_factory = repository_factory
-        self.client = client or ElevenLabsClient()
-        self.mapper = VoiceMapper(logger=self.logger)
+        self.client = client or elevenlabs.ElevenLabsClient()
+        self.mapper = elevenlabs.VoiceMapper(logger=self.logger)
 
     def _find_voices_in_db(self, attributes: Dict[str, Any]) -> List[Dict[str, Any]]:
         """

@@ -20,12 +20,18 @@ from artificial_u.api.models.professors import (
     ProfessorUpdate,
 )
 from artificial_u.models.core import Professor
-from artificial_u.models.repositories.factory import RepositoryFactory
-from artificial_u.services import ProfessorService
-from artificial_u.services.content_service import ContentService
-from artificial_u.services.image_service import ImageService
-from artificial_u.services.voice_service import VoiceService
-from artificial_u.utils.exceptions import DatabaseError, GenerationError, ProfessorNotFoundError
+from artificial_u.models.repositories import RepositoryFactory
+from artificial_u.services import (
+    ContentService,
+    ImageService,
+    ProfessorService,
+    VoiceService,
+)
+from artificial_u.utils import (
+    DatabaseError,
+    GenerationError,
+    ProfessorNotFoundError,
+)
 
 
 class ProfessorApiService:

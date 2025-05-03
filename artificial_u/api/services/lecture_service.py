@@ -7,13 +7,20 @@ from typing import Optional
 
 from fastapi import HTTPException, status
 
-from artificial_u.api.models.lectures import Lecture, LectureCreate, LectureList, LectureUpdate
+from artificial_u.api.models import (
+    Lecture,
+    LectureCreate,
+    LectureList,
+    LectureUpdate,
+)
 from artificial_u.models.repositories import RepositoryFactory
-from artificial_u.services import LectureService
-from artificial_u.services.content_service import ContentService
-from artificial_u.services.course_service import CourseService
-from artificial_u.services.professor_service import ProfessorService
-from artificial_u.services.storage_service import StorageService
+from artificial_u.services import (
+    ContentService,
+    CourseService,
+    LectureService,
+    ProfessorService,
+    StorageService,
+)
 
 
 class LectureApiService:
