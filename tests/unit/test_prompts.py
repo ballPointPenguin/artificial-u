@@ -86,20 +86,30 @@ class TestPromptModules:
     def test_professor_prompt(self):
         """Test the professor prompt generator."""
         prompt = get_professor_prompt(
-            department="Computer Science",
-            specialization="Artificial Intelligence",
-            gender="Male",
-            nationality="Canadian",
-            age_range="40-50",
+            existing_professors=[
+                {
+                    "name": "Dr. Smith",
+                    "department": "Anthropology",
+                    "specialization": "Cultural Anthropology",
+                }
+            ],
+            partial_attributes={
+                "department": "Computer Science",
+                "specialization": "Artificial Intelligence",
+                "gender": "Male",
+                "accent": "Canadian",
+                "age": "50",
+            },
         )
 
         # Check that required elements are in the prompt
         assert "Computer Science" in prompt
         assert "Artificial Intelligence" in prompt
-        assert "Gender: Male" in prompt
-        assert "Nationality/cultural background: Canadian" in prompt
-        assert "Age range: 40-50" in prompt
-        assert "<professor_profile>" in prompt
+        assert "Male" in prompt
+        assert "Canadian" in prompt
+        assert "50" in prompt
+        assert "<professor>" in prompt
+        assert "<existing_professors>" in prompt
 
     @pytest.mark.unit
     def test_lecture_prompt(self):

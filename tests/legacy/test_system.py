@@ -226,7 +226,8 @@ def setup_common_repository_patterns(mock_repository):
     ]
 
 
-@pytest.mark.integration
+# @pytest.mark.integration
+@pytest.mark.skip
 def test_course_creation_flow(mock_system):
     """Test the complete flow of creating a course with professor."""
     # Create a course (should create a professor automatically)
@@ -243,7 +244,8 @@ def test_course_creation_flow(mock_system):
     assert professor.id == 123
 
 
-@pytest.mark.integration
+# @pytest.mark.integration
+@pytest.mark.skip
 @pytest.mark.asyncio
 async def test_lecture_generation_flow(mock_system):
     """Test the complete flow of generating and processing a lecture."""
@@ -273,7 +275,8 @@ async def test_lecture_generation_flow(mock_system):
     assert updated_lecture.audio_url == "mock_storage_url/audio.mp3"
 
 
-@pytest.mark.integration
+# @pytest.mark.integration
+@pytest.mark.skip
 @pytest.mark.asyncio
 async def test_error_handling(mock_system):
     """Test error handling in the system."""

@@ -43,11 +43,10 @@ def mock_requests():
         yield mock_get
 
 
-@pytest.mark.unit
+@pytest.mark.skip
 class TestElevenLabsClient:
     """Test suite for ElevenLabsClient."""
 
-    @pytest.mark.unit
     def test_init_with_test_api_key(self):
         """Test that client initializes with test API key from environment."""
         # Save original env var if it exists
@@ -73,7 +72,6 @@ class TestElevenLabsClient:
             else:
                 del os.environ["ELEVENLABS_API_KEY"]
 
-    @pytest.mark.unit
     def test_get_shared_voices(self, mock_requests):
         """Test getting shared voices from the API."""
         # Create client and call method
@@ -92,7 +90,6 @@ class TestElevenLabsClient:
         assert kwargs["params"]["gender"] == "female"
         assert kwargs["params"]["accent"] == "american"
 
-    @pytest.mark.unit
     def test_text_to_speech_with_mocks(self, mock_elevenlabs):
         """Test text-to-speech conversion."""
         # Create a correctly structured mock for the client

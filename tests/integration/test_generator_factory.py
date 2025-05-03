@@ -73,8 +73,8 @@ def test_create_generator_factory():
 
     with patch("artificial_u.generators.factory.create_ollama_generator") as mock_ollama:
         create_generator(backend="ollama", model="tinyllama")
-        # Use a more flexible assertion that checks if the function was called with the model parameter
-        # but allows other parameters like timeout to be present
+        # Use a more flexible assertion that checks if the function was called with the model
+        # parameter but allows other parameters like timeout to be present
         assert mock_ollama.call_count == 1
         call_args = mock_ollama.call_args
         assert call_args.kwargs.get("model") == "tinyllama"
