@@ -2,11 +2,10 @@
 Services module for ArtificialU.
 
 This module provides service-layer abstractions for core functionality.
+Each service is responsible for managing its own dependencies and external
+service connections. Services should be instantiated through the dependency
+injection system rather than using global state.
 """
-
-import logging
-import os
-import sys
 
 from artificial_u.integrations.elevenlabs.client import ElevenLabsClient
 from artificial_u.integrations.elevenlabs.voice_mapper import VoiceMapper
@@ -35,35 +34,3 @@ __all__ = [
     "VoiceMapper",
     "ElevenLabsClient",
 ]
-
-logger = logging.getLogger(__name__)
-
-
-# Check if we're running in a test environment
-def is_test_environment() -> bool:
-    """Check if we're running in a test environment."""
-    return os.environ.get("TESTING") == "true" or "pytest" in sys.modules
-
-
-# Only import actual implementations if we're not in a unit test
-# This avoids database connection issues during unit tests
-if not is_test_environment():
-    try:
-        from artificial_u.models.repositories import RepositoryFactory
-
-        # Initialize basic components
-        db_repository = RepositoryFactory()
-
-        # Initialize elevenlabs client
-        elevenlabs_client = ElevenLabsClient()
-
-        logger.info("Initialized production services")
-    except Exception as e:
-        logger.warning(f"Error initializing services: {e}")
-        db_repository = None
-        elevenlabs_client = None
-else:
-    # In test environment, don't initialize real services
-    logger.info("In test environment - not initializing real services")
-    db_repository = None
-    elevenlabs_client = None
