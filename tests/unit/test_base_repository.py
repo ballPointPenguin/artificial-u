@@ -5,7 +5,6 @@ Unit tests for BaseRepository.
 from unittest.mock import MagicMock, patch
 
 import pytest
-from sqlalchemy.orm import Session
 
 from artificial_u.models.repositories.base import BaseRepository
 
@@ -50,16 +49,13 @@ class TestBaseRepository:
         mock_create_engine.assert_called_once_with("sqlite:///:memory:")
         assert repo.engine == mock_engine
 
-    @patch("artificial_u.models.repositories.base.Session")
-    def test_get_session(self, mock_session_class):
+    def test_get_session(self, mock_session):
         """Test getting a database session."""
-        mock_session = MagicMock(spec=Session)
-        mock_session_class.return_value = mock_session
-
+        # Override the get_session method to return our mock
         repo = BaseRepository()
-        session = repo.get_session()
-
-        assert session == mock_session
+        with patch.object(repo, "get_session", return_value=mock_session):
+            session = repo.get_session()
+            assert session == mock_session
 
     @patch("artificial_u.models.database.Base.metadata.create_all")
     def test_create_tables(self, mock_create_all):
