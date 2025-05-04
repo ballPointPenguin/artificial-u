@@ -49,8 +49,7 @@ def repository_factory():
 def content_service():
     """Create a mock ContentService with async support."""
     mock = MagicMock()
-    # Set up generate_text as an AsyncMock
-    mock.generate_text = AsyncMock()
+    mock.generate_text = AsyncMock(return_value=MOCK_LECTURE_XML)
     return mock
 
 
@@ -78,7 +77,7 @@ def professor_service(repository_factory, content_service, image_service, voice_
 
 
 @pytest.fixture
-def department_service(repository_factory):
+def department_service(repository_factory, content_service):
     """Create a DepartmentService with mocked dependent services."""
     professor_service_mock = MagicMock()
     course_service_mock = MagicMock()
@@ -87,6 +86,7 @@ def department_service(repository_factory):
         repository_factory=repository_factory,
         professor_service=professor_service_mock,
         course_service=course_service_mock,
+        content_service=content_service,
     )
 
 

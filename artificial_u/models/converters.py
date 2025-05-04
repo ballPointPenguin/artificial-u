@@ -157,11 +157,7 @@ def departments_to_xml(departments: list[str]) -> str:
     return "\n".join(f"<department>{name}</department>" for name in departments)
 
 
-def courses_to_xml(
-    courses: List[Dict[str, Any]],
-    include_topics: bool = True,
-    max_topics: int = 5,
-) -> str:
+def courses_to_xml(courses: List[Dict[str, Any]]) -> str:
     """Format a list of courses (dicts) as XML for context."""
     if not courses:
         return "<no_existing_courses />"
@@ -172,23 +168,7 @@ def courses_to_xml(
         lines.append(f"    <code>{course.get('code', 'N/A')}</code>")
         lines.append(f"    <title>{course.get('title', 'N/A')}</title>")
         lines.append(f"    <description>{course.get('description', 'N/A')}</description>")
-
-        # Add topic overview if available and requested
-        course_topics = course.get("topics", [])
-        if include_topics and course_topics:
-            lines.append("    <topics_overview>")
-            topics_to_show = course_topics[:max_topics]
-            for topic in topics_to_show:
-                # Assuming topics are strings (titles) based on course_service usage
-                lines.append(f"      <topic>{topic}</topic>")
-            if len(course_topics) > max_topics:
-                lines.append(
-                    f"      <additional_topics_count>"
-                    f"        {len(course_topics) - max_topics}"
-                    f"      </additional_topics_count>"
-                )
-            lines.append("    </topics_overview>")
-
+        # Removed topics_overview for simplicity in this context
         lines.append("  </course>")
     lines.append("</existing_courses>")
     return "\n".join(lines)
@@ -422,3 +402,66 @@ def parse_lecture_xml(lecture_xml: str) -> Dict[str, Any]:
         raise ValueError(f"Failed to parse lecture XML: {e}")
     except Exception as e:
         raise ValueError(f"Error processing lecture data: {e}")
+
+
+def parse_department_xml(department_xml: str) -> Dict[str, Any]:
+    """Parse department XML from LLM response into a dictionary.
+
+    Args:
+        department_xml: The XML string to parse
+
+    Returns:
+        Dict[str, Any]: The parsed department attributes
+
+    Raises:
+        ValueError: If the XML is invalid or missing required elements
+    """
+    try:
+        root = ET.fromstring(department_xml.strip())
+        # The root element should be the department
+        if root.tag != "department":
+            raise ValueError("Root element must be <department>")
+
+        department_data = {}
+
+        # Process required fields
+        required_fields = ["name", "code", "faculty"]
+        for field in required_fields:
+            value = _parse_text_field(root.find(field))
+            if not value:
+                raise ValueError(f"Required field '{field}' is missing or empty")
+            department_data[field] = value
+
+        # Process optional fields
+        department_data["description"] = _parse_text_field(root.find("description"))
+
+        return department_data
+
+    except ET.ParseError as e:
+        raise ValueError(f"Invalid XML format: {e}")
+    except Exception as e:
+        raise ValueError(f"Error parsing department XML: {e}")
+
+
+def partial_department_to_xml(
+    partial_attrs: Dict[str, Any], generate_marker: str = "[GENERATE]"
+) -> str:
+    """Builds the XML string for partial department attributes, marking missing fields.
+
+    Args:
+        partial_attrs: Dictionary of known department attributes
+        generate_marker: Marker to use for missing fields
+
+    Returns:
+        str: XML representation of the department
+    """
+    lines = ["<department>"]
+    fields = ["name", "code", "faculty", "description"]
+    for field in fields:
+        value = partial_attrs.get(field)
+        if value is not None and value != generate_marker:
+            lines.append(f"  <{field}>{str(value)}</{field}>")
+        else:
+            lines.append(f"  <{field}>{generate_marker}</{field}>")
+    lines.append("</department>")
+    return "\n".join(lines)

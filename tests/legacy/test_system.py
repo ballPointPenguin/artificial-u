@@ -246,7 +246,7 @@ def test_course_creation_flow(mock_system):
 
 # @pytest.mark.integration
 @pytest.mark.skip
-# @pytest.mark.asyncio
+@pytest.mark.asyncio
 async def test_lecture_generation_flow(mock_system):
     """Test the complete flow of generating and processing a lecture."""
     # Generate a lecture
@@ -277,7 +277,7 @@ async def test_lecture_generation_flow(mock_system):
 
 # @pytest.mark.integration
 @pytest.mark.skip
-# @pytest.mark.asyncio
+@pytest.mark.asyncio
 async def test_error_handling(mock_system):
     """Test error handling in the system."""
     # Test course not found error

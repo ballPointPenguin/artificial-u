@@ -5,17 +5,15 @@ Course management service for ArtificialU.
 import logging
 from typing import Any, Dict, List, Optional, Tuple
 
-from artificial_u.config import DEFAULT_COURSE_WEEKS, DEFAULT_LECTURES_PER_WEEK, settings
+from artificial_u.config import DEFAULT_COURSE_WEEKS, DEFAULT_LECTURES_PER_WEEK, get_settings
 from artificial_u.models.converters import (
     course_model_to_dict,
     department_model_to_dict,
-    department_to_xml,
     extract_xml_content,
     parse_course_xml,
     professor_model_to_dict,
-    professor_to_xml,
 )
-from artificial_u.models.database import CourseModel, DepartmentModel, ProfessorModel
+from artificial_u.models.core import Course, Department, Professor
 from artificial_u.models.repositories.factory import RepositoryFactory
 from artificial_u.prompts import (
     get_course_prompt,
@@ -69,7 +67,7 @@ class CourseService:
         weeks: int = DEFAULT_COURSE_WEEKS,
         lectures_per_week: int = DEFAULT_LECTURES_PER_WEEK,
         topics: Optional[List[Dict[str, Any]]] = None,
-    ) -> Tuple[CourseModel, ProfessorModel]:
+    ) -> Tuple[Course, Professor]:
         """
         Create a new course without generating content.
 
@@ -105,7 +103,7 @@ class CourseService:
             raise DatabaseError(f"Error retrieving professor {professor_id}")
 
         # Create basic course model
-        course = CourseModel(
+        course = Course(
             code=code,
             title=title,
             department_id=department_id,
@@ -129,7 +127,7 @@ class CourseService:
             self.logger.error(error_msg, exc_info=True)
             raise DatabaseError(error_msg) from e
 
-    def get_course(self, course_id: int) -> CourseModel:
+    def get_course(self, course_id: int) -> Course:
         """
         Get a course by ID.
 
@@ -149,7 +147,7 @@ class CourseService:
             raise CourseNotFoundError(error_msg)
         return course
 
-    def get_course_by_code(self, course_code: str) -> CourseModel:
+    def get_course_by_code(self, course_code: str) -> Course:
         """
         Get a course by its code.
 
@@ -203,7 +201,7 @@ class CourseService:
             self.logger.error(error_msg, exc_info=True)
             raise DatabaseError(error_msg) from e
 
-    def update_course(self, course_id: int, update_data: Dict[str, Any]) -> CourseModel:
+    def update_course(self, course_id: int, update_data: Dict[str, Any]) -> Course:
         """
         Update a course.
 
@@ -265,35 +263,11 @@ class CourseService:
 
     # --- Generation Methods --- #
 
-    async def _prepare_prompt_arguments(
-        self,
-        partial_attributes: Dict[str, Any],
-        professor_xml: str,
-        department_xml: str,
-        existing_courses_dicts: List[Dict[str, Any]],
-    ) -> Dict[str, Any]:
-        """Prepare arguments for the course generation prompt."""
-        return {
-            "course_title": partial_attributes.get("title", "[GENERATE]"),
-            "course_code": partial_attributes.get("code", "[GENERATE]"),
-            "course_description": partial_attributes.get("description", "[GENERATE]"),
-            "course_level": partial_attributes.get("level", "[GENERATE]"),
-            "course_credits": partial_attributes.get("credits", "[GENERATE]"),
-            "lectures_per_week": partial_attributes.get(
-                "lectures_per_week", DEFAULT_LECTURES_PER_WEEK
-            ),
-            "total_weeks": partial_attributes.get("total_weeks", DEFAULT_COURSE_WEEKS),
-            "department_xml": department_xml,
-            "professor_xml": professor_xml,
-            "existing_courses": existing_courses_dicts,
-            "topics": partial_attributes.get("topics"),
-            "freeform_prompt": partial_attributes.get("freeform_prompt"),
-        }
-
     async def _generate_and_parse_content(self, prompt_args: Dict[str, Any]) -> str:
         """Generate course content and parse the XML response."""
         course_prompt = get_course_prompt(**prompt_args)
         system_prompt = get_system_prompt("course")
+        settings = get_settings()
 
         self.logger.info("Calling content service to generate course...")
         raw_response = await self.content_service.generate_text(
@@ -308,12 +282,11 @@ class CourseService:
         if not generated_xml_output:
             generated_xml_output = extract_xml_content(raw_response, "course")
             if not generated_xml_output:
-                self.logger.error(
+                error_msg = (
                     f"Could not extract <output> or <course> tag from response:\n{raw_response}"
                 )
-                raise ContentGenerationError(
-                    "AI response missing expected <output> or <course> tag."
-                )
+                self.logger.error(error_msg)
+                raise ContentGenerationError(error_msg)
             else:
                 self.logger.warning("Extracted <course> tag directly as <output> was missing.")
 
@@ -321,34 +294,25 @@ class CourseService:
 
     async def _process_models_for_generation(
         self, partial_attributes: Dict[str, Any]
-    ) -> Tuple[Optional[ProfessorModel], Optional[DepartmentModel], List[Dict[str, Any]]]:
-        """Process professor, department, and existing courses for generation."""
+    ) -> Tuple[Optional[Professor], Optional[Department], List[Dict[str, Any]]]:
+        """Process professor, department, and existing courses for generation.
+
+        Returns:
+            Tuple: (Professor model, Department model, List of existing course dicts)
+        """
         # 1. Get Professor
         professor_model = await self._get_professor(partial_attributes)
-        professor_dict = professor_model_to_dict(professor_model) if professor_model else {}
-        professor_xml = professor_to_xml(professor_dict)
 
         # 2. Get Department
         department_model = await self._get_department(partial_attributes, professor_model)
-        department_dict = department_model_to_dict(department_model) if department_model else {}
-        department_xml = department_to_xml(department_dict)
-        if department_model:
-            partial_attributes.setdefault("department_id", department_model.id)
 
-        # 3. Get Existing Courses
+        # 3. Get Existing Courses as dictionaries
         existing_courses_models = await self._get_existing_courses(department_model)
-        existing_courses_dicts = []
-        for c in existing_courses_models:
-            course_dict = course_model_to_dict(c)
-            # Extract topic titles for the XML converter's current format
-            course_dict["topics"] = [t.title for t in c.lectures] if c.lectures else []
-            existing_courses_dicts.append(course_dict)
+        existing_courses_dicts = [course_model_to_dict(c) for c in existing_courses_models]
 
         return (
             professor_model,
             department_model,
-            professor_xml,
-            department_xml,
             existing_courses_dicts,
         )
 
@@ -370,44 +334,60 @@ class CourseService:
             DatabaseError: If there's an error fetching prerequisites.
             ContentGenerationError: If content generation or parsing fails.
         """
-        partial_attributes = partial_attributes or {}
+        initial_partial_attributes = partial_attributes or {}
         self.logger.info(
-            f"Generating course content with partial attributes: {list(partial_attributes.keys())}"
+            f"Generating course content with partial attributes: "
+            f"{list(initial_partial_attributes.keys())}"
         )
 
         try:
-            # Process models and prepare data for generation
+            # 1. Process models and fetch existing courses
             (
                 professor_model,
                 department_model,
-                professor_xml,
-                department_xml,
                 existing_courses_dicts,
-            ) = await self._process_models_for_generation(partial_attributes)
+            ) = await self._process_models_for_generation(initial_partial_attributes)
 
-            # Prepare prompt arguments
-            prompt_args = self._prepare_prompt_arguments(
-                partial_attributes,
-                professor_xml,
-                department_xml,
-                existing_courses_dicts,
-            )
+            # 2. Prepare prompt arguments directly using models and initial attributes
+            prompt_args = {
+                # Convert models to dicts for XML generation within get_course_prompt
+                "department_data": (
+                    department_model_to_dict(department_model) if department_model else {}
+                ),
+                "professor_data": (
+                    professor_model_to_dict(professor_model) if professor_model else {}
+                ),
+                "existing_courses": existing_courses_dicts,
+                "partial_course_attrs": initial_partial_attributes,  # Pass original partials
+                "freeform_prompt": initial_partial_attributes.get("freeform_prompt"),
+            }
 
-            # Generate and parse content
+            # 3. Generate and parse content
             generated_xml_output = await self._generate_and_parse_content(prompt_args)
 
-            # Parse XML and combine with partial attributes
-            parsed_course_data = parse_course_xml(generated_xml_output)
-            final_course_data = {**parsed_course_data, **partial_attributes}
+            # 4. Parse XML response into a dictionary
+            final_course_data = parse_course_xml(generated_xml_output)
 
-            # Add IDs from models
+            # 5. Add IDs from fetched models
             if professor_model:
                 final_course_data["professor_id"] = professor_model.id
             if department_model:
                 final_course_data["department_id"] = department_model.id
 
-            # Remove non-course fields
-            final_course_data.pop("freeform_prompt", None)
+            # 6. Fill in missing values from initial partial attributes if they weren't generated
+            for key, value in initial_partial_attributes.items():
+                if key not in final_course_data or final_course_data[key] is None:
+                    final_course_data[key] = value
+
+            # 7. Filter final dictionary to only include valid Course fields
+            # Get valid fields from Course.__annotations__ or CourseModel.__table__.columns
+            # Using CourseModel for simplicity here
+            from artificial_u.models.database import CourseModel
+
+            valid_course_keys = {c.name for c in CourseModel.__table__.columns}
+            final_course_data = {
+                k: v for k, v in final_course_data.items() if k in valid_course_keys
+            }
 
             self.logger.info(
                 f"Successfully generated course: "
@@ -415,21 +395,22 @@ class CourseService:
             )
             return final_course_data
 
-        except DatabaseError:
-            # Let database errors propagate up
-            raise
-        except ContentGenerationError:
-            # Let content generation errors propagate up
+        except (DatabaseError, ContentGenerationError):
+            # Let specific errors propagate up
             raise
         except ValueError as e:
-            raise ContentGenerationError(f"Error generating/parsing course: {e}")
+            # Catch parsing errors etc. from converters
+            self.logger.error(
+                f"Error during course generation value processing: {e}", exc_info=True
+            )
+            raise ContentGenerationError(f"Error processing generated course data: {e}") from e
         except Exception as e:
             self.logger.error(f"Unexpected error during course generation: {e}", exc_info=True)
-            raise ContentGenerationError(f"An unexpected error occurred: {e}")
+            raise ContentGenerationError(f"An unexpected error occurred: {e}") from e
 
     # --- Helper Methods for Fetching Data (using Repository) --- #
 
-    async def _get_professor(self, partial_attributes: Dict[str, Any]) -> Optional[ProfessorModel]:
+    async def _get_professor(self, partial_attributes: Dict[str, Any]) -> Optional[Professor]:
         """Fetches professor DB model based on ID if provided, using repository."""
         professor_id = partial_attributes.get("professor_id")
         if not professor_id:
@@ -455,8 +436,8 @@ class CourseService:
     async def _get_department(
         self,
         partial_attributes: Dict[str, Any],
-        professor: Optional[ProfessorModel] = None,
-    ) -> Optional[DepartmentModel]:
+        professor: Optional[Professor] = None,
+    ) -> Optional[Department]:
         """Fetches department DB model based on ID or professor's department, using repository."""
         department_id = partial_attributes.get("department_id")
 
@@ -483,9 +464,7 @@ class CourseService:
                 f"Error fetching department {department_id} from repository."
             ) from e
 
-    async def _get_existing_courses(
-        self, department: Optional[DepartmentModel]
-    ) -> List[CourseModel]:
+    async def _get_existing_courses(self, department: Optional[Department]) -> List[Course]:
         """Fetches existing courses for a given department using the repository."""
         if not department:
             return []

@@ -16,8 +16,10 @@ from artificial_u.models.converters import (
     lecture_to_xml,
     lectures_to_xml,
     parse_course_xml,
+    parse_department_xml,
     parse_lecture_xml,
     partial_course_to_xml,
+    partial_department_to_xml,
     partial_lecture_to_xml,
     partial_professor_to_xml,
     professor_model_to_dict,
@@ -168,13 +170,13 @@ def test_professor_to_xml():
         "title": "Associate Professor",
     }
 
-    xml_str = professor_to_xml(partial_data, missing_marker="[TODO]")
+    xml_str = professor_to_xml(partial_data, missing_marker="[GENERATE]")
     root = ET.fromstring(xml_str)
     assert root.find("name").text == "Dr. Jane Smith"
     assert root.find("title").text == "Associate Professor"
-    assert root.find("specialization").text == "[TODO]"
-    assert root.find("personality").text == "[TODO]"
-    assert root.find("teaching_style").text == "[TODO]"
+    assert root.find("specialization").text == "[GENERATE]"
+    assert root.find("personality").text == "[GENERATE]"
+    assert root.find("teaching_style").text == "[GENERATE]"
 
 
 @pytest.mark.unit
@@ -290,8 +292,7 @@ def test_courses_to_xml():
         },
     ]
 
-    # Test with topics included
-    xml_str = courses_to_xml(courses, include_topics=True, max_topics=3)
+    xml_str = courses_to_xml(courses)
     root = ET.fromstring(xml_str)
     assert root.tag == "existing_courses"
     assert len(root) == 2
@@ -300,21 +301,13 @@ def test_courses_to_xml():
 
     # Check first course
     assert course_elems[0].find("code").text == "CS101"
-    topics_overview = course_elems[0].find("topics_overview")
-    assert len(topics_overview.findall("topic")) == 3  # Limited to max_topics=3
-    assert topics_overview.find("additional_topics_count").text.strip() == "3"  # 6-3=3 more topics
+    assert course_elems[0].find("title").text == "Introduction to Programming"
+    assert course_elems[0].find("description").text == "Basic programming concepts"
 
     # Check second course
     assert course_elems[1].find("code").text == "CS201"
-    topics_overview = course_elems[1].find("topics_overview")
-    assert len(topics_overview.findall("topic")) == 3
-    assert topics_overview.find("additional_topics_count") is None  # No additional topics
-
-    # Test without topics
-    xml_str = courses_to_xml(courses, include_topics=False)
-    root = ET.fromstring(xml_str)
-    course_elems = root.findall("course")
-    assert course_elems[0].find("topics_overview") is None
+    assert course_elems[1].find("title").text == "Data Structures"
+    assert course_elems[1].find("description").text == "Advanced data structures"
 
 
 @pytest.mark.unit
@@ -607,3 +600,98 @@ def test_extract_xml_content():
     # Test with no match
     result = extract_xml_content(text, "nonexistent")
     assert result is None
+
+
+@pytest.mark.unit
+def test_parse_department_xml():
+    """Test parsing department XML into a dictionary."""
+    # Create a valid department XML
+    department_xml = """
+    <department>
+      <name>Computer Science</name>
+      <code>CS</code>
+      <faculty>Science and Engineering</faculty>
+      <description>Study of computation and software systems</description>
+    </department>
+    """
+
+    result = parse_department_xml(department_xml)
+
+    assert result["name"] == "Computer Science"
+    assert result["code"] == "CS"
+    assert result["faculty"] == "Science and Engineering"
+    assert result["description"] == "Study of computation and software systems"
+
+    # Test handling of generate placeholders
+    placeholder_xml = """
+    <department>
+      <name>Computer Science</name>
+      <code>[GENERATE]</code>
+      <faculty>Science and Engineering</faculty>
+      <description>[GENERATE]</description>
+    </department>
+    """
+
+    with pytest.raises(ValueError) as exc_info:
+        parse_department_xml(placeholder_xml)
+    assert "Required field 'code' is missing or empty" in str(exc_info.value)
+
+    # Test error handling for invalid XML
+    with pytest.raises(ValueError) as exc_info:
+        parse_department_xml("<invalid>XML</with>")
+    assert "Invalid XML format" in str(exc_info.value)
+
+    # Test error handling for missing required fields
+    incomplete_xml = """
+    <department>
+      <name>Computer Science</name>
+      <code>CS</code>
+    </department>
+    """
+    with pytest.raises(ValueError) as exc_info:
+        parse_department_xml(incomplete_xml)
+    assert "Required field 'faculty' is missing or empty" in str(exc_info.value)
+
+
+@pytest.mark.unit
+def test_partial_department_to_xml():
+    """Test converting partial department attributes to XML."""
+    # Test with empty data
+    empty_xml = partial_department_to_xml({})
+    root = ET.fromstring(empty_xml)
+    assert root.tag == "department"
+    assert len(root.findall("*")) == 4  # All fields should be present with [GENERATE]
+
+    # Test with partial data
+    partial_data = {
+        "name": "Computer Science",
+        "code": "CS",
+        "faculty": "Science and Engineering",
+    }
+
+    xml_str = partial_department_to_xml(partial_data)
+    root = ET.fromstring(xml_str)
+    assert root.find("name").text == "Computer Science"
+    assert root.find("code").text == "CS"
+    assert root.find("faculty").text == "Science and Engineering"
+    assert root.find("description").text == "[GENERATE]"
+
+    # Test with custom generate marker
+    xml_str = partial_department_to_xml(partial_data, generate_marker="[TODO]")
+    root = ET.fromstring(xml_str)
+    assert root.find("description").text == "[TODO]"
+
+    # Test with all fields provided
+    complete_data = {
+        "name": "Computer Science",
+        "code": "CS",
+        "faculty": "Science and Engineering",
+        "description": "Study of computation",
+    }
+
+    xml_str = partial_department_to_xml(complete_data)
+    root = ET.fromstring(xml_str)
+    assert root.find("name").text == "Computer Science"
+    assert root.find("code").text == "CS"
+    assert root.find("faculty").text == "Science and Engineering"
+    assert root.find("description").text == "Study of computation"

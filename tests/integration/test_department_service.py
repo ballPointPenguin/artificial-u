@@ -2,14 +2,27 @@
 Integration tests for DepartmentService.
 """
 
-from unittest.mock import MagicMock
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
+from artificial_u.config import get_settings
 from artificial_u.models.core import Course, Professor
 from artificial_u.models.repositories import RepositoryFactory
 from artificial_u.services import DepartmentService
-from artificial_u.utils import DepartmentNotFoundError, DependencyError
+from artificial_u.utils import ContentGenerationError, DepartmentNotFoundError, DependencyError
+
+# Example AI-generated XML response for department
+MOCK_DEPARTMENT_XML = """
+<output>
+  <department>
+    <name>Data Science</name>
+    <code>DS</code>
+    <faculty>Engineering</faculty>
+    <description>A modern department focused on data analytics and machine learning.</description>
+  </department>
+</output>
+"""
 
 
 @pytest.fixture
@@ -20,14 +33,23 @@ def repository_factory():
 
 
 @pytest.fixture
-def department_service(repository_factory):
-    """Create a DepartmentService with mocked professor and course services."""
+def content_service():
+    """Create a mock ContentService with async support."""
+    mock = MagicMock()
+    mock.generate_text = AsyncMock(return_value=MOCK_DEPARTMENT_XML)
+    return mock
+
+
+@pytest.fixture
+def department_service(repository_factory, content_service):
+    """Create a DepartmentService with mocked dependent services."""
     professor_service = MagicMock()
     course_service = MagicMock()
     return DepartmentService(
         repository_factory=repository_factory,
         professor_service=professor_service,
         course_service=course_service,
+        content_service=content_service,
     )
 
 
@@ -173,3 +195,57 @@ class TestDepartmentService:
         # Verify it's gone
         with pytest.raises(DepartmentNotFoundError):
             department_service.get_department(dept.id)
+
+    @pytest.mark.asyncio
+    async def test_generate_department(self, department_service):
+        """Test generating department content with mocked AI response."""
+        # Mock the content service's generate_text method
+        department_service.content_service.generate_text.return_value = MOCK_DEPARTMENT_XML
+
+        # Generate department content
+        department_data = await department_service.generate_department(
+            {
+                "course_name": "Advanced Data Analytics",
+                "freeform_prompt": "Focus on modern data science curriculum",
+            }
+        )
+
+        # Verify the generated content
+        assert department_data["name"] == "Data Science"
+        assert department_data["code"] == "DS"
+        assert department_data["faculty"] == "Engineering"
+        assert "data analytics" in department_data["description"].lower()
+
+        # Verify content service was called with correct arguments
+        department_service.content_service.generate_text.assert_called_once()
+        call_args = department_service.content_service.generate_text.call_args
+        assert call_args.kwargs["model"] == get_settings().DEPARTMENT_GENERATION_MODEL
+        assert "system_prompt" in call_args.kwargs
+
+    @pytest.mark.asyncio
+    async def test_generate_department_error_handling(self, department_service):
+        """Test error handling in department generation."""
+        # Test invalid XML response
+        department_service.content_service.generate_text = AsyncMock(
+            return_value="<invalid>XML</invalid>"
+        )
+
+        with pytest.raises(ContentGenerationError) as exc_info:
+            await department_service.generate_department({"course_name": "Test Course"})
+        assert "Failed to parse department XML" in str(exc_info.value)
+
+        # Test empty response
+        department_service.content_service.generate_text = AsyncMock(return_value="")
+
+        with pytest.raises(ContentGenerationError) as exc_info:
+            await department_service.generate_department({"course_name": "Test Course"})
+        assert "Content service returned empty response" in str(exc_info.value)
+
+        # Test exception in content service
+        department_service.content_service.generate_text = AsyncMock(
+            side_effect=Exception("API Error")
+        )
+
+        with pytest.raises(ContentGenerationError) as exc_info:
+            await department_service.generate_department({"course_name": "Test Course"})
+        assert "Unexpected error" in str(exc_info.value)

@@ -2,14 +2,45 @@
 Integration tests for CourseService.
 """
 
-from unittest.mock import MagicMock
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
+from artificial_u.config import get_settings
 from artificial_u.models.core import Professor
 from artificial_u.models.repositories.factory import RepositoryFactory
 from artificial_u.services import CourseService, DepartmentService, ProfessorService
-from artificial_u.utils.exceptions import CourseNotFoundError
+from artificial_u.utils.exceptions import ContentGenerationError, CourseNotFoundError
+
+# Example AI-generated XML response for course
+MOCK_COURSE_XML = """
+<output>
+  <course>
+    <title>Advanced Machine Learning</title>
+    <code>CS501</code>
+    <description>Deep dive into modern machine learning algorithms and applications.</description>
+    <level>Graduate</level>
+    <credits>4</credits>
+    <lectures_per_week>2</lectures_per_week>
+    <total_weeks>14</total_weeks>
+    <topics>
+      <week number="1">
+        <lecture number="1">
+          <topic>Neural Networks Fundamentals</topic>
+        </lecture>
+        <lecture number="2">
+          <topic>Deep Learning Architectures</topic>
+        </lecture>
+      </week>
+      <week number="2">
+        <lecture number="1">
+          <topic>Reinforcement Learning</topic>
+        </lecture>
+      </week>
+    </topics>
+  </course>
+</output>
+"""
 
 
 @pytest.fixture
@@ -21,8 +52,10 @@ def repository_factory():
 
 @pytest.fixture
 def content_service():
-    """Create a mock ContentService."""
-    return MagicMock()
+    """Create a mock ContentService with async support."""
+    mock = MagicMock()
+    mock.generate_text = AsyncMock(return_value=MOCK_COURSE_XML)
+    return mock
 
 
 @pytest.fixture
@@ -49,7 +82,7 @@ def professor_service(repository_factory, content_service, image_service, voice_
 
 
 @pytest.fixture
-def department_service(repository_factory):
+def department_service(repository_factory, content_service):
     """Create a DepartmentService with mocked dependent services."""
     professor_service_mock = MagicMock()
     course_service_mock = MagicMock()
@@ -58,6 +91,7 @@ def department_service(repository_factory):
         repository_factory=repository_factory,
         professor_service=professor_service_mock,
         course_service=course_service_mock,
+        content_service=content_service,
     )
 
 
@@ -338,3 +372,130 @@ class TestCourseService:
         # Verify it's gone
         with pytest.raises(CourseNotFoundError):
             course_service.get_course(course.id)
+
+    @pytest.mark.asyncio
+    async def test_generate_course_content(
+        self, course_service, department_service, professor_service
+    ):
+        """Test generating course content with mocked AI response."""
+        # Setup prerequisites
+        department = department_service.create_department(
+            name="Computer Science",
+            code="CS",
+            faculty="Engineering",
+        )
+
+        professor = professor_service.create_professor(
+            Professor(
+                name="Dr. Geoffrey Hinton",
+                title="Professor",
+                department_id=department.id,
+                specialization="Machine Learning",
+                gender="Male",
+            )
+        )
+
+        # Mock the content service's generate_text method
+        course_service.content_service.generate_text.return_value = MOCK_COURSE_XML
+
+        # Generate course content
+        course_data = await course_service.generate_course_content(
+            {
+                "department_id": department.id,
+                "professor_id": professor.id,
+                "freeform_prompt": "Focus on advanced ML concepts",
+            }
+        )
+
+        # Verify the generated content
+        assert course_data["title"] == "Advanced Machine Learning"
+        assert course_data["code"] == "CS501"
+        assert course_data["level"] == "Graduate"
+        assert course_data["credits"] == 4
+        assert course_data["lectures_per_week"] == 2
+        assert course_data["total_weeks"] == 14
+        assert "machine learning" in course_data["description"].lower()
+
+        # Verify topics structure
+        topics = course_data["topics"]
+        assert len(topics) == 3  # Total number of lectures across all weeks
+
+        # Check first week's lectures
+        assert topics[0]["week_number"] == 1
+        assert topics[0]["order_in_week"] == 1
+        assert topics[0]["title"] == "Neural Networks Fundamentals"
+
+        assert topics[1]["week_number"] == 1
+        assert topics[1]["order_in_week"] == 2
+        assert topics[1]["title"] == "Deep Learning Architectures"
+
+        # Check second week's lecture
+        assert topics[2]["week_number"] == 2
+        assert topics[2]["order_in_week"] == 1
+        assert topics[2]["title"] == "Reinforcement Learning"
+
+        # Verify content service was called with correct arguments
+        course_service.content_service.generate_text.assert_called_once()
+        call_args = course_service.content_service.generate_text.call_args
+        assert call_args.kwargs["model"] == get_settings().COURSE_GENERATION_MODEL
+        assert "system_prompt" in call_args.kwargs
+
+    @pytest.mark.asyncio
+    async def test_generate_course_content_error_handling(
+        self, course_service, department_service, professor_service
+    ):
+        """Test error handling in course generation."""
+        # Setup prerequisites
+        department = department_service.create_department(
+            name="Computer Science",
+            code="CS",
+            faculty="Engineering",
+        )
+
+        professor = professor_service.create_professor(
+            Professor(
+                name="Dr. Test Professor",
+                title="Professor",
+                department_id=department.id,
+                specialization="Testing",
+                gender="Other",
+            )
+        )
+
+        # Test invalid XML response
+        course_service.content_service.generate_text = AsyncMock(
+            return_value="<invalid>XML</invalid>"
+        )
+
+        with pytest.raises(ContentGenerationError) as exc_info:
+            await course_service.generate_course_content(
+                {
+                    "department_id": department.id,
+                    "professor_id": professor.id,
+                }
+            )
+        assert "Could not extract <output> or <course> tag" in str(exc_info.value)
+
+        # Test empty response
+        course_service.content_service.generate_text = AsyncMock(return_value="")
+
+        with pytest.raises(ContentGenerationError) as exc_info:
+            await course_service.generate_course_content(
+                {
+                    "department_id": department.id,
+                    "professor_id": professor.id,
+                }
+            )
+        assert "Could not extract <output> or <course> tag" in str(exc_info.value)
+
+        # Test exception in content service
+        course_service.content_service.generate_text = AsyncMock(side_effect=Exception("API Error"))
+
+        with pytest.raises(ContentGenerationError) as exc_info:
+            await course_service.generate_course_content(
+                {
+                    "department_id": department.id,
+                    "professor_id": professor.id,
+                }
+            )
+        assert "An unexpected error occurred" in str(exc_info.value)

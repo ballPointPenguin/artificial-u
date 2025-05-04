@@ -3,10 +3,13 @@ Department management service for ArtificialU.
 """
 
 import logging
-import xml.etree.ElementTree as ET
 from typing import Dict, List, Optional
 
 from artificial_u.config import get_settings
+from artificial_u.models.converters import (
+    extract_xml_content,
+    parse_department_xml,
+)
 from artificial_u.models.core import Course, Department, Professor
 from artificial_u.models.repositories.factory import RepositoryFactory
 from artificial_u.prompts import (
@@ -16,6 +19,7 @@ from artificial_u.prompts import (
 )
 from artificial_u.services.content_service import ContentService
 from artificial_u.utils import (
+    ContentGenerationError,
     DatabaseError,
     DepartmentNotFoundError,
     DependencyError,
@@ -30,6 +34,7 @@ class DepartmentService:
         repository_factory: RepositoryFactory,
         professor_service,
         course_service,
+        content_service: ContentService,
         logger=None,
     ):
         """
@@ -39,12 +44,78 @@ class DepartmentService:
             repository_factory: Repository factory instance
             professor_service: Professor management service
             course_service: Course management service
+            content_service: Content generation service
             logger: Optional logger instance
         """
         self.repository_factory = repository_factory
         self.professor_service = professor_service
         self.course_service = course_service
+        self.content_service = content_service
         self.logger = logger or logging.getLogger(__name__)
+
+    async def generate_department(self, department_data: dict) -> dict:
+        """
+        Generate a department using AI based on the department name, course_name, or neither.
+        If both name and course_name are supplied, name takes precedence.
+
+        Args:
+            department_data: Dictionary containing optional name and/or course_name
+
+        Returns:
+            dict: The generated department attributes
+
+        Raises:
+            ContentGenerationError: If generation or parsing fails
+            DatabaseError: If there's an error accessing the database
+        """
+        try:
+            name = department_data.get("name")
+            course_name = department_data.get("course_name")
+
+            if name:
+                prompt = get_department_prompt(name)
+            elif course_name:
+                prompt = get_department_prompt(course_name=course_name)
+            else:
+                existing_departments = self.repository_factory.department.list_department_names()
+                prompt = get_open_department_prompt(existing_departments=existing_departments)
+
+            settings = get_settings()
+
+            # Generate the department using content service
+            self.logger.info("Calling content service to generate department...")
+            response = await self.content_service.generate_text(
+                prompt=prompt,
+                model=settings.DEPARTMENT_GENERATION_MODEL,
+                system_prompt=get_system_prompt("department"),
+            )
+            self.logger.info("Received response from content service.")
+
+            if not response:
+                raise ContentGenerationError("Content service returned empty response")
+
+            # Extract XML content if wrapped in output tags
+            xml_content = extract_xml_content(response, "output")
+            if not xml_content:
+                xml_content = response  # Use full response if no output tags
+
+            # Parse the response using the converter function
+            try:
+                department_attrs = parse_department_xml(xml_content)
+                self.logger.info(
+                    f"Successfully generated department: {department_attrs.get('name')}"
+                )
+                return department_attrs
+            except ValueError as e:
+                raise ContentGenerationError(f"Failed to parse department XML: {e}")
+
+        except ContentGenerationError:
+            # Re-raise content generation errors
+            raise
+        except Exception as e:
+            error_msg = f"Unexpected error during department generation: {e}"
+            self.logger.error(error_msg, exc_info=True)
+            raise ContentGenerationError(error_msg) from e
 
     def create_department(
         self,
@@ -68,6 +139,7 @@ class DepartmentService:
         Raises:
             DatabaseError: If there's an error saving to the database
         """
+        self.logger.info(f"Creating new department: {code} - {name}")
 
         # Create department object
         department = Department(
@@ -80,10 +152,11 @@ class DepartmentService:
         # Save to database
         try:
             department = self.repository_factory.department.create(department)
+            self.logger.info(f"Department created with ID: {department.id}")
             return department
         except Exception as e:
             error_msg = f"Failed to save department: {str(e)}"
-            self.logger.error(error_msg)
+            self.logger.error(error_msg, exc_info=True)
             raise DatabaseError(error_msg) from e
 
     def get_department(self, department_id: str) -> Department:
@@ -197,9 +270,6 @@ class DepartmentService:
             DependencyError: If department has dependencies
             DatabaseError: If there's an error deleting from the database
         """
-        # TODO: Check if department exists
-        # department = self.get_department(department_id)
-
         # Check for dependencies
         professors = self.repository_factory.professor.list_by_department(department_id)
         if professors:
@@ -277,60 +347,3 @@ class DepartmentService:
             error_msg = f"Failed to get department courses: {str(e)}"
             self.logger.error(error_msg)
             raise DatabaseError(error_msg) from e
-
-    async def generate_department(self, department_data: dict) -> dict:
-        """
-        Generate a department using AI based on the department name, course_name, or neither.
-        If both name and course_name are supplied, name takes precedence.
-
-        This function uses the content service with Ollama to generate a department
-        based on the provided name, or invents a new department if no name is given.
-        It uses the GENERIC_XML_SYSTEM_PROMPT and the appropriate prompt to guide the generation.
-
-        Args:
-            name: The name of the department to generate (optional)
-            course_name: The name of the course to generate a department for (optional)
-        Returns:
-            dict: The generated department as a dictionary
-        """
-
-        name = department_data.get("name")
-        course_name = department_data.get("course_name")
-
-        if name:
-            prompt = get_department_prompt(name)
-        elif course_name:
-            prompt = get_department_prompt(course_name=course_name)
-        else:
-            # Use the existing repository_factory instead of creating a new repository
-            existing_departments = self.repository_factory.department.list_department_names()
-            prompt = get_open_department_prompt(existing_departments=existing_departments)
-
-        # Use the content service to generate the department
-        content_service = ContentService(logger=self.logger)
-
-        settings = get_settings()
-
-        # Generate the department using Ollama
-        response = await content_service.generate_text(
-            prompt=prompt,
-            model=settings.DEPARTMENT_GENERATION_MODEL,
-            system_prompt=get_system_prompt("department"),
-        )
-
-        return parse_department_xml(response)
-
-
-def parse_department_xml(xml_str: str) -> dict:
-    root = ET.fromstring(xml_str.strip())
-    # Find the <department> element
-    dept = root.find("department") if root.tag != "department" else root
-    if dept is None:
-        raise ValueError("No <department> element found in generated XML.")
-
-    return {
-        "name": dept.findtext("name"),
-        "code": dept.findtext("code"),
-        "faculty": dept.findtext("faculty"),
-        "description": dept.findtext("description"),
-    }
