@@ -12,7 +12,7 @@ from artificial_u.api.models import (
     CoursesListResponse,
     DepartmentCoursesResponse,
     DepartmentCreate,
-    DepartmentGeneration,
+    DepartmentGenerate,
     DepartmentProfessorsResponse,
     DepartmentResponse,
     DepartmentsListResponse,
@@ -287,11 +287,16 @@ async def list_department_courses(
 
 @router.post(
     "/generate",
+    response_model=DepartmentResponse,
+    status_code=status.HTTP_200_OK,
     summary="Generate department",
     description="Generate a department using AI.",
+    responses={
+        500: {"description": "Department generation failed"},
+    },
 )
 async def generate_department(
-    department_data: DepartmentGeneration,
+    department_data: DepartmentGenerate,
     department_service: DepartmentApiService = Depends(get_department_api_service),
 ):
     """

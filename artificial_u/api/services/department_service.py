@@ -12,7 +12,7 @@ from artificial_u.api.models.departments import (
     CourseBrief,
     DepartmentCoursesResponse,
     DepartmentCreate,
-    DepartmentGeneration,
+    DepartmentGenerate,
     DepartmentProfessorsResponse,
     DepartmentResponse,
     DepartmentsListResponse,
@@ -21,6 +21,10 @@ from artificial_u.api.models.departments import (
 )
 from artificial_u.models.repositories import RepositoryFactory
 from artificial_u.services import CourseService, DepartmentService, ProfessorService
+from artificial_u.utils import (
+    ContentGenerationError,
+    DatabaseError,
+)
 
 
 class DepartmentApiService:
@@ -28,9 +32,9 @@ class DepartmentApiService:
 
     def __init__(
         self,
-        repository_factory: RepositoryFactory,
-        professor_service: ProfessorService,
         course_service: CourseService,
+        professor_service: ProfessorService,
+        repository_factory: RepositoryFactory,
         logger=None,
     ):
         """
@@ -272,25 +276,59 @@ class DepartmentApiService:
         except Exception:
             return None
 
-    async def generate_department(
-        self, department_data: DepartmentGeneration
-    ) -> DepartmentResponse:
+    async def generate_department(self, generation_data: DepartmentGenerate) -> DepartmentResponse:
         """
         Generate a department using AI.
 
-        Generate a department using AI based on name, course_name, or neither.
+        This method *generates* the data but does not create/save the department.
 
         Args:
-            department_data: optional name or course_name to seed the AI prompt
+            generation_data: Input data containing optional partial attributes and prompt.
+
         Returns:
-            DepartmentResponse: The generated department
+            DepartmentResponse: The generated department data (not saved).
+
+        Raises:
+            HTTPException: If generation fails.
         """
-        dept_dict = await self.core_service.generate_department(department_data.model_dump())
-        return department_dict_to_response(dept_dict)
+        log_attrs = (
+            list(generation_data.partial_attributes.keys())
+            if generation_data.partial_attributes
+            else "None"
+        )
+        self.logger.info(
+            f"Received request to generate department with partial attributes: {log_attrs}"
+        )
+        try:
+            # Prepare attributes for the core service
+            # Assuming core service generate_department takes a dictionary of attributes
+            partial_attrs = generation_data.partial_attributes or {}
+            if generation_data.freeform_prompt:
+                partial_attrs["freeform_prompt"] = generation_data.freeform_prompt
 
+            # Call core service
+            generated_dict = await self.core_service.generate_department(
+                partial_attributes=partial_attrs  # Adjust if core service expects different args
+            )
 
-def department_dict_to_response(dept_dict: dict) -> DepartmentResponse:
-    return DepartmentResponse(
-        id=None,  # Not saved yet, so use 0 or None
-        **dept_dict,
-    )
+            # Convert the dictionary to the API response model
+            # Add placeholder ID and validate
+            generated_dict["id"] = -1  # Placeholder for validation
+            response = DepartmentResponse.model_validate(generated_dict)
+
+            self.logger.info(f"Successfully generated department data: {response.name}")
+            return response
+
+        except (ContentGenerationError, DatabaseError, ValueError) as e:
+            # Handle errors from core service
+            self.logger.error(f"Department generation failed: {e}", exc_info=True)
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Failed to generate department data: {e}",
+            )
+        except Exception as e:
+            self.logger.error(f"Unexpected error during department generation: {e}", exc_info=True)
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=("An unexpected error occurred during department generation."),
+            )

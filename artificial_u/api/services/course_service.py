@@ -10,6 +10,7 @@ from fastapi import HTTPException, status
 
 from artificial_u.api.models.courses import (
     CourseCreate,
+    CourseGenerate,
     CourseLecturesResponse,
     CourseResponse,
     CoursesListResponse,
@@ -28,6 +29,7 @@ from artificial_u.services import (
     ProfessorService,
 )
 from artificial_u.utils import (
+    ContentGenerationError,
     CourseNotFoundError,
     DatabaseError,
     LectureNotFoundError,
@@ -40,9 +42,9 @@ class CourseApiService:
 
     def __init__(
         self,
-        repository_factory: RepositoryFactory,
         content_service: ContentService,
         professor_service: ProfessorService,
+        repository_factory: RepositoryFactory,
         logger=None,
     ):
         """
@@ -494,6 +496,61 @@ class CourseApiService:
                 detail=f"An unexpected error occurred retrieving lectures for course {course_id}.",
             )
 
-    # Potential future method to wrap core service's generate_course_content
-    # async def generate_course(self, generation_data: CourseGenerate) -> CourseResponse:
-    #     pass # Implement if needed, similar to ProfessorApiService.generate_professor
+    async def generate_course(self, generation_data: CourseGenerate) -> CourseResponse:
+        """
+        Generate course content and structure using AI based on partial data.
+        This method *generates* the data but does not create/save the course.
+
+        Args:
+            generation_data: Input data containing optional partial attributes and prompt.
+
+        Returns:
+            CourseResponse: The generated course data (not saved).
+
+        Raises:
+            HTTPException: If generation fails or prerequisites are not found.
+        """
+        log_attrs = (
+            list(generation_data.partial_attributes.keys())
+            if generation_data.partial_attributes
+            else "None"
+        )
+        self.logger.info(
+            f"Received request to generate course with partial attributes: {log_attrs}"
+        )
+        try:
+            # Prepare attributes for the core service
+            partial_attrs = generation_data.partial_attributes or {}  # Start with partial attrs
+            if generation_data.freeform_prompt:  # Add prompt if provided
+                partial_attrs["freeform_prompt"] = generation_data.freeform_prompt
+
+            # Call the core service to generate the course content dictionary
+            generated_dict = await self.core_service.generate_course_content(
+                partial_attributes=partial_attrs
+            )
+
+            # Convert the dictionary to the API response model
+            # Add placeholder ID and validate
+            generated_dict["id"] = -1  # Placeholder for validation
+
+            # Validate and convert using the standard response model
+            response = CourseResponse.model_validate(generated_dict)
+
+            self.logger.info(
+                f"Successfully generated course data: {response.code} - {response.title}"
+            )
+            return response
+
+        except (ContentGenerationError, DatabaseError, ValueError) as e:
+            # Handle errors from core service (generation, DB lookups, parsing)
+            self.logger.error(f"Course generation failed: {e}", exc_info=True)
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Failed to generate course data: {e}",
+            )
+        except Exception as e:
+            self.logger.error(f"Unexpected error during course generation: {e}", exc_info=True)
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=("An unexpected error occurred during course generation."),
+            )

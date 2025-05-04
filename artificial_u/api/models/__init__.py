@@ -7,6 +7,7 @@ These models define the structure of request and response data.
 from artificial_u.api.models.courses import (
     CourseBase,
     CourseCreate,
+    CourseGenerate,
     CourseLecturesResponse,
     CourseResponse,
     CoursesListResponse,
@@ -22,7 +23,7 @@ from artificial_u.api.models.departments import (
     DepartmentBase,
     DepartmentCoursesResponse,
     DepartmentCreate,
-    DepartmentGeneration,
+    DepartmentGenerate,
     DepartmentProfessorsResponse,
     DepartmentResponse,
     DepartmentsListResponse,
@@ -44,6 +45,7 @@ from artificial_u.api.models.errors import (
 from artificial_u.api.models.lectures import (
     Lecture,
     LectureCreate,
+    LectureGenerate,
     LectureList,
     LectureUpdate,
 )
@@ -68,6 +70,7 @@ __all__ = [
     "CourseBase",
     "CourseCreate",
     "CourseUpdate",
+    "CourseGenerate",
     "CourseResponse",
     "CoursesListResponse",
     "CourseProfessorBrief",
@@ -78,7 +81,7 @@ __all__ = [
     "DepartmentBase",
     "DepartmentCreate",
     "DepartmentUpdate",
-    "DepartmentGeneration",
+    "DepartmentGenerate",
     "DepartmentResponse",
     "DepartmentsListResponse",
     "DepartmentProfessorBrief",
@@ -100,6 +103,7 @@ __all__ = [
     "LectureCreate",
     "LectureUpdate",
     "Lecture",
+    "LectureGenerate",
     "LectureList",
     # Error codes
     "ErrorDetail",

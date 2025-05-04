@@ -28,6 +28,7 @@ from artificial_u.services import (
     VoiceService,
 )
 from artificial_u.utils import (
+    ContentGenerationError,
     DatabaseError,
     GenerationError,
     ProfessorNotFoundError,
@@ -39,9 +40,9 @@ class ProfessorApiService:
 
     def __init__(
         self,
-        repository_factory: RepositoryFactory,
         content_service: ContentService,
         image_service: ImageService,
+        repository_factory: RepositoryFactory,
         voice_service: VoiceService,
         logger=None,
     ):
@@ -342,23 +343,29 @@ class ProfessorApiService:
         try:
             # Pass the partial attributes dictionary (or empty dict) to the core service
             partial_attrs = generation_data.partial_attributes or {}
+            # Add freeform prompt if the model includes it (assuming ProfessorGenerate might)
+            if hasattr(generation_data, "freeform_prompt") and generation_data.freeform_prompt:
+                partial_attrs["freeform_prompt"] = generation_data.freeform_prompt
+
             generated_dict = await self.core_service.generate_professor_profile(
                 partial_attributes=partial_attrs
             )
 
             # Convert the dictionary to the API response model
-            response = ProfessorResponse(
-                **generated_dict,
-            )
+            # Add placeholder ID and validate
+            generated_dict["id"] = -1  # Placeholder for validation
+            response = ProfessorResponse.model_validate(generated_dict)
+
             self.logger.info(f"Successfully generated professor data: {response.name}")
             return response
 
-        except GenerationError as e:
+        except (ContentGenerationError, DatabaseError, ValueError, GenerationError) as e:
+            # Include GenerationError if core service can raise it specifically
             self.logger.error(f"Professor generation failed: {e}", exc_info=True)
             # Re-raise as HTTPException for the API layer
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Failed to generate professor profile: {e}",
+                detail=f"Failed to generate professor data: {e}",
             )
         except Exception as e:
             self.logger.error(f"Unexpected error during professor generation: {e}", exc_info=True)

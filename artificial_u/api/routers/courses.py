@@ -11,6 +11,7 @@ from artificial_u.api.dependencies import get_course_api_service
 from artificial_u.api.models import (
     CourseCreate,
     CourseDepartmentBrief,
+    CourseGenerate,
     CourseLecturesResponse,
     CourseProfessorBrief,
     CourseResponse,
@@ -232,3 +233,32 @@ async def get_course_lectures(
     """
     # Service handles lookup and raises HTTPException on errors
     return course_service.get_course_lectures(course_id)
+
+
+@router.post(
+    "/generate",
+    response_model=CourseResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Generate course data",
+    description="Generates course data using AI based on partial attributes.",
+    responses={
+        500: {"description": "Course generation failed"},
+    },
+)
+async def generate_course(
+    generation_data: CourseGenerate,
+    course_service: CourseApiService = Depends(get_course_api_service),
+):
+    """
+    Generate course data using AI.
+
+    Accepts optional partial attributes and a freeform prompt to guide generation.
+
+    Args:
+        generation_data: Contains optional partial_attributes and freeform_prompt.
+
+    Returns:
+        The generated course data (not saved to the database).
+    """
+    # The service method handles exceptions and converts to HTTPException
+    return await course_service.generate_course(generation_data)

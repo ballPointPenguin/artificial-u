@@ -5,12 +5,13 @@ Lecture router for handling lecture-related API endpoints.
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, PlainTextResponse
 
 from artificial_u.api.dependencies import get_lecture_api_service
 from artificial_u.api.models import (
     Lecture,
     LectureCreate,
+    LectureGenerate,
     LectureList,
     LectureUpdate,
 )
@@ -84,7 +85,7 @@ async def get_lecture(
 
 @router.get(
     "/{lecture_id}/content",
-    response_model=Lecture,
+    response_class=PlainTextResponse,
     summary="Get lecture content",
     description="Get the full text content of a specific lecture.",
     responses={404: {"description": "Lecture not found"}},
@@ -95,14 +96,12 @@ async def get_lecture_content(
 ):
     """
     Get the full text content of a specific lecture.
-
-    - **lecture_id**: The unique identifier of the lecture
     """
     content = lecture_service.get_lecture_content(lecture_id)
-    if not content:
+    if content is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Lecture content with ID {lecture_id} not found",
+            detail=f"Content for lecture with ID {lecture_id} not found",
         )
     return content
 
@@ -141,8 +140,7 @@ async def get_lecture_audio(
             headers={"Location": audio_url},
         )
 
-    # Audio URL exists but is not a valid URL - indicates an issue
-    # (We no longer support local file paths here)
+    # If audio_url exists but is not a valid http/https url, treat as not found/invalid
     raise HTTPException(
         status_code=status.HTTP_404_NOT_FOUND,
         detail=f"Audio URL for lecture {lecture_id} is invalid or not found.",
@@ -204,7 +202,10 @@ async def update_lecture(
     status_code=status.HTTP_204_NO_CONTENT,
     summary="Delete lecture",
     description="Delete a lecture.",
-    responses={404: {"description": "Lecture not found"}},
+    responses={
+        404: {"description": "Lecture not found"},
+        400: {"description": "Failed due to database issue (e.g., constraints)"},
+    },
 )
 async def delete_lecture(
     lecture_id: int = Path(..., description="The ID of the lecture to delete"),
@@ -220,13 +221,14 @@ async def delete_lecture(
     if not success:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Lecture with ID {lecture_id} not found",
+            detail=f"Lecture with ID {lecture_id} not found (delete operation failed).",
         )
-    return None
+    return JSONResponse(status_code=status.HTTP_204_NO_CONTENT, content=None)
 
 
 @router.get(
     "/{lecture_id}/content/download",
+    response_class=PlainTextResponse,
     summary="Download lecture content as text file",
     description="Download the full text content of a specific lecture as a text file.",
     responses={
@@ -244,21 +246,40 @@ async def download_lecture_content(
     - **lecture_id**: The unique identifier of the lecture
     - Returns the lecture content as plain text
     """
-    # Get the lecture details including title
-    lecture = lecture_service.get_lecture(lecture_id)
-    if not lecture:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Lecture with ID {lecture_id} not found",
-        )
-
-    # Get content
     content = lecture_service.get_lecture_content(lecture_id)
-    if not content or not content.content:
+    if content is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Content for lecture with ID {lecture_id} not found",
         )
 
-    # Return the content directly as a string
-    return content.content
+    # Return the content string directly
+    return content
+
+
+@router.post(
+    "/generate",
+    response_model=Lecture,
+    status_code=status.HTTP_200_OK,
+    summary="Generate lecture data",
+    description="Generates lecture data using AI based on partial attributes.",
+    responses={
+        500: {"description": "Lecture generation failed"},
+    },
+)
+async def generate_lecture(
+    generation_data: LectureGenerate,
+    lecture_service: LectureApiService = Depends(get_lecture_api_service),
+):
+    """
+    Generate lecture data using AI.
+
+    Accepts optional partial attributes and a freeform prompt to guide generation.
+
+    Args:
+        generation_data: Contains optional partial_attributes and freeform_prompt.
+
+    Returns:
+        The generated lecture data (not saved to the database).
+    """
+    return await lecture_service.generate_lecture(generation_data)

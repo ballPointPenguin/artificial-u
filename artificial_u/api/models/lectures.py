@@ -2,7 +2,7 @@
 Lecture API models for request and response validation.
 """
 
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, Field
 
@@ -50,3 +50,15 @@ class LectureList(BaseModel):
     total: int = Field(..., description="Total number of matching lectures")
     page: int = Field(..., description="Current page number")
     page_size: int = Field(..., description="Number of items per page")
+
+
+# Model for generating a lecture
+class LectureGenerate(BaseModel):
+    """Model for requesting lecture generation."""
+
+    partial_attributes: Optional[Dict[str, Any]] = Field(
+        None, description="Optional dictionary of known attributes to guide generation."
+    )
+    freeform_prompt: Optional[str] = Field(
+        None, description="Optional freeform text prompt for additional guidance."
+    )

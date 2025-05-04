@@ -2,7 +2,7 @@
 API models for Course resources.
 """
 
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, Field
 
@@ -99,3 +99,15 @@ class DepartmentBrief(BaseModel):
     name: str
     code: str
     faculty: str
+
+
+# Model for generating a course
+class CourseGenerate(BaseModel):
+    """Model for requesting course generation."""
+
+    partial_attributes: Optional[Dict[str, Any]] = Field(
+        None, description="Optional dictionary of known attributes to guide generation."
+    )
+    freeform_prompt: Optional[str] = Field(
+        None, description="Optional freeform text prompt for additional guidance."
+    )

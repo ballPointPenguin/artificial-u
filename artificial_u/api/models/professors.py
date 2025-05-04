@@ -4,7 +4,7 @@ API models for Professor resources.
 
 from typing import Any, Dict, List, Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 # Base Professor model with common fields
@@ -45,6 +45,9 @@ class ProfessorGenerate(BaseModel):
     """Model for generating a new professor profile based on partial attributes."""
 
     partial_attributes: Optional[Dict[str, Any]] = None
+    freeform_prompt: Optional[str] = Field(
+        None, description="Optional freeform text prompt for additional guidance."
+    )
 
 
 # Professor response model

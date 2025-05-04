@@ -2,9 +2,9 @@
 API models for Department resources.
 """
 
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 # Base Department model with common fields
@@ -32,10 +32,15 @@ class DepartmentUpdate(DepartmentBase):
 
 
 # Department generation model
-class DepartmentGeneration(DepartmentBase):
+class DepartmentGenerate(BaseModel):
     """Model for generating a new department."""
 
-    pass
+    partial_attributes: Optional[Dict[str, Any]] = Field(
+        None, description="Optional dictionary of known attributes to guide generation."
+    )
+    freeform_prompt: Optional[str] = Field(
+        None, description="Optional freeform text prompt for additional guidance."
+    )
 
 
 # Department response model
