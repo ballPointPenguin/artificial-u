@@ -19,17 +19,13 @@ interface GetLecturesParams {
 /**
  * Get a paginated list of lectures
  */
-export async function getLectures(
-  params: GetLecturesParams = {}
-): Promise<LecturesList> {
+export async function getLectures(params: GetLecturesParams = {}): Promise<LecturesList> {
   const queryParams = new URLSearchParams()
 
   if (params.page) queryParams.append('page', String(params.page))
   if (params.size) queryParams.append('size', String(params.size))
-  if (params.course_id)
-    queryParams.append('course_id', String(params.course_id))
-  if (params.professor_id)
-    queryParams.append('professor_id', String(params.professor_id))
+  if (params.course_id) queryParams.append('course_id', String(params.course_id))
+  if (params.professor_id) queryParams.append('professor_id', String(params.professor_id))
   if (params.status) queryParams.append('status', params.status)
   if (params.title) queryParams.append('title', params.title)
   if (params.date_from) queryParams.append('date_from', params.date_from)
@@ -70,8 +66,40 @@ export async function updateLecture(
 /**
  * Delete a lecture
  */
-export async function deleteLecture(
-  id: number
-): Promise<Record<string, never>> {
+export async function deleteLecture(id: number): Promise<Record<string, never>> {
   return httpClient.delete<Record<string, never>>(ENDPOINTS.lectures.detail(id))
+}
+
+/**
+ * Get content of a lecture
+ */
+export async function getLectureContent(id: number): Promise<string> {
+  return httpClient.get<string>(ENDPOINTS.lectures.content(id))
+}
+
+/**
+ * Get audio of a lecture, returns redirect URL
+ */
+export async function getLectureAudio(id: number): Promise<{ url: string }> {
+  return httpClient.get<{ url: string }>(ENDPOINTS.lectures.audio(id))
+}
+
+/**
+ * Download lecture content as text file
+ */
+export async function downloadLectureContent(id: number): Promise<string> {
+  return httpClient.get<string>(ENDPOINTS.lectures.download(id))
+}
+
+// Add LectureGeneratePayload for generating lectures via AI
+interface LectureGeneratePayload {
+  partial_attributes?: Record<string, unknown>
+  freeform_prompt?: string
+}
+
+/**
+ * Generate lecture data using AI
+ */
+export async function generateLecture(data: LectureGeneratePayload): Promise<Lecture> {
+  return httpClient.post<Lecture>(ENDPOINTS.lectures.generate, data)
 }

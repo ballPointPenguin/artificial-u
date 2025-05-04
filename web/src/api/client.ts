@@ -45,11 +45,7 @@ async function handleResponse<T>(response: Response): Promise<T> {
       }
     }
 
-    throw new ApiError(
-      errorData.detail || 'An unknown error occurred',
-      response.status,
-      errorData
-    )
+    throw new ApiError(errorData.detail || 'An unknown error occurred', response.status, errorData)
   }
 
   // For successful responses
@@ -75,10 +71,7 @@ const timeout = (ms: number): Promise<never> => {
 /**
  * Execute a fetch request with timeout and error handling
  */
-export async function fetchWithTimeout<T>(
-  url: string,
-  options: RequestOptions = {}
-): Promise<T> {
+export async function fetchWithTimeout<T>(url: string, options: RequestOptions = {}): Promise<T> {
   const { timeout: timeoutMs = API_CONFIG.timeout, ...fetchOptions } = options
 
   try {
@@ -106,10 +99,7 @@ export async function fetchWithTimeout<T>(
       throw new ApiError('Request timed out', 408)
     }
 
-    throw new ApiError(
-      error instanceof Error ? error.message : 'Unknown error',
-      0
-    )
+    throw new ApiError(error instanceof Error ? error.message : 'Unknown error', 0)
   }
 }
 
@@ -120,10 +110,7 @@ export const httpClient = {
   /**
    * Performs a GET request
    */
-  get: async <T>(
-    endpoint: string,
-    options: RequestOptions = {}
-  ): Promise<T> => {
+  get: async <T>(endpoint: string, options: RequestOptions = {}): Promise<T> => {
     const url = createUrl(endpoint)
     const fetchOptions = { ...options }
     const headers = new Headers(DEFAULT_HEADERS)
@@ -155,11 +142,7 @@ export const httpClient = {
   /**
    * Performs a POST request
    */
-  post: async <T>(
-    endpoint: string,
-    data: unknown,
-    options: RequestOptions = {}
-  ): Promise<T> => {
+  post: async <T>(endpoint: string, data: unknown, options: RequestOptions = {}): Promise<T> => {
     const url = createUrl(endpoint)
     const fetchOptions = { ...options }
     const headers = new Headers(DEFAULT_HEADERS)
@@ -192,11 +175,7 @@ export const httpClient = {
   /**
    * Performs a PUT request
    */
-  put: async <T>(
-    endpoint: string,
-    data: unknown,
-    options: RequestOptions = {}
-  ): Promise<T> => {
+  put: async <T>(endpoint: string, data: unknown, options: RequestOptions = {}): Promise<T> => {
     const url = createUrl(endpoint)
     const fetchOptions = { ...options }
     const headers = new Headers(DEFAULT_HEADERS)
@@ -229,10 +208,7 @@ export const httpClient = {
   /**
    * Performs a DELETE request
    */
-  delete: async <T>(
-    endpoint: string,
-    options: RequestOptions = {}
-  ): Promise<T> => {
+  delete: async <T>(endpoint: string, options: RequestOptions = {}): Promise<T> => {
     const url = createUrl(endpoint)
     const fetchOptions = { ...options }
     const headers = new Headers(DEFAULT_HEADERS)

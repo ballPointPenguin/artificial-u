@@ -22,8 +22,8 @@ export interface APIInfo {
 // Health check response
 export interface HealthCheckResponse {
   status: string
-  version: string
-  timestamp: string
+  api_version: string
+  timestamp: number
 }
 
 // Professor types
@@ -177,4 +177,33 @@ export interface APIError {
   status_code?: number
   path?: string
   timestamp?: string
+}
+
+// Department nested endpoints response types
+export interface DepartmentProfessor {
+  id: number
+  name: string
+  title: string
+  specialization: string
+}
+
+export interface DepartmentProfessorsResponse {
+  department_id: number
+  professors: DepartmentProfessor[]
+  total: number
+}
+
+export interface DepartmentCourse {
+  id: number
+  code: string
+  title: string
+  level: string | null
+  credits: number | null
+  professor_id?: number
+}
+
+export interface DepartmentCoursesResponse {
+  department_id: number
+  courses: DepartmentCourse[]
+  total: number
 }

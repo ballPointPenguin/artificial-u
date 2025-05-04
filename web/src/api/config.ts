@@ -38,14 +38,16 @@ export const ENDPOINTS = {
     detail: (id: number) => `/v1/professors/${String(id)}`,
     courses: (id: number) => `/v1/professors/${String(id)}/courses`,
     lectures: (id: number) => `/v1/professors/${String(id)}/lectures`,
-    generateImage: (id: number) =>
-      `/v1/professors/${String(id)}/generate-image`,
+    generateImage: (id: number) => `/v1/professors/${String(id)}/generate-image`,
     generate: '/v1/professors/generate',
   },
   departments: {
     list: '/v1/departments',
     detail: (id: number) => `/v1/departments/${String(id)}`,
     generate: '/v1/departments/generate',
+    code: (code: string | number) => `/v1/departments/code/${String(code)}`,
+    professors: (id: number) => `/v1/departments/${String(id)}/professors`,
+    courses: (id: number) => `/v1/departments/${String(id)}/courses`,
   },
   courses: {
     list: '/v1/courses',
@@ -53,9 +55,15 @@ export const ENDPOINTS = {
     lectures: (id: number) => `/v1/courses/${String(id)}/lectures`,
     professor: (id: number) => `/v1/courses/${String(id)}/professor`,
     department: (id: number) => `/v1/courses/${String(id)}/department`,
+    code: (code: string | number) => `/v1/courses/code/${String(code)}`,
+    generate: '/v1/courses/generate',
   },
   lectures: {
     list: '/v1/lectures',
     detail: (id: number) => `/v1/lectures/${String(id)}`,
+    generate: '/v1/lectures/generate',
+    content: (id: number) => `/v1/lectures/${String(id)}/content`,
+    audio: (id: number) => `/v1/lectures/${String(id)}/audio`,
+    download: (id: number) => `/v1/lectures/${String(id)}/content/download`,
   },
 }

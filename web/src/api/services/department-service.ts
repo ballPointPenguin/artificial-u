@@ -14,9 +14,7 @@ interface GetDepartmentsParams {
 /**
  * Get a paginated list of departments
  */
-export async function getDepartments(
-  params: GetDepartmentsParams = {}
-): Promise<DepartmentsList> {
+export async function getDepartments(params: GetDepartmentsParams = {}): Promise<DepartmentsList> {
   const queryParams = new URLSearchParams()
 
   if (params.page) queryParams.append('page', String(params.page))
@@ -67,10 +65,6 @@ export async function updateDepartment(
 /**
  * Delete a department
  */
-export async function deleteDepartment(
-  id: number
-): Promise<Record<string, never>> {
-  return httpClient.delete<Record<string, never>>(
-    ENDPOINTS.departments.detail(id)
-  )
+export async function deleteDepartment(id: number): Promise<Record<string, never>> {
+  return httpClient.delete<Record<string, never>>(ENDPOINTS.departments.detail(id))
 }

@@ -13,7 +13,7 @@ import type {
 interface GetProfessorsParams {
   page?: number
   size?: number
-  department?: string
+  department_id?: number
   name?: string
   specialization?: string
 }
@@ -26,7 +26,7 @@ export async function getProfessors(params: GetProfessorsParams = {}): Promise<P
 
   if (params.page) queryParams.append('page', String(params.page))
   if (params.size) queryParams.append('size', String(params.size))
-  if (params.department) queryParams.append('department', params.department)
+  if (params.department_id) queryParams.append('department_id', String(params.department_id))
   if (params.name) queryParams.append('name', params.name)
   if (params.specialization) queryParams.append('specialization', params.specialization)
 
