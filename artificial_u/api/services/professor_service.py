@@ -141,7 +141,7 @@ class ProfessorApiService:
         except ProfessorNotFoundError:
             return None
 
-    async def create_professor(self, professor_data: ProfessorCreate) -> ProfessorResponse:
+    def create_professor(self, professor_data: ProfessorCreate) -> ProfessorResponse:
         """
         Create a new professor.
 

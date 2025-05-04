@@ -2,7 +2,7 @@
 Unit Tests for the department API endpoints, mocking the service layer.
 """
 
-from unittest.mock import AsyncMock  # For mocking async methods
+from unittest.mock import MagicMock  # Import MagicMock only
 
 import pytest
 from fastapi.testclient import TestClient
@@ -56,17 +56,17 @@ sample_courses_brief_base = [
 @pytest.fixture
 def mock_api_service(monkeypatch):
     """Mock the DepartmentApiService methods for unit testing the API router."""
+    # Use MagicMock for synchronous methods, AsyncMock for async methods
     mock_service = {
-        "get_departments": AsyncMock(),
-        "get_department": AsyncMock(),
-        "create_department": AsyncMock(),
-        "update_department": AsyncMock(),
-        "delete_department": AsyncMock(),
-        "get_department_professors": AsyncMock(),
-        "get_department_courses": AsyncMock(),
-        "get_department_by_code": AsyncMock(),
-        # Add generate_department if you test that endpoint
-        # "generate_department": AsyncMock(),
+        "get_departments": MagicMock(),  # Sync
+        "get_department": MagicMock(),  # Sync
+        "create_department": MagicMock(),  # Sync
+        "update_department": MagicMock(),  # Sync
+        "delete_department": MagicMock(),  # Sync
+        "get_department_professors": MagicMock(),  # Sync
+        "get_department_courses": MagicMock(),  # Sync
+        "get_department_by_code": MagicMock(),  # Sync
+        # "generate_department": AsyncMock(), # Keep AsyncMock if/when added
     }
 
     # --- Configure Mock Return Values ---
@@ -163,7 +163,6 @@ def mock_api_service(monkeypatch):
     mock_service["get_department_by_code"].side_effect = _mock_get_department_by_code
 
     # --- Apply Patches ---
-    # Patch methods in the actual service class path
     monkeypatch.setattr(
         "artificial_u.api.services.DepartmentApiService.get_departments",
         mock_service["get_departments"],
@@ -196,6 +195,11 @@ def mock_api_service(monkeypatch):
         "artificial_u.api.services.DepartmentApiService.get_department_by_code",
         mock_service["get_department_by_code"],
     )
+    # Patch generate_department if testing it:
+    # monkeypatch.setattr(
+    #     "artificial_u.api.services.DepartmentApiService.generate_department",
+    #     mock_service["generate_department"], # Assuming it's AsyncMock
+    # )
 
     return mock_service  # Return the dictionary of mocks if needed for assertion
 

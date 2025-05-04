@@ -52,7 +52,7 @@ async def list_professors(
     - **name**: Filter by professor name (partial match)
     - **specialization**: Filter by specialization (partial match)
     """
-    return await service.get_professors(
+    return service.get_professors(
         page=page,
         size=size,
         department_id=department_id,
@@ -77,7 +77,7 @@ async def get_professor(
 
     - **professor_id**: The unique identifier of the professor
     """
-    professor = await service.get_professor(professor_id)
+    professor = service.get_professor(professor_id)
     if not professor:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -103,7 +103,7 @@ async def create_professor(
     - Request body contains all required professor information
     - Returns the created professor with its assigned ID
     """
-    return await service.create_professor(professor_data)
+    return service.create_professor(professor_data)
 
 
 @router.put(
@@ -125,7 +125,7 @@ async def update_professor(
     - Request body contains the updated professor information
     - Returns the updated professor
     """
-    updated_professor = await service.update_professor(professor_id, professor_data)
+    updated_professor = service.update_professor(professor_id, professor_data)
     if not updated_professor:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -154,7 +154,7 @@ async def delete_professor(
     - **professor_id**: The unique identifier of the professor to delete
     - Returns no content on successful deletion
     """
-    success = await service.delete_professor(professor_id)
+    success = service.delete_professor(professor_id)
     if not success:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -180,7 +180,7 @@ async def get_professor_courses(
     - **professor_id**: The unique identifier of the professor
     - Returns a list of courses taught by the professor
     """
-    response = await service.get_professor_courses(professor_id)
+    response = service.get_professor_courses(professor_id)
     if not response:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -206,7 +206,7 @@ async def get_professor_lectures(
     - **professor_id**: The unique identifier of the professor
     - Returns a list of lectures by the professor across all their courses
     """
-    response = await service.get_professor_lectures(professor_id)
+    response = service.get_professor_lectures(professor_id)
     if not response:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -243,8 +243,8 @@ async def generate_professor_image(
         # For now, treating failure generally as internal error
         # Re-fetch professor to check if it exists, if needed for 404 vs 500
 
-        # Check if professor exists first to return 404
-        existing_professor = await service.get_professor(professor_id)
+        # Check if professor exists first to return 404 (NO await for sync get_professor)
+        existing_professor = service.get_professor(professor_id)
         if not existing_professor:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,

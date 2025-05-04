@@ -51,7 +51,7 @@ async def list_departments(
     - **faculty**: Filter by faculty name (exact match)
     - **name**: Filter by department name (partial match)
     """
-    return await department_service.get_departments(
+    return department_service.get_departments(
         page=page,
         size=size,
         faculty=faculty,
@@ -75,7 +75,7 @@ async def get_department(
 
     - **department_id**: The unique identifier of the department
     """
-    department = await department_service.get_department(department_id)
+    department = department_service.get_department(department_id)
     if not department:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -101,7 +101,7 @@ async def create_department(
     - Request body contains all required department information
     - Returns the created department with its assigned ID
     """
-    return await department_service.create_department(department_data)
+    return department_service.create_department(department_data)
 
 
 @router.put(
@@ -123,7 +123,7 @@ async def update_department(
     - Request body contains the updated department information
     - Returns the updated department
     """
-    updated_department = await department_service.update_department(department_id, department_data)
+    updated_department = department_service.update_department(department_id, department_data)
     if not updated_department:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -152,7 +152,7 @@ async def delete_department(
     - Returns no content on successful deletion
     - Any associated professors or courses will have their department_id set to null
     """
-    success = await department_service.delete_department(department_id)
+    success = department_service.delete_department(department_id)
     if not success:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -178,7 +178,7 @@ async def get_department_professors(
     - **department_id**: The unique identifier of the department
     - Returns a list of professors in the department
     """
-    response = await department_service.get_department_professors(department_id)
+    response = department_service.get_department_professors(department_id)
     if not response:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -204,7 +204,7 @@ async def get_department_courses(
     - **department_id**: The unique identifier of the department
     - Returns a list of courses in the department
     """
-    response = await department_service.get_department_courses(department_id)
+    response = department_service.get_department_courses(department_id)
     if not response:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -231,7 +231,7 @@ async def get_department_by_code(
     Raises:
         HTTPException: If department not found
     """
-    department = await department_service.get_department_by_code(code)
+    department = department_service.get_department_by_code(code)
     if not department:
         raise HTTPException(status_code=404, detail="Department not found")
     return department
@@ -255,7 +255,7 @@ async def list_department_professors(
     Raises:
         HTTPException: If department not found
     """
-    professors = await department_service.get_department_professors(department_id)
+    professors = department_service.get_department_professors(department_id)
     if not professors:
         raise HTTPException(status_code=404, detail="Department not found")
     return professors
@@ -279,7 +279,7 @@ async def list_department_courses(
     Raises:
         HTTPException: If department not found
     """
-    courses = await department_service.get_department_courses(department_id)
+    courses = department_service.get_department_courses(department_id)
     if not courses:
         raise HTTPException(status_code=404, detail="Department not found")
     return courses

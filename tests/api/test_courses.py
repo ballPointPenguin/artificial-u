@@ -2,7 +2,7 @@
 Unit Tests for the course API endpoints, mocking the service layer.
 """
 
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from fastapi.testclient import TestClient
@@ -60,15 +60,15 @@ sample_lectures_brief_base = [
 def mock_api_service(monkeypatch):
     """Mock the CourseApiService methods for unit testing the API router."""
     mock_service = {
-        "get_courses": AsyncMock(),
-        "get_course": AsyncMock(),
-        "get_course_by_code": AsyncMock(),
-        "create_course": AsyncMock(),
-        "update_course": AsyncMock(),
-        "delete_course": AsyncMock(),
-        "get_course_professor": AsyncMock(),
-        "get_course_department": AsyncMock(),
-        "get_course_lectures": AsyncMock(),
+        "get_courses": MagicMock(),
+        "get_course": MagicMock(),
+        "get_course_by_code": MagicMock(),
+        "create_course": MagicMock(),
+        "update_course": MagicMock(),
+        "delete_course": MagicMock(),
+        "get_course_professor": MagicMock(),
+        "get_course_department": MagicMock(),
+        "get_course_lectures": MagicMock(),
         "generate_course": AsyncMock(),
     }
 
