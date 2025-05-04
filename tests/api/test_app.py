@@ -6,6 +6,7 @@ from artificial_u.api.app import app
 client = TestClient(app)
 
 
+@pytest.mark.unit
 def test_health_check():
     """Test that the health check endpoint returns a 200 status code"""
     response = client.get("/api/v1/health")
@@ -23,6 +24,7 @@ def test_health_check():
     assert isinstance(data["timestamp"], float)
 
 
+@pytest.mark.unit
 def test_index_route():
     """Test that the index route returns the correct information"""
     response = client.get("/api")

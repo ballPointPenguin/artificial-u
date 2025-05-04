@@ -20,7 +20,7 @@ from artificial_u.api.models.departments import (
     ProfessorBrief,
 )
 from artificial_u.models.repositories import RepositoryFactory
-from artificial_u.services import CourseService, DepartmentService, ProfessorService
+from artificial_u.services import ContentService, CourseService, DepartmentService, ProfessorService
 from artificial_u.utils import (
     ContentGenerationError,
     DatabaseError,
@@ -35,6 +35,7 @@ class DepartmentApiService:
         course_service: CourseService,
         professor_service: ProfessorService,
         repository_factory: RepositoryFactory,
+        content_service: ContentService,
         logger=None,
     ):
         """
@@ -44,6 +45,7 @@ class DepartmentApiService:
             repository_factory: Repository factory instance
             professor_service: Professor service for professor-related operations
             course_service: Course service for course-related operations
+            content_service: Content generation service
             logger: Optional logger instance
         """
         self.repository_factory = repository_factory
@@ -54,6 +56,7 @@ class DepartmentApiService:
             repository_factory=repository_factory,
             professor_service=professor_service,
             course_service=course_service,
+            content_service=content_service,
             logger=self.logger,
         )
 

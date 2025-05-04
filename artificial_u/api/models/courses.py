@@ -32,10 +32,19 @@ class CourseCreate(CourseBase):
 
 
 # Course update model
-class CourseUpdate(CourseBase):
-    """Model for updating an existing course."""
+class CourseUpdate(BaseModel):
+    """Model for updating an existing course. All fields are optional."""
 
-    pass
+    # Make all fields optional
+    code: Optional[str] = None
+    title: Optional[str] = None
+    department_id: Optional[int] = None
+    level: Optional[str] = None
+    credits: Optional[int] = Field(default=None, ge=0)  # Keep validation if needed
+    professor_id: Optional[int] = None
+    description: Optional[str] = None
+    lectures_per_week: Optional[int] = None  # No default needed for update
+    total_weeks: Optional[int] = None  # No default needed for update
 
 
 # Course response model

@@ -49,12 +49,12 @@ async def list_lectures(
     - **professor_id**: Filter by professor ID
     - **search**: Search in title and description
     """
-    return lecture_service.list_lectures(
+    return await lecture_service.list_lectures(
         page=page,
         size=size,
         course_id=course_id,
         professor_id=professor_id,
-        search_query=search,
+        search=search,
     )
 
 
@@ -74,7 +74,7 @@ async def get_lecture(
 
     - **lecture_id**: The unique identifier of the lecture
     """
-    lecture = lecture_service.get_lecture(lecture_id)
+    lecture = await lecture_service.get_lecture(lecture_id)
     if not lecture:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -97,7 +97,7 @@ async def get_lecture_content(
     """
     Get the full text content of a specific lecture.
     """
-    content = lecture_service.get_lecture_content(lecture_id)
+    content = await lecture_service.get_lecture_content(lecture_id)
     if content is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -125,7 +125,7 @@ async def get_lecture_audio(
     - **lecture_id**: The unique identifier of the lecture
     - Returns a redirect to the storage URL where the audio file is stored
     """
-    audio_url = lecture_service.get_lecture_audio_url(lecture_id)
+    audio_url = await lecture_service.get_lecture_audio_url(lecture_id)
     if not audio_url:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -164,8 +164,7 @@ async def create_lecture(
     - Request body contains all required lecture information
     - Returns the created lecture with its assigned ID
     """
-    # Create lecture
-    lecture = lecture_service.create_lecture(lecture_data)
+    lecture = await lecture_service.create_lecture(lecture_data)
     return lecture
 
 
@@ -188,7 +187,7 @@ async def update_lecture(
     - Request body contains the updated lecture information (all fields optional)
     - Returns the updated lecture
     """
-    updated_lecture = lecture_service.update_lecture(lecture_id, lecture_data)
+    updated_lecture = await lecture_service.update_lecture(lecture_id, lecture_data)
     if not updated_lecture:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -217,7 +216,7 @@ async def delete_lecture(
     - **lecture_id**: The unique identifier of the lecture to delete
     - Returns no content on successful deletion
     """
-    success = lecture_service.delete_lecture(lecture_id)
+    success = await lecture_service.delete_lecture(lecture_id)
     if not success:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -246,7 +245,7 @@ async def download_lecture_content(
     - **lecture_id**: The unique identifier of the lecture
     - Returns the lecture content as plain text
     """
-    content = lecture_service.get_lecture_content(lecture_id)
+    content = await lecture_service.get_lecture_content(lecture_id)
     if content is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

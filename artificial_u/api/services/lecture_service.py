@@ -77,7 +77,7 @@ class LectureApiService:
         size: int = 10,
         course_id: Optional[int] = None,
         professor_id: Optional[int] = None,
-        search_query: Optional[str] = None,
+        search: Optional[str] = None,
     ) -> LectureList:
         """
         List lectures with filtering and pagination using the core service and repository.
@@ -87,7 +87,7 @@ class LectureApiService:
             size: Items per page
             course_id: Filter by course ID
             professor_id: Filter by professor ID
-            search_query: Search query for title/description
+            search: Search query for title/description
 
         Returns:
             LectureList: Paginated list of lectures
@@ -102,7 +102,7 @@ class LectureApiService:
                 size=size,
                 course_id=course_id,
                 professor_id=professor_id,
-                search_query=search_query,
+                search_query=search,
             )
 
             # Convert core models to API models
@@ -115,7 +115,7 @@ class LectureApiService:
             total_count = self.repository_factory.lecture.count(
                 course_id=course_id,
                 professor_id=professor_id,
-                search_query=search_query,
+                search_query=search,
             )
 
             return LectureList(

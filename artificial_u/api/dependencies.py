@@ -188,6 +188,7 @@ def get_department_service(
     repository_factory: RepositoryFactory = Depends(get_repository_factory),
     professor_service: ProfessorService = Depends(get_professor_service),
     course_service: CourseService = Depends(get_course_service),
+    content_service: ContentService = Depends(get_content_service),
 ) -> DepartmentService:
     """
     Get a department service instance.
@@ -196,6 +197,7 @@ def get_department_service(
         repository_factory: Repository factory
         professor_service: Professor service
         course_service: Course service
+        content_service: Content service
 
     Returns:
         DepartmentService instance
@@ -204,6 +206,7 @@ def get_department_service(
         repository_factory=repository_factory,
         professor_service=professor_service,
         course_service=course_service,
+        content_service=content_service,
         logger=logging.getLogger("artificial_u.services.department_service"),
     )
 
@@ -292,6 +295,7 @@ def get_department_api_service(
     repository_factory: RepositoryFactory = Depends(get_repository_factory),
     professor_service: ProfessorService = Depends(get_professor_service),
     course_service: CourseService = Depends(get_course_service),
+    content_service: ContentService = Depends(get_content_service),
 ) -> DepartmentApiService:
     """
     Get a department API service instance.
@@ -300,6 +304,7 @@ def get_department_api_service(
         repository_factory: Repository factory
         professor_service: Professor service
         course_service: Course service
+        content_service: Content service
 
     Returns:
         DepartmentApiService instance
@@ -308,6 +313,7 @@ def get_department_api_service(
         repository_factory=repository_factory,
         professor_service=professor_service,
         course_service=course_service,
+        content_service=content_service,
         logger=logging.getLogger("artificial_u.api.services.department_service"),
     )
 

@@ -8,6 +8,7 @@ from fastapi.testclient import TestClient
 from artificial_u.api.app import app
 
 
+@pytest.mark.unit
 def test_cors_headers_from_allowed_origin():
     """Test CORS headers are returned for requests from allowed origins"""
     client = TestClient(app)
@@ -22,6 +23,7 @@ def test_cors_headers_from_allowed_origin():
     assert response.headers["Access-Control-Allow-Credentials"] == "true"
 
 
+@pytest.mark.unit
 def test_cors_preflight_request():
     """Test CORS preflight requests are handled correctly"""
     client = TestClient(app)
@@ -46,6 +48,7 @@ def test_cors_preflight_request():
     assert "Authorization" in response.headers["Access-Control-Allow-Headers"]
 
 
+@pytest.mark.unit
 def test_cors_headers_absent_for_non_cors_request():
     """Test CORS headers are not included for non-CORS requests"""
     client = TestClient(app)
@@ -57,6 +60,7 @@ def test_cors_headers_absent_for_non_cors_request():
     assert "Access-Control-Allow-Origin" not in response.headers
 
 
+@pytest.mark.unit
 def test_cors_from_disallowed_origin():
     """Test requests from disallowed origins don't get CORS headers"""
     client = TestClient(app)

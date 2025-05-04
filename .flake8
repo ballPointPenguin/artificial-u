@@ -9,9 +9,9 @@ exclude =
     venv,
     .venv,
     alembic,
-    tests,
     scripts,
     web
 per-file-ignores =
-    __init__.py: F401
+    __init__.py: F401,
+    tests/api/*: C901
 max-complexity = 10

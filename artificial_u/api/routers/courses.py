@@ -47,8 +47,7 @@ async def list_courses(
     """
     Get a paginated list of courses with filtering options.
     """
-    # The service handles the logic and potential exceptions
-    return course_service.get_courses(
+    return await course_service.get_courses(
         page=page,
         size=size,
         department_id=department_id,
@@ -72,8 +71,15 @@ async def get_course(
     """
     Get detailed information about a specific course.
     """
-    # Service raises HTTPException on not found or errors
-    return course_service.get_course(course_id)
+    # Service raises HTTPException on not found or errors (if implemented)
+    # Add check for None response
+    response_data = await course_service.get_course(course_id)
+    if response_data is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Course with ID {course_id} not found.",
+        )
+    return response_data
 
 
 @router.get(
@@ -90,8 +96,15 @@ async def get_course_by_code(
     """
     Get detailed information about a specific course by its code.
     """
-    # Service raises HTTPException on not found or errors
-    return course_service.get_course_by_code(code)
+    # Service raises HTTPException on not found or errors (if implemented)
+    # Add check for None response
+    response_data = await course_service.get_course_by_code(code)
+    if response_data is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Course with code {code} not found.",
+        )
+    return response_data
 
 
 @router.post(
@@ -113,8 +126,7 @@ async def create_course(
     Create a new course.
     The service handles looking up dependencies and potential errors.
     """
-    # Service handles creation logic and raises HTTPException on errors
-    return course_service.create_course(course_data)
+    return await course_service.create_course(course_data)
 
 
 @router.put(
@@ -138,7 +150,14 @@ async def update_course(
     The service handles the update logic and potential errors.
     """
     # Service handles update logic and raises HTTPException on errors
-    return course_service.update_course(course_id, course_data)
+    updated_course_data = await course_service.update_course(course_id, course_data)
+    # Add check for None response (course not found)
+    if updated_course_data is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Course with ID {course_id} not found for update.",
+        )
+    return updated_course_data
 
 
 @router.delete(
@@ -160,7 +179,7 @@ async def delete_course(
     Delete a course.
     The service handles deletion and raises specific exceptions for 404/409/500.
     """
-    success = course_service.delete_course(course_id)
+    success = await course_service.delete_course(course_id)
     # The service now returns False only if not found (after attempting delete)
     # It raises HTTPException for 409 or 500 errors.
     if not success:
@@ -189,8 +208,15 @@ async def get_course_professor(
     """
     Get information about the professor teaching a specific course.
     """
-    # Service handles lookup and raises HTTPException on errors
-    return course_service.get_course_professor(course_id)
+    # Service handles lookup and raises HTTPException on errors (if implemented)
+    # Add check for None response
+    response_data = await course_service.get_course_professor(course_id)
+    if response_data is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Course with ID {course_id} or its professor not found.",
+        )
+    return response_data
 
 
 @router.get(
@@ -210,8 +236,15 @@ async def get_course_department(
     """
     Get information about the department offering a specific course.
     """
-    # Service handles lookup and raises HTTPException on errors
-    return course_service.get_course_department(course_id)
+    # Service handles lookup and raises HTTPException on errors (if implemented)
+    # Add check for None response
+    response_data = await course_service.get_course_department(course_id)
+    if response_data is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Course with ID {course_id} or its department not found.",
+        )
+    return response_data
 
 
 @router.get(
@@ -231,8 +264,15 @@ async def get_course_lectures(
     """
     Get lectures for a specific course.
     """
-    # Service handles lookup and raises HTTPException on errors
-    return course_service.get_course_lectures(course_id)
+    # Service handles lookup and raises HTTPException on errors (if implemented)
+    # We also need to handle the case where the service might just return None
+    response_data = await course_service.get_course_lectures(course_id)
+    if response_data is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Course with ID {course_id} not found or has no lectures.",
+        )
+    return response_data
 
 
 @router.post(

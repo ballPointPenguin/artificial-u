@@ -1,388 +1,395 @@
 """
-Tests for the course API endpoints.
+Unit Tests for the course API endpoints, mocking the service layer.
 """
 
-from datetime import datetime
+from unittest.mock import AsyncMock
 
 import pytest
 from fastapi.testclient import TestClient
 
-from artificial_u.api.app import app
-from artificial_u.models.core import Course, Department, Lecture, Professor
+# Import relevant API models for courses
+from artificial_u.api.models import CourseCreate  # Request model
+from artificial_u.api.models import (
+    CourseDepartmentBrief,  # Needed for CourseDepartmentBrief response simulation
+)
+from artificial_u.api.models import CourseLectureBrief  # Needed for CourseLecturesResponse
+from artificial_u.api.models import (
+    CourseProfessorBrief,  # Needed for CourseProfessorBrief response simulation
+)
+from artificial_u.api.models import CourseUpdate  # Request model
+from artificial_u.api.models import (
+    CourseLecturesResponse,
+    CourseResponse,
+    CoursesListResponse,
+)
 
-# Base data definitions
+# Base data for mocking responses
 sample_courses_base = [
-    Course(
+    CourseResponse(
         id=i,
-        code=f"CS{i}01",
+        code=f"COURSE{i}01",
         title=f"Test Course {i}",
-        department_id=1,  # Link all sample courses to Dept 1 for simplicity
-        level="Undergraduate" if i % 2 == 0 else "Graduate",
+        department_id=1 if i < 3 else 2,
+        level="Undergraduate",
         credits=3,
-        professor_id=i,  # Link course i to professor i
-        description=f"Description for course {i}",
+        professor_id=i,
+        description=f"Description {i}",
         lectures_per_week=2,
         total_weeks=14,
     )
-    for i in range(1, 4)
+    for i in range(1, 5)
 ]
 
-sample_professors_base = [
-    Professor(
-        id=i,
-        name=f"Dr. Test Professor {i}",
-        title=f"Professor of Test {i}",
-        department_id=1,  # Ensure professors are in Dept 1
-        specialization=f"Test Specialization {i}",
-        background="Test background",
-        personality="Test personality",
-        teaching_style="Test teaching style",
-        # Add other fields if needed by ProfessorBrief
+sample_professor_brief_base = CourseProfessorBrief(
+    id=1, name="Dr. Test Professor 1", title="Professor", specialization="Testing", department_id=1
+)
+
+sample_department_brief_base = CourseDepartmentBrief(
+    id=1, name="Test Department 1", code="TD1", faculty="Test Faculty"
+)
+
+sample_lectures_brief_base = [
+    CourseLectureBrief(
+        id=j, title=f"Lecture {j}", week_number=j, order_in_week=1, description=f"Description {j}"
     )
-    for i in range(1, 4)
+    for j in range(1, 4)
 ]
-
-sample_departments_base = [
-    Department(
-        id=1,
-        name="Computer Science",
-        code="CS",
-        faculty="Science and Engineering",
-        description="The Computer Science department",
-    ),
-    Department(
-        id=2,
-        name="Mathematics",
-        code="MATH",
-        faculty="Science and Engineering",
-        description="The Mathematics department",
-    ),
-]
-
-sample_lectures_data = []  # Renamed to avoid conflict
-for i in range(1, 5):  # Create 4 lectures
-    course_id = (i % 2) + 1  # Assign to courses 1 and 2
-    sample_lectures_data.append(
-        {
-            "id": i,
-            "title": f"Lecture {i} for Course {course_id}",
-            "course_id": course_id,
-            "week_number": 1,
-            "order_in_week": i,
-            "description": f"Description for lecture {i}",
-            "content": "Test content",
-            "audio_url": None,
-        }
-    )
 
 
 @pytest.fixture
-def client():
-    """Test client fixture."""
-    return TestClient(app)
+def mock_api_service(monkeypatch):
+    """Mock the CourseApiService methods for unit testing the API router."""
+    mock_service = {
+        "get_courses": AsyncMock(),
+        "get_course": AsyncMock(),
+        "get_course_by_code": AsyncMock(),
+        "create_course": AsyncMock(),
+        "update_course": AsyncMock(),
+        "delete_course": AsyncMock(),
+        "get_course_professor": AsyncMock(),
+        "get_course_department": AsyncMock(),
+        "get_course_lectures": AsyncMock(),
+        "generate_course": AsyncMock(),
+    }
 
+    # --- Configure Mock Return Values ---
 
-@pytest.fixture
-def mock_repository(monkeypatch):
-    """Mock repository with encapsulated state for testing course API."""
-
-    # --- State local to this fixture instance ---
-    local_sample_courses = [Course(**c.model_dump()) for c in sample_courses_base]
-    local_sample_professors = [Professor(**p.model_dump()) for p in sample_professors_base]
-    local_sample_departments = [Department(**d.model_dump()) for d in sample_departments_base]
-    local_sample_lectures = [Lecture(**lec_dict) for lec_dict in sample_lectures_data]
-    # --- End Local State ---
-
-    # --- Define and Patch Repository Methods ---
-    _patch_course_repo_methods(monkeypatch, locals())
-    _patch_dependent_repo_methods(monkeypatch, locals())
-    # --- End Patching ---
-
-    # Return the local state dictionary if tests need to inspect it
-    return locals()  # Return the dict containing local lists
-
-
-# --- Mock Function Definitions (Outside Fixture) ---
-
-
-def mock_list_courses(local_sample_courses, department_id=None, *args, **kwargs):
-    if department_id:
-        return [c for c in local_sample_courses if c.department_id == department_id]
-    return local_sample_courses
-
-
-def mock_get_course(local_sample_courses, course_id, *args, **kwargs):
-    return next((c for c in local_sample_courses if c.id == course_id), None)
-
-
-def mock_get_course_by_code(local_sample_courses, code, *args, **kwargs):
-    return next((c for c in local_sample_courses if c.code == code), None)
-
-
-def mock_create_course_impl(local_sample_courses, course):
-    new_id = (max(c.id for c in local_sample_courses) if local_sample_courses else 0) + 1
-    course.id = new_id
-    local_sample_courses.append(course)
-    return course
-
-
-def mock_update_course_impl(local_sample_courses, course):
-    for i, existing_course in enumerate(local_sample_courses):
-        if existing_course.id == course.id:
-            local_sample_courses[i] = course
-            return course
-    return None
-
-
-def mock_delete_course_impl(local_sample_courses, course_id):
-    initial_len = len(local_sample_courses)
-    new_list = [c for c in local_sample_courses if c.id != course_id]
-    # Note: We are modifying the list passed by reference (nonlocal behavior)
-    local_sample_courses[:] = new_list
-    return len(local_sample_courses) < initial_len
-
-
-def mock_get_professor(local_sample_professors, professor_id, *args, **kwargs):
-    return next((p for p in local_sample_professors if p.id == professor_id), None)
-
-
-def mock_get_department(local_sample_departments, department_id, *args, **kwargs):
-    return next((d for d in local_sample_departments if d.id == department_id), None)
-
-
-def mock_list_lectures_by_course(local_sample_lectures, course_id, *args, **kwargs):
-    return [lec for lec in local_sample_lectures if lec.course_id == course_id]
-
-
-# --- Patching Helper Functions ---
-def _patch_course_repo_methods(monkeypatch, local_state):
-    local_courses = local_state["local_sample_courses"]
-    # Use lambdas to capture the current local_courses list for the mocks
-    monkeypatch.setattr(
-        "artificial_u.models.repositories.course.CourseRepository.list",
-        lambda self, **kwargs: mock_list_courses(local_courses, **kwargs),
-    )
-    monkeypatch.setattr(
-        "artificial_u.models.repositories.course.CourseRepository.get",
-        lambda self, cid, **kwargs: mock_get_course(local_courses, cid, **kwargs),
-    )
-    monkeypatch.setattr(
-        "artificial_u.models.repositories.course.CourseRepository.get_by_code",
-        lambda self, code, **kwargs: mock_get_course_by_code(local_courses, code, **kwargs),
-    )
-    monkeypatch.setattr(
-        "artificial_u.models.repositories.course.CourseRepository.create",
-        lambda self, course, **kwargs: mock_create_course_impl(local_courses, course),
-    )
-    monkeypatch.setattr(
-        "artificial_u.models.repositories.course.CourseRepository.update",
-        lambda self, course, **kwargs: mock_update_course_impl(local_courses, course),
-    )
-    monkeypatch.setattr(
-        "artificial_u.models.repositories.course.CourseRepository.delete",
-        lambda self, cid, **kwargs: mock_delete_course_impl(local_courses, cid),
+    # LIST Courses (Default: all)
+    mock_service["get_courses"].return_value = CoursesListResponse(
+        items=sample_courses_base, total=4, page=1, size=10, pages=1
     )
 
+    # GET Course by ID
+    def _mock_get_course(course_id):
+        return next((c for c in sample_courses_base if c.id == course_id), None)
 
-def _patch_dependent_repo_methods(monkeypatch, local_state):
-    local_profs = local_state["local_sample_professors"]
-    local_depts = local_state["local_sample_departments"]
-    local_lecs = local_state["local_sample_lectures"]
-    monkeypatch.setattr(
-        "artificial_u.models.repositories.professor.ProfessorRepository.get",
-        lambda self, pid, **kwargs: mock_get_professor(local_profs, pid, **kwargs),
-    )
-    monkeypatch.setattr(
-        "artificial_u.models.repositories.department.DepartmentRepository.get",
-        lambda self, did, **kwargs: mock_get_department(local_depts, did, **kwargs),
-    )
-    monkeypatch.setattr(
-        "artificial_u.models.repositories.lecture.LectureRepository.list_by_course",
-        lambda self, cid, **kwargs: mock_list_lectures_by_course(local_lecs, cid, **kwargs),
-    )
+    mock_service["get_course"].side_effect = _mock_get_course
+
+    # GET Course by Code
+    def _mock_get_course_by_code(code):
+        return next((c for c in sample_courses_base if c.code == code), None)
+
+    mock_service["get_course_by_code"].side_effect = _mock_get_course_by_code
+
+    # CREATE Course
+    def _mock_create_course(course_data: CourseCreate):
+        new_id = 5  # Simulate next ID
+        # Simulate successful creation, return data resembling a saved course
+        return CourseResponse(id=new_id, **course_data.model_dump())
+
+    mock_service["create_course"].side_effect = _mock_create_course
+
+    # UPDATE Course
+    def _mock_update_course(course_id: int, course_data: CourseUpdate):
+        if course_id in [c.id for c in sample_courses_base]:
+            # Simulate successful update, return updated data
+            # Fetch original to merge update
+            original_course = next(c for c in sample_courses_base if c.id == course_id)
+            updated_data = original_course.model_dump()
+            updated_data.update(course_data.model_dump(exclude_unset=True))
+            return CourseResponse(**updated_data)
+        return None  # Simulate course not found
+
+    mock_service["update_course"].side_effect = _mock_update_course
+
+    # DELETE Course
+    # Service returns bool (True if deleted, False if not found/error occurred before delete)
+    # Router translates False to 404. Service raises HTTPException for 409/500.
+    def _mock_delete_course(course_id: int):
+        if course_id in [c.id for c in sample_courses_base]:  # Simulate finding it
+            # Assume deletion is successful if found for this mock
+            # To test 409, the service mock would need to raise HTTPException
+            return True
+        return False  # Simulate not found
+
+    mock_service["delete_course"].side_effect = _mock_delete_course
+
+    # GET Course Professor
+    def _mock_get_course_professor(course_id: int):
+        # Return the base ProfessorBrief, router expects CourseProfessorBrief
+        # But structure is compatible for this test
+        if course_id == 1:
+            return sample_professor_brief_base
+        return None  # Simulate course or professor not found
+
+    mock_service["get_course_professor"].side_effect = _mock_get_course_professor
+
+    # GET Course Department
+    def _mock_get_course_department(course_id: int):
+        # Return the base DepartmentBrief, router expects CourseDepartmentBrief
+        # But structure is compatible for this test
+        if course_id == 1:
+            return sample_department_brief_base
+        return None  # Simulate course or department not found
+
+    mock_service["get_course_department"].side_effect = _mock_get_course_department
+
+    # GET Course Lectures
+    def _mock_get_course_lectures(course_id: int):
+        if course_id == 1:
+            return CourseLecturesResponse(
+                course_id=1,
+                lectures=sample_lectures_brief_base,
+                total=len(sample_lectures_brief_base),
+            )
+        return None  # Simulate course not found
+
+    mock_service["get_course_lectures"].side_effect = _mock_get_course_lectures
+
+    # GENERATE Course
+    mock_service["generate_course"].return_value = sample_courses_base[
+        0
+    ]  # Return a sample generated course
+
+    # --- Apply Patches ---
+    base_path = "artificial_u.api.services.CourseApiService"
+    monkeypatch.setattr(f"{base_path}.get_courses", mock_service["get_courses"])
+    monkeypatch.setattr(f"{base_path}.get_course", mock_service["get_course"])
+    monkeypatch.setattr(f"{base_path}.get_course_by_code", mock_service["get_course_by_code"])
+    monkeypatch.setattr(f"{base_path}.create_course", mock_service["create_course"])
+    monkeypatch.setattr(f"{base_path}.update_course", mock_service["update_course"])
+    monkeypatch.setattr(f"{base_path}.delete_course", mock_service["delete_course"])
+    monkeypatch.setattr(f"{base_path}.get_course_professor", mock_service["get_course_professor"])
+    monkeypatch.setattr(f"{base_path}.get_course_department", mock_service["get_course_department"])
+    monkeypatch.setattr(f"{base_path}.get_course_lectures", mock_service["get_course_lectures"])
+    monkeypatch.setattr(f"{base_path}.generate_course", mock_service["generate_course"])
+
+    return mock_service
 
 
-@pytest.mark.api
-def test_list_courses(client, mock_repository):
-    """Test listing courses endpoint."""
+# Test functions will go here
+
+# --- Test Cases ---
+
+
+@pytest.mark.unit
+def test_list_courses(client: TestClient, mock_api_service):
+    """Test listing courses endpoint relies on mocked service."""
     response = client.get("/api/v1/courses")
     assert response.status_code == 200
     data = response.json()
     assert "items" in data
-    assert len(data["items"]) == len(sample_courses_base)
     assert data["total"] == len(sample_courses_base)
+    assert len(data["items"]) == len(sample_courses_base)
+    assert data["items"][0]["code"] == sample_courses_base[0].code
+    mock_api_service["get_courses"].assert_called_once_with(
+        page=1, size=10, department_id=None, professor_id=None, level=None, title=None
+    )
 
 
-@pytest.mark.api
-def test_filter_courses_by_department(client, mock_repository):
-    """Test filtering courses by department ID."""
-    # Note: Service/Router might filter by name, but repo mock expects ID if filtering happens there
-    # Adjust query parameter based on actual router implementation
-    response = client.get("/api/v1/courses?department_id=1")
+@pytest.mark.unit
+def test_list_courses_with_filters(client: TestClient, mock_api_service):
+    """Test listing courses with various filters."""
+    # Simulate filtered response from service
+    filtered_courses = [c for c in sample_courses_base if c.department_id == 1]
+    mock_api_service["get_courses"].return_value = CoursesListResponse(
+        items=filtered_courses, total=len(filtered_courses), page=1, size=10, pages=1
+    )
+
+    response = client.get("/api/v1/courses?department_id=1&level=Undergraduate")
     assert response.status_code == 200
     data = response.json()
-    expected_count = sum(1 for c in sample_courses_base if c.department_id == 1)
-    assert len(data["items"]) == expected_count
-    assert data["total"] == expected_count
-    for item in data["items"]:
-        assert item["department_id"] == 1
+    assert len(data["items"]) == len(filtered_courses)
+    assert data["total"] == len(filtered_courses)
+    mock_api_service["get_courses"].assert_called_once_with(
+        page=1, size=10, department_id=1, professor_id=None, level="Undergraduate", title=None
+    )
 
 
-@pytest.mark.api
-def test_filter_courses_by_level(client, mock_repository):
-    """Test filtering courses by level."""
-    response = client.get("/api/v1/courses?level=Undergraduate")
-    assert response.status_code == 200
-    data = response.json()
-    expected_count = sum(1 for c in sample_courses_base if c.level == "Undergraduate")
-    assert len(data["items"]) == expected_count
-    assert data["total"] == expected_count
-    for item in data["items"]:
-        assert item["level"] == "Undergraduate"
-
-
-@pytest.mark.api
-def test_get_course(client, mock_repository):
+@pytest.mark.unit
+def test_get_course(client: TestClient, mock_api_service):
     """Test getting a single course by ID."""
-    # Test with valid ID
+    # Test valid ID
     response = client.get("/api/v1/courses/1")
     assert response.status_code == 200
-    data = response.json()
-    assert data["id"] == 1
-    assert data["code"] == "CS101"
-    assert data["department_id"] == 1
+    assert response.json()["id"] == 1
+    assert response.json()["code"] == sample_courses_base[0].code
+    mock_api_service["get_course"].assert_called_once_with(1)
 
-    # Test with invalid ID
+    # Test invalid ID
+    mock_api_service["get_course"].reset_mock()
+    mock_api_service["get_course"].return_value = None
     response = client.get("/api/v1/courses/999")
-    assert response.status_code == 404
+    assert response.status_code == 404  # Router should raise 404
+    mock_api_service["get_course"].assert_called_once_with(999)
 
 
-@pytest.mark.api
-def test_get_course_by_code(client, mock_repository):
-    """Test getting a course by code."""
-    # Test with valid code
-    response = client.get("/api/v1/courses/code/CS101")
+@pytest.mark.unit
+def test_get_course_by_code(client: TestClient, mock_api_service):
+    """Test getting a single course by code."""
+    target_code = sample_courses_base[1].code  # COURSE201
+    # Test valid code
+    response = client.get(f"/api/v1/courses/code/{target_code}")
     assert response.status_code == 200
-    data = response.json()
-    assert data["id"] == 1
-    assert data["code"] == "CS101"
-    assert data["department_id"] == 1
+    assert response.json()["code"] == target_code
+    assert response.json()["id"] == sample_courses_base[1].id
+    mock_api_service["get_course_by_code"].assert_called_once_with(target_code)
 
-    # Test with invalid code
-    response = client.get("/api/v1/courses/code/INVALID")
+    # Test invalid code
+    mock_api_service["get_course_by_code"].reset_mock()
+    mock_api_service["get_course_by_code"].return_value = None
+    response = client.get("/api/v1/courses/code/INVALID99")
     assert response.status_code == 404
+    mock_api_service["get_course_by_code"].assert_called_once_with("INVALID99")
 
 
-@pytest.mark.api
-def test_create_course(client, mock_repository):
+@pytest.mark.unit
+def test_create_course(client: TestClient, mock_api_service):
     """Test creating a new course."""
-    new_course = {
-        "code": "CS501",
-        "title": "Advanced Programming",
+    new_course_data = {
+        "code": "NEW101",
+        "title": "Newly Created Course",
         "department_id": 1,
         "level": "Graduate",
         "credits": 4,
-        "professor_id": 1,
-        "description": "An advanced programming course",
-        "lectures_per_week": 2,
-        "total_weeks": 15,
+        "professor_id": 2,
+        "description": "A course created via API test",
+        "lectures_per_week": 1,
+        "total_weeks": 10,
     }
-    response = client.post("/api/v1/courses", json=new_course)
+    # Mock configured to return ID 5
+    expected_response_data = {"id": 5, **new_course_data}
+
+    response = client.post("/api/v1/courses", json=new_course_data)
     assert response.status_code == 201
-    data = response.json()
-    assert data["id"] == 4
-    assert data["code"] == "CS501"
-    assert data["title"] == "Advanced Programming"
-    assert data["department_id"] == 1
+    assert response.json() == expected_response_data
+
+    mock_api_service["create_course"].assert_called_once()
+    call_args = mock_api_service["create_course"].call_args[0]
+    assert isinstance(call_args[0], CourseCreate)
+    assert call_args[0].model_dump() == new_course_data
 
 
-@pytest.mark.api
-def test_update_course(client, mock_repository):
+@pytest.mark.unit
+def test_update_course(client: TestClient, mock_api_service):
     """Test updating an existing course."""
-    updated_data = {
-        "code": "CS101-Updated",
-        "title": "Updated Course Title",
-        "department_id": 2,
-        "level": "Undergraduate",
-        "credits": 4,
-        "professor_id": 1,
-        "description": "Updated description",
-        "lectures_per_week": 3,
-        "total_weeks": 12,
-    }
-    # Test with valid ID
-    response = client.put("/api/v1/courses/1", json=updated_data)
+    update_data = {"title": "Updated Course Title", "credits": 5}
+    course_id_to_update = 2
+    # Mock configured to return updated data for ID 2
+    # We need the original data to merge with the update for the expected response
+    original_data = next(c for c in sample_courses_base if c.id == course_id_to_update)
+    expected_data = original_data.model_dump()
+    expected_data.update(update_data)
+
+    response = client.put(f"/api/v1/courses/{course_id_to_update}", json=update_data)
     assert response.status_code == 200
-    data = response.json()
-    assert data["id"] == 1
-    assert data["code"] == "CS101-Updated"
-    assert data["title"] == "Updated Course Title"
-    assert data["department_id"] == 2
+    # The mock needs to correctly merge and return a CourseResponse
+    assert response.json() == CourseResponse(**expected_data).model_dump()
 
-    # Test with invalid ID
-    response = client.put("/api/v1/courses/999", json=updated_data)
+    mock_api_service["update_course"].assert_called_once()
+    call_args, call_kwargs = mock_api_service["update_course"].call_args
+    assert call_args[0] == course_id_to_update
+    assert isinstance(call_args[1], CourseUpdate)
+    assert call_args[1].model_dump(exclude_unset=True) == update_data
+
+    # Test invalid ID
+    mock_api_service["update_course"].reset_mock()
+    mock_api_service["update_course"].return_value = None
+    response = client.put("/api/v1/courses/999", json=update_data)
     assert response.status_code == 404
+    mock_api_service["update_course"].assert_called_once()
 
 
-@pytest.mark.api
-def test_delete_course(client, mock_repository):
+@pytest.mark.unit
+def test_delete_course(client: TestClient, mock_api_service):
     """Test deleting a course."""
-    # Test with valid ID
-    response = client.delete("/api/v1/courses/1")
+    course_id_to_delete = 3
+
+    # Test successful deletion
+    response = client.delete(f"/api/v1/courses/{course_id_to_delete}")
     assert response.status_code == 204
+    mock_api_service["delete_course"].assert_called_once_with(course_id_to_delete)
 
-    # Verify it's deleted by trying to get it
-    get_response = client.get("/api/v1/courses/1")
-    assert get_response.status_code == 404
-
-    # Test with invalid ID
+    # Test deleting non-existent course
+    mock_api_service["delete_course"].reset_mock()
+    mock_api_service["delete_course"].return_value = (
+        False  # Mock service returns False for not found
+    )
     response = client.delete("/api/v1/courses/999")
-    assert response.status_code == 404
+    assert response.status_code == 404  # Router converts False to 404
+    mock_api_service["delete_course"].assert_called_once_with(999)
 
 
-@pytest.mark.api
-def test_get_course_professor(client, mock_repository):
+@pytest.mark.unit
+def test_get_course_professor(client: TestClient, mock_api_service):
     """Test getting the professor for a course."""
-    # Test with valid course ID (Course 1 -> Prof 1)
+    # Test valid ID (Course 1)
     response = client.get("/api/v1/courses/1/professor")
     assert response.status_code == 200
-    data = response.json()
-    assert data["id"] == 1
-    assert data["name"] == "Dr. Test Professor 1"
+    # The router expects CourseProfessorBrief, but mock returns ProfessorBrief.
+    # We assert against the data structure we expect the mock to return.
+    assert response.json() == sample_professor_brief_base.model_dump()
+    mock_api_service["get_course_professor"].assert_called_once_with(1)
 
-    # Test with invalid course ID
+    # Test invalid course ID
+    mock_api_service["get_course_professor"].reset_mock()
+    mock_api_service["get_course_professor"].return_value = None
     response = client.get("/api/v1/courses/999/professor")
     assert response.status_code == 404
+    mock_api_service["get_course_professor"].assert_called_once_with(999)
 
 
-@pytest.mark.api
-def test_get_course_department(client, mock_repository):
+@pytest.mark.unit
+def test_get_course_department(client: TestClient, mock_api_service):
     """Test getting the department for a course."""
-    # Test with valid course ID (Course 1 -> Dept 1)
+    # Test valid ID (Course 1)
     response = client.get("/api/v1/courses/1/department")
     assert response.status_code == 200
-    data = response.json()
-    assert data["name"] == "Computer Science"
-    assert "code" in data
-    assert "faculty" in data
-    assert data["id"] == 1
+    # The router expects CourseDepartmentBrief, but mock returns DepartmentBrief.
+    # Assert against the data structure we expect the mock to return.
+    assert response.json() == sample_department_brief_base.model_dump()
+    mock_api_service["get_course_department"].assert_called_once_with(1)
 
-    # Test with invalid course ID
+    # Test invalid course ID
+    mock_api_service["get_course_department"].reset_mock()
+    mock_api_service["get_course_department"].return_value = None
     response = client.get("/api/v1/courses/999/department")
     assert response.status_code == 404
+    mock_api_service["get_course_department"].assert_called_once_with(999)
 
 
-@pytest.mark.api
-def test_get_course_lectures(client, mock_repository):
-    """Test getting lectures for a course."""
-    # Test with valid course ID (Course 1 -> Lectures 1, 3)
+@pytest.mark.unit
+def test_get_course_lectures(client: TestClient, mock_api_service):
+    """Test getting the lectures for a course."""
+    # Test valid ID (Course 1)
     response = client.get("/api/v1/courses/1/lectures")
     assert response.status_code == 200
     data = response.json()
     assert data["course_id"] == 1
-    assert "lectures" in data
-    assert len(data["lectures"]) == 2
+    assert len(data["lectures"]) == len(sample_lectures_brief_base)
+    assert data["total"] == len(sample_lectures_brief_base)
+    assert data["lectures"][0]["title"] == sample_lectures_brief_base[0].title
+    mock_api_service["get_course_lectures"].assert_called_once_with(1)
 
-    # Test with invalid course ID
+    # Test invalid course ID
+    mock_api_service["get_course_lectures"].reset_mock()
+    mock_api_service["get_course_lectures"].return_value = None
     response = client.get("/api/v1/courses/999/lectures")
     assert response.status_code == 404
+    mock_api_service["get_course_lectures"].assert_called_once_with(999)
+
+
+# Add test for generate_course if needed
+# @pytest.mark.unit
+# def test_generate_course(client: TestClient, mock_api_service):
+#     ...
