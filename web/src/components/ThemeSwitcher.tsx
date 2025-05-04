@@ -66,10 +66,7 @@ export function ThemeSwitcher() {
   // Initialize theme from localStorage or default
   onMount(() => {
     const savedTheme = localStorage.getItem('arcanum-theme') as Theme | null
-    if (
-      savedTheme &&
-      themeOptions.some((option) => option.value === savedTheme)
-    ) {
+    if (savedTheme && themeOptions.some((option) => option.value === savedTheme)) {
       setCurrentTheme(savedTheme)
     }
     applyTheme(currentTheme())
@@ -80,10 +77,7 @@ export function ThemeSwitcher() {
   })
 
   const getCurrentTheme = () => {
-    return (
-      themeOptions.find((option) => option.value === currentTheme()) ||
-      themeOptions[0]
-    )
+    return themeOptions.find((option) => option.value === currentTheme()) || themeOptions[0]
   }
 
   return (
@@ -133,12 +127,8 @@ export function ThemeSwitcher() {
                         }}
                       />
                       <div class="ml-3">
-                        <h3 class="text-parchment-100 font-serif">
-                          {theme.label}
-                        </h3>
-                        <p class="text-xs text-parchment-400">
-                          {theme.description}
-                        </p>
+                        <h3 class="text-parchment-100 font-serif">{theme.label}</h3>
+                        <p class="text-xs text-parchment-400">{theme.description}</p>
                       </div>
                     </div>
                   </div>

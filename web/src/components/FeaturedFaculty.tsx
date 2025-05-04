@@ -59,9 +59,7 @@ export function FeaturedFaculty(props: FeaturedFacultyProps) {
                   <Tooltip.Portal>
                     <Tooltip.Content class="z-50 p-3 bg-arcanum-800/95 border border-parchment-700 text-parchment-100 rounded shadow-arcane max-w-xs">
                       <div class="space-y-2">
-                        <p class="font-display text-parchment-200">
-                          {member.name}
-                        </p>
+                        <p class="font-display text-parchment-200">{member.name}</p>
                         <p class="font-serif text-sm">{member.title}</p>
                         {member.specialty && (
                           <p class="text-xs italic text-parchment-300">

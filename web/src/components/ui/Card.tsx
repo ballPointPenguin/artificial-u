@@ -8,12 +8,7 @@ interface CardProps {
 }
 
 export function Card(props: CardProps) {
-  const [local, others] = splitProps(props, [
-    'class',
-    'children',
-    'hover',
-    'bordered',
-  ])
+  const [local, others] = splitProps(props, ['class', 'children', 'hover', 'bordered'])
 
   return (
     <div
@@ -32,9 +27,7 @@ export function Card(props: CardProps) {
 
 export function CardHeader(props: { class?: string; children: JSX.Element }) {
   return (
-    <div class={`p-4 border-b border-parchment-800/30 ${props.class || ''}`}>
-      {props.children}
-    </div>
+    <div class={`p-4 border-b border-parchment-800/30 ${props.class || ''}`}>{props.children}</div>
   )
 }
 
@@ -44,8 +37,6 @@ export function CardContent(props: { class?: string; children: JSX.Element }) {
 
 export function CardFooter(props: { class?: string; children: JSX.Element }) {
   return (
-    <div class={`p-4 border-t border-parchment-800/30 ${props.class || ''}`}>
-      {props.children}
-    </div>
+    <div class={`p-4 border-t border-parchment-800/30 ${props.class || ''}`}>{props.children}</div>
   )
 }

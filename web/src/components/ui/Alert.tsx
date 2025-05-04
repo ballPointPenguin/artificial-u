@@ -11,13 +11,7 @@ interface AlertProps {
 }
 
 export function Alert(props: AlertProps) {
-  const [local, others] = splitProps(props, [
-    'variant',
-    'title',
-    'class',
-    'children',
-    'icon',
-  ])
+  const [local, others] = splitProps(props, ['variant', 'title', 'class', 'children', 'icon'])
 
   const variantClasses = {
     default: 'bg-arcanum-800/50 border-parchment-700/30 text-parchment-200',

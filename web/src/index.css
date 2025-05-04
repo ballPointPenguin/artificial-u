@@ -73,11 +73,8 @@
   --font-sans: "Inter", "Helvetica", "Arial", sans-serif;
 
   /* Background images */
-  --background-cosmic-wisps: linear-gradient(
-      to right,
-      rgba(86, 11, 173, 0.05),
-      rgba(5, 2, 46, 0.1)
-    ), url("/images/cosmic-wisps.png");
+  --background-cosmic-wisps: linear-gradient(to right, rgba(86, 11, 173, 0.05), rgba(5, 2, 46, 0.1)),
+    url("/images/cosmic-wisps.png");
   --background-parchment-texture: url("/images/parchment-texture.png");
   --background-nebula-glow: radial-gradient(
     circle at center,
@@ -310,16 +307,8 @@
     content: "";
     position: absolute;
     inset: 0;
-    background: radial-gradient(
-        circle at 20% 30%,
-        rgba(134, 86, 255, 0.15),
-        transparent 40%
-      ),
-      radial-gradient(
-        circle at 70% 60%,
-        rgba(107, 15, 86, 0.1),
-        transparent 50%
-      );
+    background: radial-gradient(circle at 20% 30%, rgba(134, 86, 255, 0.15), transparent 40%),
+      radial-gradient(circle at 70% 60%, rgba(107, 15, 86, 0.1), transparent 50%);
     z-index: -1;
   }
 
@@ -339,12 +328,7 @@
   .animate-shimmer {
     animation: var(--animation-shimmer);
     background-size: 200% 100%;
-    background-image: linear-gradient(
-      to right,
-      transparent,
-      rgba(134, 86, 255, 0.2),
-      transparent
-    );
+    background-image: linear-gradient(to right, transparent, rgba(134, 86, 255, 0.2), transparent);
   }
 
   /* Magic button specific styles */

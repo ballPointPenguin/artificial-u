@@ -31,9 +31,7 @@ const ConfirmationModal = (props: ConfirmationModalProps) => {
       <div class="fixed inset-0 z-50 overflow-y-auto bg-black bg-opacity-50 flex items-center justify-center">
         <div class="relative arcane-card max-w-md w-full mx-4 md:mx-auto shadow-xl">
           <div class="p-6">
-            <h3 class="text-lg font-semibold mb-3 text-parchment-100">
-              {props.title}
-            </h3>
+            <h3 class="text-lg font-semibold mb-3 text-parchment-100">{props.title}</h3>
             <div class="mb-6 text-parchment-300">{props.message}</div>
 
             <div class="flex justify-end space-x-3">
@@ -52,9 +50,7 @@ const ConfirmationModal = (props: ConfirmationModalProps) => {
                 disabled={props.isConfirming}
                 class="bg-red-800/50 hover:bg-red-700/50 border-red-500/50 text-red-100 hover:shadow-glow"
               >
-                {props.isConfirming
-                  ? 'Processing...'
-                  : props.confirmText || 'Delete'}
+                {props.isConfirming ? 'Processing...' : props.confirmText || 'Delete'}
               </Button>
             </div>
           </div>

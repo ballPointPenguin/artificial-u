@@ -11,12 +11,7 @@ interface ButtonProps extends JSX.ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 export function Button(props: ButtonProps) {
-  const [local, others] = splitProps(props, [
-    'variant',
-    'size',
-    'class',
-    'children',
-  ])
+  const [local, others] = splitProps(props, ['variant', 'size', 'class', 'children'])
 
   const variantClasses = {
     primary:
@@ -25,8 +20,7 @@ export function Button(props: ButtonProps) {
       'bg-arcanum-900/50 hover:bg-arcanum-800/50 text-parchment-200 border border-parchment-400',
     outline:
       'bg-transparent text-parchment-200 border border-parchment-400 hover:bg-parchment-800/20',
-    ghost:
-      'bg-transparent text-parchment-300 hover:text-parchment-100 hover:bg-arcanum-800/30',
+    ghost: 'bg-transparent text-parchment-300 hover:text-parchment-100 hover:bg-arcanum-800/30',
     link: 'bg-transparent text-parchment-200 hover:text-parchment-100 underline-offset-4 hover:underline',
   }
 

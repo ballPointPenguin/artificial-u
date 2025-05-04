@@ -9,19 +9,11 @@ interface TextFieldProps extends TextField.TextFieldRootProps {
 }
 
 export function Input(props: TextFieldProps) {
-  const [local, others] = splitProps(props, [
-    'label',
-    'placeholder',
-    'helperText',
-    'error',
-  ])
+  const [local, others] = splitProps(props, ['label', 'placeholder', 'helperText', 'error'])
   const [focused, setFocused] = createSignal(false)
 
   return (
-    <TextField.Root
-      {...others}
-      validationState={local.error ? 'invalid' : 'valid'}
-    >
+    <TextField.Root {...others} validationState={local.error ? 'invalid' : 'valid'}>
       <TextField.Label class="block mb-2 text-sm font-serif text-parchment-200">
         {local.label}
       </TextField.Label>

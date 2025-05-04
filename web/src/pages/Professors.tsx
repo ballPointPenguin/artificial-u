@@ -1,12 +1,7 @@
 import { For, Show, createResource, createSignal } from 'solid-js'
-import {
-  createProfessor,
-  getProfessors,
-} from '../api/services/professor-service'
+import { createProfessor, getProfessors } from '../api/services/professor-service'
 import type { Professor } from '../api/types'
-import ProfessorForm, {
-  type ProfessorFormData,
-} from '../components/professors/ProfessorForm'
+import ProfessorForm, { type ProfessorFormData } from '../components/professors/ProfessorForm'
 import ProfessorListItem from '../components/professors/ProfessorListItem'
 import { Button } from '../components/ui/Button'
 
@@ -49,9 +44,7 @@ export default function ProfessorsPage() {
       setShowCreateForm(false)
       void refetch()
     } catch (error) {
-      setFormError(
-        error instanceof Error ? error.message : 'Failed to create professor'
-      )
+      setFormError(error instanceof Error ? error.message : 'Failed to create professor')
     } finally {
       setSubmitting(false)
     }
@@ -60,9 +53,7 @@ export default function ProfessorsPage() {
   return (
     <main class="container mx-auto p-4">
       <div class="flex justify-between items-center mb-6">
-        <h1 class="text-3xl font-display mb-6 text-parchment-100 text-shadow-golden">
-          Professors
-        </h1>
+        <h1 class="text-3xl font-display mb-6 text-parchment-100 text-shadow-golden">Professors</h1>
         <Button variant="primary" onClick={() => setShowCreateForm(true)}>
           Add Professor
         </Button>
@@ -70,9 +61,7 @@ export default function ProfessorsPage() {
 
       <Show when={showCreateForm()}>
         <div class="arcane-card p-6 mb-8">
-          <h2 class="text-xl font-semibold mb-4 text-parchment-100">
-            Create New Professor
-          </h2>
+          <h2 class="text-xl font-semibold mb-4 text-parchment-100">Create New Professor</h2>
           <ProfessorForm
             onSubmit={handleSubmitCreate}
             onCancel={() => setShowCreateForm(false)}
@@ -100,11 +89,7 @@ export default function ProfessorsPage() {
       {/* Professors List */}
       <Show
         when={!professorsResource.loading}
-        fallback={
-          <p class="text-parchment-300 text-center py-8">
-            Loading professors...
-          </p>
-        }
+        fallback={<p class="text-parchment-300 text-center py-8">Loading professors...</p>}
       >
         <Show
           when={!professorsResource.error}
@@ -116,11 +101,7 @@ export default function ProfessorsPage() {
                   ? professorsResource.error.message
                   : 'Unknown error'}
               </p>
-              <Button
-                variant="ghost"
-                onClick={() => void refetch()}
-                class="mt-4"
-              >
+              <Button variant="ghost" onClick={() => void refetch()} class="mt-4">
                 Retry
               </Button>
             </div>
@@ -132,9 +113,7 @@ export default function ProfessorsPage() {
           >
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               <For each={professorsResource()?.items}>
-                {(professor: Professor) => (
-                  <ProfessorListItem professor={professor} />
-                )}
+                {(professor: Professor) => <ProfessorListItem professor={professor} />}
               </For>
             </div>
 

@@ -25,9 +25,7 @@ export function NavBar() {
   return (
     <nav
       class={`w-full z-50 transition-all duration-300 ${
-        isScrolled()
-          ? 'bg-arcanum-950/90 backdrop-blur-sm shadow-md'
-          : 'bg-transparent'
+        isScrolled() ? 'bg-arcanum-950/90 backdrop-blur-sm shadow-md' : 'bg-transparent'
       }`}
     >
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

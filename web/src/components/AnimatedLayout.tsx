@@ -80,11 +80,7 @@ export function AnimatedLayout(props: AnimatedLayoutProps) {
   onMount(() => {
     setMounted(true)
 
-    if (
-      (!props.showParticles && props.showParticles !== undefined) ||
-      !canvasRef
-    )
-      return
+    if ((!props.showParticles && props.showParticles !== undefined) || !canvasRef) return
 
     const canvas = canvasRef
     const ctx = canvas.getContext('2d')
@@ -161,10 +157,7 @@ export function AnimatedLayout(props: AnimatedLayoutProps) {
     <div class="min-h-screen flex flex-col relative overflow-hidden">
       {/* Particle effect background */}
       {(props.showParticles === undefined || props.showParticles) && (
-        <canvas
-          ref={canvasRef}
-          class="fixed top-0 left-0 w-full h-full pointer-events-none z-0"
-        />
+        <canvas ref={canvasRef} class="fixed top-0 left-0 w-full h-full pointer-events-none z-0" />
       )}
 
       {/* Gradient background */}
@@ -195,8 +188,9 @@ export function AnimatedLayout(props: AnimatedLayoutProps) {
       </div>
 
       {/* Theme switcher */}
-      {(props.showThemeSwitcher === undefined || props.showThemeSwitcher) &&
-        mounted() && <ThemeSwitcher />}
+      {(props.showThemeSwitcher === undefined || props.showThemeSwitcher) && mounted() && (
+        <ThemeSwitcher />
+      )}
     </div>
   )
 }

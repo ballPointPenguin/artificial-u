@@ -57,9 +57,7 @@ export default function ProfessorDetail() {
       setIsEditing(false)
       void refetch()
     } catch (error) {
-      setError(
-        error instanceof Error ? error.message : 'Failed to update professor'
-      )
+      setError(error instanceof Error ? error.message : 'Failed to update professor')
     } finally {
       setIsSubmitting(false)
     }
@@ -79,9 +77,7 @@ export default function ProfessorDetail() {
       // Navigate back to professors list after deletion
       navigate('/academics/professors')
     } catch (error) {
-      setError(
-        error instanceof Error ? error.message : 'Failed to delete professor'
-      )
+      setError(error instanceof Error ? error.message : 'Failed to delete professor')
       setIsDeleting(false)
     } finally {
       setIsSubmitting(false)
@@ -102,9 +98,7 @@ export default function ProfessorDetail() {
       await generateProfessorImage(id)
       void refetch()
     } catch (error) {
-      setGenerationError(
-        error instanceof Error ? error.message : 'Failed to generate image'
-      )
+      setGenerationError(error instanceof Error ? error.message : 'Failed to generate image')
     } finally {
       setIsGeneratingImage(false)
     }
@@ -115,9 +109,7 @@ export default function ProfessorDetail() {
       {/* Loading and error states */}
       <Show
         when={!professorResource.loading}
-        fallback={
-          <p class="text-parchment-300">Loading professor details...</p>
-        }
+        fallback={<p class="text-parchment-300">Loading professor details...</p>}
       >
         <Show
           when={!professorResource.error}
@@ -166,11 +158,7 @@ export default function ProfessorDetail() {
                   >
                     {isGeneratingImage() ? 'Generating...' : 'Generate Image'}
                   </Button>
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => setIsEditing(true)}
-                  >
+                  <Button variant="secondary" size="sm" onClick={() => setIsEditing(true)}>
                     Edit
                   </Button>
                   <Button
@@ -193,27 +181,17 @@ export default function ProfessorDetail() {
 
               <div class="space-y-3 text-parchment-200">
                 <p>
-                  <strong class="font-semibold text-parchment-100">
-                    Title:
-                  </strong>{' '}
-                  <span class="text-parchment-200">
-                    {professorResource()?.title}
-                  </span>
+                  <strong class="font-semibold text-parchment-100">Title:</strong>{' '}
+                  <span class="text-parchment-200">{professorResource()?.title}</span>
                 </p>
                 <p>
-                  <strong class="font-semibold text-parchment-100">
-                    Specialization:
-                  </strong>{' '}
-                  <span class="text-parchment-200">
-                    {professorResource()?.specialization}
-                  </span>
+                  <strong class="font-semibold text-parchment-100">Specialization:</strong>{' '}
+                  <span class="text-parchment-200">{professorResource()?.specialization}</span>
                 </p>
 
                 <Show when={professorResource()?.description}>
                   <p>
-                    <strong class="font-semibold text-parchment-100">
-                      Description:
-                    </strong>
+                    <strong class="font-semibold text-parchment-100">Description:</strong>
                     <span class="block mt-1 whitespace-pre-wrap">
                       {professorResource()?.description}
                     </span>
@@ -222,9 +200,7 @@ export default function ProfessorDetail() {
 
                 <Show when={professorResource()?.background}>
                   <p>
-                    <strong class="font-semibold text-parchment-100">
-                      Background:
-                    </strong>
+                    <strong class="font-semibold text-parchment-100">Background:</strong>
                     <span class="block mt-1 whitespace-pre-wrap">
                       {professorResource()?.background}
                     </span>
@@ -233,44 +209,29 @@ export default function ProfessorDetail() {
 
                 <Show when={professorResource()?.teaching_style}>
                   <p>
-                    <strong class="font-semibold text-parchment-100">
-                      Teaching Style:
-                    </strong>{' '}
-                    <span class="text-parchment-200">
-                      {professorResource()?.teaching_style}
-                    </span>
+                    <strong class="font-semibold text-parchment-100">Teaching Style:</strong>{' '}
+                    <span class="text-parchment-200">{professorResource()?.teaching_style}</span>
                   </p>
                 </Show>
 
                 <Show when={professorResource()?.personality}>
                   <p>
-                    <strong class="font-semibold text-parchment-100">
-                      Personality:
-                    </strong>{' '}
-                    <span class="text-parchment-200">
-                      {professorResource()?.personality}
-                    </span>
+                    <strong class="font-semibold text-parchment-100">Personality:</strong>{' '}
+                    <span class="text-parchment-200">{professorResource()?.personality}</span>
                   </p>
                 </Show>
 
                 {/* Display image if available */}
                 <Show when={professorResource()?.image_url}>
-                  <p class="font-semibold text-parchment-100 mt-4">
-                    Profile Image:
-                  </p>
+                  <p class="font-semibold text-parchment-100 mt-4">Profile Image:</p>
                   <img
                     src={
-                      professorResource()?.image_url
-                        ? String(professorResource()?.image_url)
-                        : ''
+                      professorResource()?.image_url ? String(professorResource()?.image_url) : ''
                     }
                     alt={`Professor ${String(professorResource()?.name || '')}`}
                     class="mt-2 max-w-xs h-auto rounded-lg shadow-lg"
                     onError={(e) => {
-                      console.error(
-                        'Image failed to load:',
-                        e.currentTarget.src
-                      )
+                      console.error('Image failed to load:', e.currentTarget.src)
                     }}
                   />
                 </Show>

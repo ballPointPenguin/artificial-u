@@ -2,11 +2,7 @@ import { createEffect, createSignal } from 'solid-js'
 import { createStore } from 'solid-js/store'
 
 // Theme types
-export type ThemeMode =
-  | 'dark-academia'
-  | 'vaporwave'
-  | 'cosmic-horror'
-  | 'techno-occult'
+export type ThemeMode = 'dark-academia' | 'vaporwave' | 'cosmic-horror' | 'techno-occult'
 
 interface ThemeProperties {
   primaryColor: string
@@ -132,9 +128,7 @@ function applyThemeToDOM(theme: ThemeMode) {
 export function getThemeVariable(variableName: string): string {
   if (typeof window === 'undefined') return ''
 
-  return getComputedStyle(document.documentElement)
-    .getPropertyValue(`--${variableName}`)
-    .trim()
+  return getComputedStyle(document.documentElement).getPropertyValue(`--${variableName}`).trim()
 }
 
 // Create custom CSS with current theme
@@ -174,12 +168,9 @@ export function generatePalette(baseColor: string, steps = 10): string[] {
 }
 
 // Create cosmic wisp background styles
-export function createCosmicWispStyles(
-  primaryColor: string,
-  secondaryColor: string
-): string {
+export function createCosmicWispStyles(primaryColor: string, secondaryColor: string): string {
   return `
-    background-image: 
+    background-image:
       radial-gradient(circle at 20% 30%, ${primaryColor}26, transparent 40%),
       radial-gradient(circle at 70% 60%, ${secondaryColor}1a, transparent 50%);
     position: relative;

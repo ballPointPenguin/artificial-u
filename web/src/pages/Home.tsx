@@ -88,19 +88,17 @@ const Home = () => {
 
           <div class="prose prose-lg prose-invert mx-auto font-serif text-parchment-300">
             <p class="text-lg md:text-xl leading-relaxed">
-              Founded in 2025, The Artificial University exists at the
-              intersection of timeless esoteric traditions and cutting-edge
-              scientific discovery. Our unique curriculum bridges quantum
-              mechanics, symbolic systems, and the digital humanities to foster
-              a new generation of scholars capable of navigating the
-              increasingly complex fabric of reality.
+              Founded in 2025, The Artificial University exists at the intersection of timeless
+              esoteric traditions and cutting-edge scientific discovery. Our unique curriculum
+              bridges quantum mechanics, symbolic systems, and the digital humanities to foster a
+              new generation of scholars capable of navigating the increasingly complex fabric of
+              reality.
             </p>
             <p class="text-lg md:text-xl leading-relaxed">
-              Through rigorous intellectual training and immersive learning
-              environments, our students develop the cognitive flexibility to
-              harmonize seemingly contradictory domains of knowledge,
-              cultivating a holistic understanding that transcends conventional
-              academic boundaries.
+              Through rigorous intellectual training and immersive learning environments, our
+              students develop the cognitive flexibility to harmonize seemingly contradictory
+              domains of knowledge, cultivating a holistic understanding that transcends
+              conventional academic boundaries.
             </p>
           </div>
 
@@ -136,8 +134,8 @@ const Home = () => {
             Begin Your Journey Into The Unknown
           </h2>
           <p class="text-xl font-serif text-parchment-300 mb-10 max-w-2xl mx-auto">
-            Applications are now open for the 2025 academic year. Join our
-            community of seekers, thinkers, and creators.
+            Applications are now open for the 2025 academic year. Join our community of seekers,
+            thinkers, and creators.
           </p>
           <a
             href="/admissions/apply"

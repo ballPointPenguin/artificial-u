@@ -11,10 +11,7 @@ export function Hero(props: HeroProps) {
   return (
     <div class="relative min-h-screen flex items-center justify-center">
       {/* Background with cosmic wisps */}
-      <div
-        class="absolute inset-0 bg-arcanum-950 overflow-hidden"
-        aria-hidden="true"
-      >
+      <div class="absolute inset-0 bg-arcanum-950 overflow-hidden" aria-hidden="true">
         {/* Animated nebula wisps */}
         <div class="absolute inset-0 opacity-20">
           <div

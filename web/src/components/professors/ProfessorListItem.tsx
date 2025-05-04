@@ -19,8 +19,7 @@ export default function ProfessorListItem(props: ProfessorListItemProps) {
         Title: <span class="text-mystic-300">{props.professor.title}</span>
       </p>
       <p class="text-sm text-parchment-300">
-        Specialization:{' '}
-        <span class="text-mystic-300">{props.professor.specialization}</span>
+        Specialization: <span class="text-mystic-300">{props.professor.specialization}</span>
       </p>
     </A>
   )

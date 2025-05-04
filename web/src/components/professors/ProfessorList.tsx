@@ -5,9 +5,7 @@ import ProfessorListItem from '../professors/ProfessorListItem'
 
 export default function ProfessorList() {
   // Use createResource properly without source signal
-  const [professorsResource, { refetch }] = createResource(() =>
-    getProfessors({})
-  )
+  const [professorsResource, { refetch }] = createResource(() => getProfessors({}))
 
   // Add debug logging
   createEffect(() => {
@@ -25,11 +23,7 @@ export default function ProfessorList() {
     <div>
       <Show
         when={!professorsResource.loading}
-        fallback={
-          <p class="text-parchment-300 text-center py-8">
-            Loading professors...
-          </p>
-        }
+        fallback={<p class="text-parchment-300 text-center py-8">Loading professors...</p>}
       >
         <Show
           when={!professorsResource.error}
@@ -55,25 +49,17 @@ export default function ProfessorList() {
             when={professorsResource()}
             keyed
             fallback={
-              <p class="text-parchment-300 text-center py-8">
-                Could not load professor data.
-              </p>
+              <p class="text-parchment-300 text-center py-8">Could not load professor data.</p>
             }
           >
             {(data) => (
               <Show
                 when={data.items.length > 0}
-                fallback={
-                  <p class="text-parchment-300 text-center py-8">
-                    No professors found.
-                  </p>
-                }
+                fallback={<p class="text-parchment-300 text-center py-8">No professors found.</p>}
               >
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   <For each={data.items}>
-                    {(professor: Professor) => (
-                      <ProfessorListItem professor={professor} />
-                    )}
+                    {(professor: Professor) => <ProfessorListItem professor={professor} />}
                   </For>
                 </div>
                 {/* TODO: Add pagination controls using data */}
