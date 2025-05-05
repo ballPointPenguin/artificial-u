@@ -1,17 +1,60 @@
 ---
-description: 
-globs: 
+description: Frontend codebase considerations
+globs:
 alwaysApply: true
 ---
 
-# Code Style for JS, TS, JSX, TSX
+## Code Style for JS, TS, JSX, TSX
 
-- "web" code is linted according to eslint (./eslint.config.js)
-- "web" code is formatted according to BiomeJS (./web/biome.json)
+- code is linted according to eslint (./eslint.config.js)
+- code is formatted according to BiomeJS (./biome.json)
 - Semicolons are only used "as-needed"
 - Default "tab" spacing is 2 spaces
 - single quotes '' preferred
 - trailing commas use 'es5' conditions
-- within `./web`, run `pnpm run format` to re-format
-- within `./web`, run `pnpm run lint` to lint
-- within `./web`, validate the build with `pnpm run build`
+- run `pnpm run format` to re-format
+- run `pnpm run lint` to lint
+- validate the build with `pnpm run build`
+- local imports should use `.js` or `.jsx` suffix (even for .ts & .tsx files)
+
+## Libraries in use
+
+- pnpm for packages and scripts
+- TypeScript
+- ESM style modules
+- Vite
+- SolidJS framework
+- SolidJS router
+- Kobalte component library
+- TailwindCSS (v4) style utilities
+- PostCSS Preset Env for modern CSS syntax
+
+## MCP Tools (subject to change)
+
+### Chrome
+
+- start-chrome
+- interact-with-chrome
+- curl
+- curl-manual
+
+### Context7
+
+- get-library-docs
+- resolve-library-id
+
+### Git
+
+- git
+
+### Perplexity
+
+- perplexity_ask
+- perplexity_reason
+- perplexity_research
+
+## Web Server
+
+- Usually vite is serving this app at my http://localhost:5173
+- Possibly visible from docker-hosted MCP services at http://host.docker.internal:5173
+- Usually proxied to a public domain by zrok at https://aliencyborg.share.zrok.io

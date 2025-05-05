@@ -103,8 +103,8 @@ const DepartmentForm = (props: DepartmentFormProps) => {
       setFormData({
         name: generated.name,
         code: generated.code,
-        faculty: generated.faculty,
-        description: generated.description,
+        faculty: generated.faculty || '',
+        description: generated.description || '',
       })
     } catch (err: unknown) {
       let message = 'Failed to generate department'

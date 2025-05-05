@@ -9,7 +9,8 @@ import {
   updateCourse,
 } from '../api/services/course-service'
 import type { LectureBrief, LecturesList } from '../api/types'
-import CourseForm, { type CourseFormData } from '../components/courses/CourseForm'
+import CourseForm from '../components/courses/CourseForm'
+import type { CourseFormData } from '../components/courses/types'
 import { Button } from '../components/ui/Button'
 
 const CourseDetail: Component = () => {
@@ -318,6 +319,50 @@ const CourseDetail: Component = () => {
                           </For>
                         </ul>
                       </Show>
+                    </Show>
+                  </div>
+
+                  {/* Topics Section */}
+                  <div class="mt-8">
+                    <h2 class="text-2xl font-display text-parchment-100 mb-5">Course Topics</h2>
+                    <Show
+                      when={
+                        Array.isArray(course().topics ?? []) && (course().topics ?? []).length > 0
+                      }
+                      fallback={
+                        <div class="arcane-card p-6 text-center text-parchment-400 font-serif">
+                          No topics defined for this course.
+                        </div>
+                      }
+                    >
+                      <ul class="space-y-4">
+                        <For
+                          each={(() => {
+                            const topics = Array.isArray(course().topics) ? course().topics : []
+                            const weeks = Math.max(...(topics ?? []).map((t) => t.week_number), 0)
+                            return Array.from({ length: weeks }, (_, i) => i + 1)
+                          })()}
+                        >
+                          {(week) => (
+                            <li class="arcane-card">
+                              <div class="font-semibold text-parchment-200 mb-2">Week {week}</div>
+                              <ul class="ml-4 list-disc">
+                                <For
+                                  each={(course().topics ?? []).filter(
+                                    (t) => t.week_number === week
+                                  )}
+                                >
+                                  {(topic) => (
+                                    <li class="text-parchment-100 font-serif">
+                                      Lecture {topic.order_in_week}: {topic.title}
+                                    </li>
+                                  )}
+                                </For>
+                              </ul>
+                            </li>
+                          )}
+                        </For>
+                      </ul>
                     </Show>
                   </div>
                 </Show>

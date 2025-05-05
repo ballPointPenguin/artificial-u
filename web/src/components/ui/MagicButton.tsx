@@ -71,13 +71,13 @@ export function MagicButton(props: MagicButtonProps) {
 
       {/* Magic sparkle effect */}
       <span class="absolute -inset-px rounded overflow-hidden">
-        <span class="absolute inset-0 bg-gradient-to-r from-mystic-500/10 to-mystic-700/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></span>
+        <span class="absolute inset-0 bg-gradient-to-r from-mystic-500/10 to-mystic-700/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
 
-        <span class="absolute h-10 w-10 -top-5 -left-5 bg-mystic-500/20 rounded-full blur-xl transform scale-0 group-hover:scale-100 group-hover:animate-pulse transition-transform duration-700"></span>
+        <span class="absolute h-10 w-10 -top-5 -left-5 bg-mystic-500/20 rounded-full blur-xl transform scale-0 group-hover:scale-100 group-hover:animate-pulse transition-transform duration-700" />
 
-        <span class="absolute h-8 w-8 -bottom-4 -right-4 bg-mystic-400/20 rounded-full blur-lg transform scale-0 group-hover:scale-100 group-hover:animate-pulse transition-transform duration-700 delay-100"></span>
+        <span class="absolute h-8 w-8 -bottom-4 -right-4 bg-mystic-400/20 rounded-full blur-lg transform scale-0 group-hover:scale-100 group-hover:animate-pulse transition-transform duration-700 delay-100" />
 
-        <span class="absolute inset-0 bg-gradient-to-tr from-transparent via-mystic-500/5 to-transparent opacity-0 group-hover:opacity-100 group-hover:animate-shimmer transition-opacity"></span>
+        <span class="absolute inset-0 bg-gradient-to-tr from-transparent via-mystic-500/5 to-transparent opacity-0 group-hover:opacity-100 group-hover:animate-shimmer transition-opacity" />
       </span>
     </Button>
   )

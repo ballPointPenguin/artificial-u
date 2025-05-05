@@ -30,16 +30,16 @@ export interface HealthCheckResponse {
 export interface Professor {
   id: number
   name: string
-  title: string | null
-  specialization: string | null
-  background: string | null
-  personality: string | null
-  teaching_style: string | null
-  gender: string | null
   accent: string | null
-  description: string | null
   age: number | null
+  background: string | null
+  description: string | null
+  gender: string | null
   image_url: string | null
+  personality: string | null
+  specialization: string | null
+  teaching_style: string | null
+  title: string | null
   department_id: number | null
 }
 
@@ -82,10 +82,8 @@ export interface Department {
   id: number
   name: string
   code: string
-  faculty: string
-  description: string
-  created_at?: string
-  updated_at?: string
+  faculty: string | null
+  description: string | null
 }
 
 export type DepartmentsList = PaginatedResponse<Department>
@@ -95,20 +93,28 @@ export interface DepartmentBrief {
   id: number
   name: string
   code: string
-  faculty: string
+  faculty: string | null
 }
 
 // Course types
+export interface CourseTopic {
+  week_number: number
+  order_in_week: number
+  title: string
+}
+
 export interface Course {
   id: number
   code: string
   title: string
-  level: string | null
   credits: number | null
-  professor_id: number
   description: string | null
   lectures_per_week: number | null
+  level: string | null
   total_weeks: number | null
+  department_id: number | null
+  professor_id: number | null
+  topics?: CourseTopic[]
 }
 
 export type CoursesList = PaginatedResponse<Course>
@@ -117,9 +123,9 @@ export type CoursesList = PaginatedResponse<Course>
 export interface ProfessorBrief {
   id: number
   name: string
-  title: string
-  department_id: number // Assuming this is available from backend
-  specialization: string
+  title: string | null
+  specialization: string | null
+  department_id: number | null
 }
 
 // Lecture types
@@ -129,8 +135,8 @@ export interface Lecture {
   course_id: number
   week_number: number
   order_in_week: number
-  description: string
-  content: string
+  description: string | null
+  content: string | null
   audio_url: string | null
 }
 
@@ -140,7 +146,7 @@ export interface LectureBrief {
   title: string
   week_number: number
   order_in_week: number
-  description: string
+  description: string | null
   audio_url: string | null
 }
 
@@ -155,7 +161,7 @@ export interface LecturesList {
 export interface Voice {
   id: number
   el_voice_id: string
-  name: string
+  name: string | null
   accent: string | null
   gender: string | null
   age: string | null
