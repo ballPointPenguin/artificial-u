@@ -266,6 +266,7 @@ def test_create_course(client: TestClient, mock_api_service):
         "description": "A course created via API test",
         "lectures_per_week": 1,
         "total_weeks": 10,
+        "topics": [],
     }
     # Mock configured to return ID 5
     expected_response_data = {"id": 5, **new_course_data}

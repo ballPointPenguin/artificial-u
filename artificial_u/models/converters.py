@@ -156,12 +156,14 @@ def departments_to_xml(departments: List[Dict[str, str]]) -> str:
         departments: List of department dictionaries containing 'name' and 'code' keys.
     """
     if not departments:
-        return ""
-    lines = []
+        return "<no_existing_departments />"
+    lines = ["<existing_departments>"]
     for dept in departments:
-        name = dept.get("name", "")
-        code = dept.get("code", "")
-        lines.append(f"<department><name>{name}</name><code>{code}</code></department>")
+        lines.append("  <department>")
+        lines.append(f"    <name>{dept.get('name', '')}</name>")
+        lines.append(f"    <code>{dept.get('code', '')}</code>")
+        lines.append("  </department>")
+    lines.append("</existing_departments>")
     return "\n".join(lines)
 
 

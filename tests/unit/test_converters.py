@@ -257,17 +257,23 @@ def test_department_to_xml():
 def test_departments_to_xml():
     """Test converting a list of department names to XML."""
     # Test with empty list
-    assert departments_to_xml([]) == ""
+    assert departments_to_xml([]) == "<no_existing_departments />"
 
     # Test with populated list
-    departments = ["Computer Science", "Mathematics", "Physics"]
+    departments = [
+        {"name": "Computer Science", "code": "CS"},
+        {"name": "Mathematics", "code": "MTH"},
+        {"name": "Physics", "code": "PHY"},
+    ]
 
     xml_str = departments_to_xml(departments)
-    lines = xml_str.strip().split("\n")
-    assert len(lines) == 3
-    assert lines[0] == "<department>Computer Science</department>"
-    assert lines[1] == "<department>Mathematics</department>"
-    assert lines[2] == "<department>Physics</department>"
+    root = ET.fromstring(xml_str)
+    assert root.tag == "existing_departments"
+    assert len(root) == 3
+
+    depts = root.findall("department")
+    assert depts[0].find("name").text == "Computer Science"
+    assert depts[0].find("code").text == "CS"
 
 
 @pytest.mark.unit

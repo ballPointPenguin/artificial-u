@@ -232,7 +232,7 @@ class TestDepartmentService:
 
         with pytest.raises(ContentGenerationError) as exc_info:
             await department_service.generate_department({"course_name": "Test Course"})
-        assert "Failed to parse department XML" in str(exc_info.value)
+        assert "Error parsing department XML" in str(exc_info.value)
 
         # Test empty response
         department_service.content_service.generate_text = AsyncMock(return_value="")
