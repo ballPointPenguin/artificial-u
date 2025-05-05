@@ -20,17 +20,17 @@ class VoiceRepository(BaseRepository):
                 el_voice_id=voice.el_voice_id,
                 name=voice.name,
                 accent=voice.accent,
-                gender=voice.gender,
                 age=voice.age,
-                descriptive=voice.descriptive,
-                use_case=voice.use_case,
                 category=voice.category,
+                description=voice.description,
+                descriptive=voice.descriptive,
+                gender=voice.gender,
                 language=voice.language,
                 locale=voice.locale,
-                description=voice.description,
-                preview_url=voice.preview_url,
-                verified_languages=voice.verified_languages,
                 popularity_score=voice.popularity_score,
+                preview_url=voice.preview_url,
+                use_case=voice.use_case,
+                verified_languages=voice.verified_languages,
                 last_updated=datetime.now(),
             )
 
@@ -54,17 +54,17 @@ class VoiceRepository(BaseRepository):
                 el_voice_id=db_voice.el_voice_id,
                 name=db_voice.name,
                 accent=db_voice.accent,
-                gender=db_voice.gender,
                 age=db_voice.age,
-                descriptive=db_voice.descriptive,
-                use_case=db_voice.use_case,
                 category=db_voice.category,
+                description=db_voice.description,
+                descriptive=db_voice.descriptive,
+                gender=db_voice.gender,
                 language=db_voice.language,
                 locale=db_voice.locale,
-                description=db_voice.description,
-                preview_url=db_voice.preview_url,
-                verified_languages=db_voice.verified_languages or {},
                 popularity_score=db_voice.popularity_score,
+                preview_url=db_voice.preview_url,
+                use_case=db_voice.use_case,
+                verified_languages=db_voice.verified_languages or {},
                 last_updated=db_voice.last_updated,
             )
 
@@ -81,28 +81,28 @@ class VoiceRepository(BaseRepository):
                 el_voice_id=db_voice.el_voice_id,
                 name=db_voice.name,
                 accent=db_voice.accent,
-                gender=db_voice.gender,
                 age=db_voice.age,
-                descriptive=db_voice.descriptive,
-                use_case=db_voice.use_case,
                 category=db_voice.category,
+                description=db_voice.description,
+                descriptive=db_voice.descriptive,
+                gender=db_voice.gender,
                 language=db_voice.language,
                 locale=db_voice.locale,
-                description=db_voice.description,
-                preview_url=db_voice.preview_url,
-                verified_languages=db_voice.verified_languages or {},
                 popularity_score=db_voice.popularity_score,
+                preview_url=db_voice.preview_url,
+                use_case=db_voice.use_case,
+                verified_languages=db_voice.verified_languages or {},
                 last_updated=db_voice.last_updated,
             )
 
     def list(
         self,
-        gender: Optional[str] = None,
         accent: Optional[str] = None,
         age: Optional[str] = None,
+        category: Optional[str] = None,
+        gender: Optional[str] = None,
         language: Optional[str] = None,
         use_case: Optional[str] = None,
-        category: Optional[str] = None,
         limit: int = 100,
         offset: int = 0,
     ) -> List[Voice]:
@@ -111,18 +111,18 @@ class VoiceRepository(BaseRepository):
             query = session.query(VoiceModel)
 
             # Apply filters
-            if gender:
-                query = query.filter(VoiceModel.gender.ilike(f"%{gender}%"))
             if accent:
                 query = query.filter(VoiceModel.accent.ilike(f"%{accent}%"))
             if age:
                 query = query.filter(VoiceModel.age.ilike(f"%{age}%"))
+            if category:
+                query = query.filter(VoiceModel.category.ilike(f"%{category}%"))
+            if gender:
+                query = query.filter(VoiceModel.gender.ilike(f"%{gender}%"))
             if language:
                 query = query.filter(VoiceModel.language.ilike(f"%{language}%"))
             if use_case:
                 query = query.filter(VoiceModel.use_case.ilike(f"%{use_case}%"))
-            if category:
-                query = query.filter(VoiceModel.category.ilike(f"%{category}%"))
 
             # Apply pagination
             voices = (
@@ -135,17 +135,17 @@ class VoiceRepository(BaseRepository):
                     el_voice_id=v.el_voice_id,
                     name=v.name,
                     accent=v.accent,
-                    gender=v.gender,
                     age=v.age,
-                    descriptive=v.descriptive,
-                    use_case=v.use_case,
                     category=v.category,
+                    description=v.description,
+                    descriptive=v.descriptive,
+                    gender=v.gender,
                     language=v.language,
                     locale=v.locale,
-                    description=v.description,
-                    preview_url=v.preview_url,
-                    verified_languages=v.verified_languages or {},
                     popularity_score=v.popularity_score,
+                    preview_url=v.preview_url,
+                    use_case=v.use_case,
+                    verified_languages=v.verified_languages or {},
                     last_updated=v.last_updated,
                 )
                 for v in voices
@@ -162,17 +162,17 @@ class VoiceRepository(BaseRepository):
             db_voice.el_voice_id = voice.el_voice_id
             db_voice.name = voice.name
             db_voice.accent = voice.accent
-            db_voice.gender = voice.gender
             db_voice.age = voice.age
-            db_voice.descriptive = voice.descriptive
-            db_voice.use_case = voice.use_case
             db_voice.category = voice.category
+            db_voice.description = voice.description
+            db_voice.descriptive = voice.descriptive
+            db_voice.gender = voice.gender
             db_voice.language = voice.language
             db_voice.locale = voice.locale
-            db_voice.description = voice.description
-            db_voice.preview_url = voice.preview_url
-            db_voice.verified_languages = voice.verified_languages
             db_voice.popularity_score = voice.popularity_score
+            db_voice.preview_url = voice.preview_url
+            db_voice.use_case = voice.use_case
+            db_voice.verified_languages = voice.verified_languages
             db_voice.last_updated = datetime.now()
 
             session.commit()

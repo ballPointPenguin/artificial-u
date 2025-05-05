@@ -17,6 +17,7 @@ class LectureCreate(BaseModel):
     description: str = Field(..., description="Brief description of the lecture content")
     content: str = Field(..., description="Full lecture content text")
     audio_url: Optional[str] = Field(None, description="URL to audio file if available")
+    transcript_url: Optional[str] = Field(None, description="URL to transcript file if available")
 
 
 class LectureUpdate(BaseModel):
@@ -28,6 +29,7 @@ class LectureUpdate(BaseModel):
     week_number: Optional[int] = Field(None, ge=1, description="Updated week number")
     order_in_week: Optional[int] = Field(None, ge=1, description="Updated order in week")
     audio_url: Optional[str] = Field(None, description="Updated audio URL")
+    transcript_url: Optional[str] = Field(None, description="Updated transcript URL")
 
 
 class Lecture(BaseModel):
@@ -41,6 +43,7 @@ class Lecture(BaseModel):
     description: str = Field(..., description="Brief description of the lecture content")
     content: str = Field(..., description="Full lecture content text")
     audio_url: Optional[str] = Field(None, description="URL to audio file if available")
+    transcript_url: Optional[str] = Field(None, description="URL to transcript file if available")
 
 
 class LectureList(BaseModel):

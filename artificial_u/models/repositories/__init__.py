@@ -8,6 +8,7 @@ from artificial_u.models.repositories.department import DepartmentRepository
 from artificial_u.models.repositories.factory import RepositoryFactory
 from artificial_u.models.repositories.lecture import LectureRepository
 from artificial_u.models.repositories.professor import ProfessorRepository
+from artificial_u.models.repositories.topic import TopicRepository
 from artificial_u.models.repositories.voice import VoiceRepository
 
 __all__ = [
@@ -17,5 +18,6 @@ __all__ = [
     "LectureRepository",
     "ProfessorRepository",
     "RepositoryFactory",
+    "TopicRepository",
     "VoiceRepository",
 ]

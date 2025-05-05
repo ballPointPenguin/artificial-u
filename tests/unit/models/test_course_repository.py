@@ -27,14 +27,13 @@ class TestCourseRepository:
         mock_course.id = 1
         mock_course.code = "CS101"
         mock_course.title = "Introduction to Programming"
-        mock_course.department_id = 1
-        mock_course.level = "Undergraduate"
         mock_course.credits = 3
-        mock_course.professor_id = 1
         mock_course.description = "Basic programming concepts"
         mock_course.lectures_per_week = 2
+        mock_course.level = "Undergraduate"
         mock_course.total_weeks = 14
-        mock_course.topics = [{"name": "Topic 1"}, {"name": "Topic 2"}]
+        mock_course.department_id = 1
+        mock_course.professor_id = 1
         return mock_course
 
     def test_create(self, course_repository, mock_session):
@@ -43,7 +42,6 @@ class TestCourseRepository:
         # Configure mock behaviors
         def mock_refresh(model):
             model.id = 1
-            model.topics = [{"name": "Topic 1"}, {"name": "Topic 2"}]
 
         mock_session.refresh.side_effect = mock_refresh
 
@@ -51,14 +49,13 @@ class TestCourseRepository:
         course = Course(
             code="CS101",
             title="Introduction to Programming",
-            department_id=1,
-            level="Undergraduate",
             credits=3,
-            professor_id=1,
             description="Basic programming concepts",
             lectures_per_week=2,
+            level="Undergraduate",
             total_weeks=14,
-            topics=[{"name": "Topic 1"}, {"name": "Topic 2"}],
+            department_id=1,
+            professor_id=1,
         )
 
         # Exercise
@@ -71,14 +68,13 @@ class TestCourseRepository:
         assert result.id == 1
         assert result.code == "CS101"
         assert result.title == "Introduction to Programming"
-        assert result.department_id == 1
-        assert result.level == "Undergraduate"
         assert result.credits == 3
-        assert result.professor_id == 1
         assert result.description == "Basic programming concepts"
         assert result.lectures_per_week == 2
+        assert result.level == "Undergraduate"
         assert result.total_weeks == 14
-        assert result.topics == [{"name": "Topic 1"}, {"name": "Topic 2"}]
+        assert result.department_id == 1
+        assert result.professor_id == 1
 
     def test_get(self, course_repository, mock_session, mock_course_model):
         """Test getting a course by ID."""
@@ -95,14 +91,13 @@ class TestCourseRepository:
         assert result.id == 1
         assert result.code == "CS101"
         assert result.title == "Introduction to Programming"
-        assert result.department_id == 1
-        assert result.level == "Undergraduate"
         assert result.credits == 3
-        assert result.professor_id == 1
         assert result.description == "Basic programming concepts"
         assert result.lectures_per_week == 2
+        assert result.level == "Undergraduate"
         assert result.total_weeks == 14
-        assert result.topics == [{"name": "Topic 1"}, {"name": "Topic 2"}]
+        assert result.department_id == 1
+        assert result.professor_id == 1
 
     def test_get_not_found(self, course_repository, mock_session):
         """Test getting a non-existent course returns None."""
@@ -138,27 +133,25 @@ class TestCourseRepository:
         mock_course1.id = 1
         mock_course1.code = "CS101"
         mock_course1.title = "Introduction to Programming"
-        mock_course1.department_id = 1
-        mock_course1.level = "Undergraduate"
         mock_course1.credits = 3
-        mock_course1.professor_id = 1
         mock_course1.description = "Basic programming concepts"
         mock_course1.lectures_per_week = 2
+        mock_course1.level = "Undergraduate"
         mock_course1.total_weeks = 14
-        mock_course1.topics = [{"name": "Topic 1"}, {"name": "Topic 2"}]
+        mock_course1.department_id = 1
+        mock_course1.professor_id = 1
 
         mock_course2 = MagicMock(spec=CourseModel)
         mock_course2.id = 2
         mock_course2.code = "CS102"
         mock_course2.title = "Advanced Programming"
-        mock_course2.department_id = 1
-        mock_course2.level = "Undergraduate"
         mock_course2.credits = 4
-        mock_course2.professor_id = 2
         mock_course2.description = "Advanced programming concepts"
         mock_course2.lectures_per_week = 3
+        mock_course2.level = "Graduate"
         mock_course2.total_weeks = 14
-        mock_course2.topics = [{"name": "Topic 3"}, {"name": "Topic 4"}]
+        mock_course2.department_id = 1
+        mock_course2.professor_id = 2
 
         query_mock = mock_session.query.return_value
         query_mock.all.return_value = [mock_course1, mock_course2]
@@ -181,14 +174,13 @@ class TestCourseRepository:
         mock_course.id = 1
         mock_course.code = "CS101"
         mock_course.title = "Introduction to Programming"
-        mock_course.department_id = 1
-        mock_course.level = "Undergraduate"
         mock_course.credits = 3
-        mock_course.professor_id = 1
         mock_course.description = "Basic programming concepts"
         mock_course.lectures_per_week = 2
+        mock_course.level = "Undergraduate"
         mock_course.total_weeks = 14
-        mock_course.topics = [{"name": "Topic 1"}, {"name": "Topic 2"}]
+        mock_course.department_id = 1
+        mock_course.professor_id = 1
 
         query_mock = mock_session.query.return_value
         query_mock.filter_by.return_value.all.return_value = [mock_course]
@@ -214,14 +206,13 @@ class TestCourseRepository:
             id=1,
             code="CS101-NEW",
             title="Updated Introduction to Programming",
-            department_id=2,
-            level="Graduate",
             credits=4,
-            professor_id=2,
             description="Updated programming concepts",
             lectures_per_week=3,
+            level="Graduate",
             total_weeks=15,
-            topics=[{"name": "Updated Topic 1"}, {"name": "Updated Topic 2"}],
+            department_id=2,
+            professor_id=2,
         )
 
         # Exercise
@@ -235,30 +226,25 @@ class TestCourseRepository:
         # Check that the model was updated with new values
         assert mock_course_model.code == "CS101-NEW"
         assert mock_course_model.title == "Updated Introduction to Programming"
-        assert mock_course_model.department_id == 2
-        assert mock_course_model.level == "Graduate"
         assert mock_course_model.credits == 4
-        assert mock_course_model.professor_id == 2
         assert mock_course_model.description == "Updated programming concepts"
         assert mock_course_model.lectures_per_week == 3
+        assert mock_course_model.level == "Graduate"
         assert mock_course_model.total_weeks == 15
-        assert mock_course_model.topics == [
-            {"name": "Updated Topic 1"},
-            {"name": "Updated Topic 2"},
-        ]
+        assert mock_course_model.department_id == 2
+        assert mock_course_model.professor_id == 2
 
         # Check that the returned course has the updated values
         assert result.id == 1
         assert result.code == "CS101-NEW"
         assert result.title == "Updated Introduction to Programming"
-        assert result.department_id == 2
-        assert result.level == "Graduate"
         assert result.credits == 4
-        assert result.professor_id == 2
         assert result.description == "Updated programming concepts"
         assert result.lectures_per_week == 3
+        assert result.level == "Graduate"
         assert result.total_weeks == 15
-        assert result.topics == [{"name": "Updated Topic 1"}, {"name": "Updated Topic 2"}]
+        assert result.department_id == 2
+        assert result.professor_id == 2
 
     def test_update_not_found(self, course_repository, mock_session):
         """Test updating a non-existent course raises an error."""
@@ -271,14 +257,13 @@ class TestCourseRepository:
             id=999,
             code="CS999",
             title="Non-existent Course",
-            department_id=1,
-            level="Undergraduate",
             credits=3,
-            professor_id=1,
             description="This course doesn't exist",
             lectures_per_week=2,
+            level="Undergraduate",
             total_weeks=14,
-            topics=[],
+            department_id=1,
+            professor_id=1,
         )
 
         # Exercise & Verify

@@ -5,7 +5,7 @@ Course management service for ArtificialU.
 import logging
 from typing import Any, Dict, List, Optional, Tuple
 
-from artificial_u.config import DEFAULT_COURSE_WEEKS, DEFAULT_LECTURES_PER_WEEK, get_settings
+from artificial_u.config import get_settings
 from artificial_u.models.converters import (
     course_model_to_dict,
     department_model_to_dict,
@@ -64,8 +64,8 @@ class CourseService:
         professor_id: Optional[str] = None,
         description: Optional[str] = None,
         credits: Optional[int] = 3,
-        weeks: int = DEFAULT_COURSE_WEEKS,
-        lectures_per_week: int = DEFAULT_LECTURES_PER_WEEK,
+        weeks: int = 14,
+        lectures_per_week: int = 1,
         topics: Optional[List[Dict[str, Any]]] = None,
     ) -> Tuple[Course, Professor]:
         """

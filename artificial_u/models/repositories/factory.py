@@ -9,6 +9,7 @@ from artificial_u.models.repositories.course import CourseRepository
 from artificial_u.models.repositories.department import DepartmentRepository
 from artificial_u.models.repositories.lecture import LectureRepository
 from artificial_u.models.repositories.professor import ProfessorRepository
+from artificial_u.models.repositories.topic import TopicRepository
 from artificial_u.models.repositories.voice import VoiceRepository
 
 R = TypeVar("R", bound=BaseRepository)
@@ -51,9 +52,19 @@ class RepositoryFactory:
         return self._repositories[repo_name]
 
     @property
+    def course(self) -> CourseRepository:
+        """Get the course repository."""
+        return self.get_repository(CourseRepository)
+
+    @property
     def department(self) -> DepartmentRepository:
         """Get the department repository."""
         return self.get_repository(DepartmentRepository)
+
+    @property
+    def lecture(self) -> LectureRepository:
+        """Get the lecture repository."""
+        return self.get_repository(LectureRepository)
 
     @property
     def professor(self) -> ProfessorRepository:
@@ -61,14 +72,9 @@ class RepositoryFactory:
         return self.get_repository(ProfessorRepository)
 
     @property
-    def course(self) -> CourseRepository:
-        """Get the course repository."""
-        return self.get_repository(CourseRepository)
-
-    @property
-    def lecture(self) -> LectureRepository:
-        """Get the lecture repository."""
-        return self.get_repository(LectureRepository)
+    def topic(self) -> TopicRepository:
+        """Get the topic repository."""
+        return self.get_repository(TopicRepository)
 
     @property
     def voice(self) -> VoiceRepository:

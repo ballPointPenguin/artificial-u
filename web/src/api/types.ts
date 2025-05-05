@@ -138,6 +138,7 @@ export interface Lecture {
   description: string | null
   content: string | null
   audio_url: string | null
+  transcript_url: string | null
 }
 
 // Brief Lecture info for nested responses
@@ -148,6 +149,7 @@ export interface LectureBrief {
   order_in_week: number
   description: string | null
   audio_url: string | null
+  transcript_url: string | null
 }
 
 // Updated LecturesList to use LectureBrief for Course detail view

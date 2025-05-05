@@ -18,16 +18,16 @@ class ProfessorRepository(BaseRepository):
             db_professor = ProfessorModel(
                 name=professor.name,
                 title=professor.title,
-                department_id=professor.department_id,
-                specialization=professor.specialization,
-                background=professor.background,
-                personality=professor.personality,
-                teaching_style=professor.teaching_style,
-                gender=professor.gender,
                 accent=professor.accent,
-                description=professor.description,
                 age=professor.age,
+                background=professor.background,
+                description=professor.description,
+                gender=professor.gender,
+                personality=professor.personality,
+                specialization=professor.specialization,
+                teaching_style=professor.teaching_style,
                 image_url=professor.image_url,
+                department_id=professor.department_id,
                 voice_id=professor.voice_id,
             )
 
@@ -50,17 +50,17 @@ class ProfessorRepository(BaseRepository):
                 id=db_professor.id,
                 name=db_professor.name,
                 title=db_professor.title,
-                department_id=db_professor.department_id,
-                specialization=db_professor.specialization,
-                background=db_professor.background,
-                personality=db_professor.personality,
-                teaching_style=db_professor.teaching_style,
-                gender=db_professor.gender,
                 accent=db_professor.accent,
-                description=db_professor.description,
                 age=db_professor.age,
-                voice_id=db_professor.voice_id,
+                background=db_professor.background,
+                description=db_professor.description,
+                gender=db_professor.gender,
+                personality=db_professor.personality,
+                specialization=db_professor.specialization,
+                teaching_style=db_professor.teaching_style,
                 image_url=db_professor.image_url,
+                department_id=db_professor.department_id,
+                voice_id=db_professor.voice_id,
             )
 
     def list(self) -> List[Professor]:
@@ -73,17 +73,17 @@ class ProfessorRepository(BaseRepository):
                     id=p.id,
                     name=p.name,
                     title=p.title,
-                    department_id=p.department_id,
-                    specialization=p.specialization,
-                    background=p.background,
-                    personality=p.personality,
-                    teaching_style=p.teaching_style,
-                    gender=p.gender,
                     accent=p.accent,
-                    description=p.description,
                     age=p.age,
-                    voice_id=p.voice_id,
+                    background=p.background,
+                    description=p.description,
+                    gender=p.gender,
+                    personality=p.personality,
+                    specialization=p.specialization,
+                    teaching_style=p.teaching_style,
                     image_url=p.image_url,
+                    department_id=p.department_id,
+                    voice_id=p.voice_id,
                 )
                 for p in db_professors
             ]
@@ -99,18 +99,21 @@ class ProfessorRepository(BaseRepository):
             # Update fields
             db_professor.name = professor.name
             db_professor.title = professor.title
-            db_professor.department_id = professor.department_id
-            db_professor.specialization = professor.specialization
-            db_professor.background = professor.background
-            db_professor.personality = professor.personality
-            db_professor.teaching_style = professor.teaching_style
-            db_professor.gender = professor.gender
             db_professor.accent = professor.accent
-            db_professor.description = professor.description
             db_professor.age = professor.age
+            db_professor.background = professor.background
+            db_professor.description = professor.description
+            db_professor.gender = professor.gender
+            db_professor.personality = professor.personality
+            db_professor.specialization = professor.specialization
+            db_professor.teaching_style = professor.teaching_style
             db_professor.image_url = professor.image_url
+            db_professor.department_id = professor.department_id
             db_professor.voice_id = professor.voice_id
+
             session.commit()
+            session.refresh(db_professor)
+
             return professor
 
     def update_field(self, professor_id: int, **fields) -> Optional[Professor]:
@@ -143,17 +146,17 @@ class ProfessorRepository(BaseRepository):
                 id=db_professor.id,
                 name=db_professor.name,
                 title=db_professor.title,
-                department_id=db_professor.department_id,
-                specialization=db_professor.specialization,
-                background=db_professor.background,
-                personality=db_professor.personality,
-                teaching_style=db_professor.teaching_style,
-                gender=db_professor.gender,
                 accent=db_professor.accent,
-                description=db_professor.description,
                 age=db_professor.age,
-                voice_id=db_professor.voice_id,
+                background=db_professor.background,
+                description=db_professor.description,
+                gender=db_professor.gender,
+                personality=db_professor.personality,
+                specialization=db_professor.specialization,
+                teaching_style=db_professor.teaching_style,
                 image_url=db_professor.image_url,
+                department_id=db_professor.department_id,
+                voice_id=db_professor.voice_id,
             )
 
     def delete(self, professor_id: int) -> bool:
@@ -190,18 +193,18 @@ class ProfessorRepository(BaseRepository):
                         "id": p.id,
                         "name": p.name or "",
                         # Optional fields with defaults
-                        "department_id": getattr(p, "department_id", None),
                         "title": getattr(p, "title", None),
-                        "specialization": getattr(p, "specialization", None),
-                        "background": getattr(p, "background", None),
-                        "personality": getattr(p, "personality", None),
-                        "teaching_style": getattr(p, "teaching_style", None),
-                        "gender": getattr(p, "gender", None),
                         "accent": getattr(p, "accent", None),
-                        "description": getattr(p, "description", None),
                         "age": getattr(p, "age", None),
-                        "voice_id": getattr(p, "voice_id", None),
+                        "background": getattr(p, "background", None),
+                        "description": getattr(p, "description", None),
+                        "gender": getattr(p, "gender", None),
+                        "personality": getattr(p, "personality", None),
+                        "specialization": getattr(p, "specialization", None),
+                        "teaching_style": getattr(p, "teaching_style", None),
                         "image_url": getattr(p, "image_url", None),
+                        "department_id": getattr(p, "department_id", None),
+                        "voice_id": getattr(p, "voice_id", None),
                     }
                 )
                 for p in db_professors

@@ -207,6 +207,7 @@ class LectureService:
         description: Optional[str] = None,
         content: Optional[str] = None,
         audio_url: Optional[str] = None,
+        transcript_url: Optional[str] = None,
     ) -> Lecture:
         """
         Create a new lecture.
@@ -219,6 +220,7 @@ class LectureService:
             description: Optional lecture description
             content: Optional lecture content
             audio_url: Optional URL to audio content
+            transcript_url: Optional URL to transcript content
 
         Returns:
             Lecture: The created lecture
@@ -235,6 +237,7 @@ class LectureService:
             description=description,
             content=content,
             audio_url=audio_url,
+            transcript_url=transcript_url,
         )
 
         try:

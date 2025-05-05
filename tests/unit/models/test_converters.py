@@ -13,18 +13,20 @@ from artificial_u.models.converters import (
     department_to_xml,
     departments_to_xml,
     extract_xml_content,
-    lecture_to_xml,
     lectures_to_xml,
     parse_course_xml,
     parse_department_xml,
     parse_lecture_xml,
+    parse_professor_xml,
+    parse_topic_xml,
+    parse_topics_xml,
     partial_course_to_xml,
     partial_department_to_xml,
-    partial_lecture_to_xml,
     partial_professor_to_xml,
     professor_model_to_dict,
     professor_to_xml,
     professors_to_xml,
+    topics_to_xml,
 )
 
 
@@ -120,7 +122,6 @@ def test_course_model_to_dict():
         description="Basic programming concepts",
         lectures_per_week=2,
         total_weeks=14,
-        topics=["Variables", "Functions", "Loops"],
     )
 
     result = course_model_to_dict(course)
@@ -135,7 +136,6 @@ def test_course_model_to_dict():
     assert result["description"] == "Basic programming concepts"
     assert result["lectures_per_week"] == 2
     assert result["total_weeks"] == 14
-    assert result["topics"] == ["Variables", "Functions", "Loops"]
 
 
 @pytest.mark.unit
@@ -288,13 +288,11 @@ def test_courses_to_xml():
             "code": "CS101",
             "title": "Introduction to Programming",
             "description": "Basic programming concepts",
-            "topics": ["Variables", "Functions", "Loops", "Conditionals", "Objects", "Classes"],
         },
         {
             "code": "CS201",
             "title": "Data Structures",
             "description": "Advanced data structures",
-            "topics": ["Arrays", "Linked Lists", "Trees"],
         },
     ]
 
@@ -323,7 +321,7 @@ def test_partial_course_to_xml():
     empty_xml = partial_course_to_xml({})
     root = ET.fromstring(empty_xml)
     assert root.tag == "course"
-    assert len(root.findall("*")) == 8  # 7 fields + topics
+    assert len(root.findall("*")) == 7  # 7 fields
 
     # Test with partial data
     partial_data = {
@@ -331,10 +329,6 @@ def test_partial_course_to_xml():
         "title": "Introduction to Programming",
         "description": "Basic programming concepts",
         "level": "Undergraduate",
-        "topics": [
-            {"week": 1, "lecture": 1, "topic": "Introduction to Variables"},
-            {"week": 1, "lecture": 2, "topic": "Control Flow"},
-        ],
     }
 
     xml_str = partial_course_to_xml(partial_data)
@@ -344,14 +338,6 @@ def test_partial_course_to_xml():
     assert root.find("description").text == "Basic programming concepts"
     assert root.find("level").text == "Undergraduate"
     assert root.find("credits").text == "[GENERATE]"
-
-    topics_elem = root.find("topics")
-    weeks = topics_elem.findall("week")
-    assert len(weeks) == 2
-    assert weeks[0].get("number") == "1"
-    lecture = weeks[0].find("lecture")
-    assert lecture.get("number") == "1"
-    assert lecture.find("topic").text == "Introduction to Variables"
 
 
 @pytest.mark.unit
@@ -367,21 +353,6 @@ def test_parse_course_xml():
       <credits>3</credits>
       <lectures_per_week>2</lectures_per_week>
       <total_weeks>14</total_weeks>
-      <topics>
-        <week number="1">
-          <lecture number="1">
-            <topic>Introduction to Variables</topic>
-          </lecture>
-          <lecture number="2">
-            <topic>Control Flow</topic>
-          </lecture>
-        </week>
-        <week number="2">
-          <lecture number="1">
-            <topic>Functions</topic>
-          </lecture>
-        </week>
-      </topics>
     </course>
     """
 
@@ -394,19 +365,6 @@ def test_parse_course_xml():
     assert result["credits"] == 3
     assert result["lectures_per_week"] == 2
     assert result["total_weeks"] == 14
-
-    # Check topics
-    topics = result["topics"]
-    assert len(topics) == 3
-    assert topics[0]["week_number"] == 1
-    assert topics[0]["order_in_week"] == 1
-    assert topics[0]["title"] == "Introduction to Variables"
-    assert topics[1]["week_number"] == 1
-    assert topics[1]["order_in_week"] == 2
-    assert topics[1]["title"] == "Control Flow"
-    assert topics[2]["week_number"] == 2
-    assert topics[2]["order_in_week"] == 1
-    assert topics[2]["title"] == "Functions"
 
     # Test handling of generate placeholders
     placeholder_xml = """
@@ -432,41 +390,6 @@ def test_parse_course_xml():
 
 
 @pytest.mark.unit
-def test_lecture_to_xml():
-    """Test converting lecture data to XML format."""
-    # Test with empty data
-    assert lecture_to_xml({}) == "<lecture>[GENERATE]</lecture>"
-
-    # Test with populated data
-    lecture_data = {
-        "title": "Introduction to Variables",
-        "content": "Today we'll learn about variables...",
-        "description": "Understanding basic variable concepts",
-    }
-
-    xml_str = lecture_to_xml(lecture_data)
-
-    # Parse the XML to validate structure
-    root = ET.fromstring(xml_str)
-    assert root.tag == "lecture"
-    assert root.find("title").text == "Introduction to Variables"
-    assert root.find("content").text == "Today we'll learn about variables..."
-    assert root.find("description").text == "Understanding basic variable concepts"
-
-    # Test with partial data and custom missing marker
-    partial_data = {
-        "title": "Introduction to Variables",
-        "description": "Understanding basic variable concepts",
-    }
-
-    xml_str = lecture_to_xml(partial_data, missing_marker="[TODO]")
-    root = ET.fromstring(xml_str)
-    assert root.find("title").text == "Introduction to Variables"
-    assert root.find("description").text == "Understanding basic variable concepts"
-    assert root.find("content").text == "[TODO]"
-
-
-@pytest.mark.unit
 def test_lectures_to_xml():
     """Test converting a list of lectures to XML."""
     # Test with empty list
@@ -475,120 +398,160 @@ def test_lectures_to_xml():
     # Test with populated list
     lectures = [
         {
+            "week": 1,
+            "order": 1,
             "title": "Introduction to Variables",
-            "description": "Basic variable concepts",
-            "week_number": 1,
-            "order_in_week": 1,
+            "summary": "Understanding basic variable concepts",
         },
         {
+            "week": 1,
+            "order": 2,
             "title": "Control Flow",
-            "description": "Understanding loops and conditionals",
-            "week_number": 1,
-            "order_in_week": 2,
-        },
-        {
-            "title": "Functions",
-            "description": "Working with functions",
-            "week_number": 2,
-            "order_in_week": 1,
+            "summary": "Understanding loops and conditionals",
         },
     ]
 
-    # Test with default max_lectures
     xml_str = lectures_to_xml(lectures)
     root = ET.fromstring(xml_str)
     assert root.tag == "existing_lectures"
-    assert len(root.findall("lecture")) == 3
+    assert len(root.findall("lecture")) == 2
 
     lecture_elems = root.findall("lecture")
-    assert lecture_elems[0].find("title").text == "Introduction to Variables"
-    assert lecture_elems[0].find("week_number").text == "1"
-    assert lecture_elems[0].find("order_in_week").text == "1"
-
-    # Test with max_lectures limit
-    xml_str = lectures_to_xml(lectures, max_lectures=2)
-    root = ET.fromstring(xml_str)
-    assert len(root.findall("lecture")) == 2
-    assert root.find("additional_lectures_count").text.strip() == "1"
+    assert lecture_elems[0].find("week").text == "1"
+    assert lecture_elems[0].find("order").text == "1"
+    assert lecture_elems[0].find("topic").text == "Introduction to Variables"
+    assert lecture_elems[0].find("summary").text == "Understanding basic variable concepts"
 
 
 @pytest.mark.unit
-def test_partial_lecture_to_xml():
-    """Test converting partial lecture attributes to XML."""
-    # Test with empty data
-    empty_xml = partial_lecture_to_xml({})
-    root = ET.fromstring(empty_xml)
-    assert root.tag == "lecture"
-    assert len(root.findall("*")) == 5  # All fields should be present with [GENERATE]
+def test_topics_to_xml():
+    """Test converting a list of topics to XML."""
+    # Test with empty list
+    assert topics_to_xml([]) == "<no_existing_topics />"
 
-    # Test with partial data
-    partial_data = {
-        "title": "Introduction to Variables",
-        "week_number": 1,
-        "order_in_week": 1,
-        "description": "Understanding variables",
-    }
+    # Test with populated list
+    topics = [
+        {
+            "title": "Introduction to Variables",
+            "week": 1,
+            "order": 1,
+        },
+        {
+            "title": "Control Flow",
+            "week": 1,
+            "order": 2,
+        },
+    ]
 
-    xml_str = partial_lecture_to_xml(partial_data)
+    xml_str = topics_to_xml(topics)
     root = ET.fromstring(xml_str)
-    assert root.find("title").text == "Introduction to Variables"
-    assert root.find("week_number").text == "1"
-    assert root.find("order_in_week").text == "1"
-    assert root.find("description").text == "Understanding variables"
-    assert root.find("content").text == "[GENERATE]"
+    assert root.tag == "existing_topics"
+    assert len(root.findall("topic")) == 2
 
-    # Test with custom generate marker
-    xml_str = partial_lecture_to_xml(partial_data, generate_marker="[TODO]")
+    topic_elems = root.findall("topic")
+    assert topic_elems[0].find("title").text == "Introduction to Variables"
+    assert topic_elems[0].find("week").text == "1"
+    assert topic_elems[0].find("order").text == "1"
+
+    # Test with max_topics limit
+    xml_str = topics_to_xml(topics, max_topics=1)
     root = ET.fromstring(xml_str)
-    assert root.find("content").text == "[TODO]"
+    assert len(root.findall("topic")) == 1
+    assert root.find("additional_topics_count").text.strip() == "1"
 
 
 @pytest.mark.unit
-def test_parse_lecture_xml():
-    """Test parsing lecture XML into a dictionary."""
-    # Create a valid lecture XML
-    lecture_xml = """
-    <lecture>
+def test_parse_topic_xml():
+    """Test parsing topic XML into a dictionary."""
+    # Create a valid topic XML
+    topic_xml = """
+    <topic>
       <title>Introduction to Variables</title>
-      <week_number>1</week_number>
-      <order_in_week>1</order_in_week>
-      <description>Understanding variable concepts</description>
-      <content>
-        [Professor enters the room]
-        Today we'll learn about variables...
-      </content>
-    </lecture>
+      <week>1</week>
+      <order>1</order>
+    </topic>
     """
 
-    result = parse_lecture_xml(lecture_xml)
+    result = parse_topic_xml(topic_xml)
 
     assert result["title"] == "Introduction to Variables"
-    assert result["week_number"] == 1
-    assert result["order_in_week"] == 1
-    assert result["description"] == "Understanding variable concepts"
-    assert "Today we'll learn about variables..." in result["content"]
-
-    # Test handling of generate placeholders
-    placeholder_xml = """
-    <lecture>
-      <title>Introduction to Variables</title>
-      <week_number>[GENERATE]</week_number>
-      <order_in_week>1</order_in_week>
-      <description>Understanding variables</description>
-      <content>[GENERATE]</content>
-    </lecture>
-    """
-
-    result = parse_lecture_xml(placeholder_xml)
-    assert result["title"] == "Introduction to Variables"
-    assert result["week_number"] is None  # [GENERATE] values should be None
-    assert result["order_in_week"] == 1
-    assert result["description"] == "Understanding variables"
-    assert result["content"] is None
+    assert result["week"] == 1
+    assert result["order"] == 1
 
     # Test error handling
     with pytest.raises(ValueError):
-        parse_lecture_xml("<invalid>XML</with>")
+        parse_topic_xml("<invalid>XML</with>")
+
+
+@pytest.mark.unit
+def test_parse_topics_xml():
+    """Test parsing topics XML into a list of dictionaries."""
+    # Create a valid topics XML
+    topics_xml = """
+    <topics>
+      <topic>
+        <title>Introduction to Variables</title>
+        <week>1</week>
+        <order>1</order>
+      </topic>
+      <topic>
+        <title>Control Flow</title>
+        <week>1</week>
+        <order>2</order>
+      </topic>
+    </topics>
+    """
+
+    result = parse_topics_xml(topics_xml)
+
+    assert len(result) == 2
+    assert result[0]["title"] == "Introduction to Variables"
+    assert result[0]["week"] == 1
+    assert result[0]["order"] == 1
+    assert result[1]["title"] == "Control Flow"
+    assert result[1]["week"] == 1
+    assert result[1]["order"] == 2
+
+    # Test error handling
+    with pytest.raises(ValueError):
+        parse_topics_xml("<invalid>XML</with>")
+
+
+@pytest.mark.unit
+def test_parse_professor_xml():
+    """Test parsing professor XML into a dictionary."""
+    # Create a valid professor XML
+    professor_xml = """
+    <professor>
+      <name>Dr. Jane Smith</name>
+      <title>Associate Professor</title>
+      <accent>American</accent>
+      <age>35</age>
+      <background>PhD from Stanford</background>
+      <description>Expert in Machine Learning</description>
+      <gender>Female</gender>
+      <personality>Engaging</personality>
+      <specialization>Machine Learning</specialization>
+      <teaching_style>Interactive</teaching_style>
+    </professor>
+    """
+
+    result = parse_professor_xml(professor_xml)
+
+    assert result["name"] == "Dr. Jane Smith"
+    assert result["title"] == "Associate Professor"
+    assert result["accent"] == "American"
+    assert result["age"] == 35
+    assert result["background"] == "PhD from Stanford"
+    assert result["description"] == "Expert in Machine Learning"
+    assert result["gender"] == "Female"
+    assert result["personality"] == "Engaging"
+    assert result["specialization"] == "Machine Learning"
+    assert result["teaching_style"] == "Interactive"
+
+    # Test error handling
+    with pytest.raises(ValueError):
+        parse_professor_xml("<invalid>XML</with>")
 
 
 @pytest.mark.unit
@@ -628,35 +591,10 @@ def test_parse_department_xml():
     assert result["faculty"] == "Science and Engineering"
     assert result["description"] == "Study of computation and software systems"
 
-    # Test handling of generate placeholders
-    placeholder_xml = """
-    <department>
-      <name>Computer Science</name>
-      <code>[GENERATE]</code>
-      <faculty>Science and Engineering</faculty>
-      <description>[GENERATE]</description>
-    </department>
-    """
-
-    with pytest.raises(ValueError) as exc_info:
-        parse_department_xml(placeholder_xml)
-    assert "Required field 'code' is missing or empty" in str(exc_info.value)
-
     # Test error handling for invalid XML
     with pytest.raises(ValueError) as exc_info:
         parse_department_xml("<invalid>XML</with>")
     assert "Invalid XML format" in str(exc_info.value)
-
-    # Test error handling for missing required fields
-    incomplete_xml = """
-    <department>
-      <name>Computer Science</name>
-      <code>CS</code>
-    </department>
-    """
-    with pytest.raises(ValueError) as exc_info:
-        parse_department_xml(incomplete_xml)
-    assert "Required field 'faculty' is missing or empty" in str(exc_info.value)
 
 
 @pytest.mark.unit
@@ -701,3 +639,22 @@ def test_partial_department_to_xml():
     assert root.find("code").text == "CS"
     assert root.find("faculty").text == "Science and Engineering"
     assert root.find("description").text == "Study of computation"
+
+
+@pytest.mark.unit
+def test_parse_lecture_xml():
+    """Test parsing lecture XML into a dictionary."""
+    # Create a valid lecture XML
+    lecture_xml = """
+    <lecture>
+      <content>Today we'll learn about variables...</content>
+    </lecture>
+    """
+
+    result = parse_lecture_xml(lecture_xml)
+
+    assert result["content"] == "Today we'll learn about variables..."
+
+    # Test error handling
+    with pytest.raises(ValueError):
+        parse_lecture_xml("<invalid>XML</with>")

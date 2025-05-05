@@ -7,8 +7,6 @@ from datetime import datetime
 from sqlalchemy import JSON, Column, DateTime, ForeignKey, Index, Integer, String, Text
 from sqlalchemy.orm import DeclarativeBase, relationship
 
-from artificial_u.config.defaults import DEFAULT_COURSE_WEEKS, DEFAULT_LECTURES_PER_WEEK
-
 
 # SQLAlchemy Base
 class Base(DeclarativeBase):
@@ -90,9 +88,9 @@ class CourseModel(Base):
     title = Column(String, nullable=False)
     credits = Column(Integer, nullable=True, default=3)
     description = Column(Text, nullable=True)
-    lectures_per_week = Column(Integer, nullable=True, default=DEFAULT_LECTURES_PER_WEEK)
+    lectures_per_week = Column(Integer, nullable=True, default=1)
     level = Column(String, nullable=True)
-    total_weeks = Column(Integer, nullable=True, default=DEFAULT_COURSE_WEEKS)
+    total_weeks = Column(Integer, nullable=True, default=14)
     department_id = Column(Integer, ForeignKey("departments.id"), nullable=True)
     professor_id = Column(Integer, ForeignKey("professors.id"), nullable=True)
 
@@ -119,10 +117,11 @@ class LectureModel(Base):
     __tablename__ = "lectures"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    audio_url = Column(String, nullable=True)
-    content = Column(Text, nullable=True)
     revision = Column(Integer, nullable=False, default=1)
+    content = Column(Text, nullable=True)
     summary = Column(Text, nullable=True)
+    audio_url = Column(String, nullable=True)
+    transcript_url = Column(String, nullable=True)
     course_id = Column(Integer, ForeignKey("courses.id"), nullable=False)
     topic_id = Column(Integer, ForeignKey("topics.id"), nullable=False)
 

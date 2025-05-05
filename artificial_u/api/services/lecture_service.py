@@ -197,6 +197,7 @@ class LectureApiService:
                 week_number=lecture_data.week_number,
                 order_in_week=lecture_data.order_in_week,
                 audio_url=lecture_data.audio_url,
+                transcript_url=lecture_data.transcript_url,
             )
             return Lecture.model_validate(core_lecture)
         except DatabaseError as e:

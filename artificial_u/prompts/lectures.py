@@ -4,7 +4,6 @@ from typing import Any, Dict, List, Optional
 
 from artificial_u.models.converters import (
     lectures_to_xml,
-    partial_lecture_to_xml,
     professor_to_xml,
 )
 from artificial_u.prompts.base import PromptTemplate
@@ -139,7 +138,6 @@ Wrap your answer in <output> tags, providing only the <lecture> element.
 def get_lecture_prompt(
     professor_data: Dict[str, Any],
     existing_lectures: List[Dict[str, Any]],
-    partial_lecture_attrs: Dict[str, Any],
     freeform_prompt: Optional[str] = None,
     word_count: int = 2500,
 ) -> str:
@@ -158,7 +156,6 @@ def get_lecture_prompt(
     # Use converters to generate XML sections
     professor_xml_str = professor_to_xml(professor_data)
     existing_lectures_xml_str = lectures_to_xml(existing_lectures)
-    partial_lecture_xml_str = partial_lecture_to_xml(partial_lecture_attrs)
 
     # Format freeform prompt if provided
     freeform_prompt_text = (
@@ -169,7 +166,6 @@ def get_lecture_prompt(
     try:
         return LECTURE_PROMPT.format(
             existing_lectures_xml=existing_lectures_xml_str,
-            partial_lecture_xml=partial_lecture_xml_str,
             professor_xml=professor_xml_str,
             word_count=word_count,
             freeform_prompt_text=freeform_prompt_text,

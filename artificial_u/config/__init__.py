@@ -6,10 +6,8 @@ Configuration modules for the ArtificialU system.
 from artificial_u.config.defaults import (
     DEFAULT_CONTENT_BACKEND,
     DEFAULT_CONTENT_LOGS_PATH,
-    DEFAULT_COURSE_WEEKS,
     DEFAULT_DB_URL,
     DEFAULT_LECTURE_WORD_COUNT,
-    DEFAULT_LECTURES_PER_WEEK,
     DEFAULT_LOG_LEVEL,
     DEFAULT_OLLAMA_MODEL,
     DEFAULT_STORAGE_ACCESS_KEY,
@@ -56,8 +54,6 @@ __all__ = [
     "DEFAULT_CONTENT_BACKEND",
     "DEFAULT_OLLAMA_MODEL",
     # Course and lecture defaults
-    "DEFAULT_COURSE_WEEKS",
-    "DEFAULT_LECTURES_PER_WEEK",
     "DEFAULT_LECTURE_WORD_COUNT",
     # System defaults
     "DEFAULT_LOG_LEVEL",

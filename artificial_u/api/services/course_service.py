@@ -455,7 +455,6 @@ class CourseApiService:
                     week_number=lecture.week_number,
                     order_in_week=lecture.order_in_week,
                     description=lecture.description,
-                    audio_url=lecture.audio_url,
                 )
                 for lecture in lectures
             ]

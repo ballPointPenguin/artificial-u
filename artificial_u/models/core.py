@@ -7,8 +7,6 @@ from typing import Any, Dict, Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from artificial_u.config.defaults import DEFAULT_COURSE_WEEKS, DEFAULT_LECTURES_PER_WEEK
-
 
 class Department(BaseModel):
     """Department model representing an academic department."""
@@ -155,9 +153,9 @@ class Course(BaseModel):
     title: str
     credits: int = Field(default=3, ge=0)
     description: Optional[str] = None
-    lectures_per_week: int = DEFAULT_LECTURES_PER_WEEK
+    lectures_per_week: int = 1
     level: Optional[str] = None
-    total_weeks: int = DEFAULT_COURSE_WEEKS
+    total_weeks: int = 14
     department_id: Optional[int] = None
     professor_id: Optional[int] = None
 
@@ -191,10 +189,11 @@ class Lecture(BaseModel):
         json_schema_extra={
             "example": {
                 "id": 1,
-                "audio_url": "https://storage.example.com/audio_files/CS4511/week1/lecture1.mp3",
-                "content": "Good morning, students. Welcome to CSCI-4511...",
                 "revision": 1,
+                "content": "Good morning, students. Welcome to CSCI-4511...",
                 "summary": "Overview of AI definitions, history, and intelligent agents",
+                "audio_url": "https://example.com/audio_files/CS4511/week1/lecture1.mp3",
+                "transcript_url": "https://example.com/transcript_files/CS4511/week1/lecture1.txt",
                 "course_id": 1,
                 "topic_id": 1,
             }
@@ -202,9 +201,10 @@ class Lecture(BaseModel):
     )
 
     id: Optional[int] = None
-    audio_url: Optional[str] = None
-    content: Optional[str] = None
     revision: int = Field(default=1, gt=0)
+    content: Optional[str] = None
     summary: Optional[str] = None
+    audio_url: Optional[str] = None
+    transcript_url: Optional[str] = None
     course_id: int
     topic_id: int

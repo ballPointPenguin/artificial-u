@@ -6,8 +6,6 @@ from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, Field
 
-from artificial_u.config.defaults import DEFAULT_COURSE_WEEKS, DEFAULT_LECTURES_PER_WEEK
-
 
 # Base Course model with common fields
 class CourseBase(BaseModel):
@@ -20,8 +18,8 @@ class CourseBase(BaseModel):
     credits: int = Field(default=3, ge=0)
     professor_id: int
     description: str
-    lectures_per_week: int = DEFAULT_LECTURES_PER_WEEK
-    total_weeks: int = DEFAULT_COURSE_WEEKS
+    lectures_per_week: int = 14
+    total_weeks: int = 1
     topics: Optional[list[dict]] = None
 
 
@@ -89,7 +87,6 @@ class LectureBrief(BaseModel):
     week_number: int
     order_in_week: int
     description: str
-    audio_url: Optional[str] = None
 
 
 # Course's lectures response model

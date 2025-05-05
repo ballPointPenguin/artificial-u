@@ -18,14 +18,13 @@ class CourseRepository(BaseRepository):
             db_course = CourseModel(
                 code=course.code,
                 title=course.title,
-                department_id=course.department_id,
-                level=course.level,
                 credits=course.credits,
-                professor_id=course.professor_id,
                 description=course.description,
                 lectures_per_week=course.lectures_per_week,
+                level=course.level,
                 total_weeks=course.total_weeks,
-                topics=course.topics,
+                department_id=course.department_id,
+                professor_id=course.professor_id,
             )
 
             session.add(db_course)
@@ -33,7 +32,6 @@ class CourseRepository(BaseRepository):
             session.refresh(db_course)
 
             course.id = db_course.id
-            course.topics = db_course.topics
             return course
 
     def get(self, course_id: int) -> Optional[Course]:
@@ -48,14 +46,13 @@ class CourseRepository(BaseRepository):
                 id=db_course.id,
                 code=db_course.code,
                 title=db_course.title,
-                department_id=db_course.department_id,
-                level=db_course.level,
                 credits=db_course.credits,
-                professor_id=db_course.professor_id,
                 description=db_course.description,
                 lectures_per_week=db_course.lectures_per_week,
+                level=db_course.level,
                 total_weeks=db_course.total_weeks,
-                topics=db_course.topics,
+                department_id=db_course.department_id,
+                professor_id=db_course.professor_id,
             )
 
     def get_by_code(self, code: str) -> Optional[Course]:
@@ -70,14 +67,13 @@ class CourseRepository(BaseRepository):
                 id=db_course.id,
                 code=db_course.code,
                 title=db_course.title,
-                department_id=db_course.department_id,
-                level=db_course.level,
                 credits=db_course.credits,
-                professor_id=db_course.professor_id,
                 description=db_course.description,
                 lectures_per_week=db_course.lectures_per_week,
+                level=db_course.level,
                 total_weeks=db_course.total_weeks,
-                topics=db_course.topics,
+                department_id=db_course.department_id,
+                professor_id=db_course.professor_id,
             )
 
     def list(self, department_id: Optional[int] = None) -> List[Course]:
@@ -92,19 +88,18 @@ class CourseRepository(BaseRepository):
 
             return [
                 Course(
-                    id=c.id,
-                    code=c.code,
-                    title=c.title,
-                    department_id=c.department_id,
-                    level=c.level,
-                    credits=c.credits,
-                    professor_id=c.professor_id,
-                    description=c.description,
-                    lectures_per_week=c.lectures_per_week,
-                    total_weeks=c.total_weeks,
-                    topics=c.topics,
+                    id=course.id,
+                    code=course.code,
+                    title=course.title,
+                    credits=course.credits,
+                    description=course.description,
+                    lectures_per_week=course.lectures_per_week,
+                    level=course.level,
+                    total_weeks=course.total_weeks,
+                    department_id=course.department_id,
+                    professor_id=course.professor_id,
                 )
-                for c in db_courses
+                for course in db_courses
             ]
 
     def update(self, course: Course) -> Course:
@@ -118,17 +113,15 @@ class CourseRepository(BaseRepository):
             # Update fields
             db_course.code = course.code
             db_course.title = course.title
-            db_course.department_id = course.department_id
-            db_course.level = course.level
             db_course.credits = course.credits
-            db_course.professor_id = course.professor_id
             db_course.description = course.description
             db_course.lectures_per_week = course.lectures_per_week
+            db_course.level = course.level
             db_course.total_weeks = course.total_weeks
-            db_course.topics = course.topics
+            db_course.department_id = course.department_id
+            db_course.professor_id = course.professor_id
 
             session.commit()
-            course.topics = db_course.topics
             return course
 
     def delete(self, course_id: int) -> bool:
