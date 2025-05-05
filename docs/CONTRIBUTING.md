@@ -41,7 +41,7 @@ Thank you for considering contributing to ArtificialU! This document provides gu
 - **Style**: Follow PEP 8 style guide for Python code. Adherence is enforced by Black and Flake8 via pre-commit hooks.
 - **Type Hints**: Use type hints for function signatures and variables where appropriate. Mypy is used for type checking.
 - **Docstrings**: Write clear docstrings for all public modules, classes, and functions using a standard format (e.g., Google style).
-- **Simplicity**: Keep functions focused and strive for clear, readable code. Apply the principles outlined in the project's [Greenfield Development Guidelines](<#greenfield-development-guidelines>).
+- **Simplicity**: Keep functions focused and strive for clear, readable code. Apply the principles outlined in the project's [Greenfield Development Guidelines](<.cursor/rules/greenfield.mdc>).
 - **Commit Messages**: Write informative commit messages.
 
 ## Testing Guidelines

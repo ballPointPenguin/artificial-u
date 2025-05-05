@@ -16,6 +16,7 @@ class Department(BaseModel):
     model_config = ConfigDict(
         json_schema_extra={
             "example": {
+                "id": 1,
                 "name": "Computer Science",
                 "code": "CS",
                 "faculty": "Science and Engineering",
@@ -38,20 +39,22 @@ class Voice(BaseModel):
     model_config = ConfigDict(
         json_schema_extra={
             "example": {
+                "id": 1,
                 "el_voice_id": "MF4J4IDTRo0AxOO4dpFR",
                 "name": "Devi - Clear Hindi pronunciation",
                 "accent": "standard",
-                "gender": "female",
                 "age": "young",
-                "descriptive": "professional",
-                "use_case": "informative_educational",
                 "category": "high_quality",
-                "language": "hi",
-                "locale": "hi-IN",
                 "description": "Devi is the pen name of a young Indian female artist with "
                 "clear Hindi instructions.",
+                "descriptive": "professional",
+                "gender": "female",
+                "language": "hi",
+                "locale": "hi-IN",
+                "popularity_score": 138250,
                 "preview_url": "https://storage.googleapis.com/eleven-public-prod/voices/"
                 "example.mp3",
+                "use_case": "informative_educational",
                 "verified_languages": {
                     "languages": [
                         {
@@ -62,7 +65,7 @@ class Voice(BaseModel):
                         }
                     ]
                 },
-                "popularity_score": 138250,
+                "last_updated": "2025-05-05T00:00:00Z",
             }
         }
     )
@@ -71,17 +74,17 @@ class Voice(BaseModel):
     el_voice_id: str
     name: Optional[str] = None
     accent: Optional[str] = None
-    gender: Optional[str] = None
     age: Optional[str] = None
-    descriptive: Optional[str] = None
-    use_case: Optional[str] = None
     category: Optional[str] = None
+    description: Optional[str] = None
+    descriptive: Optional[str] = None
+    gender: Optional[str] = None
     language: Optional[str] = None
     locale: Optional[str] = None
-    description: Optional[str] = None
-    preview_url: Optional[str] = None
-    verified_languages: Dict[str, Any] = Field(default_factory=dict)
     popularity_score: Optional[int] = None
+    preview_url: Optional[str] = None
+    use_case: Optional[str] = None
+    verified_languages: Dict[str, Any] = Field(default_factory=dict)
     last_updated: datetime = Field(default_factory=datetime.now)
 
 
@@ -91,20 +94,22 @@ class Professor(BaseModel):
     model_config = ConfigDict(
         json_schema_extra={
             "example": {
+                "id": 1,
                 "name": "Dr. Mikhail Volkov",
                 "title": "Professor of Computer Science",
-                "department_id": 1,
-                "specialization": "Artificial Intelligence",
-                "background": "58-year-old Russian-American CS professor (Moscow State, Bell Labs)",
-                "personality": "Methodical, philosophical, occasional dry humor",
-                "teaching_style": "Combines methodical explanations with philosophical "
-                "perspectives",
-                "gender": "Male",
                 "accent": "Russian",
+                "age": 58,
+                "background": "58-year-old Russian-American CS professor (Moscow State, Bell Labs)",
                 "description": "Distinguished, salt-and-pepper hair, mustache, glasses. "
                 "Formal wear, bow tie.",
-                "age": 58,
+                "gender": "Male",
+                "personality": "Methodical, philosophical, occasional dry humor",
+                "specialization": "Artificial Intelligence",
+                "teaching_style": "Combines methodical explanations with philosophical "
+                "perspectives",
+                "department_id": 1,
                 "voice_id": 1,
+                "image_url": "https://storage.example.com/professors/mikhail_volkov.jpg",
             }
         }
     )
@@ -112,16 +117,16 @@ class Professor(BaseModel):
     id: Optional[int] = None
     name: str
     title: Optional[str] = None
-    department_id: Optional[int] = None
-    specialization: Optional[str] = None
-    background: Optional[str] = None
-    personality: Optional[str] = None
-    teaching_style: Optional[str] = None
-    gender: Optional[str] = None
     accent: Optional[str] = None
-    description: Optional[str] = None
     age: Optional[int] = None
+    background: Optional[str] = None
+    description: Optional[str] = None
+    gender: Optional[str] = None
+    personality: Optional[str] = None
+    specialization: Optional[str] = None
+    teaching_style: Optional[str] = None
     image_url: Optional[str] = None
+    department_id: Optional[int] = None
     voice_id: Optional[int] = None
 
 
@@ -131,28 +136,16 @@ class Course(BaseModel):
     model_config = ConfigDict(
         json_schema_extra={
             "example": {
+                "id": 1,
                 "code": "CS4511",
                 "title": "Introduction to Artificial Intelligence",
-                "department_id": 1,
-                "level": "Undergraduate",
                 "credits": 3,
-                "professor_id": 1,
                 "description": "Foundational concepts and techniques in AI.",
                 "lectures_per_week": 1,
+                "level": "Undergraduate",
                 "total_weeks": 14,
-                "topics": [
-                    {
-                        "week": 1,
-                        "lectures": [
-                            {"number": 1, "title": "Introduction to AI"},
-                            {"number": 2, "title": "History of AI"},
-                        ],
-                    },
-                    {
-                        "week": 2,
-                        "lectures": [{"number": 1, "title": "Search Algorithms"}],
-                    },
-                ],
+                "department_id": 1,
+                "professor_id": 1,
             }
         }
     )
@@ -160,14 +153,35 @@ class Course(BaseModel):
     id: Optional[int] = None
     code: str
     title: str
-    department_id: Optional[int] = None
-    level: Optional[str] = None
     credits: int = Field(default=3, ge=0)
-    professor_id: Optional[int] = None
     description: Optional[str] = None
     lectures_per_week: int = DEFAULT_LECTURES_PER_WEEK
+    level: Optional[str] = None
     total_weeks: int = DEFAULT_COURSE_WEEKS
-    topics: Optional[list[dict]] = None
+    department_id: Optional[int] = None
+    professor_id: Optional[int] = None
+
+
+class Topic(BaseModel):
+    """Topic model representing a course topic."""
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "id": 1,
+                "title": "Introduction: What is AI?",
+                "order": 1,
+                "week": 1,
+                "course_id": 1,
+            }
+        }
+    )
+
+    id: Optional[int] = None
+    title: str
+    order: int = Field(default=1, gt=0)
+    week: int = Field(default=1, gt=0)
+    course_id: int
 
 
 class Lecture(BaseModel):
@@ -176,22 +190,21 @@ class Lecture(BaseModel):
     model_config = ConfigDict(
         json_schema_extra={
             "example": {
-                "title": "Introduction: What is AI?",
-                "course_id": 1,
-                "week_number": 1,
-                "order_in_week": 1,
-                "description": "Overview of AI definitions, history, and intelligent agents",
-                "content": "Good morning, students. Welcome to CSCI-4511...",
+                "id": 1,
                 "audio_url": "https://storage.example.com/audio_files/CS4511/week1/lecture1.mp3",
+                "content": "Good morning, students. Welcome to CSCI-4511...",
+                "revision": 1,
+                "summary": "Overview of AI definitions, history, and intelligent agents",
+                "course_id": 1,
+                "topic_id": 1,
             }
         }
     )
 
     id: Optional[int] = None
-    title: str
-    course_id: int
-    week_number: int = Field(gt=0)
-    order_in_week: int = Field(default=1, gt=0)
-    description: Optional[str] = None
-    content: Optional[str] = None
     audio_url: Optional[str] = None
+    content: Optional[str] = None
+    revision: int = Field(default=1, gt=0)
+    summary: Optional[str] = None
+    course_id: int
+    topic_id: int

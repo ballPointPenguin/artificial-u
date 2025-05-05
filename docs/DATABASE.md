@@ -19,7 +19,7 @@ ArtificialU uses PostgreSQL for its database and Alembic for database migrations
 2. Initialize the database and run migrations:
 
    ```sh
-   python initialize_db.py
+   python scripts/initialize_db.py
    ```
 
 ### Production/Staging
@@ -45,6 +45,16 @@ When you need to make changes to the database schema:
    ```sh
    alembic upgrade head
    ```
+
+## Totally Rebuild the Dev Database
+
+Warning: This is only for development/greenfield phase.
+
+This will delete all existing migrations and the database, and create a new one.
+
+```sh
+python scripts/rebuild_dev_db.py
+```
 
 ## Testing
 

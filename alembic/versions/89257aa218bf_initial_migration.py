@@ -1,8 +1,8 @@
 """Initial migration
 
-Revision ID: 92444c4efe6c
+Revision ID: 89257aa218bf
 Revises:
-Create Date: 2025-04-13 06:26:12.010186
+Create Date: 2025-05-05 00:56:26.733543
 
 """
 
@@ -11,7 +11,7 @@ import sqlalchemy as sa
 from alembic import op
 
 # revision identifiers, used by Alembic.
-revision = "92444c4efe6c"
+revision = "89257aa218bf"
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -36,17 +36,17 @@ def upgrade() -> None:
         sa.Column("el_voice_id", sa.String(), nullable=False),
         sa.Column("name", sa.String(), nullable=False),
         sa.Column("accent", sa.String(length=100), nullable=True),
-        sa.Column("gender", sa.String(length=50), nullable=True),
         sa.Column("age", sa.String(length=50), nullable=True),
-        sa.Column("descriptive", sa.String(length=100), nullable=True),
-        sa.Column("use_case", sa.String(length=100), nullable=True),
         sa.Column("category", sa.String(length=100), nullable=True),
+        sa.Column("description", sa.Text(), nullable=True),
+        sa.Column("descriptive", sa.String(length=100), nullable=True),
+        sa.Column("gender", sa.String(length=50), nullable=True),
         sa.Column("language", sa.String(length=10), nullable=True),
         sa.Column("locale", sa.String(length=20), nullable=True),
-        sa.Column("description", sa.Text(), nullable=True),
-        sa.Column("preview_url", sa.Text(), nullable=True),
-        sa.Column("verified_languages", sa.JSON(), nullable=True),
         sa.Column("popularity_score", sa.Integer(), nullable=True),
+        sa.Column("preview_url", sa.Text(), nullable=True),
+        sa.Column("use_case", sa.String(length=100), nullable=True),
+        sa.Column("verified_languages", sa.JSON(), nullable=True),
         sa.Column("last_updated", sa.DateTime(), nullable=False),
         sa.PrimaryKeyConstraint("id"),
         sa.UniqueConstraint("el_voice_id"),
@@ -57,17 +57,17 @@ def upgrade() -> None:
         sa.Column("id", sa.Integer(), autoincrement=True, nullable=False),
         sa.Column("name", sa.String(), nullable=False),
         sa.Column("title", sa.String(), nullable=True),
-        sa.Column("department_id", sa.Integer(), nullable=True),
-        sa.Column("specialization", sa.String(), nullable=True),
-        sa.Column("background", sa.Text(), nullable=True),
-        sa.Column("personality", sa.Text(), nullable=True),
-        sa.Column("teaching_style", sa.Text(), nullable=True),
-        sa.Column("gender", sa.String(), nullable=True),
         sa.Column("accent", sa.String(), nullable=True),
-        sa.Column("description", sa.Text(), nullable=True),
         sa.Column("age", sa.Integer(), nullable=True),
-        sa.Column("voice_id", sa.Integer(), nullable=True),
+        sa.Column("background", sa.Text(), nullable=True),
+        sa.Column("description", sa.Text(), nullable=True),
+        sa.Column("gender", sa.String(), nullable=True),
+        sa.Column("personality", sa.Text(), nullable=True),
+        sa.Column("specialization", sa.String(), nullable=True),
+        sa.Column("teaching_style", sa.Text(), nullable=True),
         sa.Column("image_url", sa.String(), nullable=True),
+        sa.Column("department_id", sa.Integer(), nullable=True),
+        sa.Column("voice_id", sa.Integer(), nullable=True),
         sa.ForeignKeyConstraint(
             ["department_id"],
             ["departments.id"],
@@ -83,15 +83,13 @@ def upgrade() -> None:
         sa.Column("id", sa.Integer(), autoincrement=True, nullable=False),
         sa.Column("code", sa.String(), nullable=False),
         sa.Column("title", sa.String(), nullable=False),
-        sa.Column("department_id", sa.Integer(), nullable=True),
-        sa.Column("level", sa.String(), nullable=True),
         sa.Column("credits", sa.Integer(), nullable=True),
-        sa.Column("professor_id", sa.Integer(), nullable=True),
         sa.Column("description", sa.Text(), nullable=True),
         sa.Column("lectures_per_week", sa.Integer(), nullable=True),
+        sa.Column("level", sa.String(), nullable=True),
         sa.Column("total_weeks", sa.Integer(), nullable=True),
-        sa.Column("syllabus", sa.Text(), nullable=True),
-        sa.Column("generated_at", sa.DateTime(), nullable=False),
+        sa.Column("department_id", sa.Integer(), nullable=True),
+        sa.Column("professor_id", sa.Integer(), nullable=True),
         sa.ForeignKeyConstraint(
             ["department_id"],
             ["departments.id"],
@@ -104,19 +102,36 @@ def upgrade() -> None:
         sa.UniqueConstraint("code"),
     )
     op.create_table(
-        "lectures",
+        "topics",
         sa.Column("id", sa.Integer(), autoincrement=True, nullable=False),
         sa.Column("title", sa.String(), nullable=False),
+        sa.Column("order", sa.Integer(), nullable=False),
+        sa.Column("week", sa.Integer(), nullable=False),
         sa.Column("course_id", sa.Integer(), nullable=False),
-        sa.Column("week_number", sa.Integer(), nullable=False),
-        sa.Column("order_in_week", sa.Integer(), nullable=False),
-        sa.Column("description", sa.Text(), nullable=True),
-        sa.Column("content", sa.Text(), nullable=True),
-        sa.Column("audio_url", sa.String(), nullable=True),
-        sa.Column("generated_at", sa.DateTime(), nullable=False),
         sa.ForeignKeyConstraint(
             ["course_id"],
             ["courses.id"],
+        ),
+        sa.PrimaryKeyConstraint("id"),
+    )
+    op.create_index(op.f("ix_topics_course_id"), "topics", ["course_id"], unique=False)
+    op.create_index(op.f("ix_topics_week"), "topics", ["week"], unique=False)
+    op.create_table(
+        "lectures",
+        sa.Column("id", sa.Integer(), autoincrement=True, nullable=False),
+        sa.Column("audio_url", sa.String(), nullable=True),
+        sa.Column("content", sa.Text(), nullable=True),
+        sa.Column("revision", sa.Integer(), nullable=False),
+        sa.Column("summary", sa.Text(), nullable=True),
+        sa.Column("course_id", sa.Integer(), nullable=False),
+        sa.Column("topic_id", sa.Integer(), nullable=False),
+        sa.ForeignKeyConstraint(
+            ["course_id"],
+            ["courses.id"],
+        ),
+        sa.ForeignKeyConstraint(
+            ["topic_id"],
+            ["topics.id"],
         ),
         sa.PrimaryKeyConstraint("id"),
     )
@@ -126,6 +141,9 @@ def upgrade() -> None:
 def downgrade() -> None:
     # ### commands auto generated by Alembic - please adjust! ###
     op.drop_table("lectures")
+    op.drop_index(op.f("ix_topics_week"), table_name="topics")
+    op.drop_index(op.f("ix_topics_course_id"), table_name="topics")
+    op.drop_table("topics")
     op.drop_table("courses")
     op.drop_table("professors")
     op.drop_index("idx_voices_language", table_name="voices")
