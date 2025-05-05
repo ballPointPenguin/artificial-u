@@ -6,10 +6,7 @@ used across the Artificial-U system.
 
 from artificial_u.prompts.base import PromptTemplate
 from artificial_u.prompts.courses import get_course_prompt
-from artificial_u.prompts.department import (
-    get_department_prompt,
-    get_open_department_prompt,
-)
+from artificial_u.prompts.department import get_department_prompt
 from artificial_u.prompts.images import format_professor_image_prompt
 from artificial_u.prompts.lectures import get_lecture_prompt
 from artificial_u.prompts.professors import get_professor_prompt
@@ -22,7 +19,6 @@ __all__ = [
     "get_course_prompt",
     # Department prompts
     "get_department_prompt",
-    "get_open_department_prompt",
     # Image prompts
     "format_professor_image_prompt",
     # Lecture prompts

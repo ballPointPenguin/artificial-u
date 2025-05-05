@@ -165,7 +165,7 @@ class UniversitySystem:
 
         # Initialize ContentService (assuming it configures itself from settings)
         self.content_service = ContentService(
-            logger=logging.getLogger("artificial_u.services.content_service")
+            logger=logging.getLogger("artificial_u.services.content_service"),
         )
 
         # Initialize ImageService

@@ -7,6 +7,7 @@ from typing import Dict, List, Optional
 
 from artificial_u.config import get_settings
 from artificial_u.models.converters import (
+    department_model_to_dict,
     extract_xml_content,
     parse_department_xml,
 )
@@ -14,7 +15,6 @@ from artificial_u.models.core import Course, Department, Professor
 from artificial_u.models.repositories.factory import RepositoryFactory
 from artificial_u.prompts import (
     get_department_prompt,
-    get_open_department_prompt,
     get_system_prompt,
 )
 from artificial_u.services.content_service import ContentService
@@ -53,13 +53,12 @@ class DepartmentService:
         self.content_service = content_service
         self.logger = logger or logging.getLogger(__name__)
 
-    async def generate_department(self, department_data: dict) -> dict:
+    async def generate_department(self, partial_attributes: Optional[Dict] = None) -> dict:
         """
-        Generate a department using AI based on the department name, course_name, or neither.
-        If both name and course_name are supplied, name takes precedence.
+        Generate a department using AI based on provided partial attributes.
 
         Args:
-            department_data: Dictionary containing optional name and/or course_name
+            partial_attributes: Optional dictionary containing attributes to guide generation
 
         Returns:
             dict: The generated department attributes
@@ -68,17 +67,29 @@ class DepartmentService:
             ContentGenerationError: If generation or parsing fails
             DatabaseError: If there's an error accessing the database
         """
-        try:
-            name = department_data.get("name")
-            course_name = department_data.get("course_name")
+        partial_attributes = partial_attributes or {}
+        self.logger.info(
+            f"Generating department with partial attributes: {list(partial_attributes.keys())}"
+        )
 
-            if name:
-                prompt = get_department_prompt(name)
-            elif course_name:
-                prompt = get_department_prompt(course_name=course_name)
-            else:
-                existing_departments = self.repository_factory.department.list_department_names()
-                prompt = get_open_department_prompt(existing_departments=existing_departments)
+        try:
+            # Get existing departments for context
+            # existing_courses_models = await self._get_existing_courses(department_model)
+            # existing_courses_dicts = [course_model_to_dict(c) for c in existing_courses_models]
+            existing_departments_models = self.repository_factory.department.list()
+            existing_departments_dicts = [
+                department_model_to_dict(d) for d in existing_departments_models
+            ]
+
+            # Extract freeform prompt if present
+            freeform_prompt = partial_attributes.pop("freeform_prompt", None)
+
+            # Get the prompt using the helper function
+            prompt = get_department_prompt(
+                existing_departments=existing_departments_dicts,
+                partial_attributes=partial_attributes,
+                freeform_prompt=freeform_prompt,
+            )
 
             settings = get_settings()
 
@@ -100,14 +111,9 @@ class DepartmentService:
                 xml_content = response  # Use full response if no output tags
 
             # Parse the response using the converter function
-            try:
-                department_attrs = parse_department_xml(xml_content)
-                self.logger.info(
-                    f"Successfully generated department: {department_attrs.get('name')}"
-                )
-                return department_attrs
-            except ValueError as e:
-                raise ContentGenerationError(f"Failed to parse department XML: {e}")
+            department_attrs = parse_department_xml(xml_content)
+            self.logger.info(f"Successfully generated department: {department_attrs.get('name')}")
+            return department_attrs
 
         except ContentGenerationError:
             # Re-raise content generation errors

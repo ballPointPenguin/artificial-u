@@ -125,8 +125,7 @@ IMPORTANT:
 - Include natural student interactions and engagement
 - Aim for approximately {{word_count}} words in the lecture content
 
-Wrap your answer in <output> tags, providing only the <lecture> element:
-<output>
+Wrap your answer in <output> tags, providing only the <lecture> element.
 """,
     required_vars=[
         "existing_lectures_xml",

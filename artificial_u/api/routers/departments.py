@@ -296,20 +296,18 @@ async def list_department_courses(
     },
 )
 async def generate_department(
-    department_data: DepartmentGenerate,
+    generation_data: DepartmentGenerate,
     department_service: DepartmentApiService = Depends(get_department_api_service),
 ):
     """
-    Generate a department using AI.
+    Generate department data using AI.
 
-    - If name is provided, it is used.
-    - If only course_name is provided, it is used to invent a department.
-    - If neither is provided, the model invents a department.
+    Accepts optional partial attributes and a freeform prompt to guide generation.
 
     Args:
-        name: Optional name of the department to generate
-        course_name: Optional name of the course to generate a department for
+        generation_data: Contains optional partial_attributes and freeform_prompt.
+
     Returns:
-        The generated department XML as a string
+        The generated department data (not saved to the database).
     """
-    return await department_service.generate_department(department_data)
+    return await department_service.generate_department(generation_data)

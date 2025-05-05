@@ -62,8 +62,8 @@ Desired complete output format (fill in *all* bracketed placeholders):
 Example of a filled profile:
 {EXAMPLE_PROFESSOR_1}
 
-Generate the *complete* profile:
-<output>
+Generate the *complete* profile.
+Wrap your answer in <output> tags, providing only the <professor> element.
 """,
     required_vars=[
         "existing_professors_xml",
@@ -89,8 +89,8 @@ Desired output format (fill in the bracketed placeholders):
 Example of a filled profile:
 {EXAMPLE_PROFESSOR_1}
 
-Generate the profile for the newly invented professor:
-<output>
+Generate the profile for the newly invented professor.
+Wrap your answer in <output> tags, providing only the <professor> element.
 """,
     required_vars=["existing_professors_xml"],
 )

@@ -1,10 +1,17 @@
+import json
 import logging
+import os
+from datetime import datetime
 from typing import Optional
 
 from google.genai import types
 
 from artificial_u.config import get_settings
 from artificial_u.integrations import anthropic_client, gemini_client, ollama_client, openai_client
+
+# TODO: Make these configurable
+DEFAULT_TEMPERATURE = 0.3
+DEFAULT_MAX_TOKENS = 1024
 
 
 class ContentService:
@@ -19,6 +26,7 @@ class ContentService:
         settings = get_settings()
         self.default_backend = settings.content_backend
         self.default_model = settings.content_model
+        self.content_logs_path = settings.CONTENT_LOGS_PATH
         self.logger.info(
             f"ContentService initialized with default backend: {self.default_backend}, "
             f"default model: {self.default_model}"
@@ -84,7 +92,7 @@ class ContentService:
             raise ValueError("No model specified and no default model configured.")
 
         self.logger.info(
-            f"Generating text for prompt: '{prompt[:1500]}...' using model: {target_model}"
+            f"Generating text for prompt: '{prompt[:500]}...' using model: {target_model}"
         )
 
         # Determine backend based on model name
@@ -115,21 +123,84 @@ class ContentService:
             )
             raise
 
+    async def _log_content(
+        self,
+        model: str,
+        prompt: str,
+        system_prompt: str | None,
+        temperature: float | None,
+        max_tokens: int | None,
+        response: str,
+        backend: str,
+    ) -> None:
+        """Log the content generation details to a file.
+
+        Args:
+            model: The model used for generation
+            prompt: The input prompt
+            system_prompt: Optional system prompt
+            temperature: Optional temperature setting
+            max_tokens: Optional max tokens setting
+            response: The generated response
+            backend: The backend service used (anthropic, openai, etc.)
+        """
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
+
+        # Structure the log data hierarchically
+        log_data = {
+            "metadata": {
+                "timestamp": timestamp,
+                "backend": backend,
+                "model": model,
+                "settings": {
+                    "temperature": temperature,
+                    "max_tokens": max_tokens,
+                },
+            },
+            "content": {"system_prompt": system_prompt, "prompt": prompt, "response": response},
+        }
+
+        # Create a unique filename for this generation
+        filename = f"{timestamp}_{backend}_{model.replace('/', '_')}.json"
+        filepath = os.path.join(self.content_logs_path, filename)
+
+        try:
+            with open(filepath, "w", encoding="utf-8") as f:
+                json.dump(log_data, f, indent=2, ensure_ascii=False)
+            self.logger.debug(f"Content log saved to {filepath}")
+        except Exception as e:
+            self.logger.error(f"Failed to save content log to {filepath}: {str(e)}")
+
     async def _generate_anthropic(self, prompt, model, system_prompt, temperature, max_tokens):
+        self.logger.info(f"Generating text with Anthropic model: {model}")
         messages = []
         if system_prompt:
             pass  # Anthropic uses 'system' parameter outside messages
         messages.append({"role": "user", "content": prompt})
         response = await anthropic_client.messages.create(
             model=model,
-            max_tokens=max_tokens if max_tokens is not None else 1024,
+            max_tokens=max_tokens if max_tokens is not None else DEFAULT_MAX_TOKENS,
             messages=messages,
             system=system_prompt,
-            temperature=temperature if temperature is not None else 0.7,
+            temperature=temperature if temperature is not None else DEFAULT_TEMPERATURE,
         )
-        return response.content[0].text
+        response_text = response.content[0].text
+        self.logger.info(f"Received response from Anthropic: {response_text[:500]}")
+
+        await self._log_content(
+            model=model,
+            prompt=prompt,
+            system_prompt=system_prompt,
+            temperature=temperature,
+            max_tokens=max_tokens,
+            response=response_text,
+            backend="anthropic",
+        )
+
+        return response_text
 
     async def _generate_openai(self, prompt, model, system_prompt, temperature, max_tokens):
+        self.logger.info(f"Generating text with OpenAI model: {model}")
         messages = []
         if system_prompt:
             messages.append({"role": "system", "content": system_prompt})
@@ -137,16 +208,30 @@ class ContentService:
         response = await openai_client.chat.completions.create(
             model=model,
             messages=messages,
-            max_tokens=max_tokens if max_tokens is not None else 1024,
-            temperature=temperature if temperature is not None else 0.7,
+            max_tokens=max_tokens if max_tokens is not None else DEFAULT_MAX_TOKENS,
+            temperature=temperature if temperature is not None else DEFAULT_TEMPERATURE,
         )
-        return response.choices[0].message.content
+        response_text = response.choices[0].message.content
+        self.logger.info(f"Received response from OpenAI: {response_text[:500]}")
+
+        await self._log_content(
+            model=model,
+            prompt=prompt,
+            system_prompt=system_prompt,
+            temperature=temperature,
+            max_tokens=max_tokens,
+            response=response_text,
+            backend="openai",
+        )
+
+        return response_text
 
     async def _generate_gemini(self, prompt, model, system_prompt, temperature, max_tokens):
+        self.logger.info(f"Generating text with Gemini model: {model}")
         contents = [types.Content(parts=[types.Part.from_text(prompt)])]
         generation_config = types.GenerationConfig(
-            temperature=temperature if temperature is not None else 0.7,
-            max_output_tokens=max_tokens if max_tokens is not None else 1024,
+            temperature=temperature if temperature is not None else DEFAULT_TEMPERATURE,
+            max_output_tokens=max_tokens if max_tokens is not None else DEFAULT_MAX_TOKENS,
         )
         if system_prompt:
             generation_config.system_instruction = system_prompt
@@ -155,13 +240,28 @@ class ContentService:
             contents=contents,
             generation_config=generation_config,
         )
+
         if response.candidates and response.candidates[0].content:
-            return response.candidates[0].content.parts[0].text
+            response_text = response.candidates[0].content.parts[0].text
+            self.logger.info(f"Received response from Gemini: {response_text[:500]}")
+
+            await self._log_content(
+                model=model,
+                prompt=prompt,
+                system_prompt=system_prompt,
+                temperature=temperature,
+                max_tokens=max_tokens,
+                response=response_text,
+                backend="gemini",
+            )
+
+            return response_text
         else:
             self.logger.warning("No content generated from Gemini model")
             return ""
 
     async def _generate_ollama(self, prompt, model, system_prompt, temperature, max_tokens):
+        self.logger.info(f"Generating text with Ollama model: {model}")
         messages = []
         if system_prompt:
             messages.append({"role": "system", "content": system_prompt})
@@ -170,8 +270,21 @@ class ContentService:
             model=model,
             messages=messages,
             options={
-                "temperature": temperature if temperature is not None else 0.7,
-                "num_predict": max_tokens if max_tokens is not None else 1024,
+                "temperature": temperature if temperature is not None else DEFAULT_TEMPERATURE,
+                "num_predict": max_tokens if max_tokens is not None else DEFAULT_MAX_TOKENS,
             },
         )
-        return response.get("message", {}).get("content", "")
+        response_text = response.get("message", {}).get("content", "")
+        self.logger.info(f"Received response from Ollama: {response_text[:500]}")
+
+        await self._log_content(
+            model=model,
+            prompt=prompt,
+            system_prompt=system_prompt,
+            temperature=temperature,
+            max_tokens=max_tokens,
+            response=response_text,
+            backend="ollama",
+        )
+
+        return response_text

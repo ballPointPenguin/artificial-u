@@ -2,7 +2,7 @@
 
 import pytest
 
-from artificial_u.prompts.department import get_department_prompt, get_open_department_prompt
+from artificial_u.prompts.department import get_department_prompt
 
 
 @pytest.mark.unit
@@ -49,34 +49,3 @@ def test_department_prompt_with_existing():
     assert "Mathematics" in prompt
     assert "Physics" in prompt
     assert "<existing_departments>" in prompt
-
-
-@pytest.mark.unit
-def test_open_department_prompt():
-    """Test open-ended department prompt generation."""
-    existing_departments = [
-        "Computer Science",
-        "Mathematics",
-        "Physics",
-    ]
-
-    prompt = get_open_department_prompt(existing_departments=existing_departments)
-
-    # Check that the prompt contains examples and existing departments
-    assert "Computer Science" in prompt
-    assert "Mathematics" in prompt
-    assert "Physics" in prompt
-    assert "<example>" in prompt
-    assert "<existing_departments>" in prompt
-    assert "<department>" in prompt
-
-
-@pytest.mark.unit
-def test_open_department_prompt_empty():
-    """Test open-ended department prompt with no existing departments."""
-    prompt = get_open_department_prompt()
-
-    # Check that the prompt contains basic structure
-    assert "<example>" in prompt
-    assert "<existing_departments>" in prompt
-    assert "<department>" in prompt

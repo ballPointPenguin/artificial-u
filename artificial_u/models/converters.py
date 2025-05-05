@@ -124,8 +124,8 @@ def professors_to_xml(professors: List[Dict[str, str]]) -> str:
     lines = ["<existing_professors>"]
     for prof in professors:
         lines.append(
-            f"  <professor><name>{prof.get('name', 'N/A')}</name>"
-            f"<specialization>{prof.get('specialization', 'N/A')}</specialization></professor>"
+            f"  <professor><name>{prof.get('name', '')}</name>"
+            f"<specialization>{prof.get('specialization', '')}</specialization></professor>"
         )
     lines.append("</existing_professors>")
     return "\n".join(lines)
@@ -149,12 +149,20 @@ def department_to_xml(department_data: dict, missing_marker: str = "[GENERATE]")
     return "\n".join(lines)
 
 
-def departments_to_xml(departments: list[str]) -> str:
-    """Format a list of department names as XML for prompt context."""
+def departments_to_xml(departments: List[Dict[str, str]]) -> str:
+    """Format a list of department dictionaries as XML for prompt context.
+
+    Args:
+        departments: List of department dictionaries containing 'name' and 'code' keys.
+    """
     if not departments:
         return ""
-    # Assumes list of names based on prompts/department.py
-    return "\n".join(f"<department>{name}</department>" for name in departments)
+    lines = []
+    for dept in departments:
+        name = dept.get("name", "")
+        code = dept.get("code", "")
+        lines.append(f"<department><name>{name}</name><code>{code}</code></department>")
+    return "\n".join(lines)
 
 
 def courses_to_xml(courses: List[Dict[str, Any]]) -> str:
@@ -165,9 +173,9 @@ def courses_to_xml(courses: List[Dict[str, Any]]) -> str:
     lines = ["<existing_courses>"]
     for course in courses:
         lines.append("  <course>")
-        lines.append(f"    <code>{course.get('code', 'N/A')}</code>")
-        lines.append(f"    <title>{course.get('title', 'N/A')}</title>")
-        lines.append(f"    <description>{course.get('description', 'N/A')}</description>")
+        lines.append(f"    <code>{course.get('code', '')}</code>")
+        lines.append(f"    <title>{course.get('title', '')}</title>")
+        lines.append(f"    <description>{course.get('description', '')}</description>")
         # Removed topics_overview for simplicity in this context
         lines.append("  </course>")
     lines.append("</existing_courses>")
@@ -249,7 +257,7 @@ def _process_topic_elements(topics_elem: Optional[ET.Element]) -> List[Dict[str,
     topics_data = []
     # Process all topic elements
     for week_elem in topics_elem.findall("week"):
-        week_num = int(week_elem.get("number", 0))
+        week_num = int(week_elem.get("number", 1))
         for lecture_elem in week_elem.findall("lecture"):
             lecture_num = int(lecture_elem.get("number", 1))
             topic_elem = lecture_elem.find("topic")
@@ -339,7 +347,7 @@ def lectures_to_xml(lectures: List[Dict[str, Any]], max_lectures: int = 5) -> st
     lines = ["<existing_lectures>"]
     for lecture in lectures[:max_lectures]:
         lines.append("  <lecture>")
-        lines.append(f"    <title>{lecture.get('title', 'N/A')}</title>")
+        lines.append(f"    <title>{lecture.get('title', '')}</title>")
         if lecture.get("description"):
             lines.append(f"    <description>{lecture.get('description')}</description>")
         if lecture.get("week_number") is not None:

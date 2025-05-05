@@ -162,6 +162,7 @@ TESTING=true
 | `GOOGLE_API_KEY` | API key for Google | None | No |
 | `OPENAI_API_KEY` | API key for OpenAI | None | No |
 | `TEMP_AUDIO_PATH` | Path for *temporary* audio file processing | `temp_audio` | No |
+| `CONTENT_LOGS_PATH` | Path for content generation logs | `content_logs` | No |
 | `LOG_LEVEL` | Logging level | `INFO` | No |
 | `content_backend` | Backend for content generation | `anthropic` | No |
 | `content_model` | Model for chosen backend | Depends on backend | No |

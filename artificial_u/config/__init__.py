@@ -5,6 +5,7 @@ Configuration modules for the ArtificialU system.
 # Re-export defaults for direct import from artificial_u.config
 from artificial_u.config.defaults import (
     DEFAULT_CONTENT_BACKEND,
+    DEFAULT_CONTENT_LOGS_PATH,
     DEFAULT_COURSE_WEEKS,
     DEFAULT_DB_URL,
     DEFAULT_LECTURE_WORD_COUNT,
@@ -41,6 +42,7 @@ __all__ = [
     # Default paths and storage
     "DEFAULT_DB_URL",
     "DEFAULT_TEMP_AUDIO_PATH",
+    "DEFAULT_CONTENT_LOGS_PATH",
     "DEFAULT_STORAGE_TYPE",
     "DEFAULT_STORAGE_ENDPOINT_URL",
     "DEFAULT_STORAGE_PUBLIC_URL",

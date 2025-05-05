@@ -35,12 +35,32 @@ class DepartmentUpdate(DepartmentBase):
 class DepartmentGenerate(BaseModel):
     """Model for generating a new department."""
 
-    partial_attributes: Optional[Dict[str, Any]] = Field(
-        None, description="Optional dictionary of known attributes to guide generation."
-    )
+    name: Optional[str] = Field(None, description="Department name")
+    code: Optional[str] = Field(None, description="Department code")
+    faculty: Optional[str] = Field(None, description="Faculty name")
+    description: Optional[str] = Field(None, description="Department description")
     freeform_prompt: Optional[str] = Field(
-        None, description="Optional freeform text prompt for additional guidance."
+        None, description="Optional freeform text prompt for additional guidance"
     )
+
+    def get_attributes(self) -> Dict[str, Any]:
+        """
+        Get combined attributes from both direct fields and nested partial_attributes.
+        Direct fields take precedence over nested ones.
+        """
+        # Start with nested attributes if they exist
+        attrs = self.partial_attributes or {}
+
+        # Add direct fields if they have values
+        direct_fields = {
+            "name": self.name,
+            "code": self.code,
+            "faculty": self.faculty,
+            "description": self.description,
+        }
+        attrs.update({k: v for k, v in direct_fields.items() if v is not None})
+
+        return attrs
 
 
 # Department response model

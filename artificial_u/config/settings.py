@@ -17,6 +17,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from artificial_u.config.defaults import (
     DEFAULT_CONTENT_BACKEND,
+    DEFAULT_CONTENT_LOGS_PATH,
     DEFAULT_DB_URL,
     DEFAULT_LOG_LEVEL,
     DEFAULT_OLLAMA_MODEL,
@@ -81,6 +82,7 @@ class Settings(BaseSettings):
 
     # Temporary storage paths
     TEMP_AUDIO_PATH: str = DEFAULT_TEMP_AUDIO_PATH
+    CONTENT_LOGS_PATH: str = DEFAULT_CONTENT_LOGS_PATH
 
     # Storage settings for S3/MinIO
     STORAGE_TYPE: str = DEFAULT_STORAGE_TYPE  # "minio" or "s3"
@@ -170,6 +172,7 @@ class Settings(BaseSettings):
     def create_directories(self) -> None:
         """Create necessary temporary directories for the application"""
         Path(self.TEMP_AUDIO_PATH).mkdir(parents=True, exist_ok=True)
+        Path(self.CONTENT_LOGS_PATH).mkdir(parents=True, exist_ok=True)
 
     def setup_logging(self) -> logging.Logger:
         """Set up logging based on configuration"""
@@ -188,6 +191,7 @@ class Settings(BaseSettings):
             "content_backend": self.content_backend,
             "content_model": self.content_model,
             "temp_audio_path": self.TEMP_AUDIO_PATH,
+            "content_logs_path": self.CONTENT_LOGS_PATH,
             "anthropic_api_key": self.ANTHROPIC_API_KEY,
             "elevenlabs_api_key": self.ELEVENLABS_API_KEY,
             "google_api_key": self.GOOGLE_API_KEY,
@@ -210,6 +214,7 @@ class Settings(BaseSettings):
         if self.content_model:
             logger.info(f"Content model: {self.content_model}")
         logger.info(f"Temporary audio path: {self.TEMP_AUDIO_PATH}")
+        logger.info(f"Content logs path: {self.CONTENT_LOGS_PATH}")
         logger.info(f"Storage type: {self.STORAGE_TYPE}")
         if self.STORAGE_TYPE == "minio":
             logger.info(f"MinIO endpoint: {self.STORAGE_ENDPOINT_URL}")

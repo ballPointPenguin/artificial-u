@@ -11,6 +11,7 @@ DEFAULT_TEMP_AUDIO_PATH = "temp_audio"
 # Content generation defaults
 DEFAULT_CONTENT_BACKEND = "anthropic"
 DEFAULT_OLLAMA_MODEL = "phi4-mini"
+DEFAULT_CONTENT_LOGS_PATH = "content_logs"
 
 # Storage defaults (MinIO/S3)
 DEFAULT_STORAGE_TYPE = "minio"  # "minio" or "s3"

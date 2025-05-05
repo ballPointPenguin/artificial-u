@@ -34,17 +34,6 @@ venv/
 *.swo
 *.swp
 
-# Project specific
-.cache/
-*.db
-*.log
-*.mp3
-*.wav
-audio_files/
-exports/
-lecture_texts/
-temp_audio/
-
 # Test files
 .coverage
 .pytest_cache/
@@ -55,3 +44,15 @@ htmlcov/
 
 # OS
 .DS_Store
+
+# Project specific
+.cache/
+*.db
+*.log
+*.mp3
+*.wav
+audio_files/
+content_logs/
+exports/
+lecture_texts/
+temp_audio/

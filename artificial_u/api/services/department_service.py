@@ -286,7 +286,8 @@ class DepartmentApiService:
         This method *generates* the data but does not create/save the department.
 
         Args:
-            generation_data: Input data containing optional partial attributes and prompt.
+            generation_data: Input data containing any known attributes
+            and optional freeform prompt.
 
         Returns:
             DepartmentResponse: The generated department data (not saved).
@@ -294,25 +295,13 @@ class DepartmentApiService:
         Raises:
             HTTPException: If generation fails.
         """
-        log_attrs = (
-            list(generation_data.partial_attributes.keys())
-            if generation_data.partial_attributes
-            else "None"
-        )
-        self.logger.info(
-            f"Received request to generate department with partial attributes: {log_attrs}"
-        )
-        try:
-            # Prepare attributes for the core service
-            # Assuming core service generate_department takes a dictionary of attributes
-            partial_attrs = generation_data.partial_attributes or {}
-            if generation_data.freeform_prompt:
-                partial_attrs["freeform_prompt"] = generation_data.freeform_prompt
+        # Convert model to dict, excluding None values
+        attrs = generation_data.model_dump(exclude_none=True)
+        self.logger.info(f"Received request to generate department with attributes: {attrs}")
 
-            # Call core service
-            generated_dict = await self.core_service.generate_department(
-                partial_attributes=partial_attrs  # Adjust if core service expects different args
-            )
+        try:
+            # Call core service with the attributes
+            generated_dict = await self.core_service.generate_department(partial_attributes=attrs)
 
             # Convert the dictionary to the API response model
             # Add placeholder ID and validate

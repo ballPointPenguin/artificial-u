@@ -136,8 +136,7 @@ IMPORTANT: Make sure that the number of lectures per week in your response match
 specified lectures_per_week value.
 For each week, generate exactly the number of lectures specified in lectures_per_week.
 
-Wrap your answer in <output> tags, providing only the <course> element:
-<output>
+Wrap your answer in <output> tags, providing only the <course> element.
 """,
     required_vars=[
         "existing_courses_xml",
