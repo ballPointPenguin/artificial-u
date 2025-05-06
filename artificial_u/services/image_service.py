@@ -8,7 +8,7 @@ from google.genai import types
 
 from artificial_u.integrations import gemini_client, openai_client
 from artificial_u.models.core import Professor
-from artificial_u.prompts.images import format_professor_image_prompt
+from artificial_u.prompts.image import format_professor_image_prompt
 from artificial_u.services.storage_service import StorageService
 
 logger = logging.getLogger(__name__)

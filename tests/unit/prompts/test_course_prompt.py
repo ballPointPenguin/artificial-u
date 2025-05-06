@@ -2,7 +2,7 @@
 
 import pytest
 
-from artificial_u.prompts.courses import get_course_prompt
+from artificial_u.prompts.course import get_course_prompt
 
 
 @pytest.mark.unit

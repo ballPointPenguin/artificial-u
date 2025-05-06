@@ -2,7 +2,7 @@
 
 import pytest
 
-from artificial_u.prompts.images import format_professor_image_prompt
+from artificial_u.prompts.image import format_professor_image_prompt
 
 
 class MockProfessor:

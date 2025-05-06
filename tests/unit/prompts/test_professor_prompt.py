@@ -2,7 +2,7 @@
 
 import pytest
 
-from artificial_u.prompts.professors import get_professor_prompt
+from artificial_u.prompts.professor import get_professor_prompt
 
 
 @pytest.mark.unit

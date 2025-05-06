@@ -217,12 +217,30 @@ def courses_to_xml(courses: List[Dict[str, Any]]) -> str:
     return "\n".join(lines)
 
 
+def topic_to_xml(topic: Dict[str, Any]) -> str:
+    """Format a topic (dict) as XML for context."""
+
+    if not topic:
+        raise ValueError("Topic data is required")
+
+    for key in ["title", "week", "order"]:
+        if key not in topic:
+            raise ValueError(f"Required field '{key}' is missing or empty")
+
+    lines = ["<topic>"]
+    lines.append(f"  <title>{topic.get('title', '')}</title>")
+    lines.append(f"  <week>{topic.get('week', '')}</week>")
+    lines.append(f"  <order>{topic.get('order', '')}</order>")
+    lines.append("</topic>")
+    return "\n".join(lines)
+
+
 def topics_to_xml(topics: List[Dict[str, Any]], max_topics: int = 5) -> str:
     """Format a list of topics as XML for context."""
     if not topics:
         return "<no_existing_topics />"
 
-    lines = ["<existing_topics>"]
+    lines = ["<topics>"]
     for topic in topics[:max_topics]:
         lines.append("  <topic>")
         lines.append(f"    <title>{topic.get('title', '')}</title>")
@@ -239,7 +257,7 @@ def topics_to_xml(topics: List[Dict[str, Any]], max_topics: int = 5) -> str:
             f"  </additional_topics_count>"
         )
 
-    lines.append("</existing_topics>")
+    lines.append("</topics>")
     return "\n".join(lines)
 
 

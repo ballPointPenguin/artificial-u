@@ -26,6 +26,7 @@ from artificial_u.models.converters import (
     professor_model_to_dict,
     professor_to_xml,
     professors_to_xml,
+    topic_to_xml,
     topics_to_xml,
 )
 
@@ -424,6 +425,32 @@ def test_lectures_to_xml():
 
 
 @pytest.mark.unit
+def test_topic_to_xml():
+    """Test converting a topic to XML."""
+    # Test with empty data
+    with pytest.raises(ValueError):
+        topic_to_xml({})
+
+    # Test with missing required fields
+    with pytest.raises(ValueError):
+        topic_to_xml({"title": "Introduction to Variables"})
+
+    # Test with populated data
+    topic_data = {
+        "title": "Introduction to Variables",
+        "week": 1,
+        "order": 1,
+    }
+
+    xml_str = topic_to_xml(topic_data)
+    root = ET.fromstring(xml_str)
+    assert root.tag == "topic"
+    assert root.find("title").text == "Introduction to Variables"
+    assert root.find("week").text == "1"
+    assert root.find("order").text == "1"
+
+
+@pytest.mark.unit
 def test_topics_to_xml():
     """Test converting a list of topics to XML."""
     # Test with empty list
@@ -445,7 +472,7 @@ def test_topics_to_xml():
 
     xml_str = topics_to_xml(topics)
     root = ET.fromstring(xml_str)
-    assert root.tag == "existing_topics"
+    assert root.tag == "topics"
     assert len(root.findall("topic")) == 2
 
     topic_elems = root.findall("topic")
