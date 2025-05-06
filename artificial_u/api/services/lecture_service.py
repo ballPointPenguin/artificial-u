@@ -380,8 +380,8 @@ class LectureApiService:
                 partial_attrs["freeform_prompt"] = generation_data.freeform_prompt
 
             # Call the core service to generate the lecture content dictionary
-            # The core service generate_lecture_content returns a dict
-            generated_dict = await self.core_service.generate_lecture_content(
+            # The core service generate_lecture returns a dict
+            generated_dict = await self.core_service.generate_lecture(
                 partial_attributes=partial_attrs
             )
 

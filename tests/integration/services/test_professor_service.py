@@ -264,7 +264,7 @@ class TestProfessorService:
         professor_service.content_service.generate_text.return_value = MOCK_PROFESSOR_XML
 
         # Generate professor profile
-        professor_data = await professor_service.generate_professor_profile(
+        professor_data = await professor_service.generate_professor(
             {"department_id": department.id, "freeform_prompt": "Focus on AI expertise"}
         )
 
@@ -292,14 +292,14 @@ class TestProfessorService:
         )
 
         with pytest.raises(GenerationError) as exc_info:
-            await professor_service.generate_professor_profile({})
+            await professor_service.generate_professor({})
         assert "Failed to parse AI-generated professor profile." in str(exc_info.value)
 
         # Test empty response
         professor_service.content_service.generate_text = AsyncMock(return_value="")
 
         with pytest.raises(GenerationError) as exc_info:
-            await professor_service.generate_professor_profile({})
+            await professor_service.generate_professor({})
         assert "AI generation returned empty content" in str(exc_info.value)
 
         # Test exception in content service
@@ -308,7 +308,7 @@ class TestProfessorService:
         )
 
         with pytest.raises(GenerationError) as exc_info:
-            await professor_service.generate_professor_profile({})
+            await professor_service.generate_professor({})
         assert "AI content generation call failed" in str(exc_info.value)
 
     @pytest.mark.asyncio

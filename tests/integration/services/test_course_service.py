@@ -399,7 +399,7 @@ class TestCourseService:
         course_service.content_service.generate_text.return_value = MOCK_COURSE_XML
 
         # Generate course content
-        course_data = await course_service.generate_course_content(
+        course_data = await course_service.generate_course(
             {
                 "department_id": department.id,
                 "professor_id": professor.id,
@@ -468,7 +468,7 @@ class TestCourseService:
         )
 
         with pytest.raises(ContentGenerationError) as exc_info:
-            await course_service.generate_course_content(
+            await course_service.generate_course(
                 {
                     "department_id": department.id,
                     "professor_id": professor.id,
@@ -480,7 +480,7 @@ class TestCourseService:
         course_service.content_service.generate_text = AsyncMock(return_value="")
 
         with pytest.raises(ContentGenerationError) as exc_info:
-            await course_service.generate_course_content(
+            await course_service.generate_course(
                 {
                     "department_id": department.id,
                     "professor_id": professor.id,
@@ -492,7 +492,7 @@ class TestCourseService:
         course_service.content_service.generate_text = AsyncMock(side_effect=Exception("API Error"))
 
         with pytest.raises(ContentGenerationError) as exc_info:
-            await course_service.generate_course_content(
+            await course_service.generate_course(
                 {
                     "department_id": department.id,
                     "professor_id": professor.id,

@@ -259,17 +259,3 @@ class TestDepartmentRepository:
         # Verify
         assert result is False
         mock_session.delete.assert_not_called()
-
-    def test_list_department_names(self, department_repository, mock_session):
-        """Test listing department names."""
-        # Configure mock behavior
-        query_mock = mock_session.query.return_value
-        query_mock.all.return_value = [("Computer Science",), ("Mathematics",)]
-
-        # Exercise
-        result = department_repository.list_department_names()
-
-        # Verify
-        mock_session.query.assert_called_once()
-        assert len(result) == 2
-        assert result == ["Computer Science", "Mathematics"]

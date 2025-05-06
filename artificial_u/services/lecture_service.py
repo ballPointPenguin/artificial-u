@@ -50,152 +50,6 @@ class LectureService:
         self.repository_factory = repository_factory
         self.logger = logger or logging.getLogger(__name__)
 
-    # --- Generation Methods --- #
-
-    async def _prepare_prompt_arguments(
-        self,
-        partial_attributes: Dict[str, Any],
-        professor_data: Dict[str, Any],
-        existing_lectures: List[Dict[str, Any]],
-    ) -> Dict[str, Any]:
-        """Prepare arguments for the lecture generation prompt."""
-        return {
-            "professor_data": professor_data,
-            "existing_lectures": existing_lectures,
-            "partial_lecture_attrs": partial_attributes,
-            "freeform_prompt": partial_attributes.get("freeform_prompt"),
-            "word_count": partial_attributes.get("word_count", 2500),
-        }
-
-    async def _generate_and_parse_content(self, prompt_args: Dict[str, Any]) -> str:
-        """Generate lecture content and parse the XML response."""
-        lecture_prompt = get_lecture_prompt(**prompt_args)
-        system_prompt = get_system_prompt("lecture")
-
-        self.logger.info("Calling content service to generate lecture...")
-        raw_response = await self.content_service.generate_text(
-            model=get_settings().LECTURE_GENERATION_MODEL,
-            prompt=lecture_prompt,
-            system_prompt=system_prompt,
-        )
-        self.logger.info("Received response from content service.")
-
-        # Extract XML content
-        generated_xml_output = extract_xml_content(raw_response, "output")
-        if not generated_xml_output:
-            # Try to extract just the lecture tag content
-            self.logger.info("Trying to extract <lecture> tag...")
-            generated_xml_output = extract_xml_content(raw_response, "lecture")
-            if not generated_xml_output:
-                error_msg = (
-                    f"Could not extract <output> or <lecture> tag from response:\n{raw_response}"
-                )
-                self.logger.error(error_msg)
-                raise ContentGenerationError(error_msg)
-            else:
-                self.logger.warning("Extracted <lecture> tag directly as <output> was missing.")
-
-        # Wrap the content in lecture tags if it's not already wrapped
-        if not generated_xml_output.strip().startswith("<lecture>"):
-            generated_xml_output = f"<lecture>\n{generated_xml_output}\n</lecture>"
-
-        return generated_xml_output
-
-    async def _process_models_for_generation(
-        self, partial_attributes: Dict[str, Any]
-    ) -> tuple[Dict[str, Any], List[Dict[str, Any]]]:
-        """Process professor and existing lectures for generation."""
-        # Get Professor
-        professor_model = None
-        course_id = partial_attributes.get("course_id")
-        if course_id:
-            try:
-                course = self.course_service.get_course(course_id)
-                if course and course.professor_id:
-                    professor_model = self.professor_service.get_professor(course.professor_id)
-            except Exception as e:
-                self.logger.warning(f"Error fetching professor for course {course_id}: {e}")
-
-        professor_dict = professor_model_to_dict(professor_model) if professor_model else {}
-
-        # Get Existing Lectures for the course
-        existing_lectures = []
-        if course_id:
-            try:
-                lectures = self.repository_factory.lecture.list_by_course(course_id)
-                existing_lectures = [
-                    {
-                        "title": lecture.title,
-                        "description": lecture.description,
-                        "week_number": lecture.week_number,
-                        "order_in_week": lecture.order_in_week,
-                    }
-                    for lecture in lectures
-                ]
-            except Exception as e:
-                self.logger.warning(f"Error fetching existing lectures for course {course_id}: {e}")
-
-        return professor_dict, existing_lectures
-
-    async def generate_lecture_content(
-        self,
-        partial_attributes: Optional[Dict[str, Any]] = None,
-    ) -> Dict[str, Any]:
-        """
-        Generate a lecture using AI based on partial attributes.
-
-        Args:
-            partial_attributes: Optional dictionary of known attributes to guide generation
-                              or fill in the blanks.
-
-        Returns:
-            Dict[str, Any]: The generated lecture attributes.
-
-        Raises:
-            ContentGenerationError: If content generation or parsing fails.
-        """
-        partial_attributes = partial_attributes or {}
-        self.logger.info(
-            f"Generating lecture content with partial attributes: {list(partial_attributes.keys())}"
-        )
-
-        try:
-            # Process models and prepare data for generation
-            professor_dict, existing_lectures = await self._process_models_for_generation(
-                partial_attributes
-            )
-
-            # Prepare prompt arguments
-            prompt_args = await self._prepare_prompt_arguments(
-                partial_attributes,
-                professor_dict,
-                existing_lectures,
-            )
-
-            # Generate and parse content
-            generated_xml_output = await self._generate_and_parse_content(prompt_args)
-            print(generated_xml_output)
-
-            # Parse XML and combine with partial attributes
-            parsed_lecture_data = parse_lecture_xml(generated_xml_output)
-            final_lecture_data = {**parsed_lecture_data, **partial_attributes}
-
-            # Remove non-lecture fields
-            final_lecture_data.pop("freeform_prompt", None)
-            final_lecture_data.pop("word_count", None)
-
-            self.logger.info(f"Successfully generated lecture: {final_lecture_data.get('title')}")
-            return final_lecture_data
-
-        except ContentGenerationError:
-            # Let content generation errors propagate up
-            raise
-        except ValueError as e:
-            raise ContentGenerationError(f"Error generating/parsing lecture: {e}")
-        except Exception as e:
-            self.logger.error(f"Unexpected error during lecture generation: {e}", exc_info=True)
-            raise ContentGenerationError(f"An unexpected error occurred: {e}")
-
     # --- CRUD Methods --- #
 
     def create_lecture(
@@ -402,3 +256,149 @@ class LectureService:
             error_msg = f"Failed to delete lecture: {str(e)}"
             self.logger.error(error_msg)
             raise DatabaseError(error_msg) from e
+
+    # --- Generation Methods --- #
+
+    async def _prepare_prompt_arguments(
+        self,
+        partial_attributes: Dict[str, Any],
+        professor_data: Dict[str, Any],
+        existing_lectures: List[Dict[str, Any]],
+    ) -> Dict[str, Any]:
+        """Prepare arguments for the lecture generation prompt."""
+        return {
+            "professor_data": professor_data,
+            "existing_lectures": existing_lectures,
+            "partial_lecture_attrs": partial_attributes,
+            "freeform_prompt": partial_attributes.get("freeform_prompt"),
+            "word_count": partial_attributes.get("word_count", 2500),
+        }
+
+    async def _generate_and_parse_content(self, prompt_args: Dict[str, Any]) -> str:
+        """Generate lecture content and parse the XML response."""
+        lecture_prompt = get_lecture_prompt(**prompt_args)
+        system_prompt = get_system_prompt("lecture")
+
+        self.logger.info("Calling content service to generate lecture...")
+        raw_response = await self.content_service.generate_text(
+            model=get_settings().LECTURE_GENERATION_MODEL,
+            prompt=lecture_prompt,
+            system_prompt=system_prompt,
+        )
+        self.logger.info("Received response from content service.")
+
+        # Extract XML content
+        generated_xml_output = extract_xml_content(raw_response, "output")
+        if not generated_xml_output:
+            # Try to extract just the lecture tag content
+            self.logger.info("Trying to extract <lecture> tag...")
+            generated_xml_output = extract_xml_content(raw_response, "lecture")
+            if not generated_xml_output:
+                error_msg = (
+                    f"Could not extract <output> or <lecture> tag from response:\n{raw_response}"
+                )
+                self.logger.error(error_msg)
+                raise ContentGenerationError(error_msg)
+            else:
+                self.logger.warning("Extracted <lecture> tag directly as <output> was missing.")
+
+        # Wrap the content in lecture tags if it's not already wrapped
+        if not generated_xml_output.strip().startswith("<lecture>"):
+            generated_xml_output = f"<lecture>\n{generated_xml_output}\n</lecture>"
+
+        return generated_xml_output
+
+    async def _process_models_for_generation(
+        self, partial_attributes: Dict[str, Any]
+    ) -> tuple[Dict[str, Any], List[Dict[str, Any]]]:
+        """Process professor and existing lectures for generation."""
+        # Get Professor
+        professor_model = None
+        course_id = partial_attributes.get("course_id")
+        if course_id:
+            try:
+                course = self.course_service.get_course(course_id)
+                if course and course.professor_id:
+                    professor_model = self.professor_service.get_professor(course.professor_id)
+            except Exception as e:
+                self.logger.warning(f"Error fetching professor for course {course_id}: {e}")
+
+        professor_dict = professor_model_to_dict(professor_model) if professor_model else {}
+
+        # Get Existing Lectures for the course
+        existing_lectures = []
+        if course_id:
+            try:
+                lectures = self.repository_factory.lecture.list_by_course(course_id)
+                existing_lectures = [
+                    {
+                        "title": lecture.title,
+                        "description": lecture.description,
+                        "week_number": lecture.week_number,
+                        "order_in_week": lecture.order_in_week,
+                    }
+                    for lecture in lectures
+                ]
+            except Exception as e:
+                self.logger.warning(f"Error fetching existing lectures for course {course_id}: {e}")
+
+        return professor_dict, existing_lectures
+
+    async def generate_lecture(
+        self,
+        partial_attributes: Optional[Dict[str, Any]] = None,
+    ) -> Dict[str, Any]:
+        """
+        Generate a lecture using AI based on partial attributes.
+
+        Args:
+            partial_attributes: Optional dictionary of known attributes to guide generation
+                              or fill in the blanks.
+
+        Returns:
+            Dict[str, Any]: The generated lecture attributes.
+
+        Raises:
+            ContentGenerationError: If content generation or parsing fails.
+        """
+        partial_attributes = partial_attributes or {}
+        self.logger.info(
+            f"Generating lecture content with partial attributes: {list(partial_attributes.keys())}"
+        )
+
+        try:
+            # Process models and prepare data for generation
+            professor_dict, existing_lectures = await self._process_models_for_generation(
+                partial_attributes
+            )
+
+            # Prepare prompt arguments
+            prompt_args = await self._prepare_prompt_arguments(
+                partial_attributes,
+                professor_dict,
+                existing_lectures,
+            )
+
+            # Generate and parse content
+            generated_xml_output = await self._generate_and_parse_content(prompt_args)
+            print(generated_xml_output)
+
+            # Parse XML and combine with partial attributes
+            parsed_lecture_data = parse_lecture_xml(generated_xml_output)
+            final_lecture_data = {**parsed_lecture_data, **partial_attributes}
+
+            # Remove non-lecture fields
+            final_lecture_data.pop("freeform_prompt", None)
+            final_lecture_data.pop("word_count", None)
+
+            self.logger.info(f"Successfully generated lecture: {final_lecture_data.get('title')}")
+            return final_lecture_data
+
+        except ContentGenerationError:
+            # Let content generation errors propagate up
+            raise
+        except ValueError as e:
+            raise ContentGenerationError(f"Error generating/parsing lecture: {e}")
+        except Exception as e:
+            self.logger.error(f"Unexpected error during lecture generation: {e}", exc_info=True)
+            raise ContentGenerationError(f"An unexpected error occurred: {e}")

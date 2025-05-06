@@ -4,7 +4,7 @@ Lecture repository for database operations.
 
 from typing import List, Optional
 
-from sqlalchemy import or_
+from sqlalchemy import func, or_
 
 from artificial_u.models.core import Lecture
 from artificial_u.models.database import CourseModel, LectureModel
@@ -17,6 +17,15 @@ class LectureRepository(BaseRepository):
     def create(self, lecture: Lecture) -> Lecture:
         """Create a new lecture."""
         with self.get_session() as session:
+            # If revision is not provided, calculate the next revision for the topic.
+            if lecture.revision is None:
+                max_revision = (
+                    session.query(func.max(LectureModel.revision))
+                    .filter(LectureModel.topic_id == lecture.topic_id)
+                    .scalar()
+                )
+                lecture.revision = (max_revision or 0) + 1
+
             db_lecture = LectureModel(
                 revision=lecture.revision,
                 content=lecture.content,

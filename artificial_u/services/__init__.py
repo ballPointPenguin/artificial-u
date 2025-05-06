@@ -15,6 +15,7 @@ from artificial_u.services.image_service import ImageService
 from artificial_u.services.lecture_service import LectureService
 from artificial_u.services.professor_service import ProfessorService
 from artificial_u.services.storage_service import StorageService
+from artificial_u.services.topic_service import TopicService
 from artificial_u.services.tts_service import TTSService
 from artificial_u.services.voice_service import VoiceService
 
@@ -29,6 +30,7 @@ __all__ = [
     "DepartmentService",
     "LectureService",
     "ProfessorService",
+    "TopicService",
     # Infrastructure services
     "AudioService",
     "StorageService",

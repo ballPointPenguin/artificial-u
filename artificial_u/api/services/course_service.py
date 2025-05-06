@@ -524,7 +524,7 @@ class CourseApiService:
                 partial_attrs["freeform_prompt"] = generation_data.freeform_prompt
 
             # Call the core service to generate the course content dictionary
-            generated_dict = await self.core_service.generate_course_content(
+            generated_dict = await self.core_service.generate_course(
                 partial_attributes=partial_attrs
             )
 

@@ -201,7 +201,7 @@ class Lecture(BaseModel):
     )
 
     id: Optional[int] = None
-    revision: int = Field(default=1, gt=0)
+    revision: Optional[int] = None
     content: Optional[str] = None
     summary: Optional[str] = None
     audio_url: Optional[str] = None

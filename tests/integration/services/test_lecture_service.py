@@ -433,7 +433,7 @@ class TestLectureService:
         lecture_service.content_service.generate_text.return_value = MOCK_LECTURE_XML
 
         # Generate lecture content
-        lecture_data = await lecture_service.generate_lecture_content(
+        lecture_data = await lecture_service.generate_lecture(
             {
                 "course_id": course.id,
                 "week_number": 1,
@@ -499,7 +499,7 @@ class TestLectureService:
         lecture_service.content_service.generate_text.return_value = MOCK_LECTURE_XML
 
         # Generate lecture content
-        lecture_data = await lecture_service.generate_lecture_content(
+        lecture_data = await lecture_service.generate_lecture(
             {
                 "course_id": course.id,
                 "week_number": 1,
@@ -550,7 +550,7 @@ class TestLectureService:
         lecture_service.content_service.generate_text.return_value = "<invalid>XML</invalid>"
 
         with pytest.raises(ContentGenerationError) as exc_info:
-            await lecture_service.generate_lecture_content(
+            await lecture_service.generate_lecture(
                 {"course_id": course.id, "week_number": 1, "order_in_week": 1}
             )
         assert "Could not extract" in str(exc_info.value)
@@ -559,7 +559,7 @@ class TestLectureService:
         lecture_service.content_service.generate_text.return_value = ""
 
         with pytest.raises(ContentGenerationError) as exc_info:
-            await lecture_service.generate_lecture_content(
+            await lecture_service.generate_lecture(
                 {"course_id": course.id, "week_number": 1, "order_in_week": 1}
             )
         assert "Could not extract" in str(exc_info.value)
@@ -568,7 +568,7 @@ class TestLectureService:
         lecture_service.content_service.generate_text.side_effect = Exception("API Error")
 
         with pytest.raises(ContentGenerationError) as exc_info:
-            await lecture_service.generate_lecture_content(
+            await lecture_service.generate_lecture(
                 {"course_id": course.id, "week_number": 1, "order_in_week": 1}
             )
         assert "unexpected error" in str(exc_info.value).lower()

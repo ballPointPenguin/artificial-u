@@ -263,60 +263,7 @@ class CourseService:
 
     # --- Generation Methods --- #
 
-    async def _generate_and_parse_content(self, prompt_args: Dict[str, Any]) -> str:
-        """Generate course content and parse the XML response."""
-        course_prompt = get_course_prompt(**prompt_args)
-        system_prompt = get_system_prompt("course")
-        settings = get_settings()
-
-        self.logger.info("Calling content service to generate course...")
-        raw_response = await self.content_service.generate_text(
-            model=settings.COURSE_GENERATION_MODEL,
-            prompt=course_prompt,
-            system_prompt=system_prompt,
-        )
-        self.logger.info("Received response from content service.")
-
-        # Extract XML content
-        generated_xml_output = extract_xml_content(raw_response, "output")
-        if not generated_xml_output:
-            generated_xml_output = extract_xml_content(raw_response, "course")
-            if not generated_xml_output:
-                error_msg = (
-                    f"Could not extract <output> or <course> tag from response:\n{raw_response}"
-                )
-                self.logger.error(error_msg)
-                raise ContentGenerationError(error_msg)
-            else:
-                self.logger.warning("Extracted <course> tag directly as <output> was missing.")
-
-        return generated_xml_output
-
-    async def _process_models_for_generation(
-        self, partial_attributes: Dict[str, Any]
-    ) -> Tuple[Optional[Professor], Optional[Department], List[Dict[str, Any]]]:
-        """Process professor, department, and existing courses for generation.
-
-        Returns:
-            Tuple: (Professor model, Department model, List of existing course dicts)
-        """
-        # 1. Get Professor
-        professor_model = await self._get_professor(partial_attributes)
-
-        # 2. Get Department
-        department_model = await self._get_department(partial_attributes, professor_model)
-
-        # 3. Get Existing Courses as dictionaries
-        existing_courses_models = await self._get_existing_courses(department_model)
-        existing_courses_dicts = [course_model_to_dict(c) for c in existing_courses_models]
-
-        return (
-            professor_model,
-            department_model,
-            existing_courses_dicts,
-        )
-
-    async def generate_course_content(
+    async def generate_course(
         self,
         partial_attributes: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
@@ -407,6 +354,59 @@ class CourseService:
         except Exception as e:
             self.logger.error(f"Unexpected error during course generation: {e}", exc_info=True)
             raise ContentGenerationError(f"An unexpected error occurred: {e}") from e
+
+    async def _generate_and_parse_content(self, prompt_args: Dict[str, Any]) -> str:
+        """Generate course content and parse the XML response."""
+        course_prompt = get_course_prompt(**prompt_args)
+        system_prompt = get_system_prompt("course")
+        settings = get_settings()
+
+        self.logger.info("Calling content service to generate course...")
+        raw_response = await self.content_service.generate_text(
+            model=settings.COURSE_GENERATION_MODEL,
+            prompt=course_prompt,
+            system_prompt=system_prompt,
+        )
+        self.logger.info("Received response from content service.")
+
+        # Extract XML content
+        generated_xml_output = extract_xml_content(raw_response, "output")
+        if not generated_xml_output:
+            generated_xml_output = extract_xml_content(raw_response, "course")
+            if not generated_xml_output:
+                error_msg = (
+                    f"Could not extract <output> or <course> tag from response:\n{raw_response}"
+                )
+                self.logger.error(error_msg)
+                raise ContentGenerationError(error_msg)
+            else:
+                self.logger.warning("Extracted <course> tag directly as <output> was missing.")
+
+        return generated_xml_output
+
+    async def _process_models_for_generation(
+        self, partial_attributes: Dict[str, Any]
+    ) -> Tuple[Optional[Professor], Optional[Department], List[Dict[str, Any]]]:
+        """Process professor, department, and existing courses for generation.
+
+        Returns:
+            Tuple: (Professor model, Department model, List of existing course dicts)
+        """
+        # 1. Get Professor
+        professor_model = await self._get_professor(partial_attributes)
+
+        # 2. Get Department
+        department_model = await self._get_department(partial_attributes, professor_model)
+
+        # 3. Get Existing Courses as dictionaries
+        existing_courses_models = await self._get_existing_courses(department_model)
+        existing_courses_dicts = [course_model_to_dict(c) for c in existing_courses_models]
+
+        return (
+            professor_model,
+            department_model,
+            existing_courses_dicts,
+        )
 
     # --- Helper Methods for Fetching Data (using Repository) --- #
 

@@ -29,6 +29,40 @@ class TopicRepository(BaseRepository):
             topic.id = db_topic.id
             return topic
 
+    def create_batch(self, topics: List[Topic]) -> List[Topic]:
+        """
+        Create multiple topics in a single transaction.
+
+        Args:
+            topics: List of Topic models to create
+
+        Returns:
+            List of created Topic models with their IDs populated
+        """
+        with self.get_session() as session:
+            db_topics = [
+                TopicModel(
+                    title=topic.title,
+                    order=topic.order,
+                    week=topic.week,
+                    course_id=topic.course_id,
+                )
+                for topic in topics
+            ]
+
+            session.add_all(db_topics)
+            session.commit()
+
+            # Refresh all topics to get their IDs
+            for db_topic in db_topics:
+                session.refresh(db_topic)
+
+            # Update the original topic objects with their new IDs
+            for topic, db_topic in zip(topics, db_topics):
+                topic.id = db_topic.id
+
+            return topics
+
     def get(self, topic_id: int) -> Optional[Topic]:
         """Get a topic by ID."""
         with self.get_session() as session:

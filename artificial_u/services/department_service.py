@@ -53,75 +53,7 @@ class DepartmentService:
         self.content_service = content_service
         self.logger = logger or logging.getLogger(__name__)
 
-    async def generate_department(self, partial_attributes: Optional[Dict] = None) -> dict:
-        """
-        Generate a department using AI based on provided partial attributes.
-
-        Args:
-            partial_attributes: Optional dictionary containing attributes to guide generation
-
-        Returns:
-            dict: The generated department attributes
-
-        Raises:
-            ContentGenerationError: If generation or parsing fails
-            DatabaseError: If there's an error accessing the database
-        """
-        partial_attributes = partial_attributes or {}
-        self.logger.info(
-            f"Generating department with partial attributes: {list(partial_attributes.keys())}"
-        )
-
-        try:
-            # Get existing departments for context
-            # existing_courses_models = await self._get_existing_courses(department_model)
-            # existing_courses_dicts = [course_model_to_dict(c) for c in existing_courses_models]
-            existing_departments_models = self.repository_factory.department.list()
-            existing_departments_dicts = [
-                department_model_to_dict(d) for d in existing_departments_models
-            ]
-
-            # Extract freeform prompt if present
-            freeform_prompt = partial_attributes.pop("freeform_prompt", None)
-
-            # Get the prompt using the helper function
-            prompt = get_department_prompt(
-                existing_departments=existing_departments_dicts,
-                partial_attributes=partial_attributes,
-                freeform_prompt=freeform_prompt,
-            )
-
-            settings = get_settings()
-
-            # Generate the department using content service
-            self.logger.info("Calling content service to generate department...")
-            response = await self.content_service.generate_text(
-                prompt=prompt,
-                model=settings.DEPARTMENT_GENERATION_MODEL,
-                system_prompt=get_system_prompt("department"),
-            )
-            self.logger.info("Received response from content service.")
-
-            if not response:
-                raise ContentGenerationError("Content service returned empty response")
-
-            # Extract XML content if wrapped in output tags
-            xml_content = extract_xml_content(response, "output")
-            if not xml_content:
-                xml_content = response  # Use full response if no output tags
-
-            # Parse the response using the converter function
-            department_attrs = parse_department_xml(xml_content)
-            self.logger.info(f"Successfully generated department: {department_attrs.get('name')}")
-            return department_attrs
-
-        except ContentGenerationError:
-            # Re-raise content generation errors
-            raise
-        except Exception as e:
-            error_msg = f"Unexpected error during department generation: {e}"
-            self.logger.error(error_msg, exc_info=True)
-            raise ContentGenerationError(error_msg) from e
+    # --- CRUD Methods --- #
 
     def create_department(
         self,
@@ -353,3 +285,75 @@ class DepartmentService:
             error_msg = f"Failed to get department courses: {str(e)}"
             self.logger.error(error_msg)
             raise DatabaseError(error_msg) from e
+
+    # --- Generation Methods --- #
+
+    async def generate_department(self, partial_attributes: Optional[Dict] = None) -> dict:
+        """
+        Generate a department using AI based on provided partial attributes.
+
+        Args:
+            partial_attributes: Optional dictionary containing attributes to guide generation
+
+        Returns:
+            dict: The generated department attributes
+
+        Raises:
+            ContentGenerationError: If generation or parsing fails
+            DatabaseError: If there's an error accessing the database
+        """
+        partial_attributes = partial_attributes or {}
+        self.logger.info(
+            f"Generating department with partial attributes: {list(partial_attributes.keys())}"
+        )
+
+        try:
+            # Get existing departments for context
+            # existing_courses_models = await self._get_existing_courses(department_model)
+            # existing_courses_dicts = [course_model_to_dict(c) for c in existing_courses_models]
+            existing_departments_models = self.repository_factory.department.list()
+            existing_departments_dicts = [
+                department_model_to_dict(d) for d in existing_departments_models
+            ]
+
+            # Extract freeform prompt if present
+            freeform_prompt = partial_attributes.pop("freeform_prompt", None)
+
+            # Get the prompt using the helper function
+            prompt = get_department_prompt(
+                existing_departments=existing_departments_dicts,
+                partial_attributes=partial_attributes,
+                freeform_prompt=freeform_prompt,
+            )
+
+            settings = get_settings()
+
+            # Generate the department using content service
+            self.logger.info("Calling content service to generate department...")
+            response = await self.content_service.generate_text(
+                prompt=prompt,
+                model=settings.DEPARTMENT_GENERATION_MODEL,
+                system_prompt=get_system_prompt("department"),
+            )
+            self.logger.info("Received response from content service.")
+
+            if not response:
+                raise ContentGenerationError("Content service returned empty response")
+
+            # Extract XML content if wrapped in output tags
+            xml_content = extract_xml_content(response, "output")
+            if not xml_content:
+                xml_content = response  # Use full response if no output tags
+
+            # Parse the response using the converter function
+            department_attrs = parse_department_xml(xml_content)
+            self.logger.info(f"Successfully generated department: {department_attrs.get('name')}")
+            return department_attrs
+
+        except ContentGenerationError:
+            # Re-raise content generation errors
+            raise
+        except Exception as e:
+            error_msg = f"Unexpected error during department generation: {e}"
+            self.logger.error(error_msg, exc_info=True)
+            raise ContentGenerationError(error_msg) from e

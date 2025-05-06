@@ -347,7 +347,7 @@ class ProfessorApiService:
             if hasattr(generation_data, "freeform_prompt") and generation_data.freeform_prompt:
                 partial_attrs["freeform_prompt"] = generation_data.freeform_prompt
 
-            generated_dict = await self.core_service.generate_professor_profile(
+            generated_dict = await self.core_service.generate_professor(
                 partial_attributes=partial_attrs
             )
 
