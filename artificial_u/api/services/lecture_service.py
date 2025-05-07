@@ -189,15 +189,16 @@ class LectureApiService:
         """
         try:
             # Create lecture using core service, passing individual args
+            # Core service create_lecture expects: course_id, topic_id, content, summary,
+            # audio_url, transcript_url, revision
             core_lecture = self.core_service.create_lecture(
-                title=lecture_data.title,
-                description=lecture_data.description,
-                content=lecture_data.content,
                 course_id=lecture_data.course_id,
-                week_number=lecture_data.week_number,
-                order_in_week=lecture_data.order_in_week,
+                topic_id=lecture_data.topic_id,
+                content=lecture_data.content,
+                summary=lecture_data.summary,
                 audio_url=lecture_data.audio_url,
                 transcript_url=lecture_data.transcript_url,
+                revision=lecture_data.revision,
             )
             return Lecture.model_validate(core_lecture)
         except DatabaseError as e:
@@ -386,13 +387,38 @@ class LectureApiService:
             )
 
             # Convert the dictionary to the API response model
-            # Add placeholder ID and validate
-            generated_dict["id"] = -1  # Placeholder for validation
+            # Add placeholder ID and validate if necessary,
+            # or ensure core service provides all needed fields
+            # The core LectureService.generate_lecture returns a dict like:
+            # {"course_id": ..., "topic_id": ..., "revision": ..., "content": ..., "summary": ...}
+            # This dict is used to populate api_lecture_data for validation.
+            # For Lecture.model_validate, all required fields of API Lecture model must be present.
+            # The core service returns generated attributes; not a full Lecture object.
+            # We must ensure all fields for API Lecture model are present,
+            # using placeholders if needed.
+
+            # Placeholder for ID, as generation doesn't assign one.
+            # Revision should come from generated_dict if available.
+            # Content and summary must be in generated_dict.
+            # course_id and topic_id are in partial_attributes and should be in generated_dict.
+
+            # Ensure generated_dict has all keys required by the API Lecture model,
+            # using placeholders for fields not directly produced by generation (like id).
+            api_lecture_data = {
+                "id": -1,  # Placeholder ID for a non-saved generated lecture
+                "course_id": generated_dict.get("course_id"),
+                "topic_id": generated_dict.get("topic_id"),
+                "revision": generated_dict.get("revision"),  # Assumes core service provides this
+                "content": generated_dict.get("content"),
+                "summary": generated_dict.get("summary"),
+                "audio_url": generated_dict.get("audio_url"),  # Allow passthrough
+                "transcript_url": generated_dict.get("transcript_url"),  # Allow passthrough
+            }
 
             # Validate and convert using the standard response model
-            response = Lecture.model_validate(generated_dict)
+            response = Lecture.model_validate(api_lecture_data)
 
-            self.logger.info(f"Successfully generated lecture data: {response.title}")
+            self.logger.info(f"Successfully generated lecture data for topic {response.topic_id}")
             return response
 
         except (ContentGenerationError, DatabaseError, ValueError) as e:

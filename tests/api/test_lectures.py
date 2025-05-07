@@ -19,13 +19,13 @@ from artificial_u.api.models.lectures import (
 sample_lectures_base = [
     Lecture(
         id=i,
-        title=f"Test Lecture {i}",
         course_id=1 if i < 3 else 2,
-        week_number=i,
-        order_in_week=1,
-        description=f"Description for lecture {i}",
+        topic_id=i * 10,
+        revision=1,
         content=f"Full content for lecture {i}",
+        summary=f"Summary for lecture {i}",
         audio_url=f"https://example.com/audio/lecture_{i}.mp3" if i % 2 == 0 else None,
+        transcript_url=f"https://example.com/transcript/lecture_{i}.txt" if i % 3 == 0 else None,
     )
     for i in range(1, 5)
 ]
@@ -61,7 +61,16 @@ def mock_api_service(monkeypatch):
     # CREATE Lecture
     def _mock_create_lecture(lecture_data: LectureCreate):
         new_id = 5  # Simulate next ID
-        return Lecture(id=new_id, **lecture_data.model_dump())
+        return Lecture(
+            id=new_id,
+            course_id=lecture_data.course_id,
+            topic_id=lecture_data.topic_id,
+            revision=lecture_data.revision if lecture_data.revision is not None else 1,
+            content=lecture_data.content,
+            summary=lecture_data.summary,
+            audio_url=lecture_data.audio_url,
+            transcript_url=lecture_data.transcript_url,
+        )
 
     mock_service["create_lecture"].side_effect = _mock_create_lecture
 
@@ -72,7 +81,8 @@ def mock_api_service(monkeypatch):
                 lecture for lecture in sample_lectures_base if lecture.id == lecture_id
             )
             updated_data = original_lecture.model_dump()
-            updated_data.update(lecture_data.model_dump(exclude_unset=True))
+            update_payload = lecture_data.model_dump(exclude_unset=True)
+            updated_data.update(update_payload)
             return Lecture(**updated_data)
         return None
 
@@ -103,7 +113,17 @@ def mock_api_service(monkeypatch):
     mock_service["get_lecture_audio_url"].side_effect = _mock_get_lecture_audio_url
 
     # GENERATE Lecture
-    mock_service["generate_lecture"].return_value = sample_lectures_base[0]
+    generated_lecture_mock = Lecture(
+        id=sample_lectures_base[0].id,
+        course_id=sample_lectures_base[0].course_id,
+        topic_id=sample_lectures_base[0].topic_id,
+        revision=sample_lectures_base[0].revision,
+        content=sample_lectures_base[0].content,
+        summary=sample_lectures_base[0].summary,
+        audio_url=sample_lectures_base[0].audio_url,
+        transcript_url=sample_lectures_base[0].transcript_url,
+    )
+    mock_service["generate_lecture"].return_value = generated_lecture_mock
 
     # --- Apply Patches ---
     base_path = "artificial_u.api.services.LectureApiService"
@@ -132,7 +152,8 @@ def test_list_lectures(client: TestClient, mock_api_service):
     assert "items" in data
     assert data["total"] == len(sample_lectures_base)
     assert len(data["items"]) == len(sample_lectures_base)
-    assert data["items"][0]["title"] == sample_lectures_base[0].title
+    assert data["items"][0]["content"] == sample_lectures_base[0].content
+    assert data["items"][0]["topic_id"] == sample_lectures_base[0].topic_id
 
     mock_api_service["list_lectures"].assert_called_once_with(
         page=1, size=10, course_id=None, professor_id=None, search=None
@@ -165,7 +186,8 @@ def test_get_lecture(client: TestClient, mock_api_service):
     response = client.get("/api/v1/lectures/1")
     assert response.status_code == 200
     assert response.json()["id"] == 1
-    assert response.json()["title"] == sample_lectures_base[0].title
+    assert response.json()["content"] == sample_lectures_base[0].content
+    assert response.json()["topic_id"] == sample_lectures_base[0].topic_id
     mock_api_service["get_lecture"].assert_called_once_with(1)
 
     # Test invalid ID
@@ -214,15 +236,24 @@ def test_get_lecture_audio(client: TestClient, mock_api_service):
 def test_create_lecture(client: TestClient, mock_api_service):
     """Test creating a new lecture."""
     new_lecture_data = {
-        "title": "New Test Lecture",
         "course_id": 1,
-        "week_number": 5,
-        "order_in_week": 1,
-        "description": "A new test lecture",
+        "topic_id": 50,
         "content": "Full content for the new test lecture",
+        "summary": "A new test lecture summary",
         "audio_url": "https://example.com/audio/new_lecture.mp3",
+        "transcript_url": "https://example.com/transcript/new_lecture.txt",
+        "revision": 1,
     }
-    expected_response_data = {"id": 5, **new_lecture_data}
+    expected_response_data = {
+        "id": 5,
+        "course_id": new_lecture_data["course_id"],
+        "topic_id": new_lecture_data["topic_id"],
+        "revision": new_lecture_data["revision"],
+        "content": new_lecture_data["content"],
+        "summary": new_lecture_data["summary"],
+        "audio_url": new_lecture_data["audio_url"],
+        "transcript_url": new_lecture_data["transcript_url"],
+    }
 
     response = client.post("/api/v1/lectures", json=new_lecture_data)
     assert response.status_code == 201
@@ -237,13 +268,14 @@ def test_create_lecture(client: TestClient, mock_api_service):
 @pytest.mark.unit
 def test_update_lecture(client: TestClient, mock_api_service):
     """Test updating an existing lecture."""
-    update_data = {"title": "Updated Lecture Title", "description": "Updated description"}
+    update_data = {"summary": "Updated Lecture Summary", "content": "Updated content"}
     lecture_id_to_update = 2
 
     response = client.patch(f"/api/v1/lectures/{lecture_id_to_update}", json=update_data)
     assert response.status_code == 200
-    assert response.json()["title"] == update_data["title"]
-    assert response.json()["description"] == update_data["description"]
+    assert response.json()["summary"] == update_data["summary"]
+    assert response.json()["content"] == update_data["content"]
+    assert response.json()["id"] == lecture_id_to_update
 
     mock_api_service["update_lecture"].assert_called_once()
     call_args = mock_api_service["update_lecture"].call_args[0]
@@ -297,14 +329,18 @@ def test_download_lecture_content(client: TestClient, mock_api_service):
 def test_generate_lecture(client: TestClient, mock_api_service):
     """Test generating lecture data using AI."""
     generation_data = {
-        "partial_attributes": {"course_id": 1, "week_number": 5},
+        "partial_attributes": {"course_id": 1, "topic_id": 50},
         "freeform_prompt": "Generate a lecture about testing",
     }
 
     response = client.post("/api/v1/lectures/generate", json=generation_data)
     assert response.status_code == 200
-    assert "id" in response.json()
-    assert "title" in response.json()
+    data = response.json()
+    assert "id" in data
+    assert "content" in data
+    assert "summary" in data
+    assert "topic_id" in data
+    assert data["topic_id"] == sample_lectures_base[0].topic_id
 
     mock_api_service["generate_lecture"].assert_called_once()
     call_args = mock_api_service["generate_lecture"].call_args[0]

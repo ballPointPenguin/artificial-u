@@ -67,3 +67,9 @@ class ProfessorNotFoundError(ArtificialUException):
     """Raised when a professor cannot be found."""
 
     pass
+
+
+class TopicNotFoundError(ArtificialUException):
+    """Raised when a topic cannot be found."""
+
+    pass

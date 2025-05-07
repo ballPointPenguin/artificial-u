@@ -14,6 +14,7 @@ from artificial_u.utils.exceptions import (
     GenerationError,
     LectureNotFoundError,
     ProfessorNotFoundError,
+    TopicNotFoundError,
 )
 
 __all__ = [
@@ -28,4 +29,5 @@ __all__ = [
     "GenerationError",
     "LectureNotFoundError",
     "ProfessorNotFoundError",
+    "TopicNotFoundError",
 ]

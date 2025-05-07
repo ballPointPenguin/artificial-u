@@ -17,6 +17,7 @@ from artificial_u.api.services import (
     DepartmentApiService,
     LectureApiService,
     ProfessorApiService,
+    TopicApiService,
 )
 from artificial_u.integrations import elevenlabs
 from artificial_u.models.repositories import RepositoryFactory
@@ -28,6 +29,7 @@ from artificial_u.services import (
     LectureService,
     ProfessorService,
     StorageService,
+    TopicService,
     VoiceService,
 )
 
@@ -236,8 +238,31 @@ def get_lecture_service(
         professor_service=professor_service,
         course_service=course_service,
         content_service=content_service,
-        storage_service=storage_service,
         logger=logging.getLogger("artificial_u.services.lecture_service"),
+    )
+
+
+def get_topic_service(
+    repository_factory: RepositoryFactory = Depends(get_repository_factory),
+    content_service: ContentService = Depends(get_content_service),
+    course_service: CourseService = Depends(get_course_service),
+) -> TopicService:
+    """
+    Get a core TopicService instance.
+
+    Args:
+        repository_factory: Repository factory
+        content_service: Content service
+        course_service: Course service
+
+    Returns:
+        TopicService instance
+    """
+    return TopicService(
+        repository_factory=repository_factory,
+        content_service=content_service,
+        course_service=course_service,
+        logger=logging.getLogger("artificial_u.services.topic_service"),
     )
 
 
@@ -246,6 +271,8 @@ def get_professor_api_service(
     content_service: ContentService = Depends(get_content_service),
     image_service: ImageService = Depends(get_image_service),
     voice_service: VoiceService = Depends(get_voice_service),
+    storage_service: StorageService = Depends(get_storage_service),
+    logger=logging.getLogger("artificial_u.api.services.lecture_service"),
 ) -> ProfessorApiService:
     """
     Get a professor API service instance.
@@ -255,6 +282,8 @@ def get_professor_api_service(
         content_service: Content service
         image_service: Image service
         voice_service: Voice service
+        storage_service: Storage service
+        logger: Logger for the service
 
     Returns:
         ProfessorApiService instance
@@ -264,7 +293,7 @@ def get_professor_api_service(
         content_service=content_service,
         image_service=image_service,
         voice_service=voice_service,
-        logger=logging.getLogger("artificial_u.api.services.professor_service"),
+        logger=logger,
     )
 
 
@@ -345,4 +374,25 @@ def get_lecture_api_service(
         content_service=content_service,
         storage_service=storage_service,
         logger=logging.getLogger("artificial_u.api.services.lecture_service"),
+    )
+
+
+def get_topic_api_service(
+    core_topic_service: TopicService = Depends(get_topic_service),
+    repository_factory: RepositoryFactory = Depends(get_repository_factory),
+) -> TopicApiService:
+    """
+    Get a Topic API service instance.
+
+    Args:
+        core_topic_service: Core TopicService instance
+        repository_factory: Repository factory
+
+    Returns:
+        TopicApiService instance
+    """
+    return TopicApiService(
+        core_topic_service=core_topic_service,
+        repository_factory=repository_factory,
+        logger=logging.getLogger("artificial_u.api.services.topic_service"),
     )

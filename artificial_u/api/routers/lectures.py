@@ -37,7 +37,7 @@ async def list_lectures(
     size: int = Query(10, ge=1, le=100, description="Items per page"),
     course_id: Optional[int] = Query(None, description="Filter by course ID"),
     professor_id: Optional[int] = Query(None, description="Filter by professor ID"),
-    search: Optional[str] = Query(None, description="Search in title and description"),
+    search: Optional[str] = Query(None, description="Search in content and summary"),
     lecture_service: LectureApiService = Depends(get_lecture_api_service),
 ):
     """
