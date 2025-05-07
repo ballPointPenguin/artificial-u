@@ -6,62 +6,51 @@ import re
 import xml.etree.ElementTree as ET
 from typing import Any, Dict, List, Optional
 
-from artificial_u.models.database import CourseModel, DepartmentModel, ProfessorModel
+from artificial_u.models.core import Course, Department, Lecture, Professor, Topic
 
 # --- Model to Dict Converters --- #
 
 
-def professor_model_to_dict(professor: Optional[ProfessorModel]) -> Dict[str, Any]:
-    """Convert ProfessorModel to dictionary."""
+def professor_model_to_dict(professor: Optional[Professor]) -> Dict[str, Any]:
+    """Convert Professor Pydantic model to dictionary."""
     if not professor:
         return {}
-    return {
-        "id": professor.id,
-        "name": professor.name,
-        "title": professor.title,
-        "accent": professor.accent,
-        "age": professor.age,
-        "background": professor.background,
-        "description": professor.description,
-        "gender": professor.gender,
-        "personality": professor.personality,
-        "specialization": professor.specialization,
-        "teaching_style": professor.teaching_style,
-        "image_url": professor.image_url,
-        "department_id": professor.department_id,
-        "voice_id": professor.voice_id,
-    }
+    return professor.model_dump(exclude_none=True)
 
 
-def department_model_to_dict(department: Optional[DepartmentModel]) -> Dict[str, Any]:
-    """Convert DepartmentModel to dictionary."""
+def department_model_to_dict(department: Optional[Department]) -> Dict[str, Any]:
+    """Convert Department Pydantic model to dictionary."""
     if not department:
         return {}
-    return {
-        "id": department.id,
-        "name": department.name,
-        "code": department.code,
-        "faculty": department.faculty,
-        "description": department.description,
-    }
+    return department.model_dump(exclude_none=True)
 
 
-def course_model_to_dict(course: Optional[CourseModel]) -> Dict[str, Any]:
-    """Convert CourseModel to dictionary."""
+def course_model_to_dict(course: Optional[Course]) -> Dict[str, Any]:
+    """Convert Course Pydantic model to dictionary."""
     if not course:
         return {}
-    return {
-        "id": course.id,
-        "code": course.code,
-        "title": course.title,
-        "credits": course.credits,
-        "description": course.description,
-        "lectures_per_week": course.lectures_per_week,
-        "level": course.level,
-        "total_weeks": course.total_weeks,
-        "department_id": course.department_id,
-        "professor_id": course.professor_id,
-    }
+    return course.model_dump(exclude_none=True)
+
+
+def lecture_model_to_dict(lecture: Optional[Lecture]) -> Dict[str, Any]:
+    """Convert Lecture Pydantic model to dictionary."""
+    if not lecture:
+        return {}
+    return lecture.model_dump(exclude_none=True)
+
+
+def topic_model_to_dict(topic: Optional[Topic]) -> Dict[str, Any]:
+    """Convert a Topic Pydantic model to a dictionary."""
+    if not topic:
+        return {}
+    return topic.model_dump(exclude_none=True)
+
+
+def topics_model_to_dict(topics: List[Topic]) -> List[Dict[str, Any]]:
+    """Convert a list of Topic Pydantic models to a list of dictionaries."""
+    if not topics:
+        return []
+    return [topic.model_dump(exclude_none=True) for topic in topics]
 
 
 # --- XML Formatting Functions (mostly for prompts) --- #

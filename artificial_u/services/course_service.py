@@ -66,7 +66,6 @@ class CourseService:
         credits: Optional[int] = 3,
         weeks: int = 14,
         lectures_per_week: int = 1,
-        topics: Optional[List[Dict[str, Any]]] = None,
     ) -> Tuple[Course, Professor]:
         """
         Create a new course without generating content.
@@ -81,7 +80,6 @@ class CourseService:
             credits: Number of credits for the course (default: 3)
             weeks: Number of weeks in the course
             lectures_per_week: Number of lectures per week
-            topics: Optional pre-defined topics structure
 
         Returns:
             Tuple: (Course, Professor) - The created course and its professor
@@ -113,7 +111,6 @@ class CourseService:
             credits=credits,
             total_weeks=weeks,
             lectures_per_week=lectures_per_week,
-            topics=topics,
         )
 
         # Save using the repository factory
@@ -324,11 +321,12 @@ class CourseService:
             # 6. Fill in missing values from initial partial attributes if they weren't generated
             for key, value in initial_partial_attributes.items():
                 if key not in final_course_data or final_course_data[key] is None:
-                    final_course_data[key] = value
+                    # Avoid re-adding 'topics' if it was in partial_attributes
+                    if key != "topics":
+                        final_course_data[key] = value
 
             # 7. Filter final dictionary to only include valid Course fields
             # Get valid fields from Course.__annotations__ or CourseModel.__table__.columns
-            # Using CourseModel for simplicity here
             from artificial_u.models.database import CourseModel
 
             valid_course_keys = {c.name for c in CourseModel.__table__.columns}

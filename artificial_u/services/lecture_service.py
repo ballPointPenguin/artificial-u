@@ -7,9 +7,12 @@ from typing import Any, Dict, List, Optional
 
 from artificial_u.config import get_settings
 from artificial_u.models.converters import (
+    course_model_to_dict,
     extract_xml_content,
     parse_lecture_xml,
     professor_model_to_dict,
+    topic_model_to_dict,
+    topics_model_to_dict,
 )
 from artificial_u.models.core import Lecture
 from artificial_u.prompts import (
@@ -33,6 +36,7 @@ class LectureService:
         professor_service,
         repository_factory,
         logger=None,
+        topic_service=None,
     ):
         """
         Initialize the lecture service.
@@ -43,38 +47,38 @@ class LectureService:
             professor_service: Professor management service
             repository_factory: Repository factory instance
             logger: Optional logger instance
+            topic_service: Topic management service
         """
         self.content_service = content_service
         self.course_service = course_service
         self.professor_service = professor_service
         self.repository_factory = repository_factory
         self.logger = logger or logging.getLogger(__name__)
+        self.topic_service = topic_service
 
     # --- CRUD Methods --- #
 
     def create_lecture(
         self,
-        title: str,
         course_id: int,
-        week_number: int,
-        order_in_week: int = 1,
-        description: Optional[str] = None,
+        topic_id: int,
         content: Optional[str] = None,
+        summary: Optional[str] = None,
         audio_url: Optional[str] = None,
         transcript_url: Optional[str] = None,
+        revision: Optional[int] = None,
     ) -> Lecture:
         """
         Create a new lecture.
 
         Args:
-            title: Lecture title
             course_id: ID of the course this lecture belongs to
-            week_number: Week number in the course
-            order_in_week: Order of the lecture within the week (default: 1)
-            description: Optional lecture description
+            topic_id: ID of the topic this lecture belongs to
             content: Optional lecture content
+            summary: Optional lecture summary
             audio_url: Optional URL to audio content
             transcript_url: Optional URL to transcript content
+            revision: Optional revision number for the lecture
 
         Returns:
             Lecture: The created lecture
@@ -84,12 +88,11 @@ class LectureService:
         """
         # Create lecture object
         lecture = Lecture(
-            title=title,
             course_id=course_id,
-            week_number=week_number,
-            order_in_week=order_in_week,
-            description=description,
+            topic_id=topic_id,
+            revision=revision,
             content=content,
+            summary=summary,
             audio_url=audio_url,
             transcript_url=transcript_url,
         )
@@ -97,7 +100,7 @@ class LectureService:
         try:
             # Save to database using repository
             created_lecture = self.repository_factory.lecture.create(lecture)
-            self.logger.info(f"Created lecture: {title} for course {course_id}")
+            self.logger.info(f"Created lecture for topic {topic_id}, course {course_id}")
             return created_lecture
         except Exception as e:
             error_msg = f"Failed to create lecture: {str(e)}"
@@ -262,14 +265,19 @@ class LectureService:
     async def _prepare_prompt_arguments(
         self,
         partial_attributes: Dict[str, Any],
+        course_data: Dict[str, Any],
         professor_data: Dict[str, Any],
-        existing_lectures: List[Dict[str, Any]],
+        topic_data: Dict[str, Any],
+        existing_lectures_data: List[Dict[str, Any]],
+        all_course_topics_data: List[Dict[str, Any]],
     ) -> Dict[str, Any]:
         """Prepare arguments for the lecture generation prompt."""
         return {
+            "course_data": course_data,
             "professor_data": professor_data,
-            "existing_lectures": existing_lectures,
-            "partial_lecture_attrs": partial_attributes,
+            "topic_data": topic_data,
+            "existing_lectures": existing_lectures_data,
+            "topics_data": all_course_topics_data,
             "freeform_prompt": partial_attributes.get("freeform_prompt"),
             "word_count": partial_attributes.get("word_count", 2500),
         }
@@ -308,41 +316,125 @@ class LectureService:
 
         return generated_xml_output
 
-    async def _process_models_for_generation(
-        self, partial_attributes: Dict[str, Any]
-    ) -> tuple[Dict[str, Any], List[Dict[str, Any]]]:
-        """Process professor and existing lectures for generation."""
-        # Get Professor
-        professor_model = None
+    async def _process_models_for_generation(self, partial_attributes: Dict[str, Any]) -> tuple[
+        Dict[str, Any],  # course_dict
+        Dict[str, Any],  # professor_dict
+        Dict[str, Any],  # topic_dict
+        List[Dict[str, Any]],  # existing_lectures_list_of_dicts
+        List[Dict[str, Any]],  # all_course_topics_list_of_dicts
+    ]:
+        """Process course, professor, topic, existing lectures, and all course topics
+        for generation."""
         course_id = partial_attributes.get("course_id")
-        if course_id:
-            try:
-                course = self.course_service.get_course(course_id)
-                if course and course.professor_id:
-                    professor_model = self.professor_service.get_professor(course.professor_id)
-            except Exception as e:
-                self.logger.warning(f"Error fetching professor for course {course_id}: {e}")
+        topic_id = partial_attributes.get("topic_id")
 
-        professor_dict = professor_model_to_dict(professor_model) if professor_model else {}
+        if not course_id:
+            raise ValueError("course_id is required for lecture generation.")
+        if not topic_id:
+            raise ValueError("topic_id is required for lecture generation.")
 
-        # Get Existing Lectures for the course
-        existing_lectures = []
-        if course_id:
-            try:
-                lectures = self.repository_factory.lecture.list_by_course(course_id)
-                existing_lectures = [
-                    {
-                        "title": lecture.title,
-                        "description": lecture.description,
-                        "week_number": lecture.week_number,
-                        "order_in_week": lecture.order_in_week,
-                    }
-                    for lecture in lectures
-                ]
-            except Exception as e:
-                self.logger.warning(f"Error fetching existing lectures for course {course_id}: {e}")
+        course_dict = await self._get_course_data_for_generation(course_id)
+        professor_dict = await self._get_professor_data_for_generation(course_dict.get("id"))
+        current_topic_dict = await self._get_current_topic_data_for_generation(topic_id, course_id)
+        existing_lectures_list_of_dicts = await self._get_existing_lectures_data_for_generation(
+            course_id
+        )
+        all_course_topics_list_of_dicts = await self._get_all_course_topics_data_for_generation(
+            course_id
+        )
 
-        return professor_dict, existing_lectures
+        return (
+            course_dict,
+            professor_dict,
+            current_topic_dict,
+            existing_lectures_list_of_dicts,
+            all_course_topics_list_of_dicts,
+        )
+
+    async def _get_course_data_for_generation(self, course_id: int) -> Dict[str, Any]:
+        """Fetches and prepares course data for lecture generation."""
+        try:
+            course = self.course_service.get_course(course_id)
+            return course_model_to_dict(course) if course else {}
+        except Exception as e:
+            self.logger.error(f"Error fetching course {course_id}: {e}")
+            raise DatabaseError(f"Error fetching course {course_id}: {e}")
+
+    async def _get_professor_data_for_generation(self, course_id: Optional[int]) -> Dict[str, Any]:
+        """Fetches and prepares professor data for lecture generation."""
+        if not course_id:
+            return {}
+        try:
+            # Need to get the course first to find the professor_id
+            course = self.course_service.get_course(course_id)
+            if course and course.professor_id:
+                professor = self.professor_service.get_professor(course.professor_id)
+                return professor_model_to_dict(professor) if professor else {}
+            return {}
+        except Exception as e:
+            self.logger.warning(f"Error fetching professor for course {course_id}: {e}")
+            return {}  # Return empty dict on error as per original logic
+
+    async def _get_current_topic_data_for_generation(
+        self, topic_id: int, course_id: int
+    ) -> Dict[str, Any]:
+        """Fetches and prepares the current topic data for lecture generation."""
+        try:
+            current_topic = await self.topic_service.get_topic(topic_id)
+            if not current_topic or current_topic.course_id != course_id:
+                err_msg = f"Topic {topic_id} not found or does not belong to course {course_id}."
+                self.logger.error(err_msg)
+                raise DatabaseError(err_msg)
+            return topic_model_to_dict(current_topic) if current_topic else {}
+        except Exception as e:
+            self.logger.error(f"Error fetching topic {topic_id}: {e}")
+            raise DatabaseError(f"Error fetching topic {topic_id}: {e}")
+
+    async def _get_existing_lectures_data_for_generation(
+        self, course_id: int
+    ) -> List[Dict[str, Any]]:
+        """Fetches and prepares existing lectures data for context."""
+        existing_lectures_list_of_dicts = []
+        try:
+            lectures_core_models = self.repository_factory.lecture.list_by_course(course_id)
+            for lec_model in lectures_core_models:
+                try:
+                    lec_topic = await self.topic_service.get_topic(lec_model.topic_id)
+                    if lec_topic:
+                        existing_lectures_list_of_dicts.append(
+                            {
+                                "title": lec_topic.title,
+                                "week": lec_topic.week,
+                                "order": lec_topic.order,
+                                "summary": lec_model.summary or "",
+                            }
+                        )
+                    else:
+                        self.logger.warning(
+                            f"Could not find topic {lec_model.topic_id} for existing lecture "
+                            f"{lec_model.id}"
+                        )
+                except Exception as topic_e:
+                    self.logger.error(
+                        f"Error fetching topic {lec_model.topic_id} for existing lecture "
+                        f"{lec_model.id}: {topic_e}"
+                    )
+        except Exception as e:
+            self.logger.warning(
+                f"Error fetching or processing existing lectures for course {course_id}: {e}"
+            )
+        return existing_lectures_list_of_dicts
+
+    async def _get_all_course_topics_data_for_generation(
+        self, course_id: int
+    ) -> List[Dict[str, Any]]:
+        """Fetches and prepares all course topics data for context."""
+        try:
+            topics_core_models = await self.topic_service.list_topics(course_id=course_id)
+            return topics_model_to_dict(topics_core_models)
+        except Exception as e:
+            self.logger.warning(f"Error fetching all topics for course {course_id}: {e}")
+            return []  # Return empty list on error as per original logic
 
     async def generate_lecture(
         self,
@@ -353,45 +445,84 @@ class LectureService:
 
         Args:
             partial_attributes: Optional dictionary of known attributes to guide generation
-                              or fill in the blanks.
+                              or fill in the blanks. Expected to contain 'course_id' and 'topic_id'.
 
         Returns:
             Dict[str, Any]: The generated lecture attributes.
 
         Raises:
             ContentGenerationError: If content generation or parsing fails.
+            DatabaseError: If there's an error fetching prerequisite data.
+            ValueError: If required partial_attributes are missing.
         """
         partial_attributes = partial_attributes or {}
         self.logger.info(
-            f"Generating lecture content with partial attributes: {list(partial_attributes.keys())}"
+            "Generating lecture content with partial attributes: "
+            f"{list(partial_attributes.keys())}"
         )
 
         try:
             # Process models and prepare data for generation
-            professor_dict, existing_lectures = await self._process_models_for_generation(
-                partial_attributes
-            )
+            (
+                course_dict,
+                professor_dict,
+                current_topic_dict,
+                existing_lectures_data,
+                all_course_topics_data,
+            ) = await self._process_models_for_generation(partial_attributes)
 
             # Prepare prompt arguments
             prompt_args = await self._prepare_prompt_arguments(
                 partial_attributes,
+                course_dict,
                 professor_dict,
-                existing_lectures,
+                current_topic_dict,
+                existing_lectures_data,
+                all_course_topics_data,
             )
 
             # Generate and parse content
             generated_xml_output = await self._generate_and_parse_content(prompt_args)
-            print(generated_xml_output)
+            self.logger.debug(f"Generated XML for lecture: {generated_xml_output[:500]}...")
 
             # Parse XML and combine with partial attributes
+            # parse_lecture_xml is expected to return {'content': '...'}
             parsed_lecture_data = parse_lecture_xml(generated_xml_output)
-            final_lecture_data = {**parsed_lecture_data, **partial_attributes}
 
-            # Remove non-lecture fields
-            final_lecture_data.pop("freeform_prompt", None)
-            final_lecture_data.pop("word_count", None)
+            if parsed_lecture_data.get("content") is None:
+                error_msg = (
+                    "Failed to extract valid <content> from generated XML. "
+                    f"Input XML: {generated_xml_output[:500]}..."
+                )
+                self.logger.error(error_msg)
+                raise ContentGenerationError(error_msg)
 
-            self.logger.info(f"Successfully generated lecture: {final_lecture_data.get('title')}")
+            # final_lecture_data should be built based on Lecture model fields
+            final_lecture_data = {
+                "course_id": partial_attributes.get("course_id"),
+                "topic_id": partial_attributes.get("topic_id"),
+                "revision": partial_attributes.get("revision"),
+                "content": parsed_lecture_data.get("content"),
+                "summary": partial_attributes.get("summary"),
+            }
+
+            # Add other relevant fields from partial_attributes if they are valid for Lecture model
+            for key in ["audio_url", "transcript_url"]:
+                if key in partial_attributes:
+                    final_lecture_data[key] = partial_attributes[key]
+
+            # Filter final_lecture_data to include only valid LectureModel fields
+            from artificial_u.models.database import LectureModel  # Keep import local for clarity
+
+            valid_lecture_keys = {c.name for c in LectureModel.__table__.columns}
+            final_lecture_data = {
+                k: v for k, v in final_lecture_data.items() if k in valid_lecture_keys
+            }
+
+            self.logger.info(
+                "Successfully generated lecture content for topic "
+                f"{final_lecture_data.get('topic_id')}"
+            )
             return final_lecture_data
 
         except ContentGenerationError:

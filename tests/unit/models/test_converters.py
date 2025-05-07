@@ -13,6 +13,7 @@ from artificial_u.models.converters import (
     department_to_xml,
     departments_to_xml,
     extract_xml_content,
+    lecture_model_to_dict,
     lectures_to_xml,
     parse_course_xml,
     parse_department_xml,
@@ -26,117 +27,230 @@ from artificial_u.models.converters import (
     professor_model_to_dict,
     professor_to_xml,
     professors_to_xml,
+    topic_model_to_dict,
     topic_to_xml,
+    topics_model_to_dict,
     topics_to_xml,
 )
 
-
-class MockModel:
-    """Mock model class for testing converters."""
-
-    def __init__(self, **kwargs):
-        for key, value in kwargs.items():
-            setattr(self, key, value)
+# Import Pydantic core models
+from artificial_u.models.core import (
+    Course,
+    Department,
+    Lecture,
+    Professor,
+    Topic,
+)
 
 
 @pytest.mark.unit
 def test_professor_model_to_dict():
-    """Test converting a professor model to a dictionary."""
+    """Test converting a professor Pydantic model to a dictionary."""
     # Test with None
     assert professor_model_to_dict(None) == {}
 
-    # Test with a populated model
-    professor = MockModel(
-        id=1,
-        name="Dr. Jane Smith",
-        title="Associate Professor",
-        department_id=2,
-        specialization="Machine Learning",
-        background="PhD from Stanford",
-        personality="Engaging",
-        teaching_style="Interactive",
-        gender="Female",
-        accent="American",
-        description="Expert in ML",
-        age=35,
-        voice_id=3,
-        image_url="https://example.com/jane.jpg",
-    )
-
+    # Test with a populated Pydantic model
+    professor_data = {
+        "id": 1,
+        "name": "Dr. Jane Smith",
+        "title": "Associate Professor",
+        "department_id": 2,
+        "specialization": "Machine Learning",
+        "background": "PhD from Stanford",
+        "personality": "Engaging",
+        "teaching_style": "Interactive",
+        "gender": "Female",
+        "accent": "American",
+        "description": "Expert in ML",
+        "age": 35,
+        "voice_id": 3,
+        "image_url": "https://example.com/jane.jpg",
+    }
+    professor = Professor(**professor_data)
     result = professor_model_to_dict(professor)
+    expected = professor.model_dump(exclude_none=True)
+    assert result == expected
 
-    assert result["id"] == 1
-    assert result["name"] == "Dr. Jane Smith"
-    assert result["title"] == "Associate Professor"
-    assert result["department_id"] == 2
-    assert result["specialization"] == "Machine Learning"
-    assert result["background"] == "PhD from Stanford"
-    assert result["personality"] == "Engaging"
-    assert result["teaching_style"] == "Interactive"
-    assert result["gender"] == "Female"
-    assert result["accent"] == "American"
-    assert result["description"] == "Expert in ML"
-    assert result["age"] == 35
-    assert result["voice_id"] == 3
-    assert result["image_url"] == "https://example.com/jane.jpg"
+    # Test with a model having some None values (they should be excluded)
+    professor_partial_data = {
+        "id": 2,
+        "name": "Dr. John Doe",
+        "title": None,  # This should be excluded
+    }
+    professor_partial = Professor(**professor_partial_data)
+    result_partial = professor_model_to_dict(professor_partial)
+    expected_partial = professor_partial.model_dump(exclude_none=True)
+    assert result_partial == expected_partial
+    assert "title" not in result_partial
 
 
 @pytest.mark.unit
 def test_department_model_to_dict():
-    """Test converting a department model to a dictionary."""
+    """Test converting a department Pydantic model to a dictionary."""
     # Test with None
     assert department_model_to_dict(None) == {}
 
-    # Test with a populated model
-    department = MockModel(
-        id=1,
-        name="Computer Science",
-        code="CS",
-        faculty="Science and Engineering",
-        description="Study of computation",
-    )
-
+    # Test with a populated Pydantic model
+    department_data = {
+        "id": 1,
+        "name": "Computer Science",
+        "code": "CS",
+        "faculty": "Science and Engineering",
+        "description": "Study of computation",
+    }
+    department = Department(**department_data)
     result = department_model_to_dict(department)
+    expected = department.model_dump(exclude_none=True)
+    assert result == expected
 
-    assert result["id"] == 1
-    assert result["name"] == "Computer Science"
-    assert result["code"] == "CS"
-    assert result["faculty"] == "Science and Engineering"
-    assert result["description"] == "Study of computation"
+    department_partial_data = {"id": 2, "name": "Physics", "code": "PHY", "faculty": None}
+    department_partial = Department(**department_partial_data)
+    result_partial = department_model_to_dict(department_partial)
+    expected_partial = department_partial.model_dump(exclude_none=True)
+    assert result_partial == expected_partial
+    assert "faculty" not in result_partial
 
 
 @pytest.mark.unit
 def test_course_model_to_dict():
-    """Test converting a course model to a dictionary."""
+    """Test converting a course Pydantic model to a dictionary."""
     # Test with None
     assert course_model_to_dict(None) == {}
 
-    # Test with a populated model
-    course = MockModel(
-        id=1,
-        code="CS101",
-        title="Introduction to Programming",
-        department_id=2,
-        level="Undergraduate",
-        credits=3,
-        professor_id=3,
-        description="Basic programming concepts",
-        lectures_per_week=2,
-        total_weeks=14,
-    )
-
+    # Test with a populated Pydantic model
+    course_data = {
+        "id": 1,
+        "code": "CS101",
+        "title": "Introduction to Programming",
+        "department_id": 2,
+        "level": "Undergraduate",
+        "credits": 3,
+        "professor_id": 3,
+        "description": "Basic programming concepts",
+        "lectures_per_week": 2,
+        "total_weeks": 14,
+    }
+    course = Course(**course_data)
     result = course_model_to_dict(course)
+    expected = course.model_dump(exclude_none=True)
+    assert result == expected
 
-    assert result["id"] == 1
-    assert result["code"] == "CS101"
-    assert result["title"] == "Introduction to Programming"
-    assert result["department_id"] == 2
-    assert result["level"] == "Undergraduate"
-    assert result["credits"] == 3
-    assert result["professor_id"] == 3
-    assert result["description"] == "Basic programming concepts"
-    assert result["lectures_per_week"] == 2
-    assert result["total_weeks"] == 14
+    course_partial_data = {
+        "id": 2,
+        "code": "PY202",
+        "title": "Python Advanced",
+        "description": None,
+    }
+    course_partial = Course(**course_partial_data)
+    result_partial = course_model_to_dict(course_partial)
+    expected_partial = course_partial.model_dump(exclude_none=True)
+    assert result_partial == expected_partial
+    assert "description" not in result_partial
+
+
+@pytest.mark.unit
+def test_lecture_model_to_dict():
+    """Test converting a lecture Pydantic model to a dictionary."""
+    # Test with None
+    assert lecture_model_to_dict(None) == {}
+
+    # Test with a populated Pydantic model
+    lecture_data = {
+        "id": 1,
+        "revision": 1,
+        "content": "Lecture content here.",
+        "summary": "Lecture summary.",
+        "audio_url": "http://example.com/audio.mp3",
+        "transcript_url": "http://example.com/transcript.txt",
+        "course_id": 10,
+        "topic_id": 20,
+    }
+    lecture = Lecture(**lecture_data)
+    result = lecture_model_to_dict(lecture)
+    expected = lecture.model_dump(exclude_none=True)
+    assert result == expected
+
+    lecture_partial_data = {
+        "id": 2,
+        "course_id": 11,
+        "topic_id": 22,
+        "content": "Partial content",
+        "summary": None,
+    }
+    lecture_partial = Lecture(**lecture_partial_data)
+    result_partial = lecture_model_to_dict(lecture_partial)
+    expected_partial = lecture_partial.model_dump(exclude_none=True)
+    assert result_partial == expected_partial
+    assert "summary" not in result_partial
+    assert "revision" not in result_partial  # Default is None, so excluded
+
+
+@pytest.mark.unit
+def test_topic_model_to_dict():
+    """Test converting a topic Pydantic model to a dictionary."""
+    # Test with None
+    assert topic_model_to_dict(None) == {}
+
+    # Test with a populated Pydantic model
+    topic_data = {
+        "id": 1,
+        "title": "Introduction to AI",
+        "order": 1,
+        "week": 1,
+        "course_id": 10,
+    }
+    topic = Topic(**topic_data)
+    result = topic_model_to_dict(topic)
+    expected = topic.model_dump(exclude_none=True)
+    assert result == expected
+
+    topic_partial_data = {
+        "id": 2,
+        "title": "Search Algorithms",
+        "course_id": 11,
+    }  # order and week will use defaults
+    topic_partial = Topic(**topic_partial_data)
+    result_partial = topic_model_to_dict(topic_partial)
+    expected_partial = topic_partial.model_dump(
+        exclude_none=True
+    )  # Pydantic defaults will be included unless None
+    assert result_partial == expected_partial
+    assert result_partial["order"] == 1  # Check default value
+    assert result_partial["week"] == 1  # Check default value
+
+
+@pytest.mark.unit
+def test_topics_model_to_dict():
+    """Test converting a list of topic Pydantic models to a list of dictionaries."""
+    # Test with empty list
+    assert topics_model_to_dict([]) == []
+
+    # Test with a list of populated Pydantic models
+    topic_data1 = {"id": 1, "title": "Topic 1", "order": 1, "week": 1, "course_id": 10}
+    topic_data2 = {
+        "id": 2,
+        "title": "Topic 2",
+        "order": 2,
+        "week": 1,
+        "course_id": 10,
+        "description": None,
+    }  # Add a None field
+
+    topic1 = Topic(**topic_data1)
+    topic2 = Topic(
+        **topic_data2
+    )  # description is not a field on Topic model, will be ignored by Pydantic
+
+    topics_list = [topic1, topic2]
+
+    result = topics_model_to_dict(topics_list)
+    expected = [
+        topic1.model_dump(exclude_none=True),
+        topic2.model_dump(exclude_none=True),
+    ]
+    assert result == expected
+    # Ensure 'description' which is not on Topic model is not in the output
+    assert "description" not in result[1]
 
 
 @pytest.mark.unit

@@ -23,21 +23,6 @@ MOCK_COURSE_XML = """
     <credits>4</credits>
     <lectures_per_week>2</lectures_per_week>
     <total_weeks>14</total_weeks>
-    <topics>
-      <week number="1">
-        <lecture number="1">
-          <topic>Neural Networks Fundamentals</topic>
-        </lecture>
-        <lecture number="2">
-          <topic>Deep Learning Architectures</topic>
-        </lecture>
-      </week>
-      <week number="2">
-        <lecture number="1">
-          <topic>Reinforcement Learning</topic>
-        </lecture>
-      </week>
-    </topics>
   </course>
 </output>
 """
@@ -142,7 +127,6 @@ class TestCourseService:
             credits=3,
             weeks=14,
             lectures_per_week=2,
-            topics=[{"name": "Variables"}, {"name": "Functions"}],
         )[
             0
         ]  # The create_course method returns a tuple (course, professor)
@@ -415,24 +399,6 @@ class TestCourseService:
         assert course_data["lectures_per_week"] == 2
         assert course_data["total_weeks"] == 14
         assert "machine learning" in course_data["description"].lower()
-
-        # Verify topics structure
-        topics = course_data["topics"]
-        assert len(topics) == 3  # Total number of lectures across all weeks
-
-        # Check first week's lectures
-        assert topics[0]["week_number"] == 1
-        assert topics[0]["order_in_week"] == 1
-        assert topics[0]["title"] == "Neural Networks Fundamentals"
-
-        assert topics[1]["week_number"] == 1
-        assert topics[1]["order_in_week"] == 2
-        assert topics[1]["title"] == "Deep Learning Architectures"
-
-        # Check second week's lecture
-        assert topics[2]["week_number"] == 2
-        assert topics[2]["order_in_week"] == 1
-        assert topics[2]["title"] == "Reinforcement Learning"
 
         # Verify content service was called with correct arguments
         course_service.content_service.generate_text.assert_called_once()
