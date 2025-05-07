@@ -3,7 +3,7 @@ Integration tests for TopicService.
 """
 
 import logging
-from unittest.mock import MagicMock
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
@@ -60,11 +60,20 @@ def course_service(repository_factory, professor_service):
 
 
 @pytest.fixture
-def topic_service(repository_factory):
-    """Create a TopicService with mocked logger."""
+def content_service():
+    """Create a ContentService mock."""
+    return MagicMock()
+
+
+@pytest.fixture
+def topic_service(repository_factory, course_service, content_service):
+    """Create a TopicService with mocked ContentService and actual CourseService."""
     logger = logging.getLogger(__name__)
+    # The content_service fixture will provide a mock for ContentService
     return TopicService(
         repository_factory=repository_factory,
+        content_service=content_service,  # Use the provided content_service mock
+        course_service=course_service,  # Use the actual course_service
         logger=logger,
     )
 
@@ -511,3 +520,101 @@ class TestTopicService:
         # Test deleting non-existent topic
         result = topic_service.delete_topic(999999)
         assert result is False
+
+    @pytest.mark.asyncio
+    async def test_generate_topics_for_course(
+        self, topic_service, course_service, department_service, professor_service
+    ):
+        """Test generating topics for a course with mocked ContentService."""
+        # 1. Setup prerequisite data
+        department = department_service.create_department(
+            name="Test Department for Topic Gen",
+            code="TDTG",
+            faculty="Test Faculty",
+            description="A test department for topic generation.",
+        )
+        professor = professor_service.create_professor(
+            Professor(
+                name="Dr. Gen Topics",
+                title="Lecturer",
+                department_id=department.id,
+                specialization="Topic Studies",
+                gender="Other",
+                description="Expert in generating test topics.",
+            )
+        )
+        course, _ = course_service.create_course(
+            title="Test Course for Topic Generation",
+            code="TTG101",
+            department_id=department.id,
+            level="Test Level",
+            professor_id=professor.id,
+            description="A course to test topic generation.",
+            credits=1,
+            weeks=2,
+            lectures_per_week=2,
+        )
+
+        # 2. Define the mocked XML response from ContentService
+        # This XML should be what the ContentService's generate_text would return
+        mock_xml_response = """<output>
+<topics>
+  <course_title>Test Course for Topic Generation</course_title>
+  <lectures_per_week>2</lectures_per_week>
+  <total_weeks>2</total_weeks>
+  <topic>
+    <title>Generated Mock Topic 1</title>
+    <week>1</week>
+    <order>1</order>
+  </topic>
+  <topic>
+    <title>Generated Mock Topic 2</title>
+    <week>1</week>
+    <order>2</order>
+  </topic>
+  <topic>
+    <title>Generated Mock Topic 3</title>
+    <week>2</week>
+    <order>1</order>
+  </topic>
+</topics>
+</output>"""
+
+        # 3. Mock the content_service.generate_text method
+        # topic_service.content_service is already a MagicMock from the fixture
+        # We configure its async generate_text method here.
+        topic_service.content_service.generate_text = AsyncMock(return_value=mock_xml_response)
+
+        # 4. Call the method under test
+        generated_topics = await topic_service.generate_topics_for_course(course_id=course.id)
+
+        # 5. Assertions
+        assert generated_topics is not None
+        assert len(generated_topics) == 3, "Should generate 3 topics based on mock XML"
+
+        # Verify content_service.generate_text was called once
+        topic_service.content_service.generate_text.assert_called_once()
+        # More specific call argument checks could be added if necessary, e.g.:
+        # call_args = topic_service.content_service.generate_text.call_args
+        # assert "Test Course for Topic Generation" in call_args.kwargs.get("prompt", "")
+
+        # Verify attributes of the generated topics
+        expected_topics_data = [
+            {"title": "Generated Mock Topic 1", "week": 1, "order": 1},
+            {"title": "Generated Mock Topic 2", "week": 1, "order": 2},
+            {"title": "Generated Mock Topic 3", "week": 2, "order": 1},
+        ]
+
+        for i, topic_data in enumerate(expected_topics_data):
+            generated_topic = generated_topics[i]
+            assert generated_topic.title == topic_data["title"]
+            assert generated_topic.course_id == course.id
+            assert generated_topic.week == topic_data["week"]
+            assert generated_topic.order == topic_data["order"]
+            assert generated_topic.id is not None, "Topic ID should be set after creation"
+
+            # Verify that topics were actually saved to the DB by retrieving them
+            retrieved_topic = topic_service.get_topic(generated_topic.id)
+            assert retrieved_topic is not None
+            assert retrieved_topic.title == topic_data["title"]
+            assert retrieved_topic.course_id == course.id

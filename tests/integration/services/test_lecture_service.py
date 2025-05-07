@@ -103,8 +103,11 @@ def course_service(repository_factory, professor_service, content_service):
 def topic_service(repository_factory):
     """Create a TopicService."""
     # This assumes TopicService primarily uses the repository for CRUD.
-    # If it has content generation, it might need content_service too.
-    return TopicService(repository_factory=repository_factory)
+    return TopicService(
+        repository_factory=repository_factory,
+        content_service=content_service,
+        course_service=course_service,
+    )
 
 
 @pytest.fixture

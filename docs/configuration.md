@@ -117,6 +117,9 @@ LECTURE_GENERATION_MODEL=claude-3.7-sonnet-latest
 # Professor generation model
 PROFESSOR_GENERATION_MODEL=gpt-4.1-nano
 
+# Topics generation model
+TOPICS_GENERATION_MODEL=gemini-2.5-flash-preview-04-17
+
 # Image generation model
 IMAGE_GENERATION_MODEL=gpt-image-1
 ```

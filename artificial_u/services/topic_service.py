@@ -3,11 +3,20 @@ Topic management service for ArtificialU.
 """
 
 import logging
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 
+from artificial_u.config import get_settings
+from artificial_u.models.converters import (
+    course_model_to_dict,
+    extract_xml_content,
+    parse_topics_xml,
+)
 from artificial_u.models.core import Topic
 from artificial_u.models.repositories.factory import RepositoryFactory
-from artificial_u.utils import DatabaseError
+from artificial_u.prompts import get_system_prompt, get_topics_prompt
+from artificial_u.services.content_service import ContentService
+from artificial_u.services.course_service import CourseService
+from artificial_u.utils import ContentGenerationError, CourseNotFoundError, DatabaseError
 
 
 class TopicService:
@@ -16,6 +25,8 @@ class TopicService:
     def __init__(
         self,
         repository_factory: RepositoryFactory,
+        content_service: ContentService,
+        course_service: CourseService,
         logger=None,
     ):
         """
@@ -23,9 +34,13 @@ class TopicService:
 
         Args:
             repository_factory: Repository factory instance
+            content_service: Content generation service
+            course_service: Course management service
             logger: Optional logger instance
         """
         self.repository_factory = repository_factory
+        self.content_service = content_service
+        self.course_service = course_service
         self.logger = logger or logging.getLogger(__name__)
 
     # --- CRUD Methods --- #
@@ -242,3 +257,184 @@ class TopicService:
             error_msg = f"Failed to delete topics: {str(e)}"
             self.logger.error(error_msg)
             raise DatabaseError(error_msg) from e
+
+    # --- Generation Methods --- #
+
+    async def _generate_and_parse_topic_content(
+        self, course_data: Dict[str, Any], freeform_prompt: Optional[str]
+    ) -> str:
+        """Generate topic content and parse the XML response."""
+        topics_prompt = get_topics_prompt(course_data=course_data, freeform_prompt=freeform_prompt)
+        system_prompt = get_system_prompt("topics")
+        settings = get_settings()
+
+        self.logger.info(
+            f"Calling content service to generate topics for course ID: {course_data.get('id')}"
+        )
+        raw_response = await self.content_service.generate_text(
+            model=settings.TOPICS_GENERATION_MODEL,
+            prompt=topics_prompt,
+            system_prompt=system_prompt,
+        )
+        self.logger.info("Received response from content service for topics.")
+
+        # Extract XML content, trying <output> then <topics>
+        generated_xml_output = extract_xml_content(raw_response, "output")
+        if not generated_xml_output:
+            self.logger.info("<output> tag not found, trying to extract <topics> tag directly...")
+            # If <topics> is the root, extract_xml_content will get its *inner* content.
+            # However, parse_topics_xml expects the full <topics>...</topics> string.
+            # So we try to find <topics>, and if it's the root, we need to reconstruct it.
+            # A simpler approach: if LLM returns <topics>...</topics> directly, use the raw_response
+            # if it starts appropriately, or extract <topics> content and wrap.
+            if "<topics>" in raw_response and "</topics>" in raw_response:
+                # Attempt to extract the full <topics> block if it's not inside <output>
+                # This assumes <topics> is a top-level or easily extractable block.
+                start_index = raw_response.find("<topics>")
+                end_index = raw_response.rfind("</topics>") + len("</topics>")
+                if start_index != -1 and end_index != -1 and start_index < end_index:
+                    generated_xml_output = raw_response[start_index:end_index]
+                else:  # Fallback to trying to extract content and wrap
+                    extracted_content = extract_xml_content(raw_response, "topics")
+                    if extracted_content:
+                        generated_xml_output = f"<topics>\n{extracted_content}\n</topics>"
+            else:  # Final fallback: try to extract inner content and wrap it
+                extracted_content = extract_xml_content(raw_response, "topics")
+                if extracted_content:
+                    generated_xml_output = f"<topics>\n{extracted_content}\n</topics>"
+
+        if not generated_xml_output:
+            error_msg = (
+                f"Could not extract <output> or <topics> tag from response:\n"
+                f"{raw_response[:500]}..."
+            )
+            self.logger.error(error_msg)
+            raise ContentGenerationError(error_msg)
+
+        # Ensure the extracted/formed content is properly wrapped for the parser
+        if not generated_xml_output.strip().startswith("<topics>"):
+            self.logger.warning(
+                "Manually wrapping extracted content in <topics> tags as it was missing."
+            )
+            generated_xml_output = f"<topics>\n{generated_xml_output}\n</topics>"
+
+        return generated_xml_output
+
+    def _parse_convert_and_save_topics(
+        self, generated_xml_output: str, course_id: int
+    ) -> List[Topic]:
+        """
+        Parses XML topic data, converts to Topic models, and saves them to the DB.
+
+        Args:
+            generated_xml_output: The XML string containing topic data.
+            course_id: The ID of the course these topics belong to.
+
+        Returns:
+            A list of created Topic objects.
+
+        Raises:
+            ContentGenerationError: If XML parsing fails.
+            DatabaseError: If there's an error saving topics to the database.
+        """
+        try:
+            parsed_topic_dicts = parse_topics_xml(generated_xml_output)
+        except ValueError as e:  # Catch parsing errors specifically
+            self.logger.error(f"XML parsing error for topics: {e}", exc_info=True)
+            raise ContentGenerationError(f"Error parsing generated topic XML: {e}") from e
+
+        if not parsed_topic_dicts:
+            self.logger.warning(
+                f"No topics were parsed from the generated XML for course {course_id}."
+            )
+            return []
+
+        topic_models_to_create = []
+        for topic_dict in parsed_topic_dicts:
+            title = topic_dict.get("title")
+            week = topic_dict.get("week")
+            order = topic_dict.get("order")
+
+            if not title or week is None or order is None:
+                self.logger.warning(f"Skipping incomplete topic data: {topic_dict}")
+                continue
+
+            new_topic = Topic(
+                title=title,
+                course_id=course_id,
+                week=week,
+                order=order,
+            )
+            topic_models_to_create.append(new_topic)
+
+        if not topic_models_to_create:
+            self.logger.warning(f"No valid topics to create for course {course_id} after parsing.")
+            return []
+
+        # Batch create topics in the database (can raise DatabaseError)
+        created_topics = self.repository_factory.topic.create_batch(topic_models_to_create)
+        self.logger.info(
+            f"Successfully saved {len(created_topics)} topics to DB for course {course_id}"
+        )
+        return created_topics
+
+    async def generate_topics_for_course(
+        self, course_id: int, freeform_prompt: Optional[str] = None
+    ) -> List[Topic]:
+        """
+        Generate a list of topics for a course using AI.
+
+        Args:
+            course_id: ID of the course for which to generate topics.
+            freeform_prompt: Optional freeform text to guide topic generation.
+
+        Returns:
+            List[Topic]: A list of created Topic objects.
+
+        Raises:
+            CourseNotFoundError: If the course with the given ID is not found.
+            ContentGenerationError: If content generation or parsing fails.
+            DatabaseError: If there's an error saving topics to the database.
+        """
+        self.logger.info(
+            f"Generating topics for course ID: {course_id}, freeform: {bool(freeform_prompt)}"
+        )
+
+        try:
+            # 1. Fetch Course data
+            course_model = self.course_service.get_course(course_id)
+            # get_course raises CourseNotFoundError if not found, so direct check not essential here
+            course_data = course_model_to_dict(course_model)
+
+            # 2. Generate XML content
+            generated_xml_output = await self._generate_and_parse_topic_content(
+                course_data, freeform_prompt
+            )
+            self.logger.debug(f"Generated XML for topics: {generated_xml_output[:500]}...")
+
+            # 3. Parse XML, convert to Topic models, and save to DB
+            created_topics = self._parse_convert_and_save_topics(generated_xml_output, course_id)
+
+            self.logger.info(
+                f"Overall success: generated and saved {len(created_topics)} topics for course "
+                f"{course_id}"
+            )
+            return created_topics
+
+        except CourseNotFoundError as e:
+            self.logger.error(f"Error generating topics - course not found: {e}")
+            raise
+        except ContentGenerationError as e:
+            self.logger.error(f"Content generation or parsing error for topics: {e}")
+            raise
+        # ValueError from parsing is now handled inside _parse_convert_and_save_topics
+        # and raised as ContentGenerationError, so it's caught by the above.
+        except DatabaseError as e:
+            self.logger.error(f"Database error during topic generation: {e}")
+            raise
+        except Exception as e:
+            log_message = f"Unexpected error during topic generation for course {course_id}: {e}"
+            self.logger.error(log_message, exc_info=True)
+            raise ContentGenerationError(
+                f"An unexpected error occurred during topic generation: {e}"
+            ) from e
