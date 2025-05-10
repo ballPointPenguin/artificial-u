@@ -12,7 +12,10 @@ export function Tooltip(props: TooltipProps) {
     <KobalteTooltip.Root placement={props.side || 'top'}>
       <KobalteTooltip.Trigger>{props.children}</KobalteTooltip.Trigger>
       <KobalteTooltip.Portal>
-        <KobalteTooltip.Content class="z-50 p-2 bg-arcanum-800/95 border border-parchment-700 text-parchment-100 rounded shadow-arcane max-w-xs text-sm">
+        <KobalteTooltip.Content
+          class="z-50 p-2 rounded shadow-arcane max-w-xs text-sm
+                 bg-surface/95 border border-border text-foreground"
+        >
           {props.content}
           <KobalteTooltip.Arrow />
         </KobalteTooltip.Content>

@@ -5,7 +5,7 @@ import { ThemeSwitcher } from './ThemeSwitcher'
 
 const Layout: Component<RouteSectionProps> = (props) => {
   return (
-    <div class="flex flex-col min-h-screen bg-arcanum-950 text-parchment-100">
+    <div class="flex flex-col min-h-screen bg-background text-foreground">
       <header>
         <NavBar />
       </header>

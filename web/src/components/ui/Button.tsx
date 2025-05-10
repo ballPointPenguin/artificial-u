@@ -13,15 +13,18 @@ interface ButtonProps extends JSX.ButtonHTMLAttributes<HTMLButtonElement> {
 export function Button(props: ButtonProps) {
   const [local, others] = splitProps(props, ['variant', 'size', 'class', 'children'])
 
+  // Base classes for all buttons
+  const baseClasses =
+    'rounded font-serif tracking-wider transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-primary ui-disabled:opacity-50 ui-disabled:cursor-not-allowed cursor-pointer'
+
   const variantClasses = {
     primary:
-      'bg-gradient-to-r from-parchment-700/50 to-mystic-800/50 text-parchment-100 border border-parchment-500/50 shadow-arcane hover:shadow-glow',
-    secondary:
-      'bg-arcanum-900/50 hover:bg-arcanum-800/50 text-parchment-200 border border-parchment-400',
-    outline:
-      'bg-transparent text-parchment-200 border border-parchment-400 hover:bg-parchment-800/20',
-    ghost: 'bg-transparent text-parchment-300 hover:text-parchment-100 hover:bg-arcanum-800/30',
-    link: 'bg-transparent text-parchment-200 hover:text-parchment-100 underline-offset-4 hover:underline',
+      // Using text-foreground for better contrast on vibrant primary backgrounds across themes.
+      'bg-primary text-foreground border border-accent/70 shadow-arcane hover:shadow-glow',
+    secondary: 'bg-surface hover:bg-surface/80 text-foreground border border-border',
+    outline: 'bg-transparent text-primary border border-primary hover:bg-primary/10',
+    ghost: 'bg-transparent text-muted hover:text-primary hover:bg-primary/10',
+    link: 'bg-transparent text-primary underline-offset-4 hover:underline',
   }
 
   const sizeClasses = {
@@ -33,7 +36,7 @@ export function Button(props: ButtonProps) {
   return (
     <KobalteButton
       class={[
-        'rounded font-serif tracking-wider transition-all duration-300',
+        baseClasses,
         variantClasses[local.variant || 'primary'],
         sizeClasses[local.size || 'md'],
         local.class || '',

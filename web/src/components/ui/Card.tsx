@@ -13,8 +13,8 @@ export function Card(props: CardProps) {
   return (
     <div
       class={[
-        'bg-arcanum-900 rounded-sm overflow-hidden',
-        local.bordered ? 'border border-parchment-800/30' : '',
+        'bg-surface rounded-sm overflow-hidden',
+        local.bordered ? 'border border-border/30' : '',
         local.hover ? 'transition-all duration-300 hover:shadow-arcane' : '',
         local.class || '',
       ].join(' ')}
@@ -26,9 +26,7 @@ export function Card(props: CardProps) {
 }
 
 export function CardHeader(props: { class?: string; children: JSX.Element }) {
-  return (
-    <div class={`p-4 border-b border-parchment-800/30 ${props.class || ''}`}>{props.children}</div>
-  )
+  return <div class={`p-4 border-b border-border/30 ${props.class || ''}`}>{props.children}</div>
 }
 
 export function CardContent(props: { class?: string; children: JSX.Element }) {
@@ -36,7 +34,5 @@ export function CardContent(props: { class?: string; children: JSX.Element }) {
 }
 
 export function CardFooter(props: { class?: string; children: JSX.Element }) {
-  return (
-    <div class={`p-4 border-t border-parchment-800/30 ${props.class || ''}`}>{props.children}</div>
-  )
+  return <div class={`p-4 border-t border-border/30 ${props.class || ''}`}>{props.children}</div>
 }

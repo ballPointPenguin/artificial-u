@@ -14,11 +14,11 @@ export function Alert(props: AlertProps) {
   const [local, others] = splitProps(props, ['variant', 'title', 'class', 'children', 'icon'])
 
   const variantClasses = {
-    default: 'bg-arcanum-800/50 border-parchment-700/30 text-parchment-200',
-    info: 'bg-vaporwave-900/30 border-vaporwave-700/30 text-vaporwave-200',
-    success: 'bg-green-900/30 border-green-700/30 text-green-200',
-    warning: 'bg-amber-900/30 border-amber-700/30 text-amber-200',
-    danger: 'bg-red-900/30 border-red-700/30 text-red-200',
+    default: 'bg-surface/80 border-border text-muted',
+    info: 'bg-info-bg border-info-border text-info',
+    success: 'bg-success-bg border-success-border text-success',
+    warning: 'bg-warning-bg border-warning-border text-warning',
+    danger: 'bg-danger-bg border-danger-border text-danger',
   }
 
   return (
@@ -31,14 +31,18 @@ export function Alert(props: AlertProps) {
       role="alert"
       {...others}
     >
-      <div class="flex">
+      <div class="flex items-start">
         <Show when={local.icon}>
-          <div class="flex-shrink-0 mr-3">{local.icon}</div>
+          <div
+            class={`flex-shrink-0 mr-3 ${variantClasses[local.variant || 'default'].split(' ').find((cls) => cls.startsWith('text-')) || 'text-muted'}`}
+          >
+            {local.icon}
+          </div>
         </Show>
 
         <div>
           <Show when={local.title}>
-            <h3 class="text-lg font-serif mb-1">{local.title}</h3>
+            <h3 class="text-lg font-serif mb-1 font-medium text-foreground">{local.title}</h3>
           </Show>
 
           <div class="text-sm font-serif">{local.children}</div>

@@ -12,11 +12,11 @@ export function Badge(props: BadgeProps) {
   const [local, others] = splitProps(props, ['variant', 'class', 'children'])
 
   const variantClasses = {
-    default: 'bg-parchment-800/40 text-parchment-200',
-    outline: 'bg-transparent border border-parchment-400 text-parchment-300',
-    secondary: 'bg-mystic-900/40 text-mystic-200',
-    success: 'bg-green-900/40 text-green-200',
-    danger: 'bg-red-900/40 text-red-200',
+    default: 'bg-surface text-muted',
+    outline: 'bg-transparent border border-border text-muted',
+    secondary: 'bg-accent/40 text-accent',
+    success: 'bg-success-bg text-success',
+    danger: 'bg-danger-bg text-danger',
   }
 
   return (

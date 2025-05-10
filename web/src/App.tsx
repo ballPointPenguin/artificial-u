@@ -11,12 +11,14 @@ const Professors = lazy(() => import('./pages/Professors'))
 const ProfessorDetail = lazy(() => import('./pages/ProfessorDetail'))
 const Courses = lazy(() => import('./pages/Courses'))
 const CourseDetail = lazy(() => import('./pages/CourseDetail'))
+const Stylebook = lazy(() => import('./pages/Stylebook'))
 
 const App: Component = () => {
   return (
     <Route path="/" component={Layout}>
       <Route path="/" component={Home} />
       <Route path="/about" component={About} />
+      <Route path="/stylebook" component={Stylebook} />
 
       {/* Academic routes */}
       <Route path="/academics">

@@ -1,0 +1,40 @@
+/* src/components/ui/MagicButton.css */
+
+.magic-button-icon svg {
+  color: hsl(var(--color-accent)); /* Was text-mystic-300 */
+}
+
+.magic-button-spinner {
+  border-color: hsl(var(--color-accent));
+  border-top-color: transparent;
+}
+
+/* Sparkle Effects - using --color-secondary for the glow */
+.magic-sparkle-overlay {
+  /* bg-gradient-to-r from-mystic-500/10 to-mystic-700/10 */
+  /* Using secondary for both start and end for simplicity, adjust if specific shades are needed */
+  background-image: linear-gradient(
+    to right,
+    color-mix(in srgb, var(--color-secondary) 50%, transparent),
+    color-mix(in srgb, var(--color-accent) 50%, transparent)
+  );
+}
+
+.magic-sparkle-pulse-1 {
+  /* bg-mystic-500/20 */
+  background-color: color-mix(in srgb, var(--color-secondary) 20%, transparent);
+}
+
+.magic-sparkle-pulse-2 {
+  /* bg-mystic-400/20 */
+  /* Assuming mystic-400 is a lighter shade of secondary, using secondary with slightly more alpha */
+  background-color: color-mix(in srgb, var(--color-secondary) 25%, transparent);
+}
+
+.magic-sparkle-shimmer-overlay {
+  /* bg-gradient-to-tr from-transparent via-mystic-500/5 to-transparent */
+  /* This is tied to the animate-shimmer utility which now uses --color-secondary */
+  /* The animate-shimmer class itself handles the gradient, so this class might just need to ensure opacity transition */
+  /* For now, let's ensure it has a base transparent background for the shimmer to apply over */
+  background-color: transparent;
+}

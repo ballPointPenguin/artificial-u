@@ -4,6 +4,7 @@ import { createStore } from 'solid-js/store'
 // Theme types
 export type ThemeMode = 'dark-academia' | 'vaporwave' | 'cosmic-horror' | 'techno-occult'
 
+// Extend ThemeProperties for status colors
 interface ThemeProperties {
   primaryColor: string
   secondaryColor: string
@@ -11,51 +12,120 @@ interface ThemeProperties {
   backgroundColor: string
   textColor: string
   borderColor: string
-  glowColor: string
+  surfaceColor: string
+  // Status Colors (using HSL strings)
+  infoColor: string
+  infoBgColor: string
+  infoBorderColor: string
+  successColor: string
+  successBgColor: string
+  successBorderColor: string
+  warningColor: string
+  warningBgColor: string
+  warningBorderColor: string
+  dangerColor: string
+  dangerBgColor: string
+  dangerBorderColor: string
+}
+
+// Placeholder HSL values - these need refinement!
+const statusPlaceholders = {
+  info: { color: '217deg 89% 70%', bg: '217deg 89% 20%', border: '217deg 89% 40%' }, // Blueish
+  success: { color: '145deg 75% 70%', bg: '145deg 75% 15%', border: '145deg 75% 35%' }, // Greenish
+  warning: { color: '39deg 100% 70%', bg: '39deg 100% 15%', border: '39deg 100% 40%' }, // Orangey
+  danger: { color: '0deg 84% 70%', bg: '0deg 84% 15%', border: '0deg 84% 40%' }, // Reddish
 }
 
 // Theme configuration
 const themeProperties: Record<ThemeMode, ThemeProperties> = {
   'dark-academia': {
-    primaryColor: '#c29747', // parchment-500
-    secondaryColor: '#8656ff', // mystic-500
-    accentColor: '#b09981', // arcanum-400
-    backgroundColor: '#2a241c', // arcanum-950
-    textColor: '#f8f5f0', // parchment-50
-    borderColor: '#594936', // arcanum-800
-    glowColor: 'rgba(138, 43, 226, 0.3)',
+    primaryColor: '39deg 50% 52%', // Was #c29747
+    secondaryColor: '255deg 100% 67%', // Was #8656ff
+    accentColor: '30deg 23% 60%', // Was #b09981
+    backgroundColor: '31deg 18% 13%', // Was #2a241c
+    textColor: '38deg 33% 95%', // Was #f8f5f0
+    borderColor: '30deg 25% 28%', // Was #594936
+    surfaceColor: '30deg 22% 23%',
+    infoColor: statusPlaceholders.info.color,
+    infoBgColor: statusPlaceholders.info.bg,
+    infoBorderColor: statusPlaceholders.info.border,
+    successColor: statusPlaceholders.success.color,
+    successBgColor: statusPlaceholders.success.bg,
+    successBorderColor: statusPlaceholders.success.border,
+    warningColor: statusPlaceholders.warning.color,
+    warningBgColor: statusPlaceholders.warning.bg,
+    warningBorderColor: statusPlaceholders.warning.border,
+    dangerColor: statusPlaceholders.danger.color,
+    dangerBgColor: statusPlaceholders.danger.bg,
+    dangerBorderColor: statusPlaceholders.danger.border,
   },
   vaporwave: {
-    primaryColor: '#8656ff', // mystic-500
-    secondaryColor: '#b0cafe', // vaporwave-300
-    accentColor: '#d097fe', // nebula-400
-    backgroundColor: '#13186a', // vaporwave-950
-    textColor: '#f3f8ff', // vaporwave-50
-    borderColor: '#4322bd', // vaporwave-800
-    glowColor: 'rgba(134, 86, 255, 0.3)',
+    primaryColor: '255deg 100% 67%', // Was #8656ff
+    secondaryColor: '212deg 99% 84%', // Was #b0cafe
+    accentColor: '276deg 98% 79%', // Was #d097fe
+    backgroundColor: '236deg 71% 25%', // Was #13186a
+    textColor: '216deg 100% 97%', // Was #f3f8ff
+    borderColor: '254deg 69% 43%', // Was #4322bd
+    surfaceColor: '236deg 71% 30%',
+    infoColor: statusPlaceholders.info.color,
+    infoBgColor: statusPlaceholders.info.bg,
+    infoBorderColor: statusPlaceholders.info.border,
+    successColor: statusPlaceholders.success.color,
+    successBgColor: statusPlaceholders.success.bg,
+    successBorderColor: statusPlaceholders.success.border,
+    warningColor: statusPlaceholders.warning.color,
+    warningBgColor: statusPlaceholders.warning.bg,
+    warningBorderColor: statusPlaceholders.warning.border,
+    dangerColor: statusPlaceholders.danger.color,
+    dangerBgColor: statusPlaceholders.danger.bg,
+    dangerBorderColor: statusPlaceholders.danger.border,
   },
   'cosmic-horror': {
-    primaryColor: '#6b0f56',
-    secondaryColor: '#186272',
-    accentColor: '#9f2b68',
-    backgroundColor: '#170b21',
-    textColor: '#ededf5',
-    borderColor: '#522453',
-    glowColor: 'rgba(107, 15, 86, 0.3)',
+    primaryColor: '314deg 73% 24%', // Was #6b0f56
+    secondaryColor: '191deg 65% 27%', // Was #186272
+    accentColor: '325deg 58% 39%', // Was #9f2b68
+    backgroundColor: '279deg 53% 9%', // Was #170b21
+    textColor: '240deg 21% 95%', // Was #ededf5
+    borderColor: '299deg 39% 23%', // Was #522453
+    surfaceColor: '279deg 53% 14%',
+    infoColor: statusPlaceholders.info.color,
+    infoBgColor: statusPlaceholders.info.bg,
+    infoBorderColor: statusPlaceholders.info.border,
+    successColor: statusPlaceholders.success.color,
+    successBgColor: statusPlaceholders.success.bg,
+    successBorderColor: statusPlaceholders.success.border,
+    warningColor: statusPlaceholders.warning.color,
+    warningBgColor: statusPlaceholders.warning.bg,
+    warningBorderColor: statusPlaceholders.warning.border,
+    dangerColor: statusPlaceholders.danger.color,
+    dangerBgColor: statusPlaceholders.danger.bg,
+    dangerBorderColor: statusPlaceholders.danger.border,
   },
   'techno-occult': {
-    primaryColor: '#2a9d8f',
-    secondaryColor: '#e9c46a',
-    accentColor: '#592463',
-    backgroundColor: '#0b1a23',
-    textColor: '#eff6f8',
-    borderColor: '#203842',
-    glowColor: 'rgba(42, 157, 143, 0.3)',
+    primaryColor: '173deg 57% 39%', // Was #2a9d8f
+    secondaryColor: '44deg 74% 66%', // Was #e9c46a
+    accentColor: '289deg 45% 26%', // Was #592463
+    backgroundColor: '203deg 56% 9%', // Was #0b1a23
+    textColor: '197deg 38% 95%', // Was #eff6f8
+    borderColor: '200deg 35% 19%', // Was #203842
+    surfaceColor: '203deg 56% 14%',
+    infoColor: statusPlaceholders.info.color,
+    infoBgColor: statusPlaceholders.info.bg,
+    infoBorderColor: statusPlaceholders.info.border,
+    successColor: statusPlaceholders.success.color,
+    successBgColor: statusPlaceholders.success.bg,
+    successBorderColor: statusPlaceholders.success.border,
+    warningColor: statusPlaceholders.warning.color,
+    warningBgColor: statusPlaceholders.warning.bg,
+    warningBorderColor: statusPlaceholders.warning.border,
+    dangerColor: statusPlaceholders.danger.color,
+    dangerBgColor: statusPlaceholders.danger.bg,
+    dangerBorderColor: statusPlaceholders.danger.border,
   },
 }
 
 // Create a reactive theme store
-export function createThemeStore() {
+function createThemeStoreInternal() {
   // Get theme from localStorage or use default
   const getInitialTheme = (): ThemeMode => {
     if (typeof window === 'undefined') return 'dark-academia'
@@ -98,6 +168,12 @@ export function createThemeStore() {
   }
 }
 
+// Create and export the singleton instance of the theme store
+const themeStore = createThemeStoreInternal()
+export const theme = themeStore.theme
+export const setTheme = themeStore.setTheme
+export const currentThemeProperties = themeStore.store // Exporting the reactive properties if needed
+
 // Apply theme to DOM
 function applyThemeToDOM(theme: ThemeMode) {
   if (typeof document === 'undefined') return
@@ -112,16 +188,9 @@ function applyThemeToDOM(theme: ThemeMode) {
   // Add current theme class
   root.classList.add(`theme-${theme}`)
 
-  // Optional: Apply CSS variables for theme properties
-  const properties = themeProperties[theme]
-
-  root.style.setProperty('--color-primary', properties.primaryColor)
-  root.style.setProperty('--color-secondary', properties.secondaryColor)
-  root.style.setProperty('--color-accent', properties.accentColor)
-  root.style.setProperty('--color-background', properties.backgroundColor)
-  root.style.setProperty('--color-text', properties.textColor)
-  root.style.setProperty('--color-border', properties.borderColor)
-  root.style.setProperty('--color-glow', properties.glowColor)
+  // glowColor is no longer set by JS
+  // const properties = themeProperties[theme] // This line would now cause an error if properties.glowColor was accessed
+  // root.style.setProperty('--color-glow', properties.glowColor) // Removed
 }
 
 // Helper function to get CSS variable value
@@ -132,18 +201,32 @@ export function getThemeVariable(variableName: string): string {
 }
 
 // Create custom CSS with current theme
-export function generateThemeCSS(theme: ThemeMode): string {
-  const properties = themeProperties[theme]
+export function generateThemeCSS(themeMode: ThemeMode): string {
+  const properties = themeProperties[themeMode]
+  if (!properties) return ''
 
   return `
-    :root {
+    :root { /* Or a specific theme class if not overriding globally */
       --color-primary: ${properties.primaryColor};
       --color-secondary: ${properties.secondaryColor};
       --color-accent: ${properties.accentColor};
       --color-background: ${properties.backgroundColor};
       --color-text: ${properties.textColor};
       --color-border: ${properties.borderColor};
-      --color-glow: ${properties.glowColor};
+      --color-surface: ${properties.surfaceColor};
+      /* Add status colors here */
+      --color-info: ${properties.infoColor};
+      --color-info-bg: ${properties.infoBgColor};
+      --color-info-border: ${properties.infoBorderColor};
+      --color-success: ${properties.successColor};
+      --color-success-bg: ${properties.successBgColor};
+      --color-success-border: ${properties.successBorderColor};
+      --color-warning: ${properties.warningColor};
+      --color-warning-bg: ${properties.warningBgColor};
+      --color-warning-border: ${properties.warningBorderColor};
+      --color-danger: ${properties.dangerColor};
+      --color-danger-bg: ${properties.dangerBgColor};
+      --color-danger-border: ${properties.dangerBorderColor};
     }
   `
 }
