@@ -117,18 +117,6 @@ const Home = () => {
       <FeaturedFaculty title="Distinguished Faculty" faculty={facultyMembers} />
       {/* CTA Section */}
       <section class="py-20 bg-gradient-to-b from-arcanum-900 to-arcanum-950 relative overflow-hidden">
-        {/* Animated wisps background */}
-        <div class="absolute inset-0 opacity-30" aria-hidden="true">
-          <div
-            class="absolute bottom-0 left-1/4 w-1/2 h-1/2 bg-nebula-700/20 rounded-full filter blur-3xl animate-wisps"
-            style={{ 'animation-delay': '0s' }}
-          />
-          <div
-            class="absolute bottom-1/4 right-1/4 w-1/3 h-1/3 bg-mystic-700/20 rounded-full filter blur-3xl animate-wisps"
-            style={{ 'animation-delay': '1.5s' }}
-          />
-        </div>
-
         <div class="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 class="text-3xl md:text-4xl font-display text-parchment-100 mb-6 text-shadow-golden">
             Begin Your Journey Into The Unknown

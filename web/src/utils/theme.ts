@@ -2,7 +2,7 @@ import { createEffect, createSignal } from 'solid-js'
 import { createStore } from 'solid-js/store'
 
 // Theme types
-export type ThemeMode = 'dark-academia' | 'vaporwave' | 'cosmic-horror' | 'techno-occult'
+export type ThemeMode = 'dark-academia' | 'vaporwave' | 'wabi-sabi' | 'biophilia'
 
 // Extend ThemeProperties for status colors
 interface ThemeProperties {
@@ -28,99 +28,92 @@ interface ThemeProperties {
   dangerBorderColor: string
 }
 
-// Placeholder HSL values - these need refinement!
-const statusPlaceholders = {
-  info: { color: '217deg 89% 70%', bg: '217deg 89% 20%', border: '217deg 89% 40%' }, // Blueish
-  success: { color: '145deg 75% 70%', bg: '145deg 75% 15%', border: '145deg 75% 35%' }, // Greenish
-  warning: { color: '39deg 100% 70%', bg: '39deg 100% 15%', border: '39deg 100% 40%' }, // Orangey
-  danger: { color: '0deg 84% 70%', bg: '0deg 84% 15%', border: '0deg 84% 40%' }, // Reddish
-}
-
-// Theme configuration
-const themeProperties: Record<ThemeMode, ThemeProperties> = {
+export const themeProperties: Record<ThemeMode, ThemeProperties> = {
   'dark-academia': {
-    primaryColor: '39deg 50% 52%', // Was #c29747
-    secondaryColor: '255deg 100% 67%', // Was #8656ff
-    accentColor: '30deg 23% 60%', // Was #b09981
-    backgroundColor: '31deg 18% 13%', // Was #2a241c
-    textColor: '38deg 33% 95%', // Was #f8f5f0
-    borderColor: '30deg 25% 28%', // Was #594936
-    surfaceColor: '30deg 22% 23%',
-    infoColor: statusPlaceholders.info.color,
-    infoBgColor: statusPlaceholders.info.bg,
-    infoBorderColor: statusPlaceholders.info.border,
-    successColor: statusPlaceholders.success.color,
-    successBgColor: statusPlaceholders.success.bg,
-    successBorderColor: statusPlaceholders.success.border,
-    warningColor: statusPlaceholders.warning.color,
-    warningBgColor: statusPlaceholders.warning.bg,
-    warningBorderColor: statusPlaceholders.warning.border,
-    dangerColor: statusPlaceholders.danger.color,
-    dangerBgColor: statusPlaceholders.danger.bg,
-    dangerBorderColor: statusPlaceholders.danger.border,
+    primaryColor: '35deg 65% 55%', // Richer, slightly more saturated old gold/bronze
+    secondaryColor: '210deg 30% 60%', // Muted steel blue (was purple)
+    accentColor: '10deg 40% 45%', // Deep terracotta/dark orange
+    backgroundColor: '30deg 15% 12%', // Very dark, slightly warm brown
+    textColor: '35deg 25% 88%', // Aged paper / parchment
+    borderColor: '30deg 15% 25%', // Darker brown border
+    surfaceColor: '30deg 15% 18%', // Slightly lighter dark brown for surfaces
+    // Status Colors for Dark Academia
+    infoColor: '190deg 35% 65%', // Desaturated teal
+    infoBgColor: '190deg 30% 20%', // Dark teal background
+    infoBorderColor: '190deg 30% 35%', // Muted teal border
+    successColor: '90deg 30% 60%', // Muted olive green
+    successBgColor: '90deg 25% 18%', // Dark olive background
+    successBorderColor: '90deg 25% 30%', // Muted olive border
+    warningColor: '30deg 60% 65%', // Burnt orange / amber
+    warningBgColor: '30deg 50% 20%', // Dark amber background
+    warningBorderColor: '30deg 50% 35%', // Muted amber border
+    dangerColor: '0deg 45% 55%', // Dark crimson / deep red
+    dangerBgColor: '0deg 40% 18%', // Dark crimson background
+    dangerBorderColor: '0deg 40% 30%', // Muted crimson border
   },
   vaporwave: {
-    primaryColor: '255deg 100% 67%', // Was #8656ff
-    secondaryColor: '212deg 99% 84%', // Was #b0cafe
-    accentColor: '276deg 98% 79%', // Was #d097fe
-    backgroundColor: '236deg 71% 25%', // Was #13186a
-    textColor: '216deg 100% 97%', // Was #f3f8ff
-    borderColor: '254deg 69% 43%', // Was #4322bd
-    surfaceColor: '236deg 71% 30%',
-    infoColor: statusPlaceholders.info.color,
-    infoBgColor: statusPlaceholders.info.bg,
-    infoBorderColor: statusPlaceholders.info.border,
-    successColor: statusPlaceholders.success.color,
-    successBgColor: statusPlaceholders.success.bg,
-    successBorderColor: statusPlaceholders.success.border,
-    warningColor: statusPlaceholders.warning.color,
-    warningBgColor: statusPlaceholders.warning.bg,
-    warningBorderColor: statusPlaceholders.warning.border,
-    dangerColor: statusPlaceholders.danger.color,
-    dangerBgColor: statusPlaceholders.danger.bg,
-    dangerBorderColor: statusPlaceholders.danger.border,
+    primaryColor: '260deg 100% 70%', // Vibrant Violet
+    secondaryColor: '180deg 100% 55%', // Bright Cyan/Teal
+    accentColor: '330deg 100% 65%', // Hot Pink/Magenta
+    backgroundColor: '240deg 60% 15%', // Deep Indigo/Dark Blue
+    textColor: '210deg 100% 95%', // Off-white with a slight blue tint
+    borderColor: '250deg 80% 50%', // Saturated dark purple
+    surfaceColor: '240deg 50% 22%', // Slightly lighter Indigo for surfaces
+    // Status Colors for Vaporwave
+    infoColor: '200deg 100% 65%', // Electric Blue
+    infoBgColor: '200deg 70% 25%', // Dark electric blue background
+    infoBorderColor: '200deg 70% 45%', // Bright electric blue border
+    successColor: '120deg 100% 60%', // Neon Green / Lime
+    successBgColor: '120deg 70% 20%', // Dark neon green background
+    successBorderColor: '120deg 70% 40%', // Bright neon green border
+    warningColor: '45deg 100% 60%', // Vivid Orange/Yellow
+    warningBgColor: '45deg 70% 22%', // Dark vivid orange background
+    warningBorderColor: '45deg 70% 40%', // Bright vivid orange border
+    dangerColor: '300deg 100% 60%', // Glitchy Magenta/Purple
+    dangerBgColor: '300deg 70% 20%', // Dark magenta background
+    dangerBorderColor: '300deg 70% 40%', // Bright magenta border
   },
-  'cosmic-horror': {
-    primaryColor: '314deg 73% 24%', // Was #6b0f56
-    secondaryColor: '191deg 65% 27%', // Was #186272
-    accentColor: '325deg 58% 39%', // Was #9f2b68
-    backgroundColor: '279deg 53% 9%', // Was #170b21
-    textColor: '240deg 21% 95%', // Was #ededf5
-    borderColor: '299deg 39% 23%', // Was #522453
-    surfaceColor: '279deg 53% 14%',
-    infoColor: statusPlaceholders.info.color,
-    infoBgColor: statusPlaceholders.info.bg,
-    infoBorderColor: statusPlaceholders.info.border,
-    successColor: statusPlaceholders.success.color,
-    successBgColor: statusPlaceholders.success.bg,
-    successBorderColor: statusPlaceholders.success.border,
-    warningColor: statusPlaceholders.warning.color,
-    warningBgColor: statusPlaceholders.warning.bg,
-    warningBorderColor: statusPlaceholders.warning.border,
-    dangerColor: statusPlaceholders.danger.color,
-    dangerBgColor: statusPlaceholders.danger.bg,
-    dangerBorderColor: statusPlaceholders.danger.border,
+  'wabi-sabi': {
+    primaryColor: '30deg 25% 60%', // Muted terracotta/brown
+    secondaryColor: '90deg 10% 70%', // Soft, desaturated grey-green
+    accentColor: '40deg 30% 50%', // Muted ochre/gold
+    backgroundColor: '35deg 30% 92%', // Light, warm beige
+    textColor: '35deg 15% 30%', // Dark, muted brown
+    borderColor: '35deg 20% 80%', // Light beige
+    surfaceColor: '35deg 30% 88%', // Slightly off-white/beige, darker than bg
+    infoColor: '210deg 20% 50%', // Muted blue-grey
+    infoBgColor: '210deg 20% 85%', // Very light, desaturated blue-grey
+    infoBorderColor: '210deg 20% 70%', // Light, desaturated blue-grey
+    successColor: '120deg 25% 45%', // Muted, earthy green
+    successBgColor: '120deg 25% 88%', // Very light, desaturated green
+    successBorderColor: '120deg 25% 70%', // Light, desaturated green
+    warningColor: '40deg 50% 50%', // Muted ochre or amber
+    warningBgColor: '40deg 50% 88%', // Very light, desaturated ochre
+    warningBorderColor: '40deg 50% 70%', // Light, desaturated ochre
+    dangerColor: '15deg 35% 50%', // Muted, desaturated red/terracotta
+    dangerBgColor: '15deg 35% 88%', // Very light, desaturated red
+    dangerBorderColor: '15deg 35% 70%', // Light, desaturated red
   },
-  'techno-occult': {
-    primaryColor: '173deg 57% 39%', // Was #2a9d8f
-    secondaryColor: '44deg 74% 66%', // Was #e9c46a
-    accentColor: '289deg 45% 26%', // Was #592463
-    backgroundColor: '203deg 56% 9%', // Was #0b1a23
-    textColor: '197deg 38% 95%', // Was #eff6f8
-    borderColor: '200deg 35% 19%', // Was #203842
-    surfaceColor: '203deg 56% 14%',
-    infoColor: statusPlaceholders.info.color,
-    infoBgColor: statusPlaceholders.info.bg,
-    infoBorderColor: statusPlaceholders.info.border,
-    successColor: statusPlaceholders.success.color,
-    successBgColor: statusPlaceholders.success.bg,
-    successBorderColor: statusPlaceholders.success.border,
-    warningColor: statusPlaceholders.warning.color,
-    warningBgColor: statusPlaceholders.warning.bg,
-    warningBorderColor: statusPlaceholders.warning.border,
-    dangerColor: statusPlaceholders.danger.color,
-    dangerBgColor: statusPlaceholders.danger.bg,
-    dangerBorderColor: statusPlaceholders.danger.border,
+  biophilia: {
+    primaryColor: '120deg 60% 45%', // Vibrant Leaf Green
+    secondaryColor: '320deg 70% 65%', // Bright Orchid Pink
+    accentColor: '50deg 100% 45%', // Deeper Sunny Yellow
+    backgroundColor: '90deg 60% 90%', // Light Honeydew
+    textColor: '30deg 40% 18%', // Darker, richer Woody Brown
+    borderColor: '30deg 25% 50%', // Medium Woody Brown
+    surfaceColor: '90deg 55% 94%', // Lighter Honeydew
+    infoColor: '210deg 80% 60%',
+    infoBgColor: '210deg 80% 92%',
+    infoBorderColor: '210deg 80% 75%',
+    successColor: '140deg 60% 50%',
+    successBgColor: '140deg 60% 90%',
+    successBorderColor: '140deg 60% 70%',
+    warningColor: '35deg 100% 60%',
+    warningBgColor: '35deg 100% 92%',
+    warningBorderColor: '35deg 100% 75%',
+    dangerColor: '0deg 80% 60%',
+    dangerBgColor: '0deg 80% 92%',
+    dangerBorderColor: '0deg 80% 75%',
   },
 }
 
@@ -172,7 +165,8 @@ function createThemeStoreInternal() {
 const themeStore = createThemeStoreInternal()
 export const theme = themeStore.theme
 export const setTheme = themeStore.setTheme
-export const currentThemeProperties = themeStore.store // Exporting the reactive properties if needed
+// Exporting the reactive properties
+export const currentThemeProperties = themeStore.store
 
 // Apply theme to DOM
 function applyThemeToDOM(theme: ThemeMode) {
@@ -187,10 +181,6 @@ function applyThemeToDOM(theme: ThemeMode) {
 
   // Add current theme class
   root.classList.add(`theme-${theme}`)
-
-  // glowColor is no longer set by JS
-  // const properties = themeProperties[theme] // This line would now cause an error if properties.glowColor was accessed
-  // root.style.setProperty('--color-glow', properties.glowColor) // Removed
 }
 
 // Helper function to get CSS variable value
@@ -198,64 +188,4 @@ export function getThemeVariable(variableName: string): string {
   if (typeof window === 'undefined') return ''
 
   return getComputedStyle(document.documentElement).getPropertyValue(`--${variableName}`).trim()
-}
-
-// Create custom CSS with current theme
-export function generateThemeCSS(themeMode: ThemeMode): string {
-  const properties = themeProperties[themeMode]
-  if (!properties) return ''
-
-  return `
-    :root { /* Or a specific theme class if not overriding globally */
-      --color-primary: ${properties.primaryColor};
-      --color-secondary: ${properties.secondaryColor};
-      --color-accent: ${properties.accentColor};
-      --color-background: ${properties.backgroundColor};
-      --color-text: ${properties.textColor};
-      --color-border: ${properties.borderColor};
-      --color-surface: ${properties.surfaceColor};
-      /* Add status colors here */
-      --color-info: ${properties.infoColor};
-      --color-info-bg: ${properties.infoBgColor};
-      --color-info-border: ${properties.infoBorderColor};
-      --color-success: ${properties.successColor};
-      --color-success-bg: ${properties.successBgColor};
-      --color-success-border: ${properties.successBorderColor};
-      --color-warning: ${properties.warningColor};
-      --color-warning-bg: ${properties.warningBgColor};
-      --color-warning-border: ${properties.warningBorderColor};
-      --color-danger: ${properties.dangerColor};
-      --color-danger-bg: ${properties.dangerBgColor};
-      --color-danger-border: ${properties.dangerBorderColor};
-    }
-  `
-}
-
-// Generate color palette from base color
-export function generatePalette(baseColor: string, steps = 10): string[] {
-  const palette: string[] = []
-
-  // Simple implementation - in a real app, use a color library
-  // This is a placeholder for demonstration purposes
-  for (let i = 0; i < steps; i++) {
-    // Adjust opacity to create a simple palette
-    const opacity = 0.1 + (i * 0.9) / steps
-    palette.push(
-      `${baseColor}${Math.round(opacity * 255)
-        .toString(16)
-        .padStart(2, '0')}`
-    )
-  }
-
-  return palette
-}
-
-// Create cosmic wisp background styles
-export function createCosmicWispStyles(primaryColor: string, secondaryColor: string): string {
-  return `
-    background-image:
-      radial-gradient(circle at 20% 30%, ${primaryColor}26, transparent 40%),
-      radial-gradient(circle at 70% 60%, ${secondaryColor}1a, transparent 50%);
-    position: relative;
-  `
 }

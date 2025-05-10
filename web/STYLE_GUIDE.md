@@ -31,8 +31,16 @@ The application supports multiple themes, allowing for distinct visual appearanc
 
 - **Theme Definition**:
   - Themes are defined in `src/utils/theme.ts`.
-  - Each theme (e.g., `dark-academia`, `vaporwave`, `cosmic-horror`, `techno-occult`) specifies a set of properties, primarily HSL color strings for base colors (primary, secondary, accent, background, text, border, surface) and status colors (info, success, warning, danger, and their background/border variants).
+  - Each theme (e.g., `dark-academia`, `vaporwave`, `wabi-sabi`, `biophilia`) specifies a set of properties, primarily HSL color strings for base colors (primary, secondary, accent, background, text, border, surface) and status colors (info, success, warning, danger, and their background/border variants).
   - The `themeProperties` object maps theme names to their respective `ThemeProperties` interface.
+
+- **Important Note on Color Synchronization:** Color definitions exist in two places:
+
+  - `src/utils/theme.ts`: HSL *strings* are stored in `themeProperties` for JavaScript access (e.g., theme switcher previews, dynamic style attributes).
+  - `src/index.css`: HSL *component values* (e.g., `--theme-bg-h`, `--theme-bg-s`, `--theme-bg-l`) are defined within theme-specific CSS classes (e.g., `.theme-dark-academia`) or `:root` to drive the primary styling of the application via CSS custom properties.
+
+  Currently, these two sources must be kept in sync manually. When updating a theme's colors, ensure changes are reflected in both files to maintain consistency between dynamic JS-driven elements and CSS-driven global styles.
+
 - **Theme Application**:
   - The current theme is managed by a SolidJS store created in `src/utils/theme.ts`.
   - The `applyThemeToDOM` function in `src/utils/theme.ts` dynamically adds a class like `theme-<name>` (e.g., `theme-dark-academia`) to the `<html>` element in `index.html`.

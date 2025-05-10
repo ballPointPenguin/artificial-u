@@ -10,25 +10,6 @@ interface HeroProps {
 export function Hero(props: HeroProps) {
   return (
     <div class="relative min-h-screen flex items-center justify-center">
-      {/* Background with cosmic wisps */}
-      <div class="absolute inset-0 bg-arcanum-950 overflow-hidden" aria-hidden="true">
-        {/* Animated nebula wisps */}
-        <div class="absolute inset-0 opacity-20">
-          <div
-            class="absolute top-1/4 left-1/4 w-1/2 h-1/2 bg-nebula-700/20 rounded-full filter blur-3xl animate-wisps"
-            style={{ 'animation-delay': '0s' }}
-          />
-          <div
-            class="absolute top-1/3 left-1/3 w-1/3 h-2/3 bg-vaporwave-700/20 rounded-full filter blur-3xl animate-wisps"
-            style={{ 'animation-delay': '1s' }}
-          />
-          <div
-            class="absolute top-1/2 left-1/2 w-1/2 h-1/3 bg-mystic-700/20 rounded-full filter blur-3xl animate-wisps"
-            style={{ 'animation-delay': '2s' }}
-          />
-        </div>
-      </div>
-
       {/* Content */}
       <div class="relative z-10 text-center px-4 sm:px-6 lg:px-8 max-w-5xl">
         <h1 class="text-5xl sm:text-6xl md:text-7xl font-display text-parchment-200 tracking-wider leading-tight mb-6 text-shadow-golden">

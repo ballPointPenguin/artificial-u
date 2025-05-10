@@ -6,50 +6,23 @@
 
 /* Global Theme Configuration - Minimal Raw Palette, Fonts, Animations */
 @theme {
-  /* Font families - These are good as global definitions */
   --font-serif: "Cormorant Garamond", "Garamond", "Times New Roman", serif;
   --font-display: "Cinzel", serif;
   --font-sans: "Inter", "Helvetica", "Arial", sans-serif;
 
-  /* Raw palette colors - Drastically reduced. Only keep if absolutely needed for non-themed elements
-     or if a color is truly theme-agnostic. For now, we will rely on theme-derived colors.
-     Example of a truly global color if needed: --color-black: #000;
-  */
-
   /* Background images - Can stay if paths are static */
-  --background-cosmic-wisps: linear-gradient(to right, rgb(var(--theme-secondary-r, 86), var(--theme-secondary-g, 11), var(--theme-secondary-b, 173), 0.05), rgb(var(--theme-bg-r,5), var(--theme-bg-g,2), var(--theme-bg-b,46), 0.1)), url("/images/cosmic-wisps.png");
   --background-parchment-texture: url("/images/parchment-texture.png");
-  --background-nebula-glow: radial-gradient(circle at center, rgb(var(--theme-secondary-r,114), var(--theme-secondary-g,9), var(--theme-secondary-b,183), 0.2), rgb(var(--theme-secondary-r,58), var(--theme-secondary-g,12), var(--theme-secondary-b,163), 0.1), transparent 70%);
 
   /* Shadow variables using theme-derived glow components */
   --shadow-arcane: 0 0 15px rgb(var(--glow-rgb, 138, 43, 226), var(--glow-alpha, 0.3));
   --shadow-glow: 0 0 8px rgb(var(--glow-rgb, 138, 43, 226), calc(var(--glow-alpha, 0.3) * 2));
-  --shadow-text: 0 0 3px rgb(255, 217, 0, 0.3); /* Keep distinct if golden shadow is always this */
 
   /* Text shadows using theme-derived glow components */
   --text-shadow-arcane: 0 0 5px rgb(var(--glow-rgb, 138, 43, 226), calc(var(--glow-alpha, 0.3) * 1.66));
-  --text-shadow-golden: 0 0 2px rgb(219, 180, 12, 0.4); /* Keep distinct if golden shadow is always this */
+  --text-shadow-golden: 0 0 2px rgb(219, 180, 12, 0.4);
 
-  /* Animation keyframes - These are fine */
-  @keyframes wisps { /* ... */ }
-
-  @keyframes glow {
-    0% { box-shadow: 0 0 5px rgb(var(--glow-rgb, 138, 43, 226), var(--glow-alpha, 0.3)); }
-    100% { box-shadow: 0 0 20px rgb(var(--glow-rgb, 138, 43, 226), calc(var(--glow-alpha, 0.3) * 2)); }
-  }
-
-  @keyframes float { /* ... */ }
-
-  @keyframes shimmer {
-    0% { background-position: -200% 0, -150% 50%, -100% 100%; }
-    100% { background-position: 200% 0, 250% 50%, 300% 100%; }
-  }
-
-  /* Animation properties - These are fine */
-  --animation-wisps: wisps 8s ease infinite;
-  --animation-glow: glow 3s ease-in-out infinite alternate;
-  --animation-float: float 6s ease-in-out infinite;
-  --animation-shimmer: shimmer 4s linear infinite; /* Slightly adjusted duration */
+  /* Animation properties */
+  --animation-shimmer: shimmer 4s linear infinite;
 
   /* Derived Semantic Colors (for Tailwind & Components) */
   --color-background: hsl(var(--theme-bg-h) var(--theme-bg-s) var(--theme-bg-l));
@@ -80,171 +53,118 @@
 }
 
 /* Global Keyframes Definitions */
-@keyframes wisps { /* ... */ }
-
-@keyframes glow {
-  0% { box-shadow: 0 0 5px rgb(var(--glow-rgb, 138, 43, 226), var(--glow-alpha, 0.3)); }
-  100% { box-shadow: 0 0 20px rgb(var(--glow-rgb, 138, 43, 226), calc(var(--glow-alpha, 0.3) * 2)); }
-}
-
-@keyframes float { /* ... */ }
-
 @keyframes shimmer {
   0% { background-position: -200% 0, -150% 50%, -100% 100%; }
   100% { background-position: 200% 0, 250% 50%, 300% 100%; }
 }
 
-/* Root / Default Theme (Dark Academia) - Base HSL Components & Derived Semantic Colors */
+/* Root - Base HSL Components & Derived Semantic Colors */
 :root {
-  /* Base HSL components for Dark Academia */
-  --theme-bg-h: 31;      --theme-bg-s: 18%;     --theme-bg-l: 13%;
-  --theme-fg-h: 38;      --theme-fg-s: 33%;     --theme-fg-l: 95%;
-  --theme-primary-h: 39; --theme-primary-s: 50%;--theme-primary-l: 52%;
-  --theme-secondary-h: 255;--theme-secondary-s: 100%;--theme-secondary-l: 67%;
-  --theme-accent-h: 30;  --theme-accent-s: 23%; --theme-accent-l: 60%;
+  /* Base HSL components */
+  --theme-bg-h: 30;         --theme-bg-s: 15%;        --theme-bg-l: 12%;
+  --theme-fg-h: 35;         --theme-fg-s: 25%;        --theme-fg-l: 88%;
+  --theme-primary-h: 35;    --theme-primary-s: 65%;   --theme-primary-l: 55%;
+  --theme-secondary-h: 210; --theme-secondary-s: 30%; --theme-secondary-l: 60%;
+  --theme-accent-h: 10;     --theme-accent-s: 40%;    --theme-accent-l: 45%;
 
-  /* Base RGB for Glow (Dark Academia) */
-  --glow-rgb: 138, 43, 226; --glow-alpha: 0.3;
+  /* Base RGB for Glow */
+  --glow-rgb: 138, 43, 226; --glow-alpha: 0.2;
 
-  /* Base RGB for some background images if needed */
-  --theme-secondary-r: 134; --theme-secondary-g: 86; --theme-secondary-b: 255;
-  --theme-bg-r: 42; --theme-bg-g:36; --theme-bg-b:28;
+  /* Base RGB for some background images if needed (Review if these are still accurate) */
+  --theme-secondary-r: 92; --theme-secondary-g: 122; --theme-secondary-b: 153;
+  --theme-bg-r: 38; --theme-bg-g:35; --theme-bg-b:33;
 
-  /* Status Color HSL Bases (Dark Academia) - More specific than global placeholders */
-  --theme-info-h: 217;    --theme-info-s: 89%;    --theme-info-l: 65%;    /* Blueish */
-  --theme-success-h: 145; --theme-success-s: 63%;   --theme-success-l: 42%;   /* Greenish */
-  --theme-warning-h: 39;  --theme-warning-s: 90%;   --theme-warning-l: 55%;   /* Orangey/Yellowish */
-  --theme-danger-h: 0;    --theme-danger-s: 72%;    --theme-danger-l: 51%;    /* Reddish */
+  /* Status Color HSL Bases */
+  --theme-info-h: 190;    --theme-info-s: 35%;      --theme-info-l: 65%;
+  --theme-success-h: 90;  --theme-success-s: 30%;   --theme-success-l: 60%;
+  --theme-warning-h: 30;  --theme-warning-s: 60%;   --theme-warning-l: 65%;
+  --theme-danger-h: 0;    --theme-danger-s: 45%;    --theme-danger-l: 55%;
 }
 
 /* Theme Classes */
-.theme-dark-academia { /* Already covered by :root, but explicit for clarity if needed or for overrides */
-  /* Base HSL (same as :root for dark-academia) */
-  --theme-bg-h: 31;      --theme-bg-s: 18%;     --theme-bg-l: 13%;
-  --theme-fg-h: 38;      --theme-fg-s: 33%;     --theme-fg-l: 95%;
-  --theme-primary-h: 39; --theme-primary-s: 50%;--theme-primary-l: 52%;
-  --theme-secondary-h: 255;--theme-secondary-s: 100%;--theme-secondary-l: 67%;
-  --theme-accent-h: 30;  --theme-accent-s: 23%; --theme-accent-l: 60%;
-  --glow-rgb: 138, 43, 226; --glow-alpha: 0.3;
-  --theme-secondary-r: 134; --theme-secondary-g: 86; --theme-secondary-b: 255;
-  --theme-bg-r: 42; --theme-bg-g:36; --theme-bg-b:28;
-  --theme-info-h: 217;    --theme-info-s: 89%;    --theme-info-l: 65%;
-  --theme-success-h: 145; --theme-success-s: 63%;   --theme-success-l: 42%;
-  --theme-warning-h: 39;  --theme-warning-s: 90%;   --theme-warning-l: 55%;
-  --theme-danger-h: 0;    --theme-danger-s: 72%;    --theme-danger-l: 51%;
-
-  /* Semantic colors are derived as in :root */
-}
-
 .theme-vaporwave {
-  --theme-bg-h: 236;     --theme-bg-s: 71%;     --theme-bg-l: 25%;
-  --theme-fg-h: 216;     --theme-fg-s: 100%;    --theme-fg-l: 97%;
-  --theme-primary-h: 255;--theme-primary-s: 100%;--theme-primary-l: 67%; /* Same as DA secondary */
-  --theme-secondary-h: 212;--theme-secondary-s: 99%;--theme-secondary-l: 84%;
-  --theme-accent-h: 276; --theme-accent-s: 98%; --theme-accent-l: 79%;
-  --glow-rgb: 134, 86, 255; --glow-alpha: 0.3;
-  --theme-secondary-r: 134; --theme-secondary-g: 86; --theme-secondary-b: 255;
-  --theme-bg-r: 19; --theme-bg-g:24; --theme-bg-b:106;
-  --theme-info-h: 210;    --theme-info-s: 100%;   --theme-info-l: 70%;    /* Bright Blue */
-  --theme-success-h: 130; --theme-success-s: 70%;   --theme-success-l: 65%;   /* Cyan/Greenish */
-  --theme-warning-h: 50;  --theme-warning-s: 100%;  --theme-warning-l: 65%;   /* Bright Yellow */
-  --theme-danger-h: 340;   --theme-danger-s: 100%;  --theme-danger-l: 70%;   /* Bright Pink/Red */
+  --theme-bg-h: 240;        --theme-bg-s: 60%;          --theme-bg-l: 15%;
+  --theme-fg-h: 210;        --theme-fg-s: 100%;         --theme-fg-l: 95%;
+  --theme-primary-h: 260;   --theme-primary-s: 100%;    --theme-primary-l: 70%;
+  --theme-secondary-h: 180; --theme-secondary-s: 100%;  --theme-secondary-l: 55%;
+  --theme-accent-h: 330;    --theme-accent-s: 100%;     --theme-accent-l: 65%;
+  --theme-secondary-r: 0;   --theme-secondary-g: 255;   --theme-secondary-b: 255; /* Cyan approx. */
+  --theme-bg-r: 26;         --theme-bg-g:15;            --theme-bg-b:61; /* Indigo approx. */
+  --glow-rgb: 255, 0, 255;  --glow-alpha: 0.35;   /* Magenta glow */
 
-  /* Derived Semantic Colors (repeated structure for clarity, could use a mixin if CSS allowed) */
-  --color-background: hsl(var(--theme-bg-h) var(--theme-bg-s) var(--theme-bg-l));
-  --color-foreground: hsl(var(--theme-fg-h) var(--theme-fg-s) var(--theme-fg-l));
-  --color-primary: hsl(var(--theme-primary-h) var(--theme-primary-s) var(--theme-primary-l));
-  --color-secondary: hsl(var(--theme-secondary-h) var(--theme-secondary-s) var(--theme-secondary-l));
-  --color-accent: hsl(var(--theme-accent-h) var(--theme-accent-s) var(--theme-accent-l));
-  --color-surface: hsl(var(--theme-bg-h) var(--theme-bg-s) calc(var(--theme-bg-l) + 10%));
-  --color-border: hsl(var(--theme-bg-h) var(--theme-bg-s) calc(var(--theme-bg-l) + 15%));
-  --color-muted: hsl(var(--theme-fg-h) var(--theme-fg-s) calc(var(--theme-fg-l) - 45%));
-  --color-info: hsl(var(--theme-info-h) var(--theme-info-s) var(--theme-info-l));
-  --color-info-bg: hsl(var(--theme-info-h) var(--theme-info-s) calc(var(--theme-info-l) - 45%));
-  --color-info-border: hsl(var(--theme-info-h) var(--theme-info-s) calc(var(--theme-info-l) - 25%));
-  --color-success: hsl(var(--theme-success-h) var(--theme-success-s) var(--theme-success-l));
-  --color-success-bg: hsl(var(--theme-success-h) var(--theme-success-s) calc(var(--theme-success-l) - 25%));
-  --color-success-border: hsl(var(--theme-success-h) var(--theme-success-s) calc(var(--theme-success-l) - 10%));
-  --color-warning: hsl(var(--theme-warning-h) var(--theme-warning-s) var(--theme-warning-l));
-  --color-warning-bg: hsl(var(--theme-warning-h) var(--theme-warning-s) calc(var(--theme-warning-l) - 35%));
-  --color-warning-border: hsl(var(--theme-warning-h) var(--theme-warning-s) calc(var(--theme-warning-l) - 15%));
-  --color-danger: hsl(var(--theme-danger-h) var(--theme-danger-s) var(--theme-danger-l));
-  --color-danger-bg: hsl(var(--theme-danger-h) var(--theme-danger-s) calc(var(--theme-danger-l) - 30%));
-  --color-danger-border: hsl(var(--theme-danger-h) var(--theme-danger-s) calc(var(--theme-danger-l) - 10%));
+  /* Status Color HSL Bases */
+  --theme-info-h: 200;    --theme-info-s: 100%;     --theme-info-l: 65%;
+  --theme-success-h: 120; --theme-success-s: 100%;  --theme-success-l: 60%;
+  --theme-warning-h: 45;  --theme-warning-s: 100%;  --theme-warning-l: 60%;
+  --theme-danger-h: 300;  --theme-danger-s: 100%;   --theme-danger-l: 60%;
 }
 
-.theme-cosmic-horror {
-  --theme-bg-h: 279;     --theme-bg-s: 53%;     --theme-bg-l: 9%;
-  --theme-fg-h: 240;     --theme-fg-s: 21%;     --theme-fg-l: 95%;
-  --theme-primary-h: 314;--theme-primary-s: 73%;--theme-primary-l: 24%;
-  --theme-secondary-h: 191;--theme-secondary-s: 65%;--theme-secondary-l: 27%;
-  --theme-accent-h: 325; --theme-accent-s: 58%; --theme-accent-l: 39%;
-  --glow-rgb: 107, 15, 86; --glow-alpha: 0.3;
-  --theme-secondary-r: 24; --theme-secondary-g: 98; --theme-secondary-b: 114; /* Approx from #186272 */
-  --theme-bg-r: 23; --theme-bg-g:11; --theme-bg-b:33;
-  --theme-info-h: 250;    --theme-info-s: 70%;    --theme-info-l: 60%;    /* Deep Purple/Blue */
-  --theme-success-h: 170; --theme-success-s: 50%;   --theme-success-l: 35%;   /* Muted Teal/Green */
-  --theme-warning-h: 30;  --theme-warning-s: 60%;   --theme-warning-l: 40%;   /* Murky Yellow/Brown */
-  --theme-danger-h: 350;   --theme-danger-s: 65%;    --theme-danger-l: 30%;   /* Blood Red */
+.theme-wabi-sabi {
+  /* Base HSL components for Wabi Sabi */
+  --theme-bg-h: 35;         --theme-bg-s: 30%;        --theme-bg-l: 92%; /* Light, warm beige */
+  --theme-fg-h: 35;         --theme-fg-s: 15%;        --theme-fg-l: 30%; /* Dark, muted brown */
+  --theme-primary-h: 30;    --theme-primary-s: 25%;   --theme-primary-l: 60%; /* Muted terracotta/brown */
+  --theme-secondary-h: 90;  --theme-secondary-s: 10%; --theme-secondary-l: 70%; /* Soft, desaturated grey-green */
+  --theme-accent-h: 40;     --theme-accent-s: 30%;    --theme-accent-l: 50%; /* Muted ochre/gold */
 
-  /* Derived Semantic Colors */
-  --color-background: hsl(var(--theme-bg-h) var(--theme-bg-s) var(--theme-bg-l));
-  --color-foreground: hsl(var(--theme-fg-h) var(--theme-fg-s) var(--theme-fg-l));
-  --color-primary: hsl(var(--theme-primary-h) var(--theme-primary-s) var(--theme-primary-l));
-  --color-secondary: hsl(var(--theme-secondary-h) var(--theme-secondary-s) var(--theme-secondary-l));
-  --color-accent: hsl(var(--theme-accent-h) var(--theme-accent-s) var(--theme-accent-l));
-  --color-surface: hsl(var(--theme-bg-h) var(--theme-bg-s) calc(var(--theme-bg-l) + 5%)); /* Smaller increment for dark themes */
-  --color-border: hsl(var(--theme-bg-h) var(--theme-bg-s) calc(var(--theme-bg-l) + 8%));
-  --color-muted: hsl(var(--theme-fg-h) var(--theme-fg-s) calc(var(--theme-fg-l) - 40%));
-  --color-info: hsl(var(--theme-info-h) var(--theme-info-s) var(--theme-info-l));
-  --color-info-bg: hsl(var(--theme-info-h) var(--theme-info-s) calc(var(--theme-info-l) - 40%));
-  --color-info-border: hsl(var(--theme-info-h) var(--theme-info-s) calc(var(--theme-info-l) - 20%));
-  --color-success: hsl(var(--theme-success-h) var(--theme-success-s) var(--theme-success-l));
-  --color-success-bg: hsl(var(--theme-success-h) var(--theme-success-s) calc(var(--theme-success-l) - 20%));
-  --color-success-border: hsl(var(--theme-success-h) var(--theme-success-s) calc(var(--theme-success-l) - 5%));
-  --color-warning: hsl(var(--theme-warning-h) var(--theme-warning-s) var(--theme-warning-l));
-  --color-warning-bg: hsl(var(--theme-warning-h) var(--theme-warning-s) calc(var(--theme-warning-l) - 25%));
-  --color-warning-border: hsl(var(--theme-warning-h) var(--theme-warning-s) calc(var(--theme-warning-l) - 10%));
-  --color-danger: hsl(var(--theme-danger-h) var(--theme-danger-s) var(--theme-danger-l));
-  --color-danger-bg: hsl(var(--theme-danger-h) var(--theme-danger-s) calc(var(--theme-danger-l) - 20%));
-  --color-danger-border: hsl(var(--theme-danger-h) var(--theme-danger-s) calc(var(--theme-danger-l) - 5%));
+  /* Subtle Glow for Wabi Sabi */
+  --glow-rgb: 50, 40, 30; --glow-alpha: 0.05;
+
+  /* Overridden Semantic Colors for Wabi Sabi (light theme adjustments) */
+  --color-surface: hsl(35deg, 30%, 88%);  /* Slightly off-white/beige, darker than bg */
+  --color-border: hsl(35deg, 20%, 80%);   /* Light beige border */
+  --color-muted: hsl(35deg, 10%, 50%);    /* Lighter, less saturated brown for muted text */
+
+  /* Status Colors for Wabi Sabi (direct HSL values) */
+  --color-info:           hsl(210deg, 20%, 50%);
+  --color-info-bg:        hsl(210deg, 20%, 85%);
+  --color-info-border:    hsl(210deg, 20%, 70%);
+  --color-success:        hsl(120deg, 25%, 45%);
+  --color-success-bg:     hsl(120deg, 25%, 88%);
+  --color-success-border: hsl(120deg, 25%, 70%);
+  --color-warning:        hsl(40deg, 50%, 50%);
+  --color-warning-bg:     hsl(40deg, 50%, 88%);
+  --color-warning-border: hsl(40deg, 50%, 70%);
+  --color-danger:         hsl(15deg, 35%, 50%);
+  --color-danger-bg:      hsl(15deg, 35%, 88%);
+  --color-danger-border:  hsl(15deg, 35%, 70%);
 }
 
-.theme-techno-occult {
-  --theme-bg-h: 203;     --theme-bg-s: 56%;     --theme-bg-l: 9%;
-  --theme-fg-h: 197;     --theme-fg-s: 38%;     --theme-fg-l: 95%;
-  --theme-primary-h: 173;--theme-primary-s: 57%;--theme-primary-l: 39%;
-  --theme-secondary-h: 44;--theme-secondary-s: 74%;--theme-secondary-l: 66%;
-  --theme-accent-h: 289; --theme-accent-s: 45%; --theme-accent-l: 26%;
-  --glow-rgb: 42, 157, 143; --glow-alpha: 0.3;
-  --theme-secondary-r: 233; --theme-secondary-g: 196; --theme-secondary-b: 106; /* Approx from #e9c46a */
-  --theme-bg-r: 11; --theme-bg-g:26; --theme-bg-b:35;
-  --theme-info-h: 180;    --theme-info-s: 70%;    --theme-info-l: 60%;    /* Cool Cyan */
-  --theme-success-h: 100; --theme-success-s: 60%;   --theme-success-l: 55%;   /* Electric Green */
-  --theme-warning-h: 30;  --theme-warning-s: 80%;   --theme-warning-l: 60%;   /* Circuit Orange */
-  --theme-danger-h: 0;    --theme-danger-s: 75%;    --theme-danger-l: 55%;   /* Glitch Red */
+.theme-biophilia {
+  /* Base HSL components for Biophilia */
+  --theme-bg-h: 90;         --theme-bg-s: 60%;        --theme-bg-l: 90%; /* Light Honeydew */
+  --theme-fg-h: 30;         --theme-fg-s: 40%;        --theme-fg-l: 18%; /* Darker, richer Woody Brown */
+  --theme-primary-h: 120;   --theme-primary-s: 60%;   --theme-primary-l: 45%; /* Vibrant Leaf Green */
+  --theme-secondary-h: 320; --theme-secondary-s: 70%; --theme-secondary-l: 65%; /* Bright Orchid Pink */
+  --theme-accent-h: 50;     --theme-accent-s: 100%;   --theme-accent-l: 45%; /* Deeper Sunny Yellow */
 
-  /* Derived Semantic Colors */
-  --color-background: hsl(var(--theme-bg-h) var(--theme-bg-s) var(--theme-bg-l));
-  --color-foreground: hsl(var(--theme-fg-h) var(--theme-fg-s) var(--theme-fg-l));
-  --color-primary: hsl(var(--theme-primary-h) var(--theme-primary-s) var(--theme-primary-l));
-  --color-secondary: hsl(var(--theme-secondary-h) var(--theme-secondary-s) var(--theme-secondary-l));
-  --color-accent: hsl(var(--theme-accent-h) var(--theme-accent-s) var(--theme-accent-l));
-  --color-surface: hsl(var(--theme-bg-h) var(--theme-bg-s) calc(var(--theme-bg-l) + 7%));
-  --color-border: hsl(var(--theme-bg-h) var(--theme-bg-s) calc(var(--theme-bg-l) + 10%));
-  --color-muted: hsl(var(--theme-fg-h) var(--theme-fg-s) calc(var(--theme-fg-l) - 40%));
-  --color-info: hsl(var(--theme-info-h) var(--theme-info-s) var(--theme-info-l));
-  --color-info-bg: hsl(var(--theme-info-h) var(--theme-info-s) calc(var(--theme-info-l) - 40%));
-  --color-info-border: hsl(var(--theme-info-h) var(--theme-info-s) calc(var(--theme-info-l) - 20%));
-  --color-success: hsl(var(--theme-success-h) var(--theme-success-s) var(--theme-success-l));
-  --color-success-bg: hsl(var(--theme-success-h) var(--theme-success-s) calc(var(--theme-success-l) - 25%));
-  --color-success-border: hsl(var(--theme-success-h) var(--theme-success-s) calc(var(--theme-success-l) - 10%));
-  --color-warning: hsl(var(--theme-warning-h) var(--theme-warning-s) var(--theme-warning-l));
-  --color-warning-bg: hsl(var(--theme-warning-h) var(--theme-warning-s) calc(var(--theme-warning-l) - 30%));
-  --color-warning-border: hsl(var(--theme-warning-h) var(--theme-warning-s) calc(var(--theme-warning-l) - 15%));
-  --color-danger: hsl(var(--theme-danger-h) var(--theme-danger-s) var(--theme-danger-l));
-  --color-danger-bg: hsl(var(--theme-danger-h) var(--theme-danger-s) calc(var(--theme-danger-l) - 25%));
-  --color-danger-border: hsl(var(--theme-danger-h) var(--theme-danger-s) calc(var(--theme-danger-l) - 10%));
+  /* Glow for Biophilia */
+  --glow-rgb: 120, 200, 100; --glow-alpha: 0.15; /* Soft green glow */
+
+  /* Overridden Semantic Colors for Biophilia (light theme adjustments) */
+  --color-surface: hsl(90deg, 55%, 94%);  /* Lighter Honeydew */
+  --color-border: hsl(30deg, 25%, 50%);   /* Medium Woody Brown */
+  --color-muted: hsl(30deg, 20%, 45%);    /* Lighter, less saturated brown */
+
+  /* Status Color HSL Bases (Biophilia specific) */
+  --theme-info-h: 210;    --theme-info-s: 80%;      --theme-info-l: 60%;
+  --theme-success-h: 140; --theme-success-s: 60%;   --theme-success-l: 50%;
+  --theme-warning-h: 35;  --theme-warning-s: 100%;  --theme-warning-l: 60%;
+  --theme-danger-h: 0;    --theme-danger-s: 80%;    --theme-danger-l: 60%;
+
+  /* Directly defined Status Colors for Biophilia (because global derivations are for dark themes) */
+  --color-info:           hsl(var(--theme-info-h),    var(--theme-info-s), var(--theme-info-l));
+  --color-info-bg:        hsl(var(--theme-info-h),    var(--theme-info-s), 92%);
+  --color-info-border:    hsl(var(--theme-info-h),    var(--theme-info-s), 75%);
+  --color-success:        hsl(var(--theme-success-h), var(--theme-success-s), var(--theme-success-l));
+  --color-success-bg:     hsl(var(--theme-success-h), var(--theme-success-s), 90%);
+  --color-success-border: hsl(var(--theme-success-h), var(--theme-success-s), 70%);
+  --color-warning:        hsl(var(--theme-warning-h), var(--theme-warning-s), var(--theme-warning-l));
+  --color-warning-bg:     hsl(var(--theme-warning-h), var(--theme-warning-s), 92%);
+  --color-warning-border: hsl(var(--theme-warning-h), var(--theme-warning-s), 75%);
+  --color-danger:         hsl(var(--theme-danger-h),  var(--theme-danger-s), var(--theme-danger-l));
+  --color-danger-bg:      hsl(var(--theme-danger-h),  var(--theme-danger-s), 92%);
+  --color-danger-border:  hsl(var(--theme-danger-h),  var(--theme-danger-s), 75%);
 }
 
 /* Custom Utilities - Tailwind v4 style with @utility directives - These are fine */
@@ -289,30 +209,11 @@
   a:hover {
     color: hsl(var(--color-primary));
   }
-
-  /* Scrollbar styling - Fine */
-
-  /* ... */
 }
 
 /* Component Classes - These will use semantic utilities from Tailwind now */
 @layer components {
-  .arcane-glow { /* ... */ }
-
-  .btn-arcane { /* Needs review: uses specific palette colors like parchment-400, arcanum-900 */
-    @apply px-6 py-3 rounded border border-accent text-foreground
-           bg-surface/50 hover:bg-surface/70
-           transition-colors duration-300 font-serif tracking-wider;
-  }
-
-  .btn-arcane-primary { /* Needs review: uses gradient from parchment/mystic */
-    @apply px-6 py-3 rounded bg-gradient-to-r from-primary/70 to-secondary/70
-           text-background /* Assuming contrast with primary/secondary */
-           font-display tracking-wider border border-accent/50
-           shadow-arcane hover:shadow-glow transition-all duration-300;
-  }
-  .arcane-border { @apply border border-border/30; } /* Already good */
-  .arcane-card { @apply bg-surface border border-border/30 rounded-sm p-6 transition-all duration-300; } /* Already good */
+  .arcane-card { @apply bg-surface border border-border/30 rounded-sm p-6 transition-all duration-300; }
   .arcane-card:hover { @apply shadow-arcane; }
 
   .arcane-input { /* Needs review: specific palette, focus mystic-500 */
@@ -321,23 +222,6 @@
            focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/50
            transition-colors duration-200;
   }
-
-  .nav-link { /* Needs review: text-parchment-200, text-shadow-golden */
-    @apply text-muted hover:text-foreground
-           tracking-wide font-serif uppercase text-sm text-shadow-golden;
-  }
-
-  /* Background image for cosmic wisps - This is fine if images are static */
-
-  /* ... */
-
-  /* Animation classes using the animation variables - These are fine */
-
-  /* ... */
-
-  /* Magic button specific styles - Fine as it uses theme variables */
-
-  /* ... */
 
   .animate-shimmer {
     animation: var(--animation-shimmer);
@@ -348,7 +232,5 @@
     background-size: 60px 60px, 80px 80px, 70px 70px;
     background-position: 0 0, 15px 75px, 10px 35px;
     background-repeat: repeat;
-
-    /* Ensure no debug comments remain */
   }
 }

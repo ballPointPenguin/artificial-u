@@ -18,12 +18,6 @@ interface FeaturedFacultyProps {
 export function FeaturedFaculty(props: FeaturedFacultyProps) {
   return (
     <section class="py-20 bg-arcanum-950 relative overflow-hidden">
-      {/* Background effects */}
-      <div class="absolute inset-0 opacity-30" aria-hidden="true">
-        <div class="absolute top-1/4 left-1/4 w-1/2 h-1/2 bg-nebula-800/10 rounded-full filter blur-3xl" />
-        <div class="absolute bottom-1/4 right-1/4 w-1/3 h-1/3 bg-vaporwave-800/10 rounded-full filter blur-3xl" />
-      </div>
-
       <div class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <h2 class="text-4xl font-display text-parchment-200 text-center mb-16 text-shadow-golden">
           {props.title}

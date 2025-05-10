@@ -129,7 +129,7 @@ const Courses: Component = () => {
               <div class="flex space-x-3">
                 <button
                   type="button"
-                  class="btn-arcane px-4 py-2"
+                  class="px-4 py-2"
                   onClick={handlePrevPage}
                   disabled={page() <= 1}
                 >
@@ -137,7 +137,7 @@ const Courses: Component = () => {
                 </button>
                 <button
                   type="button"
-                  class="btn-arcane px-4 py-2"
+                  class="px-4 py-2"
                   onClick={handleNextPage}
                   disabled={page() >= getPages()}
                 >
