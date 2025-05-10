@@ -1,9 +1,9 @@
 import { A } from '@solidjs/router'
 import { For, Show, createResource, createSignal } from 'solid-js'
-import { createDepartment, getDepartments } from '../api/services/department-service'
-import type { Department } from '../api/types'
-import DepartmentForm from '../components/departments/DepartmentForm'
-import { Button } from '../components/ui/Button'
+import { departmentService } from '../api/services/department-service.js'
+import type { Department, DepartmentCreate } from '../api/types.js'
+import DepartmentForm from '../components/departments/DepartmentForm.js'
+import { Button, Input } from '../components/ui'
 
 const DepartmentCard = (props: { department: Department }) => {
   return (
@@ -11,7 +11,7 @@ const DepartmentCard = (props: { department: Department }) => {
       <h3 class="text-xl font-semibold mb-2 text-parchment-100">{props.department.name}</h3>
       <p class="text-parchment-300 mb-4 line-clamp-3 flex-grow">{props.department.description}</p>
       <A
-        href={`/academics/departments/${String(props.department.id)}`}
+        href={`/departments/${String(props.department.id)}`}
         class="text-mystic-500 hover:text-mystic-300 font-medium mt-auto"
       >
         View Details
@@ -33,7 +33,7 @@ const DepartmentsPage = () => {
       size: 20,
       name: searchQuery() || undefined,
     }),
-    getDepartments
+    departmentService.listDepartments
   )
 
   const handleSearch = (e: Event) => {
@@ -46,14 +46,18 @@ const DepartmentsPage = () => {
     setFormError('')
 
     try {
-      const newDepartment = {
+      const newDepartment: DepartmentCreate = {
         name: formData.get('name') as string,
         code: formData.get('code') as string,
-        faculty: formData.get('faculty') as string,
+        faculty: formData.get('faculty') as string | null,
         description: formData.get('description') as string,
       }
 
-      await createDepartment(newDepartment)
+      if (newDepartment.faculty === '') {
+        newDepartment.faculty = null
+      }
+
+      await departmentService.createDepartment(newDepartment)
       setShowCreateForm(false)
       void refetch()
     } catch (error) {
@@ -86,10 +90,11 @@ const DepartmentsPage = () => {
 
       <form onSubmit={handleSearch} class="mb-8">
         <div class="flex gap-2">
-          <input
+          <Input
+            name="search"
             type="text"
             value={searchQuery()}
-            onInput={(e) => setSearchQuery(e.target.value)}
+            onInput={(e) => setSearchQuery(e.currentTarget.value)}
             placeholder="Search departments..."
             class="flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-mystic-500 bg-arcanum-800 border-parchment-700/30 text-parchment-100 placeholder:text-parchment-500"
           />
@@ -113,7 +118,8 @@ const DepartmentsPage = () => {
           }
         >
           <Show
-            when={departments()?.items.length}
+            /* eslint-disable-next-line @typescript-eslint/no-non-null-assertion */
+            when={departments()?.items && departments()!.items.length > 0}
             fallback={<div class="text-center py-8">No departments found</div>}
           >
             {/* Departments grid */}

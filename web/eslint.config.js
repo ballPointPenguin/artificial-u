@@ -40,7 +40,7 @@ export default tseslint.config(
       '@typescript-eslint/ban-ts-comment': 'warn',
       '@typescript-eslint/no-unsafe-return': 'warn',
       '@typescript-eslint/no-non-null-assertion': 'warn',
-      '@typescript-eslint/ban-types': 'warn',
+      // '@typescript-eslint/ban-types': 'warn',
     },
   },
 

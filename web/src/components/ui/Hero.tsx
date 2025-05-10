@@ -19,11 +19,7 @@ export function Hero(props: HeroProps) {
         <p class="text-xl sm:text-2xl md:text-3xl font-serif text-muted mb-12">{props.subtitle}</p>
         {props.buttonLink && (
           <A href={props.buttonLink}>
-            <Button
-              variant="primary"
-              size="lg"
-              class="text-shadow-golden"
-            >
+            <Button variant="primary" size="lg" class="text-shadow-golden">
               {props.buttonText}
             </Button>
           </A>

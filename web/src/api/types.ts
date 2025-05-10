@@ -158,12 +158,6 @@ export interface DepartmentBrief {
 }
 
 // Course types
-export interface CourseTopic {
-  week_number: number
-  order_in_week: number
-  title: string
-}
-
 export interface Course {
   id: number
   code: string
@@ -175,7 +169,6 @@ export interface Course {
   description: string
   lectures_per_week: number
   total_weeks: number
-  topics?: CourseTopic[]
 }
 
 export type CoursesList = PaginatedResponse<Course>
@@ -200,7 +193,6 @@ export interface CourseCreate {
   description: string
   lectures_per_week?: number
   total_weeks?: number
-  topics?: CourseTopic[]
 }
 
 // Matches Python CourseUpdate

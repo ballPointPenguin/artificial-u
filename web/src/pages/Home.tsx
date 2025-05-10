@@ -1,6 +1,6 @@
 import { FeatureCards } from '../components/FeaturedCards'
 import { FeaturedFaculty } from '../components/FeaturedFaculty'
-import { Hero } from '../components/ui/Hero'
+import { Hero } from '../components/ui'
 
 const Home = () => {
   // Sample faculty data

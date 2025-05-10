@@ -1,11 +1,9 @@
 import { A } from '@solidjs/router'
 import { Show, createSignal } from 'solid-js'
-import { Button } from './ui/Button'
 
 export function NavBar() {
   const [isScrolled, setIsScrolled] = createSignal(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = createSignal(false)
-  const [isAcademicsOpen, setIsAcademicsOpen] = createSignal(false)
 
   if (typeof window !== 'undefined') {
     window.addEventListener('scroll', () => {
@@ -15,11 +13,6 @@ export function NavBar() {
 
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen())
-    setIsAcademicsOpen(false)
-  }
-
-  const toggleAcademicsMenu = () => {
-    setIsAcademicsOpen(!isAcademicsOpen())
   }
 
   return (
@@ -53,76 +46,24 @@ export function NavBar() {
             >
               About
             </A>
-            <div class="relative">
-              <button
-                type="button"
-                onClick={toggleAcademicsMenu}
-                class="flex items-center text-parchment-200 hover:text-parchment-100 tracking-wide font-serif uppercase text-shadow-golden text-sm"
-              >
-                Academics
-                <svg
-                  class="w-4 h-4 ml-1"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                  aria-hidden="true"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d={isAcademicsOpen() ? 'M5 15l7-7 7 7' : 'M19 9l-7 7-7-7'}
-                  />
-                </svg>
-              </button>
-              <Show when={isAcademicsOpen()}>
-                <div class="absolute left-0 mt-2 w-48 bg-arcanum-900 shadow-lg rounded-md py-2 z-10">
-                  <A
-                    href="/academics/departments"
-                    class="block px-4 py-2 text-parchment-200 hover:bg-arcanum-800 tracking-wide font-serif text-sm"
-                    onClick={() => setIsAcademicsOpen(false)}
-                  >
-                    Departments
-                  </A>
-                  <A
-                    href="/academics/professors"
-                    class="block px-4 py-2 text-parchment-200 hover:bg-arcanum-800 tracking-wide font-serif text-sm"
-                    onClick={() => setIsAcademicsOpen(false)}
-                  >
-                    Professors
-                  </A>
-                  <A
-                    href="/academics/programs"
-                    class="block px-4 py-2 text-parchment-200 hover:bg-arcanum-800 tracking-wide font-serif text-sm"
-                    onClick={() => setIsAcademicsOpen(false)}
-                  >
-                    Programs
-                  </A>
-                  <A
-                    href="/academics/courses"
-                    class="block px-4 py-2 text-parchment-200 hover:bg-arcanum-800 tracking-wide font-serif text-sm"
-                    onClick={() => setIsAcademicsOpen(false)}
-                  >
-                    Courses
-                  </A>
-                </div>
-              </Show>
-            </div>
             <A
-              href="/admissions"
+              href="/departments"
               class="text-parchment-200 hover:text-parchment-100 tracking-wide font-serif uppercase text-shadow-golden text-sm"
             >
-              Admissions
+              Departments
             </A>
             <A
-              href="/library"
+              href="/professors"
               class="text-parchment-200 hover:text-parchment-100 tracking-wide font-serif uppercase text-shadow-golden text-sm"
             >
-              Library
+              Professors
             </A>
-            <Button variant="outline" size="sm" class="ml-4">
-              Apply
-            </Button>
+            <A
+              href="/courses"
+              class="text-parchment-200 hover:text-parchment-100 tracking-wide font-serif uppercase text-shadow-golden text-sm"
+            >
+              Courses
+            </A>
           </div>
 
           {/* Mobile menu button */}
@@ -180,81 +121,26 @@ export function NavBar() {
             >
               About
             </A>
-            <div>
-              <button
-                type="button"
-                onClick={toggleAcademicsMenu}
-                class="flex items-center w-full text-parchment-200 hover:text-parchment-100 py-2 tracking-wide font-serif uppercase text-sm"
-              >
-                Academics
-                <svg
-                  class="w-4 h-4 ml-1"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                  aria-hidden="true"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d={isAcademicsOpen() ? 'M19 9l-7 7-7-7' : 'M9 5l7 7-7 7'}
-                  />
-                </svg>
-              </button>
-              <Show when={isAcademicsOpen()}>
-                <div class="pl-4 mt-1 space-y-1 border-l border-arcanum-700">
-                  <A
-                    href="/academics/departments"
-                    class="block text-parchment-200 hover:text-parchment-100 py-2 tracking-wide font-serif text-sm"
-                    onClick={toggleMobileMenu}
-                  >
-                    Departments
-                  </A>
-                  <A
-                    href="/academics/professors"
-                    class="block text-parchment-200 hover:text-parchment-100 py-2 tracking-wide font-serif text-sm"
-                    onClick={toggleMobileMenu}
-                  >
-                    Professors
-                  </A>
-                  <A
-                    href="/academics/programs"
-                    class="block text-parchment-200 hover:text-parchment-100 py-2 tracking-wide font-serif text-sm"
-                    onClick={toggleMobileMenu}
-                  >
-                    Programs
-                  </A>
-                  <A
-                    href="/academics/courses"
-                    class="block text-parchment-200 hover:text-parchment-100 py-2 tracking-wide font-serif text-sm"
-                    onClick={toggleMobileMenu}
-                  >
-                    Courses
-                  </A>
-                </div>
-              </Show>
-            </div>
             <A
-              href="/admissions"
+              href="/departments"
               class="block text-parchment-200 hover:text-parchment-100 py-2 tracking-wide font-serif uppercase text-sm"
               onClick={toggleMobileMenu}
             >
-              Admissions
+              Departments
             </A>
             <A
-              href="/library"
+              href="/professors"
               class="block text-parchment-200 hover:text-parchment-100 py-2 tracking-wide font-serif uppercase text-sm"
               onClick={toggleMobileMenu}
             >
-              Library
+              Professors
             </A>
             <A
-              href="/apply"
-              class="block text-center mt-4 px-6 py-2 rounded border border-parchment-400 text-parchment-100 font-display tracking-wider hover:bg-parchment-800/20 transition-colors duration-300 text-sm"
+              href="/courses"
+              class="block text-parchment-200 hover:text-parchment-100 py-2 tracking-wide font-serif uppercase text-sm"
               onClick={toggleMobileMenu}
             >
-              Apply
+              Courses
             </A>
           </div>
         </div>

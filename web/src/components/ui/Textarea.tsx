@@ -15,7 +15,6 @@ interface TextareaProps extends Omit<ComponentProps<typeof KTextField.TextArea>,
   required?: boolean
   class?: string // For KTextField.Root
   textareaClass?: string // Specific class for KTextField.TextArea
-  [key: string]: any
 }
 
 const Textarea: Component<TextareaProps> = (props) => {
@@ -48,7 +47,10 @@ const Textarea: Component<TextareaProps> = (props) => {
         target: { value: newValue, name: local.name },
         bubbles: true,
         cancelable: true,
-      } as unknown as InputEvent & { currentTarget: HTMLTextAreaElement; target: HTMLTextAreaElement }
+      } as unknown as InputEvent & {
+        currentTarget: HTMLTextAreaElement
+        target: HTMLTextAreaElement
+      }
       local.onInput(syntheticEvent)
     }
   }

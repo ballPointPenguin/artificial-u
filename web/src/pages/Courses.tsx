@@ -1,9 +1,10 @@
 import { A } from '@solidjs/router'
 import { type Component, For, Show, createResource, createSignal } from 'solid-js'
-import { createCourse, getCourses } from '../api/services/course-service'
-import type { Course, CoursesList } from '../api/types'
-import CourseForm, { type CourseFormData } from '../components/courses/CourseForm'
-import { Button } from '../components/ui/Button'
+import { courseService } from '../api/services/course-service.js'
+import type { Course, CourseCreate } from '../api/types.js'
+import CourseForm from '../components/courses/CourseForm.jsx'
+import type { CourseFormData } from '../components/courses/types.jsx'
+import { Button } from '../components/ui'
 
 const Courses: Component = () => {
   const [page, setPage] = createSignal(1)
@@ -14,7 +15,7 @@ const Courses: Component = () => {
 
   const [coursesData, { refetch }] = createResource(
     () => ({ page: page(), size: size() }),
-    ({ page, size }) => getCourses({ page, size })
+    ({ page, size }) => courseService.listCourses({ page, size })
   )
 
   // Helper function to get pages safely
@@ -46,8 +47,27 @@ const Courses: Component = () => {
     setSubmitting(true)
     setFormError('')
 
+    // The following check is redundant if CourseForm validation is robust.
+    // CourseForm's validateForm checks for null department_id and professor_id.
+    // if (formData.department_id === null || formData.professor_id === null) {
+    //   setFormError('Department and Professor are required to create a course.')
+    //   setSubmitting(false)
+    //   return
+    // }
+
+    const createPayload: CourseCreate = {
+      ...formData,
+      // Assuming CourseForm validation ensures these are numbers when onSubmit is called
+      department_id: formData.department_id as number,
+      professor_id: formData.professor_id as number,
+      credits: formData.credits === null ? undefined : Number(formData.credits),
+      lectures_per_week:
+        formData.lectures_per_week === null ? undefined : Number(formData.lectures_per_week),
+      total_weeks: formData.total_weeks === null ? undefined : Number(formData.total_weeks),
+    }
+
     try {
-      await createCourse(formData)
+      await courseService.createCourse(createPayload) // Use validated/typed payload
       setShowCreateForm(false)
       void refetch()
     } catch (error) {
@@ -98,7 +118,7 @@ const Courses: Component = () => {
                 </tr>
               </thead>
               <tbody>
-                <For each={(coursesData() as CoursesList).items}>
+                <For each={coursesData()?.items}>
                   {(course: Course) => (
                     <tr class="border-b border-parchment-800/20 hover:bg-arcanum-800/50 transition-colors">
                       <td class="py-3 px-4 text-parchment-100">{course.code}</td>
@@ -107,7 +127,7 @@ const Courses: Component = () => {
                       <td class="py-3 px-4 text-parchment-100">{course.credits}</td>
                       <td class="py-3 px-4">
                         <A
-                          href={`/academics/courses/${String(course.id)}`}
+                          href={`/courses/${String(course.id)}`}
                           class="text-mystic-400 hover:text-mystic-300 transition-colors"
                         >
                           View Details
@@ -127,22 +147,12 @@ const Courses: Component = () => {
                 Page {page()} of {getPages()}
               </div>
               <div class="flex space-x-3">
-                <button
-                  type="button"
-                  class="px-4 py-2"
-                  onClick={handlePrevPage}
-                  disabled={page() <= 1}
-                >
+                <Button variant="outline" onClick={handlePrevPage} disabled={page() <= 1}>
                   Previous
-                </button>
-                <button
-                  type="button"
-                  class="px-4 py-2"
-                  onClick={handleNextPage}
-                  disabled={page() >= getPages()}
-                >
+                </Button>
+                <Button variant="outline" onClick={handleNextPage} disabled={page() >= getPages()}>
                   Next
-                </button>
+                </Button>
               </div>
             </div>
           </Show>

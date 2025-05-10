@@ -35,7 +35,10 @@ const FormField: Component<FormFieldProps> = (props) => {
         {props.children}
       </div>
       <Show when={props.helperText && !props.error}>
-        <p class={`mt-1 text-xs text-muted ${props.helperTextClass || ''}`} id={`${fieldId()}-helper`}>
+        <p
+          class={`mt-1 text-xs text-muted ${props.helperTextClass || ''}`}
+          id={`${fieldId()}-helper`}
+        >
           {props.helperText}
         </p>
       </Show>

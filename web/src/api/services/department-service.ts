@@ -1,7 +1,8 @@
 /**
  * Department service
  */
-import { httpClient } from '../client'
+import { httpClient } from '../client.js'
+import { ENDPOINTS } from '../config.js'
 import type {
   Department,
   DepartmentCoursesResponse,
@@ -10,9 +11,7 @@ import type {
   DepartmentProfessorsResponse,
   DepartmentUpdate,
   DepartmentsListResponse,
-} from '../types'
-
-const DEPARTMENTS_ENDPOINT = '/departments'
+} from '../types.js'
 
 interface ListDepartmentsParams {
   page: number
@@ -29,38 +28,41 @@ export const departmentService = {
     })
     if (params.faculty) queryParams.set('faculty', params.faculty)
     if (params.name) queryParams.set('name', params.name)
-    return httpClient.get<DepartmentsListResponse>(`${DEPARTMENTS_ENDPOINT}?${queryParams.toString()}`)
+    return httpClient.get<DepartmentsListResponse>(
+      `${ENDPOINTS.departments.list}?${queryParams.toString()}`
+    )
   },
 
   getDepartment: (departmentId: number): Promise<Department> => {
-    return httpClient.get<Department>(`${DEPARTMENTS_ENDPOINT}/${departmentId}`)
+    return httpClient.get<Department>(ENDPOINTS.departments.detail(departmentId))
   },
 
   getDepartmentByCode: (code: string): Promise<Department> => {
-    return httpClient.get<Department>(`${DEPARTMENTS_ENDPOINT}/code/${code}`)
+    return httpClient.get<Department>(ENDPOINTS.departments.code(code))
   },
 
   createDepartment: (data: DepartmentCreate): Promise<Department> => {
-    return httpClient.post<Department>(DEPARTMENTS_ENDPOINT, data)
+    return httpClient.post<Department>(ENDPOINTS.departments.list, data)
   },
 
   updateDepartment: (departmentId: number, data: DepartmentUpdate): Promise<Department> => {
-    return httpClient.put<Department>(`${DEPARTMENTS_ENDPOINT}/${departmentId}`, data)
+    return httpClient.put<Department>(ENDPOINTS.departments.detail(departmentId), data)
   },
-
-  deleteDepartment: (departmentId: number): Promise<void> => {
-    return httpClient.delete<void>(`${DEPARTMENTS_ENDPOINT}/${departmentId}`)
+  deleteDepartment: (departmentId: number): Promise<null> => {
+    return httpClient.delete<null>(ENDPOINTS.departments.detail(departmentId))
   },
 
   getDepartmentProfessors: (departmentId: number): Promise<DepartmentProfessorsResponse> => {
-    return httpClient.get<DepartmentProfessorsResponse>(`${DEPARTMENTS_ENDPOINT}/${departmentId}/professors`)
+    return httpClient.get<DepartmentProfessorsResponse>(
+      ENDPOINTS.departments.professors(departmentId)
+    )
   },
 
   getDepartmentCourses: (departmentId: number): Promise<DepartmentCoursesResponse> => {
-    return httpClient.get<DepartmentCoursesResponse>(`${DEPARTMENTS_ENDPOINT}/${departmentId}/courses`)
+    return httpClient.get<DepartmentCoursesResponse>(ENDPOINTS.departments.courses(departmentId))
   },
 
   generateDepartment: (data: DepartmentGenerateRequest): Promise<Department> => {
-    return httpClient.post<Department>(`${DEPARTMENTS_ENDPOINT}/generate`, data)
+    return httpClient.post<Department>(ENDPOINTS.departments.generate, data)
   },
 }

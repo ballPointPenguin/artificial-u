@@ -1,17 +1,11 @@
 import { A, useNavigate, useParams } from '@solidjs/router'
 import { type Component, For, Show, createResource, createSignal } from 'solid-js'
-import {
-  deleteCourse,
-  getCourse,
-  getCourseDepartment,
-  getCourseLectures,
-  getCourseProfessor,
-  updateCourse,
-} from '../api/services/course-service'
-import type { LectureBrief, LecturesList } from '../api/types'
-import CourseForm from '../components/courses/CourseForm'
-import type { CourseFormData } from '../components/courses/types'
-import { Button } from '../components/ui/Button'
+import { courseService } from '../api/services/course-service.js'
+import { topicService } from '../api/services/topic-service.js'
+import type { CourseUpdate, LectureBrief, Topic, TopicList } from '../api/types.js'
+import CourseForm from '../components/courses/CourseForm.jsx'
+import type { CourseFormData } from '../components/courses/types.jsx'
+import { Alert, Button } from '../components/ui'
 
 const CourseDetail: Component = () => {
   const params = useParams()
@@ -31,11 +25,24 @@ const CourseDetail: Component = () => {
 
   const [courseData, { refetch }] = createResource(
     () => (isValidId ? courseId : null), // Pass null if ID is invalid
-    getCourse
+    courseService.getCourse
   )
-  const [professorData] = createResource(() => (isValidId ? courseId : null), getCourseProfessor)
-  const [departmentData] = createResource(() => (isValidId ? courseId : null), getCourseDepartment)
-  const [lecturesData] = createResource(() => (isValidId ? courseId : null), getCourseLectures)
+  const [professorData] = createResource(
+    () => (isValidId ? courseId : null),
+    courseService.getCourseProfessor
+  )
+  const [departmentData] = createResource(
+    () => (isValidId ? courseId : null),
+    courseService.getCourseDepartment
+  )
+  const [lecturesData] = createResource(
+    () => (isValidId ? courseId : null),
+    courseService.getCourseLectures
+  )
+  const [topicsData] = createResource(
+    () => (isValidId ? courseId : null),
+    (id) => topicService.listTopicsByCourse(id, 1, 100)
+  )
 
   // Helper function to safely check if lectures exist
   const hasLectures = () => {
@@ -50,8 +57,22 @@ const CourseDetail: Component = () => {
     setIsSubmitting(true)
     setError('')
 
+    // Prepare payload for CourseUpdate, converting nulls to undefined
+    const updatePayload: CourseUpdate = {
+      code: formData.code,
+      title: formData.title,
+      department_id: formData.department_id ?? undefined,
+      level: formData.level,
+      credits: formData.credits ?? undefined,
+      professor_id: formData.professor_id ?? undefined,
+      description: formData.description,
+      lectures_per_week: formData.lectures_per_week ?? undefined,
+      total_weeks: formData.total_weeks ?? undefined,
+      // topics are not part of CourseUpdate in types.ts, handle separately if needed
+    }
+
     try {
-      await updateCourse(courseId, formData)
+      await courseService.updateCourse(courseId, updatePayload)
       setIsEditing(false)
       void refetch()
     } catch (err) {
@@ -73,10 +94,11 @@ const CourseDetail: Component = () => {
 
     setIsDeleting(true)
 
-    void deleteCourse(courseId)
+    void courseService
+      .deleteCourse(courseId)
       .then(() => {
         // Redirect to courses list after successful deletion
-        navigate('/academics/courses')
+        navigate('/courses')
       })
       .catch((err: unknown) => {
         setError(err instanceof Error ? err.message : 'Failed to delete course')
@@ -102,7 +124,7 @@ const CourseDetail: Component = () => {
               <div>
                 <div class="flex items-center justify-between gap-2 mb-4">
                   <A
-                    href="/academics/courses"
+                    href="/courses"
                     class="text-mystic-400 hover:text-mystic-300 transition-colors"
                   >
                     ← Back to Courses
@@ -118,6 +140,13 @@ const CourseDetail: Component = () => {
                     </div>
                   </Show>
                 </div>
+
+                {/* Error Display */}
+                <Show when={error()}>
+                  <Alert variant="danger" class="mb-4">
+                    {error()}
+                  </Alert>
+                </Show>
 
                 {/* Delete Confirmation Dialog */}
                 <Show when={showDeleteConfirm()}>
@@ -221,7 +250,7 @@ const CourseDetail: Component = () => {
                               return (
                                 <div class="font-serif">
                                   <A
-                                    href={`/academics/departments/${String(department.id)}`}
+                                    href={`/departments/${String(department.id)}`}
                                     class="text-mystic-400 hover:text-mystic-300 transition-colors font-medium"
                                   >
                                     {department.name} ({department.code})
@@ -260,15 +289,13 @@ const CourseDetail: Component = () => {
                               return (
                                 <div class="font-serif">
                                   <A
-                                    href={`/academics/professors/${String(professor.id)}`}
+                                    href={`/professors/${String(professor.id)}`}
                                     class="text-mystic-400 hover:text-mystic-300 transition-colors font-medium"
                                   >
                                     {professor.name}
                                   </A>
                                   <p class="text-parchment-300 mt-1">{professor.title}</p>
-                                  <p class="text-parchment-400 mt-2 text-sm">
-                                    Specialization: {professor.specialization}
-                                  </p>
+                                  <p class="text-parchment-300">{professor.specialization}</p>
                                 </div>
                               )
                             }}
@@ -279,41 +306,31 @@ const CourseDetail: Component = () => {
                   </div>
 
                   {/* Lectures Section */}
-                  <div class="mt-8">
-                    <h2 class="text-2xl font-display text-parchment-100 mb-5">Course Lectures</h2>
+                  <div class="arcane-card mt-8">
+                    <h2 class="text-xl font-display text-parchment-100 mb-4 border-b border-parchment-800/30 pb-2">
+                      Lectures
+                    </h2>
                     <Show
                       when={!lecturesData.loading}
                       fallback={
-                        <div class="text-parchment-200 font-serif p-4">Loading lectures...</div>
+                        <div class="text-parchment-400 font-serif">Loading lectures...</div>
                       }
                     >
                       <Show
                         when={hasLectures()}
                         fallback={
-                          <div class="arcane-card p-6 text-center text-parchment-400 font-serif">
-                            No lectures found for this course.
-                          </div>
+                          <div class="text-parchment-400 font-serif">No lectures available.</div>
                         }
                       >
                         <ul class="space-y-4">
-                          <For each={(lecturesData() as LecturesList).lectures}>
+                          <For each={lecturesData()?.lectures}>
                             {(lecture: LectureBrief) => (
-                              <li class="arcane-card hover:shadow-arcane transition-all">
-                                <h3 class="text-lg font-display text-parchment-100 mb-2">
-                                  Week {lecture.week_number}.{lecture.order_in_week}:{' '}
+                              <li class="border-b border-parchment-800/30 pb-3">
+                                <h3 class="font-semibold text-parchment-100">
+                                  Week {lecture.week_number} - Lecture {lecture.order_in_week}:{' '}
                                   {lecture.title}
                                 </h3>
-                                <p class="text-parchment-300 font-serif mb-3">
-                                  {lecture.description}
-                                </p>
-                                {lecture.audio_url && (
-                                  <div class="mt-4">
-                                    <audio controls src={lecture.audio_url} class="w-full">
-                                      <track kind="captions" />
-                                      Your browser does not support the audio element.
-                                    </audio>
-                                  </div>
-                                )}
+                                <p class="text-parchment-300 text-sm mt-1">{lecture.description}</p>
                               </li>
                             )}
                           </For>
@@ -326,43 +343,64 @@ const CourseDetail: Component = () => {
                   <div class="mt-8">
                     <h2 class="text-2xl font-display text-parchment-100 mb-5">Course Topics</h2>
                     <Show
-                      when={
-                        Array.isArray(course().topics ?? []) && (course().topics ?? []).length > 0
-                      }
+                      when={!topicsData.loading}
                       fallback={
                         <div class="arcane-card p-6 text-center text-parchment-400 font-serif">
-                          No topics defined for this course.
+                          Loading topics...
                         </div>
                       }
                     >
-                      <ul class="space-y-4">
-                        <For
-                          each={(() => {
-                            const topics = Array.isArray(course().topics) ? course().topics : []
-                            const weeks = Math.max(...(topics ?? []).map((t) => t.week_number), 0)
-                            return Array.from({ length: weeks }, (_, i) => i + 1)
-                          })()}
-                        >
-                          {(week) => (
-                            <li class="arcane-card">
-                              <div class="font-semibold text-parchment-200 mb-2">Week {week}</div>
-                              <ul class="ml-4 list-disc">
-                                <For
-                                  each={(course().topics ?? []).filter(
-                                    (t) => t.week_number === week
-                                  )}
-                                >
-                                  {(topic) => (
-                                    <li class="text-parchment-100 font-serif">
-                                      Lecture {topic.order_in_week}: {topic.title}
-                                    </li>
-                                  )}
-                                </For>
-                              </ul>
-                            </li>
-                          )}
-                        </For>
-                      </ul>
+                      <Show
+                        when={topicsData() && (topicsData() as TopicList).items.length > 0}
+                        fallback={
+                          <div class="arcane-card p-6 text-center text-parchment-400 font-serif">
+                            No topics defined for this course.
+                          </div>
+                        }
+                      >
+                        {(() => {
+                          const topics = (topicsData() as TopicList).items
+                          const topicsByWeek = topics.reduce<Record<number, Topic[]>>(
+                            (acc, topic: Topic) => {
+                              acc[topic.week] = acc[topic.week] ?? []
+                              acc[topic.week].push(topic)
+                              return acc
+                            },
+                            {}
+                          )
+
+                          for (const weekKey in topicsByWeek) {
+                            topicsByWeek[Number(weekKey)].sort((a, b) => a.order - b.order)
+                          }
+
+                          const sortedWeeks = Object.keys(topicsByWeek)
+                            .map(Number)
+                            .sort((a, b) => a - b)
+
+                          return (
+                            <ul class="space-y-4">
+                              <For each={sortedWeeks}>
+                                {(weekNumber) => (
+                                  <li class="arcane-card p-4">
+                                    <div class="font-semibold text-parchment-200 mb-2">
+                                      Week {weekNumber}
+                                    </div>
+                                    <ul class="ml-4 list-disc space-y-1">
+                                      <For each={topicsByWeek[weekNumber]}>
+                                        {(topic) => (
+                                          <li class="text-parchment-100 font-serif">
+                                            Lecture {topic.order}: {topic.title}
+                                          </li>
+                                        )}
+                                      </For>
+                                    </ul>
+                                  </li>
+                                )}
+                              </For>
+                            </ul>
+                          )
+                        })()}
+                      </Show>
                     </Show>
                   </div>
                 </Show>

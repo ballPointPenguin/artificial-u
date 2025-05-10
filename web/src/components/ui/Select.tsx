@@ -1,7 +1,7 @@
 import { Select as KSelect } from '@kobalte/core'
+import { ChevronDown } from 'lucide-solid'
 import type { Component, ComponentProps, JSX } from 'solid-js'
 import { Show, splitProps } from 'solid-js'
-import { ChevronDown } from 'lucide-solid'
 
 export interface SelectOption {
   value: string | number
@@ -10,9 +10,22 @@ export interface SelectOption {
 }
 
 // Omit props that are handled internally or have different signatures
-interface SelectProps extends Omit<ComponentProps<typeof KSelect.Root<SelectOption>>,
-  'value' | 'defaultValue' | 'onChange' | 'options' | 'itemComponent' | 'placeholder' | 'name' | 'id' | 'required' | 'disabled' | 'validationState' | 'multiple'
-> {
+interface SelectProps
+  extends Omit<
+    ComponentProps<typeof KSelect.Root<SelectOption>>,
+    | 'value'
+    | 'defaultValue'
+    | 'onChange'
+    | 'options'
+    | 'itemComponent'
+    | 'placeholder'
+    | 'name'
+    | 'id'
+    | 'required'
+    | 'disabled'
+    | 'validationState'
+    | 'multiple'
+  > {
   name: string // Required for form association and fieldId
   label?: string // Optional: FormField will primarily handle the label
   error?: string | null | false
@@ -26,8 +39,6 @@ interface SelectProps extends Omit<ComponentProps<typeof KSelect.Root<SelectOpti
   triggerClass?: string
   contentClass?: string
   itemClass?: string
-  // Allow any other KSelect.Root props (like 'virtualized') to be passed through
-  [key: string]: any
 }
 
 const Select: Component<SelectProps> = (props) => {
@@ -53,7 +64,7 @@ const Select: Component<SelectProps> = (props) => {
   // Helper to find the full option object based on the primitive value
   const findOptionByValue = (val: SelectOption['value'] | null | undefined) => {
     if (val === null || val === undefined) return undefined
-    return local.options.find(opt => opt.value === val)
+    return local.options.find((opt) => opt.value === val)
   }
 
   return (
@@ -64,14 +75,13 @@ const Select: Component<SelectProps> = (props) => {
       optionValue="value"
       optionTextValue="label"
       optionDisabled="disabled"
-
       value={findOptionByValue(local.value)}
-      onChange={(selectedOptionObject: SelectOption | null) => { // For single (multiple=false), onChange gives SelectOption | null
+      onChange={(selectedOptionObject: SelectOption | null) => {
+        // For single (multiple=false), onChange gives SelectOption | null
         if (local.onChange) {
           local.onChange(selectedOptionObject ? selectedOptionObject.value : null)
         }
       }}
-
       placeholder={local.placeholder || 'Select...'}
       validationState={hasError() ? 'invalid' : 'valid'}
       disabled={local.disabled}
@@ -79,7 +89,8 @@ const Select: Component<SelectProps> = (props) => {
       class={local.class}
       name={local.name}
       id={fieldId()}
-      itemComponent={(itemProps) => { // itemProps is KSelect.SelectItemState<SelectOption>
+      itemComponent={(itemProps) => {
+        // itemProps is KSelect.SelectItemState<SelectOption>
         // itemProps.item is the CollectionNode<SelectOption>
         // itemProps.item.rawValue is the SelectOption object
         return (
@@ -107,10 +118,16 @@ const Select: Component<SelectProps> = (props) => {
       <KSelect.Trigger
         class={`arcane-input flex items-center justify-between w-full appearance-none ${local.triggerClass || ''}`}
         aria-invalid={hasError()}
-        aria-describedby={hasError() ? `${fieldId()}-error ${fieldId()}-helper` : `${fieldId()}-helper`}
+        aria-describedby={
+          hasError() ? `${fieldId()}-error ${fieldId()}-helper` : `${fieldId()}-helper`
+        }
       >
         <KSelect.Value<SelectOption>>
-          {(state) => state.selectedOption() ? state.selectedOption()!.label : <span class="text-muted">{local.placeholder || 'Select...'}</span>}
+          {(state) =>
+            state.selectedOption().label || (
+              <span class="text-muted">{local.placeholder || 'Select...'}</span>
+            )
+          }
         </KSelect.Value>
         <KSelect.Icon class="ml-2">
           <ChevronDown size={16} class="opacity-75" />
@@ -122,9 +139,7 @@ const Select: Component<SelectProps> = (props) => {
           class={`bg-surface border border-border rounded-sm shadow-lg p-1 z-50 ${local.contentClass || ''}`}
         >
           {/* Listbox does not take itemComponent, it's rendered by Root based on options */}
-          <KSelect.Listbox<SelectOption>
-            class="max-h-60 overflow-y-auto"
-          />
+          <KSelect.Listbox<SelectOption> class="max-h-60 overflow-y-auto" />
         </KSelect.Content>
       </KSelect.Portal>
     </KSelect.Root>

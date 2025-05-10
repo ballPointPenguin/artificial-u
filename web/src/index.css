@@ -18,7 +18,8 @@
   --shadow-glow: 0 0 8px rgb(var(--glow-rgb, 138, 43, 226), calc(var(--glow-alpha, 0.3) * 2));
 
   /* Text shadows using theme-derived glow components */
-  --text-shadow-arcane: 0 0 5px rgb(var(--glow-rgb, 138, 43, 226), calc(var(--glow-alpha, 0.3) * 1.66));
+  --text-shadow-arcane: 0 0 5px
+    rgb(var(--glow-rgb, 138, 43, 226), calc(var(--glow-alpha, 0.3) * 1.66));
   --text-shadow-golden: 0 0 2px rgb(219, 180, 12, 0.4);
 
   /* Animation properties */
@@ -37,14 +38,26 @@
   --color-info-bg: hsl(var(--theme-info-h) var(--theme-info-s) calc(var(--theme-info-l) - 45%));
   --color-info-border: hsl(var(--theme-info-h) var(--theme-info-s) calc(var(--theme-info-l) - 25%));
   --color-success: hsl(var(--theme-success-h) var(--theme-success-s) var(--theme-success-l));
-  --color-success-bg: hsl(var(--theme-success-h) var(--theme-success-s) calc(var(--theme-success-l) - 25%));
-  --color-success-border: hsl(var(--theme-success-h) var(--theme-success-s) calc(var(--theme-success-l) - 10%));
+  --color-success-bg: hsl(
+    var(--theme-success-h) var(--theme-success-s) calc(var(--theme-success-l) - 25%)
+  );
+  --color-success-border: hsl(
+    var(--theme-success-h) var(--theme-success-s) calc(var(--theme-success-l) - 10%)
+  );
   --color-warning: hsl(var(--theme-warning-h) var(--theme-warning-s) var(--theme-warning-l));
-  --color-warning-bg: hsl(var(--theme-warning-h) var(--theme-warning-s) calc(var(--theme-warning-l) - 35%));
-  --color-warning-border: hsl(var(--theme-warning-h) var(--theme-warning-s) calc(var(--theme-warning-l) - 15%));
+  --color-warning-bg: hsl(
+    var(--theme-warning-h) var(--theme-warning-s) calc(var(--theme-warning-l) - 35%)
+  );
+  --color-warning-border: hsl(
+    var(--theme-warning-h) var(--theme-warning-s) calc(var(--theme-warning-l) - 15%)
+  );
   --color-danger: hsl(var(--theme-danger-h) var(--theme-danger-s) var(--theme-danger-l));
-  --color-danger-bg: hsl(var(--theme-danger-h) var(--theme-danger-s) calc(var(--theme-danger-l) - 30%));
-  --color-danger-border: hsl(var(--theme-danger-h) var(--theme-danger-s) calc(var(--theme-danger-l) - 10%));
+  --color-danger-bg: hsl(
+    var(--theme-danger-h) var(--theme-danger-s) calc(var(--theme-danger-l) - 30%)
+  );
+  --color-danger-border: hsl(
+    var(--theme-danger-h) var(--theme-danger-s) calc(var(--theme-danger-l) - 10%)
+  );
 
   /* Sparkle Colors for Magic Button Shimmer */
   --sparkle-color-1: hsl(var(--theme-accent-h) var(--theme-accent-s) var(--theme-accent-l) / 0.8);
@@ -54,117 +67,198 @@
 
 /* Global Keyframes Definitions */
 @keyframes shimmer {
-  0% { background-position: -200% 0, -150% 50%, -100% 100%; }
-  100% { background-position: 200% 0, 250% 50%, 300% 100%; }
+  0% {
+    background-position: -200% 0, -150% 50%, -100% 100%;
+  }
+
+  100% {
+    background-position: 200% 0, 250% 50%, 300% 100%;
+  }
 }
 
 /* Root - Base HSL Components & Derived Semantic Colors */
 :root {
   /* Base HSL components */
-  --theme-bg-h: 30;         --theme-bg-s: 15%;        --theme-bg-l: 12%;
-  --theme-fg-h: 35;         --theme-fg-s: 25%;        --theme-fg-l: 88%;
-  --theme-primary-h: 35;    --theme-primary-s: 65%;   --theme-primary-l: 55%;
-  --theme-secondary-h: 210; --theme-secondary-s: 30%; --theme-secondary-l: 60%;
-  --theme-accent-h: 10;     --theme-accent-s: 40%;    --theme-accent-l: 45%;
+  --theme-bg-h: 30;
+  --theme-bg-s: 15%;
+  --theme-bg-l: 12%;
+  --theme-fg-h: 35;
+  --theme-fg-s: 25%;
+  --theme-fg-l: 88%;
+  --theme-primary-h: 35;
+  --theme-primary-s: 65%;
+  --theme-primary-l: 55%;
+  --theme-secondary-h: 210;
+  --theme-secondary-s: 30%;
+  --theme-secondary-l: 60%;
+  --theme-accent-h: 10;
+  --theme-accent-s: 40%;
+  --theme-accent-l: 45%;
 
   /* Base RGB for Glow */
-  --glow-rgb: 138, 43, 226; --glow-alpha: 0.2;
+  --glow-rgb: 138, 43, 226;
+  --glow-alpha: 0.2;
 
   /* Base RGB for some background images if needed (Review if these are still accurate) */
-  --theme-secondary-r: 92; --theme-secondary-g: 122; --theme-secondary-b: 153;
-  --theme-bg-r: 38; --theme-bg-g:35; --theme-bg-b:33;
+  --theme-secondary-r: 92;
+  --theme-secondary-g: 122;
+  --theme-secondary-b: 153;
+  --theme-bg-r: 38;
+  --theme-bg-g: 35;
+  --theme-bg-b: 33;
 
   /* Status Color HSL Bases */
-  --theme-info-h: 190;    --theme-info-s: 35%;      --theme-info-l: 65%;
-  --theme-success-h: 90;  --theme-success-s: 30%;   --theme-success-l: 60%;
-  --theme-warning-h: 30;  --theme-warning-s: 60%;   --theme-warning-l: 65%;
-  --theme-danger-h: 0;    --theme-danger-s: 45%;    --theme-danger-l: 55%;
+  --theme-info-h: 190;
+  --theme-info-s: 35%;
+  --theme-info-l: 65%;
+  --theme-success-h: 90;
+  --theme-success-s: 30%;
+  --theme-success-l: 60%;
+  --theme-warning-h: 30;
+  --theme-warning-s: 60%;
+  --theme-warning-l: 65%;
+  --theme-danger-h: 0;
+  --theme-danger-s: 45%;
+  --theme-danger-l: 55%;
 }
 
 /* Theme Classes */
 .theme-vaporwave {
-  --theme-bg-h: 240;        --theme-bg-s: 60%;          --theme-bg-l: 15%;
-  --theme-fg-h: 210;        --theme-fg-s: 100%;         --theme-fg-l: 95%;
-  --theme-primary-h: 260;   --theme-primary-s: 100%;    --theme-primary-l: 70%;
-  --theme-secondary-h: 180; --theme-secondary-s: 100%;  --theme-secondary-l: 55%;
-  --theme-accent-h: 330;    --theme-accent-s: 100%;     --theme-accent-l: 65%;
-  --theme-secondary-r: 0;   --theme-secondary-g: 255;   --theme-secondary-b: 255; /* Cyan approx. */
-  --theme-bg-r: 26;         --theme-bg-g:15;            --theme-bg-b:61; /* Indigo approx. */
-  --glow-rgb: 255, 0, 255;  --glow-alpha: 0.35;   /* Magenta glow */
+  --theme-bg-h: 240;
+  --theme-bg-s: 60%;
+  --theme-bg-l: 15%;
+  --theme-fg-h: 210;
+  --theme-fg-s: 100%;
+  --theme-fg-l: 95%;
+  --theme-primary-h: 260;
+  --theme-primary-s: 100%;
+  --theme-primary-l: 70%;
+  --theme-secondary-h: 180;
+  --theme-secondary-s: 100%;
+  --theme-secondary-l: 55%;
+  --theme-accent-h: 330;
+  --theme-accent-s: 100%;
+  --theme-accent-l: 65%;
+  --theme-secondary-r: 0;
+  --theme-secondary-g: 255;
+  --theme-secondary-b: 255; /* Cyan approx. */
+  --theme-bg-r: 26;
+  --theme-bg-g: 15;
+  --theme-bg-b: 61; /* Indigo approx. */
+  --glow-rgb: 255, 0, 255;
+  --glow-alpha: 0.35; /* Magenta glow */
 
   /* Status Color HSL Bases */
-  --theme-info-h: 200;    --theme-info-s: 100%;     --theme-info-l: 65%;
-  --theme-success-h: 120; --theme-success-s: 100%;  --theme-success-l: 60%;
-  --theme-warning-h: 45;  --theme-warning-s: 100%;  --theme-warning-l: 60%;
-  --theme-danger-h: 300;  --theme-danger-s: 100%;   --theme-danger-l: 60%;
+  --theme-info-h: 200;
+  --theme-info-s: 100%;
+  --theme-info-l: 65%;
+  --theme-success-h: 120;
+  --theme-success-s: 100%;
+  --theme-success-l: 60%;
+  --theme-warning-h: 45;
+  --theme-warning-s: 100%;
+  --theme-warning-l: 60%;
+  --theme-danger-h: 300;
+  --theme-danger-s: 100%;
+  --theme-danger-l: 60%;
 }
 
 .theme-wabi-sabi {
   /* Base HSL components for Wabi Sabi */
-  --theme-bg-h: 35;         --theme-bg-s: 30%;        --theme-bg-l: 92%; /* Light, warm beige */
-  --theme-fg-h: 35;         --theme-fg-s: 15%;        --theme-fg-l: 30%; /* Dark, muted brown */
-  --theme-primary-h: 30;    --theme-primary-s: 25%;   --theme-primary-l: 60%; /* Muted terracotta/brown */
-  --theme-secondary-h: 90;  --theme-secondary-s: 10%; --theme-secondary-l: 70%; /* Soft, desaturated grey-green */
-  --theme-accent-h: 40;     --theme-accent-s: 30%;    --theme-accent-l: 50%; /* Muted ochre/gold */
+  --theme-bg-h: 35;
+  --theme-bg-s: 30%;
+  --theme-bg-l: 92%; /* Light, warm beige */
+  --theme-fg-h: 35;
+  --theme-fg-s: 15%;
+  --theme-fg-l: 30%; /* Dark, muted brown */
+  --theme-primary-h: 30;
+  --theme-primary-s: 25%;
+  --theme-primary-l: 60%; /* Muted terracotta/brown */
+  --theme-secondary-h: 90;
+  --theme-secondary-s: 10%;
+  --theme-secondary-l: 70%; /* Soft, desaturated grey-green */
+  --theme-accent-h: 40;
+  --theme-accent-s: 30%;
+  --theme-accent-l: 50%; /* Muted ochre/gold */
 
   /* Subtle Glow for Wabi Sabi */
-  --glow-rgb: 50, 40, 30; --glow-alpha: 0.05;
+  --glow-rgb: 50, 40, 30;
+  --glow-alpha: 0.05;
 
   /* Overridden Semantic Colors for Wabi Sabi (light theme adjustments) */
-  --color-surface: hsl(35deg, 30%, 88%);  /* Slightly off-white/beige, darker than bg */
-  --color-border: hsl(35deg, 20%, 80%);   /* Light beige border */
-  --color-muted: hsl(35deg, 10%, 50%);    /* Lighter, less saturated brown for muted text */
+  --color-surface: hsl(35deg, 30%, 88%); /* Slightly off-white/beige, darker than bg */
+  --color-border: hsl(35deg, 20%, 80%); /* Light beige border */
+  --color-muted: hsl(35deg, 10%, 50%); /* Lighter, less saturated brown for muted text */
 
   /* Status Colors for Wabi Sabi (direct HSL values) */
-  --color-info:           hsl(210deg, 20%, 50%);
-  --color-info-bg:        hsl(210deg, 20%, 85%);
-  --color-info-border:    hsl(210deg, 20%, 70%);
-  --color-success:        hsl(120deg, 25%, 45%);
-  --color-success-bg:     hsl(120deg, 25%, 88%);
+  --color-info: hsl(210deg, 20%, 50%);
+  --color-info-bg: hsl(210deg, 20%, 85%);
+  --color-info-border: hsl(210deg, 20%, 70%);
+  --color-success: hsl(120deg, 25%, 45%);
+  --color-success-bg: hsl(120deg, 25%, 88%);
   --color-success-border: hsl(120deg, 25%, 70%);
-  --color-warning:        hsl(40deg, 50%, 50%);
-  --color-warning-bg:     hsl(40deg, 50%, 88%);
+  --color-warning: hsl(40deg, 50%, 50%);
+  --color-warning-bg: hsl(40deg, 50%, 88%);
   --color-warning-border: hsl(40deg, 50%, 70%);
-  --color-danger:         hsl(15deg, 35%, 50%);
-  --color-danger-bg:      hsl(15deg, 35%, 88%);
-  --color-danger-border:  hsl(15deg, 35%, 70%);
+  --color-danger: hsl(15deg, 35%, 50%);
+  --color-danger-bg: hsl(15deg, 35%, 88%);
+  --color-danger-border: hsl(15deg, 35%, 70%);
 }
 
 .theme-biophilia {
   /* Base HSL components for Biophilia */
-  --theme-bg-h: 90;         --theme-bg-s: 60%;        --theme-bg-l: 90%; /* Light Honeydew */
-  --theme-fg-h: 30;         --theme-fg-s: 40%;        --theme-fg-l: 18%; /* Darker, richer Woody Brown */
-  --theme-primary-h: 120;   --theme-primary-s: 60%;   --theme-primary-l: 45%; /* Vibrant Leaf Green */
-  --theme-secondary-h: 320; --theme-secondary-s: 70%; --theme-secondary-l: 65%; /* Bright Orchid Pink */
-  --theme-accent-h: 50;     --theme-accent-s: 100%;   --theme-accent-l: 45%; /* Deeper Sunny Yellow */
+  --theme-bg-h: 90;
+  --theme-bg-s: 60%;
+  --theme-bg-l: 90%; /* Light Honeydew */
+  --theme-fg-h: 30;
+  --theme-fg-s: 40%;
+  --theme-fg-l: 18%; /* Darker, richer Woody Brown */
+  --theme-primary-h: 120;
+  --theme-primary-s: 60%;
+  --theme-primary-l: 45%; /* Vibrant Leaf Green */
+  --theme-secondary-h: 320;
+  --theme-secondary-s: 70%;
+  --theme-secondary-l: 65%; /* Bright Orchid Pink */
+  --theme-accent-h: 50;
+  --theme-accent-s: 100%;
+  --theme-accent-l: 45%; /* Deeper Sunny Yellow */
 
   /* Glow for Biophilia */
-  --glow-rgb: 120, 200, 100; --glow-alpha: 0.15; /* Soft green glow */
+  --glow-rgb: 120, 200, 100;
+  --glow-alpha: 0.15; /* Soft green glow */
 
   /* Overridden Semantic Colors for Biophilia (light theme adjustments) */
-  --color-surface: hsl(90deg, 55%, 94%);  /* Lighter Honeydew */
-  --color-border: hsl(30deg, 25%, 50%);   /* Medium Woody Brown */
-  --color-muted: hsl(30deg, 20%, 45%);    /* Lighter, less saturated brown */
+  --color-surface: hsl(90deg, 55%, 94%); /* Lighter Honeydew */
+  --color-border: hsl(30deg, 25%, 50%); /* Medium Woody Brown */
+  --color-muted: hsl(30deg, 20%, 45%); /* Lighter, less saturated brown */
 
   /* Status Color HSL Bases (Biophilia specific) */
-  --theme-info-h: 210;    --theme-info-s: 80%;      --theme-info-l: 60%;
-  --theme-success-h: 140; --theme-success-s: 60%;   --theme-success-l: 50%;
-  --theme-warning-h: 35;  --theme-warning-s: 100%;  --theme-warning-l: 60%;
-  --theme-danger-h: 0;    --theme-danger-s: 80%;    --theme-danger-l: 60%;
+  --theme-info-h: 210;
+  --theme-info-s: 80%;
+  --theme-info-l: 60%;
+  --theme-success-h: 140;
+  --theme-success-s: 60%;
+  --theme-success-l: 50%;
+  --theme-warning-h: 35;
+  --theme-warning-s: 100%;
+  --theme-warning-l: 60%;
+  --theme-danger-h: 0;
+  --theme-danger-s: 80%;
+  --theme-danger-l: 60%;
 
   /* Directly defined Status Colors for Biophilia (because global derivations are for dark themes) */
-  --color-info:           hsl(var(--theme-info-h),    var(--theme-info-s), var(--theme-info-l));
-  --color-info-bg:        hsl(var(--theme-info-h),    var(--theme-info-s), 92%);
-  --color-info-border:    hsl(var(--theme-info-h),    var(--theme-info-s), 75%);
-  --color-success:        hsl(var(--theme-success-h), var(--theme-success-s), var(--theme-success-l));
-  --color-success-bg:     hsl(var(--theme-success-h), var(--theme-success-s), 90%);
+  --color-info: hsl(var(--theme-info-h), var(--theme-info-s), var(--theme-info-l));
+  --color-info-bg: hsl(var(--theme-info-h), var(--theme-info-s), 92%);
+  --color-info-border: hsl(var(--theme-info-h), var(--theme-info-s), 75%);
+  --color-success: hsl(var(--theme-success-h), var(--theme-success-s), var(--theme-success-l));
+  --color-success-bg: hsl(var(--theme-success-h), var(--theme-success-s), 90%);
   --color-success-border: hsl(var(--theme-success-h), var(--theme-success-s), 70%);
-  --color-warning:        hsl(var(--theme-warning-h), var(--theme-warning-s), var(--theme-warning-l));
-  --color-warning-bg:     hsl(var(--theme-warning-h), var(--theme-warning-s), 92%);
+  --color-warning: hsl(var(--theme-warning-h), var(--theme-warning-s), var(--theme-warning-l));
+  --color-warning-bg: hsl(var(--theme-warning-h), var(--theme-warning-s), 92%);
   --color-warning-border: hsl(var(--theme-warning-h), var(--theme-warning-s), 75%);
-  --color-danger:         hsl(var(--theme-danger-h),  var(--theme-danger-s), var(--theme-danger-l));
-  --color-danger-bg:      hsl(var(--theme-danger-h),  var(--theme-danger-s), 92%);
-  --color-danger-border:  hsl(var(--theme-danger-h),  var(--theme-danger-s), 75%);
+  --color-danger: hsl(var(--theme-danger-h), var(--theme-danger-s), var(--theme-danger-l));
+  --color-danger-bg: hsl(var(--theme-danger-h), var(--theme-danger-s), 92%);
+  --color-danger-border: hsl(var(--theme-danger-h), var(--theme-danger-s), 75%);
 }
 
 /* Custom Utilities - Tailwind v4 style with @utility directives - These are fine */
@@ -191,13 +285,18 @@
     min-height: 100vh;
   }
 
-  h1, h2, h3, h4, h5, h6 {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     color: hsl(var(--color-foreground));
     font-family: var(--font-display);
 
     @apply tracking-wide;
 
-     /* Consider if text-primary or text-accent is better for headings by default */
+    /* Consider if text-primary or text-accent is better for headings by default */
   }
 
   a {
@@ -213,10 +312,16 @@
 
 /* Component Classes - These will use semantic utilities from Tailwind now */
 @layer components {
-  .arcane-card { @apply bg-surface border border-border/30 rounded-sm p-6 transition-all duration-300; }
-  .arcane-card:hover { @apply shadow-arcane; }
+  .arcane-card {
+    @apply bg-surface border border-border/30 rounded-sm p-6 transition-all duration-300;
+  }
 
-  .arcane-input { /* Needs review: specific palette, focus mystic-500 */
+  .arcane-card:hover {
+    @apply shadow-arcane;
+  }
+
+  .arcane-input {
+    /* Needs review: specific palette, focus mystic-500 */
     @apply w-full px-4 py-2 bg-surface border border-border
            rounded-sm text-foreground placeholder:text-muted
            focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/50
@@ -225,8 +330,7 @@
 
   .animate-shimmer {
     animation: var(--animation-shimmer);
-    background-image:
-      radial-gradient(circle, var(--sparkle-color-1) 2px, transparent 3px),
+    background-image: radial-gradient(circle, var(--sparkle-color-1) 2px, transparent 3px),
       radial-gradient(circle, var(--sparkle-color-2) 2px, transparent 3px),
       radial-gradient(circle, var(--sparkle-color-3) 2px, transparent 3px);
     background-size: 60px 60px, 80px 80px, 70px 70px;

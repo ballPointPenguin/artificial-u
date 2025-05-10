@@ -1,11 +1,14 @@
 import { For, Show, createEffect, createResource } from 'solid-js'
-import { getProfessors } from '../../api/services/professor-service'
-import type { Professor } from '../../api/types'
-import ProfessorListItem from '../professors/ProfessorListItem'
+import { professorService } from '../../api/services/professor-service.js'
+import type { Professor } from '../../api/types.js'
+import ProfessorListItem from '../professors/ProfessorListItem.js'
 
 export default function ProfessorList() {
-  // Use createResource properly without source signal
-  const [professorsResource, { refetch }] = createResource(() => getProfessors({}))
+  // Use createResource properly with the correct service method
+  const [professorsResource, { refetch }] = createResource(
+    () => ({ page: 1, size: 20 }), // Example params, adjust as needed or make dynamic
+    professorService.listProfessors
+  )
 
   // Add debug logging
   createEffect(() => {

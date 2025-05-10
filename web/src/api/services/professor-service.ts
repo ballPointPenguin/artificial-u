@@ -1,7 +1,8 @@
 /**
  * Professor service
  */
-import { httpClient } from '../client'
+import { httpClient } from '../client.js'
+import { ENDPOINTS } from '../config.js'
 import type {
   Professor,
   ProfessorCoursesResponse,
@@ -10,9 +11,7 @@ import type {
   ProfessorLecturesResponse,
   ProfessorUpdate,
   ProfessorsListResponse,
-} from '../types'
-
-const PROFESSORS_ENDPOINT = '/professors'
+} from '../types.js'
 
 interface ListProfessorsParams {
   page: number
@@ -31,38 +30,39 @@ export const professorService = {
     if (params.departmentId) queryParams.set('department_id', params.departmentId.toString())
     if (params.name) queryParams.set('name', params.name)
     if (params.specialization) queryParams.set('specialization', params.specialization)
-    return httpClient.get<ProfessorsListResponse>(`${PROFESSORS_ENDPOINT}?${queryParams.toString()}`)
+    return httpClient.get<ProfessorsListResponse>(
+      `${ENDPOINTS.professors.list}?${queryParams.toString()}`
+    )
   },
 
   getProfessor: (professorId: number): Promise<Professor> => {
-    return httpClient.get<Professor>(`${PROFESSORS_ENDPOINT}/${professorId}`)
+    return httpClient.get<Professor>(ENDPOINTS.professors.detail(professorId))
   },
 
   createProfessor: (data: ProfessorCreate): Promise<Professor> => {
-    return httpClient.post<Professor>(PROFESSORS_ENDPOINT, data)
+    return httpClient.post<Professor>(ENDPOINTS.professors.list, data)
   },
 
   updateProfessor: (professorId: number, data: ProfessorUpdate): Promise<Professor> => {
-    return httpClient.put<Professor>(`${PROFESSORS_ENDPOINT}/${professorId}`, data)
+    return httpClient.put<Professor>(ENDPOINTS.professors.detail(professorId), data)
   },
-
-  deleteProfessor: (professorId: number): Promise<void> => {
-    return httpClient.delete<void>(`${PROFESSORS_ENDPOINT}/${professorId}`)
+  deleteProfessor: (professorId: number): Promise<undefined> => {
+    return httpClient.delete(ENDPOINTS.professors.detail(professorId))
   },
 
   getProfessorCourses: (professorId: number): Promise<ProfessorCoursesResponse> => {
-    return httpClient.get<ProfessorCoursesResponse>(`${PROFESSORS_ENDPOINT}/${professorId}/courses`)
+    return httpClient.get<ProfessorCoursesResponse>(ENDPOINTS.professors.courses(professorId))
   },
 
   getProfessorLectures: (professorId: number): Promise<ProfessorLecturesResponse> => {
-    return httpClient.get<ProfessorLecturesResponse>(`${PROFESSORS_ENDPOINT}/${professorId}/lectures`)
+    return httpClient.get<ProfessorLecturesResponse>(ENDPOINTS.professors.lectures(professorId))
   },
 
   generateProfessorImage: (professorId: number): Promise<Professor> => {
-    return httpClient.post<Professor>(`${PROFESSORS_ENDPOINT}/${professorId}/generate-image`, {})
+    return httpClient.post<Professor>(ENDPOINTS.professors.generateImage(professorId), {})
   },
 
   generateProfessor: (data: ProfessorGenerateRequest): Promise<Professor> => {
-    return httpClient.post<Professor>(`${PROFESSORS_ENDPOINT}/generate`, data)
+    return httpClient.post<Professor>(ENDPOINTS.professors.generate, data)
   },
 }

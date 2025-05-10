@@ -31,7 +31,7 @@ export const DEFAULT_HEADERS = {
 
 // Endpoints
 export const ENDPOINTS = {
-  info: '/',
+  info: '/v1/info',
   health: '/v1/health',
   professors: {
     list: '/v1/professors',
@@ -65,5 +65,10 @@ export const ENDPOINTS = {
     content: (id: number) => `/v1/lectures/${String(id)}/content`,
     audio: (id: number) => `/v1/lectures/${String(id)}/audio`,
     download: (id: number) => `/v1/lectures/${String(id)}/content/download`,
+  },
+  topics: {
+    list: '/v1/topics',
+    detail: (id: number) => `/v1/topics/${String(id)}`,
+    generateForCourse: (courseId: number) => `/v1/courses/${String(courseId)}/topics/generate`,
   },
 }

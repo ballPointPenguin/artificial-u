@@ -10,7 +10,9 @@ interface FormProps extends ParentProps<Omit<ComponentProps<'form'>, 'children'>
 const Form: Component<FormProps> = (props) => {
   const [local, others] = splitProps(props, ['class', 'children', 'onSubmit'])
 
-  const handleSubmit = (event: SubmitEvent & { currentTarget: HTMLFormElement; target: Element }) => {
+  const handleSubmit = (
+    event: SubmitEvent & { currentTarget: HTMLFormElement; target: Element }
+  ) => {
     if (local.onSubmit) {
       // Prevent default if onSubmit is provided, common practice for SPA forms
       event.preventDefault()
@@ -22,7 +24,7 @@ const Form: Component<FormProps> = (props) => {
   return (
     <form
       class={`space-y-6 ${local.class || ''}`} // Apply base spacing and any custom class
-      onSubmit={props.onSubmit ? handleSubmit : undefined}
+      onSubmit={handleSubmit}
       {...others} // Pass through other native form attributes
     >
       {local.children}

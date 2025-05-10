@@ -81,10 +81,12 @@ export async function deleteLecture(id: number): Promise<Record<string, never>> 
  * Get content of a lecture
  */
 export async function getLectureContent(id: number): Promise<string> {
-  const url = createUrl(`${ENDPOINTS.lectures.content(id)}`)
+  const url = createUrl(ENDPOINTS.lectures.content(id))
   const response = await fetch(url)
   if (!response.ok) {
-    throw new Error(`Failed to fetch lecture content: ${response.statusText} (status: ${response.status})`)
+    throw new Error(
+      `Failed to fetch lecture content: ${response.statusText} (status: ${String(response.status)})`
+    )
   }
   return response.text()
 }
@@ -100,10 +102,12 @@ export async function getLectureAudio(id: number): Promise<{ url: string }> {
  * Download lecture content as text file
  */
 export async function downloadLectureContent(id: number): Promise<string> {
-  const url = createUrl(`${ENDPOINTS.lectures.download(id)}`)
+  const url = createUrl(ENDPOINTS.lectures.download(id))
   const response = await fetch(url)
   if (!response.ok) {
-    throw new Error(`Failed to download lecture content: ${response.statusText} (status: ${response.status})`)
+    throw new Error(
+      `Failed to download lecture content: ${response.statusText} (status: ${String(response.status)})`
+    )
   }
   return response.text()
 }
@@ -120,8 +124,6 @@ interface LectureGeneratePayload {
 export async function generateLecture(data: LectureGeneratePayload): Promise<Lecture> {
   return httpClient.post<Lecture>(ENDPOINTS.lectures.generate, data)
 }
-
-const LECTURES_ENDPOINT = '/lectures'
 
 interface ListLecturesParams {
   page: number
@@ -141,48 +143,52 @@ export const lectureService = {
     if (params.professorId) queryParams.set('professor_id', params.professorId.toString())
     if (params.search) queryParams.set('search', params.search)
 
-    return httpClient.get<LectureList>(`${LECTURES_ENDPOINT}?${queryParams.toString()}`)
+    return httpClient.get<LectureList>(`${ENDPOINTS.lectures.list}?${queryParams.toString()}`)
   },
 
   getLecture: (lectureId: number): Promise<Lecture> => {
-    return httpClient.get<Lecture>(`${LECTURES_ENDPOINT}/${lectureId}`)
+    return httpClient.get<Lecture>(ENDPOINTS.lectures.detail(lectureId))
   },
 
   getLectureContent: async (lectureId: number): Promise<string> => {
-    const url = createUrl(`${LECTURES_ENDPOINT}/${lectureId}/content`)
+    const url = createUrl(ENDPOINTS.lectures.content(lectureId))
     const response = await fetch(url)
     if (!response.ok) {
-      throw new Error(`Failed to fetch lecture content: ${response.statusText} (status: ${response.status})`)
+      throw new Error(
+        `Failed to fetch lecture content: ${response.statusText} (status: ${String(response.status)})`
+      )
     }
     return response.text()
   },
 
   getLectureAudioUrl: (lectureId: number): Promise<AudioRedirectResponse> => {
-    return httpClient.get<AudioRedirectResponse>(`${LECTURES_ENDPOINT}/${lectureId}/audio`)
+    return httpClient.get<AudioRedirectResponse>(ENDPOINTS.lectures.audio(lectureId))
   },
 
   createLecture: (data: LectureCreate): Promise<Lecture> => {
-    return httpClient.post<Lecture>(LECTURES_ENDPOINT, data)
+    return httpClient.post<Lecture>(ENDPOINTS.lectures.list, data)
   },
 
   updateLecture: (lectureId: number, data: LectureUpdate): Promise<Lecture> => {
-    return httpClient.patch<Lecture>(`${LECTURES_ENDPOINT}/${lectureId}`, data)
+    return httpClient.patch<Lecture>(ENDPOINTS.lectures.detail(lectureId), data)
   },
 
-  deleteLecture: (lectureId: number): Promise<void> => {
-    return httpClient.delete<void>(`${LECTURES_ENDPOINT}/${lectureId}`)
+  deleteLecture: (lectureId: number): Promise<null> => {
+    return httpClient.delete<null>(ENDPOINTS.lectures.detail(lectureId))
   },
 
   downloadLectureContent: async (lectureId: number): Promise<string> => {
-    const url = createUrl(`${LECTURES_ENDPOINT}/${lectureId}/content/download`)
+    const url = createUrl(ENDPOINTS.lectures.download(lectureId))
     const response = await fetch(url)
     if (!response.ok) {
-      throw new Error(`Failed to download lecture content: ${response.statusText} (status: ${response.status})`)
+      throw new Error(
+        `Failed to download lecture content: ${response.statusText} (status: ${String(response.status)})`
+      )
     }
     return response.text()
   },
 
   generateLecture: (data: LectureGenerateRequest): Promise<Lecture> => {
-    return httpClient.post<Lecture>(`${LECTURES_ENDPOINT}/generate`, data)
+    return httpClient.post<Lecture>(ENDPOINTS.lectures.generate, data)
   },
 }

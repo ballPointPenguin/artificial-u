@@ -1,69 +1,16 @@
-import type { Course, CourseTopic } from '../../api/types'
-
-// Form data interface matching the API model
+// Form data interface for Course creation and editing
 export interface CourseFormData {
   code: string
   title: string
-  department_id: number | null
+  department_id: number | null // Will be number for submission, null if not selected
   level: string
-  credits: number
-  professor_id: number | null
+  credits: number | null
+  professor_id: number | null // Will be number for submission, null if not selected
   description: string
-  lectures_per_week: number
-  total_weeks: number
-  topics: CourseTopic[]
-}
+  lectures_per_week?: number | null // Optional field
+  total_weeks?: number | null // Optional field
 
-export interface ValidationErrors {
-  [key: string]: string
-}
-
-export interface FormProps {
-  course?: Course
-  onSubmit: (data: CourseFormData) => void | Promise<void>
-  onCancel: () => void
-  isSubmitting: boolean
-  error: string
-}
-
-export interface BasicInfoProps {
-  disabled?: boolean
-}
-
-export interface DescriptionProps {
-  disabled?: boolean
-}
-
-export interface TopicsProps {
-  disabled?: boolean
-}
-
-export interface WeekTopicsProps {
-  week: number
-  lecturesPerWeek: number
-  disabled?: boolean
-}
-
-export interface TopicInputProps {
-  week: number
-  order: number
-  disabled?: boolean
-}
-
-// Default form data
-export const defaultFormData: CourseFormData = {
-  code: '',
-  title: '',
-  department_id: null,
-  level: 'Undergraduate',
-  credits: 3,
-  professor_id: null,
-  description: '',
-  lectures_per_week: 1,
-  total_weeks: 14,
-  topics: Array.from({ length: 14 }, (_, weekIdx) => ({
-    week_number: weekIdx + 1,
-    order_in_week: 1,
-    title: '',
-  })),
+  // Add any other fields that are part of the form but maybe not directly in CourseCreate/Update initially
+  // For example, a freeform prompt for generation if not directly mapping all fields to CourseGenerateRequest.partial_attributes
+  generate_prompt?: string
 }

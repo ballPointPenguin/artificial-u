@@ -9,7 +9,7 @@ export default function ProfessorListItem(props: ProfessorListItemProps) {
   return (
     // Ensure ID is converted to string for the URL
     <A
-      href={`/academics/professors/${String(props.professor.id)}`}
+      href={`/professors/${String(props.professor.id)}`}
       class="block arcane-card hover:shadow-glow"
     >
       <h3 class="text-xl font-display text-parchment-100 mb-2 text-shadow-golden">

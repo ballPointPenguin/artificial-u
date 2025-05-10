@@ -65,21 +65,20 @@ const icons: Record<string, JSX.Element> = {
 }
 
 const FeatureCardItem: Component<{ feature: FeatureCard }> = (props) => {
-  const { feature } = props
   return (
     <A
-      href={feature.link}
+      href={props.feature.link}
       class="group block bg-surface border border-border/30 rounded-sm p-6 transition-all duration-300 hover:bg-surface/70 hover:shadow-arcane"
     >
       <div class="flex flex-col items-center text-center space-y-4">
         <div class="text-accent group-hover:text-primary transition-colors">
-          {icons[feature.icon as keyof typeof icons]}
+          {icons[props.feature.icon]}
         </div>
         <h3 class="text-foreground font-display text-xl tracking-wide group-hover:text-primary transition-colors">
-          {feature.title}
+          {props.feature.title}
         </h3>
         <p class="text-muted font-serif group-hover:text-muted/80 transition-colors">
-          {feature.description}
+          {props.feature.description}
         </p>
       </div>
     </A>

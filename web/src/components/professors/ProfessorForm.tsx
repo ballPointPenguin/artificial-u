@@ -1,11 +1,17 @@
-import type { Component, JSX } from 'solid-js'
-import { For, Show, createEffect, createResource, createSignal } from 'solid-js'
-import { getDepartments } from '../../api/services/department-service' // Import department service
-import { generateProfessor } from '../../api/services/professor-service' // Import professor generate service
-import type { Department, Professor } from '../../api/types'
-import { Button, MagicButton } from '../ui'
+import type { Component } from 'solid-js'
+import { Show, createEffect, createResource, createSignal } from 'solid-js'
+import { departmentService } from '../../api/services/department-service.js'
+import { professorService } from '../../api/services/professor-service.js'
+import type {
+  Department,
+  Professor,
+  ProfessorCreate,
+  ProfessorGenerateRequest,
+} from '../../api/types.js'
 
-// Form data interface matching the API model
+import { Button, Form, FormActions, FormField, Input, MagicButton, Select, Textarea } from '../ui'
+import type { SelectOption } from '../ui'
+
 export interface ProfessorFormData {
   name: string
   title: string
@@ -22,16 +28,15 @@ export interface ProfessorFormData {
 }
 
 interface ProfessorFormProps {
-  professor?: Professor
+  professor?: Professor // Professor data for editing
   onSubmit: (data: ProfessorFormData) => Promise<void>
   onCancel: () => void
   isSubmitting: boolean
-  error?: string
-  setError?: (error: string) => void
+  error?: string // General form error from parent
+  setError?: (error: string) => void // To set errors from parent or async operations
 }
 
 const ProfessorForm: Component<ProfessorFormProps> = (props) => {
-  // State for controlled form inputs
   const [formData, setFormData] = createSignal<ProfessorFormData>({
     name: '',
     title: '',
@@ -44,118 +49,157 @@ const ProfessorForm: Component<ProfessorFormProps> = (props) => {
     specialization: '',
     background: '',
     personality: '',
-    image_url: '',
+    image_url: '', // Should not be directly edited here, typically set by other means
   })
 
-  // State for generation
+  const [validationErrors, setValidationErrors] = createSignal<Record<string, string>>({})
   const [isGenerating, setIsGenerating] = createSignal(false)
   const [generateError, setGenerateError] = createSignal<string | null>(null)
 
-  // Keep formData in sync with props.professor (for edit mode)
   createEffect(() => {
+    const p = props.professor
     setFormData({
-      name: props.professor?.name || '',
-      title: props.professor?.title || '',
-      description: props.professor?.description || '',
-      teaching_style: props.professor?.teaching_style || '',
-      gender: props.professor?.gender || '',
-      accent: props.professor?.accent || '',
-      age: props.professor?.age || null,
-      department_id: props.professor?.department_id || null,
-      specialization: props.professor?.specialization || '',
-      background: props.professor?.background || '',
-      personality: props.professor?.personality || '',
-      image_url: props.professor?.image_url || '',
+      name: p?.name || '',
+      title: p?.title || '',
+      description: p?.description || '',
+      teaching_style: p?.teaching_style || '',
+      gender: p?.gender || '',
+      accent: p?.accent || '',
+      age: p?.age ?? null, // Ensure null if undefined
+      department_id: p?.department_id ?? null, // Ensure null if undefined
+      specialization: p?.specialization || '',
+      background: p?.background || '',
+      personality: p?.personality || '',
+      image_url: p?.image_url || '', // Populate for reference, but not editable field
     })
   })
 
-  // Fetch departments for the dropdown
   const [departmentsResource] = createResource(async () => {
     try {
-      // Fetch all departments - adjust if pagination is needed later
-      const response = await getDepartments()
-      return response.items
+      const response = await departmentService.listDepartments({ page: 1, size: 100 })
+      return response.items.map((dept: Department) => ({
+        value: dept.id,
+        label: `${dept.name} (${dept.code})`,
+      })) as SelectOption[]
     } catch (error: unknown) {
       console.error('Failed to fetch departments:', error)
-      // Optionally set an error state for the form
       if (props.setError) {
-        // Check if error is an instance of Error before accessing message
         const errorMessage = error instanceof Error ? error.message : String(error)
         props.setError(`Failed to load departments: ${errorMessage}`)
       }
-      return [] // Return empty array on error
+      return []
     }
   })
 
-  const handleInput: JSX.EventHandler<
-    HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement,
-    InputEvent
-  > = (e) => {
-    const { name, value, type } = e.currentTarget
-    setFormData((prev) => ({
-      ...prev,
-      [name]:
-        type === 'number'
-          ? value === ''
-            ? null
-            : Number(value)
-          : type === 'select-one' && value === ''
-            ? null
-            : value,
-    }))
+  const validateField = (
+    fieldName: keyof ProfessorFormData,
+    value: string | number | null
+  ): string => {
+    if (fieldName === 'name' && (!value || String(value).trim() === '')) {
+      return 'Professor name is required'
+    }
+    if (fieldName === 'title' && (!value || String(value).trim() === '')) {
+      return 'Title is required'
+    }
+    // Add more specific validations as needed
+    return ''
   }
 
-  const handleSubmit = (e: SubmitEvent) => {
-    e.preventDefault()
-    // Now use the signal state instead of FormData
-    try {
-      void props.onSubmit(formData())
-    } catch (error: unknown) {
-      if (props.setError) {
-        props.setError(error instanceof Error ? error.message : String(error))
+  const handleInputChange = (fieldName: keyof ProfessorFormData, value: string | number | null) => {
+    const error = validateField(fieldName, value)
+    setValidationErrors((prev) => ({ ...prev, [fieldName]: error }))
+    setFormData((prev) => ({ ...prev, [fieldName]: value }))
+  }
+
+  const validateForm = (data: ProfessorFormData): boolean => {
+    const newErrors: Record<string, string> = {}
+    let isValid = true
+
+    if (!data.name || data.name.trim() === '') {
+      newErrors.name = 'Professor name is required'
+      isValid = false
+    }
+    if (!data.title || data.title.trim() === '') {
+      newErrors.title = 'Title is required'
+      isValid = false
+    }
+    // Department is not strictly required by API for create/update, but might be for generation
+    // No validation for department_id here, but could be added if it's a business rule
+
+    // Example: Age must be a positive number if provided
+    if (data.age !== null && data.age <= 0) {
+      newErrors.age = 'Age must be a positive number.'
+      isValid = false
+    }
+
+    setValidationErrors(newErrors)
+    return isValid
+  }
+
+  const handleSubmit = () => {
+    // Form component handles event.preventDefault()
+    if (validateForm(formData())) {
+      // Prepare data, ensuring optional fields are handled correctly for the API
+      const submissionData: ProfessorFormData = {
+        ...formData(),
+        // API expects null for empty optional number fields, or undefined/omitted
+        // For string fields, empty string is usually fine, or null if API allows.
+        // The types.ts definitions (ProfessorCreate/Update) use `string | null`, etc.
+        // so current formData structure should be mostly fine.
+        specialization: formData().specialization || undefined, // Send undefined if empty
+        background: formData().background || undefined,
+        personality: formData().personality || undefined,
+        // image_url is not part of this form's direct submission flow
       }
+      void props.onSubmit(submissionData)
     }
   }
 
   const handleGenerate = async () => {
     setGenerateError(null)
     setIsGenerating(true)
+    setValidationErrors({}) // Clear validation errors before generating
 
-    // Prepare partial attributes (optional)
-    const partialAttributes: Record<string, unknown> = {}
-    if (formData().accent) partialAttributes.accent = formData().accent
-    if (formData().age) partialAttributes.age = formData().age
-    if (formData().background) partialAttributes.background = formData().background
-    if (formData().department_id) partialAttributes.department_id = formData().department_id
-    if (formData().description) partialAttributes.description = formData().description
-    if (formData().gender) partialAttributes.gender = formData().gender
-    if (formData().name) partialAttributes.name = formData().name
-    if (formData().personality) partialAttributes.personality = formData().personality
-    if (formData().specialization) partialAttributes.specialization = formData().specialization
-    if (formData().teaching_style) partialAttributes.teaching_style = formData().teaching_style
-    if (formData().title) partialAttributes.title = formData().title
+    const currentData = formData()
+
+    // Construct partial_attributes carefully based on ProfessorGenerateRequest and ProfessorCreate types
+    const partialAttributes: ProfessorCreate = {}
+    if (currentData.name) partialAttributes.name = currentData.name
+    if (currentData.title) partialAttributes.title = currentData.title
+    if (currentData.department_id) partialAttributes.department_id = currentData.department_id
+    if (currentData.specialization) partialAttributes.specialization = currentData.specialization
+    if (currentData.background) partialAttributes.background = currentData.background
+    if (currentData.personality) partialAttributes.personality = currentData.personality
+    if (currentData.teaching_style) partialAttributes.teaching_style = currentData.teaching_style
+    if (currentData.gender) partialAttributes.gender = currentData.gender
+    if (currentData.accent) partialAttributes.accent = currentData.accent
+    if (currentData.description) partialAttributes.description = currentData.description
+    if (currentData.age !== null) partialAttributes.age = currentData.age
+    // image_url is not sent for generation
+
+    const payload: ProfessorGenerateRequest = {
+      partial_attributes:
+        Object.keys(partialAttributes).length > 0
+          ? (partialAttributes as Record<string, unknown>)
+          : undefined,
+    }
 
     try {
-      const generated = await generateProfessor({
-        partial_attributes:
-          Object.keys(partialAttributes).length > 0 ? partialAttributes : undefined,
-      })
-
-      // Update form state with generated data, keeping existing ID if editing
+      const generated = await professorService.generateProfessor(payload)
       setFormData((prev) => ({
         ...prev, // Keep existing fields like ID if they were there
+        name: generated.name || prev.name,
+        title: generated.title || prev.title,
+        description: generated.description || prev.description,
+        teaching_style: generated.teaching_style || prev.teaching_style,
+        gender: generated.gender || prev.gender,
         accent: generated.accent || prev.accent,
         age: generated.age ?? prev.age,
-        background: generated.background || prev.background,
-        description: generated.description || prev.description,
-        gender: generated.gender || prev.gender,
-        name: generated.name || prev.name, // Use generated or keep previous
-        personality: generated.personality || prev.personality,
+        // department_id usually set by user, not overwritten by generation unless specifically designed for it
         specialization: generated.specialization || prev.specialization,
-        teaching_style: generated.teaching_style || prev.teaching_style,
-        title: generated.title || prev.title,
-        // department_id should likely remain as selected by the user
-        // image_url shouldn't be generated here
+        background: generated.background || prev.background,
+        personality: generated.personality || prev.personality,
+        // image_url is not typically part of this generation flow
       }))
     } catch (err: unknown) {
       let message = 'Failed to generate professor profile'
@@ -173,7 +217,6 @@ const ProfessorForm: Component<ProfessorFormProps> = (props) => {
     }
   }
 
-  // Add handleClear function
   const handleClear = () => {
     setFormData({
       name: '',
@@ -187,218 +230,179 @@ const ProfessorForm: Component<ProfessorFormProps> = (props) => {
       specialization: '',
       background: '',
       personality: '',
+      image_url: '',
     })
+    setValidationErrors({})
     setGenerateError(null)
   }
 
-  // Helper to disable inputs/buttons during submission or generation
   const isDisabled = () => props.isSubmitting || isGenerating()
 
   return (
-    <form onSubmit={handleSubmit} class="space-y-6">
-      <div>
-        <label for="name" class="block text-sm font-medium mb-1 text-parchment-300">
-          Professor Name
-        </label>
-        <input
-          id="name"
+    <Form onSubmit={handleSubmit}>
+      <FormField label="Professor Name" name="name" required error={validationErrors().name}>
+        <Input
           name="name"
-          type="text"
           value={formData().name}
-          onInput={handleInput}
-          class="arcane-input"
+          onChange={(v) => {
+            handleInputChange('name', v)
+          }}
           disabled={isDisabled()}
+          required
         />
-      </div>
+      </FormField>
 
-      <div>
-        <label for="title" class="block text-sm font-medium mb-1 text-parchment-300">
-          Title
-        </label>
-        <input
-          id="title"
+      <FormField label="Title" name="title" required error={validationErrors().title}>
+        <Input
           name="title"
-          type="text"
           value={formData().title}
-          onInput={handleInput}
-          class="arcane-input"
+          onChange={(v) => {
+            handleInputChange('title', v)
+          }}
           disabled={isDisabled()}
+          required
         />
-      </div>
+      </FormField>
 
-      <div>
-        <label for="department_id" class="block text-sm font-medium mb-1 text-parchment-300">
-          Department (Required for Generate)
-        </label>
-        <select
-          id="department_id"
+      <FormField
+        label="Department"
+        name="department_id"
+        error={validationErrors().department_id}
+        helperText="Department affiliation."
+      >
+        <Select
           name="department_id"
-          class="arcane-input appearance-none"
-          value={formData().department_id ?? ''}
-          onInput={handleInput}
+          options={departmentsResource() || []}
+          value={formData().department_id}
+          onChange={(v) => {
+            handleInputChange('department_id', v === '' ? null : Number(v))
+          }}
+          placeholder="-- Select Department --"
           disabled={departmentsResource.loading || isDisabled()}
-        >
-          <option value="">-- Select Department --</option>
-          <Show
-            when={!departmentsResource.loading && departmentsResource()}
-            fallback={<option disabled>Loading departments...</option>}
-          >
-            {/* Check if the resource data is an array before mapping */}
-            <For each={Array.isArray(departmentsResource()) ? departmentsResource() : []}>
-              {(dept: Department) => (
-                <option value={dept.id}>
-                  {dept.name} ({dept.code})
-                </option>
-              )}
-            </For>
-          </Show>
-        </select>
-        {/* Explicitly check if error is truthy */}
-        <Show when={!!departmentsResource.error}>
-          <p class="mt-1 text-sm text-red-600">Failed to load departments.</p>
-        </Show>
-      </div>
+          required
+        />
+      </FormField>
 
-      <div>
-        <label for="specialization" class="block text-sm font-medium mb-1 text-parchment-300">
-          Specialization (Required for Generate)
-        </label>
-        <input
-          id="specialization"
+      <FormField
+        label="Specialization"
+        name="specialization"
+        error={validationErrors().specialization}
+        helperText="Primary field of expertise."
+      >
+        <Input
           name="specialization"
-          type="text"
           value={formData().specialization || ''}
-          onInput={handleInput}
-          class="arcane-input"
+          onChange={(v) => {
+            handleInputChange('specialization', v)
+          }}
           disabled={isDisabled()}
         />
-      </div>
+      </FormField>
 
-      <div>
-        <label for="description" class="block text-sm font-medium mb-1 text-parchment-300">
-          Description
-        </label>
-        <textarea
-          id="description"
+      <FormField label="Description" name="description" error={validationErrors().description}>
+        <Textarea
           name="description"
           rows={3}
           value={formData().description}
-          onInput={handleInput}
-          class="arcane-input"
+          onChange={(v) => {
+            handleInputChange('description', v)
+          }}
           disabled={isDisabled()}
         />
-      </div>
+      </FormField>
 
-      <div>
-        <label for="background" class="block text-sm font-medium mb-1 text-parchment-300">
-          Background
-        </label>
-        <textarea
-          id="background"
+      <FormField label="Background" name="background" error={validationErrors().background}>
+        <Textarea
           name="background"
           rows={3}
           value={formData().background || ''}
-          onInput={handleInput}
-          class="arcane-input"
+          onChange={(v) => {
+            handleInputChange('background', v)
+          }}
           disabled={isDisabled()}
         />
-      </div>
+      </FormField>
 
-      <div>
-        <label for="personality" class="block text-sm font-medium mb-1 text-parchment-300">
-          Personality
-        </label>
-        <input
-          id="personality"
+      <FormField label="Personality" name="personality" error={validationErrors().personality}>
+        <Input
           name="personality"
-          type="text"
           value={formData().personality || ''}
-          onInput={handleInput}
-          class="arcane-input"
+          onChange={(v) => {
+            handleInputChange('personality', v)
+          }}
           disabled={isDisabled()}
         />
-      </div>
+      </FormField>
 
-      <div>
-        <label for="teaching_style" class="block text-sm font-medium mb-1 text-parchment-300">
-          Teaching Style
-        </label>
-        <input
-          id="teaching_style"
+      <FormField
+        label="Teaching Style"
+        name="teaching_style"
+        error={validationErrors().teaching_style}
+      >
+        <Input
           name="teaching_style"
-          type="text"
           value={formData().teaching_style}
-          onInput={handleInput}
-          class="arcane-input"
+          onChange={(v) => {
+            handleInputChange('teaching_style', v)
+          }}
           disabled={isDisabled()}
         />
-      </div>
+      </FormField>
 
-      <div>
-        <label for="gender" class="block text-sm font-medium mb-1 text-parchment-300">
-          Gender
-        </label>
-        <input
-          id="gender"
-          name="gender"
-          type="text"
-          value={formData().gender}
-          onInput={handleInput}
-          class="arcane-input"
-          disabled={isDisabled()}
-        />
-      </div>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <FormField label="Gender" name="gender" error={validationErrors().gender}>
+          <Input
+            name="gender"
+            value={formData().gender}
+            onChange={(v) => {
+              handleInputChange('gender', v)
+            }}
+            disabled={isDisabled()}
+          />
+        </FormField>
 
-      <div>
-        <label for="accent" class="block text-sm font-medium mb-1 text-parchment-300">
-          Accent
-        </label>
-        <input
-          id="accent"
-          name="accent"
-          type="text"
-          value={formData().accent}
-          onInput={handleInput}
-          class="arcane-input"
-          disabled={isDisabled()}
-        />
-      </div>
+        <FormField label="Accent" name="accent" error={validationErrors().accent}>
+          <Input
+            name="accent"
+            value={formData().accent}
+            onChange={(v) => {
+              handleInputChange('accent', v)
+            }}
+            disabled={isDisabled()}
+          />
+        </FormField>
 
-      <div>
-        <label for="age" class="block text-sm font-medium mb-1 text-parchment-300">
-          Age
-        </label>
-        <input
-          id="age"
-          name="age"
-          type="number"
-          value={formData().age ?? ''}
-          onInput={handleInput}
-          class="arcane-input"
-          disabled={isDisabled()}
-        />
+        <FormField label="Age" name="age" error={validationErrors().age}>
+          <Input
+            name="age"
+            type="number"
+            value={formData().age ?? ''} // Use empty string for input if null
+            onChange={(v) => {
+              handleInputChange('age', v === '' ? null : Number(v))
+            }}
+            disabled={isDisabled()}
+          />
+        </FormField>
       </div>
 
       <Show when={props.error}>
-        <div class="bg-red-900/20 border border-red-500 text-red-300 px-4 py-3 rounded">
+        <div class="bg-red-900/20 border border-red-500 text-red-300 px-4 py-3 rounded my-4">
           {props.error}
         </div>
       </Show>
-      {/* Show Generation Error */}
       <Show when={generateError()}>
-        <div class="bg-yellow-900/20 border border-yellow-500 text-yellow-300 px-4 py-3 rounded">
+        <div class="bg-yellow-900/20 border border-yellow-500 text-yellow-300 px-4 py-3 rounded my-4">
           {generateError()}
         </div>
       </Show>
 
-      <div class="flex justify-end space-x-3">
+      <FormActions>
         <Button type="button" variant="outline" onClick={props.onCancel} disabled={isDisabled()}>
           Cancel
         </Button>
         <Button type="button" variant="outline" onClick={handleClear} disabled={isDisabled()}>
           Clear
         </Button>
-        {/* Generate Button */}
         <MagicButton
           type="button"
           variant="secondary"
@@ -414,8 +418,8 @@ const ProfessorForm: Component<ProfessorFormProps> = (props) => {
         <Button type="submit" variant="primary" disabled={isDisabled()}>
           {props.isSubmitting ? 'Saving...' : props.professor !== undefined ? 'Update' : 'Save'}
         </Button>
-      </div>
-    </form>
+      </FormActions>
+    </Form>
   )
 }
 

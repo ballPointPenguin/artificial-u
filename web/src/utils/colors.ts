@@ -12,9 +12,9 @@ export function hslStringToCss(hslString: string): string {
   // Regular expression to capture H, S, L parts. Assumes hue might or might not have 'deg'.
   // It expects format like "<hue>deg <saturation>% <lightness>%" or "<hue> <saturation>% <lightness>%"
   const parts = hslString.trim().split(/\s+/)
-
   if (parts.length === 3) {
-    let [h, s, l] = parts
+    const [s, l] = parts.slice(1)
+    let h = parts[0]
 
     // Ensure hue has 'deg' if it's just a number, otherwise assume it includes it or is a variable
     if (!isNaN(Number.parseFloat(h)) && !h.includes('deg')) {

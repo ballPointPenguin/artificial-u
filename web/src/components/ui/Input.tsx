@@ -18,8 +18,6 @@ interface InputProps extends Omit<ComponentProps<typeof KTextField.Input>, 'id'>
   required?: boolean
   class?: string
   inputClass?: string // Specific class for the KTextField.Input
-  // Allow any other KTextField.Input props to be passed through
-  [key: string]: any
 }
 
 const Input: Component<InputProps> = (props) => {
@@ -51,18 +49,18 @@ const Input: Component<InputProps> = (props) => {
     // For now, prioritize local.onChange for Kobalte's controlled pattern.
     // If onInput is critical, the parent might need to adapt or this component needs a more complex event synthesis.
     if (local.onInput) {
-        // Create a synthetic event if onInput expects it
-        // This is a common pattern but can be tricky.
-        // For simplicity, if onInput is primary, direct usage of KTextField.Input's onInput might be better.
-        const syntheticEvent = {
-            currentTarget: { value: newValue, name: local.name },
-            target: { value: newValue, name: local.name },
-            bubbles: true,
-            cancelable: true,
-        } as unknown as InputEvent & { currentTarget: HTMLInputElement; target: HTMLInputElement }
-        // It's tricky to perfectly mimic native event objects.
-        // Consider if `onChange` prop is sufficient for most use cases with Kobalte.
-         local.onInput(syntheticEvent)
+      // Create a synthetic event if onInput expects it
+      // This is a common pattern but can be tricky.
+      // For simplicity, if onInput is primary, direct usage of KTextField.Input's onInput might be better.
+      const syntheticEvent = {
+        currentTarget: { value: newValue, name: local.name },
+        target: { value: newValue, name: local.name },
+        bubbles: true,
+        cancelable: true,
+      } as unknown as InputEvent & { currentTarget: HTMLInputElement; target: HTMLInputElement }
+      // It's tricky to perfectly mimic native event objects.
+      // Consider if `onChange` prop is sufficient for most use cases with Kobalte.
+      local.onInput(syntheticEvent)
     }
   }
 

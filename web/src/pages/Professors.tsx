@@ -1,9 +1,9 @@
 import { For, Show, createResource, createSignal } from 'solid-js'
-import { createProfessor, getProfessors } from '../api/services/professor-service'
-import type { Professor } from '../api/types'
-import ProfessorForm, { type ProfessorFormData } from '../components/professors/ProfessorForm'
-import ProfessorListItem from '../components/professors/ProfessorListItem'
-import { Button } from '../components/ui/Button'
+import { professorService } from '../api/services/professor-service.js'
+import type { Professor } from '../api/types.js'
+import ProfessorForm, { type ProfessorFormData } from '../components/professors/ProfessorForm.js'
+import ProfessorListItem from '../components/professors/ProfessorListItem.js'
+import { Button, Input } from '../components/ui'
 
 export default function ProfessorsPage() {
   const [searchQuery, setSearchQuery] = createSignal('')
@@ -19,7 +19,7 @@ export default function ProfessorsPage() {
       size: 20,
       name: searchQuery() || undefined,
     }),
-    getProfessors
+    professorService.listProfessors
   )
 
   const handleSearch = (e: Event) => {
@@ -40,7 +40,7 @@ export default function ProfessorsPage() {
         image_url: formData.image_url || '',
       }
 
-      await createProfessor(newProfessor)
+      await professorService.createProfessor(newProfessor)
       setShowCreateForm(false)
       void refetch()
     } catch (error) {
@@ -73,12 +73,13 @@ export default function ProfessorsPage() {
 
       <form onSubmit={handleSearch} class="mb-8">
         <div class="flex gap-2">
-          <input
+          <Input
+            name="searchProfessors"
             type="text"
             value={searchQuery()}
-            onInput={(e) => setSearchQuery(e.target.value)}
+            onInput={(e) => setSearchQuery(e.currentTarget.value)}
             placeholder="Search professors..."
-            class="flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-mystic-500 bg-arcanum-800 border-parchment-700/30 text-parchment-100 placeholder:text-parchment-500"
+            inputClass="flex-1"
           />
           <Button type="submit" variant="secondary">
             Search
@@ -89,12 +90,12 @@ export default function ProfessorsPage() {
       {/* Professors List */}
       <Show
         when={!professorsResource.loading}
-        fallback={<p class="text-parchment-300 text-center py-8">Loading professors...</p>}
+        fallback={<p class="text-muted text-center py-8">Loading professors...</p>}
       >
         <Show
           when={!professorsResource.error}
           fallback={
-            <div class="text-red-400 text-center py-8">
+            <div class="text-danger text-center py-8">
               <p>
                 Error loading professors:{' '}
                 {professorsResource.error instanceof Error
@@ -126,7 +127,7 @@ export default function ProfessorsPage() {
               >
                 Previous
               </Button>
-              <span class="px-4 py-2 flex items-center text-parchment-300">
+              <span class="px-4 py-2 flex items-center text-muted">
                 Page {page()} of {professorsResource()?.pages || 1}
               </span>
               <Button

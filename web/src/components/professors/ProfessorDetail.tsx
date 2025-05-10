@@ -1,15 +1,9 @@
 import { useNavigate, useParams } from '@solidjs/router'
 import { Show, createResource, createSignal } from 'solid-js'
-import {
-  deleteProfessor,
-  generateProfessorImage,
-  getProfessor,
-  updateProfessor,
-} from '../../api/services/professor-service'
-import type { Professor } from '../../api/types'
-import { Button } from '../ui/Button'
-import ConfirmationModal from '../ui/ConfirmationModal'
-import ProfessorForm, { type ProfessorFormData } from './ProfessorForm'
+import { professorService } from '../../api/services/professor-service.js'
+import type { Professor } from '../../api/types.js'
+import { Alert, Button, ConfirmationModal } from '../ui'
+import ProfessorForm, { type ProfessorFormData } from './ProfessorForm.js'
 
 export default function ProfessorDetail() {
   const params = useParams()
@@ -28,7 +22,7 @@ export default function ProfessorDetail() {
       throw new Error('Professor ID is missing or invalid')
     }
     return id
-  }, getProfessor)
+  }, professorService.getProfessor)
 
   // Type-safe helper to get error message
   const getErrorMessage = () => {
@@ -53,7 +47,7 @@ export default function ProfessorDetail() {
         teaching_style: formData.teaching_style || '',
       }
 
-      await updateProfessor(id, updatedProfessor)
+      await professorService.updateProfessor(id, updatedProfessor)
       setIsEditing(false)
       void refetch()
     } catch (error) {
@@ -73,9 +67,9 @@ export default function ProfessorDetail() {
         throw new Error('Invalid professor ID')
       }
 
-      await deleteProfessor(id)
+      await professorService.deleteProfessor(id)
       // Navigate back to professors list after deletion
-      navigate('/academics/professors')
+      navigate('/professors')
     } catch (error) {
       setError(error instanceof Error ? error.message : 'Failed to delete professor')
       setIsDeleting(false)
@@ -95,7 +89,7 @@ export default function ProfessorDetail() {
         throw new Error('Invalid professor ID')
       }
 
-      await generateProfessorImage(id)
+      await professorService.generateProfessorImage(id)
       void refetch()
     } catch (error) {
       setGenerationError(error instanceof Error ? error.message : 'Failed to generate image')
@@ -109,22 +103,17 @@ export default function ProfessorDetail() {
       {/* Loading and error states */}
       <Show
         when={!professorResource.loading}
-        fallback={<p class="text-parchment-300">Loading professor details...</p>}
+        fallback={<p class="text-muted">Loading professor details...</p>}
       >
         <Show
           when={!professorResource.error}
           fallback={
-            <div class="bg-red-900/20 border border-red-500 text-red-300 px-4 py-3 rounded">
+            <Alert variant="danger" class="mb-4">
               <p>Error loading professor: {getErrorMessage()}</p>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => void refetch()}
-                class="mt-2 text-red-300 hover:text-red-100"
-              >
+              <Button variant="ghost" size="sm" onClick={() => void refetch()} class="mt-2">
                 Try Again
               </Button>
-            </div>
+            </Alert>
           }
         >
           <Show
@@ -154,7 +143,6 @@ export default function ProfessorDetail() {
                     size="sm"
                     onClick={() => void handleGenerateImage()}
                     disabled={isGeneratingImage()}
-                    class="text-cyan-300 hover:text-cyan-100"
                   >
                     {isGeneratingImage() ? 'Generating...' : 'Generate Image'}
                   </Button>
@@ -165,7 +153,7 @@ export default function ProfessorDetail() {
                     variant="outline"
                     size="sm"
                     onClick={() => setIsDeleting(true)}
-                    class="border-red-500/50 text-red-300 hover:bg-red-900/30 hover:border-red-500"
+                    class="text-danger border-danger hover:bg-danger-bg hover:text-foreground"
                   >
                     Delete
                   </Button>
@@ -174,25 +162,25 @@ export default function ProfessorDetail() {
 
               {/* Display generation error if any */}
               <Show when={generationError()}>
-                <div class="bg-red-900/20 border border-red-500 text-red-300 px-4 py-3 rounded mb-4">
+                <Alert variant="danger" class="mb-4">
                   <p>Error generating image: {generationError()}</p>
-                </div>
+                </Alert>
               </Show>
 
-              <div class="space-y-3 text-parchment-200">
+              <div class="space-y-3 text-muted">
                 <p>
-                  <strong class="font-semibold text-parchment-100">Title:</strong>{' '}
-                  <span class="text-parchment-200">{professorResource()?.title}</span>
+                  <strong class="font-semibold text-foreground">Title:</strong>{' '}
+                  <span class="text-muted">{professorResource()?.title}</span>
                 </p>
                 <p>
-                  <strong class="font-semibold text-parchment-100">Specialization:</strong>{' '}
-                  <span class="text-parchment-200">{professorResource()?.specialization}</span>
+                  <strong class="font-semibold text-foreground">Specialization:</strong>{' '}
+                  <span class="text-muted">{professorResource()?.specialization}</span>
                 </p>
 
                 <Show when={professorResource()?.description}>
                   <p>
-                    <strong class="font-semibold text-parchment-100">Description:</strong>
-                    <span class="block mt-1 whitespace-pre-wrap">
+                    <strong class="font-semibold text-foreground">Description:</strong>
+                    <span class="block mt-1 whitespace-pre-wrap text-muted">
                       {professorResource()?.description}
                     </span>
                   </p>
@@ -200,8 +188,8 @@ export default function ProfessorDetail() {
 
                 <Show when={professorResource()?.background}>
                   <p>
-                    <strong class="font-semibold text-parchment-100">Background:</strong>
-                    <span class="block mt-1 whitespace-pre-wrap">
+                    <strong class="font-semibold text-foreground">Background:</strong>
+                    <span class="block mt-1 whitespace-pre-wrap text-muted">
                       {professorResource()?.background}
                     </span>
                   </p>
@@ -209,21 +197,21 @@ export default function ProfessorDetail() {
 
                 <Show when={professorResource()?.teaching_style}>
                   <p>
-                    <strong class="font-semibold text-parchment-100">Teaching Style:</strong>{' '}
-                    <span class="text-parchment-200">{professorResource()?.teaching_style}</span>
+                    <strong class="font-semibold text-foreground">Teaching Style:</strong>{' '}
+                    <span class="text-muted">{professorResource()?.teaching_style}</span>
                   </p>
                 </Show>
 
                 <Show when={professorResource()?.personality}>
                   <p>
-                    <strong class="font-semibold text-parchment-100">Personality:</strong>{' '}
-                    <span class="text-parchment-200">{professorResource()?.personality}</span>
+                    <strong class="font-semibold text-foreground">Personality:</strong>{' '}
+                    <span class="text-muted">{professorResource()?.personality}</span>
                   </p>
                 </Show>
 
                 {/* Display image if available */}
                 <Show when={professorResource()?.image_url}>
-                  <p class="font-semibold text-parchment-100 mt-4">Profile Image:</p>
+                  <p class="font-semibold text-foreground mt-4">Profile Image:</p>
                   <img
                     src={
                       professorResource()?.image_url ? String(professorResource()?.image_url) : ''

@@ -1,14 +1,14 @@
 import { type JSX, Show, createEffect, createSignal } from 'solid-js'
-import { generateDepartment } from '../../api/services/department-service'
-import type { Department } from '../../api/types'
-import { Button, MagicButton } from '../ui'
+import { departmentService } from '../../api/services/department-service.js'
+import type { Department, DepartmentGenerateRequest } from '../../api/types.js'
+import { Button, Form, FormActions, FormField, Input, MagicButton, Textarea } from '../ui'
 
 // Form data interface matching the API model
 interface DepartmentFormData {
   name: string
   code: string
-  faculty: string
-  description: string
+  faculty: string | null // Allow null to match API type, input will use ''
+  description: string | null // Changed from string to string | null
 }
 
 interface DepartmentFormProps {
@@ -26,8 +26,8 @@ const DepartmentForm = (props: DepartmentFormProps) => {
   const [formData, setFormData] = createSignal<DepartmentFormData>({
     name: '',
     code: '',
-    faculty: '',
-    description: '',
+    faculty: '', // Initialize with empty string for input compatibility
+    description: '', // Initialize with empty string for input compatibility
   })
 
   // Keep formData in sync with props.department (for edit mode)
@@ -35,35 +35,29 @@ const DepartmentForm = (props: DepartmentFormProps) => {
     setFormData({
       name: props.department?.name || '',
       code: props.department?.code || '',
-      faculty: props.department?.faculty || '',
-      description: props.department?.description || '',
+      faculty: props.department?.faculty || '', // Default null to empty string for input
+      description: props.department?.description || '', // Default null to empty string for input
     })
   })
 
-  const validateForm = (form: HTMLFormElement): boolean => {
+  const validateForm = (currentData: DepartmentFormData): boolean => {
     const newErrors: Record<string, string> = {}
-    const formData = new FormData(form)
 
-    const name = formData.get('name') as string
-    const code = formData.get('code') as string
-    const faculty = formData.get('faculty') as string
-    const description = formData.get('description') as string
-
-    if (!name || name.trim() === '') {
+    if (!currentData.name || currentData.name.trim() === '') {
       newErrors.name = 'Department name is required'
     }
 
-    if (!code || code.trim() === '') {
+    if (!currentData.code || currentData.code.trim() === '') {
       newErrors.code = 'Department code is required'
-    } else if (code.length < 2 || code.length > 10) {
+    } else if (currentData.code.length < 2 || currentData.code.length > 10) {
       newErrors.code = 'Code must be between 2 and 10 characters'
     }
 
-    if (!faculty || faculty.trim() === '') {
+    if (!currentData.faculty || currentData.faculty.trim() === '') {
       newErrors.faculty = 'Faculty is required'
     }
 
-    if (!description || description.trim() === '') {
+    if (!currentData.description || currentData.description.trim() === '') {
       newErrors.description = 'Description is required'
     }
 
@@ -71,40 +65,56 @@ const DepartmentForm = (props: DepartmentFormProps) => {
     return Object.keys(newErrors).length === 0
   }
 
-  const handleInput = (e: Event) => {
-    const target = e.target as HTMLInputElement | HTMLTextAreaElement
-    setFormData({ ...formData(), [target.name]: target.value })
+  // Unified input handler using onChange from new components
+  const handleInputChange = (fieldName: keyof DepartmentFormData, value: string) => {
+    setFormData((prev) => ({ ...prev, [fieldName]: value }))
   }
 
-  const handleSubmit: JSX.EventHandler<HTMLFormElement, SubmitEvent> = (event) => {
-    event.preventDefault()
-    const form = event.currentTarget
+  const handleSubmit: JSX.EventHandler<HTMLFormElement, SubmitEvent> = () => {
+    // event.preventDefault() // Form component handles this if onSubmit is provided
+    // const form = event.currentTarget // No longer need to get form element directly for FormData
 
-    if (validateForm(form)) {
-      const formData = new FormData(form)
-      props.onSubmit(formData)
+    if (validateForm(formData())) {
+      // Construct FormData object from the signal for submission
+      const formSubmissionData = new FormData()
+      Object.entries(formData()).forEach(([key, value]) => {
+        if (value !== null) {
+          formSubmissionData.append(key, value as string)
+        }
+      })
+      props.onSubmit(formSubmissionData)
     }
   }
 
   const handleGenerate = async () => {
     setGenerateError(null)
     setIsGenerating(true)
-    setValidationErrors({})
+    setValidationErrors({}) // Clear previous validation errors
+
+    const currentData = formData()
+    // Pre-generation validation (optional, but good practice)
+    // For example, if 'name' is required for generation:
+    // if (!currentData.name || currentData.name.trim() === '') {
+    //   setValidationErrors({ name: 'Department name is required to generate details.' });
+    //   setIsGenerating(false);
+    //   return;
+    // }
+
     try {
-      // Validate before sending
-      const fakeForm = document.createElement('form')
-      for (const [k, v] of Object.entries(formData())) {
-        const input = document.createElement('input')
-        input.name = k
-        input.value = v as string // Type assertion to fix the unsafe assignment
-        fakeForm.appendChild(input)
+      const payload: DepartmentGenerateRequest = {
+        name: currentData.name,
+        code: currentData.code,
+        // Ensure faculty and description are string or undefined for the API
+        faculty: currentData.faculty === '' ? undefined : currentData.faculty || undefined,
+        description:
+          currentData.description === '' ? undefined : currentData.description || undefined,
       }
-      const generated = await generateDepartment(formData())
+      const generated = await departmentService.generateDepartment(payload)
       setFormData({
         name: generated.name,
         code: generated.code,
-        faculty: generated.faculty || '',
-        description: generated.description || '',
+        faculty: generated.faculty || '', // Ensure input gets a string
+        description: generated.description || '', // Ensure input gets a string
       })
     } catch (err: unknown) {
       let message = 'Failed to generate department'
@@ -136,103 +146,79 @@ const DepartmentForm = (props: DepartmentFormProps) => {
   const isDisabled = () => props.isSubmitting || isGenerating()
 
   return (
-    <form onSubmit={handleSubmit} class="space-y-6">
-      <div>
-        <label for="name" class="block text-sm font-medium mb-1 text-parchment-300">
-          Department Name
-        </label>
-        <input
-          id="name"
+    <Form onSubmit={handleSubmit}>
+      <FormField label="Department Name" name="name" required error={validationErrors().name}>
+        <Input
           name="name"
-          type="text"
           value={formData().name}
-          onInput={handleInput}
-          class="arcane-input"
-          classList={{
-            'border-red-500': !!validationErrors().name,
+          onChange={(value) => {
+            handleInputChange('name', value)
           }}
           disabled={isDisabled()}
+          required
         />
-        <Show when={validationErrors().name}>
-          <p class="mt-1 text-sm text-red-600">{validationErrors().name}</p>
-        </Show>
-      </div>
+      </FormField>
 
-      <div>
-        <label for="code" class="block text-sm font-medium mb-1 text-parchment-300">
-          Department Code
-        </label>
-        <input
-          id="code"
+      <FormField
+        label="Department Code"
+        name="code"
+        required
+        error={validationErrors().code}
+        helperText="Must be between 2 and 10 characters."
+      >
+        <Input
           name="code"
-          type="text"
           value={formData().code}
-          onInput={handleInput}
-          class="arcane-input"
-          classList={{
-            'border-red-500': !!validationErrors().code,
+          onChange={(value) => {
+            handleInputChange('code', value)
           }}
           disabled={isDisabled()}
+          required
         />
-        <Show when={validationErrors().code}>
-          <p class="mt-1 text-sm text-red-600">{validationErrors().code}</p>
-        </Show>
-      </div>
+      </FormField>
 
-      <div>
-        <label for="faculty" class="block text-sm font-medium mb-1 text-parchment-300">
-          Faculty
-        </label>
-        <input
-          id="faculty"
+      <FormField label="Faculty" name="faculty" required error={validationErrors().faculty}>
+        <Input
           name="faculty"
-          type="text"
-          value={formData().faculty}
-          onInput={handleInput}
-          class="arcane-input"
-          classList={{
-            'border-red-500': !!validationErrors().faculty,
+          value={formData().faculty || ''}
+          onChange={(value) => {
+            handleInputChange('faculty', value)
           }}
           disabled={isDisabled()}
+          required
         />
-        <Show when={validationErrors().faculty}>
-          <p class="mt-1 text-sm text-red-600">{validationErrors().faculty}</p>
-        </Show>
-      </div>
+      </FormField>
 
-      <div>
-        <label for="description" class="block text-sm font-medium mb-1 text-parchment-300">
-          Description
-        </label>
-        <textarea
-          id="description"
+      <FormField
+        label="Description"
+        name="description"
+        required
+        error={validationErrors().description}
+      >
+        <Textarea
           name="description"
           rows={4}
-          value={formData().description}
-          onInput={handleInput}
-          class="arcane-input"
-          classList={{
-            'border-red-500': !!validationErrors().description,
+          value={formData().description || ''}
+          onChange={(value) => {
+            handleInputChange('description', value)
           }}
           disabled={isDisabled()}
+          required
         />
-        <Show when={validationErrors().description}>
-          <p class="mt-1 text-sm text-red-600">{validationErrors().description}</p>
-        </Show>
-      </div>
+      </FormField>
 
       <Show when={props.error}>
-        <div class="bg-red-900/20 border border-red-500 text-red-300 px-4 py-3 rounded">
+        <div class="bg-red-900/20 border border-red-500 text-red-300 px-4 py-3 rounded my-4">
           {props.error}
         </div>
       </Show>
       <Show when={generateError()}>
-        <div class="bg-red-900/20 border border-red-500 text-red-300 px-4 py-3 rounded">
+        <div class="bg-red-900/20 border border-red-500 text-red-300 px-4 py-3 rounded my-4">
           {generateError()}
         </div>
       </Show>
 
-      <div class="flex justify-end space-x-3">
+      <FormActions>
         <Button type="button" variant="outline" onClick={props.onCancel} disabled={isDisabled()}>
           Cancel
         </Button>
@@ -254,8 +240,8 @@ const DepartmentForm = (props: DepartmentFormProps) => {
         <Button type="submit" variant="primary" disabled={isDisabled()}>
           {props.isSubmitting ? 'Saving...' : props.department !== undefined ? 'Update' : 'Save'}
         </Button>
-      </div>
-    </form>
+      </FormActions>
+    </Form>
   )
 }
 

@@ -1,14 +1,9 @@
 import { A, useNavigate, useParams } from '@solidjs/router'
 import { Show, createResource, createSignal } from 'solid-js'
-import {
-  deleteDepartment,
-  getDepartment,
-  updateDepartment,
-} from '../api/services/department-service'
-import type { Department } from '../api/types'
-import DepartmentForm from '../components/departments/DepartmentForm'
-import { Button } from '../components/ui/Button'
-import ConfirmationModal from '../components/ui/ConfirmationModal'
+import { departmentService } from '../api/services/department-service.js'
+import type { DepartmentUpdate } from '../api/types.js'
+import DepartmentForm from '../components/departments/DepartmentForm.js'
+import { Button, ConfirmationModal } from '../components/ui'
 
 const DepartmentDetail = () => {
   const params = useParams()
@@ -25,7 +20,7 @@ const DepartmentDetail = () => {
       throw new Error('Invalid department ID')
     }
     return id
-  }, getDepartment)
+  }, departmentService.getDepartment)
 
   const handleSubmitUpdate = async (formData: FormData) => {
     setIsSubmitting(true)
@@ -37,14 +32,19 @@ const DepartmentDetail = () => {
         throw new Error('Invalid department ID')
       }
 
-      const updatedDepartment = {
+      const updatedDepartmentData: DepartmentUpdate = {
         name: formData.get('name') as string,
         code: formData.get('code') as string,
-        faculty: formData.get('faculty') as string,
+        faculty: formData.get('faculty') as string | null,
         description: formData.get('description') as string,
       }
 
-      await updateDepartment(id, updatedDepartment)
+      // Ensure faculty is null if it's an empty string and API expects null for updates
+      if (updatedDepartmentData.faculty === '') {
+        updatedDepartmentData.faculty = null
+      }
+
+      await departmentService.updateDepartment(id, updatedDepartmentData)
       setIsEditing(false)
       void refetch()
     } catch (error) {
@@ -64,9 +64,9 @@ const DepartmentDetail = () => {
         throw new Error('Invalid department ID')
       }
 
-      await deleteDepartment(id)
+      await departmentService.deleteDepartment(id)
       // Navigate back to departments list after deletion
-      navigate('/academics/departments')
+      navigate('/departments')
     } catch (error) {
       setError(error instanceof Error ? error.message : 'Failed to delete department')
       setIsDeleting(false)
@@ -79,7 +79,7 @@ const DepartmentDetail = () => {
     <div class="container mx-auto px-4 py-8">
       {/* Breadcrumb navigation - Use theme colors */}
       <div class="mb-6">
-        <A href="/academics/departments" class="text-mystic-500 hover:text-mystic-300">
+        <A href="/departments" class="text-mystic-500 hover:text-mystic-300">
           ← Back to Departments
         </A>
       </div>
@@ -115,55 +115,63 @@ const DepartmentDetail = () => {
           <Show
             when={!isEditing()}
             fallback={
-              <div class="bg-arcanum-900 border border-parchment-800/30 rounded-lg p-6">
-                <h2 class="text-xl font-semibold mb-4">Edit Department</h2>
-                <DepartmentForm
-                  department={department() as Department}
-                  onSubmit={(formData) => void handleSubmitUpdate(formData)}
-                  onCancel={() => setIsEditing(false)}
-                  isSubmitting={isSubmitting()}
-                  error={error()}
-                />
-              </div>
+              <Show when={department()} keyed>
+                {(dept) => (
+                  <div class="bg-arcanum-900 border border-parchment-800/30 rounded-lg p-6">
+                    <h2 class="text-xl font-semibold mb-4">Edit Department</h2>
+                    <DepartmentForm
+                      department={dept}
+                      onSubmit={(fd) => void handleSubmitUpdate(fd)}
+                      onCancel={() => setIsEditing(false)}
+                      isSubmitting={isSubmitting()}
+                      error={error()}
+                    />
+                  </div>
+                )}
+              </Show>
             }
           >
             {/* Department details */}
-            <div class="bg-arcanum-900 border border-parchment-800/30 rounded-lg overflow-hidden">
-              <div class="p-6">
-                <div class="flex justify-between items-center mb-4">
-                  <h1 class="text-3xl font-bold">{department()?.name}</h1>
-                  <div class="flex space-x-2">
-                    <Button variant="secondary" size="sm" onClick={() => setIsEditing(true)}>
-                      Edit
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setIsDeleting(true)}
-                      class="border-red-500/50 text-red-300 hover:bg-red-900/30 hover:border-red-500"
-                    >
-                      Delete
-                    </Button>
-                  </div>
-                </div>
+            <Show when={department()} keyed>
+              {(dept) => (
+                <div class="bg-arcanum-900 border border-parchment-800/30 rounded-lg overflow-hidden">
+                  <div class="p-6">
+                    <div class="flex justify-between items-center mb-4">
+                      <h1 class="text-3xl font-bold">{dept.name}</h1>
+                      <div class="flex space-x-2">
+                        <Button variant="secondary" size="sm" onClick={() => setIsEditing(true)}>
+                          Edit
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setIsDeleting(true)}
+                          class="border-red-500/50 text-red-300 hover:bg-red-900/30 hover:border-red-500"
+                        >
+                          Delete
+                        </Button>
+                      </div>
+                    </div>
 
-                <div class="mb-6">
-                  <h2 class="text-xl font-semibold mb-2 text-parchment-100">Description</h2>
-                  <p class="text-parchment-200 whitespace-pre-line">{department()?.description}</p>
-                </div>
+                    <div class="mb-6">
+                      <h2 class="text-xl font-semibold mb-2 text-parchment-100">Description</h2>
+                      <p class="text-parchment-200 whitespace-pre-line">{dept.description}</p>
+                    </div>
 
-                <div class="grid grid-cols-2 gap-4 mb-6">
-                  <div>
-                    <h3 class="font-medium text-parchment-400">Department Code</h3>
-                    <p>{department()?.code}</p>
-                  </div>
-                  <div>
-                    <h3 class="font-medium text-parchment-400">Faculty</h3>
-                    <p>{department()?.faculty}</p>
+                    <div class="grid grid-cols-2 gap-4 mb-6">
+                      <div>
+                        <h3 class="font-medium text-parchment-400">Department Code</h3>
+                        <p>{dept.code}</p>
+                      </div>
+                      <div>
+                        <h3 class="font-medium text-parchment-400">Faculty</h3>
+                        <p>{dept.faculty}</p>
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </div>
+              )}
+            </Show>
 
             {/* Related sections - placeholder for future expansion */}
             <div class="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">

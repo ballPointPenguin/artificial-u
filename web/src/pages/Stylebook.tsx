@@ -1,20 +1,23 @@
 import { type Component, createSignal } from 'solid-js'
-import { Alert } from '../components/ui/Alert'
-import { Badge } from '../components/ui/Badge'
-import { Button } from '../components/ui/Button'
-import { Card, CardContent, CardFooter, CardHeader } from '../components/ui/Card'
-import ConfirmationModal from '../components/ui/ConfirmationModal'
-import { MagicButton } from '../components/ui/MagicButton'
-import { Tooltip } from '../components/ui/Tooltip'
 import {
+  Alert,
+  Badge,
+  Button,
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+  ConfirmationModal,
   Form,
   FormActions,
   FormField,
   Input,
+  MagicButton,
   Select,
   Textarea,
-} from '../components/ui/index.js'
-import type { SelectOption } from '../components/ui/index.js'
+  Tooltip,
+} from '../components/ui'
+import type { SelectOption } from '../components/ui'
 
 const Stylebook: Component = () => {
   const [inputValue, setInputValue] = createSignal('')
@@ -348,7 +351,13 @@ const Stylebook: Component = () => {
               </FormField>
 
               <FormActions>
-                <Button type="button" variant="outline" onClick={() => console.log('Clear clicked')}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    console.log('Clear clicked')
+                  }}
+                >
                   Clear (Dummy)
                 </Button>
                 <MagicButton type="submit" isLoading={isProcessing()} loadingText="Submitting...">

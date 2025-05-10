@@ -20,20 +20,20 @@ const App: Component = () => {
       <Route path="/about" component={About} />
       <Route path="/stylebook" component={Stylebook} />
 
-      {/* Academic routes */}
-      <Route path="/academics">
-        {/* Departments routes */}
-        <Route path="/departments" component={Departments} />
-        <Route path="/departments/:id" component={DepartmentDetail} />
+      {/* Departments routes */}
+      <Route path="/departments" component={Departments} />
+      <Route path="/departments/:id" component={DepartmentDetail} />
 
-        {/* Professor routes */}
-        <Route path="/professors" component={Professors} />
-        <Route path="/professors/:id" component={ProfessorDetail} />
+      {/* Professor routes */}
+      <Route path="/professors" component={Professors} />
+      <Route path="/professors/:id" component={ProfessorDetail} />
 
-        {/* Courses routes */}
-        <Route path="/courses" component={Courses} />
-        <Route path="/courses/:id" component={CourseDetail} />
-      </Route>
+      {/* Courses routes */}
+      <Route path="/courses" component={Courses} />
+      <Route path="/courses/:id" component={CourseDetail} />
+
+      {/* Course Topics routes */}
+      {/* Course Lectures routes */}
     </Route>
   )
 }

@@ -1,4 +1,4 @@
-import type { Component, JSX, ParentProps } from 'solid-js'
+import type { Component, ParentProps } from 'solid-js'
 import { splitProps } from 'solid-js'
 
 interface FormActionsProps extends ParentProps {
