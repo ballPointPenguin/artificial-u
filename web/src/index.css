@@ -1,6 +1,9 @@
 /* Import Google Fonts */
 @import url("https://fonts.googleapis.com/css2?family=Cinzel:wght@400..900&family=Cormorant+Garamond:ital,wght@0,300..700;1,300..700&family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap");
 
+/* Replace @tailwind directives with the new import */
+@import "tailwindcss";
+
 /* Global Theme Configuration - Minimal Raw Palette, Fonts, Animations */
 @theme {
   /* Font families - These are good as global definitions */
@@ -14,26 +17,29 @@
   */
 
   /* Background images - Can stay if paths are static */
-  --background-cosmic-wisps: linear-gradient(to right, rgba(var(--theme-secondary-r, 86), var(--theme-secondary-g, 11), var(--theme-secondary-b, 173), 0.05), rgba(var(--theme-bg-r,5), var(--theme-bg-g,2), var(--theme-bg-b,46), 0.1)), url("/images/cosmic-wisps.png");
+  --background-cosmic-wisps: linear-gradient(to right, rgb(var(--theme-secondary-r, 86), var(--theme-secondary-g, 11), var(--theme-secondary-b, 173), 0.05), rgb(var(--theme-bg-r,5), var(--theme-bg-g,2), var(--theme-bg-b,46), 0.1)), url("/images/cosmic-wisps.png");
   --background-parchment-texture: url("/images/parchment-texture.png");
-  --background-nebula-glow: radial-gradient(circle at center, rgba(var(--theme-secondary-r,114), var(--theme-secondary-g,9), var(--theme-secondary-b,183), 0.2), rgba(var(--theme-secondary-r,58), var(--theme-secondary-g,12), var(--theme-secondary-b,163), 0.1), transparent 70%);
+  --background-nebula-glow: radial-gradient(circle at center, rgb(var(--theme-secondary-r,114), var(--theme-secondary-g,9), var(--theme-secondary-b,183), 0.2), rgb(var(--theme-secondary-r,58), var(--theme-secondary-g,12), var(--theme-secondary-b,163), 0.1), transparent 70%);
 
   /* Shadow variables using theme-derived glow components */
-  --shadow-arcane: 0 0 15px rgba(var(--glow-rgb, 138, 43, 226), var(--glow-alpha, 0.3));
-  --shadow-glow: 0 0 8px rgba(var(--glow-rgb, 138, 43, 226), calc(var(--glow-alpha, 0.3) * 2));
-  --shadow-text: 0 0 3px rgba(255, 217, 0, 0.3); /* Keep distinct if golden shadow is always this */
+  --shadow-arcane: 0 0 15px rgb(var(--glow-rgb, 138, 43, 226), var(--glow-alpha, 0.3));
+  --shadow-glow: 0 0 8px rgb(var(--glow-rgb, 138, 43, 226), calc(var(--glow-alpha, 0.3) * 2));
+  --shadow-text: 0 0 3px rgb(255, 217, 0, 0.3); /* Keep distinct if golden shadow is always this */
 
   /* Text shadows using theme-derived glow components */
-  --text-shadow-arcane: 0 0 5px rgba(var(--glow-rgb, 138, 43, 226), calc(var(--glow-alpha, 0.3) * 1.66));
-  --text-shadow-golden: 0 0 2px rgba(219, 180, 12, 0.4); /* Keep distinct if golden shadow is always this */
+  --text-shadow-arcane: 0 0 5px rgb(var(--glow-rgb, 138, 43, 226), calc(var(--glow-alpha, 0.3) * 1.66));
+  --text-shadow-golden: 0 0 2px rgb(219, 180, 12, 0.4); /* Keep distinct if golden shadow is always this */
 
   /* Animation keyframes - These are fine */
   @keyframes wisps { /* ... */ }
+
   @keyframes glow {
-    0% { box-shadow: 0 0 5px rgba(var(--glow-rgb, 138, 43, 226), var(--glow-alpha, 0.3)); }
-    100% { box-shadow: 0 0 20px rgba(var(--glow-rgb, 138, 43, 226), calc(var(--glow-alpha, 0.3) * 2)); }
+    0% { box-shadow: 0 0 5px rgb(var(--glow-rgb, 138, 43, 226), var(--glow-alpha, 0.3)); }
+    100% { box-shadow: 0 0 20px rgb(var(--glow-rgb, 138, 43, 226), calc(var(--glow-alpha, 0.3) * 2)); }
   }
+
   @keyframes float { /* ... */ }
+
   @keyframes shimmer {
     0% { background-position: -200% 0, -150% 50%, -100% 100%; }
     100% { background-position: 200% 0, 250% 50%, 300% 100%; }
@@ -51,23 +57,18 @@
   --color-primary: hsl(var(--theme-primary-h) var(--theme-primary-s) var(--theme-primary-l));
   --color-secondary: hsl(var(--theme-secondary-h) var(--theme-secondary-s) var(--theme-secondary-l));
   --color-accent: hsl(var(--theme-accent-h) var(--theme-accent-s) var(--theme-accent-l));
-
   --color-surface: hsl(var(--theme-bg-h) var(--theme-bg-s) calc(var(--theme-bg-l) + 10%));
   --color-border: hsl(var(--theme-bg-h) var(--theme-bg-s) calc(var(--theme-bg-l) + 15%));
   --color-muted: hsl(var(--theme-fg-h) var(--theme-fg-s) calc(var(--theme-fg-l) - 35%));
-
   --color-info: hsl(var(--theme-info-h) var(--theme-info-s) var(--theme-info-l));
   --color-info-bg: hsl(var(--theme-info-h) var(--theme-info-s) calc(var(--theme-info-l) - 45%));
   --color-info-border: hsl(var(--theme-info-h) var(--theme-info-s) calc(var(--theme-info-l) - 25%));
-
   --color-success: hsl(var(--theme-success-h) var(--theme-success-s) var(--theme-success-l));
   --color-success-bg: hsl(var(--theme-success-h) var(--theme-success-s) calc(var(--theme-success-l) - 25%));
   --color-success-border: hsl(var(--theme-success-h) var(--theme-success-s) calc(var(--theme-success-l) - 10%));
-
   --color-warning: hsl(var(--theme-warning-h) var(--theme-warning-s) var(--theme-warning-l));
   --color-warning-bg: hsl(var(--theme-warning-h) var(--theme-warning-s) calc(var(--theme-warning-l) - 35%));
   --color-warning-border: hsl(var(--theme-warning-h) var(--theme-warning-s) calc(var(--theme-warning-l) - 15%));
-
   --color-danger: hsl(var(--theme-danger-h) var(--theme-danger-s) var(--theme-danger-l));
   --color-danger-bg: hsl(var(--theme-danger-h) var(--theme-danger-s) calc(var(--theme-danger-l) - 30%));
   --color-danger-border: hsl(var(--theme-danger-h) var(--theme-danger-s) calc(var(--theme-danger-l) - 10%));
@@ -80,11 +81,14 @@
 
 /* Global Keyframes Definitions */
 @keyframes wisps { /* ... */ }
+
 @keyframes glow {
-  0% { box-shadow: 0 0 5px rgba(var(--glow-rgb, 138, 43, 226), var(--glow-alpha, 0.3)); }
-  100% { box-shadow: 0 0 20px rgba(var(--glow-rgb, 138, 43, 226), calc(var(--glow-alpha, 0.3) * 2)); }
+  0% { box-shadow: 0 0 5px rgb(var(--glow-rgb, 138, 43, 226), var(--glow-alpha, 0.3)); }
+  100% { box-shadow: 0 0 20px rgb(var(--glow-rgb, 138, 43, 226), calc(var(--glow-alpha, 0.3) * 2)); }
 }
+
 @keyframes float { /* ... */ }
+
 @keyframes shimmer {
   0% { background-position: -200% 0, -150% 50%, -100% 100%; }
   100% { background-position: 200% 0, 250% 50%, 300% 100%; }
@@ -101,6 +105,7 @@
 
   /* Base RGB for Glow (Dark Academia) */
   --glow-rgb: 138, 43, 226; --glow-alpha: 0.3;
+
   /* Base RGB for some background images if needed */
   --theme-secondary-r: 134; --theme-secondary-g: 86; --theme-secondary-b: 255;
   --theme-bg-r: 42; --theme-bg-g:36; --theme-bg-b:28;
@@ -111,9 +116,6 @@
   --theme-warning-h: 39;  --theme-warning-s: 90%;   --theme-warning-l: 55%;   /* Orangey/Yellowish */
   --theme-danger-h: 0;    --theme-danger-s: 72%;    --theme-danger-l: 51%;    /* Reddish */
 }
-
-/* Replace @tailwind directives with the new import */
-@import "tailwindcss";
 
 /* Theme Classes */
 .theme-dark-academia { /* Already covered by :root, but explicit for clarity if needed or for overrides */
@@ -130,6 +132,7 @@
   --theme-success-h: 145; --theme-success-s: 63%;   --theme-success-l: 42%;
   --theme-warning-h: 39;  --theme-warning-s: 90%;   --theme-warning-l: 55%;
   --theme-danger-h: 0;    --theme-danger-s: 72%;    --theme-danger-l: 51%;
+
   /* Semantic colors are derived as in :root */
 }
 
@@ -146,6 +149,7 @@
   --theme-success-h: 130; --theme-success-s: 70%;   --theme-success-l: 65%;   /* Cyan/Greenish */
   --theme-warning-h: 50;  --theme-warning-s: 100%;  --theme-warning-l: 65%;   /* Bright Yellow */
   --theme-danger-h: 340;   --theme-danger-s: 100%;  --theme-danger-l: 70%;   /* Bright Pink/Red */
+
   /* Derived Semantic Colors (repeated structure for clarity, could use a mixin if CSS allowed) */
   --color-background: hsl(var(--theme-bg-h) var(--theme-bg-s) var(--theme-bg-l));
   --color-foreground: hsl(var(--theme-fg-h) var(--theme-fg-s) var(--theme-fg-l));
@@ -182,6 +186,7 @@
   --theme-success-h: 170; --theme-success-s: 50%;   --theme-success-l: 35%;   /* Muted Teal/Green */
   --theme-warning-h: 30;  --theme-warning-s: 60%;   --theme-warning-l: 40%;   /* Murky Yellow/Brown */
   --theme-danger-h: 350;   --theme-danger-s: 65%;    --theme-danger-l: 30%;   /* Blood Red */
+
   /* Derived Semantic Colors */
   --color-background: hsl(var(--theme-bg-h) var(--theme-bg-s) var(--theme-bg-l));
   --color-foreground: hsl(var(--theme-fg-h) var(--theme-fg-s) var(--theme-fg-l));
@@ -218,6 +223,7 @@
   --theme-success-h: 100; --theme-success-s: 60%;   --theme-success-l: 55%;   /* Electric Green */
   --theme-warning-h: 30;  --theme-warning-s: 80%;   --theme-warning-l: 60%;   /* Circuit Orange */
   --theme-danger-h: 0;    --theme-danger-s: 75%;    --theme-danger-l: 55%;   /* Glitch Red */
+
   /* Derived Semantic Colors */
   --color-background: hsl(var(--theme-bg-h) var(--theme-bg-s) var(--theme-bg-l));
   --color-foreground: hsl(var(--theme-fg-h) var(--theme-fg-s) var(--theme-fg-l));
@@ -245,6 +251,7 @@
 @utility text-shadow-arcane {
   text-shadow: var(--text-shadow-arcane);
 }
+
 @utility text-shadow-golden {
   text-shadow: var(--text-shadow-golden);
 }
@@ -253,39 +260,51 @@
 @layer base {
   html {
     @apply antialiased;
+
     scroll-behavior: smooth;
   }
+
   body {
     color: hsl(var(--color-foreground));
     font-family: var(--font-serif);
     background-color: hsl(var(--color-background));
     min-height: 100vh;
   }
+
   h1, h2, h3, h4, h5, h6 {
     color: hsl(var(--color-foreground));
     font-family: var(--font-display);
+
     @apply tracking-wide;
+
      /* Consider if text-primary or text-accent is better for headings by default */
   }
+
   a {
     color: hsl(var(--color-accent));
+
     @apply transition-colors duration-200;
   }
+
   a:hover {
     color: hsl(var(--color-primary));
   }
+
   /* Scrollbar styling - Fine */
+
   /* ... */
 }
 
 /* Component Classes - These will use semantic utilities from Tailwind now */
 @layer components {
   .arcane-glow { /* ... */ }
+
   .btn-arcane { /* Needs review: uses specific palette colors like parchment-400, arcanum-900 */
     @apply px-6 py-3 rounded border border-accent text-foreground
            bg-surface/50 hover:bg-surface/70
            transition-colors duration-300 font-serif tracking-wider;
   }
+
   .btn-arcane-primary { /* Needs review: uses gradient from parchment/mystic */
     @apply px-6 py-3 rounded bg-gradient-to-r from-primary/70 to-secondary/70
            text-background /* Assuming contrast with primary/secondary */
@@ -295,21 +314,29 @@
   .arcane-border { @apply border border-border/30; } /* Already good */
   .arcane-card { @apply bg-surface border border-border/30 rounded-sm p-6 transition-all duration-300; } /* Already good */
   .arcane-card:hover { @apply shadow-arcane; }
+
   .arcane-input { /* Needs review: specific palette, focus mystic-500 */
     @apply w-full px-4 py-2 bg-surface border border-border
            rounded-sm text-foreground placeholder:text-muted
            focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/50
            transition-colors duration-200;
   }
+
   .nav-link { /* Needs review: text-parchment-200, text-shadow-golden */
     @apply text-muted hover:text-foreground
            tracking-wide font-serif uppercase text-sm text-shadow-golden;
   }
+
   /* Background image for cosmic wisps - This is fine if images are static */
+
   /* ... */
+
   /* Animation classes using the animation variables - These are fine */
+
   /* ... */
+
   /* Magic button specific styles - Fine as it uses theme variables */
+
   /* ... */
 
   .animate-shimmer {
@@ -319,8 +346,9 @@
       radial-gradient(circle, var(--sparkle-color-2) 2px, transparent 3px),
       radial-gradient(circle, var(--sparkle-color-3) 2px, transparent 3px);
     background-size: 60px 60px, 80px 80px, 70px 70px;
-    background-position: 0px 0px, 15px 75px, 10px 35px;
+    background-position: 0 0, 15px 75px, 10px 35px;
     background-repeat: repeat;
+
     /* Ensure no debug comments remain */
   }
 }
