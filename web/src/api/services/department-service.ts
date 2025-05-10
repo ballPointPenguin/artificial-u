@@ -2,69 +2,65 @@
  * Department service
  */
 import { httpClient } from '../client'
-import { ENDPOINTS } from '../config'
-import type { Department, DepartmentsList } from '../types'
+import type {
+  Department,
+  DepartmentCoursesResponse,
+  DepartmentCreate,
+  DepartmentGenerateRequest,
+  DepartmentProfessorsResponse,
+  DepartmentUpdate,
+  DepartmentsListResponse,
+} from '../types'
 
-interface GetDepartmentsParams {
-  page?: number
-  size?: number
+const DEPARTMENTS_ENDPOINT = '/departments'
+
+interface ListDepartmentsParams {
+  page: number
+  size: number
+  faculty?: string
   name?: string
 }
 
-/**
- * Get a paginated list of departments
- */
-export async function getDepartments(params: GetDepartmentsParams = {}): Promise<DepartmentsList> {
-  const queryParams = new URLSearchParams()
+export const departmentService = {
+  listDepartments: (params: ListDepartmentsParams): Promise<DepartmentsListResponse> => {
+    const queryParams = new URLSearchParams({
+      page: params.page.toString(),
+      size: params.size.toString(),
+    })
+    if (params.faculty) queryParams.set('faculty', params.faculty)
+    if (params.name) queryParams.set('name', params.name)
+    return httpClient.get<DepartmentsListResponse>(`${DEPARTMENTS_ENDPOINT}?${queryParams.toString()}`)
+  },
 
-  if (params.page) queryParams.append('page', String(params.page))
-  if (params.size) queryParams.append('size', String(params.size))
-  if (params.name) queryParams.append('name', params.name)
+  getDepartment: (departmentId: number): Promise<Department> => {
+    return httpClient.get<Department>(`${DEPARTMENTS_ENDPOINT}/${departmentId}`)
+  },
 
-  const queryString = queryParams.toString()
-  const endpoint = `${ENDPOINTS.departments.list}${queryString ? `?${queryString}` : ''}`
+  getDepartmentByCode: (code: string): Promise<Department> => {
+    return httpClient.get<Department>(`${DEPARTMENTS_ENDPOINT}/code/${code}`)
+  },
 
-  return httpClient.get<DepartmentsList>(endpoint)
-}
+  createDepartment: (data: DepartmentCreate): Promise<Department> => {
+    return httpClient.post<Department>(DEPARTMENTS_ENDPOINT, data)
+  },
 
-/**
- * Get a department by ID
- */
-export async function getDepartment(id: number): Promise<Department> {
-  return httpClient.get<Department>(ENDPOINTS.departments.detail(id))
-}
+  updateDepartment: (departmentId: number, data: DepartmentUpdate): Promise<Department> => {
+    return httpClient.put<Department>(`${DEPARTMENTS_ENDPOINT}/${departmentId}`, data)
+  },
 
-/**
- * Create a new department
- */
-export async function createDepartment(
-  data: Omit<Department, 'id' | 'created_at' | 'updated_at'>
-): Promise<Department> {
-  return httpClient.post<Department>(ENDPOINTS.departments.list, data)
-}
+  deleteDepartment: (departmentId: number): Promise<void> => {
+    return httpClient.delete<void>(`${DEPARTMENTS_ENDPOINT}/${departmentId}`)
+  },
 
-/**
- * Generate a department with AI
- */
-export async function generateDepartment(
-  data: Omit<Department, 'id' | 'created_at' | 'updated_at'>
-): Promise<Department> {
-  return httpClient.post<Department>(ENDPOINTS.departments.generate, data)
-}
+  getDepartmentProfessors: (departmentId: number): Promise<DepartmentProfessorsResponse> => {
+    return httpClient.get<DepartmentProfessorsResponse>(`${DEPARTMENTS_ENDPOINT}/${departmentId}/professors`)
+  },
 
-/**
- * Update a department
- */
-export async function updateDepartment(
-  id: number,
-  data: Partial<Omit<Department, 'id' | 'created_at' | 'updated_at'>>
-): Promise<Department> {
-  return httpClient.put<Department>(ENDPOINTS.departments.detail(id), data)
-}
+  getDepartmentCourses: (departmentId: number): Promise<DepartmentCoursesResponse> => {
+    return httpClient.get<DepartmentCoursesResponse>(`${DEPARTMENTS_ENDPOINT}/${departmentId}/courses`)
+  },
 
-/**
- * Delete a department
- */
-export async function deleteDepartment(id: number): Promise<Record<string, never>> {
-  return httpClient.delete<Record<string, never>>(ENDPOINTS.departments.detail(id))
+  generateDepartment: (data: DepartmentGenerateRequest): Promise<Department> => {
+    return httpClient.post<Department>(`${DEPARTMENTS_ENDPOINT}/generate`, data)
+  },
 }

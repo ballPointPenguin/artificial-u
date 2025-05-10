@@ -2,104 +2,74 @@
  * Course service
  */
 import { httpClient } from '../client'
-import { ENDPOINTS } from '../config'
-import type { Course, CoursesList, DepartmentBrief, LecturesList, ProfessorBrief } from '../types'
+import type {
+  Course,
+  CourseCreate,
+  CourseGenerateRequest,
+  CourseLecturesResponse,
+  CourseUpdate,
+  CoursesListResponse,
+  DepartmentBrief,
+  ProfessorBrief,
+} from '../types'
 
-interface GetCoursesParams {
-  page?: number
-  size?: number
-  department_id?: number
-  professor_id?: number
-  semester?: string
+const COURSES_ENDPOINT = '/courses'
+
+interface ListCoursesParams {
+  page: number
+  size: number
+  departmentId?: number
+  professorId?: number
+  level?: string
   title?: string
 }
 
-/**
- * Get a paginated list of courses
- */
-export async function getCourses(params: GetCoursesParams = {}): Promise<CoursesList> {
-  const queryParams = new URLSearchParams()
+export const courseService = {
+  listCourses: (params: ListCoursesParams): Promise<CoursesListResponse> => {
+    const queryParams = new URLSearchParams({
+      page: params.page.toString(),
+      size: params.size.toString(),
+    })
+    if (params.departmentId) queryParams.set('department_id', params.departmentId.toString())
+    if (params.professorId) queryParams.set('professor_id', params.professorId.toString())
+    if (params.level) queryParams.set('level', params.level)
+    if (params.title) queryParams.set('title', params.title)
+    return httpClient.get<CoursesListResponse>(`${COURSES_ENDPOINT}?${queryParams.toString()}`)
+  },
 
-  if (params.page) queryParams.append('page', String(params.page))
-  if (params.size) queryParams.append('size', String(params.size))
-  if (params.department_id) queryParams.append('department_id', String(params.department_id))
-  if (params.professor_id) queryParams.append('professor_id', String(params.professor_id))
-  if (params.semester) queryParams.append('semester', params.semester)
-  if (params.title) queryParams.append('title', params.title)
+  getCourse: (courseId: number): Promise<Course> => {
+    return httpClient.get<Course>(`${COURSES_ENDPOINT}/${courseId}`)
+  },
 
-  const queryString = queryParams.toString()
-  const endpoint = `${ENDPOINTS.courses.list}${queryString ? `?${queryString}` : ''}`
+  getCourseByCode: (code: string): Promise<Course> => {
+    return httpClient.get<Course>(`${COURSES_ENDPOINT}/code/${code}`)
+  },
 
-  return httpClient.get<CoursesList>(endpoint)
-}
+  createCourse: (data: CourseCreate): Promise<Course> => {
+    return httpClient.post<Course>(COURSES_ENDPOINT, data)
+  },
 
-/**
- * Get a course by ID
- */
-export async function getCourse(id: number): Promise<Course> {
-  return httpClient.get<Course>(ENDPOINTS.courses.detail(id))
-}
+  updateCourse: (courseId: number, data: CourseUpdate): Promise<Course> => {
+    return httpClient.put<Course>(`${COURSES_ENDPOINT}/${courseId}`, data) // Python uses PUT
+  },
 
-/**
- * Get lectures for a course
- */
-export async function getCourseLectures(id: number): Promise<LecturesList> {
-  return httpClient.get<LecturesList>(ENDPOINTS.courses.lectures(id))
-}
+  deleteCourse: (courseId: number): Promise<void> => {
+    return httpClient.delete<void>(`${COURSES_ENDPOINT}/${courseId}`)
+  },
 
-/**
- * Create a new course
- */
-export async function createCourse(data: Omit<Course, 'id'>): Promise<Course> {
-  return httpClient.post<Course>(ENDPOINTS.courses.list, data)
-}
+  getCourseProfessor: (courseId: number): Promise<ProfessorBrief> => {
+    return httpClient.get<ProfessorBrief>(`${COURSES_ENDPOINT}/${courseId}/professor`)
+  },
 
-/**
- * Update a course
- */
-export async function updateCourse(id: number, data: Partial<Omit<Course, 'id'>>): Promise<Course> {
-  return httpClient.put<Course>(ENDPOINTS.courses.detail(id), data)
-}
+  getCourseDepartment: (courseId: number): Promise<DepartmentBrief> => {
+    return httpClient.get<DepartmentBrief>(`${COURSES_ENDPOINT}/${courseId}/department`)
+  },
 
-/**
- * Delete a course
- */
-export async function deleteCourse(id: number): Promise<Record<string, never>> {
-  return httpClient.delete<Record<string, never>>(ENDPOINTS.courses.detail(id))
-}
+  getCourseLectures: (courseId: number): Promise<CourseLecturesResponse> => {
+    return httpClient.get<CourseLecturesResponse>(`${COURSES_ENDPOINT}/${courseId}/lectures`)
+  },
 
-/**
- * Get professor for a course
- */
-export async function getCourseProfessor(id: number): Promise<ProfessorBrief> {
-  return httpClient.get<ProfessorBrief>(ENDPOINTS.courses.professor(id))
-}
-
-/**
- * Get department for a course
- */
-export async function getCourseDepartment(id: number): Promise<DepartmentBrief> {
-  return httpClient.get<DepartmentBrief>(ENDPOINTS.courses.department(id))
-}
-
-/**
- * Add getCourseByCode to fetch a course via its code
- */
-export async function getCourseByCode(code: string | number): Promise<Course> {
-  return httpClient.get<Course>(ENDPOINTS.courses.code(code))
-}
-
-/**
- * Add CourseGeneratePayload for generating courses via AI
- */
-interface CourseGeneratePayload {
-  partial_attributes?: Record<string, unknown>
-  freeform_prompt?: string
-}
-
-/**
- * Generate course data using AI
- */
-export async function generateCourse(data: CourseGeneratePayload): Promise<Course> {
-  return httpClient.post<Course>(ENDPOINTS.courses.generate, data)
+  generateCourse: (data: CourseGenerateRequest): Promise<Course> => {
+    return httpClient.post<Course>(`${COURSES_ENDPOINT}/generate`, data)
+  },
 }

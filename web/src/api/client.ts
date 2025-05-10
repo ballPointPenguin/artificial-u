@@ -236,4 +236,37 @@ export const httpClient = {
       ...fetchOptions,
     })
   },
+
+  /**
+   * Performs a PATCH request
+   */
+  patch: async <T>(endpoint: string, data: unknown, options: RequestOptions = {}): Promise<T> => {
+    const url = createUrl(endpoint)
+    const fetchOptions = { ...options }
+    const headers = new Headers(DEFAULT_HEADERS)
+
+    // Add headers from fetchOptions if present
+    if (fetchOptions.headers) {
+      const customHeaders = fetchOptions.headers
+      if (customHeaders instanceof Headers) {
+        for (const [key, value] of customHeaders.entries()) {
+          headers.set(key, value)
+        }
+      } else if (typeof customHeaders === 'object') {
+        for (const [key, value] of Object.entries(customHeaders)) {
+          if (value) {
+            headers.set(key, String(value))
+          }
+        }
+      }
+    }
+
+    return fetchWithTimeout<T>(url, {
+      method: 'PATCH',
+      headers,
+      credentials: API_CONFIG.withCredentials ? 'include' : 'same-origin',
+      body: JSON.stringify(data),
+      ...fetchOptions,
+    })
+  },
 }

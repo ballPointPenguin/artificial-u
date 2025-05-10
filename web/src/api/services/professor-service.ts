@@ -2,106 +2,67 @@
  * Professor service
  */
 import { httpClient } from '../client'
-import { ENDPOINTS } from '../config'
 import type {
   Professor,
   ProfessorCoursesResponse,
+  ProfessorCreate,
+  ProfessorGenerateRequest,
   ProfessorLecturesResponse,
-  ProfessorsList,
+  ProfessorUpdate,
+  ProfessorsListResponse,
 } from '../types'
 
-interface GetProfessorsParams {
-  page?: number
-  size?: number
-  department_id?: number
+const PROFESSORS_ENDPOINT = '/professors'
+
+interface ListProfessorsParams {
+  page: number
+  size: number
+  departmentId?: number
   name?: string
   specialization?: string
 }
 
-/**
- * Get a paginated list of professors
- */
-export async function getProfessors(params: GetProfessorsParams = {}): Promise<ProfessorsList> {
-  const queryParams = new URLSearchParams()
+export const professorService = {
+  listProfessors: (params: ListProfessorsParams): Promise<ProfessorsListResponse> => {
+    const queryParams = new URLSearchParams({
+      page: params.page.toString(),
+      size: params.size.toString(),
+    })
+    if (params.departmentId) queryParams.set('department_id', params.departmentId.toString())
+    if (params.name) queryParams.set('name', params.name)
+    if (params.specialization) queryParams.set('specialization', params.specialization)
+    return httpClient.get<ProfessorsListResponse>(`${PROFESSORS_ENDPOINT}?${queryParams.toString()}`)
+  },
 
-  if (params.page) queryParams.append('page', String(params.page))
-  if (params.size) queryParams.append('size', String(params.size))
-  if (params.department_id) queryParams.append('department_id', String(params.department_id))
-  if (params.name) queryParams.append('name', params.name)
-  if (params.specialization) queryParams.append('specialization', params.specialization)
+  getProfessor: (professorId: number): Promise<Professor> => {
+    return httpClient.get<Professor>(`${PROFESSORS_ENDPOINT}/${professorId}`)
+  },
 
-  const queryString = queryParams.toString()
-  const endpoint = `${ENDPOINTS.professors.list}${queryString ? `?${queryString}` : ''}`
+  createProfessor: (data: ProfessorCreate): Promise<Professor> => {
+    return httpClient.post<Professor>(PROFESSORS_ENDPOINT, data)
+  },
 
-  return httpClient.get<ProfessorsList>(endpoint)
-}
+  updateProfessor: (professorId: number, data: ProfessorUpdate): Promise<Professor> => {
+    return httpClient.put<Professor>(`${PROFESSORS_ENDPOINT}/${professorId}`, data)
+  },
 
-/**
- * Get a professor by ID
- */
-export async function getProfessor(id: number): Promise<Professor> {
-  return httpClient.get<Professor>(ENDPOINTS.professors.detail(id))
-}
+  deleteProfessor: (professorId: number): Promise<void> => {
+    return httpClient.delete<void>(`${PROFESSORS_ENDPOINT}/${professorId}`)
+  },
 
-/**
- * Get courses taught by a professor
- */
-export async function getProfessorCourses(id: number): Promise<ProfessorCoursesResponse> {
-  return httpClient.get<ProfessorCoursesResponse>(ENDPOINTS.professors.courses(id))
-}
+  getProfessorCourses: (professorId: number): Promise<ProfessorCoursesResponse> => {
+    return httpClient.get<ProfessorCoursesResponse>(`${PROFESSORS_ENDPOINT}/${professorId}/courses`)
+  },
 
-/**
- * Get lectures by a professor
- */
-export async function getProfessorLectures(id: number): Promise<ProfessorLecturesResponse> {
-  return httpClient.get<ProfessorLecturesResponse>(ENDPOINTS.professors.lectures(id))
-}
+  getProfessorLectures: (professorId: number): Promise<ProfessorLecturesResponse> => {
+    return httpClient.get<ProfessorLecturesResponse>(`${PROFESSORS_ENDPOINT}/${professorId}/lectures`)
+  },
 
-/**
- * Create a new professor
- */
-export async function createProfessor(
-  data: Omit<Professor, 'id' | 'created_at' | 'updated_at'>
-): Promise<Professor> {
-  return httpClient.post<Professor>(ENDPOINTS.professors.list, data)
-}
+  generateProfessorImage: (professorId: number): Promise<Professor> => {
+    return httpClient.post<Professor>(`${PROFESSORS_ENDPOINT}/${professorId}/generate-image`, {})
+  },
 
-/**
- * Update a professor
- */
-export async function updateProfessor(
-  id: number,
-  data: Partial<Omit<Professor, 'id' | 'created_at' | 'updated_at'>>
-): Promise<Professor> {
-  return httpClient.put<Professor>(ENDPOINTS.professors.detail(id), data)
-}
-
-/**
- * Delete a professor
- */
-export async function deleteProfessor(id: number): Promise<Record<string, never>> {
-  return httpClient.delete<Record<string, never>>(ENDPOINTS.professors.detail(id))
-}
-
-/**
- * Triggers the generation of a profile image for the specified professor.
- */
-export async function generateProfessorImage(id: number): Promise<Professor> {
-  return httpClient.post<Professor>(
-    ENDPOINTS.professors.generateImage(id),
-    {}, // Empty body for this POST request
-    { timeout: 120000 } // Add 120 seconds timeout (in milliseconds)
-  )
-}
-
-// Define the input payload type for generation
-interface ProfessorGeneratePayload {
-  partial_attributes?: Record<string, unknown>
-}
-
-/**
- * Generate a professor profile using AI
- */
-export async function generateProfessor(data: ProfessorGeneratePayload): Promise<Professor> {
-  return httpClient.post<Professor>(ENDPOINTS.professors.generate, data)
+  generateProfessor: (data: ProfessorGenerateRequest): Promise<Professor> => {
+    return httpClient.post<Professor>(`${PROFESSORS_ENDPOINT}/generate`, data)
+  },
 }
