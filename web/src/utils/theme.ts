@@ -1,4 +1,4 @@
-import { createEffect, createSignal } from 'solid-js'
+import { createEffect, createSignal, createRoot } from 'solid-js'
 import { createStore } from 'solid-js/store'
 
 // Theme types
@@ -119,46 +119,48 @@ export const themeProperties: Record<ThemeMode, ThemeProperties> = {
 
 // Create a reactive theme store
 function createThemeStoreInternal() {
-  // Get theme from localStorage or use default
-  const getInitialTheme = (): ThemeMode => {
-    if (typeof window === 'undefined') return 'dark-academia'
+  return createRoot(() => {
+    // Get theme from localStorage or use default
+    const getInitialTheme = (): ThemeMode => {
+      if (typeof window === 'undefined') return 'dark-academia'
 
-    const savedTheme = localStorage.getItem('arcanum-theme') as ThemeMode | null
-    return savedTheme && Object.keys(themeProperties).includes(savedTheme)
-      ? savedTheme
-      : 'dark-academia'
-  }
+      const savedTheme = localStorage.getItem('arcanum-theme') as ThemeMode | null
+      return savedTheme && Object.keys(themeProperties).includes(savedTheme)
+        ? savedTheme
+        : 'dark-academia'
+    }
 
-  const [theme, setTheme] = createSignal<ThemeMode>(getInitialTheme())
+    const [theme, setTheme] = createSignal<ThemeMode>(getInitialTheme())
 
-  // Initialize with default values
-  const initialTheme = getInitialTheme()
-  const [store, setStore] = createStore({
-    current: initialTheme,
-    properties: themeProperties[initialTheme],
-  })
-
-  // Update theme properties when theme changes
-  createEffect(() => {
-    setStore({
-      current: theme(),
-      properties: themeProperties[theme()],
+    // Initialize with default values
+    const initialTheme = getInitialTheme()
+    const [store, setStore] = createStore({
+      current: initialTheme,
+      properties: themeProperties[initialTheme],
     })
 
-    // Update DOM
-    applyThemeToDOM(theme())
+    // Update theme properties when theme changes
+    createEffect(() => {
+      setStore({
+        current: theme(),
+        properties: themeProperties[theme()],
+      })
 
-    // Save to localStorage
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('arcanum-theme', theme())
+      // Update DOM
+      applyThemeToDOM(theme())
+
+      // Save to localStorage
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('arcanum-theme', theme())
+      }
+    })
+
+    return {
+      theme,
+      setTheme,
+      store,
     }
   })
-
-  return {
-    theme,
-    setTheme,
-    store,
-  }
 }
 
 // Create and export the singleton instance of the theme store

@@ -1,6 +1,6 @@
-import { Button } from '@kobalte/core/button'
 import { A } from '@solidjs/router'
 import { Show, createSignal } from 'solid-js'
+import { Button } from './ui/Button'
 
 export function NavBar() {
   const [isScrolled, setIsScrolled] = createSignal(false)
@@ -120,7 +120,7 @@ export function NavBar() {
             >
               Library
             </A>
-            <Button class="ml-4 px-6 py-2 rounded border border-parchment-400 text-parchment-100 font-display tracking-wider hover:bg-parchment-800/20 transition-colors duration-300 text-sm">
+            <Button variant="outline" size="sm" class="ml-4">
               Apply
             </Button>
           </div>

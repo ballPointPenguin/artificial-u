@@ -6,9 +6,9 @@ import {
   updateDepartment,
 } from '../api/services/department-service'
 import type { Department } from '../api/types'
-import ConfirmationModal from '../components/ConfirmationModal'
 import DepartmentForm from '../components/departments/DepartmentForm'
 import { Button } from '../components/ui/Button'
+import ConfirmationModal from '../components/ui/ConfirmationModal'
 
 const DepartmentDetail = () => {
   const params = useParams()

@@ -3,13 +3,65 @@ import { Alert } from '../components/ui/Alert'
 import { Badge } from '../components/ui/Badge'
 import { Button } from '../components/ui/Button'
 import { Card, CardContent, CardFooter, CardHeader } from '../components/ui/Card'
+import ConfirmationModal from '../components/ui/ConfirmationModal'
 import { MagicButton } from '../components/ui/MagicButton'
-import { Input } from '../components/ui/TextField'
 import { Tooltip } from '../components/ui/Tooltip'
+import {
+  Form,
+  FormActions,
+  FormField,
+  Input,
+  Select,
+  Textarea,
+} from '../components/ui/index.js'
+import type { SelectOption } from '../components/ui/index.js'
 
 const Stylebook: Component = () => {
   const [inputValue, setInputValue] = createSignal('')
+  const [anotherInputValue, setAnotherInputValue] = createSignal('Initial Value')
+  const [numberValue, setNumberValue] = createSignal<number | null>(42)
+  const [textareaValue, setTextareaValue] = createSignal('This is a textarea.')
+  const [selectValue, setSelectValue] = createSignal<string | number | null>(null)
+  const [selectDisabledValue, setSelectDisabledValue] = createSignal<string | number | null>('opt2')
+
   const isInputInvalid = () => inputValue().length > 0 && inputValue().length < 3
+
+  // State for ConfirmationModal
+  const [isModalOpen, setIsModalOpen] = createSignal(false)
+  const [isProcessing, setIsProcessing] = createSignal(false)
+
+  const handleModalConfirm = () => {
+    console.log('Modal confirmed')
+    setIsProcessing(true)
+    setTimeout(() => {
+      setIsProcessing(false)
+      setIsModalOpen(false)
+    }, 1500) // Simulate async action
+  }
+
+  const handleModalCancel = () => {
+    console.log('Modal cancelled')
+    setIsModalOpen(false)
+    setIsProcessing(false) // Reset processing state if cancelled during processing
+  }
+
+  const sampleSelectOptions: SelectOption[] = [
+    { value: 'opt1', label: 'Option 1' },
+    { value: 'opt2', label: 'Option 2' },
+    { value: 'opt3', label: 'Option 3 (Disabled)', disabled: true },
+    { value: 4, label: 'Option 4 (Number)' },
+  ]
+
+  const handleFormSubmit = (e: SubmitEvent) => {
+    e.preventDefault() // Already handled by Form component if onSubmit is provided
+    console.log('Stylebook Form Submitted', {
+      inputValue: inputValue(),
+      anotherInputValue: anotherInputValue(),
+      numberValue: numberValue(),
+      textareaValue: textareaValue(),
+      selectValue: selectValue(),
+    })
+  }
 
   return (
     <div class="p-8 space-y-12">
@@ -133,31 +185,6 @@ const Stylebook: Component = () => {
         </Card>
       </section>
 
-      {/* TextField (Input) Section */}
-      <section>
-        <h2 class="text-2xl font-display text-accent mb-6 border-b border-border/50 pb-2">
-          TextField (Input)
-        </h2>
-        <Card>
-          <CardContent class="space-y-6">
-            <Input
-              label="Default Input"
-              placeholder="Enter text..."
-              helperText="This is helper text."
-            />
-            <Input
-              label="Input with Error"
-              placeholder="Enter at least 3 chars..."
-              value={inputValue()}
-              onChange={setInputValue}
-              error={isInputInvalid() ? 'Must be at least 3 characters' : undefined}
-              helperText="Example with validation."
-            />
-            <Input label="Disabled Input" placeholder="Cannot edit" disabled />
-          </CardContent>
-        </Card>
-      </section>
-
       {/* Badge Section */}
       <section>
         <h2 class="text-2xl font-display text-accent mb-6 border-b border-border/50 pb-2">
@@ -197,6 +224,138 @@ const Stylebook: Component = () => {
             >
               <Button variant="outline">Hover Me (Bottom)</Button>
             </Tooltip>
+          </CardContent>
+        </Card>
+      </section>
+
+      {/* Confirmation Modal Section */}
+      <section>
+        <h2 class="text-2xl font-display text-accent mb-6 border-b border-border/50 pb-2">
+          Confirmation Modal
+        </h2>
+        <Card>
+          <CardContent class="space-y-4">
+            <p class="text-muted">
+              Click the button below to test the Kobalte-based Confirmation Modal.
+            </p>
+            <Button variant="secondary" onClick={() => setIsModalOpen(true)}>
+              Open Confirmation Modal
+            </Button>
+          </CardContent>
+        </Card>
+        <ConfirmationModal
+          isOpen={isModalOpen()}
+          title="Confirm Action"
+          message={
+            <p>
+              Are you sure you want to proceed with this action? This cannot be undone.
+              <br />
+              <strong class="text-warning">Please consider the implications.</strong>
+            </p>
+          }
+          confirmText="Yes, Proceed"
+          cancelText="No, Go Back"
+          onConfirm={handleModalConfirm}
+          onCancel={handleModalCancel}
+          isConfirming={isProcessing()}
+        />
+      </section>
+
+      {/* Form Components Section */}
+      <section>
+        <h2 class="text-2xl font-display text-accent mb-6 border-b border-border/50 pb-2">
+          Form Components
+        </h2>
+        <Card>
+          <CardHeader>
+            <h3 class="text-xl font-semibold text-foreground">Form Elements Showcase</h3>
+          </CardHeader>
+          <CardContent>
+            <Form onSubmit={handleFormSubmit}>
+              <FormField
+                label="Text Input (Required)"
+                name="textInput"
+                required
+                error={isInputInvalid() ? 'Min 3 chars' : null}
+                helperText="Enter at least 3 characters."
+              >
+                <Input
+                  name="textInput" // Name must match FormField for association
+                  value={inputValue()}
+                  onInput={(e) => setInputValue(e.currentTarget.value)}
+                  placeholder="e.g., Professor Snape"
+                  required
+                />
+              </FormField>
+
+              <FormField label="Another Text Input" name="anotherInput">
+                <Input
+                  name="anotherInput"
+                  value={anotherInputValue()}
+                  onInput={(e) => setAnotherInputValue(e.currentTarget.value)}
+                  placeholder="Some other text"
+                />
+              </FormField>
+
+              <FormField label="Number Input" name="numberInput" helperText="Enter a number.">
+                <Input
+                  name="numberInput"
+                  type="number"
+                  value={numberValue() === null ? undefined : String(numberValue())}
+                  onInput={(e) => {
+                    const val = e.currentTarget.value
+                    setNumberValue(val === '' ? null : Number(val))
+                  }}
+                  placeholder="e.g., 42"
+                />
+              </FormField>
+
+              <FormField label="Disabled Input" name="disabledInput">
+                <Input name="disabledInput" value="Cannot change me" disabled />
+              </FormField>
+
+              <FormField label="Textarea" name="textareaInput" helperText="Enter a longer text.">
+                <Textarea
+                  name="textareaInput"
+                  value={textareaValue()}
+                  onInput={(e) => setTextareaValue(e.currentTarget.value)}
+                  placeholder="Describe your master plan..."
+                  rows={4}
+                />
+              </FormField>
+
+              <FormField label="Select Dropdown" name="selectInput" required>
+                <Select
+                  name="selectInput"
+                  options={sampleSelectOptions}
+                  value={selectValue()}
+                  onChange={setSelectValue}
+                  placeholder="-- Choose an Option --"
+                  required
+                />
+              </FormField>
+              <p class="text-sm text-muted mt-1 mb-4">Selected value: {selectValue() ?? 'None'}</p>
+
+              <FormField label="Disabled Select" name="disabledSelect">
+                <Select
+                  name="disabledSelect"
+                  options={sampleSelectOptions}
+                  value={selectDisabledValue()}
+                  onChange={setSelectDisabledValue} // Still allow change for testing UI reaction
+                  placeholder="-- Cannot Choose --"
+                  disabled
+                />
+              </FormField>
+
+              <FormActions>
+                <Button type="button" variant="outline" onClick={() => console.log('Clear clicked')}>
+                  Clear (Dummy)
+                </Button>
+                <MagicButton type="submit" isLoading={isProcessing()} loadingText="Submitting...">
+                  Submit Form
+                </MagicButton>
+              </FormActions>
+            </Form>
           </CardContent>
         </Card>
       </section>

@@ -7,8 +7,8 @@ import {
   updateProfessor,
 } from '../../api/services/professor-service'
 import type { Professor } from '../../api/types'
-import ConfirmationModal from '../ConfirmationModal'
 import { Button } from '../ui/Button'
+import ConfirmationModal from '../ui/ConfirmationModal'
 import ProfessorForm, { type ProfessorFormData } from './ProfessorForm'
 
 export default function ProfessorDetail() {

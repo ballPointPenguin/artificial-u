@@ -1,5 +1,5 @@
 import { A } from '@solidjs/router'
-import { For } from 'solid-js'
+import { For, type Component, type JSX } from 'solid-js'
 
 interface FeatureCard {
   id: string
@@ -14,7 +14,7 @@ interface FeatureCardsProps {
 }
 
 // SVG Icons
-const icons = {
+const icons: Record<string, JSX.Element> = {
   book: (
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -64,33 +64,34 @@ const icons = {
   ),
 }
 
+const FeatureCardItem: Component<{ feature: FeatureCard }> = (props) => {
+  const { feature } = props
+  return (
+    <A
+      href={feature.link}
+      class="group block bg-surface border border-border/30 rounded-sm p-6 transition-all duration-300 hover:bg-surface/70 hover:shadow-arcane"
+    >
+      <div class="flex flex-col items-center text-center space-y-4">
+        <div class="text-accent group-hover:text-primary transition-colors">
+          {icons[feature.icon as keyof typeof icons]}
+        </div>
+        <h3 class="text-foreground font-display text-xl tracking-wide group-hover:text-primary transition-colors">
+          {feature.title}
+        </h3>
+        <p class="text-muted font-serif group-hover:text-muted/80 transition-colors">
+          {feature.description}
+        </p>
+      </div>
+    </A>
+  )
+}
+
 export function FeatureCards(props: FeatureCardsProps) {
   return (
-    <section class="bg-arcanum-950 py-16 relative">
+    <section class="bg-background py-16 relative">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-          <For each={props.features}>
-            {(feature) => (
-              <A
-                href={feature.link}
-                class="group block bg-arcanum-900 border border-parchment-800/30 rounded-sm p-6 transition-all duration-300 hover:bg-arcanum-800 hover:shadow-arcane"
-              >
-                <div class="flex flex-col items-center text-center space-y-4">
-                  <div class="text-parchment-300 group-hover:text-parchment-200 transition-colors">
-                    {icons[feature.icon as keyof typeof icons]}
-                  </div>
-
-                  <h3 class="text-parchment-200 font-display text-xl tracking-wide">
-                    {feature.title}
-                  </h3>
-
-                  <p class="text-parchment-400 font-serif group-hover:text-parchment-300 transition-colors">
-                    {feature.description}
-                  </p>
-                </div>
-              </A>
-            )}
-          </For>
+          <For each={props.features}>{(feature) => <FeatureCardItem feature={feature} />}</For>
         </div>
       </div>
     </section>

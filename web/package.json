@@ -20,6 +20,7 @@
   "dependencies": {
     "@kobalte/core": "^0.13.9",
     "@solidjs/router": "^0.15.3",
+    "lucide-solid": "^0.509.0",
     "solid-js": "^1.9.6"
   },
   "devDependencies": {
