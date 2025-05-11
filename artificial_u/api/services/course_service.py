@@ -16,6 +16,7 @@ from artificial_u.api.models.courses import (
     CoursesListResponse,
     CourseUpdate,
     DepartmentBrief,
+    GeneratedCourseData,
     LectureBrief,
     ProfessorBrief,
 )
@@ -495,7 +496,7 @@ class CourseApiService:
                 detail=f"An unexpected error occurred retrieving lectures for course {course_id}.",
             )
 
-    async def generate_course(self, generation_data: CourseGenerate) -> CourseResponse:
+    async def generate_course(self, generation_data: CourseGenerate) -> GeneratedCourseData:
         """
         Generate course content and structure using AI based on partial data.
         This method *generates* the data but does not create/save the course.
@@ -504,7 +505,7 @@ class CourseApiService:
             generation_data: Input data containing optional partial attributes and prompt.
 
         Returns:
-            CourseResponse: The generated course data (not saved).
+            GeneratedCourseData: The generated course data (not saved), allowing partial fields.
 
         Raises:
             HTTPException: If generation fails or prerequisites are not found.
@@ -528,15 +529,17 @@ class CourseApiService:
                 partial_attributes=partial_attrs
             )
 
-            # Convert the dictionary to the API response model
-            # Add placeholder ID and validate
-            generated_dict["id"] = -1  # Placeholder for validation
+            # Ensure 'id' is present for the response model, even if it's a placeholder
+            # The model itself has a default, but setting it here ensures consistency
+            # if the core service might return an 'id'.
+            if "id" not in generated_dict or generated_dict["id"] is None:
+                generated_dict["id"] = -1
 
-            # Validate and convert using the standard response model
-            response = CourseResponse.model_validate(generated_dict)
+            # Validate and convert using the new GeneratedCourseData model
+            response = GeneratedCourseData.model_validate(generated_dict)
 
             self.logger.info(
-                f"Successfully generated course data: {response.code} - {response.title}"
+                f"Generated course (partial validation): C='{response.code}', T='{response.title}'"
             )
             return response
 

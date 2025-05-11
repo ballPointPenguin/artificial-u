@@ -118,3 +118,30 @@ class CourseGenerate(BaseModel):
     freeform_prompt: Optional[str] = Field(
         None, description="Optional freeform text prompt for additional guidance."
     )
+
+
+# Model for the response of a generated course, allowing partial data
+class GeneratedCourseData(BaseModel):
+    """
+    Model for the response of a generated course.
+    Allows for partial data, making most fields from CourseBase optional.
+    Includes an ID, typically a placeholder for generated (non-persisted) courses.
+    """
+
+    id: Optional[int] = Field(
+        default=-1,
+        description="Placeholder ID for generated course, typically -1 if not persisted.",
+    )
+    code: Optional[str] = None
+    title: Optional[str] = None
+    department_id: Optional[int] = None
+    level: Optional[str] = None
+    credits: Optional[int] = Field(default=None, ge=0)  # Keep validation if provided
+    professor_id: Optional[int] = None
+    description: Optional[str] = None
+    lectures_per_week: Optional[int] = None
+    total_weeks: Optional[int] = None
+    topics: Optional[List[Dict[str, Any]]] = None
+
+    class Config:
+        from_attributes = True

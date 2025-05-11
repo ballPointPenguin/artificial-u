@@ -2,6 +2,7 @@
 Unit Tests for the professor API endpoints, mocking the service layer.
 """
 
+from typing import List
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -78,6 +79,7 @@ def mock_api_service(monkeypatch):
         "get_professor_lectures": MagicMock(),
         "generate_professor_image": AsyncMock(),
         "generate_professor": AsyncMock(),
+        "get_featured_professors": MagicMock(),
     }
 
     # --- Configure Mock Return Values ---
@@ -170,6 +172,9 @@ def mock_api_service(monkeypatch):
         f"{base_path}.generate_professor_image", mock_service["generate_professor_image"]
     )
     monkeypatch.setattr(f"{base_path}.generate_professor", mock_service["generate_professor"])
+    monkeypatch.setattr(
+        f"{base_path}.get_featured_professors", mock_service["get_featured_professors"]
+    )
 
     return mock_service
 
@@ -381,3 +386,54 @@ def test_generate_professor(client: TestClient, mock_api_service):
     call_args = mock_api_service["generate_professor"].call_args[0]
     assert isinstance(call_args[0], ProfessorGenerate)
     assert call_args[0].model_dump() == generation_data
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize(
+    "all_professors_data, expected_count_min, expected_count_max",
+    [
+        ([], 0, 0),  # No professors
+        ([sample_professors_base[0]], 1, 1),  # 1 professor
+        (sample_professors_base[:2], 2, 2),  # 2 professors
+        (sample_professors_base[:3], 3, 3),  # 3 professors
+        (sample_professors_base, 3, 3),  # 3+ professors (takes 3)
+    ],
+)
+def test_get_featured_professors(
+    client: TestClient,
+    mock_api_service: MagicMock,
+    all_professors_data: List[ProfessorResponse],
+    expected_count_min: int,
+    expected_count_max: int,
+):
+    """Test getting featured professors with varying numbers of total professors."""
+    # The mock_api_service fixture handles mocking ProfessorApiService methods.
+    # We directly set the return_value for the 'get_featured_professors' mock.
+    # This return value is List[ProfessorResponse], as returned by the service method.
+
+    # Determine the expected response based on the input data and the logic (max 3)
+    if not all_professors_data:
+        expected_response = []
+    else:
+        num_to_select = min(len(all_professors_data), 3)
+        # For a deterministic test, we use a slice of the input data.
+        # The actual service method uses random.sample, but the mock controls the outcome here.
+        expected_response = all_professors_data[:num_to_select]
+
+    mock_api_service["get_featured_professors"].return_value = expected_response
+
+    response = client.get("/api/v1/professors/featured")
+    assert response.status_code == 200
+    data = response.json()
+
+    assert isinstance(data, list)
+    # Check count based on the number of items we told the mock to return
+    assert len(data) == len(expected_response)
+    assert expected_count_min <= len(data) <= expected_count_max
+
+    if expected_response:  # If we expect a non-empty list
+        assert len(data) == len(expected_response)
+        # Compare the data received from API with what the mock was set to return
+        assert data == [p.model_dump() for p in expected_response]
+
+    mock_api_service["get_featured_professors"].assert_called_once()

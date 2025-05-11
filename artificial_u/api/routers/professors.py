@@ -2,7 +2,7 @@
 Professor router for handling professor-related API endpoints.
 """
 
-from typing import Optional
+from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
 from fastapi.responses import JSONResponse
@@ -25,6 +25,22 @@ router = APIRouter(
     tags=["professors"],
     responses={404: {"description": "Not found"}},
 )
+
+
+@router.get(
+    "/featured",
+    response_model=List[ProfessorResponse],
+    summary="Get featured professors",
+    description="Get a list of up to 3 randomly selected featured professors.",
+)
+async def get_featured_professors(
+    service: ProfessorApiService = Depends(get_professor_api_service),
+):
+    """
+    Get up to 3 featured professors.
+    The selection is random for this version.
+    """
+    return service.get_featured_professors()
 
 
 @router.get(

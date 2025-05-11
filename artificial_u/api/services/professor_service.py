@@ -3,8 +3,9 @@ Professor service for handling business logic related to professors.
 """
 
 import logging
+import random
 from math import ceil
-from typing import Optional
+from typing import List, Optional
 
 from fastapi import HTTPException, status
 
@@ -372,4 +373,34 @@ class ProfessorApiService:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=("An unexpected error occurred during profile generation."),
+            )
+
+    def get_featured_professors(self) -> List[ProfessorResponse]:
+        """
+        Get a list of up to 3 random featured professors.
+        """
+        try:
+            all_professors_core = self.core_service.list_professors(filters=None)  # Get all
+
+            if not all_professors_core:
+                return []
+
+            num_to_select = min(len(all_professors_core), 3)
+            featured_professors_core = random.sample(all_professors_core, num_to_select)
+
+            featured_responses = [
+                ProfessorResponse.model_validate(p.model_dump()) for p in featured_professors_core
+            ]
+            self.logger.info(f"Returning {len(featured_responses)} featured professors.")
+            return featured_responses
+
+        except Exception as e:
+            self.logger.error(f"Error fetching featured professors: {e}", exc_info=True)
+            # For a "featured" endpoint, returning an empty list on error might be acceptable
+            # rather than a 500, depending on requirements. For now, let it raise if not handled.
+            # If it's a DatabaseError from list_professors, it will already be a 500.
+            # If it's a random.sample error (e.g. k > n), that's a logic bug.
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Could not retrieve featured professors.",
             )
