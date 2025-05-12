@@ -3,7 +3,12 @@
  */
 import { httpClient } from '../client'
 import { ENDPOINTS } from '../config'
-import type { ManualVoiceAssignmentPayload, PaginatedVoices, Voice, VoiceListParams } from '../types'
+import type {
+  ManualVoiceAssignmentPayload,
+  PaginatedVoices,
+  Voice,
+  VoiceListParams,
+} from '../types'
 
 /**
  * Manually assign a voice to a professor.
@@ -20,7 +25,7 @@ export const manualAssignVoice = async (
     ENDPOINTS.voices.manualAssignVoice(professorId),
     payload
   )
-  return;
+  return
 }
 
 /**
@@ -31,12 +36,22 @@ export const manualAssignVoice = async (
  */
 export const listVoices = async (params: VoiceListParams = {}): Promise<PaginatedVoices> => {
   const queryParams = new URLSearchParams()
-  for (const [key, value] of Object.entries(params)) {
-    if (value !== undefined && value !== null) {
-      queryParams.append(key, String(value))
-    }
-  }
-  const endpoint = `${ENDPOINTS.voices.listVoices}${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+
+  // Explicitly add known parameters if they exist (are not undefined)
+  if (params.gender !== undefined) queryParams.set('gender', params.gender)
+  if (params.accent !== undefined) queryParams.set('accent', params.accent)
+  if (params.age !== undefined) queryParams.set('age', params.age)
+  if (params.language !== undefined) queryParams.set('language', params.language)
+  if (params.use_case !== undefined) queryParams.set('use_case', params.use_case)
+  if (params.category !== undefined) queryParams.set('category', params.category)
+
+  // Pagination parameters, usually included if provided and not undefined
+  if (params.limit !== undefined) queryParams.set('limit', String(params.limit))
+  if (params.offset !== undefined) queryParams.set('offset', String(params.offset))
+
+  // Construct the endpoint URL. URLSearchParams.toString() handles empty cases.
+  const endpoint = `${ENDPOINTS.voices.listVoices}?${queryParams.toString()}`
+
   return httpClient.get<PaginatedVoices>(endpoint)
 }
 

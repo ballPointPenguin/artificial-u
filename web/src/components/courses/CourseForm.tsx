@@ -32,7 +32,7 @@ const CourseForm: Component<CourseFormProps> = (props) => {
     code: '',
     title: '',
     department_id: null,
-    level: '' /* Default level, e.g., 'Undergraduate 100' */,
+    level: '',
     credits: null,
     professor_id: null,
     description: '',
@@ -94,6 +94,7 @@ const CourseForm: Component<CourseFormProps> = (props) => {
 
   const handleInputChange = (fieldName: keyof CourseFormData, value: string | number | null) => {
     setFormData((prev) => ({ ...prev, [fieldName]: value }))
+
     // When input changes, clear the specific validation error for that field
     if (validationErrors()[fieldName]) {
       setValidationErrors((prev) => {

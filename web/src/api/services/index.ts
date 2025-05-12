@@ -9,4 +9,3 @@ export * from './lecture-service'
 export * from './professor-service'
 export * from './topic-service'
 export * from './voice-service'
-

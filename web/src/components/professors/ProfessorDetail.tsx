@@ -1,8 +1,9 @@
-import { useNavigate, useParams } from '@solidjs/router'
-import { Show, createResource, createSignal } from 'solid-js'
+import { A, useNavigate, useParams } from '@solidjs/router'
+import { For, Show, createResource, createSignal } from 'solid-js'
 import { professorService } from '../../api/services/professor-service.js'
-import type { Professor } from '../../api/types.js'
-import { Alert, Button, ConfirmationModal } from '../ui'
+import { departmentService } from '../../api/services/department-service.js'
+import type { Professor, ProfessorCourseBrief } from '../../api/types.js'
+import { Alert, Button, ConfirmationModal, MagicButton } from '../ui'
 import ProfessorForm, { type ProfessorFormData } from './ProfessorForm.js'
 
 export default function ProfessorDetail() {
@@ -15,8 +16,7 @@ export default function ProfessorDetail() {
   const [isGeneratingImage, setIsGeneratingImage] = createSignal(false)
   const [generationError, setGenerationError] = createSignal('')
 
-  // Fetch the specific professor using createResource
-  const [professorResource, { refetch }] = createResource(() => {
+  const [professorResource, { refetch: refetchProfessor }] = createResource(() => {
     const id = Number.parseInt(params.id, 10)
     if (Number.isNaN(id)) {
       throw new Error('Professor ID is missing or invalid')
@@ -24,10 +24,28 @@ export default function ProfessorDetail() {
     return id
   }, professorService.getProfessor)
 
-  // Type-safe helper to get error message
-  const getErrorMessage = () => {
-    const error: unknown = professorResource.error
-    return error instanceof Error ? error.message : 'Unknown error'
+  const [departmentResource] = createResource(
+    () => {
+      const prof = professorResource()
+      return prof && typeof prof.department_id === 'number' ? prof.department_id : null
+    },
+    async (departmentId) => {
+      return departmentService.getDepartment(departmentId)
+    }
+  )
+
+  const [coursesResource] = createResource(
+    () => professorResource()?.id,
+    async (professorId: number) => {
+      if (professorId) {
+        return professorService.getProfessorCourses(professorId)
+      }
+      return undefined
+    }
+  )
+
+  const getErrorMessage = (resourceError: unknown) => {
+    return resourceError instanceof Error ? resourceError.message : 'Unknown error'
   }
 
   const handleSubmitUpdate = async (formData: ProfessorFormData) => {
@@ -49,7 +67,7 @@ export default function ProfessorDetail() {
 
       await professorService.updateProfessor(id, updatedProfessor)
       setIsEditing(false)
-      void refetch()
+      void refetchProfessor()
     } catch (error) {
       setError(error instanceof Error ? error.message : 'Failed to update professor')
     } finally {
@@ -68,7 +86,6 @@ export default function ProfessorDetail() {
       }
 
       await professorService.deleteProfessor(id)
-      // Navigate back to professors list after deletion
       navigate('/professors')
     } catch (error) {
       setError(error instanceof Error ? error.message : 'Failed to delete professor')
@@ -90,7 +107,7 @@ export default function ProfessorDetail() {
       }
 
       await professorService.generateProfessorImage(id)
-      void refetch()
+      void refetchProfessor()
     } catch (error) {
       setGenerationError(error instanceof Error ? error.message : 'Failed to generate image')
     } finally {
@@ -100,7 +117,6 @@ export default function ProfessorDetail() {
 
   return (
     <div class="arcane-card p-8">
-      {/* Loading and error states */}
       <Show
         when={!professorResource.loading}
         fallback={<p class="text-muted">Loading professor details...</p>}
@@ -109,8 +125,13 @@ export default function ProfessorDetail() {
           when={!professorResource.error}
           fallback={
             <Alert variant="danger" class="mb-4">
-              <p>Error loading professor: {getErrorMessage()}</p>
-              <Button variant="ghost" size="sm" onClick={() => void refetch()} class="mt-2">
+              <p>Error loading professor: {getErrorMessage(professorResource.error)}</p>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => void refetchProfessor()}
+                class="mt-2"
+              >
                 Try Again
               </Button>
             </Alert>
@@ -131,21 +152,23 @@ export default function ProfessorDetail() {
               </div>
             }
           >
-            {/* Professor details display */}
             <div>
               <div class="flex justify-between items-center mb-6">
                 <h1 class="text-3xl font-display text-parchment-100 text-shadow-golden">
                   {professorResource()?.name}
                 </h1>
-                <div class="flex space-x-2">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => void handleGenerateImage()}
-                    disabled={isGeneratingImage()}
-                  >
-                    {isGeneratingImage() ? 'Generating...' : 'Generate Image'}
-                  </Button>
+                <div class="flex space-x-2 items-center">
+                  <Show when={!professorResource()?.image_url && !isGeneratingImage()}>
+                    <MagicButton
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => void handleGenerateImage()}
+                      isLoading={isGeneratingImage()}
+                      loadingText="Generating..."
+                    >
+                      Generate Image
+                    </MagicButton>
+                  </Show>
                   <Button variant="secondary" size="sm" onClick={() => setIsEditing(true)}>
                     Edit
                   </Button>
@@ -160,68 +183,177 @@ export default function ProfessorDetail() {
                 </div>
               </div>
 
-              {/* Display generation error if any */}
               <Show when={generationError()}>
                 <Alert variant="danger" class="mb-4">
                   <p>Error generating image: {generationError()}</p>
                 </Alert>
               </Show>
 
-              <div class="space-y-3 text-muted">
-                <p>
-                  <strong class="font-semibold text-foreground">Title:</strong>{' '}
-                  <span class="text-muted">{professorResource()?.title}</span>
-                </p>
-                <p>
-                  <strong class="font-semibold text-foreground">Specialization:</strong>{' '}
-                  <span class="text-muted">{professorResource()?.specialization}</span>
-                </p>
-
-                <Show when={professorResource()?.description}>
+              {/* Start of two-column layout for md screens and up */}
+              <div class="md:flex md:gap-8 mb-6">
+                {/* Left Column: All Attributes */}
+                <div class="md:w-1/2 space-y-3 text-muted">
                   <p>
-                    <strong class="font-semibold text-foreground">Description:</strong>
-                    <span class="block mt-1 whitespace-pre-wrap text-muted">
-                      {professorResource()?.description}
-                    </span>
+                    <strong class="font-semibold text-foreground">Title:</strong>{' '}
+                    <span class="text-muted">{professorResource()?.title}</span>
                   </p>
-                </Show>
+                  <Show when={professorResource()?.department_id}>
+                    <p>
+                      <strong class="font-semibold text-foreground">Department:</strong>{' '}
+                      <Show
+                        when={!departmentResource.loading && departmentResource()}
+                        fallback={<span class="text-muted italic">Loading department...</span>}
+                      >
+                        <Show
+                          when={!departmentResource.error && departmentResource()}
+                          fallback={<span class="text-danger">Error loading department</span>}
+                        >
+                          {(dept) => <span class="text-muted">{dept().name}</span>}
+                        </Show>
+                      </Show>
+                    </p>
+                  </Show>
 
-                <Show when={professorResource()?.background}>
-                  <p>
-                    <strong class="font-semibold text-foreground">Background:</strong>
-                    <span class="block mt-1 whitespace-pre-wrap text-muted">
-                      {professorResource()?.background}
-                    </span>
-                  </p>
-                </Show>
+                  <Show when={professorResource()?.specialization}>
+                    {(specialization) => (
+                      <p>
+                        <strong class="font-semibold text-foreground">Specialization:</strong>{' '}
+                        <span class="text-muted">{specialization()}</span>
+                      </p>
+                    )}
+                  </Show>
 
-                <Show when={professorResource()?.teaching_style}>
-                  <p>
-                    <strong class="font-semibold text-foreground">Teaching Style:</strong>{' '}
-                    <span class="text-muted">{professorResource()?.teaching_style}</span>
-                  </p>
-                </Show>
+                  <Show when={professorResource()?.gender}>
+                    {(gender) => (
+                      <p>
+                        <strong class="font-semibold text-foreground">Gender:</strong>{' '}
+                        <span class="text-muted">{gender()}</span>
+                      </p>
+                    )}
+                  </Show>
 
-                <Show when={professorResource()?.personality}>
-                  <p>
-                    <strong class="font-semibold text-foreground">Personality:</strong>{' '}
-                    <span class="text-muted">{professorResource()?.personality}</span>
-                  </p>
-                </Show>
+                  <Show when={professorResource()?.accent}>
+                    {(accent) => (
+                      <p>
+                        <strong class="font-semibold text-foreground">Accent:</strong>{' '}
+                        <span class="text-muted">{accent()}</span>
+                      </p>
+                    )}
+                  </Show>
 
-                {/* Display image if available */}
-                <Show when={professorResource()?.image_url}>
-                  <p class="font-semibold text-foreground mt-4">Profile Image:</p>
-                  <img
-                    src={
-                      professorResource()?.image_url ? String(professorResource()?.image_url) : ''
+                  <Show when={professorResource()?.age}>
+                    {(age) => (
+                      <p>
+                        <strong class="font-semibold text-foreground">Age:</strong>{' '}
+                        <span class="text-muted">{age()}</span>
+                      </p>
+                    )}
+                  </Show>
+
+                  {/* Moved longer attributes here */}
+                  <Show when={professorResource()?.description}>
+                    {(desc) => (
+                      <p>
+                        <strong class="font-semibold text-foreground">Description:</strong>
+                        <span class="block mt-1 whitespace-pre-wrap text-muted">{desc()}</span>
+                      </p>
+                    )}
+                  </Show>
+
+                  <Show when={professorResource()?.background}>
+                    {(bg) => (
+                      <p>
+                        <strong class="font-semibold text-foreground">Background:</strong>
+                        <span class="block mt-1 whitespace-pre-wrap text-muted">{bg()}</span>
+                      </p>
+                    )}
+                  </Show>
+
+                  <Show when={professorResource()?.teaching_style}>
+                    {(style) => (
+                      <p>
+                        <strong class="font-semibold text-foreground">Teaching Style:</strong>{' '}
+                        <span class="text-muted">{style()}</span>
+                      </p>
+                    )}
+                  </Show>
+
+                  <Show when={professorResource()?.personality}>
+                    {(pers) => (
+                      <p>
+                        <strong class="font-semibold text-foreground">Personality:</strong>{' '}
+                        <span class="text-muted">{pers()}</span>
+                      </p>
+                    )}
+                  </Show>
+                </div>
+
+                {/* Right Column: Image */}
+                <div class="md:w-1/2 mt-6 md:mt-0">
+                  <Show when={professorResource()?.image_url}>
+                    <img
+                      src={professorResource()?.image_url ?? ''}
+                      alt={`Professor ${professorResource()?.name || ''}`}
+                      class="w-full max-w-sm h-auto rounded-lg shadow-lg object-contain"
+                      onError={(e) => {
+                        // biome-ignore lint/suspicious/noConsoleLog: Intended for debugging
+                        console.log('Image failed to load:', (e.target as HTMLImageElement).src)
+                      }}
+                    />
+                  </Show>
+                </div>
+              </div>
+              {/* End of two-column layout - No more full-width attributes div needed below */}
+
+              {/* Courses Section */}
+              <div class="mt-8">
+                <h2 class="text-2xl font-display text-parchment-100 mb-4 text-shadow-golden">
+                  Courses Taught
+                </h2>
+                <Show
+                  when={!coursesResource.loading}
+                  fallback={<p class="text-muted">Loading courses...</p>}
+                >
+                  <Show
+                    when={!coursesResource.error}
+                    fallback={
+                      <Alert variant="danger">
+                        Error loading courses:{' '}
+                        {coursesResource.error instanceof Error
+                          ? coursesResource.error.message
+                          : 'Unknown error'}
+                      </Alert>
                     }
-                    alt={`Professor ${String(professorResource()?.name || '')}`}
-                    class="mt-2 max-w-xs h-auto rounded-lg shadow-lg"
-                    onError={(e) => {
-                      console.error('Image failed to load:', e.currentTarget.src)
-                    }}
-                  />
+                  >
+                    <Show
+                      /* eslint-disable-next-line @typescript-eslint/no-non-null-assertion */
+                      when={coursesResource()?.courses && coursesResource()!.courses.length > 0}
+                      fallback={
+                        <p class="text-muted">
+                          This professor is not currently teaching any courses.
+                        </p>
+                      }
+                    >
+                      <ul class="space-y-2">
+                        <For each={coursesResource()?.courses}>
+                          {(course: ProfessorCourseBrief) => (
+                            <li class="arcane-card-sm p-3">
+                              <A href={`/courses/${String(course.id)}`} class="hover:text-primary">
+                                <strong class="font-semibold text-foreground">
+                                  {course.code}:
+                                </strong>{' '}
+                                {course.title}
+                              </A>
+                              <div class="text-xs text-muted mt-1">
+                                <span>Level: {course.level}</span> |{' '}
+                                <span>Credits: {course.credits}</span>
+                              </div>
+                            </li>
+                          )}
+                        </For>
+                      </ul>
+                    </Show>
+                  </Show>
                 </Show>
               </div>
             </div>
@@ -229,7 +361,6 @@ export default function ProfessorDetail() {
         </Show>
       </Show>
 
-      {/* Delete confirmation modal */}
       <ConfirmationModal
         isOpen={isDeleting()}
         title="Delete Professor"
