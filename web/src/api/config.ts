@@ -71,4 +71,9 @@ export const ENDPOINTS = {
     detail: (id: number) => `/v1/topics/${String(id)}`,
     generateForCourse: (courseId: number) => `/v1/courses/${String(courseId)}/topics/generate`,
   },
+  voices: {
+    manualAssignVoice: (professorId: string) => `/v1/voices/${professorId}/assign_voice`,
+    listVoices: '/v1/voices/',
+    getVoice: (voiceId: number) => `/v1/voices/${String(voiceId)}`,
+  },
 }

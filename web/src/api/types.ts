@@ -319,7 +319,7 @@ export interface AudioRedirectResponse {
 // Voice types
 export interface Voice {
   id: number
-  el_voice_id: string
+  el_voice_id: string | null
   name: string | null
   accent: string | null
   gender: string | null
@@ -331,9 +331,9 @@ export interface Voice {
   locale: string | null
   description: string | null
   preview_url: string | null
-  verified_languages: Record<string, unknown>
+  verified_languages: Record<string, unknown> | null
   popularity_score: number | null
-  last_updated: string
+  last_updated: string | null
 }
 
 // Error response type
@@ -376,4 +376,26 @@ export interface DepartmentCoursesResponse {
 export interface CourseGenerateRequest {
   partial_attributes?: Record<string, unknown>
   freeform_prompt?: string
+}
+
+export interface PaginatedVoices {
+  items: Voice[]
+  total: number
+  limit: number
+  offset: number
+}
+
+export interface ManualVoiceAssignmentPayload {
+  el_voice_id: string
+}
+
+export interface VoiceListParams {
+  gender?: string
+  accent?: string
+  age?: string
+  language?: string
+  use_case?: string
+  category?: string
+  limit?: number
+  offset?: number
 }
