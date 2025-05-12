@@ -1,5 +1,5 @@
 import { Select as KSelect } from '@kobalte/core'
-import { ChevronDown } from 'lucide-solid'
+import ChevronDown from 'lucide-solid/icons/chevron-down'
 import type { Component, ComponentProps, JSX } from 'solid-js'
 import { Show, splitProps } from 'solid-js'
 
