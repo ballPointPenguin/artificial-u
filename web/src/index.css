@@ -179,7 +179,7 @@
   --theme-secondary-l: 70%; /* Soft, desaturated grey-green */
   --theme-accent-h: 40;
   --theme-accent-s: 30%;
-  --theme-accent-l: 50%; /* Muted ochre/gold */
+  --theme-accent-l: 40%; /* Muted ochre/gold (darkened) */
 
   /* Subtle Glow for Wabi Sabi */
   --glow-rgb: 50, 40, 30;
@@ -221,7 +221,7 @@
   --theme-secondary-l: 65%; /* Bright Orchid Pink */
   --theme-accent-h: 50;
   --theme-accent-s: 100%;
-  --theme-accent-l: 45%; /* Deeper Sunny Yellow */
+  --theme-accent-l: 35%; /* Deeper Sunny Yellow */
 
   /* Glow for Biophilia */
   --glow-rgb: 120, 200, 100;

@@ -76,7 +76,7 @@ export const themeProperties: Record<ThemeMode, ThemeProperties> = {
   'wabi-sabi': {
     primaryColor: '30deg 25% 60%', // Muted terracotta/brown
     secondaryColor: '90deg 10% 70%', // Soft, desaturated grey-green
-    accentColor: '40deg 30% 50%', // Muted ochre/gold
+    accentColor: '40deg 30% 40%', // Muted ochre/gold (darkened)
     backgroundColor: '35deg 30% 92%', // Light, warm beige
     textColor: '35deg 15% 30%', // Dark, muted brown
     borderColor: '35deg 20% 80%', // Light beige
@@ -97,7 +97,7 @@ export const themeProperties: Record<ThemeMode, ThemeProperties> = {
   biophilia: {
     primaryColor: '120deg 60% 45%', // Vibrant Leaf Green
     secondaryColor: '320deg 70% 65%', // Bright Orchid Pink
-    accentColor: '50deg 100% 45%', // Deeper Sunny Yellow
+    accentColor: '50deg 100% 35%', // Deeper Sunny Yellow
     backgroundColor: '90deg 60% 90%', // Light Honeydew
     textColor: '30deg 40% 18%', // Darker, richer Woody Brown
     borderColor: '30deg 25% 50%', // Medium Woody Brown
