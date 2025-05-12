@@ -286,6 +286,21 @@ class VoiceService:
         except Exception as e:
             self.logger.error(f"Error saving voice to database: {e}")
 
+    def get_voice_by_id(self, voice_id: int) -> Optional[Dict[str, Any]]:
+        """
+        Get voice data by database voice ID.
+
+        Args:
+            voice_id: Database voice ID to look up
+
+        Returns:
+            Voice data dictionary or None if not found
+        """
+        db_voice = self.repository_factory.voice.get(voice_id)
+        if db_voice:
+            return db_voice.model_dump()
+        return None
+
     def get_voice_by_el_id(self, el_voice_id: str) -> Optional[Dict[str, Any]]:
         """
         Get voice data by ElevenLabs voice ID.
@@ -395,3 +410,38 @@ class VoiceService:
             self._save_voice_to_db(voice)
 
         return voices_page
+
+    def count_available_voices(
+        self,
+        gender: Optional[str] = None,
+        accent: Optional[str] = None,
+        age: Optional[str] = None,
+        language: Optional[str] = None,
+        use_case: Optional[str] = None,
+        category: Optional[str] = None,
+    ) -> int:
+        """
+        Count available voices with optional filtering.
+
+        Args:
+            gender: Optional filter by gender
+            accent: Optional filter by accent
+            age: Optional filter by age
+            language: Optional filter by language
+            use_case: Optional filter by use case
+            category: Optional filter by category
+
+        Returns:
+            Total count of matching voices in the database.
+        """
+        # This primarily counts from the database.
+        # If the expectation is to count from API if DB is empty, logic would need to be added,
+        # but for typical pagination, counting existing DB entries is standard.
+        return self.repository_factory.voice.count(
+            gender=gender,
+            accent=accent,
+            age=age,
+            language=language,
+            use_case=use_case,
+            category=category,
+        )

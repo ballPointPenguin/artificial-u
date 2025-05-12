@@ -217,7 +217,7 @@ class ProfessorApiService:
             True if deleted successfully, False otherwise
         """
         try:
-            return self.core_service.delete_professor(str(professor_id))
+            return self.core_service.delete_professor(professor_id)
         except (ProfessorNotFoundError, DatabaseError):
             return False
 
@@ -233,7 +233,7 @@ class ProfessorApiService:
         """
         try:
             # Use core service to get courses
-            courses = self.core_service.list_professor_courses(str(professor_id))
+            courses = self.core_service.list_professor_courses(professor_id)
 
             # Convert to brief format
             course_briefs = [

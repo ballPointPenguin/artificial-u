@@ -8,7 +8,7 @@ from typing import Any, Dict, List, Optional
 
 from artificial_u.config import get_settings
 from artificial_u.models.converters import extract_xml_content
-from artificial_u.models.core import Professor
+from artificial_u.models.core import Course, Professor
 from artificial_u.models.repositories.factory import RepositoryFactory
 from artificial_u.prompts import (
     get_professor_prompt,
@@ -328,6 +328,48 @@ class ProfessorService:
             # Re-raise errors from the update step
             self.logger.error(f"Failed to update professor {professor_id} with image URL: {e}")
             raise
+
+    # --- Relationship Methods --- #
+
+    def list_professor_courses(self, professor_id: int) -> List[Course]:
+        """
+        Lists all courses taught by a specific professor.
+
+        Args:
+            professor_id: The ID of the professor.
+
+        Returns:
+            A list of Course objects taught by the professor.
+
+        Raises:
+            ProfessorNotFoundError: If the professor is not found.
+            DatabaseError: If there's an issue querying the database.
+        """
+        self.logger.info(f"Listing courses for professor ID: {professor_id}")
+
+        # First, ensure the professor exists
+        if not self.repository_factory.professor.get(professor_id):
+            error_msg = f"Professor with ID {professor_id} not found."
+            self.logger.warning(error_msg)
+            raise ProfessorNotFoundError(error_msg)
+
+        try:
+            # Fetch all courses (or courses based on supported filters by .list())
+            # and then filter by professor_id in Python.
+            # Assuming self.repository_factory.course.list() without arguments lists all courses.
+            # If it expects other arguments (e.g., department_id) or has mandatory ones,
+            # this might need further adjustment based on CourseRepository's actual signature.
+            all_courses = self.repository_factory.course.list()
+            courses = [course for course in all_courses if course.professor_id == professor_id]
+            self.logger.info(f"Found {len(courses)} courses for prof ID: {professor_id}")
+            return courses
+        except Exception as e:
+            # Preserve the original, more detailed error message if preferred
+            # err_str = str(e)
+            # error_msg = f"Course list failed for prof {professor_id}: {err_str}"
+            error_msg = f"Failed to list courses for professor {professor_id}: {str(e)}"
+            self.logger.error(error_msg, exc_info=True)
+            raise DatabaseError(error_msg) from e
 
     # --- Generation Method --- #
 

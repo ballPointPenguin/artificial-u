@@ -15,6 +15,7 @@ from artificial_u.api.routers.lectures import router as lectures_router
 from artificial_u.api.routers.professors import router as professors_router
 from artificial_u.api.routers.topics import router as topics_router
 from artificial_u.api.routers.topics import router_for_course_topics
+from artificial_u.api.routers.voice import router as voice_router
 from artificial_u.api.utils.logging import setup_logging
 from artificial_u.config.settings import Environment
 
@@ -61,6 +62,9 @@ def create_application() -> FastAPI:
     app.include_router(lectures_router, prefix="/api/v1")
     app.include_router(topics_router, prefix="/api/v1")
     app.include_router(router_for_course_topics, prefix="/api/v1")
+
+    # Include the new voice router
+    app.include_router(voice_router, prefix="/api/v1")
 
     return app
 

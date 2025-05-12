@@ -185,3 +185,32 @@ class VoiceRepository(BaseRepository):
             voice.id = existing_voice.id
             return self.update(voice)
         return self.create(voice)
+
+    def count(
+        self,
+        accent: Optional[str] = None,
+        age: Optional[str] = None,
+        category: Optional[str] = None,
+        gender: Optional[str] = None,
+        language: Optional[str] = None,
+        use_case: Optional[str] = None,
+    ) -> int:
+        """Count voices with optional filters."""
+        with self.get_session() as session:
+            query = session.query(VoiceModel)
+
+            # Apply filters
+            if accent:
+                query = query.filter(VoiceModel.accent.ilike(f"%{accent}%"))
+            if age:
+                query = query.filter(VoiceModel.age.ilike(f"%{age}%"))
+            if category:
+                query = query.filter(VoiceModel.category.ilike(f"%{category}%"))
+            if gender:
+                query = query.filter(VoiceModel.gender.ilike(f"%{gender}%"))
+            if language:
+                query = query.filter(VoiceModel.language.ilike(f"%{language}%"))
+            if use_case:
+                query = query.filter(VoiceModel.use_case.ilike(f"%{use_case}%"))
+
+            return query.count()
