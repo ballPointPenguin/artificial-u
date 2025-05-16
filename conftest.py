@@ -48,5 +48,7 @@ def verify_test_environment():
         assert settings.GOOGLE_API_KEY == "test_google_key", "Using incorrect Google key"
     if settings.OPENAI_API_KEY:
         assert settings.OPENAI_API_KEY == "test_openai_key", "Using incorrect OpenAI key"
+    if settings.SPEECH_KEY:
+        assert settings.SPEECH_KEY == "test_speech_key", "Using incorrect Speech key"
 
     yield

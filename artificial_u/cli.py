@@ -38,12 +38,16 @@ def get_system():
         elevenlabs_key = os.environ.get("ELEVENLABS_API_KEY")
         google_key = os.environ.get("GOOGLE_API_KEY")
         openai_key = os.environ.get("OPENAI_API_KEY")
+        speech_key = os.environ.get("SPEECH_KEY")
+        speech_region = os.environ.get("SPEECH_REGION")
 
         university_system = UniversitySystem(
             anthropic_api_key=anthropic_key,
             elevenlabs_api_key=elevenlabs_key,
             google_api_key=google_key,
             openai_api_key=openai_key,
+            speech_key=speech_key,
+            speech_region=speech_region,
             db_url=os.environ.get("DATABASE_URL"),
             content_backend=os.environ.get("CONTENT_BACKEND"),
             content_model=os.environ.get("CONTENT_MODEL"),

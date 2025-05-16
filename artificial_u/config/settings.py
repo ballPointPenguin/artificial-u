@@ -79,6 +79,8 @@ class Settings(BaseSettings):
     ELEVENLABS_API_KEY: Optional[str] = None
     GOOGLE_API_KEY: Optional[str] = None
     OPENAI_API_KEY: Optional[str] = None
+    SPEECH_KEY: Optional[str] = None
+    SPEECH_REGION: Optional[str] = None
 
     # Temporary storage paths
     TEMP_AUDIO_PATH: str = DEFAULT_TEMP_AUDIO_PATH
@@ -198,6 +200,8 @@ class Settings(BaseSettings):
             "elevenlabs_api_key": self.ELEVENLABS_API_KEY,
             "google_api_key": self.GOOGLE_API_KEY,
             "openai_api_key": self.OPENAI_API_KEY,
+            "speech_key": self.SPEECH_KEY,
+            "speech_region": self.SPEECH_REGION,
             "storage_type": self.STORAGE_TYPE,
             "storage_endpoint_url": self.STORAGE_ENDPOINT_URL,
             "storage_public_url": self.STORAGE_PUBLIC_URL,

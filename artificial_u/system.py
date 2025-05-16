@@ -36,6 +36,8 @@ class UniversitySystem:
         elevenlabs_api_key: Optional[str] = None,
         google_api_key: Optional[str] = None,
         openai_api_key: Optional[str] = None,
+        speech_key: Optional[str] = None,
+        speech_region: Optional[str] = None,
         db_url: Optional[str] = None,
         content_backend: Optional[str] = None,
         content_model: Optional[str] = None,
@@ -52,6 +54,8 @@ class UniversitySystem:
             elevenlabs_api_key: API key for ElevenLabs
             google_api_key: API key for Google
             openai_api_key: API key for OpenAI
+            speech_key: API key for Azure Speech
+            speech_region: Azure Speech region
             db_url: PostgreSQL database URL
             content_backend: Backend to use for content generation ('anthropic' or 'ollama')
             content_model: Model to use with the chosen backend
@@ -65,7 +69,12 @@ class UniversitySystem:
 
         # Configure all settings
         self._configure_api_keys(
-            anthropic_api_key, elevenlabs_api_key, google_api_key, openai_api_key
+            anthropic_api_key,
+            elevenlabs_api_key,
+            google_api_key,
+            openai_api_key,
+            speech_key,
+            speech_region,
         )
         self._configure_database(db_url)
         self._configure_content(content_backend, content_model)
@@ -92,6 +101,8 @@ class UniversitySystem:
         elevenlabs_api_key: Optional[str],
         google_api_key: Optional[str],
         openai_api_key: Optional[str],
+        speech_key: Optional[str],
+        speech_region: Optional[str],
     ):
         """Configure API keys"""
         if anthropic_api_key:
@@ -102,6 +113,10 @@ class UniversitySystem:
             self.settings.GOOGLE_API_KEY = google_api_key
         if openai_api_key:
             self.settings.OPENAI_API_KEY = openai_api_key
+        if speech_key:
+            self.settings.SPEECH_KEY = speech_key
+        if speech_region:
+            self.settings.SPEECH_REGION = speech_region
 
     def _configure_database(self, db_url: Optional[str]):
         """Configure database settings"""

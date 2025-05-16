@@ -2,15 +2,6 @@
 
 ArtificialU provides a comprehensive configuration system that supports different environments, environment variables, and validation.
 
-## Required API Keys
-
-ArtificialU requires the following API keys to function properly:
-
-- **ANTHROPIC_API_KEY**: Required for content generation using Claude models
-- **ELEVENLABS_API_KEY**: Required for text-to-speech conversion
-
-These keys must be set in your `.env` file or as environment variables before running the application.
-
 ## Basic Usage
 
 The simplest way to access configuration values is through the `get_settings()` function:
@@ -160,10 +151,12 @@ TESTING=true
 | Setting | Description | Default | Required |
 |---------|-------------|---------|----------|
 | `DATABASE_URL` | Database connection string | `postgresql://postgres:postgres@localhost:5432/artificial_u_dev` | Yes |
-| `ANTHROPIC_API_KEY` | API key for Anthropic | None | Yes |
-| `ELEVENLABS_API_KEY` | API key for ElevenLabs | None | Yes |
+| `ANTHROPIC_API_KEY` | API key for Anthropic | None | No |
+| `ELEVENLABS_API_KEY` | API key for ElevenLabs | None | No |
 | `GOOGLE_API_KEY` | API key for Google | None | No |
 | `OPENAI_API_KEY` | API key for OpenAI | None | No |
+| `SPEECH_KEY` | API key for Azure Speech | None | No |
+| `SPEECH_REGION` | Azure Speech region | None | No |
 | `TEMP_AUDIO_PATH` | Path for *temporary* audio file processing | `temp_audio` | No |
 | `CONTENT_LOGS_PATH` | Path for content generation logs | `content_logs` | No |
 | `LOG_LEVEL` | Logging level | `INFO` | No |

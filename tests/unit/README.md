@@ -27,6 +27,7 @@ Unit tests use dummy API keys from `.env.test`:
 - `ANTHROPIC_API_KEY=test_anthropic_key`
 - `GOOGLE_API_KEY=test_google_key`
 - `OPENAI_API_KEY=test_openai_key`
+- `SPEECH_KEY=test_speech_key`
 
 ## Test Organization
 

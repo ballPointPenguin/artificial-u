@@ -30,5 +30,8 @@ def test_environment_variables_are_set():
         os.environ.get("OPENAI_API_KEY") == "test_openai_key"
     ), "OpenAI API key not set to test value"
 
+    # Verify Speech key
+    assert os.environ.get("SPEECH_KEY") == "test_speech_key", "Speech key not set to test value"
+
     # Verify we're in a test environment
     assert os.environ.get("TESTING") == "true", "TESTING environment variable should be 'true'"

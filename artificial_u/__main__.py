@@ -20,17 +20,21 @@ def check_api_keys():
     """Check if required API keys are set in environment variables."""
     # Check for required environment variables
     missing_vars = []
-    if not os.environ.get("ANTHROPIC_API_KEY"):
-        missing_vars.append("ANTHROPIC_API_KEY")
-    if not os.environ.get("ELEVENLABS_API_KEY"):
-        missing_vars.append("ELEVENLABS_API_KEY")
 
     # Check for optional but recommended API keys
     optional_missing = []
+    if not os.environ.get("ANTHROPIC_API_KEY"):
+        optional_missing.append("ANTHROPIC_API_KEY")
+    if not os.environ.get("ELEVENLABS_API_KEY"):
+        optional_missing.append("ELEVENLABS_API_KEY")
     if not os.environ.get("GOOGLE_API_KEY"):
         optional_missing.append("GOOGLE_API_KEY")
     if not os.environ.get("OPENAI_API_KEY"):
         optional_missing.append("OPENAI_API_KEY")
+    if not os.environ.get("SPEECH_KEY"):
+        optional_missing.append("SPEECH_KEY")
+    if not os.environ.get("SPEECH_REGION"):
+        optional_missing.append("SPEECH_REGION")
 
     return missing_vars, optional_missing
 
