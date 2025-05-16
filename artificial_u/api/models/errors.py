@@ -32,7 +32,7 @@ class ErrorResponse(BaseModel):
     class Config:
         """Pydantic model configuration"""
 
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "status_code": 400,
                 "error_code": "VALIDATION_ERROR",
