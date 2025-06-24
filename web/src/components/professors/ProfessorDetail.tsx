@@ -1,7 +1,7 @@
 import { A, useNavigate, useParams } from '@solidjs/router'
 import { For, Show, createResource, createSignal } from 'solid-js'
-import { professorService } from '../../api/services/professor-service.js'
 import { departmentService } from '../../api/services/department-service.js'
+import { professorService } from '../../api/services/professor-service.js'
 import type { Professor, ProfessorCourseBrief } from '../../api/types.js'
 import { Alert, Button, ConfirmationModal, MagicButton } from '../ui'
 import ProfessorForm, { type ProfessorFormData } from './ProfessorForm.js'
@@ -296,7 +296,6 @@ export default function ProfessorDetail() {
                       alt={`Professor ${professorResource()?.name || ''}`}
                       class="w-full max-w-sm h-auto rounded-lg shadow-lg object-contain"
                       onError={(e) => {
-                        // biome-ignore lint/suspicious/noConsoleLog: Intended for debugging
                         console.log('Image failed to load:', (e.target as HTMLImageElement).src)
                       }}
                     />
