@@ -9,7 +9,17 @@ import type {
   ProfessorGenerateRequest,
 } from '../../api/types.js'
 
-import { Button, Form, FormActions, FormField, Input, MagicButton, Select, Textarea } from '../ui'
+import {
+  Alert,
+  Button,
+  Form,
+  FormActions,
+  FormField,
+  Input,
+  MagicButton,
+  Select,
+  Textarea,
+} from '../ui'
 import type { SelectOption } from '../ui'
 
 export interface ProfessorFormData {
@@ -386,14 +396,14 @@ const ProfessorForm: Component<ProfessorFormProps> = (props) => {
       </div>
 
       <Show when={props.error}>
-        <div class="bg-red-900/20 border border-red-500 text-red-300 px-4 py-3 rounded my-4">
+        <Alert variant="danger" class="my-4">
           {props.error}
-        </div>
+        </Alert>
       </Show>
       <Show when={generateError()}>
-        <div class="bg-yellow-900/20 border border-yellow-500 text-yellow-300 px-4 py-3 rounded my-4">
+        <Alert variant="warning" class="my-4">
           {generateError()}
-        </div>
+        </Alert>
       </Show>
 
       <FormActions>

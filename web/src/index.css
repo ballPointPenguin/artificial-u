@@ -53,7 +53,7 @@
   );
   --color-danger: hsl(var(--theme-danger-h) var(--theme-danger-s) var(--theme-danger-l));
   --color-danger-bg: hsl(
-    var(--theme-danger-h) var(--theme-danger-s) calc(var(--theme-danger-l) - 30%)
+    var(--theme-danger-h) var(--theme-danger-s) calc(var(--theme-danger-l) - 35%)
   );
   --color-danger-border: hsl(
     var(--theme-danger-h) var(--theme-danger-s) calc(var(--theme-danger-l) - 10%)
@@ -200,8 +200,8 @@
   --color-warning: hsl(40deg, 50%, 50%);
   --color-warning-bg: hsl(40deg, 50%, 88%);
   --color-warning-border: hsl(40deg, 50%, 70%);
-  --color-danger: hsl(15deg, 35%, 50%);
-  --color-danger-bg: hsl(15deg, 35%, 88%);
+  --color-danger: hsl(15deg, 40%, 45%);
+  --color-danger-bg: hsl(15deg, 35%, 92%);
   --color-danger-border: hsl(15deg, 35%, 70%);
 }
 
@@ -244,7 +244,7 @@
   --theme-warning-l: 60%;
   --theme-danger-h: 0;
   --theme-danger-s: 80%;
-  --theme-danger-l: 60%;
+  --theme-danger-l: 55%;
 
   /* Directly defined Status Colors for Biophilia (because global derivations are for dark themes) */
   --color-info: hsl(var(--theme-info-h), var(--theme-info-s), var(--theme-info-l));
@@ -257,7 +257,7 @@
   --color-warning-bg: hsl(var(--theme-warning-h), var(--theme-warning-s), 92%);
   --color-warning-border: hsl(var(--theme-warning-h), var(--theme-warning-s), 75%);
   --color-danger: hsl(var(--theme-danger-h), var(--theme-danger-s), var(--theme-danger-l));
-  --color-danger-bg: hsl(var(--theme-danger-h), var(--theme-danger-s), 92%);
+  --color-danger-bg: hsl(var(--theme-danger-h), 60%, 94%);
   --color-danger-border: hsl(var(--theme-danger-h), var(--theme-danger-s), 75%);
 }
 

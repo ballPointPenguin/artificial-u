@@ -52,7 +52,7 @@ const ConfirmationModal = (props: ConfirmationModalProps) => {
                 <Button
                   onClick={props.onConfirm}
                   disabled={props.isConfirming}
-                  class="bg-danger-bg hover:bg-danger text-foreground border-danger-border hover:shadow-glow"
+                  variant="danger"
                   // Note: This applies md size by default from ui/Button. If other sizes needed, pass size prop.
                 >
                   {props.isConfirming ? 'Processing...' : props.confirmText || 'Delete'}

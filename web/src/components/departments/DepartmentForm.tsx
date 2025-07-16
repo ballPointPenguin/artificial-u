@@ -1,7 +1,7 @@
 import { type JSX, Show, createEffect, createSignal } from 'solid-js'
 import { departmentService } from '../../api/services/department-service.js'
 import type { Department, DepartmentGenerateRequest } from '../../api/types.js'
-import { Button, Form, FormActions, FormField, Input, MagicButton, Textarea } from '../ui'
+import { Alert, Button, Form, FormActions, FormField, Input, MagicButton, Textarea } from '../ui'
 
 // Form data interface matching the API model
 interface DepartmentFormData {
@@ -208,14 +208,14 @@ const DepartmentForm = (props: DepartmentFormProps) => {
       </FormField>
 
       <Show when={props.error}>
-        <div class="bg-red-900/20 border border-red-500 text-red-300 px-4 py-3 rounded my-4">
+        <Alert variant="danger" class="my-4">
           {props.error}
-        </div>
+        </Alert>
       </Show>
       <Show when={generateError()}>
-        <div class="bg-red-900/20 border border-red-500 text-red-300 px-4 py-3 rounded my-4">
+        <Alert variant="danger" class="my-4">
           {generateError()}
-        </div>
+        </Alert>
       </Show>
 
       <FormActions>

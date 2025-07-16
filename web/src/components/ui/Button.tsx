@@ -1,7 +1,7 @@
 import { Button as KobalteButton } from '@kobalte/core/button'
 import { type JSX, splitProps } from 'solid-js'
 
-type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'link'
+type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'link' | 'danger'
 type ButtonSize = 'sm' | 'md' | 'lg'
 
 interface ButtonProps extends JSX.ButtonHTMLAttributes<HTMLButtonElement> {
@@ -25,6 +25,8 @@ export function Button(props: ButtonProps) {
     outline: 'bg-transparent text-primary border border-primary hover:bg-primary/10',
     ghost: 'bg-transparent text-muted hover:text-primary hover:bg-primary/10',
     link: 'bg-transparent text-primary underline-offset-4 hover:underline',
+    danger:
+      'bg-danger-bg border border-danger-border text-danger hover:bg-danger hover:text-foreground',
   }
 
   const sizeClasses = {

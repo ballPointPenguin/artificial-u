@@ -48,7 +48,7 @@ export const themeProperties: Record<ThemeMode, ThemeProperties> = {
     warningBgColor: '30deg 50% 20%', // Dark amber background
     warningBorderColor: '30deg 50% 35%', // Muted amber border
     dangerColor: '0deg 45% 55%', // Dark crimson / deep red
-    dangerBgColor: '0deg 40% 18%', // Dark crimson background
+    dangerBgColor: '0deg 45% 20%', // Dark crimson background
     dangerBorderColor: '0deg 40% 30%', // Muted crimson border
   },
   vaporwave: {
@@ -70,7 +70,7 @@ export const themeProperties: Record<ThemeMode, ThemeProperties> = {
     warningBgColor: '45deg 70% 22%', // Dark vivid orange background
     warningBorderColor: '45deg 70% 40%', // Bright vivid orange border
     dangerColor: '300deg 100% 60%', // Glitchy Magenta/Purple
-    dangerBgColor: '300deg 70% 20%', // Dark magenta background
+    dangerBgColor: '300deg 100% 25%', // Dark magenta background
     dangerBorderColor: '300deg 70% 40%', // Bright magenta border
   },
   'wabi-sabi': {
@@ -90,8 +90,8 @@ export const themeProperties: Record<ThemeMode, ThemeProperties> = {
     warningColor: '40deg 50% 50%', // Muted ochre or amber
     warningBgColor: '40deg 50% 88%', // Very light, desaturated ochre
     warningBorderColor: '40deg 50% 70%', // Light, desaturated ochre
-    dangerColor: '15deg 35% 50%', // Muted, desaturated red/terracotta
-    dangerBgColor: '15deg 35% 88%', // Very light, desaturated red
+    dangerColor: '15deg 40% 45%', // Muted, desaturated red/terracotta
+    dangerBgColor: '15deg 35% 92%', // Very light, desaturated red
     dangerBorderColor: '15deg 35% 70%', // Light, desaturated red
   },
   biophilia: {
@@ -111,8 +111,8 @@ export const themeProperties: Record<ThemeMode, ThemeProperties> = {
     warningColor: '35deg 100% 60%',
     warningBgColor: '35deg 100% 92%',
     warningBorderColor: '35deg 100% 75%',
-    dangerColor: '0deg 80% 60%',
-    dangerBgColor: '0deg 80% 92%',
+    dangerColor: '0deg 80% 55%',
+    dangerBgColor: '0deg 60% 94%',
     dangerBorderColor: '0deg 80% 75%',
   },
 }

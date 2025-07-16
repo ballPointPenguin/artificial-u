@@ -143,10 +143,9 @@ const DepartmentDetail = () => {
                           Edit
                         </Button>
                         <Button
-                          variant="outline"
+                          variant="danger"
                           size="sm"
                           onClick={() => setIsDeleting(true)}
-                          class="border-red-500/50 text-red-300 hover:bg-red-900/30 hover:border-red-500"
                         >
                           Delete
                         </Button>
