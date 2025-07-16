@@ -339,6 +339,7 @@ export interface Voice {
 // Error response type
 export interface APIError {
   detail: string
+  message?: string
   status_code?: number
   path?: string
   timestamp?: string

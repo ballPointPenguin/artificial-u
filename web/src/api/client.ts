@@ -34,18 +34,21 @@ export const createUrl = (endpoint: string): string => {
 async function handleResponse<T>(response: Response): Promise<T> {
   if (!response.ok) {
     let errorData: APIError | undefined
+    let errorMessage: string
 
     try {
       // Try to parse error response
       errorData = (await response.json()) as APIError
+      // Check for the new error shape first, then fall back to the old one.
+      errorMessage =
+        errorData.message || errorData.detail || response.statusText || 'An unknown error occurred'
     } catch {
       // If parsing fails, use a generic error message
-      errorData = {
-        detail: response.statusText || 'An error occurred',
-      }
+      errorMessage = response.statusText || 'An error occurred'
+      errorData = { detail: errorMessage }
     }
 
-    throw new ApiError(errorData.detail || 'An unknown error occurred', response.status, errorData)
+    throw new ApiError(errorMessage, response.status, errorData)
   }
 
   // For successful responses
