@@ -31,6 +31,14 @@ ArtificialU combines the Anthropic Claude API for generating educational content
 
 This project uses [Hatch](https://hatch.pypa.io/latest/) for managing Python environments and dependencies.
 
+### Installing Hatch with pipx (Recommended)
+
+```bash
+brew install pipx
+pipx ensurepath
+pipx install hatch
+```
+
 1. **Clone the repository:**
 
     ```bash
