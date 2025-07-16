@@ -151,7 +151,7 @@ def departments_to_xml(departments: List[Dict[str, str]]) -> str:
     """Format a list of department dictionaries as XML for prompt context.
 
     Args:
-        departments: List of department dictionaries containing 'name' and 'code' keys.
+        departments: List of department dictionaries containing 'name', 'code', and 'faculty' keys.
     """
     if not departments:
         return "<no_existing_departments />"
@@ -160,6 +160,7 @@ def departments_to_xml(departments: List[Dict[str, str]]) -> str:
         lines.append("  <department>")
         lines.append(f"    <name>{dept.get('name', '')}</name>")
         lines.append(f"    <code>{dept.get('code', '')}</code>")
+        lines.append(f"    <faculty>{dept.get('faculty', '')}</faculty>")
         lines.append("  </department>")
     lines.append("</existing_departments>")
     return "\n".join(lines)
