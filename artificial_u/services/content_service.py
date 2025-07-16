@@ -4,10 +4,15 @@ import os
 from datetime import datetime
 from typing import Optional
 
+import anthropic
+import openai
+from google.api_core import exceptions as google_exceptions
 from google.genai import types
+from ollama import ResponseError
 
 from artificial_u.config import get_settings
 from artificial_u.integrations import anthropic_client, gemini_client, ollama_client, openai_client
+from artificial_u.utils.exceptions import ContentGenerationError
 
 # TODO: Make these configurable
 DEFAULT_TEMPERATURE = 0.3
@@ -72,7 +77,7 @@ class ContentService:
 
         Args:
             prompt: The main text prompt for generation.
-            model: The specific model name to use (e.g., 'claude-3-opus-20240229',
+            model: The specific model name to use (e.g., 'claude-3-7-sonnet-latest',
             'gpt-4', 'gemini-1.5-pro'). If None, uses the default model from settings.
             system_prompt: An optional system prompt or instruction for the model.
             temperature: Optional temperature for sampling (model-dependent, default varies).
@@ -85,6 +90,7 @@ class ContentService:
         Raises:
             ValueError: If the specified or default model is not supported or configured.
             NotImplementedError: If the backend for the model is not implemented.
+            ContentGenerationError: If the content generation fails.
         """
         target_model = model or self.default_model
         if not target_model:
@@ -121,7 +127,10 @@ class ContentService:
                 f"Error generating text with model {target_model} (backend {backend}): {e}",
                 exc_info=True,
             )
-            raise
+            # Re-raise as a generic ContentGenerationError to be handled by the caller
+            raise ContentGenerationError(
+                f"Failed to generate content with model {target_model}."
+            ) from e
 
     async def _log_content(
         self,
@@ -173,18 +182,22 @@ class ContentService:
 
     async def _generate_anthropic(self, prompt, model, system_prompt, temperature, max_tokens):
         self.logger.info(f"Generating text with Anthropic model: {model}")
-        messages = []
-        if system_prompt:
-            pass  # Anthropic uses 'system' parameter outside messages
-        messages.append({"role": "user", "content": prompt})
-        response = await anthropic_client.messages.create(
-            model=model,
-            max_tokens=max_tokens if max_tokens is not None else DEFAULT_MAX_TOKENS,
-            messages=messages,
-            system=system_prompt,
-            temperature=temperature if temperature is not None else DEFAULT_TEMPERATURE,
-        )
-        response_text = response.content[0].text
+        try:
+            messages = []
+            if system_prompt:
+                pass  # Anthropic uses 'system' parameter outside messages
+            messages.append({"role": "user", "content": prompt})
+            response = await anthropic_client.messages.create(
+                model=model,
+                max_tokens=max_tokens if max_tokens is not None else DEFAULT_MAX_TOKENS,
+                messages=messages,
+                system=system_prompt,
+                temperature=temperature if temperature is not None else DEFAULT_TEMPERATURE,
+            )
+            response_text = response.content[0].text
+        except anthropic.APIError as e:
+            raise ContentGenerationError(f"Anthropic API error: {e}") from e
+
         self.logger.info(f"Received response from Anthropic: {response_text[:500]}")
 
         await self._log_content(
@@ -201,17 +214,21 @@ class ContentService:
 
     async def _generate_openai(self, prompt, model, system_prompt, temperature, max_tokens):
         self.logger.info(f"Generating text with OpenAI model: {model}")
-        messages = []
-        if system_prompt:
-            messages.append({"role": "system", "content": system_prompt})
-        messages.append({"role": "user", "content": prompt})
-        response = await openai_client.chat.completions.create(
-            model=model,
-            messages=messages,
-            max_tokens=max_tokens if max_tokens is not None else DEFAULT_MAX_TOKENS,
-            temperature=temperature if temperature is not None else DEFAULT_TEMPERATURE,
-        )
-        response_text = response.choices[0].message.content
+        try:
+            messages = []
+            if system_prompt:
+                messages.append({"role": "system", "content": system_prompt})
+            messages.append({"role": "user", "content": prompt})
+            response = await openai_client.chat.completions.create(
+                model=model,
+                messages=messages,
+                max_tokens=max_tokens if max_tokens is not None else DEFAULT_MAX_TOKENS,
+                temperature=temperature if temperature is not None else DEFAULT_TEMPERATURE,
+            )
+            response_text = response.choices[0].message.content
+        except openai.APIError as e:
+            raise ContentGenerationError(f"OpenAI API error: {e}") from e
+
         self.logger.info(f"Received response from OpenAI: {response_text[:500]}")
 
         await self._log_content(
@@ -228,53 +245,61 @@ class ContentService:
 
     async def _generate_gemini(self, prompt, model, system_prompt, temperature, max_tokens):
         self.logger.info(f"Generating text with Gemini model: {model}")
-        contents = [types.Content(parts=[types.Part.from_text(prompt)])]
-        generation_config = types.GenerationConfig(
-            temperature=temperature if temperature is not None else DEFAULT_TEMPERATURE,
-            max_output_tokens=max_tokens if max_tokens is not None else DEFAULT_MAX_TOKENS,
-        )
-        if system_prompt:
-            generation_config.system_instruction = system_prompt
-        response = await gemini_client.aio.models.generate_content(
-            model=model,
-            contents=contents,
-            generation_config=generation_config,
-        )
-
-        if response.candidates and response.candidates[0].content:
-            response_text = response.candidates[0].content.parts[0].text
-            self.logger.info(f"Received response from Gemini: {response_text[:500]}")
-
-            await self._log_content(
+        try:
+            contents = [types.Content(parts=[types.Part.from_text(prompt)])]
+            generation_config = types.GenerationConfig(
+                temperature=temperature if temperature is not None else DEFAULT_TEMPERATURE,
+                max_output_tokens=max_tokens if max_tokens is not None else DEFAULT_MAX_TOKENS,
+            )
+            if system_prompt:
+                generation_config.system_instruction = system_prompt
+            response = await gemini_client.aio.models.generate_content(
                 model=model,
-                prompt=prompt,
-                system_prompt=system_prompt,
-                temperature=temperature,
-                max_tokens=max_tokens,
-                response=response_text,
-                backend="gemini",
+                contents=contents,
+                generation_config=generation_config,
             )
 
-            return response_text
-        else:
-            self.logger.warning("No content generated from Gemini model")
-            return ""
+            if response.candidates and response.candidates[0].content:
+                response_text = response.candidates[0].content.parts[0].text
+            else:
+                self.logger.warning("No content generated from Gemini model")
+                response_text = ""
+        except (google_exceptions.GoogleAPICallError, Exception) as e:
+            raise ContentGenerationError(f"Gemini API error: {e}") from e
+
+        self.logger.info(f"Received response from Gemini: {response_text[:500]}")
+
+        await self._log_content(
+            model=model,
+            prompt=prompt,
+            system_prompt=system_prompt,
+            temperature=temperature,
+            max_tokens=max_tokens,
+            response=response_text,
+            backend="gemini",
+        )
+
+        return response_text
 
     async def _generate_ollama(self, prompt, model, system_prompt, temperature, max_tokens):
         self.logger.info(f"Generating text with Ollama model: {model}")
-        messages = []
-        if system_prompt:
-            messages.append({"role": "system", "content": system_prompt})
-        messages.append({"role": "user", "content": prompt})
-        response = await ollama_client.chat(
-            model=model,
-            messages=messages,
-            options={
-                "temperature": temperature if temperature is not None else DEFAULT_TEMPERATURE,
-                "num_predict": max_tokens if max_tokens is not None else DEFAULT_MAX_TOKENS,
-            },
-        )
-        response_text = response.get("message", {}).get("content", "")
+        try:
+            messages = []
+            if system_prompt:
+                messages.append({"role": "system", "content": system_prompt})
+            messages.append({"role": "user", "content": prompt})
+            response = await ollama_client.chat(
+                model=model,
+                messages=messages,
+                options={
+                    "temperature": temperature if temperature is not None else DEFAULT_TEMPERATURE,
+                    "num_predict": max_tokens if max_tokens is not None else DEFAULT_MAX_TOKENS,
+                },
+            )
+            response_text = response.get("message", {}).get("content", "")
+        except (ResponseError, Exception) as e:
+            raise ContentGenerationError(f"Ollama error: {e}") from e
+
         self.logger.info(f"Received response from Ollama: {response_text[:500]}")
 
         await self._log_content(

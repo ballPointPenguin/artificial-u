@@ -65,10 +65,16 @@ filelock==3.18.0
     # via virtualenv
 flake8==7.3.0
     # via artificial-u (pyproject.toml)
+google-api-core==2.25.1
+    # via artificial-u (pyproject.toml)
 google-auth==2.40.3
-    # via google-genai
+    # via
+    #   google-api-core
+    #   google-genai
 google-genai==1.25.0
     # via artificial-u (pyproject.toml)
+googleapis-common-protos==1.70.0
+    # via google-api-core
 h11==0.16.0
     # via
     #   httpcore
@@ -147,6 +153,13 @@ pluggy==1.6.0
     #   pytest-cov
 pre-commit==4.2.0
     # via artificial-u (pyproject.toml)
+proto-plus==1.26.1
+    # via google-api-core
+protobuf==6.31.1
+    # via
+    #   google-api-core
+    #   googleapis-common-protos
+    #   proto-plus
 psycopg2-binary==2.9.10
     # via artificial-u (pyproject.toml)
 pyasn1==0.6.1
@@ -215,6 +228,7 @@ requests==2.32.4
     # via
     #   azure-core
     #   elevenlabs
+    #   google-api-core
     #   google-genai
 rich==14.0.0
     # via artificial-u (pyproject.toml)

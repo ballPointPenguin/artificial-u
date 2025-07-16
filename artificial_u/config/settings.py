@@ -109,11 +109,11 @@ class Settings(BaseSettings):
     # Department generation model
     DEPARTMENT_GENERATION_MODEL: str = "gpt-4.1-nano"
     # Lecture generation model
-    LECTURE_GENERATION_MODEL: str = "claude-3.7-sonnet-latest"
+    LECTURE_GENERATION_MODEL: str = "claude-sonnet-4-0"
     # Professor generation model
     PROFESSOR_GENERATION_MODEL: str = "gpt-4.1-nano"
     # Topics generation model
-    TOPICS_GENERATION_MODEL: str = "gemini-2.5-flash-preview-04-17"
+    TOPICS_GENERATION_MODEL: str = "gemini-2.5-flash"
     # Image generation model
     IMAGE_GENERATION_MODEL: str = "gpt-image-1"
 
