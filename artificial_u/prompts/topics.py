@@ -11,38 +11,73 @@ TOPICS_XML_STRUCTURE = """<topics>
     <title>[Topic title]</title>
     <week>[Week number]</week>
     <order>[Order in week]</order>
-  </topic>
-  <topic>
-    <title>[Topic title]</title>
-    <week>[Week number]</week>
-    <order>[Order in week]</order>
+    <content>
+      <lecture>[Lecture title or description]</lecture>
+      <readings>
+        <reading>[Reading 1]</reading>
+        <reading>[Reading 2]</reading>
+      </readings>
+      <objectives>
+        <objective>[Learning objective 1]</objective>
+        <objective>[Learning objective 2]</objective>
+      </objectives>
+      <notes>[Additional notes or context]</notes>
+    </content>
   </topic>
   <!-- Add more topics as needed -->
 </topics>"""
 
 EXAMPLE_TOPICS_1 = """<topics>
-  <course_title>Introduction to Computer Science</course_title>
+  <course_title>Philosophy of Consciousness</course_title>
   <lectures_per_week>2</lectures_per_week>
   <total_weeks>12</total_weeks>
   <topic>
-    <title>Introduction to Computer Science and Computational Thinking</title>
+    <title>The "Hard Problem" of Consciousness</title>
     <week>1</week>
     <order>1</order>
+    <content>
+      <lecture>What is it Like to Be a Bat? Defining Subjective Experience</lecture>
+      <readings>
+        <reading>Chalmers, David. "Facing Up to the Problem of Consciousness."</reading>
+        <reading>Nagel, Thomas. "What Is It Like to Be a Bat?"</reading>
+      </readings>
+    </content>
   </topic>
   <topic>
-    <title>History of Computing and Binary Number Systems</title>
+    <title>The Mind-Body Problem: Foundational Debates</title>
     <week>1</week>
     <order>2</order>
+    <content>
+      <lecture>Ghosts in the Machine: From Cartesian Dualism to Physicalism</lecture>
+      <readings>
+        <reading>Descartes, René. Meditations on First Philosophy (II & VI).</reading>
+        <reading>Ryle, Gilbert. The Concept of Mind (Ch. 1).</reading>
+      </readings>
+    </content>
   </topic>
   <topic>
-    <title>Introduction to Programming: Basic Syntax and Variables</title>
+    <title>Behaviorism and the Rejection of Mind</title>
     <week>2</week>
     <order>1</order>
+    <content>
+      <lecture>The Black Box: Can We Understand Mind by Observing Behavior Alone?</lecture>
+      <readings>
+        <reading>Skinner, B.F. "The 'Operational' Analysis of Psychological Terms."</reading>
+        <reading>Putnam, Hilary. "Brains and Behavior."</reading>
+      </readings>
+    </content>
   </topic>
   <topic>
-    <title>Control Structures: Conditionals and Loops</title>
+    <title>Identity Theory and Functionalism</title>
     <week>2</week>
     <order>2</order>
+    <content>
+      <lecture>Is the Mind Just the Brain? States, Roles, and Realizers</lecture>
+      <readings>
+        <reading>Smart, J.J.C. "Sensations and Brain Processes."</reading>
+        <reading>Block, Ned. "Troubles with Functionalism."</reading>
+      </readings>
+    </content>
   </topic>
   <!-- Additional topics omitted for brevity -->
 </topics>"""
@@ -89,6 +124,14 @@ TOPICS_PROMPT = PromptTemplate(
 Generate a list of topics for a course in XML format.
 Use the structure below; fill in all bracketed placeholders with either provided values
 or generated ones if marked as [GENERATE].
+
+For each topic, you can include flexible content with these simple patterns:
+- Single items: <lecture>text</lecture>, <notes>text</notes>
+- Lists: <readings><reading>text</reading><reading>text</reading></readings>
+- Common elements: lecture, readings, objectives, concepts, notes
+
+All content elements are optional - include what makes sense for each topic.
+Keep content simple and academic.
 
 XML Structure:
 {TOPICS_XML_STRUCTURE}

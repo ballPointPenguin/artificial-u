@@ -91,6 +91,7 @@ class TopicApiService(BaseApiService[CoreTopic, Topic, TopicListResponse]):
                 course_id=topic_data.course_id,
                 week=topic_data.week,
                 order=topic_data.order,
+                content=topic_data.content,
             )
             return Topic.model_validate(core_topic)
         except DatabaseError as e:
@@ -115,6 +116,7 @@ class TopicApiService(BaseApiService[CoreTopic, Topic, TopicListResponse]):
                 course_id=update_payload.get("course_id", core_topic_to_update.course_id),
                 week=update_payload.get("week", core_topic_to_update.week),
                 order=update_payload.get("order", core_topic_to_update.order),
+                content=update_payload.get("content", core_topic_to_update.content),
             )
 
             # Call core service update method

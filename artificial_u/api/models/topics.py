@@ -2,7 +2,7 @@
 Topic API models for request and response validation.
 """
 
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, Field
 
@@ -14,6 +14,9 @@ class TopicBase(BaseModel):
     course_id: int = Field(..., description="ID of the course this topic belongs to")
     week: int = Field(..., ge=1, description="Week number in the course for this topic")
     order: int = Field(..., ge=1, description="Order of this topic within the week")
+    content: Optional[Dict[str, Any]] = Field(
+        default=None, description="Flexible content structure for the topic"
+    )
 
 
 class TopicCreate(TopicBase):
@@ -29,6 +32,9 @@ class TopicUpdate(BaseModel):
     course_id: Optional[int] = Field(None, description="Updated ID of the course")
     week: Optional[int] = Field(None, ge=1, description="Updated week number")
     order: Optional[int] = Field(None, ge=1, description="Updated order in week")
+    content: Optional[Dict[str, Any]] = Field(
+        None, description="Updated content structure for the topic"
+    )
 
 
 class Topic(TopicBase):

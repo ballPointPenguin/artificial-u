@@ -221,6 +221,13 @@ def topic_to_xml(topic: Dict[str, Any]) -> str:
     lines.append(f"  <title>{topic.get('title', '')}</title>")
     lines.append(f"  <week>{topic.get('week', '')}</week>")
     lines.append(f"  <order>{topic.get('order', '')}</order>")
+
+    # Add content if present
+    content = topic.get("content")
+    if content:
+        content_xml = _content_json_to_xml(content, "  ")
+        lines.append(content_xml)
+
     lines.append("</topic>")
     return "\n".join(lines)
 
@@ -238,6 +245,13 @@ def topics_to_xml(topics: List[Dict[str, Any]], max_topics: int = 5) -> str:
             lines.append(f"    <week>{topic.get('week')}</week>")
         if topic.get("order") is not None:
             lines.append(f"    <order>{topic.get('order')}</order>")
+
+        # Add content if present
+        content = topic.get("content")
+        if content:
+            content_xml = _content_json_to_xml(content, "    ")
+            lines.append(content_xml)
+
         lines.append("  </topic>")
 
     if len(topics) > max_topics:
@@ -333,6 +347,66 @@ def _parse_numeric_field(element: Optional[ET.Element]) -> Optional[int]:
     return None
 
 
+def _content_json_to_xml(content: Optional[Dict[str, Any]], indent: str = "  ") -> str:
+    """Convert content JSON to XML format for LLM prompts.
+
+    Two simple patterns:
+    - Single: {"lecture": "text"} → <lecture>text</lecture>
+    - List: {"readings": ["a", "b"]} → <readings><reading>a</reading><reading>b</reading></readings>
+    """
+    if not content:
+        return ""
+
+    lines = [f"{indent}<content>"]
+
+    for key, value in content.items():
+        if isinstance(value, str):
+            # Single item pattern
+            lines.append(f"{indent}  <{key}>{value}</{key}>")
+        elif isinstance(value, list):
+            # Simple list pattern - convert plural to singular (readings -> reading)
+            singular_key = key[:-1] if key.endswith("s") else key
+            lines.append(f"{indent}  <{key}>")
+            for item in value:
+                lines.append(f"{indent}    <{singular_key}>{item}</{singular_key}>")
+            lines.append(f"{indent}  </{key}>")
+
+    lines.append(f"{indent}</content>")
+    return "\n".join(lines)
+
+
+def _content_xml_to_json(content_element: Optional[ET.Element]) -> Optional[Dict[str, Any]]:
+    """Convert content XML element to JSON format.
+
+    Supports two simple patterns:
+    - Single item: <lecture>text</lecture> → {"lecture": "text"}
+    - Simple list: <readings><reading>text1</reading><reading>text2</reading></readings>
+      → {"readings": ["text1", "text2"]}
+    """
+    if content_element is None:
+        return None
+
+    content = {}
+
+    for child in content_element:
+        tag = child.tag
+
+        if len(child) == 0:  # Leaf node with text - single item pattern
+            text = child.text.strip() if child.text else ""
+            if text:
+                content[tag] = text
+        else:  # Has child elements - simple list pattern
+            items = []
+            for subchild in child:
+                sub_text = subchild.text.strip() if subchild.text else ""
+                if sub_text:
+                    items.append(sub_text)
+            if items:
+                content[tag] = items
+
+    return content if content else None
+
+
 def parse_course_xml(course_xml: str) -> Dict[str, Any]:
     """Parse course XML from LLM response into a dictionary.
 
@@ -389,6 +463,10 @@ def parse_topic_xml(topic_xml: str) -> Dict[str, Any]:
         topic_data["title"] = _parse_text_field(root.find("title"))
         topic_data["week"] = _parse_numeric_field(root.find("week"))
         topic_data["order"] = _parse_numeric_field(root.find("order"))
+
+        # Process content field
+        content_element = root.find("content")
+        topic_data["content"] = _content_xml_to_json(content_element)
 
         return topic_data
 

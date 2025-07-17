@@ -569,6 +569,65 @@ def test_topic_to_xml():
 
 
 @pytest.mark.unit
+def test_topic_to_xml_with_content():
+    """Test converting a topic with content to XML."""
+    topic_data = {
+        "title": "Introduction to Variables",
+        "week": 1,
+        "order": 1,
+        "content": {
+            "lecture": "Python Variables and Data Types",
+            "readings": ["Python Tutorial Chapter 3", "Variables and Types Guide"],
+            "objectives": ["Understand variable assignment", "Learn data types"],
+            "notes": "This topic covers the basics of variables and data types in Python.",
+        },
+    }
+
+    xml_str = topic_to_xml(topic_data)
+    root = ET.fromstring(xml_str)
+
+    # Check basic fields
+    assert root.tag == "topic"
+    assert root.find("title").text == "Introduction to Variables"
+    assert root.find("week").text == "1"
+    assert root.find("order").text == "1"
+
+    # Check content is present
+    content_element = root.find("content")
+    assert content_element is not None
+
+    # Check lecture content
+    lecture_element = content_element.find("lecture")
+    assert lecture_element is not None
+    assert lecture_element.text == "Python Variables and Data Types"
+
+    # Check readings
+    readings_element = content_element.find("readings")
+    assert readings_element is not None
+    reading_elements = readings_element.findall("reading")
+    assert len(reading_elements) == 2
+    reading_texts = [r.text for r in reading_elements]
+    assert "Python Tutorial Chapter 3" in reading_texts
+    assert "Variables and Types Guide" in reading_texts
+
+    # Check objectives
+    objectives_element = content_element.find("objectives")
+    assert objectives_element is not None
+    objective_elements = objectives_element.findall("objective")
+    assert len(objective_elements) == 2
+    objective_texts = [o.text for o in objective_elements]
+    assert "Understand variable assignment" in objective_texts
+    assert "Learn data types" in objective_texts
+
+    # Check notes (single item)
+    notes_element = content_element.find("notes")
+    assert notes_element is not None
+    assert (
+        notes_element.text == "This topic covers the basics of variables and data types in Python."
+    )
+
+
+@pytest.mark.unit
 def test_topics_to_xml():
     """Test converting a list of topics to XML."""
     # Test with empty list
@@ -629,6 +688,51 @@ def test_parse_topic_xml():
 
 
 @pytest.mark.unit
+def test_parse_topic_xml_with_content():
+    """Test parsing topic XML with content into a dictionary."""
+    # Create a valid topic XML with content
+    topic_xml = """
+    <topic>
+      <title>Introduction to Variables</title>
+      <week>1</week>
+      <order>1</order>
+      <content>
+        <lecture>Python Variables and Data Types</lecture>
+        <readings>
+          <reading>Python Tutorial Chapter 3</reading>
+          <reading>Variables and Types Guide</reading>
+        </readings>
+        <objectives>
+          <objective>Understand variable assignment</objective>
+          <objective>Learn data types</objective>
+        </objectives>
+      </content>
+    </topic>
+    """
+
+    result = parse_topic_xml(topic_xml)
+
+    assert result["title"] == "Introduction to Variables"
+    assert result["week"] == 1
+    assert result["order"] == 1
+    assert result["content"] is not None
+
+    # Check lecture content (single item)
+    assert result["content"]["lecture"] == "Python Variables and Data Types"
+
+    # Check readings content (list)
+    assert isinstance(result["content"]["readings"], list)
+    assert len(result["content"]["readings"]) == 2
+    assert "Python Tutorial Chapter 3" in result["content"]["readings"]
+    assert "Variables and Types Guide" in result["content"]["readings"]
+
+    # Check objectives (list)
+    assert isinstance(result["content"]["objectives"], list)
+    assert "Understand variable assignment" in result["content"]["objectives"]
+    assert "Learn data types" in result["content"]["objectives"]
+
+
+@pytest.mark.unit
 def test_parse_topics_xml():
     """Test parsing topics XML into a list of dictionaries."""
     # Create a valid topics XML
@@ -638,11 +742,25 @@ def test_parse_topics_xml():
         <title>Introduction to Variables</title>
         <week>1</week>
         <order>1</order>
+        <content>
+          <lecture>Python Variables and Data Types</lecture>
+          <readings>
+            <reading>Python Tutorial Chapter 3</reading>
+            <reading>Variables and Types Guide</reading>
+          </readings>
+        </content>
       </topic>
       <topic>
         <title>Control Flow</title>
         <week>1</week>
         <order>2</order>
+        <content>
+          <lecture>Control Flow in Python</lecture>
+          <readings>
+            <reading>Python Tutorial Chapter 4</reading>
+            <reading>Control Flow in Python Guide</reading>
+          </readings>
+        </content>
       </topic>
     </topics>
     """
@@ -653,9 +771,20 @@ def test_parse_topics_xml():
     assert result[0]["title"] == "Introduction to Variables"
     assert result[0]["week"] == 1
     assert result[0]["order"] == 1
+    assert result[0]["content"]["lecture"] == "Python Variables and Data Types"
+    assert result[0]["content"]["readings"] == [
+        "Python Tutorial Chapter 3",
+        "Variables and Types Guide",
+    ]
+
     assert result[1]["title"] == "Control Flow"
     assert result[1]["week"] == 1
     assert result[1]["order"] == 2
+    assert result[1]["content"]["lecture"] == "Control Flow in Python"
+    assert result[1]["content"]["readings"] == [
+        "Python Tutorial Chapter 4",
+        "Control Flow in Python Guide",
+    ]
 
     # Test error handling
     with pytest.raises(ValueError):

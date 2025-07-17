@@ -20,6 +20,7 @@ class TopicRepository(BaseRepository):
                 order=topic.order,
                 week=topic.week,
                 course_id=topic.course_id,
+                content=topic.content,
             )
 
             session.add(db_topic)
@@ -46,6 +47,7 @@ class TopicRepository(BaseRepository):
                     order=topic.order,
                     week=topic.week,
                     course_id=topic.course_id,
+                    content=topic.content,
                 )
                 for topic in topics
             ]
@@ -77,6 +79,7 @@ class TopicRepository(BaseRepository):
                 order=db_topic.order,
                 week=db_topic.week,
                 course_id=db_topic.course_id,
+                content=db_topic.content,
             )
 
     def get_by_course_week_order(self, course_id: int, week: int, order: int) -> Optional[Topic]:
@@ -97,6 +100,7 @@ class TopicRepository(BaseRepository):
                 order=db_topic.order,
                 week=db_topic.week,
                 course_id=db_topic.course_id,
+                content=db_topic.content,
             )
 
     def list_by_course(self, course_id: int) -> List[Topic]:
@@ -116,6 +120,7 @@ class TopicRepository(BaseRepository):
                     order=t.order,
                     week=t.week,
                     course_id=t.course_id,
+                    content=t.content,
                 )
                 for t in db_topics
             ]
@@ -137,6 +142,7 @@ class TopicRepository(BaseRepository):
                     order=t.order,
                     week=t.week,
                     course_id=t.course_id,
+                    content=t.content,
                 )
                 for t in db_topics
             ]
@@ -154,6 +160,7 @@ class TopicRepository(BaseRepository):
             db_topic.order = topic.order
             db_topic.week = topic.week
             db_topic.course_id = topic.course_id
+            db_topic.content = topic.content
 
             session.commit()
             return topic

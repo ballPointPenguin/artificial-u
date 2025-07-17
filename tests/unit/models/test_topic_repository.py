@@ -29,6 +29,10 @@ class TestTopicRepository:
         mock_topic.order = 1
         mock_topic.week = 1
         mock_topic.course_id = 1
+        mock_topic.content = {
+            "lecture": "Python Basics",
+            "objectives": ["Learn Python syntax", "Understand variables"],
+        }
         return mock_topic
 
     def test_create(self, topic_repository, mock_session):
@@ -46,6 +50,10 @@ class TestTopicRepository:
             order=1,
             week=1,
             course_id=1,
+            content={
+                "lecture": "Python Basics - Introduction to Python syntax",
+                "objectives": ["Learn Python syntax", "Understand variables"],
+            },
         )
 
         # Exercise
@@ -60,6 +68,8 @@ class TestTopicRepository:
         assert result.order == 1
         assert result.week == 1
         assert result.course_id == 1
+        assert result.content is not None
+        assert result.content["lecture"] == "Python Basics - Introduction to Python syntax"
 
     def test_create_batch(self, topic_repository, mock_session):
         """Test creating multiple topics in a batch."""
@@ -106,6 +116,9 @@ class TestTopicRepository:
         assert result.order == 1
         assert result.week == 1
         assert result.course_id == 1
+        assert result.content is not None
+        assert result.content["lecture"] == "Python Basics"
+        assert result.content["objectives"] == ["Learn Python syntax", "Understand variables"]
 
     def test_get_not_found(self, topic_repository, mock_session):
         """Test getting a non-existent topic returns None."""
@@ -136,6 +149,9 @@ class TestTopicRepository:
         assert result.order == 1
         assert result.week == 1
         assert result.course_id == 1
+        assert result.content is not None
+        assert result.content["lecture"] == "Python Basics"
+        assert result.content["objectives"] == ["Learn Python syntax", "Understand variables"]
 
     def test_list_by_course(self, topic_repository, mock_session):
         """Test listing topics by course."""
@@ -146,6 +162,11 @@ class TestTopicRepository:
         mock_topic1.order = 1
         mock_topic1.week = 1
         mock_topic1.course_id = 1
+        mock_topic1.content = {
+            "lecture": "Topic 1 lecture",
+            "readings": ["Topic 1 reading 1", "Topic 1 reading 2"],
+            "objectives": ["Topic 1 objective 1", "Topic 1 objective 2"],
+        }
 
         mock_topic2 = MagicMock(spec=TopicModel)
         mock_topic2.id = 2
@@ -153,6 +174,7 @@ class TestTopicRepository:
         mock_topic2.order = 2
         mock_topic2.week = 1
         mock_topic2.course_id = 1
+        mock_topic2.content = None
 
         query_mock = mock_session.query.return_value
         query_mock.filter_by.return_value.order_by.return_value.all.return_value = [
@@ -169,8 +191,14 @@ class TestTopicRepository:
         assert len(result) == 2
         assert result[0].id == 1
         assert result[0].title == "Topic 1"
+        assert result[0].content == {
+            "lecture": "Topic 1 lecture",
+            "readings": ["Topic 1 reading 1", "Topic 1 reading 2"],
+            "objectives": ["Topic 1 objective 1", "Topic 1 objective 2"],
+        }
         assert result[1].id == 2
         assert result[1].title == "Topic 2"
+        assert result[1].content is None
 
     def test_list_by_course_week(self, topic_repository, mock_session):
         """Test listing topics by course and week."""
@@ -181,6 +209,9 @@ class TestTopicRepository:
         mock_topic1.order = 1
         mock_topic1.week = 1
         mock_topic1.course_id = 1
+        mock_topic1.content = {
+            "lecture": "Topic 1 lecture",
+        }
 
         mock_topic2 = MagicMock(spec=TopicModel)
         mock_topic2.id = 2
@@ -188,6 +219,7 @@ class TestTopicRepository:
         mock_topic2.order = 2
         mock_topic2.week = 1
         mock_topic2.course_id = 1
+        mock_topic2.content = None
 
         query_mock = mock_session.query.return_value
         query_mock.filter_by.return_value.order_by.return_value.all.return_value = [
@@ -204,8 +236,12 @@ class TestTopicRepository:
         assert len(result) == 2
         assert result[0].id == 1
         assert result[0].title == "Topic 1"
+        assert result[0].content == {
+            "lecture": "Topic 1 lecture",
+        }
         assert result[1].id == 2
         assert result[1].title == "Topic 2"
+        assert result[1].content is None
 
     def test_update(self, topic_repository, mock_session, mock_topic_model):
         """Test updating a topic."""
@@ -327,3 +363,32 @@ class TestTopicRepository:
         # Exercise & Verify
         with pytest.raises(IntegrityError):
             topic_repository.create(topic)
+
+    def test_create_topic_without_content(self, topic_repository, mock_session):
+        """Test creating a topic without content field."""
+
+        # Configure mock behaviors
+        def mock_refresh(model):
+            model.id = 1
+
+        mock_session.refresh.side_effect = mock_refresh
+
+        # Create topic without content
+        topic = Topic(
+            title="Basic Topic",
+            order=1,
+            week=1,
+            course_id=1,
+            content=None,
+        )
+
+        # Exercise
+        result = topic_repository.create(topic)
+
+        # Verify
+        assert mock_session.add.called
+        assert mock_session.commit.called
+        assert mock_session.refresh.called
+        assert result.id == 1
+        assert result.title == "Basic Topic"
+        assert result.content is None

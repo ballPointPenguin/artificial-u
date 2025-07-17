@@ -171,6 +171,17 @@ class Topic(BaseModel):
                 "order": 1,
                 "week": 1,
                 "course_id": 1,
+                "content": {
+                    "lecture": "What is Artificial Intelligence?",
+                    "readings": [
+                        "Nilsson, Nils. The Quest for Artificial Intelligence (Ch. 1)",
+                        "Russell & Norvig. AI: A Modern Approach (Ch. 1)",
+                    ],
+                    "objectives": [
+                        "Define artificial intelligence",
+                        "Understand key AI applications",
+                    ],
+                },
             }
         }
     )
@@ -180,6 +191,9 @@ class Topic(BaseModel):
     order: int = Field(default=1, gt=0)
     week: int = Field(default=1, gt=0)
     course_id: int
+    content: Optional[Dict[str, Any]] = Field(
+        default=None, description="Flexible JSONB content for the topic"
+    )
 
 
 class Lecture(BaseModel):

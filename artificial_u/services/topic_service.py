@@ -53,6 +53,7 @@ class TopicService:
         course_id: int,
         week: int,
         order: int,
+        content: Optional[Dict[str, Any]] = None,
     ) -> Topic:
         """
         Create a new topic.
@@ -62,6 +63,7 @@ class TopicService:
             course_id: ID of the course this topic belongs to
             week: Week number of the topic
             order: Order of the topic within the week
+            content: Optional content dictionary for the topic
 
         Returns:
             Topic: The created topic
@@ -77,6 +79,7 @@ class TopicService:
             course_id=course_id,
             week=week,
             order=order,
+            content=content,
         )
 
         # Save to database
@@ -390,6 +393,7 @@ class TopicService:
                 course_id=course_id,
                 week=week,
                 order=order,
+                content=topic_dict.get("content"),
             )
             topic_models_to_create.append(new_topic)
 
