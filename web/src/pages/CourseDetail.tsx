@@ -196,7 +196,7 @@ const CourseDetail: Component = () => {
                   <h1 class="text-3xl font-display text-parchment-100 mb-3">
                     {course().code}: {course().title}
                   </h1>
-                  <p class="text-xl text-parchment-200 mb-6 font-serif">{course().description}</p>
+                  <p class="text-xl text-parchment-200 mb-6 font-serif italic">{course().description}</p>
 
                   <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
                     {/* Course Details Section */}
@@ -292,10 +292,9 @@ const CourseDetail: Component = () => {
                                     href={`/professors/${String(professor.id)}`}
                                     class="text-mystic-400 hover:text-mystic-300 transition-colors font-medium"
                                   >
-                                    {professor.name}
+                                    {professor.name}, {professor.title}
                                   </A>
-                                  <p class="text-parchment-300 mt-1">{professor.title}</p>
-                                  <p class="text-parchment-300">{professor.specialization}</p>
+                                  <p class="text-parchment-300 pt-3">{professor.specialization}</p>
                                 </div>
                               )
                             }}
