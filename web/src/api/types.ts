@@ -312,12 +312,7 @@ export interface ProfessorGenerateRequest {
 }
 
 // Topic types
-export interface TopicContentItem {
-  heading: string
-  items: string[]
-}
-
-export type TopicContent = TopicContentItem[]
+export type TopicContent = Record<string, string | string[]> | null
 
 export interface Topic {
   id: number

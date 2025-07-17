@@ -1,13 +1,43 @@
-import { For, Show, createSignal, createEffect, on } from 'solid-js'
+import { For, Show, createEffect, createSignal, on } from 'solid-js'
 import { topicService } from '../../api/services/topic-service.js'
-import type { Topic, TopicCreate, TopicUpdate, APIError } from '../../api/types.js'
-import { Button } from '../ui/Button.jsx'
-import { TopicForm } from './TopicForm.jsx'
+import type { APIError, Topic, TopicCreate, TopicUpdate } from '../../api/types.js'
 import { Alert } from '../ui/Alert.jsx'
+import { Button } from '../ui/Button.jsx'
 import { MagicButton } from '../ui/MagicButton.jsx'
+import { TopicForm } from './TopicForm.jsx'
 
 interface CourseTopicsListProps {
   courseId: number
+}
+
+// Helper function to render topic content
+function renderTopicContent(content: Record<string, string | string[]> | null) {
+  if (!content) return null
+
+  return (
+    <div class="mt-3 space-y-2">
+      <For each={Object.entries(content)}>
+        {([key, value]) => (
+          <div class="text-sm">
+            <span class="font-medium text-mystic-300 capitalize">{key}:</span>
+            {Array.isArray(value) ? (
+              <ul class="ml-4 mt-1 space-y-1">
+                <For each={value}>
+                  {(item) => (
+                    <li class="text-parchment-300 font-serif">
+                      • {item}
+                    </li>
+                  )}
+                </For>
+              </ul>
+            ) : (
+              <span class="ml-2 text-parchment-300 font-serif">{value}</span>
+            )}
+          </div>
+        )}
+      </For>
+    </div>
+  )
 }
 
 export function CourseTopicsList(props: CourseTopicsListProps) {
@@ -199,11 +229,12 @@ export function CourseTopicsList(props: CourseTopicsListProps) {
             {(topic) => (
               <div class="arcane-card p-4 hover:shadow-md transition-shadow duration-200">
                 <div class="flex justify-between items-start mb-3">
-                  <div>
+                  <div class="flex-1">
                     <h3 class="text-lg font-semibold text-parchment-100">{topic.title}</h3>
                     <p class="text-sm text-parchment-300 font-serif">
                       Week: {topic.week}, Order: {topic.order}
                     </p>
+                    {renderTopicContent(topic.content)}
                   </div>
                 </div>
                 <div class="flex justify-end space-x-2 pt-3 border-t border-parchment-800/30">

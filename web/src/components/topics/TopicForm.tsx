@@ -1,8 +1,9 @@
-import { createSignal, Show, onMount } from 'solid-js'
-import type { Topic, TopicCreate, TopicUpdate, APIError } from '../../api/types.js'
+import { createSignal, onMount, Show } from 'solid-js'
+import type { APIError, Topic, TopicContent, TopicCreate, TopicUpdate } from '../../api/types.js'
 import { Button } from '../ui/Button.jsx'
-import Input from '../ui/Input.jsx'
 import FormField from '../ui/FormField.jsx'
+import Input from '../ui/Input.jsx'
+import Textarea from '../ui/Textarea.jsx'
 
 interface TopicFormProps {
   courseId: number // Needed for creating a new topic
@@ -17,19 +18,44 @@ export function TopicForm(props: TopicFormProps) {
   const [title, setTitle] = createSignal('')
   const [week, setWeek] = createSignal('')
   const [order, setOrder] = createSignal('')
+  const [content, setContent] = createSignal('')
+  const [contentError, setContentError] = createSignal<string | null>(null)
 
   onMount(() => {
     if (props.existingTopic) {
       setTitle(props.existingTopic.title)
       setWeek(props.existingTopic.week.toString())
       setOrder(props.existingTopic.order.toString())
+      // Convert existing content to JSON string for editing
+      if (props.existingTopic.content) {
+        setContent(JSON.stringify(props.existingTopic.content, null, 2))
+      } else {
+        setContent('')
+      }
     } else {
       // Reset for new topic form
       setTitle('')
       setWeek('') // Default week or let user input
       setOrder('') // Default order or let user input
+      setContent('')
     }
   })
+
+  const validateContent = (contentStr: string): boolean => {
+    if (!contentStr.trim()) {
+      setContentError(null)
+      return true
+    }
+
+    try {
+      JSON.parse(contentStr)
+      setContentError(null)
+      return true
+    } catch {
+      setContentError('Invalid JSON format')
+      return false
+    }
+  }
 
   const handleSubmit = async (e: SubmitEvent) => {
     e.preventDefault()
@@ -37,17 +63,31 @@ export function TopicForm(props: TopicFormProps) {
     const parsedOrder = parseInt(order(), 10)
 
     if (isNaN(parsedWeek) || isNaN(parsedOrder)) {
-      // Handle error: week and order must be valid numbers
-      // This could be a local error signal displayed in the form
       console.error('Week and Order must be valid numbers.')
-      // props.setError({ detail: 'Week and Order must be valid numbers.' }) // If form has local error display
       return
+    }
+
+    // Validate content JSON if provided
+    if (!validateContent(content())) {
+      return
+    }
+
+    // Parse content JSON if provided
+    let parsedContent: TopicContent = null
+    if (content().trim()) {
+      try {
+        parsedContent = JSON.parse(content())
+      } catch (error) {
+        console.error('Invalid JSON in content field:', error)
+        return
+      }
     }
 
     const topicData = {
       title: title(),
       week: parsedWeek,
       order: parsedOrder,
+      content: parsedContent,
     }
 
     if (props.existingTopic) {
@@ -110,6 +150,24 @@ export function TopicForm(props: TopicFormProps) {
           required
           min="1"
         />
+      </FormField>
+
+      <FormField name="topicContent" label="Content (JSON)">
+        <Textarea
+          name="topicContent"
+          value={content()}
+          onInput={(e: Event & { currentTarget: HTMLTextAreaElement }) => {
+            const newContent = e.currentTarget.value
+            setContent(newContent)
+            validateContent(newContent)
+          }}
+          placeholder='{"lecture": "Topic description", "readings": ["Reading 1", "Reading 2"], "objectives": ["Objective 1", "Objective 2"]}'
+          rows={8}
+          error={contentError()}
+        />
+        <p class="text-xs text-parchment-400 mt-1">
+          Enter JSON content for the topic. Example: lecture text, readings array, objectives array, etc.
+        </p>
       </FormField>
 
       <Show when={props.error}>
