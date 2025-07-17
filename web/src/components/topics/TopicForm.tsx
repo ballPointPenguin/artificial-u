@@ -76,7 +76,7 @@ export function TopicForm(props: TopicFormProps) {
     let parsedContent: TopicContent = null
     if (content().trim()) {
       try {
-        parsedContent = JSON.parse(content())
+        parsedContent = JSON.parse(content()) as TopicContent
       } catch (error) {
         console.error('Invalid JSON in content field:', error)
         return

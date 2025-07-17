@@ -398,7 +398,12 @@ const CourseDetail: Component = () => {
                                       <For each={topicsByWeek[weekNumber]}>
                                         {(topic) => (
                                           <li class="text-parchment-100 font-serif">
-                                            Lecture {topic.order}: {topic.title}
+                                            <A
+                                              href={`/courses/${String(courseId)}/topics/${String(topic.id)}`}
+                                              class="hover:text-primary transition-colors duration-200"
+                                            >
+                                              {topic.title}
+                                            </A>
                                           </li>
                                         )}
                                       </For>

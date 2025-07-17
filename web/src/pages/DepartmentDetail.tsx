@@ -1,5 +1,5 @@
 import { A, useNavigate, useParams } from '@solidjs/router'
-import { Show, createResource, createSignal } from 'solid-js'
+import { For, Show, createResource, createSignal } from 'solid-js'
 import { departmentService } from '../api/services/department-service.js'
 import type { DepartmentUpdate } from '../api/types.js'
 import DepartmentForm from '../components/departments/DepartmentForm.js'
@@ -21,6 +21,21 @@ const DepartmentDetail = () => {
     }
     return id
   }, departmentService.getDepartment)
+
+  // Create resources to fetch courses and professors for this department
+  const [courses] = createResource(
+    () => department()?.id,
+    async (departmentId: number) => {
+      return departmentService.getDepartmentCourses(departmentId)
+    }
+  )
+
+  const [professors] = createResource(
+    () => department()?.id,
+    async (departmentId: number) => {
+      return departmentService.getDepartmentProfessors(departmentId)
+    }
+  )
 
   const handleSubmitUpdate = async (formData: FormData) => {
     setIsSubmitting(true)
@@ -172,26 +187,103 @@ const DepartmentDetail = () => {
               )}
             </Show>
 
-            {/* Related sections - placeholder for future expansion */}
+            {/* Related sections - Courses and Professors */}
             <div class="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
               <div class="bg-arcanum-900 border border-parchment-800/30 rounded-lg p-6">
                 <h2 class="text-xl font-semibold mb-4">Courses</h2>
-                <p class="text-parchment-300">
-                  This section will display courses in this department.
-                </p>
-                <Button variant="link" size="sm" class="mt-4" disabled>
-                  View All Courses
-                </Button>
+                <Show
+                  when={!courses.loading}
+                  fallback={<div class="text-parchment-300">Loading courses...</div>}
+                >
+                  <Show
+                    when={!courses.error}
+                    fallback={
+                      <div class="text-red-300">
+                        Error loading courses: {courses.error instanceof Error ? courses.error.message : 'Unknown error'}
+                      </div>
+                    }
+                  >
+                    <Show
+                      when={courses()?.courses && courses()!.courses.length > 0}
+                      fallback={<div class="text-parchment-300">No courses found in this department.</div>}
+                    >
+                      <div class="space-y-3">
+                        <For each={courses()?.courses}>
+                          {(course) => (
+                            <A
+                              href={`/courses/${String(course.id)}`}
+                              class="block p-3 bg-arcanum-800/50 border border-parchment-700/30 rounded-sm hover:bg-arcanum-800 hover:border-primary/50 hover:shadow-arcane transition-all duration-300 group"
+                            >
+                              <div class="flex justify-between items-start">
+                                <div class="flex-1">
+                                  <h3 class="font-medium text-parchment-100 group-hover:text-primary transition-colors duration-300">
+                                    {course.code} - {course.title}
+                                  </h3>
+                                  <p class="text-sm text-parchment-400 mt-1">
+                                    Level: {course.level} • Credits: {course.credits}
+                                  </p>
+                                </div>
+                              </div>
+                            </A>
+                          )}
+                        </For>
+                      </div>
+                    </Show>
+                  </Show>
+                </Show>
               </div>
 
               <div class="bg-arcanum-900 border border-parchment-800/30 rounded-lg p-6">
                 <h2 class="text-xl font-semibold mb-4">Professors</h2>
-                <p class="text-parchment-300">
-                  This section will display professors in this department.
-                </p>
-                <Button variant="link" size="sm" class="mt-4" disabled>
-                  View All Professors
-                </Button>
+                <Show
+                  when={!professors.loading}
+                  fallback={<div class="text-parchment-300">Loading professors...</div>}
+                >
+                  <Show
+                    when={!professors.error}
+                    fallback={
+                      <div class="text-red-300">
+                        Error loading professors: {professors.error instanceof Error ? professors.error.message : 'Unknown error'}
+                      </div>
+                    }
+                  >
+                    <Show
+                      when={professors()?.professors && professors()!.professors.length > 0}
+                      fallback={<div class="text-parchment-300">No professors found in this department.</div>}
+                    >
+                      <div class="space-y-3">
+                        <For each={professors()?.professors}>
+                          {(professor) => (
+                            <A
+                              href={`/professors/${String(professor.id)}`}
+                              class="block p-3 bg-arcanum-800/50 border border-parchment-700/30 rounded-sm hover:bg-arcanum-800 hover:border-primary/50 hover:shadow-arcane transition-all duration-300 group"
+                            >
+                              <div class="flex items-start gap-3">
+                                <Show when={professor.image_url}>
+                                  {(imageUrl) => (
+                                    <img
+                                      src={imageUrl()}
+                                      alt={`Image of ${professor.name}`}
+                                      class="w-12 h-12 object-cover rounded-sm border border-parchment-500/20 flex-shrink-0"
+                                    />
+                                  )}
+                                </Show>
+                                <div class="flex-1 min-w-0">
+                                  <h3 class="font-medium text-parchment-100 group-hover:text-primary transition-colors duration-300 truncate">
+                                    {professor.name}
+                                  </h3>
+                                  <p class="text-sm text-parchment-400 mt-1 truncate">
+                                    {professor.specialization}
+                                  </p>
+                                </div>
+                              </div>
+                            </A>
+                          )}
+                        </For>
+                      </div>
+                    </Show>
+                  </Show>
+                </Show>
               </div>
             </div>
           </Show>

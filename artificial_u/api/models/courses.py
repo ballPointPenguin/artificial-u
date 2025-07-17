@@ -75,6 +75,7 @@ class ProfessorBrief(BaseModel):
     title: str = Field(..., description="Academic title")
     department_id: int = Field(..., description="Department ID")
     specialization: str = Field(..., description="Area of specialization")
+    image_url: Optional[str] = Field(None, description="URL of the professor's image")
 
 
 # Lecture brief info model for course's lectures endpoint

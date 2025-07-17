@@ -7,16 +7,17 @@ import { Button, Input } from '../components/ui'
 
 const DepartmentCard = (props: { department: Department }) => {
   return (
-    <div class="arcane-card h-full flex flex-col">
-      <h3 class="text-xl font-semibold mb-2 text-parchment-100">{props.department.name}</h3>
-      <p class="text-parchment-300 mb-4 line-clamp-3 flex-grow">{props.department.description}</p>
-      <A
-        href={`/departments/${String(props.department.id)}`}
-        class="text-mystic-500 hover:text-mystic-300 font-medium mt-auto"
-      >
-        View Details
-      </A>
-    </div>
+    <A
+      href={`/departments/${String(props.department.id)}`}
+      class="arcane-card h-full flex flex-col hover:shadow-arcane hover:scale-105 hover:border-primary/50 transition-all duration-300 cursor-pointer group"
+    >
+      <h3 class="text-xl font-semibold mb-2 text-parchment-100 group-hover:text-primary transition-colors duration-300">
+        {props.department.name}
+      </h3>
+      <p class="text-parchment-300 mb-4 line-clamp-3 flex-grow group-hover:text-parchment-200 transition-colors duration-300">
+        {props.department.description}
+      </p>
+    </A>
   )
 }
 

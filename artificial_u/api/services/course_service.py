@@ -293,6 +293,7 @@ class CourseApiService(BaseApiService[CoreCourse, CourseResponse, CoursesListRes
                 title=professor.title,
                 department_id=professor.department_id,
                 specialization=professor.specialization,
+                image_url=professor.image_url,
             )
         except CourseNotFoundError:
             raise HTTPException(

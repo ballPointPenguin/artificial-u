@@ -148,6 +148,7 @@ export interface DepartmentProfessor {
   name: string
   title: string
   specialization: string
+  image_url: string
 }
 
 export interface DepartmentProfessorsResponse {

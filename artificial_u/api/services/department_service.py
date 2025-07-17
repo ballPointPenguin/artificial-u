@@ -222,6 +222,7 @@ class DepartmentApiService(
                     name=p.name,
                     title=p.title,
                     specialization=p.specialization,
+                    image_url=p.image_url,
                 )
                 for p in professors
             ]
