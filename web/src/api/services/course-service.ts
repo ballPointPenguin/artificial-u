@@ -53,6 +53,7 @@ export const courseService = {
   updateCourse: (courseId: number, data: CourseUpdate): Promise<Course> => {
     return httpClient.put<Course>(ENDPOINTS.courses.detail(courseId), data)
   },
+
   deleteCourse: (courseId: number): Promise<undefined> => {
     return httpClient.delete(ENDPOINTS.courses.detail(courseId))
   },
