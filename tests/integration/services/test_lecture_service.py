@@ -22,6 +22,9 @@ from artificial_u.utils.exceptions import ContentGenerationError, LectureNotFoun
 MOCK_LECTURE_XML = """
 <output>
   <lecture>
+    <title>
+    Introduction to Variables
+    </title>
     <content>
     [Professor enters, smiling warmly]
 
@@ -426,18 +429,18 @@ class TestLectureService:
             {
                 "course_id": course.id,
                 "topic_id": topic2.id,  # Generating for topic2
-                "title": "New Test Lecture",
                 "revision": 1,
             }
         )
 
         assert lecture_data["course_id"] == course.id
         assert lecture_data["topic_id"] == topic2.id
+        assert lecture_data["title"] == "Introduction to Variables"
         assert "Good morning, everyone!" in lecture_data["content"]
 
         call_args = content_service.generate_text.call_args
         prompt_str = call_args.kwargs.get("prompt", "")
-        assert f"<topic>{topic1.title}</topic>" in prompt_str  # Check existing lecture topic title
+        assert f"<title>{topic1.title}</title>" in prompt_str  # Check existing lecture topic title
         assert (
             f"<summary>{existing_lecture.summary}</summary>" in prompt_str
         )  # Check existing lecture summary

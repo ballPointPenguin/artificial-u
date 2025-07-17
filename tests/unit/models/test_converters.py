@@ -537,7 +537,6 @@ def test_lectures_to_xml():
     lecture_elems = root.findall("lecture")
     assert lecture_elems[0].find("week").text == "1"
     assert lecture_elems[0].find("order").text == "1"
-    assert lecture_elems[0].find("topic").text == "Introduction to Variables"
     assert lecture_elems[0].find("title").text == "Introduction to Variables"
     assert lecture_elems[0].find("summary").text == "Understanding basic variable concepts"
 

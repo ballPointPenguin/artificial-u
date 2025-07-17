@@ -521,10 +521,10 @@ class LectureService:
             final_lecture_data = {
                 "course_id": partial_attributes.get("course_id"),
                 "topic_id": partial_attributes.get("topic_id"),
-                "title": partial_attributes.get("title"),
                 "revision": partial_attributes.get("revision"),
-                "content": parsed_lecture_data.get("content"),
                 "summary": partial_attributes.get("summary"),
+                "title": parsed_lecture_data.get("title"),
+                "content": parsed_lecture_data.get("content"),
             }
 
             # Add other relevant fields from partial_attributes if they are valid for Lecture model

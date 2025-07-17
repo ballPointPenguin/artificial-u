@@ -169,7 +169,7 @@ class LectureRepository(BaseRepository):
             size: Items per page
             course_id: Filter by course ID
             professor_id: Filter by professor ID
-            search_query: Search query for content/summary
+            search_query: Search query for content/summary/title
 
         Returns:
             List[Lecture]: List of lectures
@@ -186,11 +186,12 @@ class LectureRepository(BaseRepository):
                 query = query.join(CourseModel).filter(CourseModel.professor_id == professor_id)
 
             if search_query:
-                # Search in content and summary
+                # Search in content, summary, and title
                 query = query.filter(
                     or_(
                         LectureModel.content.ilike(f"%{search_query}%"),
                         LectureModel.summary.ilike(f"%{search_query}%"),
+                        LectureModel.title.ilike(f"%{search_query}%"),
                     )
                 )
 

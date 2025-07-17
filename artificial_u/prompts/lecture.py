@@ -13,6 +13,9 @@ from artificial_u.prompts.base import PromptTemplate
 
 # XML structure for lecture content
 LECTURE_XML_STRUCTURE = """<lecture>
+  <title>
+    [Title of the lecture]
+  </title>
   <content>
     [Full lecture content, including:
     - Title or Topic
@@ -28,6 +31,9 @@ LECTURE_XML_STRUCTURE = """<lecture>
 
 # Example of a filled lecture
 EXAMPLE_LECTURE_1 = """<lecture>
+  <title>
+    Introduction to Quantum Computing
+  </title>
   <content>
     Introduction to Quantum Computing
 
@@ -57,6 +63,9 @@ EXAMPLE_LECTURE_1 = """<lecture>
 
 # Example of a filled lecture with different style
 EXAMPLE_LECTURE_2 = """<lecture>
+  <title>
+    The French Revolution: Causes and Catalysts
+  </title>
   <content>
     The French Revolution: Causes and Catalysts
 
@@ -87,7 +96,9 @@ EXAMPLE_LECTURE_2 = """<lecture>
 LECTURE_PROMPT = PromptTemplate(
     template=f"""
 Generate a university lecture in XML format.
-Use the structure below; fill in the <content></content> tags with the lecture content.
+Use the structure below:
+- Fill in the <title></title> tags with the lecture title.
+- Fill in the <content></content> tags with the lecture content.
 
 XML Structure:
 {LECTURE_XML_STRUCTURE}

@@ -336,7 +336,7 @@ class LectureApiService(BaseApiService[CoreLecture, Lecture, LectureListResponse
             # Add placeholder ID and validate if necessary,
             # or ensure core service provides all needed fields
             # The core LectureService.generate_lecture returns a dict like:
-            # {"course_id": ..., "topic_id": ..., "revision": ..., "content": ..., "summary": ...}
+            # {"course_id": ..., "topic_id": ..., "content": ..., "summary": ..., "title": ...}
             # This dict is used to populate api_lecture_data for validation.
             # For Lecture.model_validate, all required fields of API Lecture model must be present.
             # The core service returns generated attributes; not a full Lecture object.
@@ -345,7 +345,7 @@ class LectureApiService(BaseApiService[CoreLecture, Lecture, LectureListResponse
 
             # Placeholder for ID, as generation doesn't assign one.
             # Revision should come from generated_dict if available.
-            # Content and summary must be in generated_dict.
+            # Content, summary, and title must be in generated_dict.
             # course_id and topic_id are in partial_attributes and should be in generated_dict.
 
             # Ensure generated_dict has all keys required by the API Lecture model,

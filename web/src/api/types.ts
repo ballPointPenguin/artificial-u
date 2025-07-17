@@ -185,6 +185,7 @@ export interface Lecture {
   course_id: number
   topic_id: number
   revision: number
+  title: string
   content: string
   summary: string | null
   audio_url: string | null
@@ -194,6 +195,7 @@ export interface Lecture {
 export interface LectureCreate {
   course_id: number
   topic_id: number
+  title: string
   content: string
   summary?: string | null
   audio_url?: string | null
@@ -204,6 +206,7 @@ export interface LectureCreate {
 export interface LectureUpdate {
   course_id?: number
   topic_id?: number
+  title?: string
   content?: string
   summary?: string | null
   audio_url?: string | null

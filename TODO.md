@@ -2,6 +2,10 @@
 
 - [x] Add Title to Lectures
 - [x] Add JSONB content to Topics
+- [ ] Generate lecture content
+- [ ] Generate lecture summary
+- [ ] Generate lecture audio
+- [ ] Preview and modify professor voices
 - [ ] Enable structured imports of syllabi
 - [ ] Content checking for user input (toxicity, stupidity, typos)
 - [ ] Spell checking for user input
