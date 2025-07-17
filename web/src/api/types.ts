@@ -26,6 +26,207 @@ export interface HealthCheckResponse {
   timestamp: number
 }
 
+// Course types
+export interface Course {
+  id: number
+  code: string
+  title: string
+  department_id: number
+  level: string
+  credits: number
+  professor_id: number
+  description: string
+  lectures_per_week: number
+  total_weeks: number
+}
+
+export type CoursesList = PaginatedResponse<Course>
+
+// Brief Professor info for nested responses
+export interface ProfessorBrief {
+  id: number
+  name: string
+  title: string
+  specialization: string
+  department_id: number
+}
+
+export interface CourseCreate {
+  code: string
+  title: string
+  department_id: number
+  level: string
+  credits?: number
+  professor_id: number
+  description: string
+  lectures_per_week?: number
+  total_weeks?: number
+}
+
+export interface CourseUpdate {
+  code?: string
+  title?: string
+  department_id?: number
+  level?: string
+  credits?: number
+  professor_id?: number
+  description?: string
+  lectures_per_week?: number
+  total_weeks?: number
+}
+
+export interface CoursesListResponse {
+  items: Course[]
+  total: number
+  page: number
+  size: number
+  pages: number
+}
+
+// Brief Lecture info for course's lectures endpoint
+export interface LectureBrief {
+  id: number
+  title: string
+  week_number: number
+  order_in_week: number
+  description: string
+}
+
+export interface CourseLecturesResponse {
+  course_id: number
+  lectures: LectureBrief[]
+  total: number
+}
+
+export interface CourseGenerateRequest {
+  partial_attributes?: Record<string, unknown>
+  freeform_prompt?: string
+}
+
+// Department types
+export interface Department {
+  id: number
+  name: string
+  code: string
+  faculty: string | null
+  description: string | null
+}
+
+export interface DepartmentCreate {
+  name: string
+  code: string
+  faculty?: string | null
+  description?: string | null
+}
+
+export interface DepartmentUpdate {
+  name: string
+  code: string
+  faculty?: string | null
+  description?: string | null
+}
+
+export interface DepartmentsListResponse {
+  items: Department[]
+  total: number
+  page: number
+  size: number
+  pages: number
+}
+
+export interface DepartmentGenerateRequest {
+  name?: string
+  code?: string
+  faculty?: string
+  description?: string
+  freeform_prompt?: string
+}
+
+// Department nested endpoints response types
+export interface DepartmentProfessor {
+  id: number
+  name: string
+  title: string
+  specialization: string
+}
+
+export interface DepartmentProfessorsResponse {
+  department_id: number
+  professors: DepartmentProfessor[]
+  total: number
+}
+
+export interface DepartmentCourse {
+  id: number
+  code: string
+  title: string
+  level: string
+  credits: number
+  professor_id?: number
+}
+
+export interface DepartmentCoursesResponse {
+  department_id: number
+  courses: DepartmentCourse[]
+  total: number
+}
+
+// Brief Department info for nested responses
+export interface DepartmentBrief {
+  id: number
+  name: string
+  code: string
+  faculty: string
+}
+
+// Lecture types
+export interface Lecture {
+  id: number
+  course_id: number
+  topic_id: number
+  revision: number
+  content: string
+  summary: string | null
+  audio_url: string | null
+  transcript_url: string | null
+}
+
+export interface LectureCreate {
+  course_id: number
+  topic_id: number
+  content: string
+  summary?: string | null
+  audio_url?: string | null
+  transcript_url?: string | null
+  revision?: number | null
+}
+
+export interface LectureUpdate {
+  course_id?: number
+  topic_id?: number
+  content?: string
+  summary?: string | null
+  audio_url?: string | null
+  transcript_url?: string | null
+  revision?: number | null
+}
+
+export interface LectureList {
+  items: Lecture[]
+  total: number
+  page: number
+  page_size: number
+}
+
+export interface LectureGenerateRequest {
+  partial_attributes?: Record<string, unknown>
+  freeform_prompt?: string
+}
+
+export interface AudioRedirectResponse {
+  url: string
+}
+
 // Professor types
 export interface Professor {
   id: number
@@ -110,136 +311,21 @@ export interface ProfessorGenerateRequest {
   freeform_prompt?: string
 }
 
-// Department types
-export interface Department {
-  id: number
-  name: string
-  code: string
-  faculty: string | null
-  description: string | null
-}
-
-export interface DepartmentCreate {
-  name: string
-  code: string
-  faculty?: string | null
-  description?: string | null
-}
-
-export interface DepartmentUpdate {
-  name: string
-  code: string
-  faculty?: string | null
-  description?: string | null
-}
-
-export interface DepartmentsListResponse {
-  items: Department[]
-  total: number
-  page: number
-  size: number
-  pages: number
-}
-
-export interface DepartmentGenerateRequest {
-  name?: string
-  code?: string
-  faculty?: string
-  description?: string
-  freeform_prompt?: string
-}
-
-// Brief Department info for nested responses
-export interface DepartmentBrief {
-  id: number
-  name: string
-  code: string
-  faculty: string
-}
-
-// Course types
-export interface Course {
-  id: number
-  code: string
-  title: string
-  department_id: number
-  level: string
-  credits: number
-  professor_id: number
-  description: string
-  lectures_per_week: number
-  total_weeks: number
-}
-
-export type CoursesList = PaginatedResponse<Course>
-
-// Brief Professor info for nested responses
-export interface ProfessorBrief {
-  id: number
-  name: string
-  title: string
-  specialization: string
-  department_id: number
-}
-
-// Matches Python CourseCreate which is based on CourseBase
-export interface CourseCreate {
-  code: string
-  title: string
-  department_id: number
-  level: string
-  credits?: number
-  professor_id: number
-  description: string
-  lectures_per_week?: number
-  total_weeks?: number
-}
-
-// Matches Python CourseUpdate
-export interface CourseUpdate {
-  code?: string
-  title?: string
-  department_id?: number
-  level?: string
-  credits?: number
-  professor_id?: number
-  description?: string
-  lectures_per_week?: number
-  total_weeks?: number
-}
-
-// Matches Python CoursesListResponse
-export interface CoursesListResponse {
-  items: Course[]
-  total: number
-  page: number
-  size: number
-  pages: number
-}
-
-// Brief Lecture info for course's lectures endpoint (matches Python model)
-export interface LectureBrief {
-  id: number
-  title: string
-  week_number: number
-  order_in_week: number
-  description: string
-}
-
-// Matches Python CourseLecturesResponse
-export interface CourseLecturesResponse {
-  course_id: number
-  lectures: LectureBrief[]
-  total: number
-}
-
 // Topic types
+export interface TopicContentItem {
+  heading: string
+  items: string[]
+}
+
+export type TopicContent = TopicContentItem[]
+
 export interface Topic {
   id: number
   title: string
   course_id: number
   week: number
   order: number
+  content: TopicContent
 }
 
 export interface TopicCreate {
@@ -247,6 +333,7 @@ export interface TopicCreate {
   course_id: number
   week: number
   order: number
+  content: TopicContent
 }
 
 export interface TopicUpdate {
@@ -254,6 +341,7 @@ export interface TopicUpdate {
   course_id?: number
   week?: number
   order?: number
+  content?: TopicContent
 }
 
 export interface TopicList {
@@ -266,54 +354,6 @@ export interface TopicList {
 export interface TopicsGenerateRequest {
   course_id: number
   freeform_prompt?: string
-}
-
-// Lecture types (updated to match Python API)
-export interface Lecture {
-  id: number
-  course_id: number
-  topic_id: number
-  revision: number
-  content: string
-  summary: string | null
-  audio_url: string | null
-  transcript_url: string | null
-}
-
-export interface LectureCreate {
-  course_id: number
-  topic_id: number
-  content: string
-  summary?: string | null
-  audio_url?: string | null
-  transcript_url?: string | null
-  revision?: number | null
-}
-
-export interface LectureUpdate {
-  course_id?: number
-  topic_id?: number
-  content?: string
-  summary?: string | null
-  audio_url?: string | null
-  transcript_url?: string | null
-  revision?: number | null
-}
-
-export interface LectureList {
-  items: Lecture[]
-  total: number
-  page: number
-  page_size: number
-}
-
-export interface LectureGenerateRequest {
-  partial_attributes?: Record<string, unknown>
-  freeform_prompt?: string
-}
-
-export interface AudioRedirectResponse {
-  url: string
 }
 
 // Voice types
@@ -336,49 +376,6 @@ export interface Voice {
   last_updated: string | null
 }
 
-// Error response type
-export interface APIError {
-  detail: string
-  message?: string
-  status_code?: number
-  path?: string
-  timestamp?: string
-}
-
-// Department nested endpoints response types
-export interface DepartmentProfessor {
-  id: number
-  name: string
-  title: string
-  specialization: string
-}
-
-export interface DepartmentProfessorsResponse {
-  department_id: number
-  professors: DepartmentProfessor[]
-  total: number
-}
-
-export interface DepartmentCourse {
-  id: number
-  code: string
-  title: string
-  level: string
-  credits: number
-  professor_id?: number
-}
-
-export interface DepartmentCoursesResponse {
-  department_id: number
-  courses: DepartmentCourse[]
-  total: number
-}
-
-export interface CourseGenerateRequest {
-  partial_attributes?: Record<string, unknown>
-  freeform_prompt?: string
-}
-
 export interface PaginatedVoices {
   items: Voice[]
   total: number
@@ -399,4 +396,13 @@ export interface VoiceListParams {
   category?: string
   limit?: number
   offset?: number
+}
+
+// Error response type
+export interface APIError {
+  detail: string
+  message?: string
+  status_code?: number
+  path?: string
+  timestamp?: string
 }

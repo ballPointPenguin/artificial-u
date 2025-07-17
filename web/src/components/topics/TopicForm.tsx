@@ -65,9 +65,9 @@ export function TopicForm(props: TopicFormProps) {
       onSubmit={(e) => {
         void handleSubmit(e)
       }}
-      class="space-y-4 p-6 bg-surface rounded-lg shadow-md border border-border/20"
+      class="arcane-card p-6 space-y-4"
     >
-      <h3 class="text-lg font-semibold text-foreground mb-4">
+      <h3 class="text-xl font-display text-parchment-100 mb-4">
         {props.existingTopic ? 'Edit Topic' : 'Create New Topic'}
       </h3>
 
@@ -121,7 +121,7 @@ export function TopicForm(props: TopicFormProps) {
         </div>
       </Show>
 
-      <div class="flex justify-end space-x-3 pt-3 mt-4 border-t border-border/20">
+      <div class="flex justify-end space-x-3 pt-3 mt-4 border-t border-parchment-800/30">
         <Button type="button" variant="outline" onClick={props.onCancel} disabled={props.isLoading}>
           Cancel
         </Button>

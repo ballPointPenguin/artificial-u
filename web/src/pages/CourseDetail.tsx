@@ -341,7 +341,16 @@ const CourseDetail: Component = () => {
 
                   {/* Topics Section */}
                   <div class="mt-8">
-                    <h2 class="text-2xl font-display text-parchment-100 mb-5">Course Topics</h2>
+                    <div class="flex items-center justify-between mb-5">
+                      <h2 class="text-2xl font-display text-parchment-100">Course Topics</h2>
+                      <Button variant="primary">
+                        <A
+                          href={`/courses/${String(courseId)}/topics`}
+                          >
+                          Edit Topics
+                        </A>
+                      </Button>
+                    </div>
                     <Show
                       when={!topicsData.loading}
                       fallback={

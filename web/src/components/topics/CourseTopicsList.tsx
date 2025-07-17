@@ -3,8 +3,8 @@ import { topicService } from '../../api/services/topic-service.js'
 import type { Topic, TopicCreate, TopicUpdate, APIError } from '../../api/types.js'
 import { Button } from '../ui/Button.jsx'
 import { TopicForm } from './TopicForm.jsx'
-import { Card, CardFooter, CardHeader } from '../ui/Card.jsx'
 import { Alert } from '../ui/Alert.jsx'
+import { MagicButton } from '../ui/MagicButton.jsx'
 
 interface CourseTopicsListProps {
   courseId: number
@@ -137,17 +137,20 @@ export function CourseTopicsList(props: CourseTopicsListProps) {
   return (
     <div class="space-y-6">
       <div class="flex justify-between items-center">
-        <h2 class="text-2xl font-bold text-foreground">Topics for Course {props.courseId}</h2>
+        <h2 class="text-2xl font-display text-parchment-100">Course Topics</h2>
         <div class="flex space-x-2">
-          <Button
+          <MagicButton
+            type="button"
             onClick={() => {
               void handleGenerateTopics()
             }}
-            variant="outline"
+            variant="secondary"
             disabled={isGenerating() || isLoading()}
+            isLoading={isGenerating()}
+            loadingText="Generating..."
           >
-            {isGenerating() ? 'Generating...' : 'Generate Topics (AI)'}
-          </Button>
+            Generate Topics
+          </MagicButton>
           <Button onClick={handleAddTopic} variant="primary" disabled={isLoading()}>
             Add New Topic
           </Button>
@@ -172,7 +175,7 @@ export function CourseTopicsList(props: CourseTopicsListProps) {
       </Show>
 
       <Show when={isLoading() && topics().length === 0 && !showForm()}>
-        <p class="text-muted-foreground text-center py-10">Loading topics...</p>
+        <p class="text-parchment-400 font-serif text-center py-10">Loading topics...</p>
       </Show>
 
       <Show when={error() && !showForm()}>
@@ -182,9 +185,9 @@ export function CourseTopicsList(props: CourseTopicsListProps) {
       </Show>
 
       <Show when={!isLoading() && topics().length === 0 && !error() && !showForm()}>
-        <div class="text-center py-10 border border-dashed border-border rounded-md">
-          <p class="text-muted-foreground mb-2">No topics found for this course.</p>
-          <p class="text-sm text-muted-foreground mb-4">
+        <div class="arcane-card p-6 text-center">
+          <p class="text-parchment-400 font-serif mb-2">No topics found for this course.</p>
+          <p class="text-sm text-parchment-300 font-serif mb-4">
             You can add topics manually or try generating them with AI.
           </p>
         </div>
@@ -194,16 +197,16 @@ export function CourseTopicsList(props: CourseTopicsListProps) {
         <div class="space-y-4">
           <For each={topics()}>
             {(topic) => (
-              <Card class="hover:shadow-md transition-shadow duration-200" bordered>
-                <CardHeader class="flex justify-between items-start">
+              <div class="arcane-card p-4 hover:shadow-md transition-shadow duration-200">
+                <div class="flex justify-between items-start mb-3">
                   <div>
-                    <h3 class="text-md font-semibold text-primary">{topic.title}</h3>
-                    <p class="text-xs text-muted-foreground">
-                      ID: {topic.id} | Week: {topic.week}, Order: {topic.order}
+                    <h3 class="text-lg font-semibold text-parchment-100">{topic.title}</h3>
+                    <p class="text-sm text-parchment-300 font-serif">
+                      Week: {topic.week}, Order: {topic.order}
                     </p>
                   </div>
-                </CardHeader>
-                <CardFooter class="flex justify-end space-x-2 bg-surface/50 py-2 px-3">
+                </div>
+                <div class="flex justify-end space-x-2 pt-3 border-t border-parchment-800/30">
                   <Button
                     variant="ghost"
                     size="sm"
@@ -223,8 +226,8 @@ export function CourseTopicsList(props: CourseTopicsListProps) {
                   >
                     Delete
                   </Button>
-                </CardFooter>
-              </Card>
+                </div>
+              </div>
             )}
           </For>
         </div>
