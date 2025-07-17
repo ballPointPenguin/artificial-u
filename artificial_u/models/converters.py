@@ -262,6 +262,7 @@ def lectures_to_xml(lectures: List[Dict[str, Any]]) -> str:
         lines.append(f"    <week>{lecture.get('week', '')}</week>")
         lines.append(f"    <order>{lecture.get('order', '')}</order>")
         lines.append(f"    <topic>{lecture.get('title', '')}</topic>")
+        lines.append(f"    <title>{lecture.get('title', '')}</title>")
         lines.append(f"    <summary>{lecture.get('summary', '')}</summary>")
         lines.append("  </lecture>")
     lines.append("</existing_lectures>")
@@ -527,6 +528,7 @@ def parse_lecture_xml(lecture_xml: str) -> Dict[str, Any]:
 
         # Process content field
         lecture_data["content"] = _parse_text_field(root.find("content"))
+        lecture_data["title"] = _parse_text_field(root.find("title"))
 
         return lecture_data
 

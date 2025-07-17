@@ -158,6 +158,7 @@ def test_lecture_model_to_dict():
     lecture_data = {
         "id": 1,
         "revision": 1,
+        "title": "Lecture 1",
         "content": "Lecture content here.",
         "summary": "Lecture summary.",
         "audio_url": "http://example.com/audio.mp3",
@@ -176,12 +177,14 @@ def test_lecture_model_to_dict():
         "topic_id": 22,
         "content": "Partial content",
         "summary": None,
+        "title": None,
     }
     lecture_partial = Lecture(**lecture_partial_data)
     result_partial = lecture_model_to_dict(lecture_partial)
     expected_partial = lecture_partial.model_dump(exclude_none=True)
     assert result_partial == expected_partial
     assert "summary" not in result_partial
+    assert "title" not in result_partial
     assert "revision" not in result_partial  # Default is None, so excluded
 
 
@@ -535,6 +538,7 @@ def test_lectures_to_xml():
     assert lecture_elems[0].find("week").text == "1"
     assert lecture_elems[0].find("order").text == "1"
     assert lecture_elems[0].find("topic").text == "Introduction to Variables"
+    assert lecture_elems[0].find("title").text == "Introduction to Variables"
     assert lecture_elems[0].find("summary").text == "Understanding basic variable concepts"
 
 
@@ -788,12 +792,14 @@ def test_parse_lecture_xml():
     # Create a valid lecture XML
     lecture_xml = """
     <lecture>
+      <title>Introduction to Variables</title>
       <content>Today we'll learn about variables...</content>
     </lecture>
     """
 
     result = parse_lecture_xml(lecture_xml)
 
+    assert result["title"] == "Introduction to Variables"
     assert result["content"] == "Today we'll learn about variables..."
 
     # Test error handling

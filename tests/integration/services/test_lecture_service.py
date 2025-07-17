@@ -171,11 +171,13 @@ class TestLectureService:
             department_service, professor_service, course_service, topic_service
         )
 
+        lecture_title = "Test Lecture Title"
         lecture_content = "This is the test lecture content."
         lecture_summary = "Summary of the test lecture."
         lecture = lecture_service.create_lecture(
             course_id=course.id,
             topic_id=topic.id,
+            title=lecture_title,
             content=lecture_content,
             summary=lecture_summary,
             revision=1,
@@ -184,6 +186,7 @@ class TestLectureService:
         assert lecture.id is not None
         assert lecture.course_id == course.id
         assert lecture.topic_id == topic.id
+        assert lecture.title == lecture_title
         assert lecture.content == lecture_content
         assert lecture.summary == lecture_summary
         assert lecture.revision == 1
@@ -192,6 +195,7 @@ class TestLectureService:
         assert retrieved.id == lecture.id
         assert retrieved.course_id == course.id
         assert retrieved.topic_id == topic.id
+        assert retrieved.title == lecture_title
         assert retrieved.content == lecture_content
         assert retrieved.summary == lecture_summary
         assert retrieved.revision == 1
@@ -210,12 +214,14 @@ class TestLectureService:
         lecture_service.create_lecture(
             course_id=course.id,
             topic_id=topic1.id,
+            title="Lecture 1",
             content="Content for lecture 1",
             summary="Summary 1",
         )
         lecture_service.create_lecture(
             course_id=course.id,
             topic_id=topic2.id,
+            title="Lecture 2",
             content="Content for lecture 2",
             summary="Summary 2",
         )
@@ -249,6 +255,7 @@ class TestLectureService:
         lecture = lecture_service.create_lecture(
             course_id=course.id,
             topic_id=topic.id,
+            title="Initial title",
             content="Initial content",
             summary="Initial summary",
             revision=1,
@@ -256,6 +263,7 @@ class TestLectureService:
 
         updated_content = "Updated lecture content."
         updated_summary = "Updated lecture summary."
+        updated_title = "Updated lecture title."
         updated_revision = 2
 
         updated = lecture_service.update_lecture(
@@ -263,6 +271,7 @@ class TestLectureService:
             {
                 "content": updated_content,
                 "summary": updated_summary,
+                "title": updated_title,
                 "revision": updated_revision,
                 # course_id and topic_id typically not updated this way, but can be included
                 "course_id": course.id,
@@ -273,6 +282,7 @@ class TestLectureService:
         assert updated.content == updated_content
         assert updated.summary == updated_summary
         assert updated.revision == updated_revision
+        assert updated.title == updated_title
         assert updated.course_id == course.id  # Ensure these remain or are correctly updated
         assert updated.topic_id == topic.id
 
@@ -280,6 +290,7 @@ class TestLectureService:
         assert retrieved.content == updated_content
         assert retrieved.summary == updated_summary
         assert retrieved.revision == updated_revision
+        assert retrieved.title == updated_title
 
     def test_delete_lecture(
         self, lecture_service, course_service, department_service, professor_service, topic_service
@@ -290,7 +301,10 @@ class TestLectureService:
         )
 
         lecture_to_delete = lecture_service.create_lecture(
-            course_id=course.id, topic_id=topic.id, content="Content to delete"
+            course_id=course.id,
+            topic_id=topic.id,
+            content="Content to delete",
+            title="Title to delete",
         )
 
         retrieved = lecture_service.get_lecture(lecture_to_delete.id)
@@ -391,6 +405,7 @@ class TestLectureService:
         existing_lecture = lecture_service.create_lecture(
             course_id=course.id,
             topic_id=topic1.id,
+            title="Existing lecture title.",
             content="Existing lecture content.",
             summary="Summary of existing lecture.",
             revision=1,
@@ -411,6 +426,7 @@ class TestLectureService:
             {
                 "course_id": course.id,
                 "topic_id": topic2.id,  # Generating for topic2
+                "title": "New Test Lecture",
                 "revision": 1,
             }
         )

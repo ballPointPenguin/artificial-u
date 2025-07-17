@@ -2,8 +2,6 @@
 Course service for handling business logic related to courses.
 """
 
-import logging
-from math import ceil
 from typing import List, Optional
 
 from fastapi import HTTPException, status
@@ -20,6 +18,8 @@ from artificial_u.api.models.courses import (
     LectureBrief,
     ProfessorBrief,
 )
+from artificial_u.api.services.base_service import BaseApiService
+from artificial_u.models.core import Course as CoreCourse
 from artificial_u.models.database import LectureModel
 
 # Import RepositoryFactory directly instead of legacy Repository wrapper
@@ -38,7 +38,7 @@ from artificial_u.utils import (
 )
 
 
-class CourseApiService:
+class CourseApiService(BaseApiService[CoreCourse, CourseResponse, CoursesListResponse]):
     """API Service for course-related operations, using the core CourseService."""
 
     def __init__(
@@ -57,8 +57,8 @@ class CourseApiService:
             professor_service: Core ProfessorService instance.
             logger: Optional logger instance.
         """
+        super().__init__(logger)
         self.repository_factory = repository_factory
-        self.logger = logger or logging.getLogger(__name__)
 
         # Initialize core service with dependencies
         self.core_service = CourseService(
@@ -115,12 +115,7 @@ class CourseApiService:
             total = len(filtered_courses)
 
             # Apply pagination to the filtered list
-            start_idx = (page - 1) * size
-            end_idx = start_idx + size
-            paginated_items = filtered_courses[start_idx:end_idx]
-
-            # Calculate total pages
-            total_pages = ceil(total / size) if total > 0 else 1
+            paginated_items = self._paginate_items(filtered_courses, page, size)
 
             # Convert the 'course' dictionary part to response models
             course_responses = [
@@ -129,25 +124,13 @@ class CourseApiService:
                 if "course" in item
             ]
 
-            return CoursesListResponse(
-                items=course_responses,
-                total=total,
-                page=page,
-                size=size,
-                pages=total_pages,
+            return self._create_list_response(
+                course_responses, total, page, size, CoursesListResponse
             )
         except DatabaseError as e:
-            self.logger.error(f"Database error getting courses: {e}", exc_info=True)
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Failed to retrieve courses due to a database issue.",
-            )
+            self._handle_database_error("get courses", e)
         except Exception as e:
-            self.logger.error(f"Unexpected error getting courses: {e}", exc_info=True)
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="An unexpected error occurred while retrieving courses.",
-            )
+            self._handle_general_error("get courses", e)
 
     def get_course(self, course_id: int) -> CourseResponse:
         """
@@ -162,17 +145,9 @@ class CourseApiService:
                 detail=f"Course with ID {course_id} not found",
             )
         except DatabaseError as e:
-            self.logger.error(f"Database error getting course {course_id}: {e}", exc_info=True)
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Database error retrieving course {course_id}.",
-            )
+            self._handle_database_error("get course", e)
         except Exception as e:
-            self.logger.error(f"Unexpected error getting course {course_id}: {e}", exc_info=True)
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"An unexpected error occurred retrieving course {course_id}.",
-            )
+            self._handle_general_error("get course", e)
 
     def get_course_by_code(self, code: str) -> CourseResponse:
         """
@@ -187,17 +162,9 @@ class CourseApiService:
                 detail=f"Course with code '{code}' not found",
             )
         except DatabaseError as e:
-            self.logger.error(f"Database error getting course by code {code}: {e}", exc_info=True)
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Database error retrieving course code '{code}'.",
-            )
+            self._handle_database_error("get course by code", e)
         except Exception as e:
-            self.logger.error(f"Unexpected error getting course by code {code}: {e}", exc_info=True)
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"An unexpected error occurred retrieving course code '{code}'.",
-            )
+            self._handle_general_error("get course by code", e)
 
     def create_course(self, course_data: CourseCreate) -> CourseResponse:
         """
@@ -228,17 +195,9 @@ class CourseApiService:
                 detail=f"Professor with ID {course_data.professor_id} not found.",
             )
         except DatabaseError as e:
-            self.logger.error(f"Database error creating course: {e}", exc_info=True)
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Database error creating course: {e}",
-            )
+            self._handle_database_error("create course", e)
         except Exception as e:
-            self.logger.error(f"Unexpected error creating course: {e}", exc_info=True)
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"An unexpected error occurred creating the course: {e}",
-            )
+            self._handle_general_error("create course", e)
 
     def update_course(self, course_id: int, course_data: CourseUpdate) -> CourseResponse:
         """
@@ -271,17 +230,9 @@ class CourseApiService:
                 detail="Professor specified in update not found.",
             )
         except DatabaseError as e:
-            self.logger.error(f"Database error updating course {course_id}: {e}", exc_info=True)
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Database error updating course {course_id}.",
-            )
+            self._handle_database_error("update course", e)
         except Exception as e:
-            self.logger.error(f"Unexpected error updating course {course_id}: {e}", exc_info=True)
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"An unexpected error occurred updating course {course_id}.",
-            )
+            self._handle_general_error("update course", e)
 
     def delete_course(self, course_id: int) -> bool:
         """
@@ -310,17 +261,9 @@ class CourseApiService:
                     ),
                 )
             else:
-                self.logger.error(f"Database error deleting course {course_id}: {e}", exc_info=True)
-                raise HTTPException(
-                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    detail=f"Database error deleting course {course_id}.",
-                )
+                self._handle_database_error("delete course", e)
         except Exception as e:
-            self.logger.error(f"Unexpected error deleting course {course_id}: {e}", exc_info=True)
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"An unexpected error occurred deleting course {course_id}.",
-            )
+            self._handle_general_error("delete course", e)
 
     def get_course_professor(self, course_id: int) -> ProfessorBrief:
         """
@@ -357,23 +300,9 @@ class CourseApiService:
                 detail=f"Course with ID {course_id} not found.",
             )
         except DatabaseError as e:
-            self.logger.error(
-                f"Database error getting professor for course {course_id}: {e}",
-                exc_info=True,
-            )
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Database error retrieving professor for course {course_id}.",
-            )
+            self._handle_database_error("get course professor", e)
         except Exception as e:
-            self.logger.error(
-                f"Unexpected error getting professor for course {course_id}: {e}",
-                exc_info=True,
-            )
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"An unexpected error occurred retrieving professor for course {course_id}.",
-            )
+            self._handle_general_error("get course professor", e)
 
     def get_course_department(self, course_id: int) -> DepartmentBrief:
         """
@@ -416,26 +345,9 @@ class CourseApiService:
                 detail=f"Course with ID {course_id} not found.",
             )
         except DatabaseError as e:
-            self.logger.error(
-                f"Database error getting department for course {course_id}: {e}",
-                exc_info=True,
-            )
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Database error retrieving department for course {course_id}.",
-            )
+            self._handle_database_error("get course department", e)
         except Exception as e:
-            self.logger.error(
-                f"Unexpected error getting department for course {course_id}: {e}",
-                exc_info=True,
-            )
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=(
-                    f"An unexpected error occurred retrieving "
-                    f"department for course {course_id}."
-                ),
-            )
+            self._handle_general_error("get course department", e)
 
     def get_course_lectures(self, course_id: int) -> CourseLecturesResponse:
         """
@@ -478,23 +390,9 @@ class CourseApiService:
             # Treat as empty list for now, repository should handle this gracefully.
             return CourseLecturesResponse(course_id=course_id, lectures=[], total=0)
         except DatabaseError as e:
-            self.logger.error(
-                f"Database error getting lectures for course {course_id}: {e}",
-                exc_info=True,
-            )
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Database error retrieving lectures for course {course_id}.",
-            )
+            self._handle_database_error("get course lectures", e)
         except Exception as e:
-            self.logger.error(
-                f"Unexpected error getting lectures for course {course_id}: {e}",
-                exc_info=True,
-            )
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"An unexpected error occurred retrieving lectures for course {course_id}.",
-            )
+            self._handle_general_error("get course lectures", e)
 
     async def generate_course(self, generation_data: CourseGenerate) -> GeneratedCourseData:
         """

@@ -10,10 +10,11 @@ from fastapi import HTTPException, status
 from artificial_u.api.models.topics import (
     Topic,
     TopicCreate,
-    TopicList,
-    TopicsGenerate,
+    TopicGenerate,
+    TopicListResponse,
     TopicUpdate,
 )
+from artificial_u.api.services.base_service import BaseApiService
 from artificial_u.models.core import Topic as CoreTopic
 from artificial_u.models.repositories import RepositoryFactory
 from artificial_u.services import TopicService as CoreTopicService
@@ -25,7 +26,7 @@ from artificial_u.utils import (
 )
 
 
-class TopicApiService:
+class TopicApiService(BaseApiService[CoreTopic, Topic, TopicListResponse]):
     """Service for handling topic API operations."""
 
     def __init__(
@@ -34,9 +35,9 @@ class TopicApiService:
         repository_factory: RepositoryFactory,  # For potential direct use, e.g. counts if added
         logger: Optional[logging.Logger] = None,
     ):
+        super().__init__(logger)
         self.core_topic_service = core_topic_service
         self.repository_factory = repository_factory
-        self.logger = logger or logging.getLogger(__name__)
 
     def get_topic(self, topic_id: int) -> Topic:
         """Get a topic by its ID."""
@@ -49,12 +50,11 @@ class TopicApiService:
             self.logger.warning(f"Topic not found: {e}")
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
         except DatabaseError as e:
-            self.logger.error(f"Database error getting topic {topic_id}: {e}", exc_info=True)
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Database error"
-            )
+            self._handle_database_error("get topic", e)
 
-    def list_topics_by_course(self, course_id: int, page: int = 1, size: int = 10) -> TopicList:
+    def list_topics_by_course(
+        self, course_id: int, page: int = 1, size: int = 10
+    ) -> TopicListResponse:
         """List topics for a course with pagination."""
         try:
             # Core service currently returns all topics for the course
@@ -67,22 +67,21 @@ class TopicApiService:
 
             topic_items = [Topic.model_validate(topic) for topic in paginated_core_topics]
 
-            return TopicList(
+            # Calculate total pages
+            pages = self._calculate_pages(total_count, size)
+
+            return TopicListResponse(
                 items=topic_items,
                 total=total_count,
                 page=page,
-                page_size=size,
+                size=size,
+                pages=pages,
             )
         except CourseNotFoundError as e:
             self.logger.warning(f"Course not found for listing topics: {e}")
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
         except DatabaseError as e:
-            self.logger.error(
-                f"Database error listing topics for course {course_id}: {e}", exc_info=True
-            )
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Database error"
-            )
+            self._handle_database_error("list topics by course", e)
 
     def create_topic(self, topic_data: TopicCreate) -> Topic:
         """Create a new topic."""
@@ -95,17 +94,9 @@ class TopicApiService:
             )
             return Topic.model_validate(core_topic)
         except DatabaseError as e:
-            self.logger.error(f"Database error creating topic: {e}", exc_info=True)
-            # Could be a 400 or 409 depending on the nature of DB error
-            # (e.g., FK constraint for course_id)
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST, detail=f"Database error: {e}"
-            )
+            self._handle_database_error("create topic", e)
         except Exception as e:
-            self.logger.error(f"Unexpected error creating topic: {e}", exc_info=True)
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Unexpected server error"
-            )
+            self._handle_general_error("create topic", e)
 
     def update_topic(self, topic_id: int, topic_data: TopicUpdate) -> Topic:
         """Update an existing topic."""
@@ -133,15 +124,9 @@ class TopicApiService:
             self.logger.warning(f"Topic not found for update: {e}")
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
         except DatabaseError as e:
-            self.logger.error(f"Database error updating topic {topic_id}: {e}", exc_info=True)
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST, detail=f"Database error: {e}"
-            )
+            self._handle_database_error("update topic", e)
         except Exception as e:
-            self.logger.error(f"Unexpected error updating topic {topic_id}: {e}", exc_info=True)
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Unexpected server error"
-            )
+            self._handle_general_error("update topic", e)
 
     def delete_topic(self, topic_id: int) -> bool:
         """Delete a topic."""
@@ -160,17 +145,11 @@ class TopicApiService:
             self.logger.warning(f"Topic not found for deletion: {e}")
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
         except DatabaseError as e:
-            self.logger.error(f"Database error deleting topic {topic_id}: {e}", exc_info=True)
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Database error"
-            )
+            self._handle_database_error("delete topic", e)
         except Exception as e:
-            self.logger.error(f"Unexpected error deleting topic {topic_id}: {e}", exc_info=True)
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Unexpected server error"
-            )
+            self._handle_general_error("delete topic", e)
 
-    async def generate_topics_for_course(self, generation_data: TopicsGenerate) -> List[Topic]:
+    async def generate_topics_for_course(self, generation_data: TopicGenerate) -> List[Topic]:
         """Generate topics for a course using the core service."""
         try:
             self.logger.info(
@@ -191,13 +170,6 @@ class TopicApiService:
                 detail=f"Content generation error: {str(e)[:500]}",  # Truncate long messages
             )
         except DatabaseError as e:
-            self.logger.error(f"Database error during topic generation: {e}", exc_info=True)
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Database error: {str(e)[:500]}",  # Truncate long messages
-            )
+            self._handle_database_error("generate topics for course", e)
         except Exception as e:
-            self.logger.error(f"Unexpected error during topic generation: {e}", exc_info=True)
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Unexpected server error"
-            )
+            self._handle_general_error("generate topics for course", e)

@@ -15,8 +15,8 @@ from fastapi.testclient import TestClient
 from artificial_u.api.models.topics import (
     Topic,
     TopicCreate,
-    TopicList,
-    TopicsGenerate,
+    TopicGenerate,
+    TopicListResponse,
     TopicUpdate,
 )
 from artificial_u.api.services.topic_service import TopicApiService  # Keep for spec
@@ -134,7 +134,7 @@ def test_get_topic_not_found(client: TestClient, mock_api_service: MagicMock):
 def test_list_topics_by_course_success(client: TestClient, mock_api_service: MagicMock):
     """Test successfully listing topics for a course."""
     topic_item = Topic(id=SAMPLE_TOPIC_ID, **SAMPLE_TOPIC_PAYLOAD)
-    expected_topic_list = TopicList(items=[topic_item], total=1, page=1, page_size=10)
+    expected_topic_list = TopicListResponse(items=[topic_item], total=1, page=1, size=10, pages=1)
     mock_api_service.list_topics_by_course.return_value = expected_topic_list
 
     response = client.get(f"{BASE_TOPIC_URL}?course_id={SAMPLE_COURSE_ID}&page=1&size=10")
@@ -248,9 +248,7 @@ BASE_COURSE_TOPICS_URL = "/api/v1/courses"
 def test_generate_topics_for_course_success(client: TestClient, mock_api_service: MagicMock):
     """Test successfully generating topics for a course."""
     freeform_prompt = "Focus on practical applications"
-    generation_data_obj = TopicsGenerate(
-        course_id=SAMPLE_COURSE_ID, freeform_prompt=freeform_prompt
-    )
+    generation_data_obj = TopicGenerate(course_id=SAMPLE_COURSE_ID, freeform_prompt=freeform_prompt)
 
     topic_item_1 = Topic(
         id=1, title="Generated Topic 1", course_id=SAMPLE_COURSE_ID, week=1, order=1
@@ -274,7 +272,7 @@ def test_generate_topics_for_course_success(client: TestClient, mock_api_service
 @pytest.mark.unit  # Added unit marker
 def test_generate_topics_for_course_no_prompt(client: TestClient, mock_api_service: MagicMock):
     """Test generating topics for a course without an optional prompt."""
-    generation_data_obj = TopicsGenerate(course_id=SAMPLE_COURSE_ID, freeform_prompt=None)
+    generation_data_obj = TopicGenerate(course_id=SAMPLE_COURSE_ID, freeform_prompt=None)
     expected_topic = Topic(
         id=1, title="Generated Topic No Prompt", course_id=SAMPLE_COURSE_ID, week=1, order=1
     )

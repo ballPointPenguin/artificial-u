@@ -2,9 +2,7 @@
 Professor service for handling business logic related to professors.
 """
 
-import logging
 import random
-from math import ceil
 from typing import List, Optional
 
 from fastapi import HTTPException, status
@@ -20,7 +18,8 @@ from artificial_u.api.models.professors import (
     ProfessorsListResponse,
     ProfessorUpdate,
 )
-from artificial_u.models.core import Professor
+from artificial_u.api.services.base_service import BaseApiService
+from artificial_u.models.core import Professor as CoreProfessor
 from artificial_u.models.repositories import RepositoryFactory
 from artificial_u.services import (
     ContentService,
@@ -36,7 +35,7 @@ from artificial_u.utils import (
 )
 
 
-class ProfessorApiService:
+class ProfessorApiService(BaseApiService[CoreProfessor, ProfessorResponse, ProfessorsListResponse]):
     """API Service for professor-related operations."""
 
     def __init__(
@@ -57,8 +56,8 @@ class ProfessorApiService:
             voice_service: Voice service
             logger: Optional logger instance
         """
+        super().__init__(logger)
         self.repository_factory = repository_factory
-        self.logger = logger or logging.getLogger(__name__)
 
         # Initialize core service with all required dependencies
         self.core_service = ProfessorService(
@@ -81,8 +80,8 @@ class ProfessorApiService:
         Get a paginated list of professors with optional filtering.
 
         Args:
-            page: Page number (starting from 1)
-            size: Number of items per page
+            page: Page number (1-indexed)
+            size: Items per page
             department_id: Filter by department ID
             name: Filter by name (partial match)
             specialization: Filter by specialization (partial match)
@@ -90,7 +89,7 @@ class ProfessorApiService:
         Returns:
             ProfessorsListResponse with paginated professors
         """
-        # Create filters dictionary for the core service
+        # Build filters dictionary
         filters = {}
         if department_id is not None:
             filters["department_id"] = department_id
@@ -99,31 +98,13 @@ class ProfessorApiService:
         if specialization:
             filters["specialization"] = specialization
 
-        # Get all professors with filters
-        all_professors = self.core_service.list_professors(filters=filters)
-
-        # Count total before pagination
-        total = len(all_professors)
-
-        # Apply pagination
-        paginated_professors = self.core_service.list_professors(
-            filters=filters, page=page, size=size
-        )
-
-        # Calculate total pages
-        total_pages = ceil(total / size) if total > 0 else 1
-
-        # Convert to response models
-        professor_responses = [
-            ProfessorResponse.model_validate(p.model_dump()) for p in paginated_professors
-        ]
-
-        return ProfessorsListResponse(
-            items=professor_responses,
-            total=total,
+        return self._standard_list_operation(
+            core_service_method="list_professors",
+            response_class=ProfessorResponse,
+            list_response_class=ProfessorsListResponse,
             page=page,
             size=size,
-            pages=total_pages,
+            filters=filters,
         )
 
     def get_professor(self, professor_id: int) -> Optional[ProfessorResponse]:
@@ -155,14 +136,14 @@ class ProfessorApiService:
         Raises:
              HTTPException: If creation fails.
         """
-        # Extract data from the Pydantic model
-        data = professor_data.model_dump(
-            exclude_unset=True
-        )  # Use exclude_unset for partial updates
-
         try:
+            # Extract data from the Pydantic model
+            data = professor_data.model_dump(
+                exclude_unset=True
+            )  # Use exclude_unset for partial updates
+
             # Instantiate the core Professor model
-            professor_to_create = Professor(**data)
+            professor_to_create = CoreProfessor(**data)
 
             # Pass the Professor instance to the core service method
             # Note: core_service.create_professor is currently sync, but we await it.
@@ -172,12 +153,7 @@ class ProfessorApiService:
             # Convert to API response model
             return ProfessorResponse.model_validate(created_professor.model_dump())
         except (DatabaseError, Exception) as e:
-            self.logger.error(f"Error creating professor: {e}", exc_info=True)
-            # Raise a generic 500 error for the API layer
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Failed to create professor: {e}",
-            )
+            self._handle_general_error("create professor", e)
 
     def update_professor(
         self, professor_id: int, professor_data: ProfessorUpdate
@@ -395,12 +371,4 @@ class ProfessorApiService:
             return featured_responses
 
         except Exception as e:
-            self.logger.error(f"Error fetching featured professors: {e}", exc_info=True)
-            # For a "featured" endpoint, returning an empty list on error might be acceptable
-            # rather than a 500, depending on requirements. For now, let it raise if not handled.
-            # If it's a DatabaseError from list_professors, it will already be a 500.
-            # If it's a random.sample error (e.g. k > n), that's a logic bug.
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Could not retrieve featured professors.",
-            )
+            self._handle_general_error("get featured professors", e)

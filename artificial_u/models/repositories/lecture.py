@@ -30,6 +30,7 @@ class LectureRepository(BaseRepository):
                 revision=lecture.revision,
                 content=lecture.content,
                 summary=lecture.summary,
+                title=lecture.title,
                 audio_url=lecture.audio_url,
                 transcript_url=lecture.transcript_url,
                 course_id=lecture.course_id,
@@ -63,6 +64,7 @@ class LectureRepository(BaseRepository):
                 revision=db_lecture.revision,
                 content=db_lecture.content,
                 summary=db_lecture.summary,
+                title=db_lecture.title,
                 audio_url=db_lecture.audio_url,
                 transcript_url=db_lecture.transcript_url,
                 course_id=db_lecture.course_id,
@@ -114,6 +116,7 @@ class LectureRepository(BaseRepository):
                     revision=lecture.revision,
                     content=lecture.content,
                     summary=lecture.summary,
+                    title=lecture.title,
                     audio_url=lecture.audio_url,
                     transcript_url=lecture.transcript_url,
                     course_id=lecture.course_id,
@@ -141,6 +144,7 @@ class LectureRepository(BaseRepository):
                     revision=lecture.revision,
                     content=lecture.content,
                     summary=lecture.summary,
+                    title=lecture.title,
                     audio_url=lecture.audio_url,
                     transcript_url=lecture.transcript_url,
                     course_id=lecture.course_id,
@@ -203,6 +207,7 @@ class LectureRepository(BaseRepository):
                     revision=lecture.revision,
                     content=lecture.content,
                     summary=lecture.summary,
+                    title=lecture.title,
                     audio_url=lecture.audio_url,
                     transcript_url=lecture.transcript_url,
                     course_id=lecture.course_id,
@@ -230,6 +235,7 @@ class LectureRepository(BaseRepository):
             db_lecture.content = lecture.content
             db_lecture.revision = lecture.revision
             db_lecture.summary = lecture.summary
+            db_lecture.title = lecture.title
             db_lecture.audio_url = lecture.audio_url
             db_lecture.transcript_url = lecture.transcript_url
             db_lecture.course_id = lecture.course_id

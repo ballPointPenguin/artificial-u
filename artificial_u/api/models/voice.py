@@ -38,14 +38,15 @@ class VoiceResponse(VoiceBase):
     )
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
-class PaginatedVoiceResponse(BaseModel):
-    items: List[VoiceResponse]
-    total: int
-    limit: int
-    offset: int
+class VoiceListResponse(BaseModel):
+    items: List[VoiceResponse] = Field(..., description="List of voices")
+    total: int = Field(..., description="Total number of matching voices")
+    page: int = Field(..., description="Current page number")
+    size: int = Field(..., description="Number of items per page")
+    pages: int = Field(..., description="Total number of pages")
 
 
 class ManualVoiceAssignmentRequest(BaseModel):

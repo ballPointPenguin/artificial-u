@@ -2,8 +2,6 @@
 Department service for handling business logic related to departments.
 """
 
-import logging
-from math import ceil
 from typing import Optional
 
 from fastapi import HTTPException, status
@@ -19,6 +17,8 @@ from artificial_u.api.models.departments import (
     DepartmentUpdate,
     ProfessorBrief,
 )
+from artificial_u.api.services.base_service import BaseApiService
+from artificial_u.models.core import Department as CoreDepartment
 from artificial_u.models.repositories import RepositoryFactory
 from artificial_u.services import ContentService, CourseService, DepartmentService, ProfessorService
 from artificial_u.utils import (
@@ -27,7 +27,9 @@ from artificial_u.utils import (
 )
 
 
-class DepartmentApiService:
+class DepartmentApiService(
+    BaseApiService[CoreDepartment, DepartmentResponse, DepartmentsListResponse]
+):
     """Service for department-related operations."""
 
     def __init__(
@@ -48,8 +50,8 @@ class DepartmentApiService:
             content_service: Content generation service
             logger: Optional logger instance
         """
+        super().__init__(logger)
         self.repository_factory = repository_factory
-        self.logger = logger or logging.getLogger(__name__)
 
         # Initialize core service with dependencies
         self.core_service = DepartmentService(
@@ -71,43 +73,28 @@ class DepartmentApiService:
         Get a paginated list of departments with optional filtering.
 
         Args:
-            page: Page number (starting from 1)
-            size: Number of items per page
+            page: Page number (1-indexed)
+            size: Items per page
             faculty: Filter by faculty
             name: Filter by name (partial match)
 
         Returns:
             DepartmentsListResponse with paginated departments
         """
-        # Get all departments from core service
-        departments = self.core_service.list_departments(faculty)
-
-        # Apply name filter if provided
+        # Build filters dictionary
+        filters = {}
+        if faculty:
+            filters["faculty"] = faculty
         if name:
-            departments = [d for d in departments if name.lower() in d.name.lower()]
+            filters["name"] = name
 
-        # Count total before pagination
-        total = len(departments)
-
-        # Apply pagination
-        start_idx = (page - 1) * size
-        end_idx = start_idx + size
-        paginated_departments = departments[start_idx:end_idx]
-
-        # Calculate total pages
-        total_pages = ceil(total / size) if total > 0 else 1
-
-        # Convert to response models
-        department_responses = [
-            DepartmentResponse.model_validate(d.model_dump()) for d in paginated_departments
-        ]
-
-        return DepartmentsListResponse(
-            items=department_responses,
-            total=total,
+        return self._standard_list_operation(
+            core_service_method="list_departments",
+            response_class=DepartmentResponse,
+            list_response_class=DepartmentsListResponse,
             page=page,
             size=size,
-            pages=total_pages,
+            filters=filters,
         )
 
     def get_department(self, department_id: int) -> Optional[DepartmentResponse]:
@@ -152,16 +139,19 @@ class DepartmentApiService:
         Returns:
             Created department with ID
         """
-        # Create department using core service
-        department = self.core_service.create_department(
-            name=department_data.name,
-            code=department_data.code,
-            faculty=department_data.faculty,
-            description=department_data.description,
-        )
+        try:
+            # Create department using core service
+            department = self.core_service.create_department(
+                name=department_data.name,
+                code=department_data.code,
+                faculty=department_data.faculty,
+                description=department_data.description,
+            )
 
-        # Convert to response model
-        return DepartmentResponse.model_validate(department.model_dump())
+            # Convert to response model
+            return DepartmentResponse.model_validate(department.model_dump())
+        except Exception as e:
+            self._handle_general_error("create department", e)
 
     def update_department(
         self, department_id: int, department_data: DepartmentUpdate

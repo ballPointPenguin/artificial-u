@@ -192,6 +192,7 @@ class Lecture(BaseModel):
                 "revision": 1,
                 "content": "Good morning, students. Welcome to CSCI-4511...",
                 "summary": "Overview of AI definitions, history, and intelligent agents",
+                "title": "Introduction to AI",
                 "audio_url": "https://example.com/audio_files/CS4511/week1/lecture1.mp3",
                 "transcript_url": "https://example.com/transcript_files/CS4511/week1/lecture1.txt",
                 "course_id": 1,
@@ -204,6 +205,7 @@ class Lecture(BaseModel):
     revision: Optional[int] = None
     content: Optional[str] = None
     summary: Optional[str] = None
+    title: Optional[str] = None
     audio_url: Optional[str] = None
     transcript_url: Optional[str] = None
     course_id: int

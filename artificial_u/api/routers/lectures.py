@@ -12,7 +12,7 @@ from artificial_u.api.models import (
     Lecture,
     LectureCreate,
     LectureGenerate,
-    LectureList,
+    LectureListResponse,
     LectureUpdate,
 )
 from artificial_u.api.services import LectureApiService
@@ -28,7 +28,7 @@ router = APIRouter(
 
 @router.get(
     "",
-    response_model=LectureList,
+    response_model=LectureListResponse,
     summary="List lectures",
     description="Get a paginated list of lectures with optional filtering.",
 )

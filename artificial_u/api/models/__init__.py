@@ -33,12 +33,12 @@ from artificial_u.api.models.departments import (
     DepartmentUpdate,
 )
 from artificial_u.api.models.departments import ProfessorBrief as DepartmentProfessorBrief
+
+# Error model
 from artificial_u.api.models.error_codes import (
     ErrorCode,
     get_error_description,
 )
-
-# Error model
 from artificial_u.api.models.errors import (
     ErrorDetail,
     ErrorResponse,
@@ -47,9 +47,10 @@ from artificial_u.api.models.errors import (
 # Lecture model
 from artificial_u.api.models.lectures import (
     Lecture,
+    LectureBase,
     LectureCreate,
     LectureGenerate,
-    LectureList,
+    LectureListResponse,
     LectureUpdate,
 )
 
@@ -65,6 +66,24 @@ from artificial_u.api.models.professors import (
     ProfessorResponse,
     ProfessorsListResponse,
     ProfessorUpdate,
+)
+
+# Topic model
+from artificial_u.api.models.topics import (
+    Topic,
+    TopicBase,
+    TopicCreate,
+    TopicGenerate,
+    TopicListResponse,
+    TopicUpdate,
+)
+
+# Voice model
+from artificial_u.api.models.voice import (
+    ManualVoiceAssignmentRequest,
+    VoiceBase,
+    VoiceListResponse,
+    VoiceResponse,
 )
 
 # All models that should be available for import
@@ -104,11 +123,24 @@ __all__ = [
     "ProfessorCoursesResponse",
     "ProfessorLecturesResponse",
     # Lecture model
+    "LectureBase",
     "LectureCreate",
     "LectureUpdate",
     "Lecture",
     "LectureGenerate",
-    "LectureList",
+    "LectureListResponse",
+    # Topic model
+    "TopicBase",
+    "TopicCreate",
+    "TopicUpdate",
+    "Topic",
+    "TopicGenerate",
+    "TopicListResponse",
+    # Voice model
+    "VoiceBase",
+    "VoiceResponse",
+    "VoiceListResponse",
+    "ManualVoiceAssignmentRequest",
     # Error codes
     "ErrorDetail",
     "ErrorResponse",

@@ -11,8 +11,8 @@ from artificial_u.api.dependencies import get_topic_api_service  # Will be creat
 from artificial_u.api.models.topics import (
     Topic,
     TopicCreate,
-    TopicList,
-    TopicsGenerate,
+    TopicGenerate,
+    TopicListResponse,
     TopicUpdate,
 )
 from artificial_u.api.services.topic_service import TopicApiService
@@ -55,7 +55,7 @@ def get_topic(
 
 @router.get(
     "",
-    response_model=TopicList,
+    response_model=TopicListResponse,
     summary="List topics by course",
     description="Get a paginated list of topics, primarily filtered by course ID.",
 )
@@ -124,9 +124,9 @@ async def generate_topics_for_course(
     topic_service: TopicApiService = Depends(get_topic_api_service),
 ):
     """Generate and save topics for a given course ID."""
-    # The API model TopicsGenerate includes course_id, but path param is more RESTful here.
-    # We can construct the TopicsGenerate object in the service or pass params directly
+    # The API model TopicGenerate includes course_id, but path param is more RESTful here.
+    # We can construct the TopicGenerate object in the service or pass params directly
     # if core service allows.
-    # Current TopicApiService.generate_topics_for_course expects a TopicsGenerate object.
-    generation_data = TopicsGenerate(course_id=course_id, freeform_prompt=freeform_prompt)
+    # Current TopicApiService.generate_topics_for_course expects a TopicGenerate object.
+    generation_data = TopicGenerate(course_id=course_id, freeform_prompt=freeform_prompt)
     return await topic_service.generate_topics_for_course(generation_data)

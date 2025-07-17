@@ -9,7 +9,7 @@ from fastapi import APIRouter, Body, Depends, HTTPException, Path, Query
 from artificial_u.api.dependencies import get_voice_service
 from artificial_u.api.models.voice import (
     ManualVoiceAssignmentRequest,
-    PaginatedVoiceResponse,
+    VoiceListResponse,
     VoiceResponse,
 )
 from artificial_u.services.voice_service import VoiceService
@@ -37,7 +37,7 @@ async def manual_assign_voice(
     return
 
 
-@router.get("/", response_model=PaginatedVoiceResponse)
+@router.get("/", response_model=VoiceListResponse)
 async def list_voices(
     gender: Optional[str] = Query(None, description="Filter by gender"),
     accent: Optional[str] = Query(None, description="Filter by accent"),
@@ -72,7 +72,7 @@ async def list_voices(
         category=category,
     )
 
-    return PaginatedVoiceResponse(
+    return VoiceListResponse(
         items=[VoiceResponse(**voice) for voice in voices_data],
         total=total_count,
         limit=limit,

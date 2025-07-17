@@ -62,6 +62,7 @@ class LectureService:
         self,
         course_id: int,
         topic_id: int,
+        title: str,
         content: Optional[str] = None,
         summary: Optional[str] = None,
         audio_url: Optional[str] = None,
@@ -74,6 +75,7 @@ class LectureService:
         Args:
             course_id: ID of the course this lecture belongs to
             topic_id: ID of the topic this lecture belongs to
+            title: Title of the lecture
             content: Optional lecture content
             summary: Optional lecture summary
             audio_url: Optional URL to audio content
@@ -90,6 +92,7 @@ class LectureService:
         lecture = Lecture(
             course_id=course_id,
             topic_id=topic_id,
+            title=title,
             revision=revision,
             content=content,
             summary=summary,
@@ -501,6 +504,7 @@ class LectureService:
             final_lecture_data = {
                 "course_id": partial_attributes.get("course_id"),
                 "topic_id": partial_attributes.get("topic_id"),
+                "title": partial_attributes.get("title"),
                 "revision": partial_attributes.get("revision"),
                 "content": parsed_lecture_data.get("content"),
                 "summary": partial_attributes.get("summary"),

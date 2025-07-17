@@ -2,7 +2,6 @@
 Lecture API service for handling lecture operations in the API layer.
 """
 
-import logging
 from typing import Optional
 
 from fastapi import HTTPException, status
@@ -12,9 +11,11 @@ from artificial_u.api.models.lectures import (
     Lecture,
     LectureCreate,
     LectureGenerate,
-    LectureList,
+    LectureListResponse,
     LectureUpdate,
 )
+from artificial_u.api.services.base_service import BaseApiService
+from artificial_u.models.core import Lecture as CoreLecture
 from artificial_u.models.repositories import RepositoryFactory
 from artificial_u.services import (
     StorageService,  # Keep even if not used directly now, matches dependency injection
@@ -30,7 +31,7 @@ from artificial_u.services import (
 from artificial_u.utils import ContentGenerationError, DatabaseError, LectureNotFoundError
 
 
-class LectureApiService:
+class LectureApiService(BaseApiService[CoreLecture, Lecture, LectureListResponse]):
     """Service for handling lecture API operations."""
 
     def __init__(
@@ -53,8 +54,8 @@ class LectureApiService:
             storage_service: Storage service for file operations (dependency injection)
             logger: Optional logger instance
         """
+        super().__init__(logger)
         self.repository_factory = repository_factory  # Keep repository factory
-        self.logger = logger or logging.getLogger(__name__)
 
         # Initialize core service with dependencies it requires
         self.core_service = CoreLectureService(
@@ -78,7 +79,7 @@ class LectureApiService:
         course_id: Optional[int] = None,
         professor_id: Optional[int] = None,
         search: Optional[str] = None,
-    ) -> LectureList:
+    ) -> LectureListResponse:
         """
         List lectures with filtering and pagination using the core service and repository.
 
@@ -90,7 +91,7 @@ class LectureApiService:
             search: Search query for title/description
 
         Returns:
-            LectureList: Paginated list of lectures
+            LectureListResponse: Paginated list of lectures
 
         Raises:
             HTTPException: If there's an error retrieving data.
@@ -118,24 +119,20 @@ class LectureApiService:
                 search_query=search,
             )
 
-            return LectureList(
+            # Calculate total pages
+            pages = self._calculate_pages(total_count, size)
+
+            return LectureListResponse(
                 items=lecture_items,
                 total=total_count,
                 page=page,
-                page_size=size,
+                size=size,
+                pages=pages,
             )
         except DatabaseError as e:
-            self.logger.error(f"Database error listing lectures: {str(e)}", exc_info=True)
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Database error listing lectures: {e}",
-            )
+            self._handle_database_error("list lectures", e)
         except Exception as e:
-            self.logger.error(f"Error listing lectures: {str(e)}", exc_info=True)
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Failed to retrieve lectures: {e}",
-            )
+            self._handle_general_error("list lectures", e)
 
     def get_lecture(self, lecture_id: int) -> Lecture:
         """
@@ -159,19 +156,9 @@ class LectureApiService:
                 detail=f"Lecture with ID {lecture_id} not found",
             )
         except DatabaseError as e:
-            self.logger.error(
-                f"Database error getting lecture {lecture_id}: {str(e)}", exc_info=True
-            )
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Database error retrieving lecture {lecture_id}: {e}",
-            )
+            self._handle_database_error("get lecture", e)
         except Exception as e:
-            self.logger.error(f"Error getting lecture {lecture_id}: {str(e)}", exc_info=True)
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Failed to retrieve lecture {lecture_id}: {e}",
-            )
+            self._handle_general_error("get lecture", e)
 
     def create_lecture(self, lecture_data: LectureCreate) -> Lecture:
         """
@@ -189,31 +176,23 @@ class LectureApiService:
         """
         try:
             # Create lecture using core service, passing individual args
-            # Core service create_lecture expects: course_id, topic_id, content, summary,
+            # Core service create_lecture expects: course_id, topic_id, content, summary, title,
             # audio_url, transcript_url, revision
             core_lecture = self.core_service.create_lecture(
                 course_id=lecture_data.course_id,
                 topic_id=lecture_data.topic_id,
                 content=lecture_data.content,
                 summary=lecture_data.summary,
+                title=lecture_data.title,
                 audio_url=lecture_data.audio_url,
                 transcript_url=lecture_data.transcript_url,
                 revision=lecture_data.revision,
             )
             return Lecture.model_validate(core_lecture)
         except DatabaseError as e:
-            self.logger.error(f"Database error creating lecture: {str(e)}", exc_info=True)
-            # Treat database errors during creation as bad request or conflict potentially
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Failed to create lecture due to database issue: {e}",
-            )
+            self._handle_database_error("create lecture", e)
         except Exception as e:
-            self.logger.error(f"Error creating lecture: {str(e)}", exc_info=True)
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"An unexpected error occurred during lecture creation: {e}",
-            )
+            self._handle_general_error("create lecture", e)
 
     def update_lecture(self, lecture_id: int, lecture_data: LectureUpdate) -> Lecture:
         """
@@ -244,19 +223,9 @@ class LectureApiService:
                 detail=f"Lecture with ID {lecture_id} not found for update.",
             )
         except DatabaseError as e:
-            self.logger.error(
-                f"Database error updating lecture {lecture_id}: {str(e)}", exc_info=True
-            )
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Failed to update lecture {lecture_id} due to database issue: {e}",
-            )
+            self._handle_database_error("update lecture", e)
         except Exception as e:
-            self.logger.error(f"Error updating lecture {lecture_id}: {str(e)}", exc_info=True)
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"An unexpected error occurred during lecture update: {e}",
-            )
+            self._handle_general_error("update lecture", e)
 
     def delete_lecture(self, lecture_id: int) -> bool:
         """
@@ -283,20 +252,9 @@ class LectureApiService:
                 detail=f"Lecture with ID {lecture_id} not found for deletion.",
             )
         except DatabaseError as e:
-            self.logger.error(
-                f"Database error deleting lecture {lecture_id}: {str(e)}", exc_info=True
-            )
-            # Check for foreign key constraints etc. if needed, otherwise general DB error
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,  # Or 409 Conflict if FK constraint
-                detail=f"Failed to delete lecture {lecture_id} due to database issue: {e}",
-            )
+            self._handle_database_error("delete lecture", e)
         except Exception as e:
-            self.logger.error(f"Error deleting lecture {lecture_id}: {str(e)}", exc_info=True)
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"An unexpected error occurred during lecture deletion: {e}",
-            )
+            self._handle_general_error("delete lecture", e)
 
     def get_lecture_content(self, lecture_id: int) -> Optional[str]:
         """
@@ -317,13 +275,7 @@ class LectureApiService:
             # Note: Repository returns None if lecture not found or content is NULL
             return content
         except Exception as e:
-            self.logger.error(
-                f"Error getting lecture content {lecture_id}: {str(e)}", exc_info=True
-            )
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Failed to retrieve lecture content for {lecture_id}: {e}",
-            )
+            self._handle_general_error("get lecture content", e)
 
     def get_lecture_audio_url(self, lecture_id: int) -> Optional[str]:
         """
@@ -344,13 +296,7 @@ class LectureApiService:
             # Note: Repository returns None if lecture not found or audio_url is NULL
             return audio_url
         except Exception as e:
-            self.logger.error(
-                f"Error getting lecture audio URL {lecture_id}: {str(e)}", exc_info=True
-            )
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Failed to retrieve lecture audio URL for {lecture_id}: {e}",
-            )
+            self._handle_general_error("get lecture audio URL", e)
 
     async def generate_lecture(self, generation_data: LectureGenerate) -> Lecture:
         """
@@ -411,6 +357,7 @@ class LectureApiService:
                 "revision": generated_dict.get("revision"),  # Assumes core service provides this
                 "content": generated_dict.get("content"),
                 "summary": generated_dict.get("summary"),
+                "title": generated_dict.get("title"),
                 "audio_url": generated_dict.get("audio_url"),  # Allow passthrough
                 "transcript_url": generated_dict.get("transcript_url"),  # Allow passthrough
             }

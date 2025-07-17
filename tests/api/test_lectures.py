@@ -11,7 +11,7 @@ from artificial_u.api.models.lectures import (
     Lecture,
     LectureCreate,
     LectureGenerate,
-    LectureList,
+    LectureListResponse,
     LectureUpdate,
 )
 
@@ -21,6 +21,7 @@ sample_lectures_base = [
         id=i,
         course_id=1 if i < 3 else 2,
         topic_id=i * 10,
+        title=f"Lecture {i}",
         revision=1,
         content=f"Full content for lecture {i}",
         summary=f"Summary for lecture {i}",
@@ -48,8 +49,8 @@ def mock_api_service(monkeypatch):
     # --- Configure Mock Return Values ---
 
     # LIST Lectures
-    mock_service["list_lectures"].return_value = LectureList(
-        items=sample_lectures_base, total=4, page=1, page_size=10
+    mock_service["list_lectures"].return_value = LectureListResponse(
+        items=sample_lectures_base, total=4, page=1, size=10, pages=1
     )
 
     # GET Lecture by ID
@@ -65,6 +66,7 @@ def mock_api_service(monkeypatch):
             id=new_id,
             course_id=lecture_data.course_id,
             topic_id=lecture_data.topic_id,
+            title=lecture_data.title,
             revision=lecture_data.revision if lecture_data.revision is not None else 1,
             content=lecture_data.content,
             summary=lecture_data.summary,
@@ -117,6 +119,7 @@ def mock_api_service(monkeypatch):
         id=sample_lectures_base[0].id,
         course_id=sample_lectures_base[0].course_id,
         topic_id=sample_lectures_base[0].topic_id,
+        title=sample_lectures_base[0].title,
         revision=sample_lectures_base[0].revision,
         content=sample_lectures_base[0].content,
         summary=sample_lectures_base[0].summary,
@@ -164,8 +167,8 @@ def test_list_lectures(client: TestClient, mock_api_service):
 def test_list_lectures_with_filters(client: TestClient, mock_api_service):
     """Test listing lectures with various filters."""
     filtered_lectures = [lecture for lecture in sample_lectures_base if lecture.course_id == 1]
-    mock_api_service["list_lectures"].return_value = LectureList(
-        items=filtered_lectures, total=len(filtered_lectures), page=1, page_size=10
+    mock_api_service["list_lectures"].return_value = LectureListResponse(
+        items=filtered_lectures, total=len(filtered_lectures), page=1, size=10, pages=1
     )
 
     response = client.get("/api/v1/lectures?course_id=1&search=Test")
@@ -238,6 +241,7 @@ def test_create_lecture(client: TestClient, mock_api_service):
     new_lecture_data = {
         "course_id": 1,
         "topic_id": 50,
+        "title": "New Test Lecture",
         "content": "Full content for the new test lecture",
         "summary": "A new test lecture summary",
         "audio_url": "https://example.com/audio/new_lecture.mp3",
@@ -248,6 +252,7 @@ def test_create_lecture(client: TestClient, mock_api_service):
         "id": 5,
         "course_id": new_lecture_data["course_id"],
         "topic_id": new_lecture_data["topic_id"],
+        "title": new_lecture_data["title"],
         "revision": new_lecture_data["revision"],
         "content": new_lecture_data["content"],
         "summary": new_lecture_data["summary"],

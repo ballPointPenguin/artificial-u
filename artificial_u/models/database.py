@@ -4,7 +4,8 @@ Database models for ArtificialU.
 
 from datetime import datetime
 
-from sqlalchemy import JSON, Column, DateTime, ForeignKey, Index, Integer, String, Text
+from sqlalchemy import Column, DateTime, ForeignKey, Index, Integer, String, Text
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import DeclarativeBase, relationship
 
 
@@ -54,6 +55,7 @@ class LectureModel(Base):
     revision = Column(Integer, nullable=False)
     content = Column(Text, nullable=True)
     summary = Column(Text, nullable=True)
+    title = Column(String, nullable=False)
     audio_url = Column(String, nullable=True)
     transcript_url = Column(String, nullable=True)
     course_id = Column(Integer, ForeignKey("courses.id"), nullable=False)
@@ -93,6 +95,7 @@ class TopicModel(Base):
     title = Column(String, nullable=False)
     order = Column(Integer, nullable=False, default=1)
     week = Column(Integer, nullable=False, index=True)
+    content = Column(JSONB, nullable=True)
     course_id = Column(Integer, ForeignKey("courses.id"), nullable=False, index=True)
 
     course = relationship("CourseModel", back_populates="topics")
@@ -116,7 +119,7 @@ class VoiceModel(Base):
     popularity_score = Column(Integer, nullable=True)
     preview_url = Column(Text, nullable=True)
     use_case = Column(String(100), nullable=True)
-    verified_languages = Column(JSON, nullable=True)
+    verified_languages = Column(JSONB, nullable=True)
     last_updated = Column(DateTime, nullable=False, default=datetime.now)
 
     professor = relationship("ProfessorModel", back_populates="voice")

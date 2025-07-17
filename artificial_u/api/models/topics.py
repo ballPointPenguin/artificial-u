@@ -37,19 +37,20 @@ class Topic(TopicBase):
     id: int = Field(..., description="Unique topic identifier")
 
     class Config:
-        orm_mode = True  # Alias for from_attributes = True
+        from_attributes = True
 
 
-class TopicList(BaseModel):
+class TopicListResponse(BaseModel):
     """Paginated list of topics."""
 
     items: List[Topic] = Field(..., description="List of topics")
     total: int = Field(..., description="Total number of matching topics")
     page: int = Field(..., description="Current page number")
-    page_size: int = Field(..., description="Number of items per page")
+    size: int = Field(..., description="Number of items per page")
+    pages: int = Field(..., description="Total number of pages")
 
 
-class TopicsGenerate(BaseModel):
+class TopicGenerate(BaseModel):
     """Model for requesting topic generation for a course."""
 
     course_id: int = Field(..., description="ID of the course for which to generate topics")

@@ -28,6 +28,7 @@ class TestLectureRepository:
             revision=1,
             content="Test Content",
             summary="Test Summary",
+            title="Test Title",
             audio_url="test_audio_url",
             transcript_url="test_transcript_url",
             course_id=1,
@@ -42,6 +43,7 @@ class TestLectureRepository:
         lecture.revision = 1
         lecture.content = "Test Content"
         lecture.summary = "Test Summary"
+        lecture.title = "Test Title"
         lecture.audio_url = "test_audio_url"
         lecture.transcript_url = "test_transcript_url"
         lecture.course_id = 1
@@ -69,6 +71,7 @@ class TestLectureRepository:
         assert result.revision == sample_lecture.revision
         assert result.content == sample_lecture.content
         assert result.summary == sample_lecture.summary
+        assert result.title == sample_lecture.title
         assert result.audio_url == sample_lecture.audio_url
         assert result.transcript_url == sample_lecture.transcript_url
         assert result.course_id == sample_lecture.course_id
@@ -92,6 +95,7 @@ class TestLectureRepository:
         assert result.revision == 1
         assert result.content == "Test Content"
         assert result.summary == "Test Summary"
+        assert result.title == "Test Title"
         assert result.audio_url == "test_audio_url"
         assert result.transcript_url == "test_transcript_url"
         assert result.course_id == 1
@@ -166,6 +170,7 @@ class TestLectureRepository:
         assert result[0].revision == 1
         assert result[0].content == "Test Content"
         assert result[0].summary == "Test Summary"
+        assert result[0].title == "Test Title"
         assert result[0].audio_url == "test_audio_url"
         assert result[0].transcript_url == "test_transcript_url"
         assert result[0].course_id == 1
@@ -188,6 +193,7 @@ class TestLectureRepository:
         assert result[0].revision == 1
         assert result[0].content == "Test Content"
         assert result[0].summary == "Test Summary"
+        assert result[0].title == "Test Title"
         assert result[0].audio_url == "test_audio_url"
         assert result[0].transcript_url == "test_transcript_url"
         assert result[0].course_id == 1
@@ -210,6 +216,7 @@ class TestLectureRepository:
         assert result[0].revision == 1
         assert result[0].content == "Test Content"
         assert result[0].summary == "Test Summary"
+        assert result[0].title == "Test Title"
         assert result[0].audio_url == "test_audio_url"
         assert result[0].transcript_url == "test_transcript_url"
         assert result[0].course_id == 1
@@ -232,6 +239,7 @@ class TestLectureRepository:
         assert result[0].revision == 1
         assert result[0].content == "Test Content"
         assert result[0].summary == "Test Summary"
+        assert result[0].title == "Test Title"
         assert result[0].audio_url == "test_audio_url"
         assert result[0].transcript_url == "test_transcript_url"
         assert result[0].course_id == 1
