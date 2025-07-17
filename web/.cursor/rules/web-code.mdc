@@ -1,9 +1,7 @@
 ---
-description: Frontend codebase considerations
-globs:
-alwaysApply: true
+globs: *
+alwaysApply: false
 ---
-
 ## Code Style for JS, TS, JSX, TSX
 
 - code is linted according to eslint (./eslint.config.js)
@@ -55,6 +53,6 @@ alwaysApply: true
 
 ## Web Server
 
-- Usually vite is serving this app at my http://localhost:5173
-- Possibly visible from docker-hosted MCP services at http://host.docker.internal:5173
-- Usually proxied to a public domain by zrok at https://aliencyborg.share.zrok.io
+- Usually vite is serving this app at my <http://localhost:5173>
+- Possibly visible from docker-hosted MCP services at <http://host.docker.internal:5173>
+- Usually proxied to a public domain by zrok at <https://aliencyborg.share.zrok.io>

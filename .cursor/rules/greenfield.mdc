@@ -1,6 +1,6 @@
 ---
-description: 
-globs: 
+description:
+globs:
 alwaysApply: true
 ---
 ## Greenfield Development Guidelines
@@ -21,4 +21,3 @@ However, continue to rigorously monitor and maintain:
 - **Best Practices in Coding and Architecture**
 
 Embrace this opportunity to innovate quickly and boldly. Fail forward!
-
