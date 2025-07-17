@@ -367,18 +367,34 @@ class CourseService:
         )
         self.logger.info("Received response from content service.")
 
-        # Extract XML content
+        # Simplified XML extraction logic
+        generated_xml_output = None
+
+        # First try to extract from <output> tags
         generated_xml_output = extract_xml_content(raw_response, "output")
-        if not generated_xml_output:
-            generated_xml_output = extract_xml_content(raw_response, "course")
-            if not generated_xml_output:
-                error_msg = (
-                    f"Could not extract <output> or <course> tag from response:\n{raw_response}"
-                )
-                self.logger.error(error_msg)
-                raise ContentGenerationError(error_msg)
+        if generated_xml_output:
+            self.logger.info("Successfully extracted content from <output> tags")
+        else:
+            self.logger.info("<output> tag not found, trying direct <course> extraction...")
+
+            # Check if the response directly contains <course>...</course>
+            if raw_response.strip().startswith("<course>") and raw_response.strip().endswith(
+                "</course>"
+            ):
+                # Use the raw response directly
+                generated_xml_output = raw_response.strip()
+                self.logger.info("Using raw response as it contains valid <course> structure")
             else:
-                self.logger.warning("Extracted <course> tag directly as <output> was missing.")
+                # Try to extract inner content and wrap it
+                inner_content = extract_xml_content(raw_response, "course")
+                if inner_content:
+                    generated_xml_output = f"<course>\n{inner_content}\n</course>"
+                    self.logger.info("Extracted <course> inner content and wrapped it")
+
+        if not generated_xml_output:
+            error_msg = f"Could not extract <output> or <course> tag from response:\n{raw_response}"
+            self.logger.error(error_msg)
+            raise ContentGenerationError(error_msg)
 
         return generated_xml_output
 

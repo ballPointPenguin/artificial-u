@@ -305,3 +305,25 @@ class TestTopicRepository:
         query_mock.filter_by.assert_called_once_with(course_id=1)
         mock_session.commit.assert_called_once()
         assert result == 3
+
+    def test_unique_constraint_course_week_order(self, topic_repository, mock_session):
+        """Test that attempting to create duplicate course_id+week+order raises an error."""
+        from sqlalchemy.exc import IntegrityError
+
+        # Configure mock to simulate unique constraint violation
+        def mock_commit():
+            raise IntegrityError("statement", "params", "orig")
+
+        mock_session.commit.side_effect = mock_commit
+
+        # Create topic to test
+        topic = Topic(
+            title="Duplicate Topic",
+            order=1,
+            week=1,
+            course_id=1,
+        )
+
+        # Exercise & Verify
+        with pytest.raises(IntegrityError):
+            topic_repository.create(topic)

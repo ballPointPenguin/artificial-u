@@ -550,24 +550,41 @@ class ProfessorService:
         """Parses the AI-generated XML content to extract professor attributes."""
         self.logger.debug(f"Attempting to parse generated content:\n{generated_content}")
 
-        # Extract XML content
-        generated_xml_output = extract_xml_content(generated_content, "output")
-        if not generated_xml_output:
-            # Try to extract just the professor tag content
-            self.logger.info("Trying to extract <professor> tag...")
-            generated_xml_output = extract_xml_content(generated_content, "professor")
-            if not generated_xml_output:
-                error_msg = (
-                    "Could not extract <output> or <professor> tag from response:\n"
-                    f"{generated_content}"
-                )
-                self.logger.error(error_msg)
-                raise ContentGenerationError(error_msg)
-            else:
-                self.logger.warning("Extracted <professor> tag directly as <output> was missing.")
+        # Simplified XML extraction logic
+        generated_xml_output = None
 
-        # Wrap the content in professor tags if it's not already wrapped
+        # First try to extract from <output> tags
+        generated_xml_output = extract_xml_content(generated_content, "output")
+        if generated_xml_output:
+            self.logger.info("Successfully extracted content from <output> tags")
+        else:
+            self.logger.info("<output> tag not found, trying direct <professor> extraction...")
+
+            # Check if the response directly contains <professor>...</professor>
+            if generated_content.strip().startswith(
+                "<professor>"
+            ) and generated_content.strip().endswith("</professor>"):
+                # Use the raw response directly
+                generated_xml_output = generated_content.strip()
+                self.logger.info("Using raw response as it contains valid <professor> structure")
+            else:
+                # Try to extract inner content and wrap it
+                inner_content = extract_xml_content(generated_content, "professor")
+                if inner_content:
+                    generated_xml_output = f"<professor>\n{inner_content}\n</professor>"
+                    self.logger.info("Extracted <professor> inner content and wrapped it")
+
+        if not generated_xml_output:
+            error_msg = (
+                "Could not extract <output> or <professor> tag from response:\n"
+                f"{generated_content}"
+            )
+            self.logger.error(error_msg)
+            raise ContentGenerationError(error_msg)
+
+        # Ensure the extracted content has the proper <professor> wrapper
         if not generated_xml_output.strip().startswith("<professor>"):
+            self.logger.warning("Wrapping extracted content in <professor> tags")
             generated_xml_output = f"<professor>\n{generated_xml_output}\n</professor>"
 
         try:

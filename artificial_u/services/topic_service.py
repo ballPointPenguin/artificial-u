@@ -10,6 +10,8 @@ from artificial_u.models.converters import (
     course_model_to_dict,
     extract_xml_content,
     parse_topics_xml,
+    topics_model_to_dict,
+    topics_to_xml,
 )
 from artificial_u.models.core import Topic
 from artificial_u.models.repositories.factory import RepositoryFactory
@@ -261,10 +263,17 @@ class TopicService:
     # --- Generation Methods --- #
 
     async def _generate_and_parse_topic_content(
-        self, course_data: Dict[str, Any], freeform_prompt: Optional[str]
+        self,
+        course_data: Dict[str, Any],
+        freeform_prompt: Optional[str],
+        existing_topics_xml: Optional[str] = None,
     ) -> str:
         """Generate topic content and parse the XML response."""
-        topics_prompt = get_topics_prompt(course_data=course_data, freeform_prompt=freeform_prompt)
+        topics_prompt = get_topics_prompt(
+            course_data=course_data,
+            freeform_prompt=freeform_prompt,
+            existing_topics_xml=existing_topics_xml,
+        )
         system_prompt = get_system_prompt("topics")
         settings = get_settings()
 
@@ -275,33 +284,33 @@ class TopicService:
             model=settings.TOPICS_GENERATION_MODEL,
             prompt=topics_prompt,
             system_prompt=system_prompt,
+            max_tokens=6144,  # Higher limit for topics generation to avoid truncation
         )
         self.logger.info("Received response from content service for topics.")
 
-        # Extract XML content, trying <output> then <topics>
+        # Simplified XML extraction logic
+        generated_xml_output = None
+
+        # First try to extract from <output> tags
         generated_xml_output = extract_xml_content(raw_response, "output")
-        if not generated_xml_output:
-            self.logger.info("<output> tag not found, trying to extract <topics> tag directly...")
-            # If <topics> is the root, extract_xml_content will get its *inner* content.
-            # However, parse_topics_xml expects the full <topics>...</topics> string.
-            # So we try to find <topics>, and if it's the root, we need to reconstruct it.
-            # A simpler approach: if LLM returns <topics>...</topics> directly, use the raw_response
-            # if it starts appropriately, or extract <topics> content and wrap.
-            if "<topics>" in raw_response and "</topics>" in raw_response:
-                # Attempt to extract the full <topics> block if it's not inside <output>
-                # This assumes <topics> is a top-level or easily extractable block.
-                start_index = raw_response.find("<topics>")
-                end_index = raw_response.rfind("</topics>") + len("</topics>")
-                if start_index != -1 and end_index != -1 and start_index < end_index:
-                    generated_xml_output = raw_response[start_index:end_index]
-                else:  # Fallback to trying to extract content and wrap
-                    extracted_content = extract_xml_content(raw_response, "topics")
-                    if extracted_content:
-                        generated_xml_output = f"<topics>\n{extracted_content}\n</topics>"
-            else:  # Final fallback: try to extract inner content and wrap it
-                extracted_content = extract_xml_content(raw_response, "topics")
-                if extracted_content:
-                    generated_xml_output = f"<topics>\n{extracted_content}\n</topics>"
+        if generated_xml_output:
+            self.logger.info("Successfully extracted content from <output> tags")
+        else:
+            self.logger.info("<output> tag not found, trying direct <topics> extraction...")
+
+            # Check if the response directly contains <topics>...</topics>
+            if raw_response.strip().startswith("<topics>") and raw_response.strip().endswith(
+                "</topics>"
+            ):
+                # Use the raw response directly
+                generated_xml_output = raw_response.strip()
+                self.logger.info("Using raw response as it contains valid <topics> structure")
+            else:
+                # Try to extract inner content and wrap it
+                inner_content = extract_xml_content(raw_response, "topics")
+                if inner_content:
+                    generated_xml_output = f"<topics>\n{inner_content}\n</topics>"
+                    self.logger.info("Extracted <topics> inner content and wrapped it")
 
         if not generated_xml_output:
             error_msg = (
@@ -311,11 +320,9 @@ class TopicService:
             self.logger.error(error_msg)
             raise ContentGenerationError(error_msg)
 
-        # Ensure the extracted/formed content is properly wrapped for the parser
+        # Ensure the extracted content has the proper <topics> wrapper
         if not generated_xml_output.strip().startswith("<topics>"):
-            self.logger.warning(
-                "Manually wrapping extracted content in <topics> tags as it was missing."
-            )
+            self.logger.warning("Wrapping extracted content in <topics> tags")
             generated_xml_output = f"<topics>\n{generated_xml_output}\n</topics>"
 
         return generated_xml_output
@@ -325,6 +332,8 @@ class TopicService:
     ) -> List[Topic]:
         """
         Parses XML topic data, converts to Topic models, and saves them to the DB.
+        If generated topics have the same course_id + week + order as existing topics,
+        the existing topics will be replaced with the generated ones.
 
         Args:
             generated_xml_output: The XML string containing topic data.
@@ -350,6 +359,8 @@ class TopicService:
             return []
 
         topic_models_to_create = []
+        replaced_topics_count = 0
+
         for topic_dict in parsed_topic_dicts:
             title = topic_dict.get("title")
             week = topic_dict.get("week")
@@ -358,6 +369,21 @@ class TopicService:
             if not title or week is None or order is None:
                 self.logger.warning(f"Skipping incomplete topic data: {topic_dict}")
                 continue
+
+            # Check if there's an existing topic with the same course_id + week + order
+            existing_topic = self.repository_factory.topic.get_by_course_week_order(
+                course_id=course_id, week=week, order=order
+            )
+
+            if existing_topic:
+                # Delete the existing topic to avoid constraint violation
+                self.logger.info(
+                    f"Replacing existing topic '{existing_topic.title}' "
+                    f"(course={course_id}, week={week}, order={order}) "
+                    f"with new topic '{title}'"
+                )
+                self.repository_factory.topic.delete(existing_topic.id)
+                replaced_topics_count += 1
 
             new_topic = Topic(
                 title=title,
@@ -373,9 +399,17 @@ class TopicService:
 
         # Batch create topics in the database (can raise DatabaseError)
         created_topics = self.repository_factory.topic.create_batch(topic_models_to_create)
-        self.logger.info(
-            f"Successfully saved {len(created_topics)} topics to DB for course {course_id}"
-        )
+
+        if replaced_topics_count > 0:
+            self.logger.info(
+                f"Successfully replaced {replaced_topics_count} existing topics and "
+                f"created {len(created_topics)} topics for course {course_id}"
+            )
+        else:
+            self.logger.info(
+                f"Successfully created {len(created_topics)} new topics for course {course_id}"
+            )
+
         return created_topics
 
     async def generate_topics_for_course(
@@ -406,13 +440,27 @@ class TopicService:
             # get_course raises CourseNotFoundError if not found, so direct check not essential here
             course_data = course_model_to_dict(course_model)
 
-            # 2. Generate XML content
+            # 2. Fetch existing topics for context
+            existing_topics = self.list_topics_by_course(course_id)
+            existing_topics_xml = None
+
+            if existing_topics:
+                self.logger.info(
+                    f"Found {len(existing_topics)} existing topics for course {course_id}"
+                )
+                existing_topics_dicts = topics_model_to_dict(existing_topics)
+                existing_topics_xml = topics_to_xml(existing_topics_dicts)
+                self.logger.debug(f"Existing topics XML: {existing_topics_xml}")
+            else:
+                self.logger.info(f"No existing topics found for course {course_id}")
+
+            # 3. Generate XML content
             generated_xml_output = await self._generate_and_parse_topic_content(
-                course_data, freeform_prompt
+                course_data, freeform_prompt, existing_topics_xml
             )
             self.logger.debug(f"Generated XML for topics: {generated_xml_output[:500]}...")
 
-            # 3. Parse XML, convert to Topic models, and save to DB
+            # 4. Parse XML, convert to Topic models, and save to DB
             created_topics = self._parse_convert_and_save_topics(generated_xml_output, course_id)
 
             self.logger.info(

@@ -7,7 +7,6 @@ from typing import Optional
 import anthropic
 import openai
 from google.api_core import exceptions as google_exceptions
-from google.genai import types
 from ollama import ResponseError
 
 from artificial_u.config import get_settings
@@ -16,7 +15,7 @@ from artificial_u.utils.exceptions import ContentGenerationError
 
 # TODO: Make these configurable
 DEFAULT_TEMPERATURE = 0.3
-DEFAULT_MAX_TOKENS = 1024
+DEFAULT_MAX_TOKENS = 4096  # Increased from 1024 to allow for longer responses like topic lists
 
 
 class ContentService:
@@ -246,23 +245,50 @@ class ContentService:
     async def _generate_gemini(self, prompt, model, system_prompt, temperature, max_tokens):
         self.logger.info(f"Generating text with Gemini model: {model}")
         try:
-            contents = [types.Content(parts=[types.Part.from_text(prompt)])]
-            generation_config = types.GenerationConfig(
-                temperature=temperature if temperature is not None else DEFAULT_TEMPERATURE,
-                max_output_tokens=max_tokens if max_tokens is not None else DEFAULT_MAX_TOKENS,
-            )
+            from google.genai import types
+
+            # Build the content list with proper Part structure
+            contents = [types.Part.from_text(text=prompt)]
+
+            # Create generation config with all parameters including system_instruction
+            config_params = {
+                "temperature": temperature if temperature is not None else DEFAULT_TEMPERATURE,
+                "max_output_tokens": max_tokens if max_tokens is not None else DEFAULT_MAX_TOKENS,
+            }
+
+            # Add system instruction to config if provided
             if system_prompt:
-                generation_config.system_instruction = system_prompt
+                config_params["system_instruction"] = system_prompt
+
+            generation_config = types.GenerateContentConfig(**config_params)
+
+            # Call the API with the config containing all parameters
             response = await gemini_client.aio.models.generate_content(
                 model=model,
                 contents=contents,
-                generation_config=generation_config,
+                config=generation_config,
             )
 
-            if response.candidates and response.candidates[0].content:
-                response_text = response.candidates[0].content.parts[0].text
+            # Handle response parsing more robustly
+            if hasattr(response, "candidates") and response.candidates:
+                candidate = response.candidates[0]
+                if hasattr(candidate, "content") and candidate.content:
+                    if hasattr(candidate.content, "parts") and candidate.content.parts:
+                        # Extract text from the first part
+                        first_part = candidate.content.parts[0]
+                        if hasattr(first_part, "text") and first_part.text:
+                            response_text = first_part.text
+                        else:
+                            self.logger.warning("No text found in response part")
+                            response_text = ""
+                    else:
+                        self.logger.warning("No parts found in response content")
+                        response_text = ""
+                else:
+                    self.logger.warning("No content found in response candidate")
+                    response_text = ""
             else:
-                self.logger.warning("No content generated from Gemini model")
+                self.logger.warning("No candidates found in Gemini response")
                 response_text = ""
         except (google_exceptions.GoogleAPICallError, Exception) as e:
             raise ContentGenerationError(f"Gemini API error: {e}") from e

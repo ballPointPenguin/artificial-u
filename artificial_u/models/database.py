@@ -4,7 +4,7 @@ Database models for ArtificialU.
 
 from datetime import datetime
 
-from sqlalchemy import Column, DateTime, ForeignKey, Index, Integer, String, Text
+from sqlalchemy import Column, DateTime, ForeignKey, Index, Integer, String, Text, UniqueConstraint
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import DeclarativeBase, relationship
 
@@ -100,6 +100,11 @@ class TopicModel(Base):
 
     course = relationship("CourseModel", back_populates="topics")
     lectures = relationship("LectureModel", back_populates="topic")
+
+    # Ensure unique combination of course_id + week + order
+    __table_args__ = (
+        UniqueConstraint("course_id", "week", "order", name="uq_topic_course_week_order"),
+    )
 
 
 class VoiceModel(Base):

@@ -298,23 +298,40 @@ class LectureService:
         )
         self.logger.info("Received response from content service.")
 
-        # Extract XML content
-        generated_xml_output = extract_xml_content(raw_response, "output")
-        if not generated_xml_output:
-            # Try to extract just the lecture tag content
-            self.logger.info("Trying to extract <lecture> tag...")
-            generated_xml_output = extract_xml_content(raw_response, "lecture")
-            if not generated_xml_output:
-                error_msg = (
-                    f"Could not extract <output> or <lecture> tag from response:\n{raw_response}"
-                )
-                self.logger.error(error_msg)
-                raise ContentGenerationError(error_msg)
-            else:
-                self.logger.warning("Extracted <lecture> tag directly as <output> was missing.")
+        # Simplified XML extraction logic
+        generated_xml_output = None
 
-        # Wrap the content in lecture tags if it's not already wrapped
+        # First try to extract from <output> tags
+        generated_xml_output = extract_xml_content(raw_response, "output")
+        if generated_xml_output:
+            self.logger.info("Successfully extracted content from <output> tags")
+        else:
+            self.logger.info("<output> tag not found, trying direct <lecture> extraction...")
+
+            # Check if the response directly contains <lecture>...</lecture>
+            if raw_response.strip().startswith("<lecture>") and raw_response.strip().endswith(
+                "</lecture>"
+            ):
+                # Use the raw response directly
+                generated_xml_output = raw_response.strip()
+                self.logger.info("Using raw response as it contains valid <lecture> structure")
+            else:
+                # Try to extract inner content and wrap it
+                inner_content = extract_xml_content(raw_response, "lecture")
+                if inner_content:
+                    generated_xml_output = f"<lecture>\n{inner_content}\n</lecture>"
+                    self.logger.info("Extracted <lecture> inner content and wrapped it")
+
+        if not generated_xml_output:
+            error_msg = (
+                f"Could not extract <output> or <lecture> tag from response:\n{raw_response}"
+            )
+            self.logger.error(error_msg)
+            raise ContentGenerationError(error_msg)
+
+        # Ensure the extracted content has the proper <lecture> wrapper
         if not generated_xml_output.strip().startswith("<lecture>"):
+            self.logger.warning("Wrapping extracted content in <lecture> tags")
             generated_xml_output = f"<lecture>\n{generated_xml_output}\n</lecture>"
 
         return generated_xml_output

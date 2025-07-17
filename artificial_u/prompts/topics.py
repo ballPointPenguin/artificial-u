@@ -96,6 +96,8 @@ XML Structure:
 Course Information:
 {{course_xml}}
 
+{{existing_topics_context}}
+
 {{freeform_prompt_text}}
 
 Examples of properly formatted topics:
@@ -107,19 +109,21 @@ Example 2:
 
 Wrap your answer in <output> tags, providing only the <topics> element.
 """,
-    required_vars=["course_xml", "freeform_prompt_text"],
+    required_vars=["course_xml", "existing_topics_context", "freeform_prompt_text"],
 )
 
 
 def get_topics_prompt(
     course_data: Dict[str, Any],
     freeform_prompt: Optional[str] = None,
+    existing_topics_xml: Optional[str] = None,
 ) -> str:
     """Generate a list of topics for a course in XML format.
 
     Args:
       course_data: Dictionary of course attributes.
       freeform_prompt: Optional freeform text context.
+      existing_topics_xml: Optional XML of existing topics for context.
 
     Returns:
       Formatted prompt string.
@@ -131,10 +135,20 @@ def get_topics_prompt(
         f"Additional context/ideas for the topics:\n{freeform_prompt}\n" if freeform_prompt else ""
     )
 
+    # Format existing topics context if provided
+    existing_topics_context = ""
+    if existing_topics_xml:
+        existing_topics_context = (
+            f"Existing topics for this course:\n{existing_topics_xml}\n\n"
+            "Please generate topics that complement or extend the existing ones, "
+            "avoiding duplicates and ensuring proper week/order sequencing.\n"
+        )
+
     # Format the main prompt template
     try:
         return TOPICS_PROMPT.format(
             course_xml=course_xml_str,
+            existing_topics_context=existing_topics_context,
             freeform_prompt_text=freeform_prompt_text,
         )
     except ValueError as e:

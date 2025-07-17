@@ -618,3 +618,220 @@ class TestTopicService:
             assert retrieved_topic is not None
             assert retrieved_topic.title == topic_data["title"]
             assert retrieved_topic.course_id == course.id
+
+    @pytest.mark.asyncio
+    async def test_generate_topics_for_course_with_existing_topics(
+        self, topic_service, course_service, department_service, professor_service
+    ):
+        """Test generating topics for a course that already has existing topics."""
+        # 1. Setup prerequisite data
+        department = department_service.create_department(
+            name="Test Department with Existing Topics",
+            code="TDET",
+            faculty="Test Faculty",
+            description="A test department for topic generation with existing topics.",
+        )
+        professor = professor_service.create_professor(
+            Professor(
+                name="Dr. Existing Topics",
+                title="Lecturer",
+                department_id=department.id,
+                specialization="Existing Topic Studies",
+                gender="Other",
+                description="Expert in generating topics with context.",
+            )
+        )
+        course, _ = course_service.create_course(
+            title="Course with Existing Topics",
+            code="CET101",
+            department_id=department.id,
+            level="Test Level",
+            professor_id=professor.id,
+            description="A course to test topic generation with existing topics.",
+            credits=1,
+            weeks=3,
+            lectures_per_week=2,
+        )
+
+        # 2. Create some existing topics
+        topic_service.create_topic(title="Existing Topic 1", course_id=course.id, week=1, order=1)
+        topic_service.create_topic(title="Existing Topic 2", course_id=course.id, week=1, order=2)
+
+        # 3. Define the mocked XML response from ContentService
+        mock_xml_response = """<output>
+<topics>
+  <course_title>Course with Existing Topics</course_title>
+  <lectures_per_week>2</lectures_per_week>
+  <total_weeks>3</total_weeks>
+  <topic>
+    <title>New Generated Topic 1</title>
+    <week>2</week>
+    <order>1</order>
+  </topic>
+  <topic>
+    <title>New Generated Topic 2</title>
+    <week>2</week>
+    <order>2</order>
+  </topic>
+</topics>
+</output>"""
+
+        # 4. Mock the content_service.generate_text method and capture the prompt
+        generated_prompt = None
+
+        async def capture_prompt(*args, **kwargs):
+            nonlocal generated_prompt
+            generated_prompt = kwargs.get("prompt", args[1] if len(args) > 1 else None)
+            return mock_xml_response
+
+        topic_service.content_service.generate_text = AsyncMock(side_effect=capture_prompt)
+
+        # 5. Call the method under test
+        generated_topics = await topic_service.generate_topics_for_course(course_id=course.id)
+
+        # 6. Verify the generated topics
+        assert generated_topics is not None
+        assert len(generated_topics) == 2, "Should generate 2 new topics based on mock XML"
+
+        # 7. Verify that the prompt included existing topics context
+        assert generated_prompt is not None, "Should have captured the generated prompt"
+        assert (
+            "Existing topics for this course:" in generated_prompt
+        ), "Prompt should include existing topics context"
+        assert "Existing Topic 1" in generated_prompt, "Prompt should contain existing topic titles"
+        assert "Existing Topic 2" in generated_prompt, "Prompt should contain existing topic titles"
+        assert (
+            "complement or extend the existing ones" in generated_prompt
+        ), "Prompt should include guidance about existing topics"
+
+        # 8. Verify the new topics have appropriate week/order values
+        for generated_topic in generated_topics:
+            assert generated_topic.week == 2, "New topics should be in week 2 to avoid conflicts"
+            assert generated_topic.course_id == course.id
+            assert generated_topic.id is not None, "Topic ID should be set after creation"
+
+        # 9. Verify total topics for the course
+        all_topics = topic_service.list_topics_by_course(course_id=course.id)
+        assert len(all_topics) == 4, "Should have 2 existing + 2 new topics = 4 total"
+
+    @pytest.mark.asyncio
+    async def test_generate_topics_with_collision_replacement(
+        self, topic_service, course_service, department_service, professor_service
+    ):
+        """
+        Test that topic generation replaces existing topics when there are week+order collisions.
+        """
+        # 1. Setup prerequisite data
+        department = department_service.create_department(
+            name="Test Department with Collisions",
+            code="TDCOL",
+            faculty="Test Faculty",
+            description="A test department for collision replacement testing.",
+        )
+        professor = professor_service.create_professor(
+            Professor(
+                name="Dr. Collision Handler",
+                title="Professor",
+                department_id=department.id,
+                specialization="Collision Management",
+                gender="Other",
+                description="Expert in handling topic collisions.",
+            )
+        )
+        course, _ = course_service.create_course(
+            title="Course with Topic Collisions",
+            code="CTC101",
+            department_id=department.id,
+            level="Test Level",
+            professor_id=professor.id,
+            description="A course to test topic collision replacement.",
+            credits=1,
+            weeks=2,
+            lectures_per_week=2,
+        )
+
+        # 2. Create existing topics
+        existing_topic_1 = topic_service.create_topic(
+            title="Original Topic 1", course_id=course.id, week=1, order=1
+        )
+        existing_topic_2 = topic_service.create_topic(
+            title="Original Topic 2", course_id=course.id, week=1, order=2
+        )
+        existing_topic_3 = topic_service.create_topic(
+            title="Original Topic 3", course_id=course.id, week=2, order=1
+        )
+
+        # 3. Store original topic IDs for comparison
+        original_topic_ids = [existing_topic_1.id, existing_topic_2.id, existing_topic_3.id]
+
+        # 4. Define XML response that includes collisions and new topics
+        mock_xml_response = """<output>
+<topics>
+  <course_title>Course with Topic Collisions</course_title>
+  <lectures_per_week>2</lectures_per_week>
+  <total_weeks>2</total_weeks>
+  <topic>
+    <title>Replaced Topic 1</title>
+    <week>1</week>
+    <order>1</order>
+  </topic>
+  <topic>
+    <title>Replaced Topic 2</title>
+    <week>1</week>
+    <order>2</order>
+  </topic>
+  <topic>
+    <title>New Topic 1</title>
+    <week>2</week>
+    <order>2</order>
+  </topic>
+</topics>
+</output>"""
+
+        # 5. Mock the content service
+        topic_service.content_service.generate_text = AsyncMock(return_value=mock_xml_response)
+
+        # 6. Call the method under test
+        generated_topics = await topic_service.generate_topics_for_course(course_id=course.id)
+
+        # 7. Verify the results
+        assert len(generated_topics) == 3, "Should have 3 generated topics"
+
+        # 8. Get all current topics for the course
+        all_current_topics = topic_service.list_topics_by_course(course_id=course.id)
+        expected_total = 4  # 1 original + 3 generated
+        assert (
+            len(all_current_topics) == expected_total
+        ), "Should have 4 total topics: 1 original + 3 generated"
+
+        # 9. Verify that colliding topics were replaced (week 1, order 1 and 2)
+        week_1_topics = [t for t in all_current_topics if t.week == 1]
+        assert len(week_1_topics) == 2, "Should have 2 topics in week 1"
+
+        week_1_order_1 = next(t for t in week_1_topics if t.order == 1)
+        week_1_order_2 = next(t for t in week_1_topics if t.order == 2)
+
+        # These should be new topics with new titles and IDs
+        assert week_1_order_1.title == "Replaced Topic 1"
+        assert week_1_order_2.title == "Replaced Topic 2"
+        assert week_1_order_1.id not in original_topic_ids, "Should have new ID (original replaced)"
+        assert week_1_order_2.id not in original_topic_ids, "Should have new ID (original replaced)"
+
+        # 10. Verify that non-colliding existing topic still exists (week 2, order 1)
+        week_2_order_1 = next(t for t in all_current_topics if t.week == 2 and t.order == 1)
+        assert (
+            week_2_order_1.title == "Original Topic 3"
+        ), "Original non-colliding topic should remain"
+        assert week_2_order_1.id == existing_topic_3.id, "Should have original ID"
+
+        # 11. Verify new topic was added (week 2, order 2)
+        week_2_order_2 = next(t for t in all_current_topics if t.week == 2 and t.order == 2)
+        assert week_2_order_2.title == "New Topic 1", "New topic should be added"
+        assert week_2_order_2.id not in original_topic_ids, "Should have new ID"
+
+        # 12. Verify that the original colliding topics no longer exist
+        for original_id in [existing_topic_1.id, existing_topic_2.id]:
+            retrieved_topic = topic_service.get_topic(original_id)
+            assert (
+                retrieved_topic is None
+            ), f"Original topic with ID {original_id} should no longer exist"
