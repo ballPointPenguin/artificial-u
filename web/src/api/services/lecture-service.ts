@@ -80,17 +80,10 @@ export const lectureService = {
   /**
    * Generate lecture with extended timeout for long-running operations
    */
-  generateLecture: (
-    data: LectureGenerateRequest,
-    onTimeout?: () => void
-  ): Promise<Lecture> => {
-    return httpClient.postWithExtendedTimeout<Lecture>(
-      ENDPOINTS.lectures.generate,
-      data,
-      {
-        timeout: TIMEOUT_CONFIG.generation,
-        onTimeout
-      }
-    )
+  generateLecture: (data: LectureGenerateRequest, onTimeout?: () => void): Promise<Lecture> => {
+    return httpClient.postWithExtendedTimeout<Lecture>(ENDPOINTS.lectures.generate, data, {
+      timeout: TIMEOUT_CONFIG.generation,
+      onTimeout,
+    })
   },
 }

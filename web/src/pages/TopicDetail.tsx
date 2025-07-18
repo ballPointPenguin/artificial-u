@@ -286,7 +286,7 @@ const TopicDetail = () => {
                           </div>
                         </Show>
 
-                                                {/* Progress indicator for generation */}
+                        {/* Progress indicator for generation */}
                         <Show when={isGeneratingLecture()}>
                           <div class="mt-4 p-4 bg-mystic-900/30 border border-mystic-700 rounded-lg">
                             <div class="flex items-center justify-center space-x-3">
@@ -303,8 +303,8 @@ const TopicDetail = () => {
                         <Show when={generationTimeout()}>
                           <Alert variant="warning" class="mt-4">
                             <p class="text-sm">
-                              The generation request took longer than expected and timed out.
-                              This can happen with complex content generation. Please try again.
+                              The generation request took longer than expected and timed out. This
+                              can happen with complex content generation. Please try again.
                             </p>
                           </Alert>
                         </Show>

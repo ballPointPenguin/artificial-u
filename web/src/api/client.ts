@@ -115,11 +115,7 @@ export async function fetchWithExtendedTimeout<T>(
   url: string,
   options: RequestOptions = {}
 ): Promise<T> {
-  const {
-    timeout: timeoutMs = API_CONFIG.timeout,
-    onTimeout,
-    ...fetchOptions
-  } = options
+  const { timeout: timeoutMs = API_CONFIG.timeout, onTimeout, ...fetchOptions } = options
 
   try {
     const controller = new AbortController()

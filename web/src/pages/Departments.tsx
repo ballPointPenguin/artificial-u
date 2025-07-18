@@ -119,7 +119,6 @@ const DepartmentsPage = () => {
           }
         >
           <Show
-            /* eslint-disable-next-line @typescript-eslint/no-non-null-assertion */
             when={departments()?.items && departments()!.items.length > 0}
             fallback={<div class="text-center py-8">No departments found</div>}
           >

@@ -325,7 +325,6 @@ export default function ProfessorDetail() {
                     }
                   >
                     <Show
-                      /* eslint-disable-next-line @typescript-eslint/no-non-null-assertion */
                       when={coursesResource()?.courses && coursesResource()!.courses.length > 0}
                       fallback={
                         <p class="text-muted">

@@ -327,9 +327,7 @@ const CourseDetail: Component = () => {
                           <For each={lecturesData()?.lectures}>
                             {(lecture: LectureBrief) => (
                               <li class="border-b border-parchment-800/30 pb-3">
-                                <h3 class="font-semibold text-parchment-100">
-                                  {lecture.title}
-                                </h3>
+                                <h3 class="font-semibold text-parchment-100">{lecture.title}</h3>
                                 <p class="text-parchment-300 text-sm mt-1">{lecture.description}</p>
                               </li>
                             )}
