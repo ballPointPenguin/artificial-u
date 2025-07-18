@@ -99,16 +99,31 @@ class LectureRepository(BaseRepository):
 
     def list_by_course(self, course_id: int) -> List[Lecture]:
         """
-        List all lectures for a specific course.
+        List all lectures for a specific course, returning only the latest revision for each topic.
 
         Args:
             course_id: ID of the course to get lectures for
 
         Returns:
-            List[Lecture]: List of lectures for the specified course
+            List[Lecture]: List of lectures for the specified course (latest revision per topic)
         """
         with self.get_session() as session:
-            db_lectures = session.query(LectureModel).filter_by(course_id=course_id).all()
+            # Subquery to get the latest revision for each topic
+            latest_revisions = (
+                session.query(
+                    LectureModel.topic_id, func.max(LectureModel.revision).label("max_revision")
+                )
+                .filter(LectureModel.course_id == course_id)
+                .group_by(LectureModel.topic_id)
+                .subquery()
+            )
+
+            # Query to get lectures with the latest revision
+            query = session.query(LectureModel).join(
+                latest_revisions,
+                (LectureModel.topic_id == latest_revisions.c.topic_id)
+                & (LectureModel.revision == latest_revisions.c.max_revision),
+            )
 
             return [
                 Lecture(
@@ -122,35 +137,52 @@ class LectureRepository(BaseRepository):
                     course_id=lecture.course_id,
                     topic_id=lecture.topic_id,
                 )
-                for lecture in db_lectures
+                for lecture in query.all()
             ]
 
     def list_by_topic(self, topic_id: int) -> List[Lecture]:
         """
-        List all lectures for a specific topic.
+        List all lectures for a specific topic, returning only the latest revision.
 
         Args:
             topic_id: ID of the topic to get lectures for
 
         Returns:
-            List[Lecture]: List of lectures for the specified topic
+            List[Lecture]: List containing the latest revision lecture for the specified topic
         """
         with self.get_session() as session:
-            db_lectures = session.query(LectureModel).filter_by(topic_id=topic_id).all()
+            # Get the latest revision for this topic
+            latest_revision = (
+                session.query(func.max(LectureModel.revision))
+                .filter(LectureModel.topic_id == topic_id)
+                .scalar()
+            )
+
+            if latest_revision is None:
+                return []
+
+            # Get the lecture with the latest revision
+            db_lecture = (
+                session.query(LectureModel)
+                .filter(LectureModel.topic_id == topic_id, LectureModel.revision == latest_revision)
+                .first()
+            )
+
+            if not db_lecture:
+                return []
 
             return [
                 Lecture(
-                    id=lecture.id,
-                    revision=lecture.revision,
-                    content=lecture.content,
-                    summary=lecture.summary,
-                    title=lecture.title,
-                    audio_url=lecture.audio_url,
-                    transcript_url=lecture.transcript_url,
-                    course_id=lecture.course_id,
-                    topic_id=lecture.topic_id,
+                    id=db_lecture.id,
+                    revision=db_lecture.revision,
+                    content=db_lecture.content,
+                    summary=db_lecture.summary,
+                    title=db_lecture.title,
+                    audio_url=db_lecture.audio_url,
+                    transcript_url=db_lecture.transcript_url,
+                    course_id=db_lecture.course_id,
+                    topic_id=db_lecture.topic_id,
                 )
-                for lecture in db_lectures
             ]
 
     def count(
@@ -160,7 +192,7 @@ class LectureRepository(BaseRepository):
         search_query: Optional[str] = None,
     ) -> int:
         """
-        Count lectures with filtering.
+        Count lectures with filtering, counting only the latest revision for each topic.
 
         Args:
             course_id: Filter by course ID
@@ -168,10 +200,24 @@ class LectureRepository(BaseRepository):
             search_query: Search query for content/summary/title
 
         Returns:
-            int: Total count of lectures matching the filters
+            int: Total count of latest revision lectures matching the filters
         """
         with self.get_session() as session:
-            query = session.query(LectureModel)
+            # Subquery to get the latest revision for each topic
+            latest_revisions = (
+                session.query(
+                    LectureModel.topic_id, func.max(LectureModel.revision).label("max_revision")
+                )
+                .group_by(LectureModel.topic_id)
+                .subquery()
+            )
+
+            # Query to count lectures with the latest revision
+            query = session.query(LectureModel).join(
+                latest_revisions,
+                (LectureModel.topic_id == latest_revisions.c.topic_id)
+                & (LectureModel.revision == latest_revisions.c.max_revision),
+            )
 
             # Apply filters
             if course_id is not None:
@@ -202,7 +248,8 @@ class LectureRepository(BaseRepository):
         search_query: Optional[str] = None,
     ) -> List[Lecture]:
         """
-        List lectures with filtering and pagination.
+        List lectures with filtering and pagination,
+        returning only the latest revision for each topic.
 
         Args:
             page: Page number (1-indexed)
@@ -212,10 +259,24 @@ class LectureRepository(BaseRepository):
             search_query: Search query for content/summary/title
 
         Returns:
-            List[Lecture]: List of lectures
+            List[Lecture]: List of lectures (latest revision per topic)
         """
         with self.get_session() as session:
-            query = session.query(LectureModel)
+            # Subquery to get the latest revision for each topic
+            latest_revisions = (
+                session.query(
+                    LectureModel.topic_id, func.max(LectureModel.revision).label("max_revision")
+                )
+                .group_by(LectureModel.topic_id)
+                .subquery()
+            )
+
+            # Query to get lectures with the latest revision
+            query = session.query(LectureModel).join(
+                latest_revisions,
+                (LectureModel.topic_id == latest_revisions.c.topic_id)
+                & (LectureModel.revision == latest_revisions.c.max_revision),
+            )
 
             # Apply filters
             if course_id is not None:

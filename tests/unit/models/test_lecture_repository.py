@@ -157,9 +157,18 @@ class TestLectureRepository:
 
     def test_list_by_course(self, lecture_repository, mock_session, sample_lecture_model):
         """Test listing lectures by course."""
-        # Configure mock behavior
+        # Configure mock behavior for subquery
+        subquery_mock = MagicMock()
+        subquery_mock.c.topic_id = MagicMock()
+        subquery_mock.c.max_revision = MagicMock()
+
+        # Configure mock behavior for main query
         query_mock = mock_session.query.return_value
-        query_mock.filter_by.return_value.all.return_value = [sample_lecture_model]
+        query_mock.filter.return_value = query_mock
+        query_mock.group_by.return_value = query_mock
+        query_mock.subquery.return_value = subquery_mock
+        query_mock.join.return_value = query_mock
+        query_mock.all.return_value = [sample_lecture_model]
 
         # Call method
         result = lecture_repository.list_by_course(1)
@@ -175,14 +184,16 @@ class TestLectureRepository:
         assert result[0].transcript_url == "test_transcript_url"
         assert result[0].course_id == 1
         assert result[0].topic_id == 1
-        mock_session.query.assert_called_once_with(LectureModel)
-        query_mock.filter_by.assert_called_once_with(course_id=1)
+        # Verify that query was called multiple times (for subquery and main query)
+        assert mock_session.query.call_count >= 2
 
     def test_list_by_topic(self, lecture_repository, mock_session, sample_lecture_model):
         """Test listing lectures by topic."""
-        # Configure mock behavior
+        # Configure mock behavior for max revision query
         query_mock = mock_session.query.return_value
-        query_mock.filter_by.return_value.all.return_value = [sample_lecture_model]
+        query_mock.filter.return_value = query_mock
+        query_mock.scalar.return_value = 1  # Latest revision is 1
+        query_mock.first.return_value = sample_lecture_model
 
         # Call method
         result = lecture_repository.list_by_topic(1)
@@ -198,13 +209,25 @@ class TestLectureRepository:
         assert result[0].transcript_url == "test_transcript_url"
         assert result[0].course_id == 1
         assert result[0].topic_id == 1
-        mock_session.query.assert_called_once_with(LectureModel)
-        query_mock.filter_by.assert_called_once_with(topic_id=1)
+        # Verify that query was called multiple times (for max revision and main query)
+        assert mock_session.query.call_count >= 2
 
     def test_list(self, lecture_repository, mock_session, sample_lecture_model):
         """Test listing all lectures."""
-        # Configure mock behavior
+        # Configure mock behavior for subquery
+        subquery_mock = MagicMock()
+        subquery_mock.c.topic_id = MagicMock()
+        subquery_mock.c.max_revision = MagicMock()
+
+        # Configure mock behavior for main query
         query_mock = mock_session.query.return_value
+        query_mock.filter.return_value = query_mock
+        query_mock.group_by.return_value = query_mock
+        query_mock.subquery.return_value = subquery_mock
+        query_mock.join.return_value = query_mock
+        query_mock.order_by.return_value = query_mock
+        query_mock.offset.return_value = query_mock
+        query_mock.limit.return_value = query_mock
         query_mock.all.return_value = [sample_lecture_model]
 
         # Call method
@@ -221,13 +244,25 @@ class TestLectureRepository:
         assert result[0].transcript_url == "test_transcript_url"
         assert result[0].course_id == 1
         assert result[0].topic_id == 1
-        mock_session.query.assert_called_once_with(LectureModel)
+        # Verify that query was called multiple times (for subquery and main query)
+        assert mock_session.query.call_count >= 2
 
     def test_list_with_filters(self, lecture_repository, mock_session, sample_lecture_model):
         """Test listing lectures with filters."""
-        # Configure mock behavior
+        # Configure mock behavior for subquery
+        subquery_mock = MagicMock()
+        subquery_mock.c.topic_id = MagicMock()
+        subquery_mock.c.max_revision = MagicMock()
+
+        # Configure mock behavior for main query
         query_mock = mock_session.query.return_value
         query_mock.filter.return_value = query_mock
+        query_mock.group_by.return_value = query_mock
+        query_mock.subquery.return_value = subquery_mock
+        query_mock.join.return_value = query_mock
+        query_mock.order_by.return_value = query_mock
+        query_mock.offset.return_value = query_mock
+        query_mock.limit.return_value = query_mock
         query_mock.all.return_value = [sample_lecture_model]
 
         # Call method
@@ -244,7 +279,8 @@ class TestLectureRepository:
         assert result[0].transcript_url == "test_transcript_url"
         assert result[0].course_id == 1
         assert result[0].topic_id == 1
-        mock_session.query.assert_called_once_with(LectureModel)
+        # Verify that query was called multiple times (for subquery and main query)
+        assert mock_session.query.call_count >= 2
 
     def test_update(self, lecture_repository, mock_session, sample_lecture, sample_lecture_model):
         """Test updating a lecture."""
@@ -364,3 +400,83 @@ class TestLectureRepository:
         assert result == 2
         mock_query.filter.assert_called()
         mock_query.count.assert_called_once()
+
+    def test_list_by_course_only_latest_revision(self, lecture_repository, mock_session):
+        """Test that list_by_course only returns the latest revision for each topic."""
+        # Create mock lectures with different revisions for the same topic
+        lecture1 = MagicMock()
+        lecture1.id = 1
+        lecture1.revision = 1
+        lecture1.content = "Old Content"
+        lecture1.summary = "Old Summary"
+        lecture1.title = "Old Title"
+        lecture1.audio_url = "old_audio_url"
+        lecture1.transcript_url = "old_transcript_url"
+        lecture1.course_id = 1
+        lecture1.topic_id = 1
+
+        lecture2 = MagicMock()
+        lecture2.id = 2
+        lecture2.revision = 2
+        lecture2.content = "New Content"
+        lecture2.summary = "New Summary"
+        lecture2.title = "New Title"
+        lecture2.audio_url = "new_audio_url"
+        lecture2.transcript_url = "new_transcript_url"
+        lecture2.course_id = 1
+        lecture2.topic_id = 1
+
+        # Configure mock behavior for subquery
+        subquery_mock = MagicMock()
+        subquery_mock.c.topic_id = MagicMock()
+        subquery_mock.c.max_revision = MagicMock()
+
+        # Configure mock behavior for main query
+        query_mock = mock_session.query.return_value
+        query_mock.filter.return_value = query_mock
+        query_mock.group_by.return_value = query_mock
+        query_mock.subquery.return_value = subquery_mock
+        query_mock.join.return_value = query_mock
+        query_mock.all.return_value = [lecture2]  # Only return the latest revision
+
+        # Call method
+        result = lecture_repository.list_by_course(1)
+
+        # Verify
+        assert len(result) == 1
+        assert result[0].id == 2  # Should be the latest revision
+        assert result[0].revision == 2
+        assert result[0].content == "New Content"
+        assert result[0].title == "New Title"
+        assert result[0].topic_id == 1
+
+    def test_list_by_topic_only_latest_revision(self, lecture_repository, mock_session):
+        """Test that list_by_topic only returns the latest revision."""
+        # Create mock lecture with latest revision
+        latest_lecture = MagicMock()
+        latest_lecture.id = 2
+        latest_lecture.revision = 2
+        latest_lecture.content = "Latest Content"
+        latest_lecture.summary = "Latest Summary"
+        latest_lecture.title = "Latest Title"
+        latest_lecture.audio_url = "latest_audio_url"
+        latest_lecture.transcript_url = "latest_transcript_url"
+        latest_lecture.course_id = 1
+        latest_lecture.topic_id = 1
+
+        # Configure mock behavior for max revision query
+        query_mock = mock_session.query.return_value
+        query_mock.filter.return_value = query_mock
+        query_mock.scalar.return_value = 2  # Latest revision is 2
+        query_mock.first.return_value = latest_lecture
+
+        # Call method
+        result = lecture_repository.list_by_topic(1)
+
+        # Verify
+        assert len(result) == 1
+        assert result[0].id == 2
+        assert result[0].revision == 2
+        assert result[0].content == "Latest Content"
+        assert result[0].title == "Latest Title"
+        assert result[0].topic_id == 1

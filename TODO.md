@@ -3,10 +3,11 @@
 - [x] Add Title to Lectures
 - [x] Add JSONB content to Topics
 - [x] Generate lecture content
+- [x] Ensure lecture revision handling
 - [ ] Generate lecture summary
-- [ ] Ensure lecture revision handling
 - [ ] Generate lecture audio
 - [ ] Generate single topic
+- [ ] Manage multiple async generations
 - [ ] Preview and modify professor voices
 - [ ] Enable structured imports of syllabi
 - [ ] Content checking for user input (toxicity, stupidity, typos)
