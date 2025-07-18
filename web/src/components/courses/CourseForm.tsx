@@ -38,7 +38,7 @@ const CourseForm: Component<CourseFormProps> = (props) => {
     description: '',
     lectures_per_week: null,
     total_weeks: null,
-    generate_prompt: '',
+    freeform_prompt: '',
   })
 
   const [validationErrors, setValidationErrors] = createSignal<Record<string, string>>({})
@@ -59,7 +59,7 @@ const CourseForm: Component<CourseFormProps> = (props) => {
         description: c.description || '',
         lectures_per_week: c.lectures_per_week,
         total_weeks: c.total_weeks,
-        generate_prompt: '', // Reset generate prompt on edit
+        freeform_prompt: '', // Reset generate prompt on edit
       })
     }
   })
@@ -153,7 +153,7 @@ const CourseForm: Component<CourseFormProps> = (props) => {
         ...(currentData.level && { level: currentData.level }),
         // Let credits, description etc. be generated if not filled
       },
-      ...(currentData.generate_prompt && { freeform_prompt: currentData.generate_prompt }),
+      ...(currentData.freeform_prompt && { freeform_prompt: currentData.freeform_prompt }),
     }
 
     // Remove partial_attributes if it's empty
@@ -193,7 +193,7 @@ const CourseForm: Component<CourseFormProps> = (props) => {
       description: '',
       lectures_per_week: null,
       total_weeks: null,
-      generate_prompt: '',
+      freeform_prompt: '',
     })
     setValidationErrors({})
     setGenerateError(null)
@@ -338,16 +338,16 @@ const CourseForm: Component<CourseFormProps> = (props) => {
 
       <FormField
         label="AI Generation Prompt (Optional)"
-        name="generate_prompt"
+        name="freeform_prompt"
         helperText="Provide a freeform prompt to guide AI generation for topics, detailed description, etc."
-        error={validationErrors().generate_prompt}
+        error={validationErrors().freeform_prompt}
       >
         <Textarea
-          name="generate_prompt"
+          name="freeform_prompt"
           rows={3}
-          value={formData().generate_prompt || ''}
+          value={formData().freeform_prompt || ''}
           onChange={(v) => {
-            handleInputChange('generate_prompt', v)
+            handleInputChange('freeform_prompt', v)
           }}
           disabled={isDisabled()}
         />

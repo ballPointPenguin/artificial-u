@@ -7,9 +7,11 @@
 - [ ] Generate lecture summary
 - [ ] Generate lecture audio
 - [ ] Generate single topic
+- [ ] Integrate freeform prompts for everything
 - [ ] Manage multiple async generations
 - [ ] Preview and modify professor voices
 - [ ] Enable structured imports of syllabi
+- [ ] Enable import/export of everything
 - [ ] Content checking for user input (toxicity, stupidity, typos)
 - [ ] Spell checking for user input
 - [ ] Normalize user input

@@ -34,6 +34,7 @@ export interface ProfessorFormData {
   background?: string
   personality?: string
   image_url?: string
+  freeform_prompt?: string
 }
 
 interface ProfessorFormProps {
@@ -59,6 +60,7 @@ const ProfessorForm: Component<ProfessorFormProps> = (props) => {
     background: '',
     personality: '',
     image_url: '', // Should not be directly edited here, typically set by other means
+    freeform_prompt: '',
   })
 
   const [validationErrors, setValidationErrors] = createSignal<Record<string, string>>({})
@@ -80,6 +82,7 @@ const ProfessorForm: Component<ProfessorFormProps> = (props) => {
       background: p?.background || '',
       personality: p?.personality || '',
       image_url: p?.image_url || '', // Populate for reference, but not editable field
+      freeform_prompt: '',
     })
   })
 
@@ -191,6 +194,7 @@ const ProfessorForm: Component<ProfessorFormProps> = (props) => {
         Object.keys(partialAttributes).length > 0
           ? (partialAttributes as Record<string, unknown>)
           : undefined,
+      freeform_prompt: currentData.freeform_prompt || undefined,
     }
 
     try {
@@ -240,6 +244,7 @@ const ProfessorForm: Component<ProfessorFormProps> = (props) => {
       background: '',
       personality: '',
       image_url: '',
+      freeform_prompt: '',
     })
     setValidationErrors({})
     setGenerateError(null)
@@ -393,6 +398,23 @@ const ProfessorForm: Component<ProfessorFormProps> = (props) => {
           />
         </FormField>
       </div>
+
+      <FormField
+        label="AI Generation Prompt (Optional)"
+        name="freeform_prompt"
+        helperText="Provide a freeform prompt to guide AI generation for personality, background, teaching style, etc."
+        error={validationErrors().freeform_prompt}
+      >
+        <Textarea
+          name="freeform_prompt"
+          rows={3}
+          value={formData().freeform_prompt || ''}
+          onChange={(v) => {
+            handleInputChange('freeform_prompt', v)
+          }}
+          disabled={isDisabled()}
+        />
+      </FormField>
 
       <Show when={props.error}>
         <Alert variant="danger" class="my-4">

@@ -538,12 +538,18 @@ class ProfessorService:
         if department_name is not None:
             combined_attrs["department_name"] = department_name
 
+        # Extract freeform prompt if present
+        freeform_prompt = combined_attrs.pop("freeform_prompt", None)
+
         self.logger.debug(f"Combined attributes: {combined_attrs}")
+        if freeform_prompt:
+            self.logger.debug(f"Freeform prompt: {freeform_prompt}")
 
         # Pass potentially None values to the prompt function
         return get_professor_prompt(
             existing_professors=existing_profs_data,
             partial_attributes=combined_attrs,
+            freeform_prompt=freeform_prompt,
         )
 
     def _parse_generated_professor_profile(self, generated_content: str) -> Dict[str, Any]:
