@@ -1,4 +1,4 @@
-import { For, Show, createEffect, createResource } from 'solid-js'
+import { createEffect, createResource, For, Show } from 'solid-js'
 import { professorService } from '../../api/services/professor-service.js'
 import type { Professor } from '../../api/types.js'
 import ProfessorListItem from '../professors/ProfessorListItem.js'

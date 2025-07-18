@@ -1,11 +1,196 @@
 import { A, useNavigate, useParams } from '@solidjs/router'
-import { type Component, For, Show, createResource, createSignal } from 'solid-js'
+import { type Component, createResource, createSignal, For, Show } from 'solid-js'
 import { courseService } from '../api/services/course-service.js'
 import { topicService } from '../api/services/topic-service.js'
-import type { CourseUpdate, LectureBrief, Topic, TopicList } from '../api/types.js'
+import type {
+  CourseUpdate,
+  DepartmentBrief,
+  LectureBrief,
+  ProfessorBrief,
+  TopicList,
+} from '../api/types.js'
 import CourseForm from '../components/courses/CourseForm.jsx'
 import type { CourseFormData } from '../components/courses/types.jsx'
 import { Alert, Button } from '../components/ui'
+
+// Department Info Component
+const DepartmentInfo: Component<{
+  departmentData: () => DepartmentBrief | undefined
+  loading: boolean
+}> = (props) => {
+  return (
+    <div class="arcane-card">
+      <h2 class="text-xl font-display text-parchment-100 mb-4 border-b border-parchment-800/30 pb-2">
+        Department
+      </h2>
+      <Show
+        when={!props.loading}
+        fallback={<div class="text-parchment-400 font-serif">Loading department...</div>}
+      >
+        <Show
+          when={props.departmentData()}
+          fallback={<div class="text-parchment-400 font-serif">Department info not available.</div>}
+        >
+          {(dept) => {
+            const department = dept()
+            return (
+              <div class="font-serif">
+                <A
+                  href={`/departments/${String(department.id)}`}
+                  class="text-mystic-400 hover:text-mystic-300 transition-colors font-medium"
+                >
+                  {department.name} ({department.code})
+                </A>
+                <p class="text-parchment-300 mt-1">Faculty: {department.faculty}</p>
+              </div>
+            )
+          }}
+        </Show>
+      </Show>
+    </div>
+  )
+}
+
+// Professor Info Component
+const ProfessorInfo: Component<{
+  professorData: () => ProfessorBrief | undefined
+  loading: boolean
+}> = (props) => {
+  return (
+    <div class="arcane-card">
+      <h2 class="text-xl font-display text-parchment-100 mb-4 border-b border-parchment-800/30 pb-2">
+        Professor
+      </h2>
+      <Show
+        when={!props.loading}
+        fallback={<div class="text-parchment-400 font-serif">Loading professor...</div>}
+      >
+        <Show
+          when={props.professorData()}
+          fallback={<div class="text-parchment-400 font-serif">Professor info not available.</div>}
+        >
+          {(prof) => {
+            const professor = prof()
+            return (
+              <div class="font-serif">
+                <A
+                  href={`/professors/${String(professor.id)}`}
+                  class="text-mystic-400 hover:text-mystic-300 transition-colors font-medium"
+                >
+                  {professor.name}, {professor.title}
+                </A>
+                <p class="text-parchment-300 pt-3">{professor.specialization}</p>
+              </div>
+            )
+          }}
+        </Show>
+      </Show>
+    </div>
+  )
+}
+
+// Lectures List Component
+const LecturesList: Component<{
+  lecturesData: () => { lectures: LectureBrief[] } | undefined
+  loading: boolean
+}> = (props) => {
+  // Helper function to safely check if lectures exist
+  const hasLectures = () => {
+    const data = props.lecturesData()
+    return data && Array.isArray(data.lectures) && data.lectures.length > 0
+  }
+
+  return (
+    <div class="arcane-card mt-8">
+      <h2 class="text-xl font-display text-parchment-100 mb-4 border-b border-parchment-800/30 pb-2">
+        Lectures
+      </h2>
+      <Show
+        when={!props.loading}
+        fallback={<div class="text-parchment-400 font-serif">Loading lectures...</div>}
+      >
+        <Show
+          when={hasLectures()}
+          fallback={<div class="text-parchment-400 font-serif">No lectures available.</div>}
+        >
+          <ul class="space-y-4">
+            <For each={props.lecturesData()?.lectures}>
+              {(lecture: LectureBrief) => (
+                <li class="border-b border-parchment-800/30 pb-3">
+                  <h3 class="font-semibold text-parchment-100">{lecture.title}</h3>
+                  <p class="text-parchment-300 text-sm mt-1">{lecture.description}</p>
+                </li>
+              )}
+            </For>
+          </ul>
+        </Show>
+      </Show>
+    </div>
+  )
+}
+
+// Topics List Component
+const TopicsList: Component<{
+  topicsData: () => TopicList | undefined
+  courseId: number
+  loading: boolean
+}> = (props) => {
+  return (
+    <Show
+      when={!props.loading}
+      fallback={
+        <div class="arcane-card p-6 text-center text-parchment-400 font-serif">
+          Loading topics...
+        </div>
+      }
+    >
+      <Show
+        when={props.topicsData() && (props.topicsData() as TopicList).items.length > 0}
+        fallback={
+          <div class="arcane-card p-6 text-center text-parchment-400 font-serif">
+            No topics defined for this course.
+          </div>
+        }
+      >
+        {(() => {
+          const topics = (props.topicsData() as TopicList).items
+          // Sort topics by week, then by order within each week
+          const sortedTopics = topics.sort((a, b) => {
+            if (a.week !== b.week) {
+              return a.week - b.week
+            }
+            return a.order - b.order
+          })
+
+          return (
+            <ul class="space-y-4">
+              <For each={sortedTopics}>
+                {(topic) => (
+                  <li class="arcane-card p-4">
+                    <div class="flex items-center justify-between">
+                      <div>
+                        <p class="text-parchment-300 text-sm mt-1">
+                          Week {topic.week}
+                          <Show when={topic.order > 1}> • Topic {topic.order}</Show>
+                        </p>
+                        <A
+                          href={`/courses/${String(props.courseId)}/topics/${String(topic.id)}`}
+                          class="text-parchment-100 font-serif hover:text-primary transition-colors duration-200"
+                        >
+                          {topic.title}
+                        </A>
+                      </div>
+                    </div>
+                  </li>
+                )}
+              </For>
+            </ul>
+          )
+        })()}
+      </Show>
+    </Show>
+  )
+}
 
 const CourseDetail: Component = () => {
   const params = useParams()
@@ -43,12 +228,6 @@ const CourseDetail: Component = () => {
     () => (isValidId ? courseId : null),
     (id) => topicService.listTopicsByCourse(id, 1, 100)
   )
-
-  // Helper function to safely check if lectures exist
-  const hasLectures = () => {
-    const data = lecturesData()
-    return data && Array.isArray(data.lectures) && data.lectures.length > 0
-  }
 
   // Handler for course update form submission
   const handleUpdateCourse = async (formData: CourseFormData) => {
@@ -228,114 +407,19 @@ const CourseDetail: Component = () => {
 
                     {/* Department and Professor Section */}
                     <div class="space-y-6">
-                      {/* Department Info */}
-                      <div class="arcane-card">
-                        <h2 class="text-xl font-display text-parchment-100 mb-4 border-b border-parchment-800/30 pb-2">
-                          Department
-                        </h2>
-                        <Show
-                          when={!departmentData.loading}
-                          fallback={
-                            <div class="text-parchment-400 font-serif">Loading department...</div>
-                          }
-                        >
-                          <Show
-                            when={departmentData()}
-                            fallback={
-                              <div class="text-parchment-400 font-serif">
-                                Department info not available.
-                              </div>
-                            }
-                          >
-                            {(dept) => {
-                              const department = dept()
-                              return (
-                                <div class="font-serif">
-                                  <A
-                                    href={`/departments/${String(department.id)}`}
-                                    class="text-mystic-400 hover:text-mystic-300 transition-colors font-medium"
-                                  >
-                                    {department.name} ({department.code})
-                                  </A>
-                                  <p class="text-parchment-300 mt-1">
-                                    Faculty: {department.faculty}
-                                  </p>
-                                </div>
-                              )
-                            }}
-                          </Show>
-                        </Show>
-                      </div>
-
-                      {/* Professor Info */}
-                      <div class="arcane-card">
-                        <h2 class="text-xl font-display text-parchment-100 mb-4 border-b border-parchment-800/30 pb-2">
-                          Professor
-                        </h2>
-                        <Show
-                          when={!professorData.loading}
-                          fallback={
-                            <div class="text-parchment-400 font-serif">Loading professor...</div>
-                          }
-                        >
-                          <Show
-                            when={professorData()}
-                            fallback={
-                              <div class="text-parchment-400 font-serif">
-                                Professor info not available.
-                              </div>
-                            }
-                          >
-                            {(prof) => {
-                              const professor = prof()
-                              return (
-                                <div class="font-serif">
-                                  <A
-                                    href={`/professors/${String(professor.id)}`}
-                                    class="text-mystic-400 hover:text-mystic-300 transition-colors font-medium"
-                                  >
-                                    {professor.name}, {professor.title}
-                                  </A>
-                                  <p class="text-parchment-300 pt-3">{professor.specialization}</p>
-                                </div>
-                              )
-                            }}
-                          </Show>
-                        </Show>
-                      </div>
+                      <DepartmentInfo
+                        departmentData={departmentData}
+                        loading={departmentData.loading}
+                      />
+                      <ProfessorInfo
+                        professorData={professorData}
+                        loading={professorData.loading}
+                      />
                     </div>
                   </div>
 
                   {/* Lectures Section */}
-                  <div class="arcane-card mt-8">
-                    <h2 class="text-xl font-display text-parchment-100 mb-4 border-b border-parchment-800/30 pb-2">
-                      Lectures
-                    </h2>
-                    <Show
-                      when={!lecturesData.loading}
-                      fallback={
-                        <div class="text-parchment-400 font-serif">Loading lectures...</div>
-                      }
-                    >
-                      <Show
-                        when={hasLectures()}
-                        fallback={
-                          <div class="text-parchment-400 font-serif">No lectures available.</div>
-                        }
-                      >
-                        <ul class="space-y-4">
-                          <For each={lecturesData()?.lectures}>
-                            {(lecture: LectureBrief) => (
-                              <li class="border-b border-parchment-800/30 pb-3">
-                                <h3 class="font-semibold text-parchment-100">{lecture.title}</h3>
-                                <p class="text-parchment-300 text-sm mt-1">{lecture.description}</p>
-                              </li>
-                            )}
-                          </For>
-                        </ul>
-                      </Show>
-                    </Show>
-                  </div>
+                  <LecturesList lecturesData={lecturesData} loading={lecturesData.loading} />
 
                   {/* Topics Section */}
                   <div class="mt-8">
@@ -345,71 +429,11 @@ const CourseDetail: Component = () => {
                         <A href={`/courses/${String(courseId)}/topics`}>Edit Topics</A>
                       </Button>
                     </div>
-                    <Show
-                      when={!topicsData.loading}
-                      fallback={
-                        <div class="arcane-card p-6 text-center text-parchment-400 font-serif">
-                          Loading topics...
-                        </div>
-                      }
-                    >
-                      <Show
-                        when={topicsData() && (topicsData() as TopicList).items.length > 0}
-                        fallback={
-                          <div class="arcane-card p-6 text-center text-parchment-400 font-serif">
-                            No topics defined for this course.
-                          </div>
-                        }
-                      >
-                        {(() => {
-                          const topics = (topicsData() as TopicList).items
-                          const topicsByWeek = topics.reduce<Record<number, Topic[]>>(
-                            (acc, topic: Topic) => {
-                              acc[topic.week] = acc[topic.week] ?? []
-                              acc[topic.week].push(topic)
-                              return acc
-                            },
-                            {}
-                          )
-
-                          for (const weekKey in topicsByWeek) {
-                            topicsByWeek[Number(weekKey)].sort((a, b) => a.order - b.order)
-                          }
-
-                          const sortedWeeks = Object.keys(topicsByWeek)
-                            .map(Number)
-                            .sort((a, b) => a - b)
-
-                          return (
-                            <ul class="space-y-4">
-                              <For each={sortedWeeks}>
-                                {(weekNumber) => (
-                                  <li class="arcane-card p-4">
-                                    <div class="font-semibold text-parchment-200 mb-2">
-                                      Week {weekNumber}
-                                    </div>
-                                    <ul class="ml-4 list-disc space-y-1">
-                                      <For each={topicsByWeek[weekNumber]}>
-                                        {(topic) => (
-                                          <li class="text-parchment-100 font-serif">
-                                            <A
-                                              href={`/courses/${String(courseId)}/topics/${String(topic.id)}`}
-                                              class="hover:text-primary transition-colors duration-200"
-                                            >
-                                              {topic.title}
-                                            </A>
-                                          </li>
-                                        )}
-                                      </For>
-                                    </ul>
-                                  </li>
-                                )}
-                              </For>
-                            </ul>
-                          )
-                        })()}
-                      </Show>
-                    </Show>
+                    <TopicsList
+                      topicsData={topicsData}
+                      courseId={courseId}
+                      loading={topicsData.loading}
+                    />
                   </div>
                 </Show>
               </div>

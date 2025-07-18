@@ -1,4 +1,4 @@
-import { createEffect, createSignal, createRoot } from 'solid-js'
+import { createEffect, createRoot, createSignal } from 'solid-js'
 import { createStore } from 'solid-js/store'
 
 // Theme types

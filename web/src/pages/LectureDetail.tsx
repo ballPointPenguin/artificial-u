@@ -1,11 +1,99 @@
 import { A, useParams } from '@solidjs/router'
-import { Show, createResource, createSignal } from 'solid-js'
-import { lectureService } from '../api/services/lecture-service.js'
+import { type Component, createResource, createSignal, Show } from 'solid-js'
 import { courseService } from '../api/services/course-service.js'
+import { lectureService } from '../api/services/lecture-service.js'
 import { topicService } from '../api/services/topic-service.js'
-import type { LectureUpdate } from '../api/types.js'
+import type { Lecture, LectureUpdate } from '../api/types.js'
 import { LectureForm } from '../components/lectures/LectureForm.jsx'
-import { Button, Alert } from '../components/ui'
+import { Alert, Button } from '../components/ui'
+
+// Lecture Detail View Component
+const LectureDetailView: Component<{
+  lecture: Lecture
+  onEdit: () => void
+}> = (props) => {
+  return (
+    <div class="arcane-card">
+      <div class="flex justify-between items-start mb-6">
+        <div>
+          <h1 class="text-3xl font-display text-parchment-100 mb-2">{props.lecture.title}</h1>
+          <p class="text-parchment-300">Revision {props.lecture.revision}</p>
+        </div>
+        <Button variant="primary" onClick={props.onEdit}>
+          Edit Lecture
+        </Button>
+      </div>
+
+      {/* Lecture Content */}
+      <Show when={props.lecture.content}>
+        <div class="border-t border-parchment-800/30 pt-6">
+          <div class="prose prose-invert max-w-none">
+            <pre class="whitespace-pre-wrap text-parchment-200 font-serif">
+              {props.lecture.content}
+            </pre>
+          </div>
+        </div>
+      </Show>
+
+      <Show when={!props.lecture.content}>
+        <div class="border-t border-parchment-800/30 pt-6">
+          <p class="text-parchment-400 font-serif italic">No content defined for this lecture.</p>
+        </div>
+      </Show>
+
+      {/* Lecture Metadata */}
+      <LectureMetadata lecture={props.lecture} />
+    </div>
+  )
+}
+
+// Lecture Metadata Component
+const LectureMetadata: Component<{
+  lecture: Lecture
+}> = (props) => {
+  return (
+    <Show when={props.lecture.summary || props.lecture.audio_url || props.lecture.transcript_url}>
+      <div class="border-t border-parchment-800/30 pt-6 mt-6">
+        <h3 class="text-lg font-semibold text-parchment-200 mb-4">Additional Resources</h3>
+
+        <Show when={props.lecture.summary}>
+          <div class="mb-4">
+            <h4 class="text-md font-medium text-parchment-300 mb-2">Summary</h4>
+            <p class="text-parchment-400 font-serif">{props.lecture.summary}</p>
+          </div>
+        </Show>
+
+        <Show when={props.lecture.audio_url}>
+          <div class="mb-4">
+            <h4 class="text-md font-medium text-parchment-300 mb-2">Audio</h4>
+            <a
+              href={props.lecture.audio_url || undefined}
+              target="_blank"
+              rel="noopener noreferrer"
+              class="text-mystic-500 hover:text-mystic-300"
+            >
+              Listen to Audio
+            </a>
+          </div>
+        </Show>
+
+        <Show when={props.lecture.transcript_url}>
+          <div class="mb-4">
+            <h4 class="text-md font-medium text-parchment-300 mb-2">Transcript</h4>
+            <a
+              href={props.lecture.transcript_url || undefined}
+              target="_blank"
+              rel="noopener noreferrer"
+              class="text-mystic-500 hover:text-mystic-300"
+            >
+              View Transcript
+            </a>
+          </div>
+        </Show>
+      </div>
+    </Show>
+  )
+}
 
 const LectureDetail = () => {
   const params = useParams()
@@ -120,88 +208,7 @@ const LectureDetail = () => {
                     }
                   >
                     {/* Lecture Detail View */}
-                    <div class="arcane-card">
-                      <div class="flex justify-between items-start mb-6">
-                        <div>
-                          <h1 class="text-3xl font-display text-parchment-100 mb-2">
-                            {lectureData.title}
-                          </h1>
-                          <p class="text-parchment-300">Revision {lectureData.revision}</p>
-                        </div>
-                        <Button variant="primary" onClick={() => setIsEditing(true)}>
-                          Edit Lecture
-                        </Button>
-                      </div>
-
-                      {/* Lecture Content */}
-                      <Show when={lectureData.content}>
-                        <div class="border-t border-parchment-800/30 pt-6">
-                          <div class="prose prose-invert max-w-none">
-                            <pre class="whitespace-pre-wrap text-parchment-200 font-serif">
-                              {lectureData.content}
-                            </pre>
-                          </div>
-                        </div>
-                      </Show>
-
-                      <Show when={!lectureData.content}>
-                        <div class="border-t border-parchment-800/30 pt-6">
-                          <p class="text-parchment-400 font-serif italic">
-                            No content defined for this lecture.
-                          </p>
-                        </div>
-                      </Show>
-
-                      {/* Lecture Metadata */}
-                      <Show
-                        when={
-                          lectureData.summary || lectureData.audio_url || lectureData.transcript_url
-                        }
-                      >
-                        <div class="border-t border-parchment-800/30 pt-6 mt-6">
-                          <h3 class="text-lg font-semibold text-parchment-200 mb-4">
-                            Additional Resources
-                          </h3>
-
-                          <Show when={lectureData.summary}>
-                            <div class="mb-4">
-                              <h4 class="text-md font-medium text-parchment-300 mb-2">Summary</h4>
-                              <p class="text-parchment-400 font-serif">{lectureData.summary}</p>
-                            </div>
-                          </Show>
-
-                          <Show when={lectureData.audio_url}>
-                            <div class="mb-4">
-                              <h4 class="text-md font-medium text-parchment-300 mb-2">Audio</h4>
-                              <a
-                                href={lectureData.audio_url || undefined}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                class="text-mystic-500 hover:text-mystic-300"
-                              >
-                                Listen to Audio
-                              </a>
-                            </div>
-                          </Show>
-
-                          <Show when={lectureData.transcript_url}>
-                            <div class="mb-4">
-                              <h4 class="text-md font-medium text-parchment-300 mb-2">
-                                Transcript
-                              </h4>
-                              <a
-                                href={lectureData.transcript_url || undefined}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                class="text-mystic-500 hover:text-mystic-300"
-                              >
-                                View Transcript
-                              </a>
-                            </div>
-                          </Show>
-                        </div>
-                      </Show>
-                    </div>
+                    <LectureDetailView lecture={lectureData} onEdit={() => setIsEditing(true)} />
                   </Show>
                 </div>
               )}

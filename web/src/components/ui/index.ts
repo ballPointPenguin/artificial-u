@@ -1,7 +1,7 @@
 export { Alert } from './Alert.jsx'
 export { Badge } from './Badge.jsx'
 export { Button } from './Button.jsx'
-export { Card, CardHeader, CardContent, CardFooter } from './Card.jsx'
+export { Card, CardContent, CardFooter, CardHeader } from './Card.jsx'
 export { default as ConfirmationModal } from './ConfirmationModal.jsx'
 export { default as Form } from './Form.jsx'
 export { default as FormActions } from './FormActions.jsx'
@@ -10,9 +10,8 @@ export { Hero } from './Hero.jsx'
 export { default as Input } from './Input.jsx'
 export { LoadingSpinner } from './LoadingSpinner.jsx'
 export { MagicButton } from './MagicButton.jsx'
+// Ensure SelectOption is also exported if it's meant to be used externally
+export type { SelectOption } from './Select.jsx'
 export { default as Select } from './Select.jsx'
 export { default as Textarea } from './Textarea.jsx'
 export { Tooltip } from './Tooltip.jsx'
-
-// Ensure SelectOption is also exported if it's meant to be used externally
-export type { SelectOption } from './Select.jsx'

@@ -1,4 +1,5 @@
 import { type Component, createSignal } from 'solid-js'
+import type { SelectOption } from '../components/ui'
 import {
   Alert,
   Badge,
@@ -17,7 +18,6 @@ import {
   Textarea,
   Tooltip,
 } from '../components/ui'
-import type { SelectOption } from '../components/ui'
 
 const Stylebook: Component = () => {
   const [inputValue, setInputValue] = createSignal('')

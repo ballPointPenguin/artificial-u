@@ -1,5 +1,5 @@
 import type { Component } from 'solid-js'
-import { Show, createEffect, createResource, createSignal } from 'solid-js'
+import { createEffect, createResource, createSignal, Show } from 'solid-js'
 import { courseService } from '../../api/services/course-service.js'
 import { departmentService } from '../../api/services/department-service.js'
 import { professorService } from '../../api/services/professor-service.js'

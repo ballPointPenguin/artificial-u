@@ -1,5 +1,5 @@
-import { Button } from './Button'
 import { A } from '@solidjs/router'
+import { Button } from './Button'
 
 interface HeroProps {
   title?: string

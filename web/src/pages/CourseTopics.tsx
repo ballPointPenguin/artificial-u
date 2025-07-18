@@ -1,5 +1,5 @@
 import { A, useParams } from '@solidjs/router'
-import { type Component, Show, createResource } from 'solid-js'
+import { type Component, createResource, Show } from 'solid-js'
 import { courseService } from '../api/services/course-service.js'
 import { CourseTopicsList } from '../components/topics/CourseTopicsList.jsx'
 

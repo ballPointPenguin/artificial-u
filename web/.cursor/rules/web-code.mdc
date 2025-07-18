@@ -27,30 +27,6 @@ alwaysApply: false
 - TailwindCSS (v4) style utilities
 - PostCSS Preset Env for modern CSS syntax
 
-## MCP Tools (subject to change)
-
-### Chrome
-
-- start-chrome
-- interact-with-chrome
-- curl
-- curl-manual
-
-### Context7
-
-- get-library-docs
-- resolve-library-id
-
-### Git
-
-- git
-
-### Perplexity
-
-- perplexity_ask
-- perplexity_reason
-- perplexity_research
-
 ## Web Server
 
 - Usually vite is serving this app at my <http://localhost:5173>

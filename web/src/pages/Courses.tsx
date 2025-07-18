@@ -1,5 +1,5 @@
 import { A } from '@solidjs/router'
-import { type Component, For, Show, createResource, createSignal } from 'solid-js'
+import { type Component, createResource, createSignal, For, Show } from 'solid-js'
 import { courseService } from '../api/services/course-service.js'
 import type { Course, CourseCreate } from '../api/types.js'
 import CourseForm from '../components/courses/CourseForm.jsx'

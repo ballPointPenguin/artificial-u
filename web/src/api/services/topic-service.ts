@@ -1,6 +1,6 @@
 import { httpClient } from '../client.js'
 import { ENDPOINTS } from '../config.js'
-import type { Topic, TopicCreate, TopicList, TopicUpdate, TopicsGenerateRequest } from '../types.js'
+import type { Topic, TopicCreate, TopicList, TopicsGenerateRequest, TopicUpdate } from '../types.js'
 
 export const topicService = {
   createTopic: (data: TopicCreate): Promise<Topic> => {

@@ -9,8 +9,8 @@ import type {
   ProfessorCreate,
   ProfessorGenerateRequest,
   ProfessorLecturesResponse,
-  ProfessorUpdate,
   ProfessorsListResponse,
+  ProfessorUpdate,
 } from '../types.js'
 
 interface ListProfessorsParams {

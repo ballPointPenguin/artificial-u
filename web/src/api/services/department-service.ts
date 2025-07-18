@@ -9,8 +9,8 @@ import type {
   DepartmentCreate,
   DepartmentGenerateRequest,
   DepartmentProfessorsResponse,
-  DepartmentUpdate,
   DepartmentsListResponse,
+  DepartmentUpdate,
 } from '../types.js'
 
 interface ListDepartmentsParams {

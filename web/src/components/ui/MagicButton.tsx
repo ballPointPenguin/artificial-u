@@ -1,4 +1,4 @@
-import { type JSX, Show, mergeProps, splitProps } from 'solid-js'
+import { type JSX, mergeProps, Show, splitProps } from 'solid-js'
 import { Button } from './Button'
 import './MagicButton.css'
 

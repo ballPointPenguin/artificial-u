@@ -1,10 +1,59 @@
 import { A, useNavigate, useParams } from '@solidjs/router'
-import { For, Show, createResource, createSignal } from 'solid-js'
+import { type Component, createResource, createSignal, For, Show } from 'solid-js'
 import { departmentService } from '../../api/services/department-service.js'
 import { professorService } from '../../api/services/professor-service.js'
-import type { Professor, ProfessorCourseBrief } from '../../api/types.js'
+import type { Professor, ProfessorCourseBrief, ProfessorCoursesResponse } from '../../api/types.js'
 import { Alert, Button, ConfirmationModal, MagicButton } from '../ui'
 import ProfessorForm, { type ProfessorFormData } from './ProfessorForm.js'
+
+// Professor Courses Component
+const ProfessorCourses: Component<{
+  coursesResource: () => ProfessorCoursesResponse | undefined
+  loading: boolean
+  error: unknown
+}> = (props) => {
+  return (
+    <div class="mt-8">
+      <h2 class="text-2xl font-display text-parchment-100 mb-4 text-shadow-golden">
+        Courses Taught
+      </h2>
+      <Show when={!props.loading} fallback={<p class="text-muted">Loading courses...</p>}>
+        <Show
+          when={!props.error}
+          fallback={
+            <Alert variant="danger">
+              Error loading courses:{' '}
+              {props.error instanceof Error ? props.error.message : 'Unknown error'}
+            </Alert>
+          }
+        >
+          <Show
+            when={props.coursesResource()?.courses && props.coursesResource()!.courses.length > 0}
+            fallback={
+              <p class="text-muted">This professor is not currently teaching any courses.</p>
+            }
+          >
+            <ul class="space-y-2">
+              <For each={props.coursesResource()?.courses}>
+                {(course: ProfessorCourseBrief) => (
+                  <li class="arcane-card-sm p-3">
+                    <A href={`/courses/${String(course.id)}`} class="hover:text-primary">
+                      <strong class="font-semibold text-foreground">{course.code}:</strong>{' '}
+                      {course.title}
+                    </A>
+                    <div class="text-xs text-muted mt-1">
+                      <span>Level: {course.level}</span> | <span>Credits: {course.credits}</span>
+                    </div>
+                  </li>
+                )}
+              </For>
+            </ul>
+          </Show>
+        </Show>
+      </Show>
+    </div>
+  )
+}
 
 export default function ProfessorDetail() {
   const params = useParams()
@@ -305,55 +354,11 @@ export default function ProfessorDetail() {
               {/* End of two-column layout - No more full-width attributes div needed below */}
 
               {/* Courses Section */}
-              <div class="mt-8">
-                <h2 class="text-2xl font-display text-parchment-100 mb-4 text-shadow-golden">
-                  Courses Taught
-                </h2>
-                <Show
-                  when={!coursesResource.loading}
-                  fallback={<p class="text-muted">Loading courses...</p>}
-                >
-                  <Show
-                    when={!coursesResource.error}
-                    fallback={
-                      <Alert variant="danger">
-                        Error loading courses:{' '}
-                        {coursesResource.error instanceof Error
-                          ? coursesResource.error.message
-                          : 'Unknown error'}
-                      </Alert>
-                    }
-                  >
-                    <Show
-                      when={coursesResource()?.courses && coursesResource()!.courses.length > 0}
-                      fallback={
-                        <p class="text-muted">
-                          This professor is not currently teaching any courses.
-                        </p>
-                      }
-                    >
-                      <ul class="space-y-2">
-                        <For each={coursesResource()?.courses}>
-                          {(course: ProfessorCourseBrief) => (
-                            <li class="arcane-card-sm p-3">
-                              <A href={`/courses/${String(course.id)}`} class="hover:text-primary">
-                                <strong class="font-semibold text-foreground">
-                                  {course.code}:
-                                </strong>{' '}
-                                {course.title}
-                              </A>
-                              <div class="text-xs text-muted mt-1">
-                                <span>Level: {course.level}</span> |{' '}
-                                <span>Credits: {course.credits}</span>
-                              </div>
-                            </li>
-                          )}
-                        </For>
-                      </ul>
-                    </Show>
-                  </Show>
-                </Show>
-              </div>
+              <ProfessorCourses
+                coursesResource={coursesResource}
+                loading={coursesResource.loading}
+                error={coursesResource.error as unknown}
+              />
             </div>
           </Show>
         </Show>

@@ -8,8 +8,8 @@ import type {
   CourseCreate,
   CourseGenerateRequest,
   CourseLecturesResponse,
-  CourseUpdate,
   CoursesListResponse,
+  CourseUpdate,
   DepartmentBrief,
   ProfessorBrief,
 } from '../types.js'

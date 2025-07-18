@@ -1,5 +1,5 @@
 import { A } from '@solidjs/router'
-import { For, type Component, type JSX } from 'solid-js'
+import { type Component, For, type JSX } from 'solid-js'
 
 interface FeatureCard {
   id: string

@@ -1,12 +1,12 @@
-import { For, Show, createEffect, createSignal, on } from 'solid-js'
 import { A } from '@solidjs/router'
+import { createEffect, createSignal, For, on, Show } from 'solid-js'
 import { topicService } from '../../api/services/topic-service.js'
 import type { APIError, Topic, TopicCreate, TopicUpdate } from '../../api/types.js'
 import { Alert } from '../ui/Alert.jsx'
 import { Button } from '../ui/Button.jsx'
 import { MagicButton } from '../ui/MagicButton.jsx'
-import { TopicForm } from './TopicForm.jsx'
 import { TopicContentRenderer } from './TopicContentRenderer.jsx'
+import { TopicForm } from './TopicForm.jsx'
 
 interface CourseTopicsListProps {
   courseId: number

@@ -1,4 +1,4 @@
-import { type JSX, Show, createEffect, createSignal } from 'solid-js'
+import { createEffect, createSignal, type JSX, Show } from 'solid-js'
 import { departmentService } from '../../api/services/department-service.js'
 import type { Department, DepartmentGenerateRequest } from '../../api/types.js'
 import { Alert, Button, Form, FormActions, FormField, Input, MagicButton, Textarea } from '../ui'

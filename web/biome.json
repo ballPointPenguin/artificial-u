@@ -1,12 +1,13 @@
 {
-  "$schema": "https://biomejs.dev/schemas/2.0.5/schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.1.2/schema.json",
   "files": {
     "includes": [
       "**/*.js",
       "**/*.jsx",
       "**/*.ts",
       "**/*.tsx",
-      "**/*.json"
+      "**/*.json",
+      "!**/dist/**"
     ]
   },
   "linter": {

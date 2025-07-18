@@ -1,12 +1,114 @@
 import { A, useParams } from '@solidjs/router'
-import { Show, createResource, createSignal } from 'solid-js'
-import { topicService } from '../api/services/topic-service.js'
+import { type Component, createResource, createSignal, Show } from 'solid-js'
 import { courseService } from '../api/services/course-service.js'
 import { lectureService } from '../api/services/lecture-service.js'
-import type { TopicUpdate } from '../api/types.js'
-import { TopicForm } from '../components/topics/TopicForm.jsx'
+import { topicService } from '../api/services/topic-service.js'
+import type { Lecture, TopicUpdate } from '../api/types.js'
 import { TopicContentRenderer } from '../components/topics/TopicContentRenderer.jsx'
-import { Button, Alert, LoadingSpinner } from '../components/ui'
+import { TopicForm } from '../components/topics/TopicForm.jsx'
+import { Alert, Button, LoadingSpinner } from '../components/ui'
+
+// Lecture Section Component
+const LectureSection: Component<{
+  lecture: () => Lecture | null | undefined
+  courseId: number
+  lectureError: string
+  isCreatingLecture: boolean
+  isGeneratingLecture: boolean
+  generationTimeout: boolean
+  onCreateLecture: () => void
+  onGenerateLecture: () => void
+}> = (props) => {
+  return (
+    <div class="border-t border-parchment-800/30 pt-6 mt-6">
+      <h3 class="text-lg font-semibold text-parchment-200 mb-4">Lecture</h3>
+
+      <Show when={props.lectureError}>
+        <Alert variant="danger" class="mb-4">
+          {props.lectureError}
+        </Alert>
+      </Show>
+
+      <Show when={props.lecture()}>
+        {(lectureData) => (
+          <div class="space-y-4">
+            <div class="flex justify-between items-center">
+              <div>
+                <h4 class="text-md font-medium text-parchment-300">{lectureData().title}</h4>
+                <p class="text-sm text-parchment-400">Revision {lectureData().revision}</p>
+              </div>
+              <div class="flex space-x-2">
+                <A
+                  href={`/courses/${String(props.courseId)}/lectures/${String(lectureData().id)}`}
+                  class="inline-block"
+                >
+                  <Button variant="outline" size="sm">
+                    View Lecture
+                  </Button>
+                </A>
+                <A
+                  href={`/courses/${String(props.courseId)}/lectures/${String(lectureData().id)}`}
+                  class="inline-block"
+                >
+                  <Button variant="primary" size="sm">
+                    Edit Lecture
+                  </Button>
+                </A>
+              </div>
+            </div>
+          </div>
+        )}
+      </Show>
+
+      <Show when={!props.lecture()}>
+        <div class="text-center py-6">
+          <p class="text-parchment-400 font-serif mb-4">
+            No lecture has been created for this topic yet.
+          </p>
+          <div class="flex justify-center space-x-4">
+            <Button
+              variant="outline"
+              onClick={props.onCreateLecture}
+              disabled={props.isCreatingLecture}
+            >
+              {props.isCreatingLecture ? 'Creating...' : 'Create Lecture'}
+            </Button>
+            <Button
+              variant="primary"
+              onClick={props.onGenerateLecture}
+              disabled={props.isGeneratingLecture}
+            >
+              {props.isGeneratingLecture ? 'Generating...' : 'Generate Lecture'}
+            </Button>
+          </div>
+        </div>
+      </Show>
+
+      {/* Loading indicator for generation */}
+      <Show when={props.isGeneratingLecture}>
+        <div class="mt-4 p-4 bg-mystic-900/30 border border-mystic-700 rounded-lg">
+          <div class="flex items-center justify-center space-x-3">
+            <LoadingSpinner />
+            <span class="text-sm text-parchment-300">Generating lecture...</span>
+          </div>
+          <p class="text-xs text-parchment-400 mt-3 text-center">
+            This may take several minutes. Please don't close this page.
+          </p>
+        </div>
+      </Show>
+
+      {/* Timeout message */}
+      <Show when={props.generationTimeout}>
+        <Alert variant="warning" class="mt-4">
+          <p class="text-sm">
+            The generation request took longer than expected and timed out. This can happen with
+            complex content generation. Please try again.
+          </p>
+        </Alert>
+      </Show>
+    </div>
+  )
+}
 
 const TopicDetail = () => {
   const params = useParams()
@@ -214,101 +316,16 @@ const TopicDetail = () => {
                       </Show>
 
                       {/* Lecture Section */}
-                      <div class="border-t border-parchment-800/30 pt-6 mt-6">
-                        <h3 class="text-lg font-semibold text-parchment-200 mb-4">Lecture</h3>
-
-                        <Show when={lectureError()}>
-                          <Alert variant="danger" class="mb-4">
-                            {lectureError()}
-                          </Alert>
-                        </Show>
-
-                        <Show when={lecture()}>
-                          {(lectureData) => (
-                            <div class="space-y-4">
-                              <div class="flex justify-between items-center">
-                                <div>
-                                  <h4 class="text-md font-medium text-parchment-300">
-                                    {lectureData().title}
-                                  </h4>
-                                  <p class="text-sm text-parchment-400">
-                                    Revision {lectureData().revision}
-                                  </p>
-                                </div>
-                                <div class="flex space-x-2">
-                                  <A
-                                    href={`/courses/${String(courseId)}/lectures/${String(lectureData().id)}`}
-                                    class="inline-block"
-                                  >
-                                    <Button variant="outline" size="sm">
-                                      View Lecture
-                                    </Button>
-                                  </A>
-                                  <A
-                                    href={`/courses/${String(courseId)}/lectures/${String(lectureData().id)}`}
-                                    class="inline-block"
-                                  >
-                                    <Button variant="primary" size="sm">
-                                      Edit Lecture
-                                    </Button>
-                                  </A>
-                                </div>
-                              </div>
-                            </div>
-                          )}
-                        </Show>
-
-                        <Show when={!lecture()}>
-                          <div class="text-center py-6">
-                            <p class="text-parchment-400 font-serif mb-4">
-                              No lecture has been created for this topic yet.
-                            </p>
-                            <div class="flex justify-center space-x-4">
-                              <Button
-                                variant="outline"
-                                onClick={() => {
-                                  void handleCreateLecture()
-                                }}
-                                disabled={isCreatingLecture()}
-                              >
-                                {isCreatingLecture() ? 'Creating...' : 'Create Lecture'}
-                              </Button>
-                              <Button
-                                variant="primary"
-                                onClick={() => {
-                                  void handleGenerateLecture()
-                                }}
-                                disabled={isGeneratingLecture()}
-                              >
-                                {isGeneratingLecture() ? 'Generating...' : 'Generate Lecture'}
-                              </Button>
-                            </div>
-                          </div>
-                        </Show>
-
-                        {/* Progress indicator for generation */}
-                        <Show when={isGeneratingLecture()}>
-                          <div class="mt-4 p-4 bg-mystic-900/30 border border-mystic-700 rounded-lg">
-                            <div class="flex items-center justify-center space-x-3">
-                              <LoadingSpinner />
-                              <span class="text-sm text-parchment-300">Generating lecture...</span>
-                            </div>
-                            <p class="text-xs text-parchment-400 mt-3 text-center">
-                              This may take several minutes. Please don't close this page.
-                            </p>
-                          </div>
-                        </Show>
-
-                        {/* Timeout message */}
-                        <Show when={generationTimeout()}>
-                          <Alert variant="warning" class="mt-4">
-                            <p class="text-sm">
-                              The generation request took longer than expected and timed out. This
-                              can happen with complex content generation. Please try again.
-                            </p>
-                          </Alert>
-                        </Show>
-                      </div>
+                      <LectureSection
+                        lecture={lecture}
+                        courseId={courseId}
+                        lectureError={lectureError()}
+                        isCreatingLecture={isCreatingLecture()}
+                        isGeneratingLecture={isGeneratingLecture()}
+                        generationTimeout={generationTimeout()}
+                        onCreateLecture={() => void handleCreateLecture()}
+                        onGenerateLecture={() => void handleGenerateLecture()}
+                      />
                     </div>
                   </Show>
                 </div>

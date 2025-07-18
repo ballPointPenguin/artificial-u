@@ -1,5 +1,5 @@
 import { A } from '@solidjs/router'
-import { For, Show, createResource, createSignal } from 'solid-js'
+import { createResource, createSignal, For, Show } from 'solid-js'
 import { departmentService } from '../api/services/department-service.js'
 import type { Department, DepartmentCreate } from '../api/types.js'
 import DepartmentForm from '../components/departments/DepartmentForm.js'

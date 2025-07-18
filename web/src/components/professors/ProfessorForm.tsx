@@ -1,5 +1,5 @@
 import type { Component } from 'solid-js'
-import { Show, createEffect, createResource, createSignal } from 'solid-js'
+import { createEffect, createResource, createSignal, Show } from 'solid-js'
 import { departmentService } from '../../api/services/department-service.js'
 import { professorService } from '../../api/services/professor-service.js'
 import type {
@@ -8,7 +8,7 @@ import type {
   ProfessorCreate,
   ProfessorGenerateRequest,
 } from '../../api/types.js'
-
+import type { SelectOption } from '../ui'
 import {
   Alert,
   Button,
@@ -20,7 +20,6 @@ import {
   Select,
   Textarea,
 } from '../ui'
-import type { SelectOption } from '../ui'
 
 export interface ProfessorFormData {
   name: string

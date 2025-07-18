@@ -1,5 +1,5 @@
 import { A } from '@solidjs/router'
-import { Show, createSignal } from 'solid-js'
+import { createSignal, Show } from 'solid-js'
 
 export function NavBar() {
   const [isScrolled, setIsScrolled] = createSignal(false)
