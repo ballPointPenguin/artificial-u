@@ -1,10 +1,13 @@
+import asyncio
 import logging
 import uuid
-from typing import List, Optional
+from enum import Enum
+from typing import Any, List, Optional
 
 import httpx  # Added httpx import
 import openai  # Added openai import
 from google.genai import types
+from google.genai.errors import ClientError, ServerError
 
 from artificial_u.integrations import gemini_client, openai_client
 from artificial_u.models.core import Professor
@@ -20,6 +23,43 @@ OPENAI_ASPECT_RATIO_TO_SIZE = {
     "16:9": "1792x1024",
     "9:16": "1024x1792",
 }
+
+
+class ImageGenerationErrorType(Enum):
+    """Types of image generation errors for categorization."""
+
+    TRANSIENT = "transient"  # Temporary errors that may succeed on retry
+    PERMANENT = "permanent"  # Permanent errors that won't succeed on retry
+    RATE_LIMITED = "rate_limited"  # Rate limiting errors
+    CONFIGURATION = "configuration"  # Configuration or setup errors
+    BACKEND_UNAVAILABLE = "backend_unavailable"  # Backend service unavailable
+
+
+class ImageGenerationError(Exception):
+    """Base exception for image generation errors."""
+
+    def __init__(
+        self,
+        message: str,
+        error_type: ImageGenerationErrorType,
+        backend: str = None,
+        original_error: Exception = None,
+    ):
+        super().__init__(message)
+        self.error_type = error_type
+        self.backend = backend
+        self.original_error = original_error
+
+
+class ImageGenerationResult:
+    """Result container for image generation attempts."""
+
+    def __init__(
+        self, success: bool, image_keys: List[str] = None, error: ImageGenerationError = None
+    ):
+        self.success = success
+        self.image_keys = image_keys or []
+        self.error = error
 
 
 class ImageService:
@@ -47,6 +87,11 @@ class ImageService:
         self.model_name = self.settings.IMAGE_GENERATION_MODEL
         self.backend = self._determine_backend(self.model_name)
 
+        # Configure retry settings
+        self.max_retries = 3
+        self.retry_delay = 2.0  # seconds
+        self.retry_exponential_base = 2.0
+
         logger.info(
             f"ImageService initialized with model: {self.model_name} (backend: {self.backend})"
         )
@@ -66,6 +111,87 @@ class ImageService:
             # Defaulting to Gemini might hide configuration issues, so let's raise an error.
             # Consider adding a default backend setting if preferred.
             raise ValueError(f"Unsupported image generation model: {model_name}")
+
+    def _categorize_error(self, error: Exception, backend: str) -> ImageGenerationErrorType:
+        """Categorize an error to determine if it's retryable."""
+        if backend == "gemini":
+            return self._categorize_gemini_error(error)
+        elif backend == "openai":
+            return self._categorize_openai_error(error)
+
+        # Default to transient for unknown errors (optimistic retrying)
+        return ImageGenerationErrorType.TRANSIENT
+
+    def _extract_status_code(self, error: ServerError) -> Optional[int]:
+        """Extract status code from ServerError."""
+        status_code = getattr(error, "status_code", None)
+        if status_code is None:
+            # Try extracting from error message
+            error_str = str(error)
+            for code in [503, 429, 500, 502, 504, 400]:
+                if str(code) in error_str:
+                    return code
+        return status_code
+
+    def _categorize_gemini_error(self, error: Exception) -> ImageGenerationErrorType:
+        """Categorize Gemini-specific errors."""
+        if isinstance(error, ServerError):
+            status_code = self._extract_status_code(error)
+
+            if status_code == 503:
+                return ImageGenerationErrorType.TRANSIENT
+            elif status_code == 429:
+                return ImageGenerationErrorType.RATE_LIMITED
+            elif status_code in [500, 502, 504]:
+                return ImageGenerationErrorType.TRANSIENT
+            else:
+                return ImageGenerationErrorType.PERMANENT
+        elif isinstance(error, ClientError):
+            return ImageGenerationErrorType.CONFIGURATION
+        return ImageGenerationErrorType.TRANSIENT
+
+    def _categorize_openai_error(self, error: Exception) -> ImageGenerationErrorType:
+        """Categorize OpenAI-specific errors."""
+        if isinstance(error, openai.APITimeoutError):
+            return ImageGenerationErrorType.TRANSIENT
+        elif isinstance(error, openai.RateLimitError):
+            return ImageGenerationErrorType.RATE_LIMITED
+        elif isinstance(error, openai.APIConnectionError):
+            return ImageGenerationErrorType.BACKEND_UNAVAILABLE
+        elif isinstance(error, openai.InternalServerError):
+            return ImageGenerationErrorType.TRANSIENT
+        elif isinstance(error, openai.BadRequestError):
+            return ImageGenerationErrorType.PERMANENT
+        return ImageGenerationErrorType.TRANSIENT
+
+    async def _retry_with_backoff(self, func, *args, **kwargs) -> Any:
+        """Retry a function with exponential backoff."""
+        last_error = None
+
+        for attempt in range(self.max_retries):
+            try:
+                return await func(*args, **kwargs)
+            except Exception as e:
+                last_error = e
+                error_type = self._categorize_error(e, self.backend)
+
+                # Don't retry for permanent errors
+                if error_type == ImageGenerationErrorType.PERMANENT:
+                    logger.info(f"Permanent error detected, not retrying: {e}")
+                    break
+
+                if attempt < self.max_retries - 1:
+                    delay = self.retry_delay * (self.retry_exponential_base**attempt)
+                    logger.info(
+                        f"Attempt {attempt + 1} failed with {error_type.value} error: {e}. "
+                        f"Retrying in {delay:.1f} seconds..."
+                    )
+                    await asyncio.sleep(delay)
+                else:
+                    logger.error(f"All {self.max_retries} attempts failed. Last error: {e}")
+
+        # If we get here, all attempts failed
+        raise last_error
 
     def _map_aspect_ratio_to_openai_size(self, aspect_ratio: str) -> str:
         """Maps a common aspect ratio string to OpenAI's required size string."""
@@ -103,7 +229,7 @@ class ImageService:
                 return []
         except Exception as e:
             logger.error(f"Error calling Gemini image generation API: {e}", exc_info=True)
-            return []  # Indicate failure
+            raise  # Re-raise to allow retry logic to handle it
 
     async def _call_openai_api(
         self, prompt: str, aspect_ratio: str
@@ -128,10 +254,10 @@ class ImageService:
                     logger.error(f"OpenAI Response Body: {e.response.json()}")
                 except Exception:
                     logger.error(f"OpenAI Response Body: {e.response.text}")
-            return None
+            raise  # Re-raise to allow retry logic to handle it
         except Exception as e:
             logger.error(f"Error calling OpenAI image generation API: {e}", exc_info=True)
-            return None
+            raise  # Re-raise to allow retry logic to handle it
 
     def _extract_image_data(self, item) -> Optional[tuple]:
         """
@@ -172,16 +298,17 @@ class ImageService:
 
         except httpx.RequestError as req_err:
             logger.error(f"Error fetching image from URL {url}: {req_err}")
+            raise
         except httpx.HTTPStatusError as status_err:
             logger.error(
                 f"HTTP error fetching image from URL {url}: "
                 f"Status {status_err.response.status_code}, "
                 f"Response: {status_err.response.text[:200]}"
             )
+            raise
         except Exception as fetch_err:
             logger.error(f"Unexpected error fetching image from URL {url}: {fetch_err}")
-
-        return None
+            raise
 
     async def _generate_openai_image(self, prompt: str, aspect_ratio: str) -> List[bytes]:
         """Generates image(s) using the OpenAI (DALL-E) backend."""
@@ -217,10 +344,26 @@ class ImageService:
                     image_data_list.append(image_bytes)
                 except Exception as e:
                     logger.error(f"Failed to decode base64 image data: {e}")
+                    raise
 
         return image_data_list
 
-    async def generate_image(self, prompt: str, aspect_ratio: str = "1:1") -> List[str]:
+    async def _generate_with_backend(
+        self, prompt: str, aspect_ratio: str, backend: str
+    ) -> List[bytes]:
+        """Generate image with a specific backend."""
+        if backend == "gemini":
+            return await self._generate_gemini_image(prompt, aspect_ratio)
+        elif backend == "openai":
+            return await self._generate_openai_image(prompt, aspect_ratio)
+        else:
+            raise ImageGenerationError(
+                f"Unsupported backend: {backend}",
+                ImageGenerationErrorType.CONFIGURATION,
+                backend=backend,
+            )
+
+    async def generate_image(self, prompt: str, aspect_ratio: str = "1:1") -> ImageGenerationResult:
         """
         Generates an image based on the provided prompt using the configured AI model.
 
@@ -230,40 +373,65 @@ class ImageService:
                           Supported values depend on the backend model.
 
         Returns:
-            A list of storage keys (object names) for the generated images.
-            Empty if generation failed.
+            An ImageGenerationResult object containing either success with image keys
+            or failure with error information.
         """
         logger.info(
             f"Generating image via {self.backend} backend (model: {self.model_name}) "
-            f"with prompt: '{prompt[:1500]}...' (aspect ratio: {aspect_ratio})"
+            f"with prompt: '{prompt[:100]}...' (aspect ratio: {aspect_ratio})"
         )
 
-        image_bytes_list: List[bytes] = []
+        # Try backend with retry logic
         try:
-            # --- Dispatch to backend ---
-            if self.backend == "gemini":
-                image_bytes_list = await self._generate_gemini_image(prompt, aspect_ratio)
-            elif self.backend == "openai":
-                image_bytes_list = await self._generate_openai_image(prompt, aspect_ratio)
+            image_bytes_list = await self._retry_with_backoff(
+                self._generate_with_backend, prompt, aspect_ratio, self.backend
+            )
+
+            if image_bytes_list:
+                # Upload images to storage
+                uploaded_keys = await self._upload_images(image_bytes_list)
+                if uploaded_keys:
+                    logger.info(f"Successfully generated {len(uploaded_keys)} image(s)")
+                    return ImageGenerationResult(success=True, image_keys=uploaded_keys)
+                else:
+                    error = ImageGenerationError(
+                        "Image generation succeeded but upload failed",
+                        ImageGenerationErrorType.TRANSIENT,
+                        backend=self.backend,
+                    )
+                    return ImageGenerationResult(success=False, error=error)
             else:
-                logger.error(f"Unsupported image generation backend: {self.backend}")
-                return []  # No generation possible
+                error = ImageGenerationError(
+                    f"Backend {self.backend} returned no image data",
+                    ImageGenerationErrorType.BACKEND_UNAVAILABLE,
+                    backend=self.backend,
+                )
+                return ImageGenerationResult(success=False, error=error)
 
-            if not image_bytes_list:
-                logger.warning(f"Backend '{self.backend}' returned no image data.")
-                return []
+        except Exception as e:
+            error = ImageGenerationError(
+                f"Image generation failed: {str(e)}",
+                self._categorize_error(e, self.backend),
+                backend=self.backend,
+                original_error=e,
+            )
 
-            # --- Upload generated images to storage ---
-            uploaded_keys = []
-            bucket = self.storage_service.images_bucket
+            logger.error(f"Image generation failed completely: {error}")
+            return ImageGenerationResult(success=False, error=error)
 
-            for image_bytes in image_bytes_list:
-                if not image_bytes:  # Skip if empty bytes received
-                    continue
+    async def _upload_images(self, image_bytes_list: List[bytes]) -> List[str]:
+        """Upload image bytes to storage and return the keys."""
+        uploaded_keys = []
+        bucket = self.storage_service.images_bucket
 
-                # Generate a simple UUID filename
-                file_name = f"{uuid.uuid4()}.png"
+        for image_bytes in image_bytes_list:
+            if not image_bytes:  # Skip if empty bytes received
+                continue
 
+            # Generate a simple UUID filename
+            file_name = f"{uuid.uuid4()}.png"
+
+            try:
                 # Upload to storage
                 success, url = await self.storage_service.upload_file(
                     file_data=image_bytes,
@@ -277,28 +445,14 @@ class ImageService:
                     logger.info(f"Image uploaded to {bucket}/{file_name}, URL: {url}")
                 else:
                     logger.error(f"Failed to upload image {file_name} to bucket {bucket}")
+            except Exception as e:
+                logger.error(f"Error uploading image {file_name}: {e}")
 
-            if uploaded_keys:
-                logger.info(
-                    f"Successfully generated and uploaded {len(uploaded_keys)} "
-                    f"image(s) via {self.backend}."
-                )
-            else:
-                logger.warning(
-                    f"Image generation via {self.backend} succeeded, but upload "
-                    f"failed for all images."
-                )
-
-            return uploaded_keys
-
-        except Exception as e:
-            # Catch potential errors during dispatch or upload logic
-            logger.error(f"Error during image generation/upload process: {str(e)}", exc_info=True)
-            return []
+        return uploaded_keys
 
     async def generate_professor_image(
         self, professor: Professor, aspect_ratio: str = "1:1"
-    ) -> Optional[str]:
+    ) -> ImageGenerationResult:
         """
         Generates a profile image for a given professor.
 
@@ -307,20 +461,20 @@ class ImageService:
             aspect_ratio: The desired aspect ratio for the image prompt
 
         Returns:
-            The storage key of the generated image, or None if generation failed
+            An ImageGenerationResult object with success/failure information.
         """
         # Generate a prompt specifically for this professor
         prompt = format_professor_image_prompt(professor, aspect_ratio=aspect_ratio)
         logger.info(f"Generating image for professor {professor.id} ({professor.name})")
 
-        # Generate just one image for the professor's profile
-        image_keys = await self.generate_image(prompt=prompt, aspect_ratio=aspect_ratio)
+        # Generate image using the main generation method
+        result = await self.generate_image(prompt=prompt, aspect_ratio=aspect_ratio)
 
-        if image_keys:
+        if result.success and result.image_keys:
             logger.info(
-                f"Successfully generated image for professor {professor.id}: {image_keys[0]}"
+                f"Successfully generated image for professor {professor.id}: {result.image_keys[0]}"
             )
-            return image_keys[0]  # Return the first (and only) key
         else:
-            logger.error(f"Failed to generate image for professor {professor.id}")
-            return None
+            logger.error(f"Failed to generate image for professor {professor.id}: {result.error}")
+
+        return result

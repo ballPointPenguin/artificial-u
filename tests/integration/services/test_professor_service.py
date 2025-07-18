@@ -74,8 +74,12 @@ def content_service():
 @pytest.fixture
 def image_service():
     """Create a mock ImageService with async support."""
+    from artificial_u.services.image_service import ImageGenerationResult
+
     mock = MagicMock()
-    mock.generate_professor_image = AsyncMock(return_value="professors/test-image-key.jpg")
+    # Mock the ImageGenerationResult
+    mock_result = ImageGenerationResult(success=True, image_keys=["professors/test-image-key.jpg"])
+    mock.generate_professor_image = AsyncMock(return_value=mock_result)
     mock.storage_service = MagicMock()
     mock.storage_service.get_file_url = MagicMock(
         return_value="https://storage.example.com/professors/test-image-key.jpg"

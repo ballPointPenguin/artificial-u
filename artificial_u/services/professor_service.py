@@ -260,6 +260,44 @@ class ProfessorService:
             self.logger.error(error_msg, exc_info=True)
             raise DatabaseError(error_msg) from e
 
+    def _validate_image_generation_result(self, result, professor_id: int) -> str:
+        """Validate image generation result and return the image key."""
+        if not result.success:
+            # Provide more specific error information
+            error_msg = f"Image generation failed for professor {professor_id}"
+            if result.error:
+                error_msg += f": {result.error.error_type.value} - {result.error}"
+                if result.error.backend:
+                    error_msg += f" (backend: {result.error.backend})"
+
+            self.logger.error(error_msg)
+            raise GenerationError(error_msg)
+
+        if not result.image_keys:
+            self.logger.error(
+                f"Image generation succeeded but returned no keys for professor {professor_id}"
+            )
+            raise GenerationError(
+                f"Image generation succeeded but yielded no result for professor {professor_id}"
+            )
+
+        return result.image_keys[0]  # Use the first generated image
+
+    def _get_image_url_from_key(self, image_key: str, professor_id: int) -> str:
+        """Get the full URL for an image key."""
+        try:
+            bucket = self.image_service.storage_service.images_bucket
+            image_url = self.image_service.storage_service.get_file_url(
+                bucket=bucket, object_name=image_key
+            )
+            self.logger.info(f"Image URL for professor {professor_id}: {image_url}")
+            return image_url
+        except Exception as e:
+            self.logger.error(f"Failed to get image URL for key {image_key}: {e}", exc_info=True)
+            raise GenerationError(
+                f"Failed to construct image URL for professor {professor_id}"
+            ) from e
+
     async def generate_and_set_professor_image(
         self, professor_id: int, aspect_ratio: str = "1:1"
     ) -> Professor:
@@ -285,7 +323,7 @@ class ProfessorService:
 
         try:
             # Generate the image using the image service
-            image_key = await self.image_service.generate_professor_image(
+            result = await self.image_service.generate_professor_image(
                 professor=professor, aspect_ratio=aspect_ratio
             )
         except Exception as e:
@@ -295,26 +333,12 @@ class ProfessorService:
             )
             raise GenerationError(f"Failed to generate image for professor {professor_id}") from e
 
-        if not image_key:
-            self.logger.error(f"Image generation returned no key for professor {professor_id}")
-            raise GenerationError(
-                f"Image generation yielded no result for professor {professor_id}"
-            )
-
+        # Validate result and get image key
+        image_key = self._validate_image_generation_result(result, professor_id)
         self.logger.info(f"Image generated for professor {professor_id}: {image_key}")
 
         # Get the full URL for the image
-        try:
-            bucket = self.image_service.storage_service.images_bucket
-            image_url = self.image_service.storage_service.get_file_url(
-                bucket=bucket, object_name=image_key
-            )
-            self.logger.info(f"Image URL for professor {professor_id}: {image_url}")
-        except Exception as e:
-            self.logger.error(f"Failed to get image URL for key {image_key}: {e}", exc_info=True)
-            raise GenerationError(
-                f"Failed to construct image URL for professor {professor_id}"
-            ) from e
+        image_url = self._get_image_url_from_key(image_key, professor_id)
 
         # Update the professor record with the new image URL
         try:

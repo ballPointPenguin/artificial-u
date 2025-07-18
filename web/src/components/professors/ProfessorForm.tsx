@@ -303,8 +303,9 @@ const ProfessorForm: Component<ProfessorFormProps> = (props) => {
         error={validationErrors().specialization}
         helperText="Primary field of expertise."
       >
-        <Input
+        <Textarea
           name="specialization"
+          rows={2}
           value={formData().specialization || ''}
           onChange={(v) => {
             handleInputChange('specialization', v)
@@ -328,7 +329,7 @@ const ProfessorForm: Component<ProfessorFormProps> = (props) => {
       <FormField label="Background" name="background" error={validationErrors().background}>
         <Textarea
           name="background"
-          rows={3}
+          rows={6}
           value={formData().background || ''}
           onChange={(v) => {
             handleInputChange('background', v)
@@ -338,8 +339,9 @@ const ProfessorForm: Component<ProfessorFormProps> = (props) => {
       </FormField>
 
       <FormField label="Personality" name="personality" error={validationErrors().personality}>
-        <Input
+        <Textarea
           name="personality"
+          rows={3}
           value={formData().personality || ''}
           onChange={(v) => {
             handleInputChange('personality', v)
@@ -353,8 +355,9 @@ const ProfessorForm: Component<ProfessorFormProps> = (props) => {
         name="teaching_style"
         error={validationErrors().teaching_style}
       >
-        <Input
+        <Textarea
           name="teaching_style"
+          rows={3}
           value={formData().teaching_style}
           onChange={(v) => {
             handleInputChange('teaching_style', v)
@@ -407,7 +410,7 @@ const ProfessorForm: Component<ProfessorFormProps> = (props) => {
       >
         <Textarea
           name="freeform_prompt"
-          rows={3}
+          rows={9}
           value={formData().freeform_prompt || ''}
           onChange={(v) => {
             handleInputChange('freeform_prompt', v)

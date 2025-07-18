@@ -3,7 +3,7 @@ import { type Component, createResource, createSignal, For, Show } from 'solid-j
 import { departmentService } from '../../api/services/department-service.js'
 import { professorService } from '../../api/services/professor-service.js'
 import type { Professor, ProfessorCourseBrief, ProfessorCoursesResponse } from '../../api/types.js'
-import { Alert, Button, ConfirmationModal, MagicButton } from '../ui'
+import { Alert, Button, ConfirmationModal, LoadingSpinner, MagicButton } from '../ui'
 import ProfessorForm, { type ProfessorFormData } from './ProfessorForm.js'
 
 // Professor Courses Component
@@ -64,14 +64,21 @@ export default function ProfessorDetail() {
   const [error, setError] = createSignal('')
   const [isGeneratingImage, setIsGeneratingImage] = createSignal(false)
   const [generationError, setGenerationError] = createSignal('')
+  const [isImageLoading, setIsImageLoading] = createSignal(false)
 
-  const [professorResource, { refetch: refetchProfessor }] = createResource(() => {
-    const id = Number.parseInt(params.id, 10)
-    if (Number.isNaN(id)) {
-      throw new Error('Professor ID is missing or invalid')
+  const [professorResource, { refetch: refetchProfessor }] = createResource(
+    () => {
+      const id = Number.parseInt(params.id, 10)
+      if (Number.isNaN(id)) {
+        throw new Error('Professor ID is missing or invalid')
+      }
+      return id
+    },
+    async (id) => {
+      setIsImageLoading(false) // Reset image loading state when professor data changes
+      return professorService.getProfessor(id)
     }
-    return id
-  }, professorService.getProfessor)
+  )
 
   const [departmentResource] = createResource(
     () => {
@@ -148,6 +155,7 @@ export default function ProfessorDetail() {
     setIsGeneratingImage(true)
     setGenerationError('')
     setError('')
+    setIsImageLoading(false) // Clear any existing image loading state
 
     try {
       const id = Number.parseInt(params.id, 10)
@@ -207,7 +215,7 @@ export default function ProfessorDetail() {
                   {professorResource()?.name}
                 </h1>
                 <div class="flex space-x-2 items-center">
-                  <Show when={!professorResource()?.image_url && !isGeneratingImage()}>
+                  <Show when={!isGeneratingImage()}>
                     <MagicButton
                       variant="ghost"
                       size="sm"
@@ -322,7 +330,7 @@ export default function ProfessorDetail() {
                     {(style) => (
                       <p>
                         <strong class="font-semibold text-foreground">Teaching Style:</strong>{' '}
-                        <span class="text-muted">{style()}</span>
+                        <span class="block mt-1 whitespace-pre-wrap text-muted">{style()}</span>
                       </p>
                     )}
                   </Show>
@@ -331,7 +339,7 @@ export default function ProfessorDetail() {
                     {(pers) => (
                       <p>
                         <strong class="font-semibold text-foreground">Personality:</strong>{' '}
-                        <span class="text-muted">{pers()}</span>
+                        <span class="block mt-1 whitespace-pre-wrap text-muted">{pers()}</span>
                       </p>
                     )}
                   </Show>
@@ -339,16 +347,36 @@ export default function ProfessorDetail() {
 
                 {/* Right Column: Image */}
                 <div class="md:w-1/2 mt-6 md:mt-0">
-                  <Show when={professorResource()?.image_url}>
-                    <img
-                      src={professorResource()?.image_url ?? ''}
-                      alt={`Professor ${professorResource()?.name || ''}`}
-                      class="w-full max-w-sm h-auto rounded-lg shadow-lg object-contain"
-                      onError={(e) => {
-                        console.log('Image failed to load:', (e.target as HTMLImageElement).src)
-                      }}
-                    />
-                  </Show>
+                  <div class="relative flex items-center justify-center min-h-[200px] bg-surface rounded-lg">
+                    <Show
+                      when={isGeneratingImage() || isImageLoading()}
+                      fallback={
+                        <Show when={professorResource()?.image_url}>
+                          <img
+                            src={professorResource()?.image_url ?? ''}
+                            alt={`Professor ${professorResource()?.name || ''}`}
+                            class="w-full max-w-sm h-auto rounded-lg shadow-lg object-contain"
+                            onLoad={() => setIsImageLoading(false)}
+                            onLoadStart={() => setIsImageLoading(true)}
+                            onError={(e) => {
+                              console.log(
+                                'Image failed to load:',
+                                (e.target as HTMLImageElement).src
+                              )
+                              setIsImageLoading(false)
+                            }}
+                          />
+                        </Show>
+                      }
+                    >
+                      <div class="flex flex-col items-center space-y-2">
+                        <LoadingSpinner size="lg" />
+                        <p class="text-sm text-muted">
+                          {isGeneratingImage() ? 'Generating image...' : 'Loading image...'}
+                        </p>
+                      </div>
+                    </Show>
+                  </div>
                 </div>
               </div>
               {/* End of two-column layout - No more full-width attributes div needed below */}
