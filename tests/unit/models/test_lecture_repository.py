@@ -480,3 +480,35 @@ class TestLectureRepository:
         assert result[0].content == "Latest Content"
         assert result[0].title == "Latest Title"
         assert result[0].topic_id == 1
+
+    def test_list_with_topic_id_filter(
+        self, lecture_repository, mock_session, sample_lecture_model
+    ):
+        """Test listing lectures with topic_id filter."""
+        # Configure mock behavior for subquery
+        subquery_mock = MagicMock()
+        subquery_mock.c.topic_id = MagicMock()
+        subquery_mock.c.max_revision = MagicMock()
+
+        # Configure mock behavior for main query
+        query_mock = mock_session.query.return_value
+        query_mock.filter.return_value = query_mock
+        query_mock.group_by.return_value = query_mock
+        query_mock.subquery.return_value = subquery_mock
+        query_mock.join.return_value = query_mock
+        query_mock.order_by.return_value = query_mock
+        query_mock.offset.return_value = query_mock
+        query_mock.limit.return_value = query_mock
+        query_mock.all.return_value = [sample_lecture_model]
+
+        # Call method with topic_id filter
+        result = lecture_repository.list(topic_id=20)
+
+        # Verify
+        assert len(result) == 1
+        assert result[0].id == 1
+        assert result[0].topic_id == 1  # This is the sample lecture's topic_id
+        # Verify that query was called multiple times (for subquery and main query)
+        assert mock_session.query.call_count >= 2
+        # Verify that filter was called for topic_id
+        query_mock.filter.assert_called()

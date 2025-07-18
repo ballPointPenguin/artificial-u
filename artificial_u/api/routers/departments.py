@@ -5,7 +5,6 @@ Department router for handling department-related API endpoints.
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
-from fastapi.responses import JSONResponse
 
 from artificial_u.api.dependencies import get_department_api_service
 from artificial_u.api.models import (
@@ -158,7 +157,8 @@ async def delete_department(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Department with ID {department_id} not found",
         )
-    return JSONResponse(status_code=status.HTTP_204_NO_CONTENT, content=None)
+    # For 204 No Content, we should not return any response body
+    # FastAPI will handle the 204 status code automatically based on the decorator
 
 
 @router.get(

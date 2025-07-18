@@ -189,6 +189,7 @@ class LectureRepository(BaseRepository):
         self,
         course_id: Optional[int] = None,
         professor_id: Optional[int] = None,
+        topic_id: Optional[int] = None,
         search_query: Optional[str] = None,
     ) -> int:
         """
@@ -197,6 +198,7 @@ class LectureRepository(BaseRepository):
         Args:
             course_id: Filter by course ID
             professor_id: Filter by professor ID
+            topic_id: Filter by topic ID
             search_query: Search query for content/summary/title
 
         Returns:
@@ -227,6 +229,9 @@ class LectureRepository(BaseRepository):
                 # Join with CourseModel to filter by professor_id
                 query = query.join(CourseModel).filter(CourseModel.professor_id == professor_id)
 
+            if topic_id is not None:
+                query = query.filter(LectureModel.topic_id == topic_id)
+
             if search_query:
                 # Search in content, summary, and title
                 query = query.filter(
@@ -245,6 +250,7 @@ class LectureRepository(BaseRepository):
         size: int = 10,
         course_id: Optional[int] = None,
         professor_id: Optional[int] = None,
+        topic_id: Optional[int] = None,
         search_query: Optional[str] = None,
     ) -> List[Lecture]:
         """
@@ -256,6 +262,7 @@ class LectureRepository(BaseRepository):
             size: Items per page
             course_id: Filter by course ID
             professor_id: Filter by professor ID
+            topic_id: Filter by topic ID
             search_query: Search query for content/summary/title
 
         Returns:
@@ -285,6 +292,9 @@ class LectureRepository(BaseRepository):
             if professor_id is not None:
                 # Join with CourseModel to filter by professor_id
                 query = query.join(CourseModel).filter(CourseModel.professor_id == professor_id)
+
+            if topic_id is not None:
+                query = query.filter(LectureModel.topic_id == topic_id)
 
             if search_query:
                 # Search in content, summary, and title

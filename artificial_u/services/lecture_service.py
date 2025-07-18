@@ -167,6 +167,7 @@ class LectureService:
         size: int = 10,
         course_id: Optional[int] = None,
         professor_id: Optional[int] = None,
+        topic_id: Optional[int] = None,
         search_query: Optional[str] = None,
     ) -> List[Lecture]:
         """
@@ -177,6 +178,7 @@ class LectureService:
             size: Items per page
             course_id: Optional filter by course ID
             professor_id: Optional filter by professor ID
+            topic_id: Optional filter by topic ID
             search_query: Optional search in title/description
 
         Returns:
@@ -191,6 +193,7 @@ class LectureService:
                 size=size,
                 course_id=course_id,
                 professor_id=professor_id,
+                topic_id=topic_id,
                 search_query=search_query,
             )
             self.logger.debug(f"Found {len(lectures)} lectures")

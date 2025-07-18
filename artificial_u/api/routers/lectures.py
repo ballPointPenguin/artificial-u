@@ -37,6 +37,7 @@ async def list_lectures(
     size: int = Query(10, ge=1, le=100, description="Items per page"),
     course_id: Optional[int] = Query(None, description="Filter by course ID"),
     professor_id: Optional[int] = Query(None, description="Filter by professor ID"),
+    topic_id: Optional[int] = Query(None, description="Filter by topic ID"),
     search: Optional[str] = Query(None, description="Search in content and summary"),
     lecture_service: LectureApiService = Depends(get_lecture_api_service),
 ):
@@ -47,6 +48,7 @@ async def list_lectures(
     - **size**: Number of items per page (1-100)
     - **course_id**: Filter by course ID
     - **professor_id**: Filter by professor ID
+    - **topic_id**: Filter by topic ID
     - **search**: Search in title and description
     """
     return lecture_service.list_lectures(
@@ -54,6 +56,7 @@ async def list_lectures(
         size=size,
         course_id=course_id,
         professor_id=professor_id,
+        topic_id=topic_id,
         search=search,
     )
 
@@ -222,7 +225,8 @@ async def delete_lecture(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Lecture with ID {lecture_id} not found (delete operation failed).",
         )
-    return JSONResponse(status_code=status.HTTP_204_NO_CONTENT, content=None)
+    # For 204 No Content, we should not return any response body
+    # FastAPI will handle the 204 status code automatically based on the decorator
 
 
 @router.get(

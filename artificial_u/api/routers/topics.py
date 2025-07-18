@@ -5,7 +5,6 @@ Topic router for handling topic-related API endpoints.
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, Path, Query, status
-from fastapi.responses import JSONResponse
 
 from artificial_u.api.dependencies import get_topic_api_service  # Will be created later
 from artificial_u.api.models.topics import (
@@ -96,7 +95,8 @@ def delete_topic(
 ):
     """Delete a specific topic."""
     topic_service.delete_topic(topic_id)
-    return JSONResponse(status_code=status.HTTP_204_NO_CONTENT, content=None)
+    # For 204 No Content, we should not return any response body
+    # FastAPI will handle the 204 status code automatically based on the decorator
 
 
 # Note: Generation endpoint is often placed under the parent resource (courses)

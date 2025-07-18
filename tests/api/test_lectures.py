@@ -159,7 +159,7 @@ def test_list_lectures(client: TestClient, mock_api_service):
     assert data["items"][0]["topic_id"] == sample_lectures_base[0].topic_id
 
     mock_api_service["list_lectures"].assert_called_once_with(
-        page=1, size=10, course_id=None, professor_id=None, search=None
+        page=1, size=10, course_id=None, professor_id=None, topic_id=None, search=None
     )
 
 
@@ -178,7 +178,27 @@ def test_list_lectures_with_filters(client: TestClient, mock_api_service):
     assert data["total"] == len(filtered_lectures)
 
     mock_api_service["list_lectures"].assert_called_once_with(
-        page=1, size=10, course_id=1, professor_id=None, search="Test"
+        page=1, size=10, course_id=1, professor_id=None, topic_id=None, search="Test"
+    )
+
+
+@pytest.mark.unit
+def test_list_lectures_with_topic_id_filter(client: TestClient, mock_api_service):
+    """Test listing lectures with topic_id filter."""
+    # Mock lectures for a specific topic
+    topic_lectures = [lecture for lecture in sample_lectures_base if lecture.topic_id == 20]
+    mock_api_service["list_lectures"].return_value = LectureListResponse(
+        items=topic_lectures, total=len(topic_lectures), page=1, size=10, pages=1
+    )
+
+    response = client.get("/api/v1/lectures?topic_id=20")
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data["items"]) == len(topic_lectures)
+    assert data["total"] == len(topic_lectures)
+
+    mock_api_service["list_lectures"].assert_called_once_with(
+        page=1, size=10, course_id=None, professor_id=None, topic_id=20, search=None
     )
 
 

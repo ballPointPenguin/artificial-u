@@ -12,7 +12,7 @@ class LectureBase(BaseModel):
 
     course_id: int = Field(..., description="ID of the course this lecture belongs to")
     topic_id: int = Field(..., description="ID of the topic this lecture is associated with")
-    revision: int = Field(..., description="Revision number of the lecture content")
+    revision: Optional[int] = Field(None, description="Revision number of the lecture content")
     content: str = Field(..., description="Full lecture content text")
     summary: Optional[str] = Field(None, description="Brief summary of the lecture content")
     title: str = Field(..., description="Title of the lecture")

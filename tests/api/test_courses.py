@@ -50,7 +50,8 @@ sample_department_brief_base = CourseDepartmentBrief(
 )
 
 sample_lectures_brief_base = [
-    CourseLectureBrief(id=j, title=f"Lecture {j}", summary=f"Summary {j}") for j in range(1, 4)
+    CourseLectureBrief(id=j, course_id=1, topic_id=j, title=f"Lecture {j}", summary=f"Summary {j}")
+    for j in range(1, 4)
 ]
 
 

@@ -56,8 +56,9 @@ sample_courses_brief_base = [
 sample_lectures_brief_base = [
     LectureBrief(
         id=i,
-        title=f"Test Lecture {i}",
         course_id=1,
+        topic_id=i,
+        title=f"Test Lecture {i}",
         summary=f"Summary for lecture {i}",
     )
     for i in range(1, 4)

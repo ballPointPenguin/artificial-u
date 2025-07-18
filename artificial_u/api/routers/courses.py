@@ -5,7 +5,6 @@ Course router for handling course-related API endpoints.
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
-from fastapi.responses import JSONResponse
 
 from artificial_u.api.dependencies import get_course_api_service
 from artificial_u.api.models import (
@@ -188,8 +187,8 @@ async def delete_course(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Course with ID {course_id} not found for deletion.",
         )
-    # If service returns True, return 204
-    return JSONResponse(status_code=status.HTTP_204_NO_CONTENT, content=None)
+    # For 204 No Content, we should not return any response body
+    # FastAPI will handle the 204 status code automatically based on the decorator
 
 
 @router.get(

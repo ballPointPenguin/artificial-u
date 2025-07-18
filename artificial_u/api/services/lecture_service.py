@@ -83,6 +83,7 @@ class LectureApiService(BaseApiService[CoreLecture, Lecture, LectureListResponse
         size: int = 10,
         course_id: Optional[int] = None,
         professor_id: Optional[int] = None,
+        topic_id: Optional[int] = None,
         search: Optional[str] = None,
     ) -> LectureListResponse:
         """
@@ -93,6 +94,7 @@ class LectureApiService(BaseApiService[CoreLecture, Lecture, LectureListResponse
             size: Items per page
             course_id: Filter by course ID
             professor_id: Filter by professor ID
+            topic_id: Filter by topic ID
             search: Search query for title/description
 
         Returns:
@@ -108,6 +110,7 @@ class LectureApiService(BaseApiService[CoreLecture, Lecture, LectureListResponse
                 size=size,
                 course_id=course_id,
                 professor_id=professor_id,
+                topic_id=topic_id,
                 search_query=search,
             )
 
@@ -121,6 +124,7 @@ class LectureApiService(BaseApiService[CoreLecture, Lecture, LectureListResponse
             total_count = self.repository_factory.lecture.count(
                 course_id=course_id,
                 professor_id=professor_id,
+                topic_id=topic_id,
                 search_query=search,
             )
 

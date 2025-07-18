@@ -365,6 +365,8 @@ class CourseApiService(BaseApiService[CoreCourse, CourseResponse, CoursesListRes
             lecture_briefs = [
                 LectureBrief(
                     id=lecture.id,
+                    course_id=lecture.course_id,
+                    topic_id=lecture.topic_id,
                     title=lecture.title,
                     summary=lecture.summary,
                 )

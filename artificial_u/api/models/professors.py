@@ -98,8 +98,9 @@ class LectureBrief(BaseModel):
     """Brief lecture information for professor's lectures endpoint."""
 
     id: int = Field(..., description="Unique lecture identifier")
-    title: str = Field(..., description="Lecture title")
     course_id: int = Field(..., description="ID of the course this lecture belongs to")
+    topic_id: int = Field(..., description="ID of the topic this lecture belongs to")
+    title: str = Field(..., description="Lecture title")
     summary: Optional[str] = Field(None, description="Lecture summary")
 
 
