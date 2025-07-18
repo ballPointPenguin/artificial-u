@@ -18,6 +18,7 @@ export class ApiError extends Error {
 
 export interface RequestOptions extends RequestInit {
   timeout?: number
+  onTimeout?: () => void // Timeout callback
 }
 
 /**
@@ -107,6 +108,52 @@ export async function fetchWithTimeout<T>(url: string, options: RequestOptions =
 }
 
 /**
+ * Execute a fetch request with extended timeout support for long-running operations
+ * For long-running requests like AI generation
+ */
+export async function fetchWithExtendedTimeout<T>(
+  url: string,
+  options: RequestOptions = {}
+): Promise<T> {
+  const {
+    timeout: timeoutMs = API_CONFIG.timeout,
+    onTimeout,
+    ...fetchOptions
+  } = options
+
+  try {
+    const controller = new AbortController()
+
+    // Set up timeout with callback
+    const timeoutId = setTimeout(() => {
+      controller.abort()
+      onTimeout?.()
+    }, timeoutMs)
+
+    const response = await Promise.race([
+      fetch(url, {
+        ...fetchOptions,
+        signal: controller.signal,
+      }),
+      timeout(timeoutMs),
+    ])
+
+    clearTimeout(timeoutId)
+    return await handleResponse<T>(response)
+  } catch (error) {
+    if (error instanceof ApiError) {
+      throw error
+    }
+
+    if (error instanceof DOMException && error.name === 'AbortError') {
+      throw new ApiError('Request timed out', 408)
+    }
+
+    throw new ApiError(error instanceof Error ? error.message : 'Unknown error', 0)
+  }
+}
+
+/**
  * HTTP client for API requests
  */
 export const httpClient = {
@@ -167,6 +214,43 @@ export const httpClient = {
     }
 
     return fetchWithTimeout<T>(url, {
+      method: 'POST',
+      headers,
+      credentials: API_CONFIG.withCredentials ? 'include' : 'same-origin',
+      body: JSON.stringify(data),
+      ...fetchOptions,
+    })
+  },
+
+  /**
+   * Performs a POST request with extended timeout for long-running operations
+   */
+  postWithExtendedTimeout: async <T>(
+    endpoint: string,
+    data: unknown,
+    options: RequestOptions = {}
+  ): Promise<T> => {
+    const url = createUrl(endpoint)
+    const fetchOptions = { ...options }
+    const headers = new Headers(DEFAULT_HEADERS)
+
+    // Add headers from fetchOptions if present
+    if (fetchOptions.headers) {
+      const customHeaders = fetchOptions.headers
+      if (customHeaders instanceof Headers) {
+        for (const [key, value] of customHeaders.entries()) {
+          headers.set(key, value)
+        }
+      } else if (typeof customHeaders === 'object') {
+        for (const [key, value] of Object.entries(customHeaders)) {
+          if (value) {
+            headers.set(key, String(value))
+          }
+        }
+      }
+    }
+
+    return fetchWithExtendedTimeout<T>(url, {
       method: 'POST',
       headers,
       credentials: API_CONFIG.withCredentials ? 'include' : 'same-origin',

@@ -166,7 +166,8 @@ export function TopicForm(props: TopicFormProps) {
           error={contentError()}
         />
         <p class="text-xs text-parchment-400 mt-1">
-          Enter JSON content for the topic. Example: lecture text, readings array, objectives array, etc.
+          Enter JSON content for the topic. Example: lecture text, readings array, objectives array,
+          etc.
         </p>
       </FormField>
 

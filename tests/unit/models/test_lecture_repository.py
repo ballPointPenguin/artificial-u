@@ -328,3 +328,39 @@ class TestLectureRepository:
         mock_session.query.assert_called_once_with(LectureModel)
         query_mock.filter_by.assert_called_once_with(topic_id=1)
         mock_session.commit.assert_called_once()
+
+    def test_count_with_filters(self, lecture_repository, mock_session):
+        """Test counting lectures with various filters."""
+        # Mock the query chain
+        mock_query = MagicMock()
+        mock_session.query.return_value = mock_query
+        mock_query.filter.return_value = mock_query
+        mock_query.join.return_value = mock_query
+        mock_query.count.return_value = 5
+
+        # Test count with course_id filter
+        result = lecture_repository.count(course_id=1)
+        assert result == 5
+        mock_query.filter.assert_called()
+        mock_query.count.assert_called_once()
+
+        # Reset mock for next test
+        mock_query.reset_mock()
+        mock_query.count.return_value = 3
+
+        # Test count with professor_id filter
+        result = lecture_repository.count(professor_id=2)
+        assert result == 3
+        mock_query.join.assert_called()
+        mock_query.filter.assert_called()
+        mock_query.count.assert_called_once()
+
+        # Reset mock for next test
+        mock_query.reset_mock()
+        mock_query.count.return_value = 2
+
+        # Test count with search query
+        result = lecture_repository.count(search_query="test")
+        assert result == 2
+        mock_query.filter.assert_called()
+        mock_query.count.assert_called_once()

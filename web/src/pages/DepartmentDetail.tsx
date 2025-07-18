@@ -157,11 +157,7 @@ const DepartmentDetail = () => {
                         <Button variant="secondary" size="sm" onClick={() => setIsEditing(true)}>
                           Edit
                         </Button>
-                        <Button
-                          variant="danger"
-                          size="sm"
-                          onClick={() => setIsDeleting(true)}
-                        >
+                        <Button variant="danger" size="sm" onClick={() => setIsDeleting(true)}>
                           Delete
                         </Button>
                       </div>
@@ -199,13 +195,16 @@ const DepartmentDetail = () => {
                     when={!courses.error}
                     fallback={
                       <div class="text-red-300">
-                        Error loading courses: {courses.error instanceof Error ? courses.error.message : 'Unknown error'}
+                        Error loading courses:{' '}
+                        {courses.error instanceof Error ? courses.error.message : 'Unknown error'}
                       </div>
                     }
                   >
                     <Show
                       when={courses()?.courses && courses()!.courses.length > 0}
-                      fallback={<div class="text-parchment-300">No courses found in this department.</div>}
+                      fallback={
+                        <div class="text-parchment-300">No courses found in this department.</div>
+                      }
                     >
                       <div class="space-y-3">
                         <For each={courses()?.courses}>
@@ -243,13 +242,20 @@ const DepartmentDetail = () => {
                     when={!professors.error}
                     fallback={
                       <div class="text-red-300">
-                        Error loading professors: {professors.error instanceof Error ? professors.error.message : 'Unknown error'}
+                        Error loading professors:{' '}
+                        {professors.error instanceof Error
+                          ? professors.error.message
+                          : 'Unknown error'}
                       </div>
                     }
                   >
                     <Show
                       when={professors()?.professors && professors()!.professors.length > 0}
-                      fallback={<div class="text-parchment-300">No professors found in this department.</div>}
+                      fallback={
+                        <div class="text-parchment-300">
+                          No professors found in this department.
+                        </div>
+                      }
                     >
                       <div class="space-y-3">
                         <For each={professors()?.professors}>

@@ -196,7 +196,9 @@ const CourseDetail: Component = () => {
                   <h1 class="text-3xl font-display text-parchment-100 mb-3">
                     {course().code}: {course().title}
                   </h1>
-                  <p class="text-xl text-parchment-200 mb-6 font-serif italic">{course().description}</p>
+                  <p class="text-xl text-parchment-200 mb-6 font-serif italic">
+                    {course().description}
+                  </p>
 
                   <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
                     {/* Course Details Section */}
@@ -326,7 +328,6 @@ const CourseDetail: Component = () => {
                             {(lecture: LectureBrief) => (
                               <li class="border-b border-parchment-800/30 pb-3">
                                 <h3 class="font-semibold text-parchment-100">
-                                  Week {lecture.week_number} - Lecture {lecture.order_in_week}:{' '}
                                   {lecture.title}
                                 </h3>
                                 <p class="text-parchment-300 text-sm mt-1">{lecture.description}</p>
@@ -343,11 +344,7 @@ const CourseDetail: Component = () => {
                     <div class="flex items-center justify-between mb-5">
                       <h2 class="text-2xl font-display text-parchment-100">Course Topics</h2>
                       <Button variant="primary">
-                        <A
-                          href={`/courses/${String(courseId)}/topics`}
-                          >
-                          Edit Topics
-                        </A>
+                        <A href={`/courses/${String(courseId)}/topics`}>Edit Topics</A>
                       </Button>
                     </div>
                     <Show

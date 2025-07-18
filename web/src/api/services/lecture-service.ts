@@ -2,7 +2,7 @@
  * Lecture service
  */
 import { createUrl, httpClient } from '../client'
-import { ENDPOINTS } from '../config'
+import { ENDPOINTS, TIMEOUT_CONFIG } from '../config'
 import type {
   AudioRedirectResponse,
   Lecture,
@@ -77,7 +77,20 @@ export const lectureService = {
     return response.text()
   },
 
-  generateLecture: (data: LectureGenerateRequest): Promise<Lecture> => {
-    return httpClient.post<Lecture>(ENDPOINTS.lectures.generate, data)
+  /**
+   * Generate lecture with extended timeout for long-running operations
+   */
+  generateLecture: (
+    data: LectureGenerateRequest,
+    onTimeout?: () => void
+  ): Promise<Lecture> => {
+    return httpClient.postWithExtendedTimeout<Lecture>(
+      ENDPOINTS.lectures.generate,
+      data,
+      {
+        timeout: TIMEOUT_CONFIG.generation,
+        onTimeout
+      }
+    )
   },
 }

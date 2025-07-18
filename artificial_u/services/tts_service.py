@@ -190,11 +190,8 @@ class TTSService:
         course_dir = os.path.join(self.audio_path, lecture.course_id)
         os.makedirs(course_dir, exist_ok=True)
 
-        week_dir = os.path.join(course_dir, f"week{lecture.week_number}")
-        os.makedirs(week_dir, exist_ok=True)
-
         # Return full path
-        return os.path.join(week_dir, f"lecture{lecture.order_in_week}.mp3")
+        return os.path.join(course_dir, f"lecture{lecture.id}.mp3")
 
     def _save_audio_file(self, file_path: str, audio_data: bytes) -> None:
         """Save audio data to a file."""

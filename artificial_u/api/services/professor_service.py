@@ -243,18 +243,19 @@ class ProfessorApiService(BaseApiService[CoreProfessor, ProfessorResponse, Profe
             ProfessorLecturesResponse or None if professor not found
         """
         try:
-            # Use core service to get lectures
-            lectures = self.core_service.list_professor_lectures(str(professor_id))
+            # First check if professor exists
+            self.core_service.get_professor(professor_id)
+
+            # Get lectures by professor using the lecture repository
+            lectures = self.repository_factory.lecture.list(professor_id=professor_id)
 
             # Convert to brief format
             lecture_briefs = [
                 LectureBrief(
                     id=lecture.id,
-                    title=lecture.title,
                     course_id=lecture.course_id,
-                    week_number=lecture.week_number,
-                    order_in_week=lecture.order_in_week,
-                    description=lecture.description,
+                    title=lecture.title,
+                    summary=lecture.summary,
                 )
                 for lecture in lectures
             ]

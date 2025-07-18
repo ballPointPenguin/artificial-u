@@ -366,9 +366,7 @@ class CourseApiService(BaseApiService[CoreCourse, CourseResponse, CoursesListRes
                 LectureBrief(
                     id=lecture.id,
                     title=lecture.title,
-                    week_number=lecture.week_number,
-                    order_in_week=lecture.order_in_week,
-                    description=lecture.description,
+                    summary=lecture.summary,
                 )
                 for lecture in lectures
             ]

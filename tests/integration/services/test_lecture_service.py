@@ -347,11 +347,11 @@ class TestLectureService:
         # We need to ensure the created topic is fetchable.
 
         # For the specific topic being generated
-        topic_service.get_topic = AsyncMock(
+        topic_service.get_topic = MagicMock(
             return_value=topic
         )  # Mock if TopicService is not fully "real"
         # For the list of all topics in the course
-        topic_service.list_topics = AsyncMock(
+        topic_service.list_topics = MagicMock(
             return_value=[topic]
         )  # Mock if TopicService is not fully "real"
 
@@ -416,11 +416,11 @@ class TestLectureService:
 
         # Mock TopicService calls for the generation process
         # For the topic of the lecture being generated (topic2)
-        lecture_service.topic_service.get_topic = AsyncMock(
+        lecture_service.topic_service.get_topic = MagicMock(
             side_effect=lambda tid: topic2 if tid == topic2.id else topic1
         )
         # For listing all topics in the course
-        lecture_service.topic_service.list_topics = AsyncMock(return_value=[topic1, topic2])
+        lecture_service.topic_service.list_topics = MagicMock(return_value=[topic1, topic2])
         # Lecture repository's list_by_course will be called to fetch existing_lecture
 
         content_service.generate_text.return_value = MOCK_LECTURE_XML
@@ -464,8 +464,8 @@ class TestLectureService:
         )
 
         # Mock TopicService methods for this test too
-        lecture_service.topic_service.get_topic = AsyncMock(return_value=topic)
-        lecture_service.topic_service.list_topics = AsyncMock(return_value=[topic])
+        lecture_service.topic_service.get_topic = MagicMock(return_value=topic)
+        lecture_service.topic_service.list_topics = MagicMock(return_value=[topic])
 
         # Test missing topic_id (should raise ValueError in _process_models,
         # caught as ContentGenerationError)

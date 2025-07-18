@@ -265,7 +265,7 @@ class LectureService:
 
     # --- Generation Methods --- #
 
-    async def _prepare_prompt_arguments(
+    def _prepare_prompt_arguments(
         self,
         partial_attributes: Dict[str, Any],
         course_data: Dict[str, Any],
@@ -336,7 +336,7 @@ class LectureService:
 
         return generated_xml_output
 
-    async def _process_models_for_generation(self, partial_attributes: Dict[str, Any]) -> tuple[
+    def _process_models_for_generation(self, partial_attributes: Dict[str, Any]) -> tuple[
         Dict[str, Any],  # course_dict
         Dict[str, Any],  # professor_dict
         Dict[str, Any],  # topic_dict
@@ -353,15 +353,11 @@ class LectureService:
         if not topic_id:
             raise ValueError("topic_id is required for lecture generation.")
 
-        course_dict = await self._get_course_data_for_generation(course_id)
-        professor_dict = await self._get_professor_data_for_generation(course_dict.get("id"))
-        current_topic_dict = await self._get_current_topic_data_for_generation(topic_id, course_id)
-        existing_lectures_list_of_dicts = await self._get_existing_lectures_data_for_generation(
-            course_id
-        )
-        all_course_topics_list_of_dicts = await self._get_all_course_topics_data_for_generation(
-            course_id
-        )
+        course_dict = self._get_course_data_for_generation(course_id)
+        professor_dict = self._get_professor_data_for_generation(course_dict.get("id"))
+        current_topic_dict = self._get_current_topic_data_for_generation(topic_id, course_id)
+        existing_lectures_list_of_dicts = self._get_existing_lectures_data_for_generation(course_id)
+        all_course_topics_list_of_dicts = self._get_all_course_topics_data_for_generation(course_id)
 
         return (
             course_dict,
@@ -371,7 +367,7 @@ class LectureService:
             all_course_topics_list_of_dicts,
         )
 
-    async def _get_course_data_for_generation(self, course_id: int) -> Dict[str, Any]:
+    def _get_course_data_for_generation(self, course_id: int) -> Dict[str, Any]:
         """Fetches and prepares course data for lecture generation."""
         try:
             course = self.course_service.get_course(course_id)
@@ -380,7 +376,7 @@ class LectureService:
             self.logger.error(f"Error fetching course {course_id}: {e}")
             raise DatabaseError(f"Error fetching course {course_id}: {e}")
 
-    async def _get_professor_data_for_generation(self, course_id: Optional[int]) -> Dict[str, Any]:
+    def _get_professor_data_for_generation(self, course_id: Optional[int]) -> Dict[str, Any]:
         """Fetches and prepares professor data for lecture generation."""
         if not course_id:
             return {}
@@ -395,12 +391,12 @@ class LectureService:
             self.logger.warning(f"Error fetching professor for course {course_id}: {e}")
             return {}  # Return empty dict on error as per original logic
 
-    async def _get_current_topic_data_for_generation(
+    def _get_current_topic_data_for_generation(
         self, topic_id: int, course_id: int
     ) -> Dict[str, Any]:
         """Fetches and prepares the current topic data for lecture generation."""
         try:
-            current_topic = await self.topic_service.get_topic(topic_id)
+            current_topic = self.topic_service.get_topic(topic_id)
             if not current_topic or current_topic.course_id != course_id:
                 err_msg = f"Topic {topic_id} not found or does not belong to course {course_id}."
                 self.logger.error(err_msg)
@@ -410,16 +406,14 @@ class LectureService:
             self.logger.error(f"Error fetching topic {topic_id}: {e}")
             raise DatabaseError(f"Error fetching topic {topic_id}: {e}")
 
-    async def _get_existing_lectures_data_for_generation(
-        self, course_id: int
-    ) -> List[Dict[str, Any]]:
+    def _get_existing_lectures_data_for_generation(self, course_id: int) -> List[Dict[str, Any]]:
         """Fetches and prepares existing lectures data for context."""
         existing_lectures_list_of_dicts = []
         try:
             lectures_core_models = self.repository_factory.lecture.list_by_course(course_id)
             for lec_model in lectures_core_models:
                 try:
-                    lec_topic = await self.topic_service.get_topic(lec_model.topic_id)
+                    lec_topic = self.topic_service.get_topic(lec_model.topic_id)
                     if lec_topic:
                         existing_lectures_list_of_dicts.append(
                             {
@@ -445,12 +439,10 @@ class LectureService:
             )
         return existing_lectures_list_of_dicts
 
-    async def _get_all_course_topics_data_for_generation(
-        self, course_id: int
-    ) -> List[Dict[str, Any]]:
+    def _get_all_course_topics_data_for_generation(self, course_id: int) -> List[Dict[str, Any]]:
         """Fetches and prepares all course topics data for context."""
         try:
-            topics_core_models = await self.topic_service.list_topics(course_id=course_id)
+            topics_core_models = self.topic_service.list_topics_by_course(course_id)
             return topics_model_to_dict(topics_core_models)
         except Exception as e:
             self.logger.warning(f"Error fetching all topics for course {course_id}: {e}")
@@ -489,10 +481,10 @@ class LectureService:
                 current_topic_dict,
                 existing_lectures_data,
                 all_course_topics_data,
-            ) = await self._process_models_for_generation(partial_attributes)
+            ) = self._process_models_for_generation(partial_attributes)
 
             # Prepare prompt arguments
-            prompt_args = await self._prepare_prompt_arguments(
+            prompt_args = self._prepare_prompt_arguments(
                 partial_attributes,
                 course_dict,
                 professor_dict,

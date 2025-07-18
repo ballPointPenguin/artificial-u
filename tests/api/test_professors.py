@@ -58,9 +58,7 @@ sample_lectures_brief_base = [
         id=i,
         title=f"Test Lecture {i}",
         course_id=1,
-        week_number=i,
-        order_in_week=1,
-        description=f"Description for lecture {i}",
+        summary=f"Summary for lecture {i}",
     )
     for i in range(1, 4)
 ]

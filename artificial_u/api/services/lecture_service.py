@@ -27,6 +27,7 @@ from artificial_u.services import (
 from artificial_u.services import LectureService as CoreLectureService  # Rename to avoid conflict
 from artificial_u.services import (
     ProfessorService,
+    TopicService,
 )
 from artificial_u.utils import ContentGenerationError, DatabaseError, LectureNotFoundError
 
@@ -41,6 +42,7 @@ class LectureApiService(BaseApiService[CoreLecture, Lecture, LectureListResponse
         professor_service: ProfessorService,
         repository_factory: RepositoryFactory,
         storage_service: StorageService,
+        topic_service: TopicService,
         logger=None,
     ):
         """
@@ -52,6 +54,7 @@ class LectureApiService(BaseApiService[CoreLecture, Lecture, LectureListResponse
             course_service: Course service for course-related operations
             content_service: Content service for content-related operations
             storage_service: Storage service for file operations (dependency injection)
+            topic_service: Topic service for topic-related operations
             logger: Optional logger instance
         """
         super().__init__(logger)
@@ -63,6 +66,7 @@ class LectureApiService(BaseApiService[CoreLecture, Lecture, LectureListResponse
             professor_service=professor_service,
             course_service=course_service,
             content_service=content_service,
+            topic_service=topic_service,
             # storage_service is not passed to core service currently
             logger=self.logger,
         )
@@ -71,6 +75,7 @@ class LectureApiService(BaseApiService[CoreLecture, Lecture, LectureListResponse
         self.course_service = course_service
         self.content_service = content_service
         self.storage_service = storage_service
+        self.topic_service = topic_service
 
     def list_lectures(
         self,
@@ -300,14 +305,14 @@ class LectureApiService(BaseApiService[CoreLecture, Lecture, LectureListResponse
 
     async def generate_lecture(self, generation_data: LectureGenerate) -> Lecture:
         """
-        Generate lecture content using AI based on partial data.
-        This method *generates* the data but does not create/save the lecture.
+        Generate lecture content using AI based on partial data and save to database.
+        This method generates the data and creates/saves the lecture.
 
         Args:
             generation_data: Input data containing optional partial attributes and prompt.
 
         Returns:
-            Lecture: The generated lecture data (API model, not saved).
+            Lecture: The generated and saved lecture data (API model).
 
         Raises:
             HTTPException: If generation fails or prerequisites are not found.
@@ -333,39 +338,53 @@ class LectureApiService(BaseApiService[CoreLecture, Lecture, LectureListResponse
             )
 
             # Convert the dictionary to the API response model
-            # Add placeholder ID and validate if necessary,
-            # or ensure core service provides all needed fields
             # The core LectureService.generate_lecture returns a dict like:
             # {"course_id": ..., "topic_id": ..., "content": ..., "summary": ..., "title": ...}
             # This dict is used to populate api_lecture_data for validation.
-            # For Lecture.model_validate, all required fields of API Lecture model must be present.
-            # The core service returns generated attributes; not a full Lecture object.
-            # We must ensure all fields for API Lecture model are present,
-            # using placeholders if needed.
 
-            # Placeholder for ID, as generation doesn't assign one.
             # Revision should come from generated_dict if available.
             # Content, summary, and title must be in generated_dict.
             # course_id and topic_id are in partial_attributes and should be in generated_dict.
 
-            # Ensure generated_dict has all keys required by the API Lecture model,
-            # using placeholders for fields not directly produced by generation (like id).
-            api_lecture_data = {
-                "id": -1,  # Placeholder ID for a non-saved generated lecture
-                "course_id": generated_dict.get("course_id"),
-                "topic_id": generated_dict.get("topic_id"),
-                "revision": generated_dict.get("revision"),  # Assumes core service provides this
-                "content": generated_dict.get("content"),
-                "summary": generated_dict.get("summary"),
-                "title": generated_dict.get("title"),
-                "audio_url": generated_dict.get("audio_url"),  # Allow passthrough
-                "transcript_url": generated_dict.get("transcript_url"),  # Allow passthrough
-            }
+            # Create a core Lecture object with the generated data
+            # Provide default revision if not present (similar to repository logic)
+            revision = generated_dict.get("revision")
+            if revision is None:
+                # Calculate next revision for the topic (similar to repository.create logic)
+                try:
+                    # Get the maximum revision for this specific topic
+                    topic_lectures = self.repository_factory.lecture.list_by_topic(
+                        generated_dict.get("topic_id")
+                    )
+                    max_revision = (
+                        max([lecture.revision for lecture in topic_lectures])
+                        if topic_lectures
+                        else 0
+                    )
+                    revision = max_revision + 1
+                except Exception:
+                    # Fallback to 1 if we can't calculate
+                    revision = 1
 
-            # Validate and convert using the standard response model
-            response = Lecture.model_validate(api_lecture_data)
+            # Create the lecture using the core service
+            core_lecture = self.core_service.create_lecture(
+                course_id=generated_dict.get("course_id"),
+                topic_id=generated_dict.get("topic_id"),
+                title=generated_dict.get("title"),
+                content=generated_dict.get("content"),
+                summary=generated_dict.get("summary"),
+                audio_url=generated_dict.get("audio_url"),
+                transcript_url=generated_dict.get("transcript_url"),
+                revision=revision,
+            )
 
-            self.logger.info(f"Successfully generated lecture data for topic {response.topic_id}")
+            # Convert to API model and return
+            response = Lecture.model_validate(core_lecture)
+
+            self.logger.info(
+                f"Successfully generated and saved lecture {response.id} "
+                f"for topic {response.topic_id}"
+            )
             return response
 
         except (ContentGenerationError, DatabaseError, ValueError) as e:

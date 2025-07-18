@@ -2,9 +2,11 @@
 
 - [x] Add Title to Lectures
 - [x] Add JSONB content to Topics
-- [ ] Generate lecture content
+- [x] Generate lecture content
 - [ ] Generate lecture summary
+- [ ] Ensure lecture revision handling
 - [ ] Generate lecture audio
+- [ ] Generate single topic
 - [ ] Preview and modify professor voices
 - [ ] Enable structured imports of syllabi
 - [ ] Content checking for user input (toxicity, stupidity, typos)
@@ -18,3 +20,6 @@
 - [ ] Enable multi-professor courses
 - [ ] Enable one-click course generation (w/ professor, topics, department)
 - [ ] Enable image-generation when professor is created
+- [ ] Update stylebook
+- [ ] Frontend tests
+- [ ] End-to-end tests

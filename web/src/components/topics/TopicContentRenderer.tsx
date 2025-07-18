@@ -17,11 +17,7 @@ export function TopicContentRenderer(props: TopicContentRendererProps) {
               {Array.isArray(value) ? (
                 <ul class="ml-4 space-y-1">
                   <For each={value}>
-                    {(item) => (
-                      <li class="text-parchment-300 font-serif">
-                        • {item}
-                      </li>
-                    )}
+                    {(item) => <li class="text-parchment-300 font-serif">• {item}</li>}
                   </For>
                 </ul>
               ) : (

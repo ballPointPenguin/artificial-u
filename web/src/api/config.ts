@@ -23,6 +23,14 @@ export const API_CONFIG = {
   withCredentials: false,
 }
 
+// Timeout configurations for different request types
+export const TIMEOUT_CONFIG = {
+  default: 30000, // 30 seconds
+  generation: 300000, // 5 minutes for AI generation
+  upload: 120000, // 2 minutes for file uploads
+  download: 60000, // 1 minute for downloads
+}
+
 // Default headers for all API requests
 export const DEFAULT_HEADERS = {
   'Content-Type': 'application/json',

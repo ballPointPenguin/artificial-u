@@ -153,6 +153,46 @@ class LectureRepository(BaseRepository):
                 for lecture in db_lectures
             ]
 
+    def count(
+        self,
+        course_id: Optional[int] = None,
+        professor_id: Optional[int] = None,
+        search_query: Optional[str] = None,
+    ) -> int:
+        """
+        Count lectures with filtering.
+
+        Args:
+            course_id: Filter by course ID
+            professor_id: Filter by professor ID
+            search_query: Search query for content/summary/title
+
+        Returns:
+            int: Total count of lectures matching the filters
+        """
+        with self.get_session() as session:
+            query = session.query(LectureModel)
+
+            # Apply filters
+            if course_id is not None:
+                query = query.filter(LectureModel.course_id == course_id)
+
+            if professor_id is not None:
+                # Join with CourseModel to filter by professor_id
+                query = query.join(CourseModel).filter(CourseModel.professor_id == professor_id)
+
+            if search_query:
+                # Search in content, summary, and title
+                query = query.filter(
+                    or_(
+                        LectureModel.content.ilike(f"%{search_query}%"),
+                        LectureModel.summary.ilike(f"%{search_query}%"),
+                        LectureModel.title.ilike(f"%{search_query}%"),
+                    )
+                )
+
+            return query.count()
+
     def list(
         self,
         page: int = 1,

@@ -12,8 +12,6 @@ interface CourseTopicsListProps {
   courseId: number
 }
 
-
-
 export function CourseTopicsList(props: CourseTopicsListProps) {
   const [topics, setTopics] = createSignal<Topic[]>([])
   const [isLoading, setIsLoading] = createSignal(false)

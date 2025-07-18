@@ -84,9 +84,7 @@ class LectureBrief(BaseModel):
 
     id: int = Field(..., description="Unique lecture identifier")
     title: str = Field(..., description="Lecture title")
-    week_number: int = Field(..., description="Week number in the course")
-    order_in_week: int = Field(..., description="Order within the week")
-    description: str = Field(..., description="Lecture description")
+    summary: Optional[str] = Field(None, description="Lecture summary")
 
 
 # Course's lectures response model
