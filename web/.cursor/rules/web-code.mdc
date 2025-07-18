@@ -1,7 +1,7 @@
 ---
-globs: *
-alwaysApply: false
+alwaysApply: true
 ---
+
 ## Code Style for JS, TS, JSX, TSX
 
 - code is linted according to eslint (./eslint.config.js)
@@ -26,6 +26,36 @@ alwaysApply: false
 - Kobalte component library
 - TailwindCSS (v4) style utilities
 - PostCSS Preset Env for modern CSS syntax
+
+## Architecture & Styling
+
+**Reference: See STYLE_GUIDE.md for comprehensive UI, styling, and theming documentation**
+
+- **Theming System**: Multiple themes (dark-academia, vaporwave, wabi-sabi, biophilia) defined in `src/utils/theme.ts`
+- **Color Sync**: Colors defined in TWO places that must be kept in sync:
+  - `src/utils/theme.ts`: HSL strings for JS access
+  - `src/index.css`: HSL component values for CSS custom properties
+- **Semantic Colors**: Uses semantic color names (primary, secondary, accent, background, foreground, muted, border, surface) plus status colors (info, success, warning, danger)
+- **Component Library**: Custom UI components in `src/components/ui/` built on Kobalte UI
+- **Fonts**: Cormorant Garamond (body), Cinzel (headings), Inter (UI elements)
+- **Testing**: Use `src/pages/Stylebook.tsx` to test UI components across themes
+
+## Key Files & Directories
+
+- `src/index.css`: Master CSS file with themes, custom properties, global styles
+- `src/utils/theme.ts`: Theme management logic
+- `src/components/ui/`: Reusable UI components
+- `src/pages/Stylebook.tsx`: Component showcase and testing
+- `tailwind.config.js`: Tailwind configuration with semantic color mappings
+- `postcss.config.mjs`: PostCSS plugin configuration
+
+## Development Best Practices
+
+- Prefer Tailwind utility classes for styling
+- Use semantic color system (e.g., `bg-primary`, `text-foreground`) rather than hardcoded colors
+- Test components in Stylebook across different themes
+- Follow "greenfield" philosophy: move fast, refactor aggressively, prioritize iteration speed
+- When adding new themes/colors, update both `theme.ts` and `index.css`
 
 ## Web Server
 

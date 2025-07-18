@@ -89,49 +89,10 @@ const ProfessorInfo: Component<{
   )
 }
 
-// Lectures List Component
-const LecturesList: Component<{
-  lecturesData: () => { lectures: LectureBrief[] } | undefined
-  loading: boolean
-}> = (props) => {
-  // Helper function to safely check if lectures exist
-  const hasLectures = () => {
-    const data = props.lecturesData()
-    return data && Array.isArray(data.lectures) && data.lectures.length > 0
-  }
-
-  return (
-    <div class="arcane-card mt-8">
-      <h2 class="text-xl font-display text-parchment-100 mb-4 border-b border-parchment-800/30 pb-2">
-        Lectures
-      </h2>
-      <Show
-        when={!props.loading}
-        fallback={<div class="text-parchment-400 font-serif">Loading lectures...</div>}
-      >
-        <Show
-          when={hasLectures()}
-          fallback={<div class="text-parchment-400 font-serif">No lectures available.</div>}
-        >
-          <ul class="space-y-4">
-            <For each={props.lecturesData()?.lectures}>
-              {(lecture: LectureBrief) => (
-                <li class="border-b border-parchment-800/30 pb-3">
-                  <h3 class="font-semibold text-parchment-100">{lecture.title}</h3>
-                  <p class="text-parchment-300 text-sm mt-1">{lecture.description}</p>
-                </li>
-              )}
-            </For>
-          </ul>
-        </Show>
-      </Show>
-    </div>
-  )
-}
-
 // Topics List Component
 const TopicsList: Component<{
   topicsData: () => TopicList | undefined
+  lecturesData: () => { lectures: LectureBrief[] } | undefined
   courseId: number
   loading: boolean
 }> = (props) => {
@@ -154,6 +115,10 @@ const TopicsList: Component<{
       >
         {(() => {
           const topics = (props.topicsData() as TopicList).items
+          const lecturesData =
+            typeof props.lecturesData === 'function' ? props.lecturesData() : undefined
+          const lectures = lecturesData?.lectures || []
+
           // Sort topics by week, then by order within each week
           const sortedTopics = topics.sort((a, b) => {
             if (a.week !== b.week) {
@@ -162,27 +127,39 @@ const TopicsList: Component<{
             return a.order - b.order
           })
 
+          // Helper function to find lecture for a topic
+          const findLectureForTopic = (topicId: number) => {
+            return lectures.find((lecture) => lecture.topic_id === topicId)
+          }
+
           return (
             <ul class="space-y-4">
               <For each={sortedTopics}>
-                {(topic) => (
-                  <li class="arcane-card p-4">
-                    <div class="flex items-center justify-between">
-                      <div>
-                        <p class="text-parchment-300 text-sm mt-1">
-                          Week {topic.week}
-                          <Show when={topic.order > 1}> • Topic {topic.order}</Show>
-                        </p>
-                        <A
-                          href={`/courses/${String(props.courseId)}/topics/${String(topic.id)}`}
-                          class="text-parchment-100 font-serif hover:text-primary transition-colors duration-200"
-                        >
-                          {topic.title}
-                        </A>
-                      </div>
-                    </div>
-                  </li>
-                )}
+                {(topic) => {
+                  const lecture = findLectureForTopic(topic.id)
+                  return (
+                    <A
+                      href={`/courses/${String(props.courseId)}/topics/${String(topic.id)}`}
+                      class="block"
+                    >
+                      <li class="arcane-card p-4 hover:bg-parchment-800/20 transition-colors duration-200 cursor-pointer">
+                        <div class="flex items-center justify-between">
+                          <div class="flex-1">
+                            <p class="text-parchment-300 text-sm mt-1">
+                              Week {topic.week}
+                              <Show when={topic.order > 1}> • Topic {topic.order}</Show>
+                            </p>
+                            <p class="text-parchment-100 font-serif">{topic.title}</p>
+                            <Show when={lecture}>
+                              <p class="text-parchment-400 text-sm mt-2">Lecture</p>
+                              <p class="text-parchment-400 text-sm mt-1">{lecture?.title}</p>
+                            </Show>
+                          </div>
+                        </div>
+                      </li>
+                    </A>
+                  )
+                }}
               </For>
             </ul>
           )
@@ -375,7 +352,7 @@ const CourseDetail: Component = () => {
                   <h1 class="text-3xl font-display text-parchment-100 mb-3">
                     {course().code}: {course().title}
                   </h1>
-                  <p class="text-xl text-parchment-200 mb-6 font-serif italic">
+                  <p class="text-base italic text-parchment-200 mb-6 font-serif">
                     {course().description}
                   </p>
 
@@ -418,9 +395,6 @@ const CourseDetail: Component = () => {
                     </div>
                   </div>
 
-                  {/* Lectures Section */}
-                  <LecturesList lecturesData={lecturesData} loading={lecturesData.loading} />
-
                   {/* Topics Section */}
                   <div class="mt-8">
                     <div class="flex items-center justify-between mb-5">
@@ -431,6 +405,7 @@ const CourseDetail: Component = () => {
                     </div>
                     <TopicsList
                       topicsData={topicsData}
+                      lecturesData={lecturesData}
                       courseId={courseId}
                       loading={topicsData.loading}
                     />

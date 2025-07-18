@@ -86,10 +86,10 @@ export interface CoursesListResponse {
 // Brief Lecture info for course's lectures endpoint
 export interface LectureBrief {
   id: number
+  course_id: number
+  topic_id: number
   title: string
-  week_number: number
-  order_in_week: number
-  description: string
+  summary: string | null
 }
 
 export interface CourseLecturesResponse {

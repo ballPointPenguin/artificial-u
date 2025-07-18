@@ -1,16 +1,18 @@
-import { A, useParams } from '@solidjs/router'
+import { A, useNavigate, useParams } from '@solidjs/router'
 import { type Component, createResource, createSignal, Show } from 'solid-js'
 import { courseService } from '../api/services/course-service.js'
 import { lectureService } from '../api/services/lecture-service.js'
 import { topicService } from '../api/services/topic-service.js'
 import type { Lecture, LectureUpdate } from '../api/types.js'
 import { LectureForm } from '../components/lectures/LectureForm.jsx'
-import { Alert, Button } from '../components/ui'
+import { Alert, Button, ConfirmationModal } from '../components/ui'
 
 // Lecture Detail View Component
 const LectureDetailView: Component<{
   lecture: Lecture
   onEdit: () => void
+  onDelete: () => void
+  isDeleting: boolean
 }> = (props) => {
   return (
     <div class="arcane-card">
@@ -19,9 +21,14 @@ const LectureDetailView: Component<{
           <h1 class="text-3xl font-display text-parchment-100 mb-2">{props.lecture.title}</h1>
           <p class="text-parchment-300">Revision {props.lecture.revision}</p>
         </div>
-        <Button variant="primary" onClick={props.onEdit}>
-          Edit Lecture
-        </Button>
+        <div class="flex space-x-2">
+          <Button variant="outline" onClick={props.onEdit}>
+            Edit
+          </Button>
+          <Button variant="danger" onClick={props.onDelete} disabled={props.isDeleting}>
+            {props.isDeleting ? 'Deleting...' : 'Delete'}
+          </Button>
+        </div>
       </div>
 
       {/* Lecture Content */}
@@ -97,10 +104,14 @@ const LectureMetadata: Component<{
 
 const LectureDetail = () => {
   const params = useParams()
+  const navigate = useNavigate()
 
   const [isEditing, setIsEditing] = createSignal(false)
   const [isSubmitting, setIsSubmitting] = createSignal(false)
+  const [isDeleting, setIsDeleting] = createSignal(false)
+  const [showDeleteModal, setShowDeleteModal] = createSignal(false)
   const [error, setError] = createSignal('')
+  const [deleteError, setDeleteError] = createSignal('')
 
   // Parse IDs from URL params
   const courseId = Number.parseInt(params.courseId, 10)
@@ -137,6 +148,29 @@ const LectureDetail = () => {
   const handleCancelEdit = () => {
     setIsEditing(false)
     setError('')
+  }
+
+  const handleDeleteLecture = async () => {
+    if (!isValidIds) return
+
+    setIsDeleting(true)
+    setDeleteError('')
+
+    try {
+      await lectureService.deleteLecture(lectureId)
+      // Navigate back to the topic page
+      const topicId = lecture()?.topic_id
+      if (topicId) {
+        navigate(`/courses/${String(courseId)}/topics/${String(topicId)}`)
+      } else {
+        navigate(`/courses/${String(courseId)}`)
+      }
+    } catch (error) {
+      setDeleteError(error instanceof Error ? error.message : 'Failed to delete lecture')
+      setShowDeleteModal(false)
+    } finally {
+      setIsDeleting(false)
+    }
   }
 
   return (
@@ -194,6 +228,12 @@ const LectureDetail = () => {
                     </Alert>
                   </Show>
 
+                  <Show when={deleteError()}>
+                    <Alert variant="danger" class="mb-4">
+                      {deleteError()}
+                    </Alert>
+                  </Show>
+
                   <Show
                     when={!isEditing()}
                     fallback={
@@ -208,8 +248,29 @@ const LectureDetail = () => {
                     }
                   >
                     {/* Lecture Detail View */}
-                    <LectureDetailView lecture={lectureData} onEdit={() => setIsEditing(true)} />
+                    <LectureDetailView
+                      lecture={lectureData}
+                      onEdit={() => setIsEditing(true)}
+                      onDelete={() => setShowDeleteModal(true)}
+                      isDeleting={isDeleting()}
+                    />
                   </Show>
+
+                  {/* Delete Confirmation Modal */}
+                  <ConfirmationModal
+                    isOpen={showDeleteModal()}
+                    title="Delete Lecture"
+                    message={
+                      <div>
+                        <p>Are you sure you want to delete the lecture "{lectureData.title}"?</p>
+                        <p class="mt-2 text-sm text-muted">This action cannot be undone.</p>
+                      </div>
+                    }
+                    confirmText="Delete"
+                    onConfirm={() => void handleDeleteLecture()}
+                    onCancel={() => setShowDeleteModal(false)}
+                    isConfirming={isDeleting()}
+                  />
                 </div>
               )}
             </Show>

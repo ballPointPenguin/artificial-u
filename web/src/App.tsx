@@ -14,6 +14,7 @@ const CourseDetail = lazy(() => import('./pages/CourseDetail'))
 const CourseTopics = lazy(() => import('./pages/CourseTopics'))
 const TopicDetail = lazy(() => import('./pages/TopicDetail'))
 const LectureDetail = lazy(() => import('./pages/LectureDetail'))
+const LectureCreate = lazy(() => import('./pages/LectureCreate'))
 const Stylebook = lazy(() => import('./pages/Stylebook'))
 
 const App: Component = () => {
@@ -38,6 +39,7 @@ const App: Component = () => {
       <Route path="/courses/:courseId/topics/:topicId" component={TopicDetail} />
 
       {/* Course Lectures routes */}
+      <Route path="/courses/:courseId/topics/:topicId/lectures/new" component={LectureCreate} />
       <Route path="/courses/:courseId/lectures/:lectureId" component={LectureDetail} />
     </Route>
   )
