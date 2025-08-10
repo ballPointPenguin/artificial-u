@@ -3,7 +3,7 @@ Core data models for the ArtificialU system.
 """
 
 from datetime import datetime
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -53,16 +53,16 @@ class Voice(BaseModel):
                 "preview_url": "https://storage.googleapis.com/eleven-public-prod/voices/"
                 "example.mp3",
                 "use_case": "informative_educational",
-                "verified_languages": {
-                    "languages": [
-                        {
-                            "language": "hi",
-                            "model_id": "eleven_turbo_v2_5",
-                            "accent": "standard",
-                            "locale": "hi-IN",
-                        }
-                    ]
-                },
+                "verified_languages": [
+                    {
+                        "language": "hi",
+                        "model_id": "eleven_turbo_v2_5",
+                        "accent": "standard",
+                        "locale": "hi-IN",
+                        "preview_url": "https://storage.googleapis.com/eleven-public-prod/"
+                        "voices/example.mp3",
+                    }
+                ],
                 "last_updated": "2025-05-05T00:00:00Z",
             }
         }
@@ -82,7 +82,7 @@ class Voice(BaseModel):
     popularity_score: Optional[int] = None
     preview_url: Optional[str] = None
     use_case: Optional[str] = None
-    verified_languages: Dict[str, Any] = Field(default_factory=dict)
+    verified_languages: List[Dict[str, Any]] = Field(default_factory=list)
     last_updated: datetime = Field(default_factory=datetime.now)
 
 

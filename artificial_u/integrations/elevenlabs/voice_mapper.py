@@ -19,62 +19,63 @@ class VoiceMapper:
     Provides algorithms for matching professors to voices.
     """
 
-    # Supported accents in ElevenLabs (for English-capable voices)
-    SUPPORTED_ACCENTS = [
-        "american",
-        "australian",
-        "british",
-        "canadian",
-        "indian",
-        "irish",
-        "jamaican",
-        "new_zealand",
-        "nigerian",
-        "scottish",
-        "south_african",
-        "african_american",
-        "singaporean",
-        "boston",
-        "chicago",
-        "new_york",
-        "us_southern",
-        "us_midwest",
-        "us_northeast",
-        "cockney",
-        "geordie",
-        "received_pronunciation",
-        "scouse",
-        "welsh",
-        "yorkshire",
-        "arabic",
-        "bulgarian",
-        "chinese",
-        "croatian",
-        "czech",
-        "danish",
-        "dutch",
-        "filipino",
-        "finnish",
-        "french",
-        "german",
-        "greek",
-        "hindi",
-        "indonesian",
-        "italian",
-        "japanese",
-        "korean",
-        "malay",
-        "polish",
-        "portuguese",
-        "romanian",
-        "russian",
-        "slovak",
-        "spanish",
-        "swedish",
-        "tamil",
-        "turkish",
-        "ukrainian",
-    ]
+    # Mapping of nationalities/accents to two-letter language codes
+    # Used for converting accent descriptions to language codes for API queries
+    ACCENT_TO_LANGUAGE_MAP = {
+        # English variants
+        "american": "en",
+        "british": "en",
+        "australian": "en",
+        "canadian": "en",
+        "irish": "en",
+        "scottish": "en",
+        "welsh": "en",
+        "new_zealand": "en",
+        "south_african": "en",
+        "indian": "en",  # For English-speaking Indians
+        "singaporean": "en",
+        "nigerian": "en",
+        "jamaican": "en",
+        # Other languages
+        "french": "fr",
+        "german": "de",
+        "spanish": "es",
+        "italian": "it",
+        "portuguese": "pt",
+        "russian": "ru",
+        "polish": "pl",
+        "czech": "cs",
+        "slovak": "sk",
+        "croatian": "hr",
+        "bulgarian": "bg",
+        "romanian": "ro",
+        "greek": "el",
+        "turkish": "tr",
+        "arabic": "ar",
+        "hebrew": "he",
+        "hindi": "hi",
+        "tamil": "ta",
+        "chinese": "zh",
+        "japanese": "ja",
+        "korean": "ko",
+        "vietnamese": "vi",
+        "thai": "th",
+        "indonesian": "id",
+        "malay": "ms",
+        "filipino": "tl",
+        "dutch": "nl",
+        "danish": "da",
+        "swedish": "sv",
+        "norwegian": "no",
+        "finnish": "fi",
+        "ukrainian": "uk",
+        # Regional variants (map to primary language)
+        "mexican": "es",
+        "argentinian": "es",
+        "brazilian": "pt",
+        "quebec": "fr",
+        "athenian": "el",
+    }
 
     def __init__(self, logger=None):
         """
@@ -172,15 +173,15 @@ class VoiceMapper:
         Returns:
             Optional[str]: Accent if detected, None otherwise
         """
-        # If professor has an accent attribute, use it
+        # If professor has an accent attribute, use it directly
         if hasattr(professor, "accent") and professor.accent:
-            # Format accent to match API expectations
-            accent = professor.accent.lower().replace(" ", "_")
-            if accent in self.SUPPORTED_ACCENTS:
-                return accent
+            accent_text = professor.accent.lower().strip()
+            self.logger.debug(f"Using accent text directly: '{accent_text}'")
+            return accent_text
 
-        # Extract from background
+        # Extract from background as fallback
         background = professor.background.lower()
+        self.logger.debug(f"Falling back to background extraction: '{background[:100]}...'")
 
         # Nationality/region indicators with corresponding accents
         nationality_accents = {
@@ -200,14 +201,39 @@ class VoiceMapper:
             "swedish": ["sweden", "stockholm", "swedish"],
             "mexican": ["mexico", "mexican", "mexico city"],
             "nigerian": ["nigeria", "lagos", "nigerian"],
+            "greek": ["greece", "athens", "greek"],
         }
 
         for accent, indicators in nationality_accents.items():
             if any(indicator in background for indicator in indicators):
+                self.logger.debug(f"Found accent '{accent}' from background indicators")
                 return accent
 
         # No clear accent detected
+        self.logger.debug("No accent detected from either accent field or background")
         return None
+
+    def accent_to_language_code(self, accent: Optional[str]) -> str:
+        """
+        Convert an accent string to a two-letter language code.
+
+        Args:
+            accent: Accent string (e.g., "british", "french", "athenian")
+
+        Returns:
+            Two-letter language code (defaults to "en" if not found)
+        """
+        if not accent:
+            return "en"
+
+        accent_lower = accent.lower().strip()
+
+        # Check if it's already a two-letter code
+        if len(accent_lower) == 2:
+            return accent_lower
+
+        # Look up in our mapping
+        return self.ACCENT_TO_LANGUAGE_MAP.get(accent_lower, "en")
 
     def _extract_age(self, professor: Professor) -> str:
         """
@@ -222,9 +248,9 @@ class VoiceMapper:
         # If professor has an age attribute, use it
         if hasattr(professor, "age") and professor.age:
             if isinstance(professor.age, int):
-                if professor.age < 35:
+                if professor.age < 45:
                     return "young"
-                elif professor.age > 60:
+                elif professor.age > 75:
                     return "old"
                 else:
                     return "middle_aged"
@@ -261,8 +287,11 @@ class VoiceMapper:
         """
         quality_score = 0.5
 
-        # Adjust based on category
-        if voice.get("category") == "high_quality":
+        # Prioritize premade voices highest
+        if voice.get("category") == "premade":
+            quality_score += 0.4
+        # Then high_quality and professional
+        elif voice.get("category") == "high_quality":
             quality_score += 0.3
         elif voice.get("category") == "professional":
             quality_score += 0.25
@@ -280,6 +309,81 @@ class VoiceMapper:
 
         return quality_score
 
+    def _calculate_voice_match_score(
+        self, voice: Dict[str, Any], criteria: Dict[str, Any]
+    ) -> float:
+        """
+        Calculate match score for a single voice against criteria.
+
+        Args:
+            voice: Voice data dictionary
+            criteria: Matching criteria
+
+        Returns:
+            Match score for the voice
+        """
+        # Start with quality score
+        quality_score = self._calculate_quality_score(voice)
+        score = quality_score
+
+        # Gender match is important
+        voice_gender = voice.get("gender")
+        criteria_gender = criteria.get("gender")
+        if criteria_gender and voice_gender == criteria_gender:
+            score += 0.3
+            self.logger.debug(f"  +0.3 for gender match: {voice_gender}")
+        elif criteria_gender:
+            self.logger.debug(
+                f"  No gender match: voice={voice_gender}, criteria={criteria_gender}"
+            )
+
+        # Accent match is also important
+        voice_accent = voice.get("accent")
+        criteria_accent = criteria.get("accent")
+        if criteria_accent and voice_accent == criteria_accent:
+            score += 0.2
+            self.logger.debug(f"  +0.2 for accent match: {voice_accent}")
+        elif criteria_accent:
+            self.logger.debug(
+                f"  No accent match: voice={voice_accent}, criteria={criteria_accent}"
+            )
+
+        # Age match is less important but still relevant
+        voice_age = voice.get("age")
+        criteria_age = criteria.get("age")
+        if criteria_age and voice_age == criteria_age:
+            score += 0.1
+            self.logger.debug(f"  +0.1 for age match: {voice_age}")
+        elif criteria_age:
+            self.logger.debug(f"  No age match: voice={voice_age}, criteria={criteria_age}")
+
+        # Use case match
+        voice_use_case = voice.get("use_case")
+        criteria_use_case = criteria.get("use_case")
+        if criteria_use_case and voice_use_case == criteria_use_case:
+            score += 0.1
+            self.logger.debug(f"  +0.1 for use case match: {voice_use_case}")
+        elif criteria_use_case:
+            self.logger.debug(
+                f"  No use case match: voice={voice_use_case}, criteria={criteria_use_case}"
+            )
+
+        return score
+
+    def _apply_reuse_penalty(
+        self, voice: Dict[str, Any], used_voice_ids: Optional[List[str]]
+    ) -> None:
+        """
+        Apply penalty if voice is already in use.
+
+        Args:
+            voice: Voice data dictionary
+            used_voice_ids: List of voice IDs already in use
+        """
+        if used_voice_ids and voice.get("el_voice_id") in used_voice_ids:
+            voice["match_score"] -= 0.3  # Significant penalty for reuse
+            self.logger.debug("  -0.3 penalty for voice already in use")
+
     def extract_profile_attributes(self, professor: Professor) -> Dict[str, Any]:
         """
         Extract all relevant attributes from a professor profile for voice matching.
@@ -295,25 +399,30 @@ class VoiceMapper:
         accent = self._extract_accent(professor)
         age = self._extract_age(professor)
 
+        # Convert accent to language code
+        language = self.accent_to_language_code(accent)
+
         # Build attributes dictionary
         attributes = {
-            "language": "en",  # Default to English
+            "language": language,  # Use derived language code
             "use_case": "informative_educational",  # Educational content
         }
-        # TODO: Consider including 'category' here
 
         # Only add attributes if they have values
         if gender:
             attributes["gender"] = gender
         if accent:
-            attributes["accent"] = accent
+            attributes["accent"] = accent  # Keep original accent for matching
         if age:
             attributes["age"] = age
 
         return attributes
 
     def rank_voices(
-        self, voices: List[Dict[str, Any]], criteria: Dict[str, Any]
+        self,
+        voices: List[Dict[str, Any]],
+        criteria: Dict[str, Any],
+        used_voice_ids: Optional[List[str]] = None,
     ) -> List[Dict[str, Any]]:
         """
         Rank voices by how well they match the given criteria.
@@ -321,38 +430,47 @@ class VoiceMapper:
         Args:
             voices: List of voice data dictionaries
             criteria: Matching criteria
+            used_voice_ids: Optional list of voice IDs already in use
 
         Returns:
             List of voices sorted by match quality
         """
+        self.logger.debug(f"=== Starting voice ranking for {len(voices)} voices ===")
+        self.logger.debug(f"Ranking criteria: {criteria}")
+
         if not voices:
+            self.logger.debug("No voices to rank, returning empty list")
             return []
 
         # Calculate match score for each voice
-        for voice in voices:
-            score = self._calculate_quality_score(voice)  # Start with quality score
+        self.logger.debug("Calculating match scores for each voice...")
+        for i, voice in enumerate(voices):
+            voice_name = voice.get("name", f"Voice_{i}")
+            voice_id = voice.get("el_voice_id", "unknown")
 
-            # Gender match is important
-            if criteria.get("gender") and voice.get("gender") == criteria["gender"]:
-                score += 0.3
+            self.logger.debug(f"Voice {i+1}: {voice_name} (ID: {voice_id})")
 
-            # Accent match is also important
-            if criteria.get("accent") and voice.get("accent") == criteria["accent"]:
-                score += 0.2
-
-            # Age match is less important but still relevant
-            if criteria.get("age") and voice.get("age") == criteria["age"]:
-                score += 0.1
-
-            # Use case match
-            if criteria.get("use_case") and voice.get("use_case") == criteria["use_case"]:
-                score += 0.1
-
-            # Store the match score
+            # Calculate base match score
+            score = self._calculate_voice_match_score(voice, criteria)
             voice["match_score"] = score
 
+            # Apply reuse penalty
+            self._apply_reuse_penalty(voice, used_voice_ids)
+
+            self.logger.debug(f"  Final match score: {voice['match_score']:.3f}")
+
         # Sort by match score
-        return sorted(voices, key=lambda v: v.get("match_score", 0), reverse=True)
+        ranked_voices = sorted(voices, key=lambda v: v.get("match_score", 0), reverse=True)
+
+        self.logger.debug("=== Voice ranking completed ===")
+        self.logger.debug("Top 5 ranked voices:")
+        for i, voice in enumerate(ranked_voices[:5]):
+            name = voice.get("name", f"Voice_{i}")
+            voice_id = voice.get("el_voice_id", "unknown")
+            score = voice.get("match_score", 0)
+            self.logger.debug(f"  {i+1}. {name} (ID: {voice_id}) - Score: {score:.3f}")
+
+        return ranked_voices
 
     def select_voice(
         self,
@@ -371,40 +489,94 @@ class VoiceMapper:
         Returns:
             Selected voice or None if no voices available
         """
+        self.logger.debug("=== Starting voice selection ===")
+        self.logger.debug(f"Strategy: {selection_strategy}, Top N: {top_n}")
+        self.logger.debug(f"Available voices: {len(ranked_voices)}")
+
         if not ranked_voices:
             self.logger.warning("No voices available for selection")
             return None
 
         if selection_strategy == "top":
             # Simply take the top ranked voice
-            return ranked_voices[0]
+            selected = ranked_voices[0]
+            self.logger.debug(
+                f"Selected top voice: {selected.get('name', 'Unknown')} "
+                f"(ID: {selected.get('el_voice_id', 'Unknown')})"
+            )
+            return selected
 
         elif selection_strategy == "top_random":
             # Take a random voice from the top N
             n = min(top_n, len(ranked_voices))
-            return random.choice(ranked_voices[:n])
+            self.logger.debug(f"Random selection from top {n} voices")
+
+            # Log the candidates
+            candidates = ranked_voices[:n]
+            self.logger.debug("Candidates for random selection:")
+            for i, voice in enumerate(candidates):
+                name = voice.get("name", f"Voice_{i}")
+                voice_id = voice.get("el_voice_id", "unknown")
+                score = voice.get("match_score", 0)
+                self.logger.debug(f"  {i+1}. {name} (ID: {voice_id}) - Score: {score:.3f}")
+
+            selected = random.choice(candidates)
+            selected_name = selected.get("name", "Unknown")
+            selected_id = selected.get("el_voice_id", "Unknown")
+            self.logger.debug(f"Randomly selected: {selected_name} (ID: {selected_id})")
+            return selected
 
         elif selection_strategy == "weighted":
             # Weighted random selection based on match score
+            self.logger.debug("Using weighted random selection")
+
             total_score = sum(v.get("match_score", 0.1) for v in ranked_voices)
+            self.logger.debug(f"Total score: {total_score:.3f}")
+
             if total_score <= 0:
                 # If all scores are zero or negative, use equal weights
-                return random.choice(ranked_voices)
+                self.logger.debug("All scores <= 0, using equal weights")
+                selected = random.choice(ranked_voices)
+                self.logger.debug(
+                    f"Equal weight selected: {selected.get('name', 'Unknown')} "
+                    f"(ID: {selected.get('el_voice_id', 'Unknown')})"
+                )
+                return selected
 
             # Random selection with weights proportional to match scores
             r = random.random() * total_score
+            self.logger.debug(f"Random threshold: {r:.3f}")
+
             cumulative = 0
-            for voice in ranked_voices:
-                cumulative += voice.get("match_score", 0.1)
+            for i, voice in enumerate(ranked_voices):
+                voice_score = voice.get("match_score", 0.1)
+                cumulative += voice_score
+                voice_name = voice.get("name", "Unknown")
+                self.logger.debug(
+                    f"Voice {i+1}: {voice_name} - Score: {voice_score:.3f}, "
+                    f"Cumulative: {cumulative:.3f}"
+                )
+
                 if cumulative >= r:
+                    voice_id = voice.get("el_voice_id", "Unknown")
+                    self.logger.debug(f"Weighted selection: {voice_name} (ID: {voice_id})")
                     return voice
 
             # Fallback in case of floating point issues
-            return ranked_voices[-1]
+            self.logger.debug("Using fallback selection (last voice)")
+            selected = ranked_voices[-1]
+            selected_name = selected.get("name", "Unknown")
+            selected_id = selected.get("el_voice_id", "Unknown")
+            self.logger.debug(f"Fallback selected: {selected_name} (ID: {selected_id})")
+            return selected
 
         else:
             # Unknown strategy, use top ranked
             self.logger.warning(
                 f"Unknown selection strategy: {selection_strategy}, using top ranked"
             )
-            return ranked_voices[0]
+            selected = ranked_voices[0]
+            selected_name = selected.get("name", "Unknown")
+            selected_id = selected.get("el_voice_id", "Unknown")
+            self.logger.debug(f"Unknown strategy fallback: {selected_name} (ID: {selected_id})")
+            return selected

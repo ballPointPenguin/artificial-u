@@ -51,6 +51,12 @@ class VoiceService:
             List of voice dictionaries
         """
         # Try strict matching first
+        self.logger.debug(
+            f"Strict matching filters: gender={attributes.get('gender')}, "
+            f"accent={attributes.get('accent')}, age={attributes.get('age')}, "
+            f"language={attributes.get('language', 'en')}, "
+            f"use_case={attributes.get('use_case')}, category={attributes.get('category')}"
+        )
         voices = self.repository_factory.voice.list(
             gender=attributes.get("gender"),
             accent=attributes.get("accent"),
@@ -62,9 +68,19 @@ class VoiceService:
 
         if voices:
             self.logger.info(f"Found {len(voices)} voices in database with strict matching")
+            # Log the actual voices found for debugging
+            for i, voice in enumerate(voices):
+                self.logger.debug(
+                    f"  Strict match {i+1}: {voice.name} "
+                    f"(gender: {voice.gender}, age: {voice.age}, accent: {voice.accent})"
+                )
             return [v.model_dump() for v in voices]
 
         # If no results, try more relaxed matching (omitting accent, use_case, category)
+        self.logger.debug(
+            f"Relaxed matching filters: gender={attributes.get('gender')}, "
+            f"age={attributes.get('age')}, language={attributes.get('language')}"
+        )
         voices = self.repository_factory.voice.list(
             gender=attributes.get("gender"),
             age=attributes.get("age"),
@@ -73,9 +89,58 @@ class VoiceService:
 
         if voices:
             self.logger.info(f"Found {len(voices)} voices in database with relaxed matching")
+            # Log the actual voices found for debugging
+            for i, voice in enumerate(voices):
+                self.logger.debug(
+                    f"  Relaxed match {i+1}: {voice.name} "
+                    f"(gender: {voice.gender}, age: {voice.age}, accent: {voice.accent})"
+                )
+            return [v.model_dump() for v in voices]
+
+        # If still no results, try with just gender and language (ignore age)
+        self.logger.debug(
+            f"Very relaxed matching filters: gender={attributes.get('gender')}, "
+            f"language={attributes.get('language')} (ignoring age)"
+        )
+        voices = self.repository_factory.voice.list(
+            gender=attributes.get("gender"),
+            language=attributes.get("language"),
+        )
+
+        if voices:
+            self.logger.info(
+                f"Found {len(voices)} voices in database with very relaxed matching (ignoring age)"
+            )
+            # Log the actual voices found for debugging
+            for i, voice in enumerate(voices):
+                self.logger.debug(
+                    f"  Very relaxed match {i+1}: {voice.name} "
+                    f"(gender: {voice.gender}, age: {voice.age}, accent: {voice.accent})"
+                )
             return [v.model_dump() for v in voices]
 
         return []
+
+    def _get_used_voice_ids(self) -> List[str]:
+        """
+        Get a list of ElevenLabs voice IDs that are already assigned to professors.
+
+        Returns:
+            List of ElevenLabs voice IDs in use
+        """
+        # Get all professors with assigned voices
+        professors = self.repository_factory.professor.list()
+
+        used_voice_ids = []
+        for professor in professors:
+            if professor.voice_id:
+                # Get the voice from database
+                voice = self.repository_factory.voice.get(professor.voice_id)
+                if voice and voice.el_voice_id:
+                    used_voice_ids.append(voice.el_voice_id)
+
+        self.logger.debug(f"Found {len(used_voice_ids)} unique voices in use")
+        return used_voice_ids
 
     def _fetch_voices_from_api(
         self,
@@ -102,23 +167,42 @@ class VoiceService:
         """
         self.logger.info("Fetching voices from API for selection")
 
-        # Get first page of results
+        voices = []
+
+        # First, try to get premade voices if we haven't already
+        premade_voices = self.client.get_premade_voices()
+        for voice in premade_voices:
+            # Apply filters to premade voices
+            if gender and voice.get("gender") != gender:
+                continue
+            if age and voice.get("age") != age:
+                continue
+            if language and voice.get("language") != language:
+                continue
+            if use_case and voice.get("use_case") != use_case:
+                continue
+            if category and voice.get("category") != category:
+                continue
+
+            voices.append(voice)
+            self._save_voice_to_db(voice)
+
+        # Don't pass accent to shared voices API, use language instead
+        # The shared voices API doesn't support 'accent' query param effectively
         voices_page, has_more = self.client.get_shared_voices(
             gender=gender,
-            accent=accent,
             age=age,
             language=language,
             use_case=use_case,
             category=category,
         )
-        voices = voices_page
+        voices.extend(voices_page)
 
         # Get additional pages if needed (limit to 3 pages)
         page = 1
         while has_more and page < 3:
             more_voices, has_more = self.client.get_shared_voices(
                 gender=gender,
-                accent=accent,
                 age=age,
                 language=language,
                 use_case=use_case,
@@ -128,11 +212,38 @@ class VoiceService:
             voices.extend(more_voices)
             page += 1
 
-        # Save to database
-        for voice_data in voices:
+        # Save remaining shared voices to database
+        for voice_data in voices_page:
             self._save_voice_to_db(voice_data)
 
         return voices
+
+    def fetch_and_store_premade_voices(self) -> int:
+        """
+        Fetch and store premade voices from the v2/voices endpoint.
+
+        Returns:
+            Number of premade voices stored
+        """
+        self.logger.info("Fetching premade voices from v2/voices endpoint")
+
+        try:
+            # Get premade voices from the API
+            premade_voices = self.client.get_premade_voices()
+
+            # Filter for premade category only
+            count = 0
+            for voice_data in premade_voices:
+                if voice_data.get("category") == "premade":
+                    self._save_voice_to_db(voice_data)
+                    count += 1
+
+            self.logger.info(f"Stored {count} premade voices to database")
+            return count
+
+        except Exception as e:
+            self.logger.error(f"Error fetching premade voices: {e}")
+            return 0
 
     def _find_voices_with_relaxed_criteria(
         self, attributes: Dict[str, Any]
@@ -213,14 +324,25 @@ class VoiceService:
         Returns:
             Selected voice data including both el_voice_id and db voice record id
         """
-        # Extract professor attributes for voice matching
-        attributes = self.mapper.extract_profile_attributes(professor)
+        self.logger.info(
+            f"=== Starting voice selection for professor: "
+            f"{professor.name} (ID: {professor.id}) ==="
+        )
+        self.logger.info(f"Selection strategy: {selection_strategy}")
 
-        # Step 1: Try to find suitable voices
+        # Extract professor attributes for voice matching
+        self.logger.debug("Step 1: Extracting professor attributes for voice matching")
+        attributes = self.mapper.extract_profile_attributes(professor)
+        self.logger.info(f"Extracted attributes: {attributes}")
+
+        # Step 1: Try to find suitable voices in database
+        self.logger.debug("Step 2: Searching for voices in database with extracted attributes")
         voices = self._find_voices_in_db(attributes)
+        self.logger.info(f"Found {len(voices)} voices in database")
 
         # Step 2: If no voices found in DB, fetch from API
         if not voices:
+            self.logger.debug("Step 3: No voices found in DB, fetching from ElevenLabs API")
             voices = self._fetch_voices_from_api(
                 gender=attributes.get("gender"),
                 accent=attributes.get("accent"),
@@ -229,29 +351,100 @@ class VoiceService:
                 use_case=attributes.get("use_case"),
                 category=attributes.get("category"),
             )
+            self.logger.info(f"Fetched {len(voices)} voices from API")
+        else:
+            self.logger.debug("Step 3: Skipping API fetch - sufficient voices found in database")
 
         # Step 3: If still no voices, try with relaxed criteria
         if not voices:
+            self.logger.debug(
+                "Step 4: No voices found with strict criteria, trying relaxed criteria"
+            )
             voices = self._find_voices_with_relaxed_criteria(attributes)
+            self.logger.info(f"Found {len(voices)} voices with relaxed criteria")
+        else:
+            self.logger.debug("Step 4: Skipping relaxed criteria - sufficient voices found")
 
-        # Step 4: Rank the voices based on match criteria
-        ranked_voices = self.mapper.rank_voices(voices, attributes)
+        # Step 4: Get already-used voice IDs to avoid reuse
+        self.logger.debug("Step 5: Getting list of already-used voice IDs")
+        used_voice_ids = self._get_used_voice_ids()
+        self.logger.info(f"Found {len(used_voice_ids)} voices already in use")
 
-        # Step 5: Select voice using the specified strategy
+        # Step 5: Rank the voices based on match criteria
+        self.logger.debug("Step 6: Ranking voices based on match criteria")
+        ranked_voices = self.mapper.rank_voices(voices, attributes, used_voice_ids)
+        self.logger.info(f"Ranked {len(ranked_voices)} voices")
+
+        # Log top 3 ranked voices for debugging
+        if ranked_voices:
+            self.logger.debug("Top 3 ranked voices:")
+            for i, voice in enumerate(ranked_voices[:3]):
+                voice_name = voice.get("name", "Unknown")
+                voice_id = voice.get("el_voice_id", "Unknown")
+                score = voice.get("match_score", "N/A")
+                self.logger.debug(f"  {i+1}. {voice_name} (ID: {voice_id}) - Score: {score}")
+
+        # Step 6: Select voice using the specified strategy
+        self.logger.debug(f"Step 7: Selecting voice using strategy: {selection_strategy}")
         selected_voice = self.mapper.select_voice(ranked_voices, selection_strategy)
 
         if not selected_voice:
+            self.logger.error("No suitable voice found for professor after all selection steps")
             raise ValueError("No suitable voice found for professor")
 
-        # Step 6: Add the db voice record
+        selected_name = selected_voice.get("name", "Unknown")
+        selected_id = selected_voice.get("el_voice_id", "Unknown")
+        self.logger.info(f"Selected voice: {selected_name} (ID: {selected_id})")
+
+        # Step 7: Add the db voice record
+        self.logger.debug("Step 8: Finding or creating database voice record")
         voice_db = self._find_or_create_db_voice(selected_voice)
+        self.logger.info(f"Database voice record ID: {voice_db.id}")
 
         # Update professor's voice_id if professor has an id
         if professor.id:
+            self.logger.debug(
+                f"Step 9: Updating professor {professor.id} with voice ID {voice_db.id}"
+            )
             self.repository_factory.professor.update_field(professor.id, voice_id=voice_db.id)
             self.logger.info(f"Updated professor {professor.id} with voice ID {voice_db.id}")
+        else:
+            # For new professors without IDs, update the object in memory
+            self.logger.debug(
+                f"Step 9: Assigning voice ID {voice_db.id} to new professor {professor.name}"
+            )
+            professor.voice_id = voice_db.id
+            self.logger.info(f"Assigned voice ID {voice_db.id} to new professor {professor.name}")
 
+        # Add database voice ID to the returned data
+        selected_voice["db_voice_id"] = voice_db.id
+        self.logger.info(f"=== Voice selection completed for professor: {professor.name} ===")
         return selected_voice
+
+    def _convert_verified_languages(self, verified_languages_raw: Any) -> List[Dict[str, Any]]:
+        """Convert ElevenLabs verified_languages data to serializable format."""
+        verified_languages = []
+
+        if isinstance(verified_languages_raw, list):
+            for lang_obj in verified_languages_raw:
+                try:
+                    if hasattr(lang_obj, "model_dump"):
+                        # Convert Pydantic model to dict
+                        verified_languages.append(lang_obj.model_dump())
+                    elif hasattr(lang_obj, "dict"):
+                        # Fallback for older Pydantic versions
+                        verified_languages.append(lang_obj.dict())
+                    elif isinstance(lang_obj, dict):
+                        # Already a dict
+                        verified_languages.append(lang_obj)
+                    else:
+                        # Convert any other object to dict via its attributes
+                        verified_languages.append(dict(lang_obj.__dict__))
+                except Exception as e:
+                    self.logger.warning(f"Failed to convert verified_languages item: {e}")
+                    continue
+
+        return verified_languages
 
     def _save_voice_to_db(self, el_voice_data: Dict[str, Any]) -> None:
         """Save a voice to the database."""
@@ -260,6 +453,11 @@ class VoiceService:
         popularity_score = el_voice_data.get("cloned_by_count", 0)
         if not popularity_score:
             popularity_score = el_voice_data.get("usage_character_count_1y", 0)
+
+        # Convert verified_languages from ElevenLabs API format to serializable format
+        verified_languages = self._convert_verified_languages(
+            el_voice_data.get("verified_languages", [])
+        )
 
         # Create Voice model
         voice = Voice(
@@ -275,7 +473,7 @@ class VoiceService:
             locale=el_voice_data.get("locale"),
             description=el_voice_data.get("description"),
             preview_url=el_voice_data.get("preview_url"),
-            verified_languages=el_voice_data.get("verified_languages", {}),
+            verified_languages=verified_languages,
             popularity_score=popularity_score,
             last_updated=datetime.now(),
         )

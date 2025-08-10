@@ -79,7 +79,17 @@ class ElevenLabsClient:
             "Accept": "application/json",
         }
 
-    def get_voice(self, voice_id: str) -> Optional[Dict[str, Any]]:
+    """
+    Get details of a specific voice by ElevenLabs voice ID.
+
+    Args:
+        el_voice_id: ElevenLabs Voice ID of the voice to retrieve
+
+    Returns:
+        Voice details or None if not found
+    """
+
+    def get_el_voice(self, el_voice_id: str) -> Optional[Dict[str, Any]]:
         """
         Get details of a specific voice.
 
@@ -90,7 +100,7 @@ class ElevenLabsClient:
             Voice details or None if not found
         """
         try:
-            response = self.client.voices.get(voice_id=voice_id)
+            response = self.client.voices.get(voice_id=el_voice_id)
 
             voice_data = {
                 "el_voice_id": response.voice_id,
@@ -105,7 +115,7 @@ class ElevenLabsClient:
 
             return voice_data
         except Exception as e:
-            self.logger.error(f"Error retrieving ElevenLabs voice {voice_id}: {e}")
+            self.logger.error(f"Error retrieving ElevenLabs voice {el_voice_id}: {e}")
             return None
 
     def get_shared_voices(
@@ -164,9 +174,19 @@ class ElevenLabsClient:
             # Format the voice data to standardized format
             formatted_voices = []
             for voice in voices:
+                # Filter out voices with non-null rate or fiat_rate
+                rate = getattr(voice, "rate", None)
+                fiat_rate = getattr(voice, "fiat_rate", None)
+
+                # Skip voices that cost extra
+                if rate is not None and rate != 1.0:
+                    continue
+                if fiat_rate is not None:
+                    continue
+
                 formatted_voices.append(
                     {
-                        "voice_id": voice.voice_id,
+                        "el_voice_id": voice.voice_id,  # Fixed: use consistent field name
                         "name": voice.name,
                         "gender": getattr(voice, "gender", None),
                         "accent": getattr(voice, "accent", None),
@@ -188,6 +208,63 @@ class ElevenLabsClient:
         except Exception as e:
             self.logger.error(f"Error retrieving shared voices: {e}")
             return [], False
+
+    def get_premade_voices(self) -> List[Dict[str, Any]]:
+        """
+        Get all available voices from the v2/voices endpoint.
+        This includes premade official voices and voices in the user's library.
+
+        Returns:
+            List of voice data dictionaries
+        """
+        try:
+            # Get all voices from the v2 endpoint
+            response = self.client.voices.get_all()
+
+            formatted_voices = []
+            for voice in response.voices:
+                # Check if we should filter out paid voices
+                sharing = getattr(voice, "sharing", None)
+                if sharing:
+                    # Filter out voices with non-null rate or fiat_rate
+                    if (
+                        getattr(sharing, "rate", None) is not None
+                        and getattr(sharing, "rate", 1.0) != 1.0
+                    ):
+                        continue
+                    if getattr(sharing, "fiat_rate", None) is not None:
+                        continue
+
+                # Get labels - for premade voices, these contain the attributes
+                labels = getattr(voice, "labels", {})
+
+                # Format the voice data
+                formatted_voices.append(
+                    {
+                        "el_voice_id": voice.voice_id,
+                        "name": voice.name,
+                        "category": getattr(voice, "category", "unknown"),
+                        "gender": labels.get("gender", None),
+                        "accent": labels.get("accent", None),
+                        "age": labels.get("age", None),
+                        "descriptive": labels.get("descriptive", None),
+                        "use_case": labels.get("use_case", None),
+                        "language": labels.get("language", "en"),
+                        "locale": None,  # Not available in v2 endpoint
+                        "description": getattr(voice, "description", ""),
+                        "preview_url": getattr(voice, "preview_url", ""),
+                        "verified_languages": getattr(voice, "verified_languages", []),
+                        "cloned_by_count": 0,  # Not available for premade voices
+                        "usage_character_count_1y": 0,  # Not available for premade voices
+                    }
+                )
+
+            self.logger.info(f"Retrieved {len(formatted_voices)} voices from v2/voices endpoint")
+            return formatted_voices
+
+        except Exception as e:
+            self.logger.error(f"Error retrieving premade voices: {e}")
+            return []
 
     def test_connection(self) -> Dict[str, Any]:
         """

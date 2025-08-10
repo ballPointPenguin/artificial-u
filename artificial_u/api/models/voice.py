@@ -26,8 +26,8 @@ class VoiceBase(BaseModel):
     )
     preview_url: Optional[str] = Field(None, description="URL to preview the voice")
     use_case: Optional[str] = Field(None, description="Intended use case for the voice")
-    verified_languages: Optional[Dict[str, Any]] = Field(
-        None, description="Verified languages for the voice"
+    verified_languages: List[Dict[str, Any]] = Field(
+        default_factory=list, description="Verified languages for the voice"
     )
 
 

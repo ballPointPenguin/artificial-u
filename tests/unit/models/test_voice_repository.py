@@ -37,7 +37,14 @@ class TestVoiceRepository:
         mock_voice.locale = "en-US"
         mock_voice.description = "A test voice"
         mock_voice.preview_url = "http://example.com/preview.mp3"
-        mock_voice.verified_languages = {"en": True}
+        mock_voice.verified_languages = [
+            {
+                "language": "en",
+                "model_id": "eleven_multilingual_v2",
+                "accent": "american",
+                "locale": "en-US",
+            }
+        ]
         mock_voice.popularity_score = 80
         mock_voice.last_updated = MagicMock()
         return mock_voice
@@ -65,7 +72,14 @@ class TestVoiceRepository:
             locale="en-US",
             description="A test voice",
             preview_url="http://example.com/preview.mp3",
-            verified_languages={"en": True},
+            verified_languages=[
+                {
+                    "language": "en",
+                    "model_id": "eleven_multilingual_v2",
+                    "accent": "american",
+                    "locale": "en-US",
+                }
+            ],
             popularity_score=80,
         )
 
@@ -139,7 +153,14 @@ class TestVoiceRepository:
         mock_voice2.locale = "en-GB"
         mock_voice2.description = "Another test voice"
         mock_voice2.preview_url = "http://example.com/preview2.mp3"
-        mock_voice2.verified_languages = {"en": True}
+        mock_voice2.verified_languages = [
+            {
+                "language": "en",
+                "model_id": "eleven_multilingual_v2",
+                "accent": "british",
+                "locale": "en-GB",
+            }
+        ]
         mock_voice2.popularity_score = 90
         mock_voice2.last_updated = MagicMock()
 
@@ -210,7 +231,14 @@ class TestVoiceRepository:
             locale="en-GB",
             description="Updated description",
             preview_url="http://example.com/updated_preview.mp3",
-            verified_languages={"en": False},
+            verified_languages=[
+                {
+                    "language": "en",
+                    "model_id": "eleven_multilingual_v2",
+                    "accent": "british",
+                    "locale": "en-GB",
+                }
+            ],
             popularity_score=90,
         )
 
@@ -235,7 +263,14 @@ class TestVoiceRepository:
         assert mock_voice_model.locale == "en-GB"
         assert mock_voice_model.description == "Updated description"
         assert mock_voice_model.preview_url == "http://example.com/updated_preview.mp3"
-        assert mock_voice_model.verified_languages == {"en": False}
+        assert mock_voice_model.verified_languages == [
+            {
+                "language": "en",
+                "model_id": "eleven_multilingual_v2",
+                "accent": "british",
+                "locale": "en-GB",
+            }
+        ]
         assert mock_voice_model.popularity_score == 90
 
         # Check that the returned voice has the updated values
@@ -263,7 +298,14 @@ class TestVoiceRepository:
             locale="en-US",
             description="A voice that doesn't exist",
             preview_url="http://example.com/preview.mp3",
-            verified_languages={"en": True},
+            verified_languages=[
+                {
+                    "language": "en",
+                    "model_id": "eleven_multilingual_v2",
+                    "accent": "american",
+                    "locale": "en-US",
+                }
+            ],
             popularity_score=80,
         )
 
@@ -291,7 +333,14 @@ class TestVoiceRepository:
             locale="en-US",
             description="A new voice",
             preview_url="http://example.com/new_preview.mp3",
-            verified_languages={"en": True},
+            verified_languages=[
+                {
+                    "language": "en",
+                    "model_id": "eleven_multilingual_v2",
+                    "accent": "american",
+                    "locale": "en-US",
+                }
+            ],
             popularity_score=80,
         )
 
@@ -308,7 +357,14 @@ class TestVoiceRepository:
             locale="en-US",
             description="A new voice",
             preview_url="http://example.com/new_preview.mp3",
-            verified_languages={"en": True},
+            verified_languages=[
+                {
+                    "language": "en",
+                    "model_id": "eleven_multilingual_v2",
+                    "accent": "american",
+                    "locale": "en-US",
+                }
+            ],
             popularity_score=80,
         )
 
@@ -345,7 +401,14 @@ class TestVoiceRepository:
             locale="en-US",
             description="An existing voice",
             preview_url="http://example.com/existing_preview.mp3",
-            verified_languages={"en": True},
+            verified_languages=[
+                {
+                    "language": "en",
+                    "model_id": "eleven_multilingual_v2",
+                    "accent": "american",
+                    "locale": "en-US",
+                }
+            ],
             popularity_score=80,
         )
 
@@ -364,7 +427,14 @@ class TestVoiceRepository:
             locale="en-GB",
             description="Updated existing description",
             preview_url="http://example.com/updated_existing_preview.mp3",
-            verified_languages={"en": False},
+            verified_languages=[
+                {
+                    "language": "en",
+                    "model_id": "eleven_multilingual_v2",
+                    "accent": "british",
+                    "locale": "en-GB",
+                }
+            ],
             popularity_score=90,
         )
 
@@ -381,7 +451,14 @@ class TestVoiceRepository:
             locale="en-GB",
             description="Updated existing description",
             preview_url="http://example.com/updated_existing_preview.mp3",
-            verified_languages={"en": False},
+            verified_languages=[
+                {
+                    "language": "en",
+                    "model_id": "eleven_multilingual_v2",
+                    "accent": "british",
+                    "locale": "en-GB",
+                }
+            ],
             popularity_score=90,
         )
 

@@ -64,7 +64,7 @@ class VoiceRepository(BaseRepository):
                 popularity_score=db_voice.popularity_score,
                 preview_url=db_voice.preview_url,
                 use_case=db_voice.use_case,
-                verified_languages=db_voice.verified_languages or {},
+                verified_languages=db_voice.verified_languages or [],
                 last_updated=db_voice.last_updated,
             )
 
@@ -91,7 +91,7 @@ class VoiceRepository(BaseRepository):
                 popularity_score=db_voice.popularity_score,
                 preview_url=db_voice.preview_url,
                 use_case=db_voice.use_case,
-                verified_languages=db_voice.verified_languages or {},
+                verified_languages=db_voice.verified_languages or [],
                 last_updated=db_voice.last_updated,
             )
 
@@ -110,19 +110,19 @@ class VoiceRepository(BaseRepository):
         with self.get_session() as session:
             query = session.query(VoiceModel)
 
-            # Apply filters
+            # Apply filters - use exact matching instead of substring matching
             if accent:
-                query = query.filter(VoiceModel.accent.ilike(f"%{accent}%"))
+                query = query.filter(VoiceModel.accent.ilike(accent))
             if age:
-                query = query.filter(VoiceModel.age.ilike(f"%{age}%"))
+                query = query.filter(VoiceModel.age.ilike(age))
             if category:
-                query = query.filter(VoiceModel.category.ilike(f"%{category}%"))
+                query = query.filter(VoiceModel.category.ilike(category))
             if gender:
-                query = query.filter(VoiceModel.gender.ilike(f"%{gender}%"))
+                query = query.filter(VoiceModel.gender.ilike(gender))
             if language:
-                query = query.filter(VoiceModel.language.ilike(f"%{language}%"))
+                query = query.filter(VoiceModel.language.ilike(language))
             if use_case:
-                query = query.filter(VoiceModel.use_case.ilike(f"%{use_case}%"))
+                query = query.filter(VoiceModel.use_case.ilike(use_case))
 
             # Apply pagination
             voices = (
@@ -145,7 +145,7 @@ class VoiceRepository(BaseRepository):
                     popularity_score=v.popularity_score,
                     preview_url=v.preview_url,
                     use_case=v.use_case,
-                    verified_languages=v.verified_languages or {},
+                    verified_languages=v.verified_languages or [],
                     last_updated=v.last_updated,
                 )
                 for v in voices
@@ -199,18 +199,18 @@ class VoiceRepository(BaseRepository):
         with self.get_session() as session:
             query = session.query(VoiceModel)
 
-            # Apply filters
+            # Apply filters - use exact matching instead of substring matching
             if accent:
-                query = query.filter(VoiceModel.accent.ilike(f"%{accent}%"))
+                query = query.filter(VoiceModel.accent.ilike(accent))
             if age:
-                query = query.filter(VoiceModel.age.ilike(f"%{age}%"))
+                query = query.filter(VoiceModel.age.ilike(age))
             if category:
-                query = query.filter(VoiceModel.category.ilike(f"%{category}%"))
+                query = query.filter(VoiceModel.category.ilike(category))
             if gender:
-                query = query.filter(VoiceModel.gender.ilike(f"%{gender}%"))
+                query = query.filter(VoiceModel.gender.ilike(gender))
             if language:
-                query = query.filter(VoiceModel.language.ilike(f"%{language}%"))
+                query = query.filter(VoiceModel.language.ilike(language))
             if use_case:
-                query = query.filter(VoiceModel.use_case.ilike(f"%{use_case}%"))
+                query = query.filter(VoiceModel.use_case.ilike(use_case))
 
             return query.count()
