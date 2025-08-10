@@ -113,6 +113,11 @@ TOPICS_GENERATION_MODEL=gemini-2.5-flash
 
 # Image generation model
 IMAGE_GENERATION_MODEL=gpt-image-1
+
+# Text-to-speech voice model (ElevenLabs)
+# Must be supported by the selected voice's verified languages
+# Common values: eleven_flash_v2_5, eleven_multilingual_v2
+TTS_VOICE_MODEL=eleven_flash_v2_5
 ```
 
 ## Logging Configuration

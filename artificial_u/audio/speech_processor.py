@@ -105,6 +105,9 @@ class SpeechProcessor:
         # Remove markdown title prefixes
         normalized_text = re.sub(r"^#+\s+", "", normalized_text, flags=re.MULTILINE)
 
+        # Apply pause → <break> conversions for bracketed stage directions
+        normalized_text = self._apply_pause_breaks(normalized_text)
+
         return normalized_text.strip()
 
     def enhance_speech_markup(self, text: str) -> str:
@@ -256,6 +259,86 @@ class SpeechProcessor:
         for pattern, replacement in replacements.items():
             text = re.sub(pattern, replacement, text)
 
+        return text
+
+    def _apply_pause_breaks(self, text: str) -> str:
+        """Convert bracketed pause stage directions to ElevenLabs <break> tags.
+
+        Rules (case-insensitive):
+        - [Pause] → <break time="1.0s" />
+        - [Slight pause] → <break time="0.5s" />
+        - [Pause for ...] (e.g., emphasis/effect/a moment) → <break time="1.5s" />
+        - [Brief pause ...] → <break time="0.5s" />
+        - [Pauses thoughtfully] → <break time="1.5s" />
+        - [Pauses, ...] → <break time="1.0s" /> (general quick pause)
+        - [Pauses at ...] is left unchanged
+        """
+        # Slight pause
+        text = re.sub(
+            r"\[\s*slight\s+pause\s*\]",
+            ' <break time="0.5s" /> ',
+            text,
+            flags=re.IGNORECASE,
+        )
+
+        # [Slight pause, ...] → 0.5s + keep remainder as bracketed comment
+        text = re.sub(
+            r"\[\s*slight\s+pause\s*,\s*([^\]]+)\]",
+            r' <break time="0.5s" /> [\1] ',
+            text,
+            flags=re.IGNORECASE,
+        )
+
+        # Exact [Pause]
+        text = re.sub(
+            r"\[\s*pause\s*\]",
+            ' <break time="1.0s" /> ',
+            text,
+            flags=re.IGNORECASE,
+        )
+
+        # [Pause for X...] (emphasis, effect, a moment, etc.) → 1.5s
+        text = re.sub(
+            r"\[\s*pause\s+for\s+[^\]]+\]",
+            ' <break time="1.5s" /> ',
+            text,
+            flags=re.IGNORECASE,
+        )
+
+        # [Brief pause ...] → 0.5s
+        text = re.sub(
+            r"\[\s*brief\s+pause[^\]]*\]",
+            ' <break time="0.5s" /> ',
+            text,
+            flags=re.IGNORECASE,
+        )
+
+        # [Brief pause, ...] → 0.5s + keep remainder as bracketed comment
+        text = re.sub(
+            r"\[\s*brief\s+pause\s*,\s*([^\]]+)\]",
+            r' <break time="0.5s" /> [\1] ',
+            text,
+            flags=re.IGNORECASE,
+        )
+
+        # [Pauses thoughtfully] → 1.5s
+        text = re.sub(
+            r"\[\s*pauses\s+thoughtfully\s*\]",
+            ' <break time="1.5s" /> ',
+            text,
+            flags=re.IGNORECASE,
+        )
+
+        # [Pauses, ...] → 1.0s (target only comma variant)
+        text = re.sub(
+            r"\[\s*pauses\s*,[^\]]*\]",
+            ' <break time="1.0s" /> ',
+            text,
+            flags=re.IGNORECASE,
+        )
+
+        # Collapse any excess whitespace again after insertions
+        text = re.sub(r"\s+", " ", text)
         return text
 
     def split_into_chunks(self, text: str, max_chunk_size: int = 4000) -> List[str]:

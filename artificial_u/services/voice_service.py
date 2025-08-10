@@ -8,6 +8,7 @@ import logging
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
+from artificial_u.config import get_settings
 from artificial_u.integrations import elevenlabs
 from artificial_u.models.core import Professor, Voice
 from artificial_u.models.repositories import RepositoryFactory
@@ -36,6 +37,7 @@ class VoiceService:
         self.repository_factory = repository_factory
         self.client = client or elevenlabs.ElevenLabsClient()
         self.mapper = elevenlabs.VoiceMapper(logger=self.logger)
+        self.settings = get_settings()
 
     def _find_voices_in_db(self, attributes: Dict[str, Any]) -> List[Dict[str, Any]]:
         """
@@ -167,25 +169,22 @@ class VoiceService:
         """
         self.logger.info("Fetching voices from API for selection")
 
-        voices = []
+        voices: List[Dict[str, Any]] = []
+        required_model = getattr(self.settings, "TTS_VOICE_MODEL", None)
 
         # First, try to get premade voices if we haven't already
         premade_voices = self.client.get_premade_voices()
-        for voice in premade_voices:
-            # Apply filters to premade voices
-            if gender and voice.get("gender") != gender:
-                continue
-            if age and voice.get("age") != age:
-                continue
-            if language and voice.get("language") != language:
-                continue
-            if use_case and voice.get("use_case") != use_case:
-                continue
-            if category and voice.get("category") != category:
-                continue
-
-            voices.append(voice)
-            self._save_voice_to_db(voice)
+        voices.extend(
+            self._filter_and_store_premade_voices(
+                premade_voices,
+                gender=gender,
+                age=age,
+                language=language,
+                use_case=use_case,
+                category=category,
+                required_model=required_model,
+            )
+        )
 
         # Don't pass accent to shared voices API, use language instead
         # The shared voices API doesn't support 'accent' query param effectively
@@ -196,12 +195,67 @@ class VoiceService:
             use_case=use_case,
             category=category,
         )
-        voices.extend(voices_page)
+        if required_model:
+            for v in voices_page:
+                if self._voice_supports_model(v, required_model):
+                    voices.append(v)
+        else:
+            voices.extend(voices_page)
 
         # Get additional pages if needed (limit to 3 pages)
-        page = 1
-        while has_more and page < 3:
-            more_voices, has_more = self.client.get_shared_voices(
+        voices.extend(
+            self._fetch_additional_shared_voice_pages(
+                start_page=1,
+                has_more=has_more,
+                gender=gender,
+                age=age,
+                language=language,
+                use_case=use_case,
+                category=category,
+                required_model=required_model,
+            )
+        )
+
+        return voices
+
+    def _filter_and_store_premade_voices(
+        self,
+        voices: List[Dict[str, Any]],
+        *,
+        gender: Optional[str],
+        age: Optional[str],
+        language: str,
+        use_case: Optional[str],
+        category: Optional[str],
+        required_model: Optional[str],
+    ) -> List[Dict[str, Any]]:
+        results: List[Dict[str, Any]] = []
+        for voice in voices:
+            if not self._voice_matches_filters(voice, gender, age, language, use_case, category):
+                continue
+            if required_model and not self._voice_supports_model(voice, required_model):
+                continue
+            results.append(voice)
+            self._save_voice_to_db(voice)
+        return results
+
+    def _fetch_additional_shared_voice_pages(
+        self,
+        *,
+        start_page: int,
+        has_more: bool,
+        gender: Optional[str],
+        age: Optional[str],
+        language: str,
+        use_case: Optional[str],
+        category: Optional[str],
+        required_model: Optional[str],
+    ) -> List[Dict[str, Any]]:
+        results: List[Dict[str, Any]] = []
+        page = start_page
+        more_flag = has_more
+        while more_flag and page < 3:
+            more_voices, more_flag = self.client.get_shared_voices(
                 gender=gender,
                 age=age,
                 language=language,
@@ -209,14 +263,43 @@ class VoiceService:
                 category=category,
                 page=page,
             )
-            voices.extend(more_voices)
+            if required_model:
+                for v in more_voices:
+                    if self._voice_supports_model(v, required_model):
+                        results.append(v)
+            else:
+                results.extend(more_voices)
             page += 1
+        return results
 
-        # Save remaining shared voices to database
-        for voice_data in voices_page:
-            self._save_voice_to_db(voice_data)
+    def _voice_matches_filters(
+        self,
+        voice: Dict[str, Any],
+        gender: Optional[str],
+        age: Optional[str],
+        language: Optional[str],
+        use_case: Optional[str],
+        category: Optional[str],
+    ) -> bool:
+        """Return True if the voice matches the provided filters."""
+        if gender and voice.get("gender") != gender:
+            return False
+        if age and voice.get("age") != age:
+            return False
+        if language and voice.get("language") != language:
+            return False
+        if use_case and voice.get("use_case") != use_case:
+            return False
+        if category and voice.get("category") != category:
+            return False
+        return True
 
-        return voices
+    def _voice_supports_model(self, voice: Dict[str, Any], required_model: str) -> bool:
+        """Return True if the voice 'verified_languages' includes the required model."""
+        verified = voice.get("verified_languages") or []
+        models = {x.get("model_id") for x in verified if isinstance(x, dict)}
+        # If models set is empty, treat as unknown support and allow
+        return not models or required_model in models
 
     def fetch_and_store_premade_voices(self) -> int:
         """

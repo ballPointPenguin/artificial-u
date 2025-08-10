@@ -14,6 +14,8 @@ from unittest.mock import MagicMock
 from elevenlabs import play
 from elevenlabs.client import ElevenLabs
 
+from artificial_u.config import get_settings
+
 
 class ElevenLabsClient:
     """
@@ -26,9 +28,6 @@ class ElevenLabsClient:
 
     # Shared voices API endpoint
     SHARED_VOICES_URL = f"{BASE_URL}/shared-voices"
-
-    # Default TTS model
-    DEFAULT_MODEL = "eleven_flash_v2_5"
 
     # Maximum retries for API calls
     MAX_RETRIES = 3
@@ -309,17 +308,13 @@ class ElevenLabsClient:
             text: Text to convert to speech
             voice_id: ElevenLabs Voice ID to use
             model_id: Model ID to use (defaults to eleven_flash_v2_5)
-            voice_settings: Voice settings (stability, clarity, etc.)
+            voice_settings: Voice settings (stability, speed, etc.)
 
         Returns:
             Audio data as bytes
         """
-        model_id = model_id or self.DEFAULT_MODEL
-        voice_settings = voice_settings or {
-            "stability": 0.5,
-            "clarity": 0.8,
-            "style": 0.0,
-        }
+        # Default to globally configured model
+        model_id = model_id or get_settings().TTS_VOICE_MODEL
 
         # Retry logic for API calls
         for attempt in range(self.MAX_RETRIES):
@@ -327,24 +322,19 @@ class ElevenLabsClient:
                 self.logger.debug(f"TTS attempt {attempt+1} for text of length {len(text)}")
 
                 # Get audio stream from the API
+                # Follow official SDK example to ensure full audio is returned
+                # Ref: https://elevenlabs.io/docs/api-reference/text-to-speech/convert
                 audio_stream = self.client.text_to_speech.convert(
-                    text=text,
                     voice_id=voice_id,
+                    output_format="mp3_44100_128",
+                    text=text,
                     model_id=model_id,
                     voice_settings=voice_settings,
+                    # Keep default apply_text_normalization behavior (auto)
                 )
 
-                # Consume the generator if it's a generator (new API behavior)
-                if hasattr(audio_stream, "__iter__") and not isinstance(audio_stream, bytes):
-                    self.logger.debug("Audio stream is a generator, consuming it")
-                    audio_data = b"".join(
-                        chunk for chunk in audio_stream if isinstance(chunk, bytes)
-                    )
-                else:
-                    # Handle the case where it's already bytes (old API behavior)
-                    self.logger.debug("Audio stream is bytes data")
-                    audio_data = audio_stream
-
+                audio_data = self._consume_audio_stream(audio_stream)
+                self._warn_if_suspicious_audio(audio_data, len(text))
                 return audio_data
 
             except Exception as e:
@@ -355,6 +345,28 @@ class ElevenLabsClient:
                 else:
                     self.logger.error(f"Failed after {self.MAX_RETRIES} attempts")
                     raise
+
+    def _consume_audio_stream(self, audio_stream: Any) -> bytes:
+        """Consume audio stream or return bytes, compatible with SDK variations."""
+        if hasattr(audio_stream, "__iter__") and not isinstance(audio_stream, (bytes, bytearray)):
+            self.logger.debug("Audio stream is a generator, consuming it")
+            audio_chunks: List[bytes] = []
+            for chunk in audio_stream:
+                if isinstance(chunk, (bytes, bytearray)):
+                    audio_chunks.append(bytes(chunk))
+            return b"".join(audio_chunks)
+        self.logger.debug("Audio stream is bytes data")
+        return bytes(audio_stream)
+
+    def _warn_if_suspicious_audio(self, audio_data: bytes, text_len: int) -> None:
+        """Warn if very long text produced unrealistically small audio output."""
+        if len(audio_data) < 16000 and text_len > 500:
+            self.logger.warning(
+                "Unexpectedly small audio returned: %d bytes for %d chars. "
+                "Text may contain unsupported markup or the request failed silently.",
+                len(audio_data),
+                text_len,
+            )
 
     def get_user_info(self) -> Dict[str, Any]:
         """

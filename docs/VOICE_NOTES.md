@@ -98,8 +98,6 @@ If 'accent' is invalid (ie has no results), no results are returned. But 'accent
 
 Filtering on language is a useful proxy for accent.
 
-The 'verified_languages' object is not actually very useful, except maybe for non-english tts. It seems to omit English even when english is obviously supported by the voice.
-
 ## Action Items
 
 - Pull and store all voices from the v2/voice endpoint with category="premade"

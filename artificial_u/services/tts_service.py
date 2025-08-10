@@ -9,6 +9,7 @@ import os
 from typing import Any, Dict, Optional, Union
 
 from artificial_u.audio.speech_processor import SpeechProcessor
+from artificial_u.config import get_settings
 from artificial_u.integrations import elevenlabs
 from artificial_u.models.core import Lecture, Professor
 from artificial_u.utils import AudioProcessingError
@@ -17,14 +18,15 @@ from artificial_u.utils import AudioProcessingError
 class TTSService:
     """Service for text-to-speech conversion."""
 
-    # Default model for text-to-speech
-    DEFAULT_MODEL = "eleven_flash_v2_5"
+    # Model selection is driven by settings.TTS_VOICE_MODEL
 
     # Default voice settings
     DEFAULT_VOICE_SETTINGS = {
-        "stability": 0.5,
-        "clarity": 0.8,
+        "similarity_boost": 0.0,
+        "speed": 1.0,
+        "stability": 0.4,
         "style": 0.0,
+        "use_speaker_boost": False,
     }
 
     def __init__(
@@ -51,6 +53,8 @@ class TTSService:
         # Initialize components
         self.client = client or elevenlabs.ElevenLabsClient(api_key=api_key)
         self.speech_processor = speech_processor or SpeechProcessor(logger=self.logger)
+        # Load settings for global TTS model
+        self.settings = get_settings()
 
     def convert_text_to_speech(
         self,
@@ -73,14 +77,15 @@ class TTSService:
         Returns:
             Audio data as bytes
         """
-        model_id = model_id or self.DEFAULT_MODEL
+        model_id = model_id or getattr(self.settings, "TTS_VOICE_MODEL")
         voice_settings = voice_settings or self.DEFAULT_VOICE_SETTINGS.copy()
 
-        # Enhance text for better speech
-        enhanced_text = self.speech_processor.enhance_speech_markup(text)
+        # Prefer normalized plain text for TTS requests to avoid SSML-like tags
+        # Some models (e.g., flash v2.5) can mis-handle embedded markup
+        normalized_text = self.speech_processor.normalize_text(text)
 
         # Split text into chunks if necessary
-        chunks = self.speech_processor.split_into_chunks(enhanced_text, max_chunk_size=chunk_size)
+        chunks = self.speech_processor.split_into_chunks(normalized_text, max_chunk_size=chunk_size)
 
         # Generate audio for each chunk
         audio_segments = []
@@ -110,6 +115,12 @@ class TTSService:
                 )
 
                 audio_segments.append(audio_data)
+                if len(audio_data) < 16000 and len(chunk) > 500:
+                    self.logger.warning(
+                        "Chunk %d produced very small audio (%d bytes).",
+                        i + 1,
+                        len(audio_data),
+                    )
                 self.logger.info(f"Successfully processed chunk {i+1}")
             except Exception as e:
                 self.logger.error(f"Error processing chunk {i+1}: {e}")
@@ -158,6 +169,14 @@ class TTSService:
             else:
                 raise ValueError("No voice ID specified or found for professor")
 
+        # Resolve model id from settings if not provided
+        model_id = model_id or getattr(self.settings, "TTS_VOICE_MODEL")
+
+        # Verify voice supports the chosen model when we can fetch metadata
+        self._validate_voice_model_support(
+            professor=professor, el_voice_id=el_voice_id, model_id=model_id
+        )
+
         # Generate the audio
         try:
             audio_data = self.convert_text_to_speech(
@@ -169,6 +188,41 @@ class TTSService:
             raise AudioProcessingError(f"Failed to generate lecture audio: {e}")
 
         return audio_data
+
+    def _validate_voice_model_support(
+        self, professor: Professor, el_voice_id: Optional[str], model_id: str
+    ) -> None:
+        """Raise if the selected voice does not support the configured model."""
+        try:
+            voice_info = (
+                self.repository_factory.voice.get(professor.voice_id)
+                if professor.voice_id
+                else None
+            )
+            if not voice_info and el_voice_id:
+                # Fetch minimal details from API when DB is missing
+                voice_info = self.client.get_el_voice(el_voice_id)
+
+            verified = None
+            if voice_info and isinstance(voice_info, dict):
+                verified = voice_info.get("verified_languages")
+            elif voice_info and hasattr(voice_info, "model_dump"):
+                verified = voice_info.model_dump().get("verified_languages")
+
+            if verified and isinstance(verified, list):
+                model_ids = {item.get("model_id") for item in verified if isinstance(item, dict)}
+                if model_ids and model_id not in model_ids:
+                    supported = ", ".join(sorted(m for m in model_ids if m))
+                    msg = (
+                        f"Voice does not support model '{model_id}'. "
+                        f"Supported models: {supported}"
+                    )
+                    raise AudioProcessingError(msg)
+        except AudioProcessingError:
+            raise
+        except Exception:
+            # Non-fatal: if verification fails, continue and let API decide
+            return
 
     def play_audio(self, audio_source: Union[bytes, str]) -> None:
         """

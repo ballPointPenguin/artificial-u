@@ -100,7 +100,7 @@
 ## Configuration
 
 - Requires `ELEVENLABS_API_KEY` and storage config (MinIO defaults for dev/test)
-- Optional: model/format overrides in settings (`TTSService.DEFAULT_MODEL`)
+- Optional: model/format overrides in settings (`TTS_VOICE_MODEL`)
 
 ## Future Enhancements (post-MVP)
 

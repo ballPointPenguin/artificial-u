@@ -185,6 +185,62 @@ More content"""
         assert processor.normalize_text("1 - 2") == "1 - 2"
 
     @pytest.mark.unit
+    def test_pause_stage_directions_basic(self, processor):
+        """[Pause] becomes a 1.0s break; [Slight pause] becomes 0.5s."""
+        text = "Please consider this. [Pause] Now continue."
+        out = processor.normalize_text(text)
+        assert '<break time="1.0s" />' in out
+
+        text2 = "This is tricky. [Slight pause] But manageable."
+        out2 = processor.normalize_text(text2)
+        assert '<break time="0.5s" />' in out2
+
+    @pytest.mark.unit
+    def test_pause_for_variants(self, processor):
+        """[Pause for ...] maps to a 1.5s break, covering emphasis/effect/a moment."""
+        for phrase in [
+            "[Pause for emphasis]",
+            "[Pause for effect]",
+            "[Pause for a moment]",
+        ]:
+            out = processor.normalize_text(f"Intro. {phrase} Outro.")
+            assert '<break time="1.5s" />' in out
+
+    @pytest.mark.unit
+    def test_pauses_with_comma(self, processor):
+        """[Pauses, ...] maps to a 1.0s break."""
+        text = "He looks around. [Pauses, waiting for students to comply] Continues."
+        out = processor.normalize_text(text)
+        assert '<break time="1.0s" />' in out
+
+    @pytest.mark.unit
+    def test_pauses_thoughtfully_and_brief_pause(self, processor):
+        """Specific cases for thoughtfully (1.5s) and brief pause (0.5s)."""
+        out1 = processor.normalize_text("She considers. [pauses thoughtfully] Responds.")
+        assert '<break time="1.5s" />' in out1
+
+        out2 = processor.normalize_text("Prompt... [Brief pause for student responses] Continue.")
+        assert '<break time="0.5s" />' in out2
+
+        # comma variants should retain remaining note
+        out3 = processor.normalize_text("Prompt... [Slight pause, waiting for answers] Continue.")
+        assert '<break time="0.5s" />' in out3
+        assert "[waiting for answers]" in out3
+
+        out4 = processor.normalize_text("Prompt... [Brief pause, listening] Continue.")
+        assert '<break time="0.5s" />' in out4
+        assert "[listening]" in out4
+
+    @pytest.mark.unit
+    def test_pauses_at_remains(self, processor):
+        """[Pauses at ...] should remain unchanged per rule."""
+        text = "He turns. [Pauses at the door] Then exits."
+        out = processor.normalize_text(text)
+        # ensure we did not replace it with a break
+        assert "<break" not in out
+        assert "[Pauses at the door]" in out
+
+    @pytest.mark.unit
     def test_split_into_chunks(self, processor):
         """Test text chunking functionality."""
         # Short text should return as single chunk

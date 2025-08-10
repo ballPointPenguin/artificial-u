@@ -111,17 +111,21 @@ class Settings(BaseSettings):
     OLLAMA_HOST: str = "http://localhost:11434"
 
     # Course generation model
-    COURSE_GENERATION_MODEL: str = "gpt-4.1-nano"
+    COURSE_GENERATION_MODEL: str = "gpt-5-nano"
     # Department generation model
-    DEPARTMENT_GENERATION_MODEL: str = "gpt-4.1-nano"
+    DEPARTMENT_GENERATION_MODEL: str = "gpt-5-nano"
     # Lecture generation model
-    LECTURE_GENERATION_MODEL: str = "claude-sonnet-4-0"
+    LECTURE_GENERATION_MODEL: str = "claude-sonnet-4-20250514"
     # Professor generation model
-    PROFESSOR_GENERATION_MODEL: str = "gpt-4.1-nano"
+    PROFESSOR_GENERATION_MODEL: str = "gpt-5-nano"
     # Topics generation model
     TOPICS_GENERATION_MODEL: str = "gemini-2.5-flash"
     # Image generation model
-    IMAGE_GENERATION_MODEL: str = "gpt-image-1"
+    IMAGE_GENERATION_MODEL: str = "imagen-4.0-generate-preview-06-06"
+
+    # Text-to-speech voice model (ElevenLabs)
+    # Example values: "eleven_flash_v2_5", "eleven_multilingual_v2"
+    TTS_VOICE_MODEL: str = "eleven_flash_v2_5"
 
     # Configure Pydantic to use .env files
     model_config = SettingsConfigDict(
