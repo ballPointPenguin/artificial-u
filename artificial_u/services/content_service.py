@@ -1,3 +1,4 @@
+import asyncio
 import json
 import logging
 import os
@@ -31,6 +32,12 @@ class ContentService:
         self.default_backend = settings.content_backend
         self.default_model = settings.content_model
         self.content_logs_path = settings.CONTENT_LOGS_PATH
+
+        # Configure retry settings from settings
+        self.max_retries = settings.content_max_retries
+        self.retry_delay = settings.content_retry_delay
+        self.retry_exponential_base = settings.content_retry_exponential_base
+
         self.logger.info(
             f"ContentService initialized with default backend: {self.default_backend}, "
             f"default model: {self.default_model}"
@@ -62,6 +69,133 @@ class ContentService:
             raise ValueError(f"Model '{model}' is for image generation.")
         else:
             return "ollama"  # Default assumption, adjust as needed
+
+    def _categorize_error(self, error: Exception, backend: str) -> str:
+        """
+        Categorize an error to determine if it's retryable.
+
+        Returns:
+            str: 'transient', 'rate_limited', 'permanent', or 'configuration'
+        """
+        if backend == "anthropic":
+            return self._categorize_anthropic_error(error)
+        elif backend == "openai":
+            return self._categorize_openai_error(error)
+        elif backend == "gemini":
+            return self._categorize_gemini_error(error)
+        elif backend == "ollama":
+            return self._categorize_ollama_error(error)
+
+        # Default to transient for unknown errors (optimistic retrying)
+        return "transient"
+
+    def _categorize_anthropic_error(self, error: Exception) -> str:
+        """Categorize Anthropic-specific errors."""
+        if isinstance(error, anthropic.InternalServerError):
+            # 529 errors are transient overloaded errors
+            if hasattr(error, "response") and error.response and error.response.status_code == 529:
+                return "transient"
+            return "transient"
+        elif isinstance(error, anthropic.RateLimitError):
+            return "rate_limited"
+        elif isinstance(error, anthropic.APITimeoutError):
+            return "transient"
+        elif isinstance(error, anthropic.APIConnectionError):
+            return "transient"
+        elif isinstance(error, anthropic.BadRequestError):
+            return "permanent"
+        elif isinstance(error, anthropic.AuthenticationError):
+            return "configuration"
+        elif isinstance(error, anthropic.PermissionDeniedError):
+            return "configuration"
+
+        # Check for 529 in error message as fallback
+        error_str = str(error)
+        if "529" in error_str and "overloaded" in error_str.lower():
+            return "transient"
+
+        return "transient"
+
+    def _categorize_openai_error(self, error: Exception) -> str:
+        """Categorize OpenAI-specific errors."""
+        if isinstance(error, openai.APITimeoutError):
+            return "transient"
+        elif isinstance(error, openai.RateLimitError):
+            return "rate_limited"
+        elif isinstance(error, openai.APIConnectionError):
+            return "transient"
+        elif isinstance(error, openai.InternalServerError):
+            return "transient"
+        elif isinstance(error, openai.BadRequestError):
+            return "permanent"
+        elif isinstance(error, openai.AuthenticationError):
+            return "configuration"
+        elif isinstance(error, openai.PermissionDeniedError):
+            return "configuration"
+
+        return "transient"
+
+    def _categorize_gemini_error(self, error: Exception) -> str:
+        """Categorize Gemini-specific errors."""
+        if isinstance(error, google_exceptions.ServiceUnavailable):
+            return "transient"
+        elif isinstance(error, google_exceptions.TooManyRequests):
+            return "rate_limited"
+        elif isinstance(error, google_exceptions.InternalServerError):
+            return "transient"
+        elif isinstance(error, google_exceptions.BadRequest):
+            return "permanent"
+        elif isinstance(error, google_exceptions.Unauthenticated):
+            return "configuration"
+        elif isinstance(error, google_exceptions.PermissionDenied):
+            return "configuration"
+
+        return "transient"
+
+    def _categorize_ollama_error(self, error: Exception) -> str:
+        """Categorize Ollama-specific errors."""
+        if isinstance(error, ResponseError):
+            error_str = str(error)
+            if "timeout" in error_str.lower():
+                return "transient"
+            elif "rate limit" in error_str.lower():
+                return "rate_limited"
+            elif "connection" in error_str.lower():
+                return "transient"
+
+        return "transient"
+
+    async def _retry_with_backoff(self, func, *args, **kwargs):
+        """Retry a function with exponential backoff."""
+        last_error = None
+        backend = kwargs.get("backend", "unknown")
+
+        for attempt in range(self.max_retries):
+            try:
+                return await func(*args, **kwargs)
+            except Exception as e:
+                last_error = e
+                error_type = self._categorize_error(e, backend)
+
+                # Don't retry for permanent or configuration errors
+                if error_type in ["permanent", "configuration"]:
+                    self.logger.info(
+                        f"Non-retryable error detected ({error_type}), not retrying: {e}"
+                    )
+                    break
+
+                if attempt < self.max_retries - 1:
+                    delay = self.retry_delay * (self.retry_exponential_base**attempt)
+                    self.logger.info(
+                        f"Attempt {attempt + 1} failed with {error_type} error: {e}. "
+                        f"Retrying in {delay:.1f} seconds..."
+                    )
+                    await asyncio.sleep(delay)
+                else:
+                    self.logger.error(f"All {self.max_retries} attempts failed. Last error: {e}")
+
+        # If we get here, all attempts failed
+        raise last_error
 
     async def generate_text(
         self,
@@ -118,8 +252,14 @@ class ContentService:
 
         try:
             generation_method = backend_methods[backend]
-            return await generation_method(
-                prompt, target_model, system_prompt, temperature, max_tokens
+            return await self._retry_with_backoff(
+                generation_method,
+                prompt,
+                target_model,
+                system_prompt,
+                temperature,
+                max_tokens,
+                backend=backend,
             )
         except Exception as e:
             self.logger.error(
@@ -179,7 +319,9 @@ class ContentService:
         except Exception as e:
             self.logger.error(f"Failed to save content log to {filepath}: {str(e)}")
 
-    async def _generate_anthropic(self, prompt, model, system_prompt, temperature, max_tokens):
+    async def _generate_anthropic(
+        self, prompt, model, system_prompt, temperature, max_tokens, **kwargs
+    ):
         self.logger.info(f"Generating text with Anthropic model: {model}")
         try:
             messages = []
@@ -195,7 +337,8 @@ class ContentService:
             )
             response_text = response.content[0].text
         except anthropic.APIError as e:
-            raise ContentGenerationError(f"Anthropic API error: {e}") from e
+            # Let the retry logic handle this
+            raise e
 
         self.logger.info(f"Received response from Anthropic: {response_text[:500]}")
 
@@ -211,22 +354,61 @@ class ContentService:
 
         return response_text
 
-    async def _generate_openai(self, prompt, model, system_prompt, temperature, max_tokens):
+    async def _generate_openai(
+        self, prompt, model, system_prompt, temperature, max_tokens, **kwargs
+    ):
         self.logger.info(f"Generating text with OpenAI model: {model}")
         try:
             messages = []
             if system_prompt:
                 messages.append({"role": "system", "content": system_prompt})
             messages.append({"role": "user", "content": prompt})
-            response = await openai_client.chat.completions.create(
-                model=model,
-                messages=messages,
-                max_tokens=max_tokens if max_tokens is not None else DEFAULT_MAX_TOKENS,
-                temperature=temperature if temperature is not None else DEFAULT_TEMPERATURE,
-            )
+
+            # Determine which parameters to use based on the model
+            # Build base parameters
+            completion_params = {
+                "model": model,
+                "messages": messages,
+            }
+
+            # Check if this is a newer model that requires special handling
+            # Models that require max_completion_tokens: gpt-5-*, o1-*, o3-*
+            # Note: gpt-5-nano also doesn't support custom temperature values
+            newer_model_prefixes = ("gpt-5", "o1-", "o3-", "gpt-4o-2024-08-06")
+            is_newer_model = any(model.startswith(prefix) for prefix in newer_model_prefixes)
+
+            # Handle token limits
+            if is_newer_model:
+                completion_params["max_completion_tokens"] = (
+                    max_tokens if max_tokens is not None else DEFAULT_MAX_TOKENS
+                )
+                self.logger.debug(f"Using max_completion_tokens parameter for model {model}")
+            else:
+                completion_params["max_tokens"] = (
+                    max_tokens if max_tokens is not None else DEFAULT_MAX_TOKENS
+                )
+                self.logger.debug(f"Using max_tokens parameter for model {model}")
+
+            # Handle temperature - gpt-5-nano and some other models don't support custom temperature
+            # For now, we'll skip temperature for gpt-5-nano specifically
+            if model == "gpt-5-nano":
+                self.logger.debug(f"Skipping temperature parameter for {model} (not supported)")
+            else:
+                completion_params["temperature"] = (
+                    temperature if temperature is not None else DEFAULT_TEMPERATURE
+                )
+
+            response = await openai_client.chat.completions.create(**completion_params)
             response_text = response.choices[0].message.content
+        except openai.BadRequestError as e:
+            # Log the specific error details for bad requests
+            self.logger.error(f"OpenAI BadRequestError for model {model}: {str(e)}")
+            self.logger.error(f"Request parameters used: {completion_params}")
+            raise e
         except openai.APIError as e:
-            raise ContentGenerationError(f"OpenAI API error: {e}") from e
+            # Let the retry logic handle this
+            self.logger.error(f"OpenAI API error for model {model}: {str(e)}")
+            raise e
 
         self.logger.info(f"Received response from OpenAI: {response_text[:500]}")
 
@@ -242,7 +424,9 @@ class ContentService:
 
         return response_text
 
-    async def _generate_gemini(self, prompt, model, system_prompt, temperature, max_tokens):
+    async def _generate_gemini(
+        self, prompt, model, system_prompt, temperature, max_tokens, **kwargs
+    ):
         self.logger.info(f"Generating text with Gemini model: {model}")
         try:
             from google.genai import types
@@ -291,7 +475,8 @@ class ContentService:
                 self.logger.warning("No candidates found in Gemini response")
                 response_text = ""
         except (google_exceptions.GoogleAPICallError, Exception) as e:
-            raise ContentGenerationError(f"Gemini API error: {e}") from e
+            # Let the retry logic handle this
+            raise e
 
         self.logger.info(f"Received response from Gemini: {response_text[:500]}")
 
@@ -307,7 +492,9 @@ class ContentService:
 
         return response_text
 
-    async def _generate_ollama(self, prompt, model, system_prompt, temperature, max_tokens):
+    async def _generate_ollama(
+        self, prompt, model, system_prompt, temperature, max_tokens, **kwargs
+    ):
         self.logger.info(f"Generating text with Ollama model: {model}")
         try:
             messages = []
@@ -324,7 +511,8 @@ class ContentService:
             )
             response_text = response.get("message", {}).get("content", "")
         except (ResponseError, Exception) as e:
-            raise ContentGenerationError(f"Ollama error: {e}") from e
+            # Let the retry logic handle this
+            raise e
 
         self.logger.info(f"Received response from Ollama: {response_text[:500]}")
 
