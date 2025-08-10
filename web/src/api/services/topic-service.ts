@@ -1,5 +1,5 @@
 import { httpClient } from '../client.js'
-import { ENDPOINTS } from '../config.js'
+import { ENDPOINTS, TIMEOUT_CONFIG } from '../config.js'
 import type { Topic, TopicCreate, TopicList, TopicsGenerateRequest, TopicUpdate } from '../types.js'
 
 export const topicService = {
@@ -27,7 +27,11 @@ export const topicService = {
     return httpClient.delete(ENDPOINTS.topics.detail(topicId))
   },
 
-  generateTopicsForCourse: (courseId: number, data?: TopicsGenerateRequest): Promise<Topic[]> => {
+  generateTopicsForCourse: (
+    courseId: number,
+    data?: TopicsGenerateRequest,
+    onTimeout?: () => void
+  ): Promise<Topic[]> => {
     let queryString = ''
     if (data?.freeform_prompt) {
       const queryParams = new URLSearchParams()
@@ -37,9 +41,10 @@ export const topicService = {
     const requestBody =
       data && !data.freeform_prompt ? data : data?.freeform_prompt ? {} : undefined
 
-    return httpClient.post<Topic[]>(
+    return httpClient.postWithExtendedTimeout<Topic[]>(
       `${ENDPOINTS.topics.generateForCourse(courseId)}${queryString}`,
-      requestBody
+      requestBody,
+      { timeout: TIMEOUT_CONFIG.generation, onTimeout }
     )
   },
 }

@@ -15,6 +15,7 @@
 - [ ] Content checking for user input (toxicity, stupidity, typos)
 - [ ] Spell checking for user input
 - [ ] Normalize user input
+- [ ] Advanced ElevenLabs voice controls
 - [ ] Enable Suggested Professors
 - [ ] Enable Suggested Departments
 - [ ] Organize Depeartments under Faculties

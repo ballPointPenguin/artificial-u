@@ -69,9 +69,48 @@ class SpeechProcessor:
         """
         self.logger = logger or logging.getLogger(__name__)
 
+    def normalize_text(self, text: str) -> str:
+        """
+        Normalize text for TTS without aggressive markup.
+        This is a light-touch normalization focused on common issues.
+
+        Args:
+            text: The text to normalize
+
+        Returns:
+            Normalized text suitable for TTS
+        """
+        normalized_text = text
+
+        # Fix hyphenated words being read as "minus"
+        # Replace hyphens with spaces in hyphenated words (but not standalone dashes)
+        # Use a more comprehensive approach to handle multi-word hyphenated phrases
+        normalized_text = re.sub(r"(\w)-(\w)", r"\1 \2", normalized_text)
+
+        # Handle em dashes and en dashes more aggressively
+        # Remove em dashes completely (they're usually just long pauses)
+        normalized_text = normalized_text.replace("—", " ")
+
+        # Remove en dashes when they appear between words
+        normalized_text = normalized_text.replace("–", " ")
+
+        # Handle prose dashes (spaced regular dashes) - remove them but preserve math contexts
+        # Match: word/space + dash + space + word, but not: digit + space + dash + space + digit
+        # This preserves "5 - 1" while removing "She paused - and took a sip"
+        normalized_text = re.sub(r"(?<!\d)\s+-\s+(?!\d)", " ", normalized_text)
+
+        # Handle multiple spaces that might result from replacements
+        normalized_text = re.sub(r"\s+", " ", normalized_text)
+
+        # Remove markdown title prefixes
+        normalized_text = re.sub(r"^#+\s+", "", normalized_text, flags=re.MULTILINE)
+
+        return normalized_text.strip()
+
     def enhance_speech_markup(self, text: str) -> str:
         """
         Enhance text with speech markup for better pronunciation.
+        This includes both normalization and advanced markup.
 
         Args:
             text: The text to enhance
@@ -79,12 +118,8 @@ class SpeechProcessor:
         Returns:
             Enhanced text with speech markup
         """
-        # Start with the original text
-        enhanced_text = text
-
-        # Remove markdown title prefix if present
-        # This helps with better TTS rendering (doesn't try to speak "hashtag")
-        enhanced_text = re.sub(r"^#\s+", "", enhanced_text)
+        # Start with normalized text
+        enhanced_text = self.normalize_text(text)
 
         # Add pronunciation guides for technical terms
         for term, pronunciation in self.PRONUNCIATION_DICT.items():
@@ -146,6 +181,7 @@ class SpeechProcessor:
     def _enhance_equations(self, text: str) -> str:
         """
         Enhance mathematical equations for better speech rendering.
+        Only applies mathematical replacements within likely equation contexts.
 
         Args:
             text: The text to enhance
@@ -153,14 +189,14 @@ class SpeechProcessor:
         Returns:
             Text with enhanced equations
         """
-        # Replace common equation syntax
-        replacements = {
-            # Basic operators
+        # First, handle mathematical operators that don't conflict with regular text
+        safe_replacements = {
+            # Multi-character operators that are clearly mathematical
             r"\*\*": " to the power of ",
-            r"\*": " times ",
-            r"/": " divided by ",
-            r"\+": " plus ",
-            r"-": " minus ",
+            r">=": " greater than or equal to ",
+            r"<=": " less than or equal to ",
+            r"!=": " not equal to ",
+            r"==": " equals ",
             # Functions
             r"\bsin\b": "sine",
             r"\bcos\b": "cosine",
@@ -172,9 +208,20 @@ class SpeechProcessor:
             r"\blim\b": "limit",
         }
 
-        # Apply replacements only within equation contexts
-        # This is a simplified approach - a more complex implementation would parse equations
-        for pattern, replacement in replacements.items():
+        # Apply safe replacements globally
+        for pattern, replacement in safe_replacements.items():
+            text = re.sub(pattern, replacement, text)
+
+        # Handle potentially ambiguous operators only in mathematical contexts
+        # Look for patterns like: number operator number, or variable operator variable
+        math_context_patterns = {
+            # Plus/minus when surrounded by numbers or variables
+            r"(\d+|\w)\s*\+\s*(\d+|\w)": r"\1 plus \2",
+            r"(\d+|\w)\s*-\s*(\d+|\w)": r"\1 minus \2",
+            r"(\d+|\w)\s*\*\s*(\d+|\w)": r"\1 times \2",
+            r"(\d+|\w)\s*/\s*(\d+|\w)": r"\1 divided by \2",
+        }
+        for pattern, replacement in math_context_patterns.items():
             text = re.sub(pattern, replacement, text)
 
         return text
