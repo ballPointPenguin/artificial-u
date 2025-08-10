@@ -75,6 +75,11 @@ const TopicDetail = () => {
     void refetchLecture()
   }
 
+   const handleLectureUpdated = () => {
+     // Refresh lecture after actions like audio generation
+     void refetchLecture()
+   }
+
   const handleGenerateLecture = async () => {
     if (!isValidIds) return
 
@@ -213,6 +218,7 @@ const TopicDetail = () => {
                           generationTimeout={generationTimeout()}
                           onGenerateLecture={() => void handleGenerateLecture()}
                           onLectureDeleted={handleLectureDeleted}
+                          onLectureUpdated={handleLectureUpdated}
                         />
                       </div>
                     </div>

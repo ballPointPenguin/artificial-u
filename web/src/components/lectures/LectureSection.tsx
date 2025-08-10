@@ -13,12 +13,16 @@ interface LectureSectionProps {
   generationTimeout: boolean
   onGenerateLecture: () => void
   onLectureDeleted?: () => void
+  onLectureUpdated?: () => void
 }
 
 export const LectureSection: Component<LectureSectionProps> = (props) => {
   const [isDeleting, setIsDeleting] = createSignal(false)
   const [showDeleteModal, setShowDeleteModal] = createSignal(false)
   const [deleteError, setDeleteError] = createSignal('')
+  const [isGeneratingAudio, setIsGeneratingAudio] = createSignal(false)
+  const [audioError, setAudioError] = createSignal('')
+  const [audioTimeout, setAudioTimeout] = createSignal(false)
 
   const handleDeleteLecture = async () => {
     const lecture = props.lecture()
@@ -39,6 +43,24 @@ export const LectureSection: Component<LectureSectionProps> = (props) => {
     }
   }
 
+  const handleGenerateAudio = async () => {
+    const lecture = props.lecture()
+    if (!lecture) return
+
+    setIsGeneratingAudio(true)
+    setAudioError('')
+    setAudioTimeout(false)
+
+    try {
+      await lectureService.generateLectureAudio(lecture.id, () => setAudioTimeout(true))
+      props.onLectureUpdated?.()
+    } catch (error) {
+      setAudioError(error instanceof Error ? error.message : 'Failed to generate audio')
+    } finally {
+      setIsGeneratingAudio(false)
+    }
+  }
+
   return (
     <div class="arcane-card">
       <div class="flex justify-between items-center mb-4">
@@ -46,6 +68,15 @@ export const LectureSection: Component<LectureSectionProps> = (props) => {
         <Show when={props.lecture()}>
           {(lectureData) => (
             <div class="flex space-x-2">
+              <Show when={!lectureData().audio_url}>
+                <MagicButton
+                  variant="primary"
+                  onClick={() => void handleGenerateAudio()}
+                  disabled={isGeneratingAudio()}
+                >
+                  {isGeneratingAudio() ? 'Generating Audio...' : 'Generate Audio'}
+                </MagicButton>
+              </Show>
               <A
                 href={`/courses/${String(props.courseId)}/lectures/${String(lectureData().id)}`}
                 class="inline-block"
@@ -76,6 +107,19 @@ export const LectureSection: Component<LectureSectionProps> = (props) => {
       <Show when={deleteError()}>
         <Alert variant="danger" class="mb-4">
           {deleteError()}
+        </Alert>
+      </Show>
+
+      {/* Audio generation error/timeout messages */}
+      <Show when={audioError()}>
+        <Alert variant="danger" class="mb-4">
+          {audioError()}
+        </Alert>
+      </Show>
+      <Show when={audioTimeout()}>
+        <Alert variant="warning" class="mb-4">
+          The audio generation request timed out. It may still complete in the background. Try
+          refreshing in a bit.
         </Alert>
       </Show>
 

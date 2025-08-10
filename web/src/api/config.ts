@@ -73,6 +73,7 @@ export const ENDPOINTS = {
     generate: '/v1/lectures/generate',
     content: (id: number) => `/v1/lectures/${String(id)}/content`,
     audio: (id: number) => `/v1/lectures/${String(id)}/audio`,
+    generateAudio: (id: number) => `/v1/lectures/${String(id)}/generate-audio`,
     download: (id: number) => `/v1/lectures/${String(id)}/content/download`,
   },
   topics: {

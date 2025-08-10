@@ -307,6 +307,40 @@ class LectureApiService(BaseApiService[CoreLecture, Lecture, LectureListResponse
         except Exception as e:
             self._handle_general_error("get lecture audio URL", e)
 
+    async def generate_lecture_audio(self, lecture_id: int) -> Lecture:
+        """
+        Trigger audio generation for a lecture, then return the updated lecture.
+
+        Args:
+            lecture_id: The unique identifier of the lecture
+
+        Returns:
+            Lecture: Updated lecture with audio_url populated if successful
+        """
+        try:
+            # Ensure the lecture exists first
+            self.core_service.get_lecture(lecture_id)
+
+            # Delegate to core service for audio generation
+            await self.core_service.generate_lecture_audio(lecture_id)
+
+            # Fetch and return updated lecture
+            updated_core = self.core_service.get_lecture(lecture_id)
+            return Lecture.model_validate(updated_core)
+        except LectureNotFoundError:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Lecture with ID {lecture_id} not found",
+            )
+        except (ContentGenerationError, DatabaseError, ValueError) as e:
+            self.logger.error(f"Audio generation failed for lecture {lecture_id}: {e}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Failed to generate audio for lecture {lecture_id}: {e}",
+            )
+        except Exception as e:
+            self._handle_general_error("generate lecture audio", e)
+
     async def generate_lecture(self, generation_data: LectureGenerate) -> Lecture:
         """
         Generate lecture content using AI based on partial data and save to database.

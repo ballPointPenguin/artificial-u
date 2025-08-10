@@ -591,3 +591,117 @@ class LectureService:
         except Exception as e:
             self.logger.error(f"Unexpected error during lecture generation: {e}", exc_info=True)
             raise ContentGenerationError(f"An unexpected error occurred: {e}")
+
+    # ===== Audio Generation (helpers) ===== #
+
+    def _fetch_entities_for_audio(self, lecture_id: int):
+        """Fetch lecture, course, topic, professor for audio generation."""
+        lecture = self.get_lecture(lecture_id)
+        if not lecture or not lecture.content:
+            raise ContentGenerationError("Lecture content is missing; cannot generate audio")
+
+        course = self.course_service.get_course(lecture.course_id)
+        if not course:
+            raise DatabaseError(f"Course {lecture.course_id} not found for lecture {lecture_id}")
+
+        topic = self.topic_service.get_topic(lecture.topic_id)
+        if not topic:
+            raise DatabaseError(f"Topic {lecture.topic_id} not found for lecture {lecture_id}")
+
+        if not course.professor_id:
+            raise DatabaseError("Course has no professor assigned; cannot select a voice")
+        professor = self.professor_service.get_professor(course.professor_id)
+        if not professor:
+            raise DatabaseError(f"Professor {course.professor_id} not found for course {course.id}")
+
+        return lecture, course, topic, professor
+
+    def _ensure_professor_el_voice_id(self, professor) -> str:
+        """Resolve or auto-assign an ElevenLabs voice id for the professor."""
+        el_voice_id: Optional[str] = None
+        if professor.voice_id:
+            voice_repo = self.repository_factory.voice
+            voice = voice_repo.get(professor.voice_id)
+            el_voice_id = voice.el_voice_id if voice else None
+
+        if not el_voice_id:
+            from artificial_u.services.voice_service import VoiceService
+
+            voice_service = VoiceService(
+                repository_factory=self.repository_factory,
+                logger=self.logger,
+            )
+            selected = voice_service.select_voice_for_professor(professor)
+            el_voice_id = selected.get("el_voice_id")
+            if not el_voice_id:
+                raise DatabaseError("Failed to select or resolve an ElevenLabs voice ID")
+
+        return el_voice_id
+
+    def _generate_audio_bytes(self, lecture, professor, el_voice_id: str) -> bytes:
+        """Use TTSService to generate audio bytes for a lecture."""
+        from artificial_u.services.tts_service import TTSService
+
+        tts_service = TTSService(
+            api_key=None,
+            audio_path=None,
+            repository_factory=self.repository_factory,
+            logger=self.logger,
+        )
+        try:
+            _file_path, audio_bytes = tts_service.generate_lecture_audio(
+                lecture=lecture,
+                professor=professor,
+                el_voice_id=el_voice_id,
+                save_to_file=False,
+            )
+            return audio_bytes
+        except Exception as e:
+            raise ContentGenerationError(f"TTS generation failed: {e}")
+
+    async def _upload_audio_and_get_url(self, course, topic, audio_bytes: bytes) -> str:
+        """Upload audio to storage and return the public URL."""
+        from artificial_u.services.storage_service import StorageService
+
+        storage_service = StorageService(logger=self.logger)
+        course_code = getattr(course, "code", str(course.id))
+        week = getattr(topic, "week", 1)
+        number = getattr(topic, "order", 1)
+        object_key = storage_service.generate_audio_key(
+            course_id=str(course_code),
+            week_number=int(week),
+            lecture_order=int(number),
+        )
+        success, audio_url = await storage_service.upload_audio_file(
+            file_data=audio_bytes,
+            object_name=object_key,
+            content_type="audio/mpeg",
+        )
+        if not success or not audio_url:
+            raise DatabaseError("Failed to upload generated audio to storage")
+        return audio_url
+
+    async def generate_lecture_audio(self, lecture_id: int) -> Dict[str, Any]:
+        """Generate and store audio for the given lecture, updating audio_url."""
+        # 1. Fetch required entities
+        lecture, course, topic, professor = self._fetch_entities_for_audio(lecture_id)
+
+        # 2. Ensure we have an ElevenLabs voice id
+        el_voice_id = self._ensure_professor_el_voice_id(professor)
+
+        # 3. Generate audio bytes
+        audio_bytes = self._generate_audio_bytes(lecture, professor, el_voice_id)
+
+        # 4. Upload to storage and get public URL
+        audio_url = await self._upload_audio_and_get_url(course, topic, audio_bytes)
+
+        # 5. Update lecture with audio URL (force update if one existed)
+        lecture.audio_url = audio_url
+        updated = self.repository_factory.lecture.update(lecture)
+        self.logger.info(
+            "Generated audio for lecture %s and uploaded to storage: %s",
+            lecture_id,
+            audio_url,
+        )
+
+        return {"lecture_id": updated.id, "audio_url": updated.audio_url}

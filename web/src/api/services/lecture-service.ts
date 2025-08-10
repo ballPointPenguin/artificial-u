@@ -54,6 +54,21 @@ export const lectureService = {
     return httpClient.get<AudioRedirectResponse>(ENDPOINTS.lectures.audio(lectureId))
   },
 
+  /**
+   * Trigger generation of lecture audio. No body required.
+   * Uses extended timeout similar to other generation actions.
+   */
+  generateLectureAudio: (
+    lectureId: number,
+    onTimeout?: () => void
+  ): Promise<Lecture> => {
+    return httpClient.postWithExtendedTimeout<Lecture>(
+      ENDPOINTS.lectures.generateAudio(lectureId),
+      undefined,
+      { timeout: TIMEOUT_CONFIG.generation, onTimeout }
+    )
+  },
+
   createLecture: (data: LectureCreate): Promise<Lecture> => {
     return httpClient.post<Lecture>(ENDPOINTS.lectures.list, data)
   },
