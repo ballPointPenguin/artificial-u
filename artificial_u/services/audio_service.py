@@ -115,7 +115,7 @@ class AudioService:
 
         # Upload to storage service (MinIO/S3)
         storage_key = self.storage_service.generate_audio_key(
-            course_id=course_code, week_number=week, lecture_order=number
+            course_code=course_code, week_number=week, lecture_order=number
         )
 
         success, storage_url = await self.storage_service.upload_audio_file(

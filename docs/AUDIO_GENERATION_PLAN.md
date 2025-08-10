@@ -73,22 +73,22 @@
      - Compute storage key from `(course.code, topic.week, topic.order)`; upload; update `lecture.audio_url`
    - Implemented directly in `LectureService` with small helpers; no reuse of legacy `AudioService` path
 
-2. Storage key convention
-   - Use `StorageService.generate_audio_key(course_id: str, week_number: int, lecture_order: int)`
-   - Prefer `course.code` for the path segment (matches `AudioService` usage)
+2. Storage key convention (COMPLETED)
+   - Use `StorageService.generate_audio_key(course_code: str, week_number: int, lecture_order: int)`
+   - Uses `course.code` for the path segment (matches `AudioService` usage)
 
-3. Voice resolution
+3. Voice resolution (COMPLETED)
    - If `professor.voice_id` exists, map to ElevenLabs `el_voice_id` via `VoiceRepository.get`
-   - If missing, call `VoiceService.select_voice_for_professor(professor)` to auto-assign and persist, then extract `el_voice_id`
+   - If missing, `VoiceService.select_voice_for_professor(professor)` auto-assigns and persists, then we extract `el_voice_id`
 
-4. Error handling and timeouts
+4. Error handling and timeouts (COMPLETED)
    - 404 if lecture not found
-   - 400/500 if content missing or TTS/storage fails; include logging
-   - Keep synchronous MVP with extended timeout; background processing later
+   - 400/500 if content missing or TTS/storage fails; logging added
+   - Synchronous MVP with extended timeout on the frontend trigger; background processing later
 
-5. API response
-   - Return updated `Lecture` (with `audio_url` set) on success
-   - Frontend will refetch or use returned body to show audio actions
+5. API response (COMPLETED)
+   - Returns updated `Lecture` (with `audio_url` set) on success
+   - Frontend refetches/uses returned body to show audio actions
 
 6. Tests
    - Unit tests for `LectureService.generate_lecture_audio(lecture_id)` with mocks:

@@ -295,7 +295,7 @@ class StorageService:
 
     def generate_audio_key(
         self,
-        course_id: str,
+        course_code: str,
         week_number: int,
         lecture_order: int,
         extension: str = "mp3",
@@ -304,7 +304,7 @@ class StorageService:
         Generate a standard object key for a lecture audio file.
 
         Args:
-            course_id: Course ID
+            course_code: Course code (human-friendly)
             week_number: Week number
             lecture_order: Lecture order within week
             extension: File extension (default: mp3)
@@ -312,11 +312,11 @@ class StorageService:
         Returns:
             Object key for S3/MinIO
         """
-        return f"{course_id}/week{week_number}/lecture{lecture_order}.{extension}"
+        return f"{course_code}/week{week_number}/lecture{lecture_order}.{extension}"
 
     def generate_lecture_key(
         self,
-        course_id: str,
+        course_code: str,
         week_number: int,
         lecture_order: int,
         extension: str = "md",
@@ -325,7 +325,7 @@ class StorageService:
         Generate a standard object key for a lecture text file.
 
         Args:
-            course_id: Course ID
+            course_code: Course code (human-friendly)
             week_number: Week number
             lecture_order: Lecture order within week
             extension: File extension (default: md)
@@ -333,4 +333,4 @@ class StorageService:
         Returns:
             Object key for S3/MinIO
         """
-        return f"{course_id}/week{week_number}/lecture{lecture_order}.{extension}"
+        return f"{course_code}/week{week_number}/lecture{lecture_order}.{extension}"

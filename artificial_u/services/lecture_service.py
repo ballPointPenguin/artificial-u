@@ -640,10 +640,13 @@ class LectureService:
 
     def _generate_audio_bytes(self, lecture, professor, el_voice_id: str) -> bytes:
         """Use TTSService to generate audio bytes for a lecture."""
+        from artificial_u.config import get_settings
         from artificial_u.services.tts_service import TTSService
 
+        settings = get_settings()
+
         tts_service = TTSService(
-            api_key=None,
+            api_key=settings.ELEVENLABS_API_KEY,
             audio_path=None,
             repository_factory=self.repository_factory,
             logger=self.logger,
@@ -668,7 +671,7 @@ class LectureService:
         week = getattr(topic, "week", 1)
         number = getattr(topic, "order", 1)
         object_key = storage_service.generate_audio_key(
-            course_id=str(course_code),
+            course_code=str(course_code),
             week_number=int(week),
             lecture_order=int(number),
         )
