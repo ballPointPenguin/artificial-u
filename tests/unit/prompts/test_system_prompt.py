@@ -17,8 +17,7 @@ def test_system_prompt_course():
 def test_system_prompt_department():
     """Test getting department system prompt."""
     prompt = get_system_prompt("department")
-    assert "department profiles" in prompt
-    assert "XML format" in prompt
+    assert "Begin with a concise checklist" in prompt
 
 
 @pytest.mark.unit

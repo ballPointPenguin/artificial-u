@@ -6,41 +6,56 @@ from artificial_u.models.converters import departments_to_xml, partial_departmen
 from artificial_u.prompts.base import PromptTemplate
 
 # XML structure for department profile
-DEPARTMENT_XML_STRUCTURE = """<department>
-  <name>[Department name]</name>
-  <code>[Department code]</code>
-  <faculty>[Department faculty]</faculty>
-  <description>[Department description]</description>
-</department>"""
+DEPARTMENT_XML_STRUCTURE = """
+<output>
+  <department>
+    <name>[GENERATE]</name>
+    <code>[GENERATE]</code>
+    <faculty>[GENERATE]</faculty>
+    <description>[GENERATE]</description>
+  </department>
+</output>
+"""
 
 # Example of a filled department
-EXAMPLE_DEPARTMENT_1 = """<department>
+EXAMPLE_DEPARTMENT_1 = """
+<department>
   <name>Mathematics</name>
   <code>MTH</code>
   <faculty>Science and Technology</faculty>
   <description>The Department of Mathematics is responsible for teaching and research in
 mathematics and its applications.</description>
-</department>"""
+</department>
+"""
 
-EXAMPLE_DEPARTMENT_2 = """<department>
+EXAMPLE_DEPARTMENT_2 = """
+<department>
   <name>History</name>
   <code>HIS</code>
   <faculty>Arts and Humanities</faculty>
   <description>The Department of History focuses on the study and research of past events
 and societies.</description>
-</department>"""
+</department>
+"""
 
 # Unified department prompt that handles both structured and freeform inputs
 DEPARTMENT_PROMPT = PromptTemplate(
     template=f"""
-Generate a department profile in XML format.
-Use the structure below; fill in all bracketed placeholders with either provided values
-or generated ones if marked as [GENERATE].
-
-XML Structure:
+Generate a new department profile following this XML structure:
 {DEPARTMENT_XML_STRUCTURE}
 
-Existing departments in the university (for context and to avoid repetition):
+Instructions:
+- All fields (inside [GENERATE]) must be filled with generated values.
+- Ensure that both <name> and <code> are unique compared to those listed under
+  <existing_departments> (case-insensitive check).
+- <code> must be a short, memorable abbreviation (2-8 uppercase letters).
+- <faculty> should be a broad academic division such as "Arts and Humanities,"
+  "Science and Technology," or similar.
+- <description> should be clear, concise, and informative about the department's focus.
+
+After generating the profile, validate that <name> and <code> are unique,
+and that all output fields meet requirements. If validation fails, self-correct and
+regenerate the output.
 {{existing_departments_xml}}
 
 Partial Department Details:
@@ -48,21 +63,10 @@ Partial Department Details:
 
 {{freeform_prompt_text}}
 
-Examples of properly formatted departments:
-Example 1:
-{EXAMPLE_DEPARTMENT_1}
-
-Example 2:
-{EXAMPLE_DEPARTMENT_2}
-
-IMPORTANT:
-- Generate a unique department that doesn't duplicate any existing ones
-- Ensure the code is a short, memorable abbreviation (2-8 letters)
-- Faculty should be a broad academic division
-  (e.g., "Arts and Humanities", "Science and Technology")
-- Description should be concise but informative
-
-Wrap your answer in <output> tags, providing only the <department> element.
+Formatting and Output Requirements:
+- Only output the XML block wrapped in <output> tags,
+  containing a single <department> element as shown.
+- No external text, notes, or markup outside the <output> block is permitted.
 """,
     required_vars=[
         "existing_departments_xml",

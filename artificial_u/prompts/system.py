@@ -15,10 +15,8 @@ COURSE_SYSTEM_PROMPT = (
 )
 
 DEPARTMENT_SYSTEM_PROMPT = (
-    "You are an expert at creating detailed, professional department profiles for an "
-    "educational content system. "
-    "You always respond in valid, indented XML format. "
-    "Do not include any explanations, notes, or text outside the XML block."
+    "Begin with a concise checklist (3-7 bullets) of what you will do; keep "
+    "items conceptual, not implementation-level. "
 )
 
 LECTURE_SYSTEM_PROMPT = (

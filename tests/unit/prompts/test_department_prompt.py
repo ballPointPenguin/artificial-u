@@ -23,7 +23,7 @@ def test_department_prompt_with_partial_attributes():
     assert "<code>" in prompt
     assert "<faculty>" in prompt
     assert "<description>" in prompt
-    assert "XML Structure:" in prompt
+    assert "XML structure:" in prompt
 
 
 @pytest.mark.unit
@@ -39,7 +39,7 @@ def test_department_prompt_with_freeform():
     assert "<code>" in prompt
     assert "<faculty>" in prompt
     assert "<description>" in prompt
-    assert "XML Structure:" in prompt
+    assert "XML structure:" in prompt
 
 
 @pytest.mark.unit
@@ -92,11 +92,9 @@ def test_department_prompt_with_empty_inputs():
     prompt = get_department_prompt()
 
     # Check that the basic structure is present
-    assert "XML Structure:" in prompt
+    assert "XML structure:" in prompt
     assert "<department>" in prompt
     assert "<name>" in prompt
     assert "<code>" in prompt
     assert "<faculty>" in prompt
     assert "<description>" in prompt
-    assert "Example 1:" in prompt
-    assert "Example 2:" in prompt
