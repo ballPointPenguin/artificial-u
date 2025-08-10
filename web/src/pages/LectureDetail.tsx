@@ -38,7 +38,7 @@ const LectureDetailView: Component<{
             </a>
           </Show>
 
-          {/* Audio actions: listen if available, otherwise generate */}
+          {/* Audio actions: listen if available, plus generate/regenerate */}
           <Show when={props.lecture.audio_url}>
             <a
               href={props.lecture.audio_url || undefined}
@@ -51,18 +51,20 @@ const LectureDetailView: Component<{
               </Button>
             </a>
           </Show>
-          <Show when={!props.lecture.audio_url}>
-            <MagicButton
-              variant="primary"
-              size="sm"
-              onClick={() => {
-                void props.onGenerateAudio()
-              }}
-              disabled={props.isGeneratingAudio}
-            >
-              {props.isGeneratingAudio ? 'Generating Audio...' : 'Generate Audio'}
-            </MagicButton>
-          </Show>
+          <MagicButton
+            variant="primary"
+            size="sm"
+            onClick={() => {
+              void props.onGenerateAudio()
+            }}
+            disabled={props.isGeneratingAudio}
+          >
+            {props.isGeneratingAudio
+              ? 'Generating Audio...'
+              : props.lecture.audio_url
+                ? 'Regenerate Audio'
+                : 'Generate Audio'}
+          </MagicButton>
           <Button variant="outline" onClick={props.onEdit}>
             Edit
           </Button>

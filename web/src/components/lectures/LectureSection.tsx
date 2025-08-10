@@ -68,15 +68,17 @@ export const LectureSection: Component<LectureSectionProps> = (props) => {
         <Show when={props.lecture()}>
           {(lectureData) => (
             <div class="flex space-x-2">
-              <Show when={!lectureData().audio_url}>
-                <MagicButton
-                  variant="primary"
-                  onClick={() => void handleGenerateAudio()}
-                  disabled={isGeneratingAudio()}
-                >
-                  {isGeneratingAudio() ? 'Generating Audio...' : 'Generate Audio'}
-                </MagicButton>
-              </Show>
+              <MagicButton
+                variant="primary"
+                onClick={() => void handleGenerateAudio()}
+                disabled={isGeneratingAudio()}
+              >
+                {isGeneratingAudio()
+                  ? 'Generating Audio...'
+                  : lectureData().audio_url
+                    ? 'Regenerate Audio'
+                    : 'Generate Audio'}
+              </MagicButton>
               <A
                 href={`/courses/${String(props.courseId)}/lectures/${String(lectureData().id)}`}
                 class="inline-block"
