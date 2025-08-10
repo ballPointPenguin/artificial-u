@@ -103,7 +103,7 @@ class AudioService:
     ) -> str:
         """Generate audio using TTS and store it. Returns storage URL."""
         # Generate audio using TTS service
-        _, audio_data = self.tts_service.generate_lecture_audio(
+        audio_data = self.tts_service.generate_lecture_audio(
             lecture=lecture,
             professor=professor,
             el_voice_id=el_voice_id,

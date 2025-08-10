@@ -652,7 +652,7 @@ class LectureService:
             logger=self.logger,
         )
         try:
-            _file_path, audio_bytes = tts_service.generate_lecture_audio(
+            audio_bytes = tts_service.generate_lecture_audio(
                 lecture=lecture,
                 professor=professor,
                 el_voice_id=el_voice_id,

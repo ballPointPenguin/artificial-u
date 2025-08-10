@@ -5,7 +5,7 @@ import { lectureService } from '../api/services/lecture-service.js'
 import { topicService } from '../api/services/topic-service.js'
 import type { Lecture, LectureUpdate } from '../api/types.js'
 import { LectureForm } from '../components/lectures/LectureForm.jsx'
-import { Alert, Button, ConfirmationModal } from '../components/ui'
+import { Alert, Button, ConfirmationModal, MagicButton } from '../components/ui'
 
 // Lecture Detail View Component
 const LectureDetailView: Component<{
@@ -13,6 +13,8 @@ const LectureDetailView: Component<{
   onEdit: () => void
   onDelete: () => void
   isDeleting: boolean
+  onGenerateAudio: () => Promise<void>
+  isGeneratingAudio: boolean
 }> = (props) => {
   return (
     <div class="arcane-card">
@@ -22,6 +24,45 @@ const LectureDetailView: Component<{
           <p class="text-parchment-300">Revision {props.lecture.revision}</p>
         </div>
         <div class="flex space-x-2">
+          {/* Transcript button at top */}
+          <Show when={props.lecture.transcript_url}>
+            <a
+              href={props.lecture.transcript_url || undefined}
+              target="_blank"
+              rel="noopener noreferrer"
+              class="inline-block"
+            >
+              <Button variant="secondary" size="sm">
+                View Transcript
+              </Button>
+            </a>
+          </Show>
+
+          {/* Audio actions: listen if available, otherwise generate */}
+          <Show when={props.lecture.audio_url}>
+            <a
+              href={props.lecture.audio_url || undefined}
+              target="_blank"
+              rel="noopener noreferrer"
+              class="inline-block"
+            >
+              <Button variant="outline" size="sm">
+                Listen
+              </Button>
+            </a>
+          </Show>
+          <Show when={!props.lecture.audio_url}>
+            <MagicButton
+              variant="primary"
+              size="sm"
+              onClick={() => {
+                void props.onGenerateAudio()
+              }}
+              disabled={props.isGeneratingAudio}
+            >
+              {props.isGeneratingAudio ? 'Generating Audio...' : 'Generate Audio'}
+            </MagicButton>
+          </Show>
           <Button variant="outline" onClick={props.onEdit}>
             Edit
           </Button>
@@ -48,57 +89,8 @@ const LectureDetailView: Component<{
         </div>
       </Show>
 
-      {/* Lecture Metadata */}
-      <LectureMetadata lecture={props.lecture} />
+      {/* Additional Resources removed per request */}
     </div>
-  )
-}
-
-// Lecture Metadata Component
-const LectureMetadata: Component<{
-  lecture: Lecture
-}> = (props) => {
-  return (
-    <Show when={props.lecture.summary || props.lecture.audio_url || props.lecture.transcript_url}>
-      <div class="border-t border-parchment-800/30 pt-6 mt-6">
-        <h3 class="text-lg font-semibold text-parchment-200 mb-4">Additional Resources</h3>
-
-        <Show when={props.lecture.summary}>
-          <div class="mb-4">
-            <h4 class="text-md font-medium text-parchment-300 mb-2">Summary</h4>
-            <p class="text-parchment-400 font-serif">{props.lecture.summary}</p>
-          </div>
-        </Show>
-
-        <Show when={props.lecture.audio_url}>
-          <div class="mb-4">
-            <h4 class="text-md font-medium text-parchment-300 mb-2">Audio</h4>
-            <a
-              href={props.lecture.audio_url || undefined}
-              target="_blank"
-              rel="noopener noreferrer"
-              class="text-mystic-500 hover:text-mystic-300"
-            >
-              Listen to Audio
-            </a>
-          </div>
-        </Show>
-
-        <Show when={props.lecture.transcript_url}>
-          <div class="mb-4">
-            <h4 class="text-md font-medium text-parchment-300 mb-2">Transcript</h4>
-            <a
-              href={props.lecture.transcript_url || undefined}
-              target="_blank"
-              rel="noopener noreferrer"
-              class="text-mystic-500 hover:text-mystic-300"
-            >
-              View Transcript
-            </a>
-          </div>
-        </Show>
-      </div>
-    </Show>
   )
 }
 
@@ -112,6 +104,9 @@ const LectureDetail = () => {
   const [showDeleteModal, setShowDeleteModal] = createSignal(false)
   const [error, setError] = createSignal('')
   const [deleteError, setDeleteError] = createSignal('')
+  const [isGeneratingAudio, setIsGeneratingAudio] = createSignal(false)
+  const [audioError, setAudioError] = createSignal('')
+  const [audioTimeout, setAudioTimeout] = createSignal(false)
 
   // Parse IDs from URL params
   const courseId = Number.parseInt(params.courseId, 10)
@@ -120,7 +115,10 @@ const LectureDetail = () => {
   const isValidIds = !Number.isNaN(courseId) && !Number.isNaN(lectureId)
 
   // Fetch lecture, course, and topic data
-  const [lecture] = createResource(() => (isValidIds ? lectureId : null), lectureService.getLecture)
+  const [lecture, { refetch: refetchLecture }] = createResource(
+    () => (isValidIds ? lectureId : null),
+    lectureService.getLecture
+  )
 
   const [course] = createResource(() => (isValidIds ? courseId : null), courseService.getCourse)
 
@@ -170,6 +168,23 @@ const LectureDetail = () => {
       setShowDeleteModal(false)
     } finally {
       setIsDeleting(false)
+    }
+  }
+
+  const handleGenerateAudio = async () => {
+    if (!isValidIds) return
+
+    setIsGeneratingAudio(true)
+    setAudioError('')
+    setAudioTimeout(false)
+
+    try {
+      await lectureService.generateLectureAudio(lectureId, () => setAudioTimeout(true))
+      await refetchLecture()
+    } catch (error) {
+      setAudioError(error instanceof Error ? error.message : 'Failed to generate audio')
+    } finally {
+      setIsGeneratingAudio(false)
     }
   }
 
@@ -234,6 +249,19 @@ const LectureDetail = () => {
                     </Alert>
                   </Show>
 
+                  {/* Audio generation error/timeout messages */}
+                  <Show when={audioError()}>
+                    <Alert variant="danger" class="mb-4">
+                      {audioError()}
+                    </Alert>
+                  </Show>
+                  <Show when={audioTimeout()}>
+                    <Alert variant="warning" class="mb-4">
+                      The audio generation request timed out. It may still complete in the
+                      background. Try refreshing in a bit.
+                    </Alert>
+                  </Show>
+
                   <Show
                     when={!isEditing()}
                     fallback={
@@ -253,6 +281,8 @@ const LectureDetail = () => {
                       onEdit={() => setIsEditing(true)}
                       onDelete={() => setShowDeleteModal(true)}
                       isDeleting={isDeleting()}
+                      onGenerateAudio={handleGenerateAudio}
+                      isGeneratingAudio={isGeneratingAudio()}
                     />
                   </Show>
 
@@ -267,7 +297,9 @@ const LectureDetail = () => {
                       </div>
                     }
                     confirmText="Delete"
-                    onConfirm={() => void handleDeleteLecture()}
+                    onConfirm={() => {
+                      void handleDeleteLecture()
+                    }}
                     onCancel={() => setShowDeleteModal(false)}
                     isConfirming={isDeleting()}
                   />

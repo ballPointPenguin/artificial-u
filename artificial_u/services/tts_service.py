@@ -6,7 +6,7 @@ This service handles converting text to speech using ElevenLabs.
 
 import logging
 import os
-from typing import Any, Dict, Optional, Tuple, Union
+from typing import Any, Dict, Optional, Union
 
 from artificial_u.audio.speech_processor import SpeechProcessor
 from artificial_u.integrations import elevenlabs
@@ -128,7 +128,7 @@ class TTSService:
         professor: Professor,
         el_voice_id: Optional[str] = None,
         model_id: Optional[str] = None,
-    ) -> Tuple[str, bytes]:
+    ) -> bytes:
         """
         Generate audio for a lecture.
 
