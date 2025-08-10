@@ -341,6 +341,40 @@ class LectureApiService(BaseApiService[CoreLecture, Lecture, LectureListResponse
         except Exception as e:
             self._handle_general_error("generate lecture audio", e)
 
+    async def _upload_transcript_and_get_url(
+        self,
+        course_id: int,
+        topic_id: int,
+        content_text: str,
+    ) -> Optional[str]:
+        """Upload generated lecture text to storage and return its URL."""
+        try:
+            if not content_text:
+                return None
+            course = self.course_service.get_course(course_id)
+            topic = self.topic_service.get_topic(topic_id)
+
+            course_code = str(getattr(course, "code", None) or getattr(course, "id"))
+            week_number = int(getattr(topic, "week", 1))
+            lecture_order = int(getattr(topic, "order", 1))
+
+            object_key = self.storage_service.generate_lecture_key(
+                course_code=course_code,
+                week_number=week_number,
+                lecture_order=lecture_order,
+                extension="txt",
+            )
+
+            success, url = await self.storage_service.upload_lecture_file(
+                file_data=content_text.encode("utf-8"),
+                object_name=object_key,
+                content_type="text/plain",
+            )
+            return url if success else None
+        except Exception as e:
+            self.logger.error("Transcript upload failed: %s", e, exc_info=True)
+            return None
+
     async def generate_lecture(self, generation_data: LectureGenerate) -> Lecture:
         """
         Generate lecture content using AI based on partial data and save to database.
@@ -415,6 +449,19 @@ class LectureApiService(BaseApiService[CoreLecture, Lecture, LectureListResponse
                 transcript_url=generated_dict.get("transcript_url"),
                 revision=revision,
             )
+
+            # Upload generated lecture content as plain text and set transcript_url
+            content_text = generated_dict.get("content")
+            upload_url = await self._upload_transcript_and_get_url(
+                course_id=generated_dict.get("course_id"),
+                topic_id=generated_dict.get("topic_id"),
+                content_text=content_text,
+            )
+            if upload_url:
+                core_lecture = self.core_service.update_lecture(
+                    lecture_id=core_lecture.id,
+                    update_data={"transcript_url": upload_url},
+                )
 
             # Convert to API model and return
             response = Lecture.model_validate(core_lecture)

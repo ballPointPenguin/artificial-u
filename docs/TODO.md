@@ -4,12 +4,12 @@
 - [x] Add JSONB content to Topics
 - [x] Generate lecture content
 - [x] Ensure lecture revision handling
+- [x] Generate lecture audio
+- [x] Preview and modify professor voices
 - [ ] Generate lecture summary
-- [ ] Generate lecture audio
 - [ ] Generate single topic
 - [ ] Integrate freeform prompts for everything
 - [ ] Manage multiple async generations
-- [ ] Preview and modify professor voices
 - [ ] Enable structured imports of syllabi
 - [ ] Enable import/export of everything
 - [ ] Content checking for user input (toxicity, stupidity, typos)
