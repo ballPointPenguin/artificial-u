@@ -157,7 +157,6 @@ TESTING=true
 | `OPENAI_API_KEY` | API key for OpenAI | None | No |
 | `SPEECH_KEY` | API key for Azure Speech | None | No |
 | `SPEECH_REGION` | Azure Speech region | None | No |
-| `TEMP_AUDIO_PATH` | Path for *temporary* audio file processing | `temp_audio` | No |
 | `CONTENT_LOGS_PATH` | Path for content generation logs | `content_logs` | No |
 | `LOG_LEVEL` | Logging level | `INFO` | No |
 | `content_backend` | Backend for content generation | `anthropic` | No |

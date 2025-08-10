@@ -25,7 +25,7 @@ def test_system_prompt_lecture():
     """Test getting lecture system prompt."""
     prompt = get_system_prompt("lecture")
     assert "educational content creator" in prompt
-    assert "XML format" in prompt
+    assert "audio delivery" in prompt
 
 
 @pytest.mark.unit

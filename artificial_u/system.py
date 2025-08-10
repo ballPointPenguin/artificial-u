@@ -189,7 +189,6 @@ class UniversitySystem:
         # Initialize TTS service
         self.tts_service = TTSService(
             api_key=self.settings.ELEVENLABS_API_KEY,
-            audio_path=self.settings.TEMP_AUDIO_PATH,
             client=self.elevenlabs_client,
             speech_processor=self.speech_processor,
             repository_factory=self.repository_factory,

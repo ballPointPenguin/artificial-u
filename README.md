@@ -14,11 +14,10 @@ ArtificialU combines the Anthropic Claude API for generating educational content
 - **Modular Audio Architecture**: Clean separation between text processing, voice selection, and TTS conversion
 - **Smart Voice Selection**: Automatically match professors to appropriate ElevenLabs voices based on gender, accent, and age
 - **Speech Enhancement**: Intelligently process academic text for optimal TTS quality, including handling of technical terms and mathematical notation
+- **AI Response Prefilling**: Guide Claude's responses with assistant message prefills for consistent formatting and structure (Anthropic models only)
 - **CLI Interface**: Easy-to-use command line interface for generating content
-- Course and lecture generation with consistent professor personas
-- Direct access to audio file paths in lecture previews
-- Local storage of course materials and audio files
-- Faculty directory with professor information
+- **Course and lecture generation** with consistent professor personas
+- **Faculty directory** with professor information
 
 ## Prerequisites
 

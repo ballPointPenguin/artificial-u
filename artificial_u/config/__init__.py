@@ -19,7 +19,6 @@ from artificial_u.config.defaults import (
     DEFAULT_STORAGE_REGION,
     DEFAULT_STORAGE_SECRET_KEY,
     DEFAULT_STORAGE_TYPE,
-    DEFAULT_TEMP_AUDIO_PATH,
     DEPARTMENTS,
 )
 
@@ -39,7 +38,6 @@ __all__ = [
     "Environment",
     # Default paths and storage
     "DEFAULT_DB_URL",
-    "DEFAULT_TEMP_AUDIO_PATH",
     "DEFAULT_CONTENT_LOGS_PATH",
     "DEFAULT_STORAGE_TYPE",
     "DEFAULT_STORAGE_ENDPOINT_URL",

@@ -302,6 +302,7 @@ class LectureService:
             prompt=lecture_prompt,
             system_prompt=system_prompt,
             max_tokens=16384,  # 2^14
+            prefill="<lecture_outline>",
         )
         self.logger.info("Received response from content service.")
 
@@ -647,7 +648,6 @@ class LectureService:
 
         tts_service = TTSService(
             api_key=settings.ELEVENLABS_API_KEY,
-            audio_path=None,
             repository_factory=self.repository_factory,
             logger=self.logger,
         )
@@ -656,7 +656,6 @@ class LectureService:
                 lecture=lecture,
                 professor=professor,
                 el_voice_id=el_voice_id,
-                save_to_file=False,
             )
             return audio_bytes
         except Exception as e:

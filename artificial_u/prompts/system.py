@@ -20,11 +20,9 @@ DEPARTMENT_SYSTEM_PROMPT = (
 )
 
 LECTURE_SYSTEM_PROMPT = (
-    "You are an expert educational content creator who specializes in developing "
-    "university-level lectures that are engaging, informative, and suitable for "
-    "audio delivery. "
-    "You always respond in valid, indented XML format. "
-    "Do not include any explanations, notes, or text outside the XML block."
+    "You are an expert educational content creator specializing in developing "
+    "university-level lectures for audio delivery. Your task is to generate an "
+    "engaging and informative lecture based on information provided."
 )
 
 PROFESSOR_SYSTEM_PROMPT = (

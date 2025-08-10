@@ -30,7 +30,6 @@ class TTSService:
     def __init__(
         self,
         api_key: Optional[str] = None,
-        audio_path: Optional[str] = None,
         client: Optional[elevenlabs.ElevenLabsClient] = None,
         speech_processor: Optional[SpeechProcessor] = None,
         repository_factory=None,
@@ -41,14 +40,12 @@ class TTSService:
 
         Args:
             api_key: Optional ElevenLabs API key
-            audio_path: Optional base path for audio files
             client: Optional ElevenLabs client instance
             speech_processor: Optional speech processor instance
             repository_factory: Optional repository factory instance
             logger: Optional logger instance
         """
         self.logger = logger or logging.getLogger(__name__)
-        self.audio_path = audio_path
         self.repository_factory = repository_factory
 
         # Initialize components
@@ -131,7 +128,6 @@ class TTSService:
         professor: Professor,
         el_voice_id: Optional[str] = None,
         model_id: Optional[str] = None,
-        save_to_file: bool = True,
     ) -> Tuple[str, bytes]:
         """
         Generate audio for a lecture.
@@ -141,7 +137,6 @@ class TTSService:
             professor: Professor delivering the lecture
             el_voice_id: Optional ElevenLabs voice ID (will be selected if not provided)
             model_id: Optional ElevenLabs model ID
-            save_to_file: Whether to save audio to file
 
         Returns:
             Tuple of (file path or empty string, audio data)
@@ -173,35 +168,7 @@ class TTSService:
         except Exception as e:
             raise AudioProcessingError(f"Failed to generate lecture audio: {e}")
 
-        # Save to file if requested
-        file_path = ""
-        if save_to_file and self.audio_path:
-            file_path = self._get_lecture_file_path(lecture)
-            self._save_audio_file(file_path, audio_data)
-
-        return file_path, audio_data
-
-    def _get_lecture_file_path(self, lecture: Lecture) -> str:
-        """Get the file path for a lecture audio file."""
-        if not self.audio_path:
-            raise ValueError("Audio path not specified")
-
-        # Create directories if needed
-        course_dir = os.path.join(self.audio_path, lecture.course_id)
-        os.makedirs(course_dir, exist_ok=True)
-
-        # Return full path
-        return os.path.join(course_dir, f"lecture{lecture.id}.mp3")
-
-    def _save_audio_file(self, file_path: str, audio_data: bytes) -> None:
-        """Save audio data to a file."""
-        try:
-            with open(file_path, "wb") as f:
-                f.write(audio_data)
-            self.logger.info(f"Audio saved to {file_path}")
-        except Exception as e:
-            self.logger.error(f"Failed to save audio file: {e}")
-            raise AudioProcessingError(f"Failed to save audio file: {e}")
+        return audio_data
 
     def play_audio(self, audio_source: Union[bytes, str]) -> None:
         """

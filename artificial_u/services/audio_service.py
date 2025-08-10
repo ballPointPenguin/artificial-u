@@ -38,12 +38,8 @@ class AudioService:
         self.repository_factory = repository_factory
 
         # Initialize services
-        storage_settings = (storage_service or StorageService()).settings
-        temp_audio_path = storage_settings.TEMP_AUDIO_PATH
-
         self.tts_service = tts_service or TTSService(
             api_key=api_key,
-            audio_path=temp_audio_path,
             repository_factory=self.repository_factory,
             logger=self.logger,
         )

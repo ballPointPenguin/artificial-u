@@ -12,131 +12,79 @@ from artificial_u.models.converters import (
 from artificial_u.prompts.base import PromptTemplate
 
 # XML structure for lecture content
-LECTURE_XML_STRUCTURE = """<lecture>
+LECTURE_XML_STRUCTURE = """
+<lecture>
   <title>
     [Title of the lecture]
   </title>
   <content>
-    [Full lecture content, including:
-    - Title or Topic
-    - Introduction and scene setting
-    - Main points and explanations
-    - Student interactions and questions
-    - Examples and analogies
-    - Stage directions in [brackets]
-    - Natural transitions between topics
-    - Conclusion and preview of next lecture]
+    [Full lecture content]
   </content>
-</lecture>"""
-
-# Example of a filled lecture
-EXAMPLE_LECTURE_1 = """<lecture>
-  <title>
-    Introduction to Quantum Computing
-  </title>
-  <content>
-    Introduction to Quantum Computing
-
-    [Professor enters, adjusting her glasses with a smile]
-
-    Good morning, everyone! I'm Dr. Sarah Chen, and I'm thrilled to begin our journey into the
-    fascinating world of quantum computing. Before we dive in, let me share a story that I think
-    perfectly illustrates why this field is so exciting...
-
-    [Walks to the whiteboard, drawing a simple diagram]
-
-    You see, classical computers, the ones we use every day, are like trying to read a book in a
-    dark room with just one flashlight. You can only see one page at a time. But quantum computers?
-    They're like suddenly turning on all the lights in the room. You can see every page at once!
-
-    [Pauses, looking around the room]
-
-    I see some skeptical faces. Good! That skepticism is exactly where we need to begin. Let's break
-    this down into something more tangible...
-
-    [Continues with main lecture content, including student interactions, examples, and transitions]
-
-    And that brings us to our conclusion for today. Next time, we'll build on these foundational
-    concepts to explore quantum superposition in more detail. Any final questions?
-  </content>
-</lecture>"""
-
-# Example of a filled lecture with different style
-EXAMPLE_LECTURE_2 = """<lecture>
-  <title>
-    The French Revolution: Causes and Catalysts
-  </title>
-  <content>
-    The French Revolution: Causes and Catalysts
-
-    [Professor strides in, carrying a worn leather briefcase]
-
-    Bonjour, class! Professor Martin here. Today we begin our exploration of one of history's most
-    pivotal moments - the French Revolution. But before we discuss the storming of the Bastille or
-    the Reign of Terror, we need to understand why France was ripe for revolution in the first
-    place.
-
-    [Opens briefcase, pulls out a replica of an 18th-century French coin]
-
-    Take a look at this. This simple coin tells us so much about pre-revolutionary France...
-
-    [Passes coin around while continuing lecture]
-
-    The story of the French Revolution is not just about kings and queens, but about ordinary people
-    facing extraordinary circumstances. Let's examine the three estates system...
-
-    [Continues with engaging narrative, weaving together social, economic, and political factors]
-
-    Next time, we'll see how these tensions finally boiled over in 1789. Remember, revolutions don't
-    just happen - they brew over time, like a pot slowly coming to boil.
-  </content>
-</lecture>"""
+</lecture>
+"""
 
 # Unified lecture prompt that handles both structured and freeform inputs
 LECTURE_PROMPT = PromptTemplate(
     template=f"""
-Generate a university lecture in XML format.
-Use the structure below:
-- Fill in the <title></title> tags with the lecture title.
-- Fill in the <content></content> tags with the lecture content.
-
-XML Structure:
-{LECTURE_XML_STRUCTURE}
-
-Course Information:
 {{course_xml}}
 
-Professor Information:
 {{professor_xml}}
 
-Topic for this lecture:
 {{topic_xml}}
 
-Summary of existing lectures in this course (for context and continuity):
 {{existing_lectures_xml}}
 
-List of topics in this course (for context and continuity):
 {{topics_xml}}
 
 {{freeform_prompt_text}}
 
-Examples of properly formatted lectures:
-Example 1:
-{EXAMPLE_LECTURE_1}
+Instructions:
 
-Example 2:
-{EXAMPLE_LECTURE_2}
+1. Review the provided information carefully to understand the context of the lecture.
 
-IMPORTANT:
-- Write in a conversational style that matches the professor's personality
-- Include stage directions in [brackets] to bring the scene to life
-- Avoid complex mathematical formulas - express them in spoken language
-- Create a narrative flow rather than just presenting facts
-- Include natural interactions and engagement
-- Produce text content that is suitable for a text-to-speech engine
-- Aim for approximately {{word_count}} words in the lecture content
+2. Generate a lecture that is approximately {{word_count}} words long, suitable for audio delivery.
 
-Wrap your answer in <output> tags, providing only the <lecture> element.
+3. Structure your response in the following XML format:
+
+{LECTURE_XML_STRUCTURE}
+
+4. In the <content> section, include the following elements:
+   - Title or Topic (repeated from the <title> section)
+   - Introduction and scene setting
+   - Main points and explanations
+   - Student interactions and questions (optional)
+   - Examples and analogies
+   - Stage directions in [brackets]
+   - Natural transitions between topics
+   - Conclusion and preview of next lecture
+
+5. Write in a conversational style that matches the professor's personality
+   as described in the professor information.
+
+6. Avoid complex mathematical formulas -
+   express them in spoken language suitable for audio delivery.
+
+7. Create a narrative flow rather than just presenting facts.
+
+8. Include natural interactions and engagement with the audience.
+
+9. Ensure that the text is suitable for a text-to-speech engine:
+   - Avoid superfluous punctuation such as asterisks or dashes.
+   - Everything in the response text will be literally read aloud.
+
+Before writing the final lecture, outline the structure and main points of your lecture
+inside <lecture_outline> tags. This will help ensure a well-organized and coherent presentation.
+In this outline:
+
+- List out the main topics and subtopics for the lecture.
+- Provide a brief description of how each topic relates to the course and previous lectures.
+- Suggest potential examples, analogies, or student interactions for each main topic.
+
+It's OK for this section to be quite long, as it will help in creating a
+comprehensive and engaging lecture.
+
+Remember to imbue the text with the personality of the professor while maintaining
+the required structure and content.
 """,
     required_vars=[
         "course_xml",

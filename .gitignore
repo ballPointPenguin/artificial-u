@@ -49,9 +49,6 @@ htmlcov/
 .cache/
 *.db
 *.log
-*.mp3
-*.wav
-audio_files/
 content_logs/
 exports/
 lecture_texts/

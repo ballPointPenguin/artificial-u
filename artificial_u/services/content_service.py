@@ -204,6 +204,7 @@ class ContentService:
         system_prompt: Optional[str] = None,
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
+        prefill: Optional[str] = None,
     ) -> str:
         """
         Generates text based on the provided prompt using the specified or default model.
@@ -216,6 +217,8 @@ class ContentService:
             temperature: Optional temperature for sampling (model-dependent, default varies).
             max_tokens: Optional maximum number of tokens to generate
             (model-dependent, default varies).
+            prefill: Optional assistant message prefill content (Anthropic only).
+            Claude will continue from where this prefill text ends.
 
         Returns:
             The generated text content as a string.
@@ -259,6 +262,7 @@ class ContentService:
                 system_prompt,
                 temperature,
                 max_tokens,
+                prefill,
                 backend=backend,
             )
         except Exception as e:
@@ -320,7 +324,7 @@ class ContentService:
             self.logger.error(f"Failed to save content log to {filepath}: {str(e)}")
 
     async def _generate_anthropic(
-        self, prompt, model, system_prompt, temperature, max_tokens, **kwargs
+        self, prompt, model, system_prompt, temperature, max_tokens, prefill, **kwargs
     ):
         self.logger.info(f"Generating text with Anthropic model: {model}")
         try:
@@ -328,6 +332,10 @@ class ContentService:
             if system_prompt:
                 pass  # Anthropic uses 'system' parameter outside messages
             messages.append({"role": "user", "content": prompt})
+
+            # Add prefill assistant message if provided
+            if prefill:
+                messages.append({"role": "assistant", "content": prefill})
             response = await anthropic_client.messages.create(
                 model=model,
                 max_tokens=max_tokens if max_tokens is not None else DEFAULT_MAX_TOKENS,
@@ -355,9 +363,11 @@ class ContentService:
         return response_text
 
     async def _generate_openai(
-        self, prompt, model, system_prompt, temperature, max_tokens, **kwargs
+        self, prompt, model, system_prompt, temperature, max_tokens, prefill, **kwargs
     ):
         self.logger.info(f"Generating text with OpenAI model: {model}")
+        if prefill:
+            self.logger.warning("Prefill parameter provided but not supported for OpenAI models")
         try:
             messages = []
             if system_prompt:
@@ -425,9 +435,11 @@ class ContentService:
         return response_text
 
     async def _generate_gemini(
-        self, prompt, model, system_prompt, temperature, max_tokens, **kwargs
+        self, prompt, model, system_prompt, temperature, max_tokens, prefill, **kwargs
     ):
         self.logger.info(f"Generating text with Gemini model: {model}")
+        if prefill:
+            self.logger.warning("Prefill parameter provided but not supported for Gemini models")
         try:
             from google.genai import types
 
@@ -493,9 +505,11 @@ class ContentService:
         return response_text
 
     async def _generate_ollama(
-        self, prompt, model, system_prompt, temperature, max_tokens, **kwargs
+        self, prompt, model, system_prompt, temperature, max_tokens, prefill, **kwargs
     ):
         self.logger.info(f"Generating text with Ollama model: {model}")
+        if prefill:
+            self.logger.warning("Prefill parameter provided but not supported for Ollama models")
         try:
             messages = []
             if system_prompt:
