@@ -374,3 +374,21 @@ class ProfessorApiService(BaseApiService[CoreProfessor, ProfessorResponse, Profe
 
         except Exception as e:
             self._handle_general_error("get featured professors", e)
+
+    def assign_voice_to_professor(self, professor_id: int) -> Optional[ProfessorResponse]:
+        """
+        Assign a voice to an existing professor.
+
+        Args:
+            professor_id: ID of the professor to assign voice to
+
+        Returns:
+            Updated professor with assigned voice, or None if professor not found
+        """
+        try:
+            updated_professor = self.core_service.assign_voice_to_professor(professor_id)
+            return ProfessorResponse.model_validate(updated_professor.model_dump())
+        except ProfessorNotFoundError:
+            return None
+        except DatabaseError:
+            return None

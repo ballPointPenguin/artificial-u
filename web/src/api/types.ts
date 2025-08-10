@@ -135,11 +135,9 @@ export interface DepartmentsListResponse {
 }
 
 export interface DepartmentGenerateRequest {
-  name?: string
-  code?: string
-  faculty?: string
-  description?: string
+  partial_attributes?: Record<string, unknown>
   freeform_prompt?: string
+  department_id?: number
 }
 
 // Department nested endpoints response types
@@ -370,7 +368,7 @@ export interface Voice {
   locale: string | null
   description: string | null
   preview_url: string | null
-  verified_languages: Record<string, unknown> | null
+  verified_languages: Array<Record<string, unknown>>
   popularity_score: number | null
   last_updated: string | null
 }

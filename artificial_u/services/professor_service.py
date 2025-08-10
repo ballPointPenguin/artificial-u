@@ -96,10 +96,17 @@ class ProfessorService:
             return
 
         try:
-            # Select a voice using VoiceService
+            # Select a voice using VoiceService (this now updates professor.voice_id automatically)
             selected_voice = self.voice_service.select_voice_for_professor(professor)
 
-            if not selected_voice:
+            if selected_voice:
+                voice_name = selected_voice.get("name", "Unknown")
+                voice_id = selected_voice.get("db_voice_id", "Unknown")
+                self.logger.info(
+                    f"Successfully assigned voice '{voice_name}' (ID: {voice_id}) "
+                    f"to professor {professor.name}"
+                )
+            else:
                 self.logger.warning(
                     f"Voice selection did not return a valid voice for {professor.name}"
                 )
@@ -107,6 +114,59 @@ class ProfessorService:
         except Exception as e:
             # Log warning but don't block professor creation
             self.logger.warning(f"Failed to assign voice to professor {professor.name}: {str(e)}")
+
+    def assign_voice_to_professor(self, professor_id: int) -> Professor:
+        """
+        Assign a voice to an existing professor.
+
+        Args:
+            professor_id: ID of the professor to assign voice to
+
+        Returns:
+            The updated Professor object with assigned voice
+
+        Raises:
+            ProfessorNotFoundError: If professor not found
+            DatabaseError: If voice assignment or update fails
+        """
+        self.logger.info(f"Assigning voice to existing professor {professor_id}")
+
+        # Get the existing professor
+        professor = self.get_professor(professor_id)
+
+        # Check if professor already has a voice
+        if professor.voice_id:
+            self.logger.info(
+                f"Professor {professor.name} already has voice ID {professor.voice_id}. "
+                "Skipping assignment."
+            )
+            return professor
+
+        try:
+            # Use the voice assignment logic (this will update the professor in the database)
+            selected_voice = self.voice_service.select_voice_for_professor(professor)
+
+            if selected_voice:
+                voice_name = selected_voice.get("name", "Unknown")
+                voice_id = selected_voice.get("db_voice_id", "Unknown")
+                self.logger.info(
+                    f"Successfully assigned voice '{voice_name}' (ID: {voice_id}) "
+                    f"to professor {professor.name}"
+                )
+
+                # Get the updated professor from the database to return
+                updated_professor = self.get_professor(professor_id)
+                return updated_professor
+            else:
+                self.logger.warning(
+                    f"Voice selection did not return a valid voice for {professor.name}"
+                )
+                return professor
+
+        except Exception as e:
+            error_msg = f"Failed to assign voice to professor {professor.name}: {str(e)}"
+            self.logger.error(error_msg, exc_info=True)
+            raise DatabaseError(error_msg) from e
 
     def get_professor(self, professor_id: int) -> Professor:  # Assuming ID is int based on repo
         """

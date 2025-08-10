@@ -157,7 +157,7 @@ def get_lecture_prompt(
     existing_lectures: List[Dict[str, Any]],
     topics_data: List[Dict[str, Any]],
     freeform_prompt: Optional[str] = None,
-    word_count: int = 2500,
+    word_count: int = 3000,
 ) -> str:
     """Generate a lecture prompt using centralized converters.
 

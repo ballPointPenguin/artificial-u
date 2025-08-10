@@ -2,6 +2,7 @@ import { A, useNavigate, useParams } from '@solidjs/router'
 import { type Component, createResource, createSignal, For, Show } from 'solid-js'
 import { departmentService } from '../../api/services/department-service.js'
 import { professorService } from '../../api/services/professor-service.js'
+import { getVoice } from '../../api/services/voice-service.js'
 import type { Professor, ProfessorCourseBrief, ProfessorCoursesResponse } from '../../api/types.js'
 import { Alert, Button, ConfirmationModal, LoadingSpinner, MagicButton } from '../ui'
 import ProfessorForm, { type ProfessorFormData } from './ProfessorForm.js'
@@ -65,6 +66,8 @@ export default function ProfessorDetail() {
   const [isGeneratingImage, setIsGeneratingImage] = createSignal(false)
   const [generationError, setGenerationError] = createSignal('')
   const [isImageLoading, setIsImageLoading] = createSignal(false)
+  const [isAssigningVoice, setIsAssigningVoice] = createSignal(false)
+  const [voiceAssignError, setVoiceAssignError] = createSignal('')
 
   const [professorResource, { refetch: refetchProfessor }] = createResource(
     () => {
@@ -76,6 +79,7 @@ export default function ProfessorDetail() {
     },
     async (id) => {
       setIsImageLoading(false) // Reset image loading state when professor data changes
+      setVoiceAssignError('') // Clear voice assignment error when professor data changes
       return professorService.getProfessor(id)
     }
   )
@@ -95,6 +99,19 @@ export default function ProfessorDetail() {
     async (professorId: number) => {
       if (professorId) {
         return professorService.getProfessorCourses(professorId)
+      }
+      return undefined
+    }
+  )
+
+  const [voiceResource] = createResource(
+    () => {
+      const prof = professorResource()
+      return prof && typeof prof.voice_id === 'number' ? prof.voice_id : null
+    },
+    async (voiceId) => {
+      if (voiceId) {
+        return getVoice(voiceId)
       }
       return undefined
     }
@@ -169,6 +186,26 @@ export default function ProfessorDetail() {
       setGenerationError(error instanceof Error ? error.message : 'Failed to generate image')
     } finally {
       setIsGeneratingImage(false)
+    }
+  }
+
+  const handleAssignVoice = async () => {
+    setIsAssigningVoice(true)
+    setVoiceAssignError('')
+    setError('')
+
+    try {
+      const id = Number.parseInt(params.id, 10)
+      if (Number.isNaN(id)) {
+        throw new Error('Invalid professor ID')
+      }
+
+      await professorService.assignVoiceToProfessor(id)
+      void refetchProfessor()
+    } catch (error) {
+      setVoiceAssignError(error instanceof Error ? error.message : 'Failed to assign voice')
+    } finally {
+      setIsAssigningVoice(false)
     }
   }
 
@@ -376,6 +413,114 @@ export default function ProfessorDetail() {
                         </p>
                       </div>
                     </Show>
+                  </div>
+
+                  {/* Voice Information Section */}
+                  <div class="mt-6">
+                    <h3 class="text-lg font-display text-parchment-100 mb-3 text-shadow-golden">
+                      Voice Profile
+                    </h3>
+                    <div class="bg-surface rounded-lg p-4 space-y-2">
+                      <Show
+                        when={professorResource()?.voice_id}
+                        fallback={
+                          <div class="space-y-3">
+                            <p class="text-sm text-muted italic">No voice ID assigned</p>
+                            <Show when={voiceAssignError()}>
+                              <Alert variant="danger" class="text-sm">
+                                {voiceAssignError()}
+                              </Alert>
+                            </Show>
+                            <MagicButton
+                              variant="secondary"
+                              size="sm"
+                              onClick={() => void handleAssignVoice()}
+                              disabled={isAssigningVoice()}
+                              isLoading={isAssigningVoice()}
+                              loadingText="Assigning..."
+                            >
+                              Assign Voice
+                            </MagicButton>
+                          </div>
+                        }
+                      >
+                        <p class="text-sm text-muted">
+                          <strong class="font-semibold text-foreground">Voice ID:</strong>{' '}
+                          {professorResource()?.voice_id}
+                        </p>
+
+                        <Show when={!voiceResource.loading && voiceResource()}>
+                          {(voice) => (
+                            <>
+                              <Show when={voice().name}>
+                                <p class="text-sm text-muted">
+                                  <strong class="font-semibold text-foreground">Name:</strong>{' '}
+                                  {voice().name}
+                                </p>
+                              </Show>
+
+                              <Show when={voice().accent}>
+                                <p class="text-sm text-muted">
+                                  <strong class="font-semibold text-foreground">Accent:</strong>{' '}
+                                  {voice().accent}
+                                </p>
+                              </Show>
+
+                              <Show when={voice().gender}>
+                                <p class="text-sm text-muted">
+                                  <strong class="font-semibold text-foreground">Gender:</strong>{' '}
+                                  {voice().gender}
+                                </p>
+                              </Show>
+
+                              <Show when={voice().age}>
+                                <p class="text-sm text-muted">
+                                  <strong class="font-semibold text-foreground">Age:</strong>{' '}
+                                  {voice().age}
+                                </p>
+                              </Show>
+
+                              <Show when={voice().language}>
+                                <p class="text-sm text-muted">
+                                  <strong class="font-semibold text-foreground">Language:</strong>{' '}
+                                  {voice().language}
+                                </p>
+                              </Show>
+
+                              <Show when={voice().description}>
+                                <p class="text-sm text-muted">
+                                  <strong class="font-semibold text-foreground">
+                                    Description:
+                                  </strong>
+                                  <span class="block mt-1 whitespace-pre-wrap">
+                                    {voice().description}
+                                  </span>
+                                </p>
+                              </Show>
+
+                              <Show when={voice().preview_url}>
+                                <div class="mt-3">
+                                  <audio controls class="w-full max-w-sm">
+                                    <source src={voice().preview_url ?? ''} type="audio/mpeg" />
+                                    Your browser does not support the audio element.
+                                  </audio>
+                                </div>
+                              </Show>
+                            </>
+                          )}
+                        </Show>
+
+                        <Show when={voiceResource.loading}>
+                          <p class="text-sm text-muted italic">Loading voice details...</p>
+                        </Show>
+
+                        <Show when={voiceResource.error as unknown}>
+                          <p class="text-sm text-danger">
+                            Error loading voice details: {getErrorMessage(voiceResource.error)}
+                          </p>
+                        </Show>
+                      </Show>
+                    </div>
                   </div>
                 </div>
               </div>

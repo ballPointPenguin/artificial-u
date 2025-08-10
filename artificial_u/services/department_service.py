@@ -312,6 +312,19 @@ class DepartmentService:
             # existing_courses_models = await self._get_existing_courses(department_model)
             # existing_courses_dicts = [course_model_to_dict(c) for c in existing_courses_models]
             existing_departments_models = self.repository_factory.department.list()
+
+            # Extract department_id if present (for editing existing department)
+            department_id = partial_attributes.get("department_id")
+
+            # Filter out the current department being edited from existing departments
+            if department_id:
+                existing_departments_models = [
+                    d for d in existing_departments_models if d.id != department_id
+                ]
+                self.logger.info(
+                    f"Excluded department ID {department_id} from existing departments list"
+                )
+
             existing_departments_dicts = [
                 department_model_to_dict(d) for d in existing_departments_models
             ]

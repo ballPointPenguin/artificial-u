@@ -48,6 +48,7 @@ export const ENDPOINTS = {
     lectures: (id: number) => `/v1/professors/${String(id)}/lectures`,
     generateImage: (id: number) => `/v1/professors/${String(id)}/generate-image`,
     generate: '/v1/professors/generate',
+    assignVoice: (id: number) => `/v1/professors/${String(id)}/assign-voice`,
   },
   departments: {
     list: '/v1/departments',

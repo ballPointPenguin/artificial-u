@@ -41,6 +41,9 @@ class DepartmentGenerate(BaseModel):
     freeform_prompt: Optional[str] = Field(
         None, description="Optional freeform text prompt for additional guidance."
     )
+    department_id: Optional[int] = Field(
+        None, description="ID of existing department being edited (for context)."
+    )
 
 
 # Department response model

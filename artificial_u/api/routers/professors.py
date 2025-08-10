@@ -149,6 +149,48 @@ async def update_professor(
     return updated_professor
 
 
+@router.post(
+    "/{professor_id}/assign-voice",
+    response_model=ProfessorResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Assign voice to professor",
+    description="Assigns a voice to an existing professor based on their profile attributes.",
+    responses={
+        404: {"description": "Professor not found"},
+        500: {"description": "Voice assignment failed"},
+    },
+)
+async def assign_voice_to_professor(
+    professor_id: int = Path(..., description="The ID of the professor to assign a voice to"),
+    service: ProfessorApiService = Depends(get_professor_api_service),
+):
+    """
+    Assign a voice to an existing professor.
+
+    - **professor_id**: The unique identifier of the professor
+    - Automatically selects an appropriate voice based on the professor's profile
+    - Skips assignment if the professor already has a voice
+    - Returns the updated professor data with the assigned voice information
+    """
+    updated_professor = service.assign_voice_to_professor(professor_id)
+    if not updated_professor:
+        # Check if professor exists first to return 404 vs 500
+        existing_professor = service.get_professor(professor_id)
+        if not existing_professor:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Professor with ID {professor_id} not found",
+            )
+        else:
+            # Professor exists, but voice assignment failed
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Failed to assign voice to professor {professor_id}",
+            )
+
+    return updated_professor
+
+
 @router.delete(
     "/{professor_id}",
     status_code=status.HTTP_204_NO_CONTENT,

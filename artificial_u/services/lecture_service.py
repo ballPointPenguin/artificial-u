@@ -8,7 +8,6 @@ from typing import Any, Dict, List, Optional
 from artificial_u.config import get_settings
 from artificial_u.models.converters import (
     course_model_to_dict,
-    extract_xml_content,
     parse_lecture_xml,
     professor_model_to_dict,
     topic_model_to_dict,
@@ -23,6 +22,10 @@ from artificial_u.utils import (
     ContentGenerationError,
     DatabaseError,
     LectureNotFoundError,
+    detect_truncation,
+    ensure_xml_wrapper,
+    extract_partial_xml_content,
+    extract_xml_between_tags,
 )
 
 
@@ -285,7 +288,7 @@ class LectureService:
             "existing_lectures": existing_lectures_data,
             "topics_data": all_course_topics_data,
             "freeform_prompt": partial_attributes.get("freeform_prompt"),
-            "word_count": partial_attributes.get("word_count", 2500),
+            "word_count": partial_attributes.get("word_count", 3000),
         }
 
     async def _generate_and_parse_content(self, prompt_args: Dict[str, Any]) -> str:
@@ -298,14 +301,20 @@ class LectureService:
             model=get_settings().LECTURE_GENERATION_MODEL,
             prompt=lecture_prompt,
             system_prompt=system_prompt,
+            max_tokens=16384,  # 2^14
         )
         self.logger.info("Received response from content service.")
+
+        # Check if response appears truncated
+        is_truncated = detect_truncation(raw_response)
+        if is_truncated:
+            self.logger.warning("Response appears to be truncated due to token limits")
 
         # Simplified XML extraction logic
         generated_xml_output = None
 
         # First try to extract from <output> tags
-        generated_xml_output = extract_xml_content(raw_response, "output")
+        generated_xml_output = extract_xml_between_tags(raw_response, "output")
         if generated_xml_output:
             self.logger.info("Successfully extracted content from <output> tags")
         else:
@@ -319,23 +328,56 @@ class LectureService:
                 generated_xml_output = raw_response.strip()
                 self.logger.info("Using raw response as it contains valid <lecture> structure")
             else:
-                # Try to extract inner content and wrap it
-                inner_content = extract_xml_content(raw_response, "lecture")
-                if inner_content:
-                    generated_xml_output = f"<lecture>\n{inner_content}\n</lecture>"
-                    self.logger.info("Extracted <lecture> inner content and wrapped it")
+                # For truncated responses, try to extract partial content
+                if is_truncated:
+                    # For lectures, we need to handle them differently since they have
+                    # a simpler structure with title and content elements
+                    generated_xml_output = extract_partial_xml_content(
+                        raw_response,
+                        root_element="lecture",
+                        child_element="content",
+                        required_children=None,  # content might be incomplete
+                        metadata_tags=["title"],
+                    )
+                    if not generated_xml_output:
+                        # Try a simpler extraction for lecture content
+                        import re
+
+                        lecture_match = re.search(
+                            r"<lecture>.*?<content>(.*)", raw_response, re.DOTALL
+                        )
+                        if lecture_match:
+                            content = lecture_match.group(1)
+                            # Close unclosed tags
+                            from artificial_u.utils.xml_utils import close_unclosed_tags
+
+                            content = close_unclosed_tags(content)
+                            if not content.endswith("</content>"):
+                                content += "</content>"
+                            generated_xml_output = f"<lecture>\n<content>{content}</lecture>"
+                            self.logger.info(
+                                "Recovered partial lecture content from truncated response"
+                            )
+                    else:
+                        self.logger.info("Extracted partial XML from truncated response")
+                else:
+                    # Try to extract inner content and wrap it
+                    inner_content = extract_xml_between_tags(raw_response, "lecture")
+                    if inner_content:
+                        generated_xml_output = f"<lecture>\n{inner_content}\n</lecture>"
+                        self.logger.info("Extracted <lecture> inner content and wrapped it")
 
         if not generated_xml_output:
             error_msg = (
-                f"Could not extract <output> or <lecture> tag from response:\n{raw_response}"
+                f"Could not extract <output> or <lecture> tag from response"
+                f"{' (response was truncated)' if is_truncated else ''}:\n"
+                f"{raw_response[:500]}..."
             )
             self.logger.error(error_msg)
             raise ContentGenerationError(error_msg)
 
         # Ensure the extracted content has the proper <lecture> wrapper
-        if not generated_xml_output.strip().startswith("<lecture>"):
-            self.logger.warning("Wrapping extracted content in <lecture> tags")
-            generated_xml_output = f"<lecture>\n{generated_xml_output}\n</lecture>"
+        generated_xml_output = ensure_xml_wrapper(generated_xml_output, "lecture")
 
         return generated_xml_output
 

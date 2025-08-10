@@ -30,7 +30,7 @@ EXAMPLE_COURSE_1 = """<course>
   and computational thinking.</description>
   <level>Undergraduate</level>
   <credits>3</credits>
-  <lectures_per_week>2</lectures_per_week>
+  <lectures_per_week>1</lectures_per_week>
   <total_weeks>12</total_weeks>
 </course>"""
 
@@ -41,7 +41,7 @@ EXAMPLE_COURSE_2 = """<course>
   examining social, political, and cultural developments.</description>
   <level>Undergraduate</level>
   <credits>4</credits>
-  <lectures_per_week>3</lectures_per_week>
+  <lectures_per_week>2</lectures_per_week>
   <total_weeks>10</total_weeks>
 </course>"""
 

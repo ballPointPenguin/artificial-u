@@ -13,6 +13,11 @@ DEFAULT_CONTENT_BACKEND = "anthropic"
 DEFAULT_OLLAMA_MODEL = "phi4-mini"
 DEFAULT_CONTENT_LOGS_PATH = "content_logs"
 
+# Content generation retry defaults
+DEFAULT_CONTENT_MAX_RETRIES = 3
+DEFAULT_CONTENT_RETRY_DELAY = 2.0  # seconds
+DEFAULT_CONTENT_RETRY_EXPONENTIAL_BASE = 2.0
+
 # Storage defaults (MinIO/S3)
 DEFAULT_STORAGE_TYPE = "minio"  # "minio" or "s3"
 DEFAULT_STORAGE_ENDPOINT_URL = "http://localhost:9000"
@@ -39,7 +44,7 @@ DEPARTMENTS = [
 ]
 
 # Course defaults
-DEFAULT_LECTURE_WORD_COUNT = 2500
+DEFAULT_LECTURE_WORD_COUNT = 3000
 
 # Logging defaults
 DEFAULT_LOG_LEVEL = "INFO"

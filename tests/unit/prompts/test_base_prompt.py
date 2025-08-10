@@ -17,8 +17,8 @@ def test_prompt_template():
     assert result == "Hello, World!"
 
     # Test calling syntax
-    result = template(name="Claude")
-    assert result == "Hello, Claude!"
+    result = template(name="Bob")
+    assert result == "Hello, Bob!"
 
     # Test missing required variable
     with pytest.raises(ValueError):

@@ -102,12 +102,16 @@ const DepartmentForm = (props: DepartmentFormProps) => {
 
     try {
       const payload: DepartmentGenerateRequest = {
-        name: currentData.name,
-        code: currentData.code,
-        // Ensure faculty and description are string or undefined for the API
-        faculty: currentData.faculty === '' ? undefined : currentData.faculty || undefined,
-        description:
-          currentData.description === '' ? undefined : currentData.description || undefined,
+        partial_attributes: {
+          name: currentData.name,
+          code: currentData.code,
+          // Ensure faculty and description are string or undefined for the API
+          faculty: currentData.faculty === '' ? undefined : currentData.faculty || undefined,
+          description:
+            currentData.description === '' ? undefined : currentData.description || undefined,
+        },
+        // Include department ID if editing an existing department
+        ...(props.department?.id && { department_id: props.department.id }),
       }
       const generated = await departmentService.generateDepartment(payload)
       setFormData({

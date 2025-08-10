@@ -65,4 +65,8 @@ export const professorService = {
   generateProfessor: (data: ProfessorGenerateRequest): Promise<Professor> => {
     return httpClient.post<Professor>(ENDPOINTS.professors.generate, data)
   },
+
+  assignVoiceToProfessor: (professorId: number): Promise<Professor> => {
+    return httpClient.post<Professor>(ENDPOINTS.professors.assignVoice(professorId), {})
+  },
 }

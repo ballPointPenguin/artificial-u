@@ -473,6 +473,81 @@ def parse_topic_xml(topic_xml: str) -> Dict[str, Any]:
         raise ValueError(f"Invalid XML format: {e}")
 
 
+def _repair_topics_xml(xml_str: str) -> str:
+    """Repair common XML issues in topics XML.
+
+    Args:
+        xml_str: The potentially malformed XML string
+
+    Returns:
+        str: Repaired XML string
+    """
+    import html
+    import re
+
+    # Fix common mismatched closing tags
+    # Special case: <order>X</content> means close order AND open content
+    def fix_mismatched_tags(text):
+        """Fix mismatched closing tags."""
+        # First handle the special case where </content> is used to close order AND open content
+        text = re.sub(r"(\s*)<order>(\d+)</content>", r"\1<order>\2</order>\n\1<content>", text)
+
+        # Then handle other common mismatches
+        patterns = [
+            (r"<week>(\d+)</content>", r"<week>\1</week>"),
+            (r"<order>(\d+)</week>", r"<order>\1</order>"),
+            (r"<week>(\d+)</order>", r"<week>\1</week>"),
+        ]
+        for pattern, replacement in patterns:
+            text = re.sub(pattern, replacement, text)
+        return text
+
+    xml_str = fix_mismatched_tags(xml_str)
+
+    # Then escape problematic characters within text content
+    # We need to be careful to only escape content, not XML tags themselves
+    def escape_xml_content(match):
+        """Escape special characters in XML text content."""
+        content = match.group(1)
+        # Only escape if it contains problematic characters
+        if any(c in content for c in ["&", "<", ">", '"', "'"]):
+            # Don't double-escape already escaped content
+            if not re.search(r"&[a-zA-Z]+;|&#\d+;", content):
+                content = html.escape(content, quote=False)
+        return f">{content}<"
+
+    # Escape content between XML tags (but not the tags themselves)
+    # This pattern matches >content< where content doesn't contain < or >
+    xml_str = re.sub(r">([^<>]+)<", escape_xml_content, xml_str)
+
+    # Fix missing </content> tags before </topic>
+    # This is a common issue where LLMs forget to close content tags
+    lines = xml_str.split("\n")
+    repaired_lines = []
+    in_content = False
+
+    for i, line in enumerate(lines):
+        # Track when we enter a content tag
+        if "<content>" in line:
+            in_content = True
+            repaired_lines.append(line)
+        # If we see </content>, we're no longer in content
+        elif "</content>" in line:
+            in_content = False
+            repaired_lines.append(line)
+        # If we see </topic> while still in content, add missing </content>
+        elif "</topic>" in line and in_content:
+            # Add proper indentation based on the </topic> line
+            indent = len(line) - len(line.lstrip())
+            repaired_lines.append(" " * (indent + 2) + "</content>")
+            repaired_lines.append(line)
+            in_content = False
+        else:
+            repaired_lines.append(line)
+
+    return "\n".join(repaired_lines)
+
+
 def parse_topics_xml(topics_xml: str) -> List[Dict[str, Any]]:
     """Parse topics XML from LLM response into a list of dictionaries.
 
@@ -485,6 +560,9 @@ def parse_topics_xml(topics_xml: str) -> List[Dict[str, Any]]:
     Raises:
         ValueError: If the XML is invalid or missing required elements
     """
+    # First, try to repair common XML issues
+    topics_xml = _repair_topics_xml(topics_xml)
+
     try:
         root = ET.fromstring(topics_xml.strip())
         # The root element should be the topics

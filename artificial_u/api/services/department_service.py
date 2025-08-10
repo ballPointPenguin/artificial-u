@@ -290,9 +290,27 @@ class DepartmentApiService(
         attrs = generation_data.model_dump(exclude_none=True)
         self.logger.info(f"Received request to generate department with attributes: {attrs}")
 
+        # Extract the actual partial attributes from the request
+        partial_attrs = attrs.get("partial_attributes", {})
+        freeform_prompt = attrs.get("freeform_prompt")
+        department_id = attrs.get("department_id")
+
+        # Add freeform_prompt to partial_attrs if present (core service expects it there)
+        if freeform_prompt:
+            partial_attrs["freeform_prompt"] = freeform_prompt
+
+        # Add department_id to partial_attrs if present (for context in generation)
+        if department_id:
+            partial_attrs["department_id"] = department_id
+
+        partial_attr_keys = list(partial_attrs.keys())
+        self.logger.info(f"Generating department with partial attributes: {partial_attr_keys}")
+
         try:
-            # Call core service with the attributes
-            generated_dict = await self.core_service.generate_department(partial_attributes=attrs)
+            # Call core service with the extracted partial attributes
+            generated_dict = await self.core_service.generate_department(
+                partial_attributes=partial_attrs,
+            )
 
             # Convert the dictionary to the API response model
             # Add placeholder ID and validate

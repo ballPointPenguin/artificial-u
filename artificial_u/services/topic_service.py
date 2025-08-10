@@ -8,7 +8,6 @@ from typing import Any, Dict, List, Optional
 from artificial_u.config import get_settings
 from artificial_u.models.converters import (
     course_model_to_dict,
-    extract_xml_content,
     parse_topics_xml,
     topics_model_to_dict,
     topics_to_xml,
@@ -18,7 +17,15 @@ from artificial_u.models.repositories.factory import RepositoryFactory
 from artificial_u.prompts import get_system_prompt, get_topics_prompt
 from artificial_u.services.content_service import ContentService
 from artificial_u.services.course_service import CourseService
-from artificial_u.utils import ContentGenerationError, CourseNotFoundError, DatabaseError
+from artificial_u.utils import (
+    ContentGenerationError,
+    CourseNotFoundError,
+    DatabaseError,
+    detect_truncation,
+    ensure_xml_wrapper,
+    extract_partial_xml_content,
+    extract_xml_between_tags,
+)
 
 
 class TopicService:
@@ -287,15 +294,20 @@ class TopicService:
             model=settings.TOPICS_GENERATION_MODEL,
             prompt=topics_prompt,
             system_prompt=system_prompt,
-            max_tokens=6144,  # Higher limit for topics generation to avoid truncation
+            max_tokens=16384,  # 2^14
         )
         self.logger.info("Received response from content service for topics.")
+
+        # Check if response appears truncated
+        is_truncated = detect_truncation(raw_response)
+        if is_truncated:
+            self.logger.warning("Response appears to be truncated due to token limits")
 
         # Simplified XML extraction logic
         generated_xml_output = None
 
         # First try to extract from <output> tags
-        generated_xml_output = extract_xml_content(raw_response, "output")
+        generated_xml_output = extract_xml_between_tags(raw_response, "output")
         if generated_xml_output:
             self.logger.info("Successfully extracted content from <output> tags")
         else:
@@ -309,24 +321,35 @@ class TopicService:
                 generated_xml_output = raw_response.strip()
                 self.logger.info("Using raw response as it contains valid <topics> structure")
             else:
-                # Try to extract inner content and wrap it
-                inner_content = extract_xml_content(raw_response, "topics")
-                if inner_content:
-                    generated_xml_output = f"<topics>\n{inner_content}\n</topics>"
-                    self.logger.info("Extracted <topics> inner content and wrapped it")
+                # For truncated responses, try to extract partial content
+                if is_truncated:
+                    generated_xml_output = extract_partial_xml_content(
+                        raw_response,
+                        root_element="topics",
+                        child_element="topic",
+                        required_children=["title", "week", "order"],
+                        metadata_tags=["course_title", "lectures_per_week", "total_weeks"],
+                    )
+                    if generated_xml_output:
+                        self.logger.info("Extracted partial XML from truncated response")
+                else:
+                    # Try to extract inner content and wrap it
+                    inner_content = extract_xml_between_tags(raw_response, "topics")
+                    if inner_content:
+                        generated_xml_output = f"<topics>\n{inner_content}\n</topics>"
+                        self.logger.info("Extracted <topics> inner content and wrapped it")
 
         if not generated_xml_output:
             error_msg = (
-                f"Could not extract <output> or <topics> tag from response:\n"
+                f"Could not extract <output> or <topics> tag from response"
+                f"{' (response was truncated)' if is_truncated else ''}:\n"
                 f"{raw_response[:500]}..."
             )
             self.logger.error(error_msg)
             raise ContentGenerationError(error_msg)
 
         # Ensure the extracted content has the proper <topics> wrapper
-        if not generated_xml_output.strip().startswith("<topics>"):
-            self.logger.warning("Wrapping extracted content in <topics> tags")
-            generated_xml_output = f"<topics>\n{generated_xml_output}\n</topics>"
+        generated_xml_output = ensure_xml_wrapper(generated_xml_output, "topics")
 
         return generated_xml_output
 
