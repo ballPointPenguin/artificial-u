@@ -90,6 +90,7 @@ export interface LectureBrief {
   topic_id: number
   title: string
   summary: string | null
+  audio_url?: string | null
 }
 
 export interface CourseLecturesResponse {

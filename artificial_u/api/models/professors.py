@@ -102,6 +102,7 @@ class LectureBrief(BaseModel):
     topic_id: int = Field(..., description="ID of the topic this lecture belongs to")
     title: str = Field(..., description="Lecture title")
     summary: Optional[str] = Field(None, description="Lecture summary")
+    audio_url: Optional[str] = Field(None, description="Audio URL if generated for this lecture")
 
 
 # Professor's courses response model

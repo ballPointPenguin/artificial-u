@@ -3,7 +3,12 @@ import { type Component, createResource, createSignal, For, Show } from 'solid-j
 import { departmentService } from '../../api/services/department-service.js'
 import { professorService } from '../../api/services/professor-service.js'
 import { getVoice } from '../../api/services/voice-service.js'
-import type { Professor, ProfessorCourseBrief, ProfessorCoursesResponse } from '../../api/types.js'
+import type {
+  LectureBrief,
+  Professor,
+  ProfessorCourseBrief,
+  ProfessorCoursesResponse,
+} from '../../api/types.js'
 import { Alert, Button, ConfirmationModal, LoadingSpinner, MagicButton } from '../ui'
 import ProfessorForm, { type ProfessorFormData } from './ProfessorForm.js'
 
@@ -13,6 +18,7 @@ const ProfessorCourses: Component<{
   loading: boolean
   error: unknown
 }> = (props) => {
+  const courses = () => props.coursesResource()?.courses
   return (
     <div class="mt-8">
       <h2 class="text-2xl font-display text-parchment-100 mb-4 text-shadow-golden">
@@ -29,13 +35,13 @@ const ProfessorCourses: Component<{
           }
         >
           <Show
-            when={props.coursesResource()?.courses && props.coursesResource()!.courses.length > 0}
+            when={Array.isArray(courses()) && (courses()?.length ?? 0) > 0}
             fallback={
               <p class="text-muted">This professor is not currently teaching any courses.</p>
             }
           >
             <ul class="space-y-2">
-              <For each={props.coursesResource()?.courses}>
+              <For each={courses() ?? []}>
                 {(course: ProfessorCourseBrief) => (
                   <li class="arcane-card-sm p-3">
                     <A href={`/courses/${String(course.id)}`} class="hover:text-primary">
@@ -112,6 +118,17 @@ export default function ProfessorDetail() {
     async (voiceId) => {
       if (voiceId) {
         return getVoice(voiceId)
+      }
+      return undefined
+    }
+  )
+
+  // Fetch professor's lectures to detect if any existing audio has been generated
+  const [lecturesResource] = createResource(
+    () => professorResource()?.id,
+    async (professorId: number) => {
+      if (professorId) {
+        return professorService.getProfessorLectures(professorId)
       }
       return undefined
     }
@@ -198,6 +215,20 @@ export default function ProfessorDetail() {
       const id = Number.parseInt(params.id, 10)
       if (Number.isNaN(id)) {
         throw new Error('Invalid professor ID')
+      }
+
+      // Phase 2: warn if reassigning and lectures already have audio
+      const hasExistingVoice = Boolean(professorResource()?.voice_id)
+      const lecturesResponse = lecturesResource()
+      const lectures: LectureBrief[] | undefined = lecturesResponse?.lectures
+      const hasAudio = Array.isArray(lectures) && lectures.some((l) => l.audio_url != null)
+      if (hasExistingVoice && hasAudio) {
+        const proceed = window.confirm(
+          'This professor already has lectures with generated audio. Reassigning the voice may make future audio sound different. Are you sure you want to continue?'
+        )
+        if (!proceed) {
+          return
+        }
       }
 
       await professorService.assignVoiceToProfessor(id)
@@ -421,29 +452,7 @@ export default function ProfessorDetail() {
                       Voice Profile
                     </h3>
                     <div class="bg-surface rounded-lg p-4 space-y-2">
-                      <Show
-                        when={professorResource()?.voice_id}
-                        fallback={
-                          <div class="space-y-3">
-                            <p class="text-sm text-muted italic">No voice ID assigned</p>
-                            <Show when={voiceAssignError()}>
-                              <Alert variant="danger" class="text-sm">
-                                {voiceAssignError()}
-                              </Alert>
-                            </Show>
-                            <MagicButton
-                              variant="secondary"
-                              size="sm"
-                              onClick={() => void handleAssignVoice()}
-                              disabled={isAssigningVoice()}
-                              isLoading={isAssigningVoice()}
-                              loadingText="Assigning..."
-                            >
-                              Assign Voice
-                            </MagicButton>
-                          </div>
-                        }
-                      >
+                      <Show when={professorResource()?.voice_id}>
                         <p class="text-sm text-muted">
                           <strong class="font-semibold text-foreground">Voice ID:</strong>{' '}
                           {professorResource()?.voice_id}
@@ -500,8 +509,19 @@ export default function ProfessorDetail() {
 
                               <Show when={voice().preview_url}>
                                 <div class="mt-3">
-                                  <audio controls class="w-full max-w-sm">
+                                  <audio
+                                    controls
+                                    class="w-full max-w-sm"
+                                    aria-label="Voice preview"
+                                  >
                                     <source src={voice().preview_url ?? ''} type="audio/mpeg" />
+                                    <track
+                                      kind="captions"
+                                      src="data:text/vtt;charset=utf-8,WEBVTT%0A%0A"
+                                      srclang="en"
+                                      label="English captions"
+                                      default
+                                    />
                                     Your browser does not support the audio element.
                                   </audio>
                                 </div>
@@ -520,6 +540,25 @@ export default function ProfessorDetail() {
                           </p>
                         </Show>
                       </Show>
+
+                      {/* Always show assign/reassign action (Phase 1, 2) */}
+                      <div class="mt-3">
+                        <Show when={voiceAssignError()}>
+                          <Alert variant="danger" class="text-sm mb-2">
+                            {voiceAssignError()}
+                          </Alert>
+                        </Show>
+                        <MagicButton
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => void handleAssignVoice()}
+                          disabled={isAssigningVoice()}
+                          isLoading={isAssigningVoice()}
+                          loadingText="Assigning..."
+                        >
+                          {professorResource()?.voice_id ? 'Reassign Voice' : 'Assign Voice'}
+                        </MagicButton>
+                      </div>
                     </div>
                   </div>
                 </div>

@@ -58,10 +58,7 @@ export const lectureService = {
    * Trigger generation of lecture audio. No body required.
    * Uses extended timeout similar to other generation actions.
    */
-  generateLectureAudio: (
-    lectureId: number,
-    onTimeout?: () => void
-  ): Promise<Lecture> => {
+  generateLectureAudio: (lectureId: number, onTimeout?: () => void): Promise<Lecture> => {
     return httpClient.postWithExtendedTimeout<Lecture>(
       ENDPOINTS.lectures.generateAudio(lectureId),
       undefined,

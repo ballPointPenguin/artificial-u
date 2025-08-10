@@ -348,7 +348,6 @@ class VoiceService:
                 accent=attributes.get("accent"),
                 age=attributes.get("age"),
                 language=attributes.get("language", "en"),
-                use_case=attributes.get("use_case"),
                 category=attributes.get("category"),
             )
             self.logger.info(f"Fetched {len(voices)} voices from API")

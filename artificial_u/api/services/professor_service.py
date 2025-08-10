@@ -257,6 +257,7 @@ class ProfessorApiService(BaseApiService[CoreProfessor, ProfessorResponse, Profe
                     topic_id=lecture.topic_id,
                     title=lecture.title,
                     summary=lecture.summary,
+                    audio_url=lecture.audio_url,
                 )
                 for lecture in lectures
             ]

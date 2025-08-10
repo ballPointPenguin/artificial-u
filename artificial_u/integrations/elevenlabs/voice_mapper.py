@@ -300,8 +300,13 @@ class VoiceMapper:
         if "cloned_by_count" in voice and voice["cloned_by_count"] > 1000:
             quality_score += min(0.2, voice["cloned_by_count"] / 100000)
 
-        # Use data typically has better voices
-        if voice.get("use_case") == "informative_educational":
+        # Use-case signals typically correlate with better narration quality
+        if voice.get("use_case") in {
+            "informative_educational",
+            "conversational",
+            "narrative_story",
+            "narration",
+        }:
             quality_score += 0.1
 
         # Cap at 1.0
@@ -405,7 +410,6 @@ class VoiceMapper:
         # Build attributes dictionary
         attributes = {
             "language": language,  # Use derived language code
-            "use_case": "informative_educational",  # Educational content
         }
 
         # Only add attributes if they have values
@@ -476,7 +480,7 @@ class VoiceMapper:
         self,
         ranked_voices: List[Dict[str, Any]],
         selection_strategy: str = "top_random",
-        top_n: int = 3,
+        top_n: int = 5,
     ) -> Optional[Dict[str, Any]]:
         """
         Select a voice from a ranked list using the specified strategy.

@@ -134,13 +134,12 @@ class ProfessorService:
         # Get the existing professor
         professor = self.get_professor(professor_id)
 
-        # Check if professor already has a voice
+        # If professor already has a voice, log and continue to reassign
         if professor.voice_id:
             self.logger.info(
-                f"Professor {professor.name} already has voice ID {professor.voice_id}. "
-                "Skipping assignment."
+                f"Professor {professor.name} currently has voice ID {professor.voice_id}. "
+                f"Reassigning voice as requested."
             )
-            return professor
 
         try:
             # Use the voice assignment logic (this will update the professor in the database)
