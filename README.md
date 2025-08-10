@@ -83,28 +83,6 @@ For a comprehensive guide on the development environment, including dependency m
 
 This repository is configured for [GitHub Codespaces](https://github.com/features/codespaces). Simply open a Codespace, add your API keys to `.env`, and use `hatch run` or `hatch shell` as described above. The environment and database setup are handled automatically.
 
-## Quick Start
-
-Run the sample demonstrations within the hatch environment:
-
-```bash
-# Activate the environment first (if not already active)
-# hatch shell
-
-# Then run the scripts
-python sample_tinyllama.py
-python sample_anthropic.py
-```
-
-Or directly using `hatch run`:
-
-```bash
-hatch run python sample_tinyllama.py
-hatch run python sample_anthropic.py
-```
-
-This will simulate the creation of a professor, course, lecture, and audio file.
-
 ## Usage
 
 The CLI interface, defined as a script in `pyproject.toml`, can be run using `hatch run`:

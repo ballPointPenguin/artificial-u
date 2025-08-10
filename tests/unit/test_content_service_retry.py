@@ -36,7 +36,8 @@ class TestContentServiceRetry:
         mock_response.content = [MagicMock(text="Success response")]
 
         with patch(
-            "artificial_u.integrations.anthropic_client.messages.create", new_callable=AsyncMock
+            "artificial_u.services.content_service.anthropic_client.messages.create",
+            new_callable=AsyncMock,
         ) as mock_create:
             # First two calls fail with 529 error
             mock_response_529 = MagicMock()
@@ -66,7 +67,8 @@ class TestContentServiceRetry:
     async def test_no_retry_on_permanent_error(self, content_service):
         """Test that permanent errors are not retried."""
         with patch(
-            "artificial_u.integrations.anthropic_client.messages.create", new_callable=AsyncMock
+            "artificial_u.services.content_service.anthropic_client.messages.create",
+            new_callable=AsyncMock,
         ) as mock_create:
             # Bad request error should not be retried
             mock_response = MagicMock()
@@ -88,7 +90,7 @@ class TestContentServiceRetry:
     async def test_retry_on_openai_timeout(self, content_service):
         """Test that OpenAI timeout errors are retried."""
         with patch(
-            "artificial_u.integrations.openai_client.chat.completions.create",
+            "artificial_u.services.content_service.openai_client.chat.completions.create",
             new_callable=AsyncMock,
         ) as mock_create:
             # First call fails with timeout, second succeeds
@@ -172,7 +174,8 @@ class TestContentServiceRetry:
     async def test_max_retries_exceeded(self, content_service):
         """Test that max retries are respected."""
         with patch(
-            "artificial_u.integrations.anthropic_client.messages.create", new_callable=AsyncMock
+            "artificial_u.services.content_service.anthropic_client.messages.create",
+            new_callable=AsyncMock,
         ) as mock_create:
             # Always fail with 529 error
             mock_response = MagicMock()

@@ -10,7 +10,7 @@ DEFAULT_TEMP_AUDIO_PATH = "temp_audio"
 
 # Content generation defaults
 DEFAULT_CONTENT_BACKEND = "anthropic"
-DEFAULT_OLLAMA_MODEL = "phi4-mini"
+DEFAULT_OLLAMA_MODEL = "qwen3:0.6b"
 DEFAULT_CONTENT_LOGS_PATH = "content_logs"
 
 # Content generation retry defaults
