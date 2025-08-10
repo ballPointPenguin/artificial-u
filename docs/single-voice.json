@@ -1,0 +1,118 @@
+{
+  "has_more": false,
+  "next_page_token": null,
+  "total_count": 1,
+  "voices": [
+    {
+      "available_for_tiers": [],
+      "category": "professional",
+      "created_at_unix": 1752486625,
+      "description": " A calm youthful voice, most suitable for narration. Gentle and easy going, this voice is perfect for narration.",
+      "fine_tuning": {
+        "dataset_duration_seconds": null,
+        "is_allowed_to_fine_tune": true,
+        "language": "el",
+        "manual_verification": null,
+        "manual_verification_requested": false,
+        "max_verification_attempts": 0,
+        "message": {
+          "eleven_flash_v2_5": "",
+          "eleven_multilingual_sts_v2": "",
+          "eleven_multilingual_v2": "",
+          "eleven_turbo_v2_5": "",
+          "eleven_v2_5_flash": ""
+        },
+        "next_max_verification_attempts_reset_unix_ms": 0,
+        "progress": {},
+        "slice_ids": null,
+        "state": {
+          "eleven_flash_v2_5": "fine_tuned",
+          "eleven_multilingual_sts_v2": "fine_tuned",
+          "eleven_multilingual_v2": "fine_tuned",
+          "eleven_turbo_v2_5": "fine_tuned",
+          "eleven_v2_5_flash": "fine_tuned"
+        },
+        "verification_attempts": null,
+        "verification_attempts_count": 0,
+        "verification_failures": []
+      },
+      "high_quality_base_model_ids": [
+        "eleven_multilingual_v2",
+        "eleven_multilingual_sts_v2",
+        "eleven_flash_v2_5",
+        "eleven_turbo_v2_5",
+        "eleven_v2_5_flash"
+      ],
+      "is_legacy": false,
+      "is_mixed": false,
+      "is_owner": false,
+      "labels": {
+        "accent": "athenian",
+        "age": "young",
+        "descriptive": "calm",
+        "gender": "male",
+        "language": "el",
+        "use_case": "narrative_story"
+      },
+      "name": "Stefanos - A calm youthful voice, most suitable for narration.",
+      "permission_on_resource": "admin",
+      "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/MKMmGlbVeLfqHnshck3qEZ5t0jq2/voices/20zUtLxCwVzsFDWub4sB/CcN2gbQ6PDzvLXrOjPjp.mp3",
+      "safety_control": null,
+      "samples": null,
+      "settings": null,
+      "sharing": {
+        "ban_reason": null,
+        "category": "high_quality",
+        "cloned_by_count": 0,
+        "date_unix": 1752486625,
+        "description": " A calm youthful voice, most suitable for narration. Gentle and easy going, this voice is perfect for narration.",
+        "disable_at_unix": null,
+        "enabled_in_library": false,
+        "featured": false,
+        "fiat_rate": null,
+        "financial_rewards_enabled": false,
+        "free_users_allowed": true,
+        "history_item_sample_id": null,
+        "image_url": "",
+        "instagram_username": null,
+        "labels": {
+          "accent": "athenian",
+          "age": "young",
+          "descriptive": "calm",
+          "gender": "male",
+          "language": "el",
+          "locale": "el-GR",
+          "use_case": "narrative_story"
+        },
+        "liked_by_count": 0,
+        "live_moderation_enabled": true,
+        "moderation_check": null,
+        "name": "Stefanos - A calm youthful voice, most suitable for narration.",
+        "notice_period": 30,
+        "original_voice_id": "20zUtLxCwVzsFDWub4sB",
+        "public_owner_id": "f584f5cea39e97ee04552d165319cec7a5b0dc573a477fc993f3bddcd84460b8",
+        "rate": 1.0,
+        "reader_app_enabled": true,
+        "reader_restricted_on": null,
+        "review_message": null,
+        "review_status": "not_requested",
+        "status": "copied",
+        "tiktok_username": null,
+        "twitter_username": null,
+        "voice_mixing_allowed": false,
+        "whitelisted_emails": [],
+        "youtube_username": null
+      },
+      "verified_languages": [],
+      "voice_id": "20zUtLxCwVzsFDWub4sB",
+      "voice_verification": {
+        "is_verified": false,
+        "language": null,
+        "requires_verification": false,
+        "verification_attempts": null,
+        "verification_attempts_count": 0,
+        "verification_failures": []
+      }
+    }
+  ]
+}

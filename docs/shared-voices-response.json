@@ -1,0 +1,351 @@
+{
+  "voices": [
+    {
+      "public_owner_id": "fc698e27298891e9920d2cb7cfa4ba25244b21c749c51d321503a2438a250fe5",
+      "voice_id": "1iF3vHdwHKuVKSPDK23Z",
+      "date_unix": 1752844513,
+      "name": "Louisa v2",
+      "accent": "standard",
+      "gender": "female",
+      "age": "middle_aged",
+      "descriptive": "classy",
+      "use_case": "conversational",
+      "category": "professional",
+      "language": "de",
+      "locale": "de-DE",
+      "description": "german, adult, emotional, warm",
+      "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/SfMZhHXQrDXNxeDpoOcOBcnCCKf1/voices/1iF3vHdwHKuVKSPDK23Z/44e680b3-5fdb-4503-9395-6594d3bc8b14.mp3",
+      "usage_character_count_1y": 81981,
+      "usage_character_count_7d": 81981,
+      "play_api_usage_character_count_1y": 0,
+      "cloned_by_count": 56,
+      "rate": 1.0,
+      "fiat_rate": null,
+      "free_users_allowed": true,
+      "live_moderation_enabled": false,
+      "featured": false,
+      "verified_languages": [
+        {
+          "language": "de",
+          "model_id": "eleven_turbo_v2_5",
+          "accent": "standard",
+          "locale": "de-DE",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/SfMZhHXQrDXNxeDpoOcOBcnCCKf1/voices/1iF3vHdwHKuVKSPDK23Z/44e680b3-5fdb-4503-9395-6594d3bc8b14.mp3"
+        },
+        {
+          "language": "de",
+          "model_id": "eleven_v2_5_flash",
+          "accent": "standard",
+          "locale": "de-DE",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/SfMZhHXQrDXNxeDpoOcOBcnCCKf1/voices/1iF3vHdwHKuVKSPDK23Z/44e680b3-5fdb-4503-9395-6594d3bc8b14.mp3"
+        },
+        {
+          "language": "de",
+          "model_id": "eleven_flash_v2_5",
+          "accent": "standard",
+          "locale": "de-DE",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/SfMZhHXQrDXNxeDpoOcOBcnCCKf1/voices/1iF3vHdwHKuVKSPDK23Z/44e680b3-5fdb-4503-9395-6594d3bc8b14.mp3"
+        },
+        {
+          "language": "de",
+          "model_id": "eleven_multilingual_v2",
+          "accent": "standard",
+          "locale": "de-DE",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/SfMZhHXQrDXNxeDpoOcOBcnCCKf1/voices/1iF3vHdwHKuVKSPDK23Z/44e680b3-5fdb-4503-9395-6594d3bc8b14.mp3"
+        }
+      ],
+      "notice_period": 730,
+      "instagram_username": null,
+      "twitter_username": null,
+      "youtube_username": null,
+      "tiktok_username": null,
+      "image_url": "",
+      "is_added_by_user": false
+    },
+    {
+      "public_owner_id": "c85885c5be715f04f6838e0c05034903e97f0ab76fa70af63fcbbfb89bba6d74",
+      "voice_id": "pTOe8BQRdydOEIgv0wFL",
+      "date_unix": 1752818357,
+      "name": "LiuPing",
+      "accent": "beijing mandarin",
+      "gender": "male",
+      "age": "young",
+      "descriptive": "calm",
+      "use_case": "narrative_story",
+      "category": "professional",
+      "language": "zh",
+      "locale": "cmn-CN",
+      "description": "Hi, I’m Liu Ping, a native Mandarin Chinese speaker. My voice is clear, professional, and recorded in standard Chinese (普通话), ideal for audiobooks, AI, learning apps, and narration. If you need a natural, expressive, and high-quality Chinese voice, my model is ready for both personal and commercial use on ElevenLabs.",
+      "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/fm5UDf7fQEfksunysBwZ2rXkgNf2/voices/pTOe8BQRdydOEIgv0wFL/iKnSGsHhztjTg5231nUR.mp3",
+      "usage_character_count_1y": 40072,
+      "usage_character_count_7d": 40072,
+      "play_api_usage_character_count_1y": 0,
+      "cloned_by_count": 70,
+      "rate": 1.0,
+      "fiat_rate": null,
+      "free_users_allowed": true,
+      "live_moderation_enabled": true,
+      "featured": false,
+      "verified_languages": [
+        {
+          "language": "zh",
+          "model_id": "eleven_turbo_v2_5",
+          "accent": "beijing mandarin",
+          "locale": "cmn-CN",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/fm5UDf7fQEfksunysBwZ2rXkgNf2/voices/pTOe8BQRdydOEIgv0wFL/iKnSGsHhztjTg5231nUR.mp3"
+        },
+        {
+          "language": "zh",
+          "model_id": "eleven_v2_5_flash",
+          "accent": "beijing mandarin",
+          "locale": "cmn-CN",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/fm5UDf7fQEfksunysBwZ2rXkgNf2/voices/pTOe8BQRdydOEIgv0wFL/iKnSGsHhztjTg5231nUR.mp3"
+        },
+        {
+          "language": "zh",
+          "model_id": "eleven_flash_v2_5",
+          "accent": "beijing mandarin",
+          "locale": "cmn-CN",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/fm5UDf7fQEfksunysBwZ2rXkgNf2/voices/pTOe8BQRdydOEIgv0wFL/iKnSGsHhztjTg5231nUR.mp3"
+        },
+        {
+          "language": "zh",
+          "model_id": "eleven_multilingual_v2",
+          "accent": "beijing mandarin",
+          "locale": "cmn-CN",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/fm5UDf7fQEfksunysBwZ2rXkgNf2/voices/pTOe8BQRdydOEIgv0wFL/iKnSGsHhztjTg5231nUR.mp3"
+        }
+      ],
+      "notice_period": 730,
+      "instagram_username": null,
+      "twitter_username": null,
+      "youtube_username": null,
+      "tiktok_username": null,
+      "image_url": "",
+      "is_added_by_user": false
+    },
+    {
+      "public_owner_id": "f35a58db6c7abc7eb0d5a0204b09e2b6f4b400c2ee168625313041b60a7bd9e2",
+      "voice_id": "Nov35cZOAeYofDhYHMnI",
+      "date_unix": 1752814334,
+      "name": "Dingo",
+      "accent": "american",
+      "gender": "male",
+      "age": "middle_aged",
+      "descriptive": "confident",
+      "use_case": "characters_animation",
+      "category": "professional",
+      "language": "en",
+      "locale": "en-US",
+      "description": "A dynamic voice resembling Dingo from the anime Expelled from Paradise",
+      "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/KUG0o1Jz9EYpuk5552pod3NoF6z2/voices/Nov35cZOAeYofDhYHMnI/w4JjvRmlreCPHVR2OyS8.mp3",
+      "usage_character_count_1y": 22041,
+      "usage_character_count_7d": 22041,
+      "play_api_usage_character_count_1y": 0,
+      "cloned_by_count": 37,
+      "rate": 1.0,
+      "fiat_rate": null,
+      "free_users_allowed": true,
+      "live_moderation_enabled": false,
+      "featured": false,
+      "verified_languages": [
+        {
+          "language": "en",
+          "model_id": "eleven_multilingual_v2",
+          "accent": "american",
+          "locale": "en-US",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/KUG0o1Jz9EYpuk5552pod3NoF6z2/voices/Nov35cZOAeYofDhYHMnI/w4JjvRmlreCPHVR2OyS8.mp3"
+        },
+        {
+          "language": "en",
+          "model_id": "eleven_turbo_v2_5",
+          "accent": "american",
+          "locale": "en-US",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/KUG0o1Jz9EYpuk5552pod3NoF6z2/voices/Nov35cZOAeYofDhYHMnI/w4JjvRmlreCPHVR2OyS8.mp3"
+        },
+        {
+          "language": "en",
+          "model_id": "eleven_v2_5_flash",
+          "accent": "american",
+          "locale": "en-US",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/KUG0o1Jz9EYpuk5552pod3NoF6z2/voices/Nov35cZOAeYofDhYHMnI/w4JjvRmlreCPHVR2OyS8.mp3"
+        },
+        {
+          "language": "en",
+          "model_id": "eleven_flash_v2_5",
+          "accent": "american",
+          "locale": "en-US",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/KUG0o1Jz9EYpuk5552pod3NoF6z2/voices/Nov35cZOAeYofDhYHMnI/w4JjvRmlreCPHVR2OyS8.mp3"
+        },
+        {
+          "language": "en",
+          "model_id": "eleven_turbo_v2",
+          "accent": "american",
+          "locale": "en-US",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/KUG0o1Jz9EYpuk5552pod3NoF6z2/voices/Nov35cZOAeYofDhYHMnI/w4JjvRmlreCPHVR2OyS8.mp3"
+        },
+        {
+          "language": "en",
+          "model_id": "eleven_v2_flash",
+          "accent": "american",
+          "locale": "en-US",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/KUG0o1Jz9EYpuk5552pod3NoF6z2/voices/Nov35cZOAeYofDhYHMnI/w4JjvRmlreCPHVR2OyS8.mp3"
+        },
+        {
+          "language": "en",
+          "model_id": "eleven_flash_v2",
+          "accent": "american",
+          "locale": "en-US",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/KUG0o1Jz9EYpuk5552pod3NoF6z2/voices/Nov35cZOAeYofDhYHMnI/w4JjvRmlreCPHVR2OyS8.mp3"
+        },
+        {
+          "language": "en",
+          "model_id": "eleven_multilingual_sts_v2",
+          "accent": "american",
+          "locale": "en-US",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/KUG0o1Jz9EYpuk5552pod3NoF6z2/voices/Nov35cZOAeYofDhYHMnI/w4JjvRmlreCPHVR2OyS8.mp3"
+        }
+      ],
+      "notice_period": 730,
+      "instagram_username": null,
+      "twitter_username": null,
+      "youtube_username": null,
+      "tiktok_username": null,
+      "image_url": "",
+      "is_added_by_user": false
+    },
+    {
+      "public_owner_id": "5b8105363a0ea55dfeef6c3239b264f59d7387fde16df5c9244df359737fce7a",
+      "voice_id": "CnnL9KfZBW3JEUs1JPeS",
+      "date_unix": 1752801785,
+      "name": "Jen",
+      "accent": "seoul",
+      "gender": "female",
+      "age": "middle_aged",
+      "descriptive": "calm",
+      "use_case": "narrative_story",
+      "category": "professional",
+      "language": "ko",
+      "locale": "ko-KR",
+      "description": "A quiet, neutral-toned voice with a calm and unembellished delivery. Ideal for storytelling, narration, and emotionally grounded content. Balanced and easy to listen to for a wide range of audiences.",
+      "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/Wg19bReb4phJhE2piWJIt96AN2j1/voices/CnnL9KfZBW3JEUs1JPeS/Vs2z27uDOmfb6lyqzOBj.mp3",
+      "usage_character_count_1y": 541504,
+      "usage_character_count_7d": 541504,
+      "play_api_usage_character_count_1y": 0,
+      "cloned_by_count": 159,
+      "rate": 1.0,
+      "fiat_rate": null,
+      "free_users_allowed": true,
+      "live_moderation_enabled": false,
+      "featured": false,
+      "verified_languages": [
+        {
+          "language": "ko",
+          "model_id": "eleven_multilingual_v2",
+          "accent": "seoul",
+          "locale": "ko-KR",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/Wg19bReb4phJhE2piWJIt96AN2j1/voices/CnnL9KfZBW3JEUs1JPeS/Vs2z27uDOmfb6lyqzOBj.mp3"
+        },
+        {
+          "language": "ko",
+          "model_id": "eleven_turbo_v2_5",
+          "accent": "seoul",
+          "locale": "ko-KR",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/Wg19bReb4phJhE2piWJIt96AN2j1/voices/CnnL9KfZBW3JEUs1JPeS/Vs2z27uDOmfb6lyqzOBj.mp3"
+        },
+        {
+          "language": "ko",
+          "model_id": "eleven_v2_5_flash",
+          "accent": "seoul",
+          "locale": "ko-KR",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/Wg19bReb4phJhE2piWJIt96AN2j1/voices/CnnL9KfZBW3JEUs1JPeS/Vs2z27uDOmfb6lyqzOBj.mp3"
+        },
+        {
+          "language": "ko",
+          "model_id": "eleven_flash_v2_5",
+          "accent": "seoul",
+          "locale": "ko-KR",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/Wg19bReb4phJhE2piWJIt96AN2j1/voices/CnnL9KfZBW3JEUs1JPeS/Vs2z27uDOmfb6lyqzOBj.mp3"
+        }
+      ],
+      "notice_period": 180,
+      "instagram_username": null,
+      "twitter_username": null,
+      "youtube_username": null,
+      "tiktok_username": null,
+      "image_url": "",
+      "is_added_by_user": false
+    },
+    {
+      "public_owner_id": "0183dfc45a8c273b5ffa12e900b87c14bcb2bce6b9d0328fe2b49f9ef58742b0",
+      "voice_id": "1KNqBv4TutQtzSIACsMC",
+      "date_unix": 1752798917,
+      "name": "Harry Kim",
+      "accent": "standard",
+      "gender": "male",
+      "age": "middle_aged",
+      "descriptive": "calm",
+      "use_case": "narrative_story",
+      "category": "professional",
+      "language": "ko",
+      "locale": "ko-KR",
+      "description": "Calm and gentle – the perfect voice for meditations, bedtime stories, and soft-spoken ASMR type narrations that soothe the mind. ",
+      "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/FDPeiNARjeOjJTmdWOK1Q8XIB452/voices/1KNqBv4TutQtzSIACsMC/cdAGIyuusrTgV8ttqahS.mp3",
+      "usage_character_count_1y": 24452,
+      "usage_character_count_7d": 24452,
+      "play_api_usage_character_count_1y": 0,
+      "cloned_by_count": 44,
+      "rate": 1.0,
+      "fiat_rate": null,
+      "free_users_allowed": true,
+      "live_moderation_enabled": false,
+      "featured": false,
+      "verified_languages": [
+        {
+          "language": "ko",
+          "model_id": "eleven_turbo_v2_5",
+          "accent": "standard",
+          "locale": "ko-KR",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/FDPeiNARjeOjJTmdWOK1Q8XIB452/voices/1KNqBv4TutQtzSIACsMC/cdAGIyuusrTgV8ttqahS.mp3"
+        },
+        {
+          "language": "ko",
+          "model_id": "eleven_v2_5_flash",
+          "accent": "standard",
+          "locale": "ko-KR",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/FDPeiNARjeOjJTmdWOK1Q8XIB452/voices/1KNqBv4TutQtzSIACsMC/cdAGIyuusrTgV8ttqahS.mp3"
+        },
+        {
+          "language": "ko",
+          "model_id": "eleven_flash_v2_5",
+          "accent": "standard",
+          "locale": "ko-KR",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/FDPeiNARjeOjJTmdWOK1Q8XIB452/voices/1KNqBv4TutQtzSIACsMC/cdAGIyuusrTgV8ttqahS.mp3"
+        },
+        {
+          "language": "ko",
+          "model_id": "eleven_multilingual_v2",
+          "accent": "standard",
+          "locale": "ko-KR",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/FDPeiNARjeOjJTmdWOK1Q8XIB452/voices/1KNqBv4TutQtzSIACsMC/cdAGIyuusrTgV8ttqahS.mp3"
+        },
+        {
+          "language": "ko",
+          "model_id": "eleven_multilingual_sts_v2",
+          "accent": "standard",
+          "locale": "ko-KR",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/FDPeiNARjeOjJTmdWOK1Q8XIB452/voices/1KNqBv4TutQtzSIACsMC/cdAGIyuusrTgV8ttqahS.mp3"
+        }
+      ],
+      "notice_period": 730,
+      "instagram_username": null,
+      "twitter_username": null,
+      "youtube_username": null,
+      "tiktok_username": null,
+      "image_url": "",
+      "is_added_by_user": false
+    }
+  ],
+  "has_more": true,
+  "last_sort_id": null
+}

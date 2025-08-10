@@ -1,0 +1,75 @@
+{
+  "has_more": false,
+  "last_sort_id": null,
+  "voices": [
+    {
+      "accent": "athenian",
+      "age": "young",
+      "category": "high_quality",
+      "cloned_by_count": 2656,
+      "date_unix": 1739430733,
+      "description": " A calm youthful voice, most suitable for narration. Gentle and easy going, this voice is perfect for narration.",
+      "descriptive": "calm",
+      "featured": false,
+      "fiat_rate": null,
+      "free_users_allowed": true,
+      "gender": "male",
+      "image_url": "",
+      "instagram_username": null,
+      "is_added_by_user": true,
+      "language": "el",
+      "live_moderation_enabled": true,
+      "locale": "el-GR",
+      "name": "Stefanos - A calm youthful voice, most suitable for narration.",
+      "notice_period": 30,
+      "play_api_usage_character_count_1y": 24738716,
+      "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/MKMmGlbVeLfqHnshck3qEZ5t0jq2/voices/20zUtLxCwVzsFDWub4sB/CcN2gbQ6PDzvLXrOjPjp.mp3",
+      "public_owner_id": "f584f5cea39e97ee04552d165319cec7a5b0dc573a477fc993f3bddcd84460b8",
+      "rate": 1.0,
+      "tiktok_username": null,
+      "twitter_username": null,
+      "usage_character_count_1y": 10831643,
+      "usage_character_count_7d": 423724,
+      "use_case": "narrative_story",
+      "verified_languages": [
+        {
+          "accent": "athenian",
+          "language": "el",
+          "locale": "el-GR",
+          "model_id": "eleven_multilingual_v2",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/MKMmGlbVeLfqHnshck3qEZ5t0jq2/voices/20zUtLxCwVzsFDWub4sB/CcN2gbQ6PDzvLXrOjPjp.mp3"
+        },
+        {
+          "accent": "athenian",
+          "language": "el",
+          "locale": "el-GR",
+          "model_id": "eleven_multilingual_sts_v2",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/MKMmGlbVeLfqHnshck3qEZ5t0jq2/voices/20zUtLxCwVzsFDWub4sB/CcN2gbQ6PDzvLXrOjPjp.mp3"
+        },
+        {
+          "accent": "athenian",
+          "language": "el",
+          "locale": "el-GR",
+          "model_id": "eleven_flash_v2_5",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/MKMmGlbVeLfqHnshck3qEZ5t0jq2/voices/20zUtLxCwVzsFDWub4sB/CcN2gbQ6PDzvLXrOjPjp.mp3"
+        },
+        {
+          "accent": "athenian",
+          "language": "el",
+          "locale": "el-GR",
+          "model_id": "eleven_turbo_v2_5",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/MKMmGlbVeLfqHnshck3qEZ5t0jq2/voices/20zUtLxCwVzsFDWub4sB/CcN2gbQ6PDzvLXrOjPjp.mp3"
+        },
+        {
+          "accent": "athenian",
+          "language": "el",
+          "locale": "el-GR",
+          "model_id": "eleven_v2_5_flash",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/MKMmGlbVeLfqHnshck3qEZ5t0jq2/voices/20zUtLxCwVzsFDWub4sB/CcN2gbQ6PDzvLXrOjPjp.mp3"
+        }
+      ],
+      "voice_id": "20zUtLxCwVzsFDWub4sB",
+      "youtube_username": null
+    }
+  ]
+}

@@ -1,0 +1,126 @@
+{
+  "has_more": false,
+  "next_page_token": null,
+  "total_count": 1,
+  "voices": [
+    {
+      "available_for_tiers": [],
+      "category": "premade",
+      "created_at_unix": null,
+      "description": "Velvety British female voice delivers news and narrations with warmth and clarity.",
+      "fine_tuning": {
+        "dataset_duration_seconds": null,
+        "is_allowed_to_fine_tune": true,
+        "language": "en",
+        "manual_verification": null,
+        "manual_verification_requested": false,
+        "max_verification_attempts": 5,
+        "message": {
+          "eleven_flash_v2": "Done!",
+          "eleven_flash_v2_5": "Done!",
+          "eleven_turbo_v2": "",
+          "eleven_v2_5_flash": "Done!",
+          "eleven_v2_flash": "Done!"
+        },
+        "next_max_verification_attempts_reset_unix_ms": 1700000000000,
+        "progress": {
+          "eleven_flash_v2": 1.0,
+          "eleven_flash_v2_5": 1.0,
+          "eleven_v2_5_flash": 1.0,
+          "eleven_v2_flash": 1.0
+        },
+        "slice_ids": null,
+        "state": {
+          "eleven_flash_v2": "fine_tuned",
+          "eleven_flash_v2_5": "fine_tuned",
+          "eleven_turbo_v2": "fine_tuned",
+          "eleven_v2_5_flash": "fine_tuned",
+          "eleven_v2_flash": "fine_tuned"
+        },
+        "verification_attempts": null,
+        "verification_attempts_count": 0,
+        "verification_failures": []
+      },
+      "high_quality_base_model_ids": [
+        "eleven_v2_flash",
+        "eleven_flash_v2",
+        "eleven_turbo_v2_5",
+        "eleven_multilingual_v2",
+        "eleven_v2_5_flash",
+        "eleven_flash_v2_5",
+        "eleven_turbo_v2"
+      ],
+      "is_legacy": false,
+      "is_mixed": false,
+      "is_owner": false,
+      "labels": {
+        "accent": "british",
+        "age": "middle_aged",
+        "description": "warm",
+        "descriptive": "confident",
+        "gender": "female",
+        "use_case": "narration"
+      },
+      "name": "Lily",
+      "permission_on_resource": null,
+      "preview_url": "https://storage.googleapis.com/eleven-public-prod/premade/voices/pFZP5JQG7iQjIQuC4Bku/89b68b35-b3dd-4348-a84a-a3c13a3c2b30.mp3",
+      "safety_control": null,
+      "samples": null,
+      "settings": null,
+      "sharing": null,
+      "verified_languages": [
+        {
+          "accent": "standard",
+          "language": "it",
+          "locale": "it-IT",
+          "model_id": "eleven_multilingual_v2",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/premade/voices/pFZP5JQG7iQjIQuC4Bku/b2edb800-06a3-4d47-9bb7-461c2e5af7b2.mp3"
+        },
+        {
+          "accent": "standard",
+          "language": "de",
+          "locale": "de-DE",
+          "model_id": "eleven_multilingual_v2",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/premade/voices/pFZP5JQG7iQjIQuC4Bku/0c5c2b73-34b6-4d17-ae2f-f4e4cb7b0636.mp3"
+        },
+        {
+          "accent": "standard",
+          "language": "zh",
+          "locale": "cmn-CN",
+          "model_id": "eleven_multilingual_v2",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/premade/voices/pFZP5JQG7iQjIQuC4Bku/288da6a0-85aa-4705-b033-73d5304cdbaa.mp3"
+        },
+        {
+          "accent": "standard",
+          "language": "cs",
+          "locale": "cs-CZ",
+          "model_id": "eleven_multilingual_v2",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/premade/voices/pFZP5JQG7iQjIQuC4Bku/f13ad751-dcab-45d0-9b3d-cb8b3b9e3f1d.mp3"
+        },
+        {
+          "accent": "standard",
+          "language": "nl",
+          "locale": "nl-NL",
+          "model_id": "eleven_multilingual_v2",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/premade/voices/pFZP5JQG7iQjIQuC4Bku/86353d12-c42f-4e3e-afc2-a574c7030884.mp3"
+        },
+        {
+          "accent": "standard",
+          "language": "pl",
+          "locale": "pl-PL",
+          "model_id": "eleven_multilingual_v2",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/premade/voices/pFZP5JQG7iQjIQuC4Bku/646f864e-fe42-42b2-a757-3da7b80275c2.mp3"
+        }
+      ],
+      "voice_id": "pFZP5JQG7iQjIQuC4Bku",
+      "voice_verification": {
+        "is_verified": false,
+        "language": null,
+        "requires_verification": false,
+        "verification_attempts": null,
+        "verification_attempts_count": 0,
+        "verification_failures": []
+      }
+    }
+  ]
+}

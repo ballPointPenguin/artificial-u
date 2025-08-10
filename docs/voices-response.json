@@ -1,444 +1,718 @@
 {
   "voices": [
     {
-      "public_owner_id": "f87f057c2250691953ac2e6227859706764bd08c88a055a18c74261957885a51",
-      "voice_id": "MF4J4IDTRo0AxOO4dpFR",
-      "date_unix": 1715511922,
-      "name": "Devi - Clear Hindi pronunciation",
-      "accent": "standard",
-      "gender": "female",
-      "age": "young",
-      "descriptive": "professional",
-      "use_case": "informative_educational",
-      "category": "high_quality",
-      "language": "hi",
-      "locale": "hi-IN",
-      "description": "Devi is the pen name of a young Indian female artist with clear Hindi instructions. She originally comes from Rajasthan, so she has a clear Hindi diction and hence a beautiful voice for educational, social media, and audiobook content.",
-      "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/workspace/514d94e9241c48e8b7905375729c436f/voices/MF4J4IDTRo0AxOO4dpFR/1tbrb5P9MoZcxUUUIvng.mp3",
-      "usage_character_count_1y": 122193277,
-      "usage_character_count_7d": 10021403,
-      "play_api_usage_character_count_1y": 24710500,
-      "cloned_by_count": 138250,
-      "rate": 1.0,
-      "free_users_allowed": true,
-      "live_moderation_enabled": false,
-      "featured": false,
+      "voice_id": "20zUtLxCwVzsFDWub4sB",
+      "name": "Stefanos - A calm youthful voice, most suitable for narration.",
+      "samples": null,
+      "category": "professional",
+      "fine_tuning": {
+        "is_allowed_to_fine_tune": true,
+        "state": {
+          "eleven_multilingual_v2": "fine_tuned",
+          "eleven_turbo_v2_5": "fine_tuned",
+          "eleven_multilingual_sts_v2": "fine_tuned",
+          "eleven_flash_v2_5": "fine_tuned",
+          "eleven_v2_5_flash": "fine_tuned"
+        },
+        "verification_failures": [],
+        "verification_attempts_count": 0,
+        "manual_verification_requested": false,
+        "language": "el",
+        "progress": {},
+        "message": {
+          "eleven_multilingual_v2": "",
+          "eleven_turbo_v2_5": "",
+          "eleven_multilingual_sts_v2": "",
+          "eleven_flash_v2_5": "",
+          "eleven_v2_5_flash": ""
+        },
+        "dataset_duration_seconds": null,
+        "verification_attempts": null,
+        "slice_ids": null,
+        "manual_verification": null,
+        "max_verification_attempts": 0,
+        "next_max_verification_attempts_reset_unix_ms": 0
+      },
+      "labels": {
+        "accent": "athenian",
+        "descriptive": "calm",
+        "age": "young",
+        "gender": "male",
+        "language": "el",
+        "use_case": "narrative_story"
+      },
+      "description": " A calm youthful voice, most suitable for narration. Gentle and easy going, this voice is perfect for narration.",
+      "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/MKMmGlbVeLfqHnshck3qEZ5t0jq2/voices/20zUtLxCwVzsFDWub4sB/CcN2gbQ6PDzvLXrOjPjp.mp3",
+      "available_for_tiers": [],
+      "settings": null,
+      "sharing": {
+        "status": "copied",
+        "history_item_sample_id": null,
+        "date_unix": 1752486625,
+        "whitelisted_emails": [],
+        "public_owner_id": "f584f5cea39e97ee04552d165319cec7a5b0dc573a477fc993f3bddcd84460b8",
+        "original_voice_id": "20zUtLxCwVzsFDWub4sB",
+        "financial_rewards_enabled": false,
+        "free_users_allowed": true,
+        "live_moderation_enabled": true,
+        "rate": 1.0,
+        "fiat_rate": null,
+        "notice_period": 30,
+        "disable_at_unix": null,
+        "voice_mixing_allowed": false,
+        "featured": false,
+        "category": "high_quality",
+        "reader_app_enabled": true,
+        "image_url": "",
+        "ban_reason": null,
+        "liked_by_count": 0,
+        "cloned_by_count": 0,
+        "name": "Stefanos - A calm youthful voice, most suitable for narration.",
+        "description": " A calm youthful voice, most suitable for narration. Gentle and easy going, this voice is perfect for narration.",
+        "labels": {
+          "language": "el",
+          "descriptive": "calm",
+          "age": "young",
+          "gender": "male",
+          "accent": "athenian",
+          "use_case": "narrative_story",
+          "locale": "el-GR"
+        },
+        "review_status": "not_requested",
+        "review_message": null,
+        "enabled_in_library": false,
+        "instagram_username": null,
+        "twitter_username": null,
+        "youtube_username": null,
+        "tiktok_username": null,
+        "moderation_check": null,
+        "reader_restricted_on": null
+      },
+      "high_quality_base_model_ids": [
+        "eleven_multilingual_v2",
+        "eleven_multilingual_sts_v2",
+        "eleven_flash_v2_5",
+        "eleven_turbo_v2_5",
+        "eleven_v2_5_flash"
+      ],
+      "verified_languages": [],
+      "safety_control": null,
+      "voice_verification": {
+        "requires_verification": false,
+        "is_verified": false,
+        "verification_failures": [],
+        "verification_attempts_count": 0,
+        "language": null,
+        "verification_attempts": null
+      },
+      "permission_on_resource": "admin",
+      "is_owner": false,
+      "is_legacy": false,
+      "is_mixed": false,
+      "created_at_unix": 1752486625
+    },
+    {
+      "voice_id": "NfUrCNRReUL9RXS9upG1",
+      "name": "Scotty Marshal",
+      "samples": null,
+      "category": "professional",
+      "fine_tuning": {
+        "is_allowed_to_fine_tune": true,
+        "state": {
+          "eleven_multilingual_v2": "fine_tuned",
+          "eleven_v2_flash": "fine_tuned",
+          "eleven_turbo_v2_5": "fine_tuned",
+          "eleven_flash_v2_5": "fine_tuned",
+          "eleven_v2_5_flash": "fine_tuned",
+          "eleven_turbo_v2": "fine_tuned",
+          "eleven_flash_v2": "fine_tuned"
+        },
+        "verification_failures": [],
+        "verification_attempts_count": 0,
+        "manual_verification_requested": false,
+        "language": "en",
+        "progress": {},
+        "message": {
+          "eleven_multilingual_v2": "",
+          "eleven_v2_flash": "",
+          "eleven_turbo_v2_5": "",
+          "eleven_flash_v2_5": "",
+          "eleven_v2_5_flash": "",
+          "eleven_turbo_v2": "",
+          "eleven_flash_v2": ""
+        },
+        "dataset_duration_seconds": null,
+        "verification_attempts": null,
+        "slice_ids": null,
+        "manual_verification": null,
+        "max_verification_attempts": 0,
+        "next_max_verification_attempts_reset_unix_ms": 0
+      },
+      "labels": {
+        "accent": "british",
+        "descriptive": "confident",
+        "age": "middle_aged",
+        "gender": "male",
+        "language": "en",
+        "use_case": "characters_animation"
+      },
+      "description": "Scotty Marshal is a chipper West Highlander, can sound Glaswegian with certain prompts. Suitable for flavorful narration or fantasy characters.",
+      "preview_url": "https://storage.googleapis.com/eleven-public-prod/custom/voices/NfUrCNRReUL9RXS9upG1/90QNyhHcQhggom7JCrJR.mp3",
+      "available_for_tiers": [],
+      "settings": null,
+      "sharing": {
+        "status": "copied",
+        "history_item_sample_id": null,
+        "date_unix": 1752483253,
+        "whitelisted_emails": [],
+        "public_owner_id": "e8cfe6680aa689e3668390963c9d961d60563b199cd1dc3e84738a74e7e12ee8",
+        "original_voice_id": "NfUrCNRReUL9RXS9upG1",
+        "financial_rewards_enabled": false,
+        "free_users_allowed": true,
+        "live_moderation_enabled": false,
+        "rate": 1.0,
+        "fiat_rate": null,
+        "notice_period": 180,
+        "disable_at_unix": null,
+        "voice_mixing_allowed": false,
+        "featured": false,
+        "category": "professional",
+        "reader_app_enabled": null,
+        "image_url": "",
+        "ban_reason": null,
+        "liked_by_count": 0,
+        "cloned_by_count": 0,
+        "name": "Scotty Marshal",
+        "description": "Scotty Marshal is a chipper West Highlander, can sound Glaswegian with certain prompts. Suitable for flavorful narration or fantasy characters.",
+        "labels": {
+          "language": "en",
+          "descriptive": "confident",
+          "age": "middle_aged",
+          "gender": "male",
+          "accent": "british",
+          "use_case": "characters_animation",
+          "locale": "en-GB"
+        },
+        "review_status": "not_requested",
+        "review_message": null,
+        "enabled_in_library": false,
+        "instagram_username": null,
+        "twitter_username": null,
+        "youtube_username": null,
+        "tiktok_username": null,
+        "moderation_check": null,
+        "reader_restricted_on": null
+      },
+      "high_quality_base_model_ids": [
+        "eleven_turbo_v2_5",
+        "eleven_v2_flash",
+        "eleven_flash_v2",
+        "eleven_turbo_v2",
+        "eleven_multilingual_v2",
+        "eleven_v2_5_flash",
+        "eleven_flash_v2_5"
+      ],
+      "verified_languages": [],
+      "safety_control": null,
+      "voice_verification": {
+        "requires_verification": false,
+        "is_verified": false,
+        "verification_failures": [],
+        "verification_attempts_count": 0,
+        "language": null,
+        "verification_attempts": null
+      },
+      "permission_on_resource": "admin",
+      "is_owner": false,
+      "is_legacy": false,
+      "is_mixed": false,
+      "created_at_unix": 1752483253
+    },
+    {
+      "voice_id": "IPgYtHTNLjC7Bq7IPHrm",
+      "name": "Alexandre Boutin - French Canadian",
+      "samples": null,
+      "category": "professional",
+      "fine_tuning": {
+        "is_allowed_to_fine_tune": true,
+        "state": {
+          "eleven_multilingual_v2": "fine_tuned",
+          "eleven_turbo_v2_5": "fine_tuned",
+          "eleven_multilingual_sts_v2": "fine_tuned",
+          "eleven_flash_v2_5": "fine_tuned",
+          "eleven_v2_5_flash": "fine_tuned"
+        },
+        "verification_failures": [],
+        "verification_attempts_count": 0,
+        "manual_verification_requested": false,
+        "language": "fr",
+        "progress": {},
+        "message": {
+          "eleven_multilingual_v2": "",
+          "eleven_turbo_v2_5": "",
+          "eleven_multilingual_sts_v2": "",
+          "eleven_flash_v2_5": "",
+          "eleven_v2_5_flash": ""
+        },
+        "dataset_duration_seconds": null,
+        "verification_attempts": null,
+        "slice_ids": null,
+        "manual_verification": null,
+        "max_verification_attempts": 0,
+        "next_max_verification_attempts_reset_unix_ms": 0
+      },
+      "labels": {
+        "accent": "quebec",
+        "descriptive": "casual",
+        "age": "middle_aged",
+        "gender": "male",
+        "language": "fr",
+        "use_case": "conversational"
+      },
+      "description": "A clear, informative French Canadian voice with an authentic Quebec accent. The tone is professional and direct, perfect for delivering precise and engaging content. The recording is crystal clear, with a natural flow that emphasizes clarity and reliability, making it ideal for informative, educational, or news-based projects",
+      "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/eFmYIzNi7fVTAUiSkCFaPtNH8aQ2/voices/IPgYtHTNLjC7Bq7IPHrm/aIJi1hsMOzak56PAiG37.mp3",
+      "available_for_tiers": [],
+      "settings": null,
+      "sharing": {
+        "status": "copied",
+        "history_item_sample_id": null,
+        "date_unix": 1751792579,
+        "whitelisted_emails": [],
+        "public_owner_id": "a1254f9da709d4a8ae8b568746606d2ef3418390a67380e88423da83da5a874e",
+        "original_voice_id": "IPgYtHTNLjC7Bq7IPHrm",
+        "financial_rewards_enabled": false,
+        "free_users_allowed": true,
+        "live_moderation_enabled": false,
+        "rate": 1.0,
+        "fiat_rate": null,
+        "notice_period": 730,
+        "disable_at_unix": null,
+        "voice_mixing_allowed": false,
+        "featured": false,
+        "category": "high_quality",
+        "reader_app_enabled": true,
+        "image_url": "",
+        "ban_reason": null,
+        "liked_by_count": 0,
+        "cloned_by_count": 0,
+        "name": "Alexandre Boutin - French Canadian",
+        "description": "A clear, informative French Canadian voice with an authentic Quebec accent. The tone is professional and direct, perfect for delivering precise and engaging content. The recording is crystal clear, with a natural flow that emphasizes clarity and reliability, making it ideal for informative, educational, or news-based projects",
+        "labels": {
+          "language": "fr",
+          "descriptive": "casual",
+          "age": "middle_aged",
+          "gender": "male",
+          "accent": "quebec",
+          "use_case": "conversational",
+          "locale": "fr-CA"
+        },
+        "review_status": "not_requested",
+        "review_message": null,
+        "enabled_in_library": false,
+        "instagram_username": null,
+        "twitter_username": null,
+        "youtube_username": null,
+        "tiktok_username": null,
+        "moderation_check": null,
+        "reader_restricted_on": null
+      },
+      "high_quality_base_model_ids": [
+        "eleven_turbo_v2_5",
+        "eleven_multilingual_sts_v2",
+        "eleven_multilingual_v2",
+        "eleven_v2_5_flash",
+        "eleven_flash_v2_5"
+      ],
       "verified_languages": [
-        {
-          "language": "hi",
-          "model_id": "eleven_turbo_v2_5",
-          "accent": "standard",
-          "locale": "hi-IN",
-          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/workspace/514d94e9241c48e8b7905375729c436f/voices/MF4J4IDTRo0AxOO4dpFR/1tbrb5P9MoZcxUUUIvng.mp3"
-        },
-        {
-          "language": "hi",
-          "model_id": "eleven_multilingual_sts_v2",
-          "accent": "standard",
-          "locale": "hi-IN",
-          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/workspace/514d94e9241c48e8b7905375729c436f/voices/MF4J4IDTRo0AxOO4dpFR/1tbrb5P9MoZcxUUUIvng.mp3"
-        },
-        {
-          "language": "hi",
-          "model_id": "eleven_multilingual_v2",
-          "accent": "standard",
-          "locale": "hi-IN",
-          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/workspace/514d94e9241c48e8b7905375729c436f/voices/MF4J4IDTRo0AxOO4dpFR/1tbrb5P9MoZcxUUUIvng.mp3"
-        },
-        {
-          "language": "hi",
-          "model_id": "eleven_v2_5_flash",
-          "accent": "standard",
-          "locale": "hi-IN",
-          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/workspace/514d94e9241c48e8b7905375729c436f/voices/MF4J4IDTRo0AxOO4dpFR/1tbrb5P9MoZcxUUUIvng.mp3"
-        },
-        {
-          "language": "hi",
-          "model_id": "eleven_flash_v2_5",
-          "accent": "standard",
-          "locale": "hi-IN",
-          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/workspace/514d94e9241c48e8b7905375729c436f/voices/MF4J4IDTRo0AxOO4dpFR/1tbrb5P9MoZcxUUUIvng.mp3"
-        },
-        {
-          "language": "bg",
-          "model_id": "eleven_multilingual_v2",
-          "accent": "standard",
-          "locale": "bg-BG",
-          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/workspace/514d94e9241c48e8b7905375729c436f/voices/MF4J4IDTRo0AxOO4dpFR/8c282aa1-7147-4a81-94f5-66ab3890a60c.mp3"
-        },
-        {
-          "language": "de",
-          "model_id": "eleven_multilingual_v2",
-          "accent": "standard",
-          "locale": "de-DE",
-          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/workspace/514d94e9241c48e8b7905375729c436f/voices/MF4J4IDTRo0AxOO4dpFR/f9ecccbf-eb90-42a3-b8d7-ac97b0d80afa.mp3"
-        },
         {
           "language": "pl",
           "model_id": "eleven_multilingual_v2",
           "accent": "standard",
           "locale": "pl-PL",
-          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/workspace/514d94e9241c48e8b7905375729c436f/voices/MF4J4IDTRo0AxOO4dpFR/5e9b5b46-db3e-4aca-9ef5-4068e895e418.mp3"
-        },
-        {
-          "language": "el",
-          "model_id": "eleven_multilingual_v2",
-          "accent": "standard",
-          "locale": "el-GR",
-          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/workspace/514d94e9241c48e8b7905375729c436f/voices/MF4J4IDTRo0AxOO4dpFR/8eadcefd-f1b5-4cee-b1b0-c43f1ab185a3.mp3"
-        },
-        {
-          "language": "es",
-          "model_id": "eleven_multilingual_v2",
-          "accent": "latin",
-          "locale": null,
-          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/workspace/514d94e9241c48e8b7905375729c436f/voices/MF4J4IDTRo0AxOO4dpFR/7048d26c-0bb9-441b-9f51-011ad4c6cfd1.mp3"
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/eFmYIzNi7fVTAUiSkCFaPtNH8aQ2/voices/IPgYtHTNLjC7Bq7IPHrm/b6c8fefa-41c4-4d3f-9dd8-c12a8be120a0.mp3"
         },
         {
           "language": "fr",
           "model_id": "eleven_multilingual_v2",
           "accent": "quebec",
           "locale": "fr-CA",
-          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/workspace/514d94e9241c48e8b7905375729c436f/voices/MF4J4IDTRo0AxOO4dpFR/9e6f5238-9276-45ee-8f1d-a3fdef2be17c.mp3"
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/eFmYIzNi7fVTAUiSkCFaPtNH8aQ2/voices/IPgYtHTNLjC7Bq7IPHrm/dc536d3f-123b-42a0-a50b-a8349263501a.mp3"
+        },
+        {
+          "language": "es",
+          "model_id": "eleven_multilingual_v2",
+          "accent": "mexican",
+          "locale": "es-MX",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/eFmYIzNi7fVTAUiSkCFaPtNH8aQ2/voices/IPgYtHTNLjC7Bq7IPHrm/50ee4087-2361-4cb8-beed-d4fc4343c527.mp3"
+        },
+        {
+          "language": "hi",
+          "model_id": "eleven_multilingual_v2",
+          "accent": "standard",
+          "locale": "hi-IN",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/eFmYIzNi7fVTAUiSkCFaPtNH8aQ2/voices/IPgYtHTNLjC7Bq7IPHrm/83a27375-cd17-48d5-b7f2-75eea9ca3998.mp3"
+        },
+        {
+          "language": "ar",
+          "model_id": "eleven_multilingual_v2",
+          "accent": "modern",
+          "locale": null,
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/eFmYIzNi7fVTAUiSkCFaPtNH8aQ2/voices/IPgYtHTNLjC7Bq7IPHrm/b80fea0d-60fb-4e93-9903-5f0f3b23e91a.mp3"
         },
         {
           "language": "hr",
           "model_id": "eleven_multilingual_v2",
           "accent": "standard",
           "locale": "hr-HR",
-          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/workspace/514d94e9241c48e8b7905375729c436f/voices/MF4J4IDTRo0AxOO4dpFR/78b5abf0-0cbd-4ee8-b913-05a201ef75f2.mp3"
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/eFmYIzNi7fVTAUiSkCFaPtNH8aQ2/voices/IPgYtHTNLjC7Bq7IPHrm/6befe548-6caf-42c3-bedf-6557480147ca.mp3"
+        },
+        {
+          "language": "id",
+          "model_id": "eleven_multilingual_v2",
+          "accent": "sundanese",
+          "locale": null,
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/eFmYIzNi7fVTAUiSkCFaPtNH8aQ2/voices/IPgYtHTNLjC7Bq7IPHrm/a3d66ca3-1294-4c21-b2fd-934bf9fa2666.mp3"
         }
       ],
-      "notice_period": 730,
-      "instagram_username": null,
-      "twitter_username": null,
-      "youtube_username": null,
-      "tiktok_username": null,
-      "image_url": "",
-      "is_added_by_user": false
+      "safety_control": null,
+      "voice_verification": {
+        "requires_verification": false,
+        "is_verified": false,
+        "verification_failures": [],
+        "verification_attempts_count": 0,
+        "language": null,
+        "verification_attempts": null
+      },
+      "permission_on_resource": "admin",
+      "is_owner": false,
+      "is_legacy": false,
+      "is_mixed": false,
+      "created_at_unix": 1751792579
     },
     {
-      "public_owner_id": "e9a6840c69b79812b77ea81fa11d55aaf80dcf1938fa0137bf7f514f67f75c99",
-      "voice_id": "KHCvMklQZZo0O30ERnVn",
-      "date_unix": 1711449833,
-      "name": "Sara Martin - 1",
-      "accent": "peninsular",
-      "gender": "female",
-      "age": "middle_aged",
-      "descriptive": "wise",
-      "use_case": "informative_educational",
-      "category": "high_quality",
-      "language": "es",
-      "locale": "es-ES",
-      "description": "Middle aged Spanish-Castillian female with a gentle & friendly tone. Great for Educational content.",
-      "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/8RYUsFHsalUXjwVG0LjhNwH1j022/voices/KHCvMklQZZo0O30ERnVn/MdsY0B910z3we0udGv3w.mp3",
-      "usage_character_count_1y": 138129927,
-      "usage_character_count_7d": 9028380,
-      "play_api_usage_character_count_1y": 3715191145,
-      "cloned_by_count": 97723,
-      "rate": 1.0,
-      "free_users_allowed": true,
-      "live_moderation_enabled": false,
-      "featured": false,
+      "voice_id": "iDEmt5MnqUotdwCIVplo",
+      "name": "Enrique Mondragón",
+      "samples": null,
+      "category": "professional",
+      "fine_tuning": {
+        "is_allowed_to_fine_tune": true,
+        "state": {
+          "eleven_multilingual_v2": "fine_tuned",
+          "eleven_turbo_v2_5": "fine_tuned",
+          "eleven_multilingual_sts_v2": "fine_tuned",
+          "eleven_flash_v2_5": "fine_tuned",
+          "eleven_v2_5_flash": "fine_tuned"
+        },
+        "verification_failures": [],
+        "verification_attempts_count": 0,
+        "manual_verification_requested": false,
+        "language": "es",
+        "progress": {},
+        "message": {
+          "eleven_multilingual_v2": "",
+          "eleven_turbo_v2_5": "",
+          "eleven_multilingual_sts_v2": "",
+          "eleven_flash_v2_5": "",
+          "eleven_v2_5_flash": ""
+        },
+        "dataset_duration_seconds": null,
+        "verification_attempts": null,
+        "slice_ids": null,
+        "manual_verification": null,
+        "max_verification_attempts": 0,
+        "next_max_verification_attempts_reset_unix_ms": 0
+      },
+      "labels": {
+        "accent": "mexican",
+        "descriptive": "calm",
+        "age": "middle_aged",
+        "gender": "male",
+        "language": "es",
+        "use_case": "narrative_story"
+      },
+      "description": "Middle aged male with a Mexican Spanish accent. Perfect for Narrations.",
+      "preview_url": "https://storage.googleapis.com/eleven-public-prod/custom/voices/iDEmt5MnqUotdwCIVplo/rS1k8yAe8MGIMeC7Uq4V.mp3",
+      "available_for_tiers": [],
+      "settings": null,
+      "sharing": {
+        "status": "copied",
+        "history_item_sample_id": null,
+        "date_unix": 1751792421,
+        "whitelisted_emails": [],
+        "public_owner_id": "e9a6840c69b79812b77ea81fa11d55aaf80dcf1938fa0137bf7f514f67f75c99",
+        "original_voice_id": "iDEmt5MnqUotdwCIVplo",
+        "financial_rewards_enabled": false,
+        "free_users_allowed": true,
+        "live_moderation_enabled": false,
+        "rate": 1.0,
+        "fiat_rate": null,
+        "notice_period": 730,
+        "disable_at_unix": null,
+        "voice_mixing_allowed": false,
+        "featured": false,
+        "category": "high_quality",
+        "reader_app_enabled": true,
+        "image_url": "",
+        "ban_reason": null,
+        "liked_by_count": 0,
+        "cloned_by_count": 0,
+        "name": "Enrique Mondragón",
+        "description": "Middle aged male with a Mexican Spanish accent. Perfect for Narrations.",
+        "labels": {
+          "language": "es",
+          "descriptive": "calm",
+          "age": "middle_aged",
+          "gender": "male",
+          "accent": "mexican",
+          "use_case": "narrative_story",
+          "locale": "es-MX"
+        },
+        "review_status": "not_requested",
+        "review_message": null,
+        "enabled_in_library": false,
+        "instagram_username": null,
+        "twitter_username": null,
+        "youtube_username": null,
+        "tiktok_username": null,
+        "moderation_check": null,
+        "reader_restricted_on": null
+      },
+      "high_quality_base_model_ids": [
+        "eleven_turbo_v2_5",
+        "eleven_multilingual_v2",
+        "eleven_flash_v2_5",
+        "eleven_v2_5_flash",
+        "eleven_multilingual_sts_v2"
+      ],
       "verified_languages": [
         {
-          "language": "es",
+          "language": "hi",
           "model_id": "eleven_multilingual_v2",
-          "accent": "peninsular",
-          "locale": "es-ES",
-          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/8RYUsFHsalUXjwVG0LjhNwH1j022/voices/KHCvMklQZZo0O30ERnVn/MdsY0B910z3we0udGv3w.mp3"
+          "accent": "standard",
+          "locale": "hi-IN",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/8RYUsFHsalUXjwVG0LjhNwH1j022/voices/iDEmt5MnqUotdwCIVplo/3a7a4891-b99b-4954-a5bf-95f3fcaf116d.mp3"
         },
         {
-          "language": "es",
-          "model_id": "eleven_turbo_v2_5",
-          "accent": "peninsular",
-          "locale": "es-ES",
-          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/8RYUsFHsalUXjwVG0LjhNwH1j022/voices/KHCvMklQZZo0O30ERnVn/MdsY0B910z3we0udGv3w.mp3"
-        },
-        {
-          "language": "es",
-          "model_id": "eleven_v2_5_flash",
-          "accent": "peninsular",
-          "locale": "es-ES",
-          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/8RYUsFHsalUXjwVG0LjhNwH1j022/voices/KHCvMklQZZo0O30ERnVn/MdsY0B910z3we0udGv3w.mp3"
-        },
-        {
-          "language": "es",
-          "model_id": "eleven_flash_v2_5",
-          "accent": "peninsular",
-          "locale": "es-ES",
-          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/8RYUsFHsalUXjwVG0LjhNwH1j022/voices/KHCvMklQZZo0O30ERnVn/MdsY0B910z3we0udGv3w.mp3"
+          "language": "pt",
+          "model_id": "eleven_multilingual_v2",
+          "accent": "brazilian",
+          "locale": "pt-BR",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/8RYUsFHsalUXjwVG0LjhNwH1j022/voices/iDEmt5MnqUotdwCIVplo/4de40545-b991-4663-8b80-9072a4003abd.mp3"
         },
         {
           "language": "bg",
           "model_id": "eleven_multilingual_v2",
           "accent": "standard",
           "locale": "bg-BG",
-          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/8RYUsFHsalUXjwVG0LjhNwH1j022/voices/KHCvMklQZZo0O30ERnVn/27d0ae09-5f3e-4508-96a7-b53239b18a66.mp3"
-        },
-        {
-          "language": "es",
-          "model_id": "eleven_multilingual_v2",
-          "accent": "peninsular",
-          "locale": "es-ES",
-          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/8RYUsFHsalUXjwVG0LjhNwH1j022/voices/KHCvMklQZZo0O30ERnVn/77efee21-9f9d-4ae9-a37f-797a1f14c0aa.mp3"
-        },
-        {
-          "language": "hi",
-          "model_id": "eleven_multilingual_v2",
-          "accent": "standard",
-          "locale": "hi-IN",
-          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/8RYUsFHsalUXjwVG0LjhNwH1j022/voices/KHCvMklQZZo0O30ERnVn/c677b517-04ae-4f79-8ac1-8b32a6c40ab6.mp3"
-        },
-        {
-          "language": "pl",
-          "model_id": "eleven_multilingual_v2",
-          "accent": "standard",
-          "locale": "pl-PL",
-          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/8RYUsFHsalUXjwVG0LjhNwH1j022/voices/KHCvMklQZZo0O30ERnVn/200a9385-98b6-4fec-92df-70a7de838489.mp3"
-        },
-        {
-          "language": "it",
-          "model_id": "eleven_multilingual_v2",
-          "accent": "standard",
-          "locale": "it-IT",
-          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/8RYUsFHsalUXjwVG0LjhNwH1j022/voices/KHCvMklQZZo0O30ERnVn/9fc23908-0abb-41a8-a3e1-f970284f46b2.mp3"
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/8RYUsFHsalUXjwVG0LjhNwH1j022/voices/iDEmt5MnqUotdwCIVplo/80771338-a541-4fd8-bffc-78011eefc28a.mp3"
         },
         {
           "language": "el",
           "model_id": "eleven_multilingual_v2",
           "accent": "standard",
           "locale": "el-GR",
-          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/8RYUsFHsalUXjwVG0LjhNwH1j022/voices/KHCvMklQZZo0O30ERnVn/f02762da-122e-4f34-91cd-8c15397c796e.mp3"
-        },
-        {
-          "language": "fr",
-          "model_id": "eleven_multilingual_v2",
-          "accent": "standard",
-          "locale": "fr-FR",
-          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/8RYUsFHsalUXjwVG0LjhNwH1j022/voices/KHCvMklQZZo0O30ERnVn/f7fb784c-b9e1-4d38-b830-2d275ecf0a0b.mp3"
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/8RYUsFHsalUXjwVG0LjhNwH1j022/voices/iDEmt5MnqUotdwCIVplo/5816edb1-7405-449b-8f7f-657d2122ce71.mp3"
         },
         {
           "language": "ar",
           "model_id": "eleven_multilingual_v2",
-          "accent": "modern",
-          "locale": null,
-          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/8RYUsFHsalUXjwVG0LjhNwH1j022/voices/KHCvMklQZZo0O30ERnVn/00a17072-46ca-4ba2-b4fa-a747943866ec.mp3"
+          "accent": "modern standard",
+          "locale": "ar-SA",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/8RYUsFHsalUXjwVG0LjhNwH1j022/voices/iDEmt5MnqUotdwCIVplo/dee8dfe0-0aed-4a22-8503-9d93fb888467.mp3"
         }
       ],
-      "notice_period": 730,
-      "instagram_username": null,
-      "twitter_username": null,
-      "youtube_username": null,
-      "tiktok_username": null,
-      "image_url": "",
-      "is_added_by_user": false
+      "safety_control": null,
+      "voice_verification": {
+        "requires_verification": false,
+        "is_verified": false,
+        "verification_failures": [],
+        "verification_attempts_count": 0,
+        "language": null,
+        "verification_attempts": null
+      },
+      "permission_on_resource": "admin",
+      "is_owner": false,
+      "is_legacy": false,
+      "is_mixed": false,
+      "created_at_unix": 1751792421
     },
     {
-      "public_owner_id": "6448d1215d14246fd2c38cdaff7e8840c0396b21d8a84ab77f2fe9cca89409fa",
-      "voice_id": "repzAAjoKlgcT2oOAIWt",
-      "date_unix": 1707616766,
-      "name": "Nassim - Corporate Narration",
-      "accent": "american",
-      "gender": "male",
-      "age": "middle_aged",
-      "descriptive": "deep",
-      "use_case": "informative_educational",
-      "category": "high_quality",
-      "language": "en",
-      "locale": "en-US",
-      "description": "A middle aged that narrates in a neutral English with a slight American accent and has a warm elegant voice.",
-      "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/NZbzesqA6CUDRU2CXJenhD5MeIu1/voices/repzAAjoKlgcT2oOAIWt/ZDAfM8XUJ6GRuoiuV1PQ.mp3",
-      "usage_character_count_1y": 1517545377,
-      "usage_character_count_7d": 1529837,
-      "play_api_usage_character_count_1y": 81744092,
-      "cloned_by_count": 80511,
-      "rate": 1.0,
-      "free_users_allowed": true,
-      "live_moderation_enabled": false,
-      "featured": false,
+      "voice_id": "RTFg9niKcgGLDwa3RFlz",
+      "name": "Marc Aurèle - Philosophy, meditation, Audiobook",
+      "samples": null,
+      "category": "professional",
+      "fine_tuning": {
+        "is_allowed_to_fine_tune": true,
+        "state": {
+          "eleven_multilingual_v2": "fine_tuned",
+          "eleven_turbo_v2_5": "fine_tuned",
+          "eleven_multilingual_sts_v2": "fine_tuned",
+          "eleven_flash_v2_5": "fine_tuned",
+          "eleven_v2_5_flash": "fine_tuned"
+        },
+        "verification_failures": [],
+        "verification_attempts_count": 0,
+        "manual_verification_requested": false,
+        "language": "fr",
+        "progress": {},
+        "message": {
+          "eleven_multilingual_v2": "",
+          "eleven_turbo_v2_5": "",
+          "eleven_multilingual_sts_v2": "",
+          "eleven_flash_v2_5": "",
+          "eleven_v2_5_flash": ""
+        },
+        "dataset_duration_seconds": null,
+        "verification_attempts": null,
+        "slice_ids": null,
+        "manual_verification": null,
+        "max_verification_attempts": 0,
+        "next_max_verification_attempts_reset_unix_ms": 0
+      },
+      "labels": {
+        "accent": "quebec",
+        "descriptive": "calm",
+        "age": "middle_aged",
+        "gender": "male",
+        "language": "fr",
+        "use_case": "narrative_story"
+      },
+      "description": "I recorded Meditations by Marcus Aurelius to create a unique voice clone with a reflective, contemplative, and philosophical tone—perfect for personal development audiobooks, guided meditations, inspiring podcasts, and immersive narration.\r\n\r\nWith a calm, wise, and profound tone, this voice conveys authenticity and serenity, ideal for deep reflection and introspection.\r\n\r\n👉 Perfect for: Audiobooks, meditation, podcasts, and storytelling.",
+      "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/eFmYIzNi7fVTAUiSkCFaPtNH8aQ2/voices/RTFg9niKcgGLDwa3RFlz/I8eiiP3LMamDvo81XsJv.mp3",
+      "available_for_tiers": [],
+      "settings": null,
+      "sharing": {
+        "status": "copied",
+        "history_item_sample_id": null,
+        "date_unix": 1751792256,
+        "whitelisted_emails": [],
+        "public_owner_id": "a1254f9da709d4a8ae8b568746606d2ef3418390a67380e88423da83da5a874e",
+        "original_voice_id": "RTFg9niKcgGLDwa3RFlz",
+        "financial_rewards_enabled": false,
+        "free_users_allowed": true,
+        "live_moderation_enabled": false,
+        "rate": 1.0,
+        "fiat_rate": null,
+        "notice_period": 730,
+        "disable_at_unix": null,
+        "voice_mixing_allowed": false,
+        "featured": false,
+        "category": "high_quality",
+        "reader_app_enabled": true,
+        "image_url": "",
+        "ban_reason": null,
+        "liked_by_count": 0,
+        "cloned_by_count": 0,
+        "name": "Marc Aurèle - Philosophy, meditation, Audiobook",
+        "description": "I recorded Meditations by Marcus Aurelius to create a unique voice clone with a reflective, contemplative, and philosophical tone—perfect for personal development audiobooks, guided meditations, inspiring podcasts, and immersive narration.\r\n\r\nWith a calm, wise, and profound tone, this voice conveys authenticity and serenity, ideal for deep reflection and introspection.\r\n\r\n👉 Perfect for: Audiobooks, meditation, podcasts, and storytelling.",
+        "labels": {
+          "language": "fr",
+          "descriptive": "calm",
+          "age": "middle_aged",
+          "gender": "male",
+          "accent": "quebec",
+          "use_case": "narrative_story",
+          "locale": "fr-CA"
+        },
+        "review_status": "not_requested",
+        "review_message": null,
+        "enabled_in_library": false,
+        "instagram_username": null,
+        "twitter_username": null,
+        "youtube_username": null,
+        "tiktok_username": null,
+        "moderation_check": null,
+        "reader_restricted_on": null
+      },
+      "high_quality_base_model_ids": [
+        "eleven_multilingual_v2",
+        "eleven_flash_v2_5",
+        "eleven_turbo_v2_5",
+        "eleven_v2_5_flash",
+        "eleven_multilingual_sts_v2"
+      ],
       "verified_languages": [
         {
           "language": "en",
-          "model_id": "pvc_v4",
-          "accent": "american",
-          "locale": "en-US",
-          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/NZbzesqA6CUDRU2CXJenhD5MeIu1/voices/repzAAjoKlgcT2oOAIWt/ZDAfM8XUJ6GRuoiuV1PQ.mp3"
-        }
-      ],
-      "notice_period": null,
-      "instagram_username": null,
-      "twitter_username": null,
-      "youtube_username": null,
-      "tiktok_username": null,
-      "image_url": "",
-      "is_added_by_user": false
-    },
-    {
-      "public_owner_id": "f87f057c2250691953ac2e6227859706764bd08c88a055a18c74261957885a51",
-      "voice_id": "IMzcdjL6UK1gZxag6QAU",
-      "date_unix": 1716172578,
-      "name": "Shrey - Deep Hindi Voice",
-      "accent": "standard",
-      "gender": "male",
-      "age": "middle_aged",
-      "descriptive": "professional",
-      "use_case": "informative_educational",
-      "category": "high_quality",
-      "language": "hi",
-      "locale": "hi-IN",
-      "description": "Shrey is a pen name of a voice-over artist who has a very deep voice. His Indian English voice is already loved by many. His voice is great for creating content in professional and conversational spaces. So if you are looking for audiobooks, social media, or any ad-related voice, this is the voice to go for.",
-      "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/workspace/514d94e9241c48e8b7905375729c436f/voices/IMzcdjL6UK1gZxag6QAU/OrLGMikWegUS7FV8xW6t.mp3",
-      "usage_character_count_1y": 91020239,
-      "usage_character_count_7d": 980061,
-      "play_api_usage_character_count_1y": 15991441,
-      "cloned_by_count": 53099,
-      "rate": 1.0,
-      "free_users_allowed": true,
-      "live_moderation_enabled": false,
-      "featured": false,
-      "verified_languages": [
-        {
-          "language": "hi",
           "model_id": "eleven_multilingual_v2",
-          "accent": "standard",
-          "locale": "hi-IN",
-          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/workspace/514d94e9241c48e8b7905375729c436f/voices/IMzcdjL6UK1gZxag6QAU/OrLGMikWegUS7FV8xW6t.mp3"
-        },
-        {
-          "language": "hi",
-          "model_id": "eleven_turbo_v2_5",
-          "accent": "standard",
-          "locale": "hi-IN",
-          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/workspace/514d94e9241c48e8b7905375729c436f/voices/IMzcdjL6UK1gZxag6QAU/OrLGMikWegUS7FV8xW6t.mp3"
-        },
-        {
-          "language": "hi",
-          "model_id": "eleven_multilingual_sts_v2",
-          "accent": "standard",
-          "locale": "hi-IN",
-          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/workspace/514d94e9241c48e8b7905375729c436f/voices/IMzcdjL6UK1gZxag6QAU/OrLGMikWegUS7FV8xW6t.mp3"
-        },
-        {
-          "language": "hi",
-          "model_id": "eleven_flash_v2_5",
-          "accent": "standard",
-          "locale": "hi-IN",
-          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/workspace/514d94e9241c48e8b7905375729c436f/voices/IMzcdjL6UK1gZxag6QAU/OrLGMikWegUS7FV8xW6t.mp3"
+          "accent": null,
+          "locale": "en-US",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/eFmYIzNi7fVTAUiSkCFaPtNH8aQ2/voices/RTFg9niKcgGLDwa3RFlz/017ffdd0-1f0c-4298-b728-cc8026183705.mp3"
         },
         {
           "language": "cs",
           "model_id": "eleven_multilingual_v2",
-          "accent": "moravian",
+          "accent": "standard",
           "locale": "cs-CZ",
-          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/workspace/514d94e9241c48e8b7905375729c436f/voices/IMzcdjL6UK1gZxag6QAU/f4da6f84-e686-4624-a5fc-a49fe9968893.mp3"
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/eFmYIzNi7fVTAUiSkCFaPtNH8aQ2/voices/RTFg9niKcgGLDwa3RFlz/10476614-fdb2-435d-bde5-61df3af75add.mp3"
         },
         {
-          "language": "hi",
+          "language": "pt",
           "model_id": "eleven_multilingual_v2",
-          "accent": "tamil",
-          "locale": null,
-          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/workspace/514d94e9241c48e8b7905375729c436f/voices/IMzcdjL6UK1gZxag6QAU/0f594d6e-0ea8-475c-8e2b-ba30cfba0449.mp3"
+          "accent": "brazilian",
+          "locale": "pt-BR",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/eFmYIzNi7fVTAUiSkCFaPtNH8aQ2/voices/RTFg9niKcgGLDwa3RFlz/a9b7acc2-68cf-483f-824d-bba31a70df37.mp3"
+        },
+        {
+          "language": "de",
+          "model_id": "eleven_multilingual_v2",
+          "accent": "standard",
+          "locale": "de-DE",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/eFmYIzNi7fVTAUiSkCFaPtNH8aQ2/voices/RTFg9niKcgGLDwa3RFlz/f9450f35-c6f3-42a9-b70c-76690bb2ac5a.mp3"
         },
         {
           "language": "es",
           "model_id": "eleven_multilingual_v2",
-          "accent": "latin",
+          "accent": "argentine",
+          "locale": "es-AR",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/eFmYIzNi7fVTAUiSkCFaPtNH8aQ2/voices/RTFg9niKcgGLDwa3RFlz/9e0350a1-1a3d-4589-8421-30a30605609d.mp3"
+        },
+        {
+          "language": "es",
+          "model_id": "eleven_turbo_v2_5",
+          "accent": "standard",
           "locale": null,
-          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/workspace/514d94e9241c48e8b7905375729c436f/voices/IMzcdjL6UK1gZxag6QAU/1d4c7cd3-814b-4333-ac5a-4cacc0d50797.mp3"
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/eFmYIzNi7fVTAUiSkCFaPtNH8aQ2/voices/RTFg9niKcgGLDwa3RFlz/b94db423-3190-43c1-b874-196eb845dae9.mp3"
         },
         {
           "language": "pl",
           "model_id": "eleven_multilingual_v2",
           "accent": "standard",
           "locale": "pl-PL",
-          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/workspace/514d94e9241c48e8b7905375729c436f/voices/IMzcdjL6UK1gZxag6QAU/ec356ed6-7962-43f9-abe7-3ab7f9eca8e1.mp3"
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/eFmYIzNi7fVTAUiSkCFaPtNH8aQ2/voices/RTFg9niKcgGLDwa3RFlz/26aa54f3-8dd6-490f-abc2-ab8b25e76373.mp3"
         },
         {
-          "language": "ar",
-          "model_id": "eleven_multilingual_v2",
-          "accent": "modern",
-          "locale": null,
-          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/workspace/514d94e9241c48e8b7905375729c436f/voices/IMzcdjL6UK1gZxag6QAU/9bee5d19-4407-4de0-9c8e-98088238d4ad.mp3"
-        }
-      ],
-      "notice_period": 730,
-      "instagram_username": null,
-      "twitter_username": null,
-      "youtube_username": null,
-      "tiktok_username": null,
-      "image_url": "",
-      "is_added_by_user": false
-    },
-    {
-      "public_owner_id": "482ea0a3dac1052b34e09319333e5bc8382ead438ffc8e686c1f37b55b394a7b",
-      "voice_id": "v70fYBHUOrHA3AKIBjPq",
-      "date_unix": 1725007939,
-      "name": "Mahaputra",
-      "accent": "standard",
-      "gender": "male",
-      "age": "young",
-      "descriptive": "formal",
-      "use_case": "informative_educational",
-      "category": "professional",
-      "language": "id",
-      "locale": "id-ID",
-      "description": "The voice of a young man, stiff, clear, and steady, is suitable for delivering standardized and formal information in a calm and professional tone.",
-      "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/kpIUsCETmARNBTw0b1WX3Q5WOKj2/voices/v70fYBHUOrHA3AKIBjPq/VhasN1RscY5mKrMIYPk0.mp3",
-      "usage_character_count_1y": 96107569,
-      "usage_character_count_7d": 7358507,
-      "play_api_usage_character_count_1y": 0,
-      "cloned_by_count": 52884,
-      "rate": 1.0,
-      "free_users_allowed": true,
-      "live_moderation_enabled": true,
-      "featured": false,
-      "verified_languages": [
-        {
-          "language": "id",
-          "model_id": "eleven_turbo_v2_5",
-          "accent": "standard",
-          "locale": "id-ID",
-          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/kpIUsCETmARNBTw0b1WX3Q5WOKj2/voices/v70fYBHUOrHA3AKIBjPq/VhasN1RscY5mKrMIYPk0.mp3"
-        },
-        {
-          "language": "id",
-          "model_id": "eleven_multilingual_sts_v2",
-          "accent": "standard",
-          "locale": "id-ID",
-          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/kpIUsCETmARNBTw0b1WX3Q5WOKj2/voices/v70fYBHUOrHA3AKIBjPq/VhasN1RscY5mKrMIYPk0.mp3"
-        },
-        {
-          "language": "id",
+          "language": "hi",
           "model_id": "eleven_multilingual_v2",
           "accent": "standard",
-          "locale": "id-ID",
-          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/kpIUsCETmARNBTw0b1WX3Q5WOKj2/voices/v70fYBHUOrHA3AKIBjPq/VhasN1RscY5mKrMIYPk0.mp3"
+          "locale": "hi-IN",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/eFmYIzNi7fVTAUiSkCFaPtNH8aQ2/voices/RTFg9niKcgGLDwa3RFlz/00c01f37-2abd-44db-afe4-92e254738c8d.mp3"
         },
         {
-          "language": "id",
-          "model_id": "eleven_v2_5_flash",
+          "language": "it",
+          "model_id": "eleven_multilingual_v2",
           "accent": "standard",
-          "locale": "id-ID",
-          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/kpIUsCETmARNBTw0b1WX3Q5WOKj2/voices/v70fYBHUOrHA3AKIBjPq/VhasN1RscY5mKrMIYPk0.mp3"
-        },
-        {
-          "language": "id",
-          "model_id": "eleven_flash_v2_5",
-          "accent": "standard",
-          "locale": "id-ID",
-          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/kpIUsCETmARNBTw0b1WX3Q5WOKj2/voices/v70fYBHUOrHA3AKIBjPq/VhasN1RscY5mKrMIYPk0.mp3"
+          "locale": "it-IT",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/eFmYIzNi7fVTAUiSkCFaPtNH8aQ2/voices/RTFg9niKcgGLDwa3RFlz/29d84871-e501-4ef4-a42d-93db2bb1855f.mp3"
         }
       ],
-      "notice_period": 730,
-      "instagram_username": null,
-      "twitter_username": null,
-      "youtube_username": null,
-      "tiktok_username": null,
-      "image_url": "",
-      "is_added_by_user": false
+      "safety_control": null,
+      "voice_verification": {
+        "requires_verification": false,
+        "is_verified": false,
+        "verification_failures": [],
+        "verification_attempts_count": 0,
+        "language": null,
+        "verification_attempts": null
+      },
+      "permission_on_resource": "admin",
+      "is_owner": false,
+      "is_legacy": false,
+      "is_mixed": false,
+      "created_at_unix": 1751792256
     }
   ],
   "has_more": true,
-  "last_sort_id": null
+  "total_count": 76,
+  "next_page_token": "fFJURmc5bmlLY2dHTER3YTNSRmx6"
 }
