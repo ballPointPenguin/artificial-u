@@ -73,8 +73,8 @@ Instructions:
    - Everything in the response text will be literally read aloud.
 
 Before writing the final lecture, outline the structure and main points of your lecture
-inside <lecture_outline> tags. This will help ensure a well-organized and coherent presentation.
-In this outline:
+inside <lecture_outline></lecture_outline> tags. This will help ensure a well-organized
+and coherent presentation. In this outline:
 
 - List out the main topics and subtopics for the lecture.
 - Provide a brief description of how each topic relates to the course and previous lectures.
@@ -82,6 +82,10 @@ In this outline:
 
 It's OK for this section to be quite long, as it will help in creating a
 comprehensive and engaging lecture.
+
+After completing the outline, provide the actual lecture content in the exact XML format
+shown above. Make sure to properly close all XML tags. The <lecture> section must be
+well-formed XML.
 
 Remember to imbue the text with the personality of the professor while maintaining
 the required structure and content.

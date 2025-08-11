@@ -933,3 +933,100 @@ def test_parse_lecture_xml():
     # Test error handling
     with pytest.raises(ValueError):
         parse_lecture_xml("<invalid>XML</with>")
+
+
+@pytest.mark.unit
+def test_parse_lecture_xml_with_extra_content():
+    """Test parsing lecture XML that contains extra content before/after the lecture tags."""
+    # Simulate LLM response with outline and extra content (like the actual failure case)
+    lecture_response = """
+    <lecture_outline>
+
+    **Main Structure:**
+
+    1. **Opening and Course Welcome** (5-7 minutes)
+       - Personal introduction as Dr. Maya Collins
+       - Excitement about the journey we're embarking on
+       - Brief overview of what makes this course unique
+
+    2. **The Scope of Evolutionary History** (8-10 minutes)
+       - What we mean by "evolutionary history" vs. just evolution
+       - The interdisciplinary nature: biology, geology, chemistry, physics, climate science
+
+    </lecture_outline>
+
+    <lecture>
+      <title>Introduction to Evolutionary History and Deep Time</title>
+      <content>
+Introduction to Evolutionary History and Deep Time
+
+[Sound of footsteps and papers rustling as students settle in]
+
+Good morning, everyone! Welcome to BIO 410, Evolutionary History of Life on Earth.
+      </content>
+    </lecture>
+
+    Some additional text after the lecture that should be ignored.
+    """
+
+    result = parse_lecture_xml(lecture_response)
+
+    assert result["title"] == "Introduction to Evolutionary History and Deep Time"
+    assert "Good morning, everyone!" in result["content"]
+    assert "Welcome to BIO 410" in result["content"]
+
+
+@pytest.mark.unit
+def test_parse_lecture_xml_missing_tags():
+    """Test error handling when lecture tags are missing."""
+    # Test missing opening tag
+    with pytest.raises(ValueError, match="No <lecture> opening tag found"):
+        parse_lecture_xml("Some content </lecture>")
+
+    # Test no lecture tags at all
+    with pytest.raises(ValueError, match="No <lecture> opening tag found"):
+        parse_lecture_xml("Just some plain text without lecture tags")
+
+
+@pytest.mark.unit
+def test_parse_lecture_xml_malformed():
+    """Test parsing of malformed XML with fallback strategies."""
+    # Test unclosed title tag - should be repaired
+    malformed_xml = """
+    <lecture>
+      <title>Introduction to AI
+      <content>This is the lecture content about AI.</content>
+    </lecture>
+    """
+    result = parse_lecture_xml(malformed_xml)
+    assert result["title"] == "Introduction to AI"
+    assert "lecture content about AI" in result["content"]
+
+    # Test unclosed content tag - should use regex fallback
+    malformed_xml2 = """
+    <lecture>
+      <title>Data Structures</title>
+      <content>This is an incomplete lecture that gets cut off...
+    </lecture>
+    """
+    result2 = parse_lecture_xml(malformed_xml2)
+    assert result2["title"] == "Data Structures"
+    assert "incomplete lecture" in result2["content"]
+
+
+@pytest.mark.unit
+def test_parse_lecture_xml_with_entities():
+    """Test parsing XML with HTML entities."""
+    xml_with_entities = """
+    <lecture>
+      <title>Functions &amp; Algorithms</title>
+      <content>
+        Let's explore f(x) = x^2 where x &gt; 0.
+        The relationship a &lt; b means a is less than b.
+      </content>
+    </lecture>
+    """
+    result = parse_lecture_xml(xml_with_entities)
+    assert result["title"] == "Functions & Algorithms"
+    assert "x > 0" in result["content"]
+    assert "a < b" in result["content"]

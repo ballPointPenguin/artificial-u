@@ -302,7 +302,7 @@ class LectureService:
             prompt=lecture_prompt,
             system_prompt=system_prompt,
             max_tokens=16384,  # 2^14
-            prefill="<lecture_outline>",
+            prefill="<lecture_outline>",  # No trailing whitespace
         )
         self.logger.info("Received response from content service.")
 

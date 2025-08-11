@@ -208,10 +208,19 @@ More content"""
 
     @pytest.mark.unit
     def test_pauses_with_comma(self, processor):
-        """[Pauses, ...] maps to a 1.0s break."""
-        text = "He looks around. [Pauses, waiting for students to comply] Continues."
-        out = processor.normalize_text(text)
-        assert '<break time="1.0s" />' in out
+        """[Pause, ...] and [Pauses, ...] both map to a 1.0s break."""
+        # Test plural "pauses"
+        text1 = "He looks around. [Pauses, waiting for students to comply] Continues."
+        out1 = processor.normalize_text(text1)
+        assert '<break time="1.0s" />' in out1
+
+        # Test singular "pause"
+        text2 = "She speaks. [Pause, warm tone] Then continues."
+        out2 = processor.normalize_text(text2)
+        assert '<break time="1.0s" />' in out2
+
+        # Test that the stage direction is completely removed
+        assert "warm tone" not in out2
 
     @pytest.mark.unit
     def test_pauses_thoughtfully_and_brief_pause(self, processor):

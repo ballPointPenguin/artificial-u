@@ -284,6 +284,7 @@ class ContentService:
         max_tokens: int | None,
         response: str,
         backend: str,
+        prefill: str | None = None,
     ) -> None:
         """Log the content generation details to a file.
 
@@ -295,6 +296,7 @@ class ContentService:
             max_tokens: Optional max tokens setting
             response: The generated response
             backend: The backend service used (anthropic, openai, etc.)
+            prefill: Optional assistant prefill content (Anthropic only)
         """
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
 
@@ -309,7 +311,12 @@ class ContentService:
                     "max_tokens": max_tokens,
                 },
             },
-            "content": {"system_prompt": system_prompt, "prompt": prompt, "response": response},
+            "content": {
+                "system_prompt": system_prompt,
+                "prompt": prompt,
+                "prefill": prefill,  # Will be None for non-Anthropic backends
+                "response": response,
+            },
         }
 
         # Create a unique filename for this generation
@@ -343,7 +350,11 @@ class ContentService:
                 system=system_prompt,
                 temperature=temperature if temperature is not None else DEFAULT_TEMPERATURE,
             )
+            # Get the response and combine with prefill if it was used
             response_text = response.content[0].text
+            # If prefill was used, combine it with the response for the full output
+            if prefill:
+                response_text = prefill + response_text
         except anthropic.APIError as e:
             # Let the retry logic handle this
             raise e
@@ -358,6 +369,7 @@ class ContentService:
             max_tokens=max_tokens,
             response=response_text,
             backend="anthropic",
+            prefill=prefill,
         )
 
         return response_text

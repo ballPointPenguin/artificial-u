@@ -270,45 +270,15 @@ class SpeechProcessor:
         - [Pause for ...] (e.g., emphasis/effect/a moment) → <break time="1.5s" />
         - [Brief pause ...] → <break time="0.5s" />
         - [Pauses thoughtfully] → <break time="1.5s" />
-        - [Pauses, ...] → <break time="1.0s" /> (general quick pause)
+        - [Pause, ...] or [Pauses, ...] → <break time="1.0s" /> (general pause with description)
         - [Pauses at ...] is left unchanged
         """
-        # Slight pause
-        text = re.sub(
-            r"\[\s*slight\s+pause\s*\]",
-            ' <break time="0.5s" /> ',
-            text,
-            flags=re.IGNORECASE,
-        )
+        # Process comma variants first (more specific patterns)
 
         # [Slight pause, ...] → 0.5s + keep remainder as bracketed comment
         text = re.sub(
             r"\[\s*slight\s+pause\s*,\s*([^\]]+)\]",
             r' <break time="0.5s" /> [\1] ',
-            text,
-            flags=re.IGNORECASE,
-        )
-
-        # Exact [Pause]
-        text = re.sub(
-            r"\[\s*pause\s*\]",
-            ' <break time="1.0s" /> ',
-            text,
-            flags=re.IGNORECASE,
-        )
-
-        # [Pause for X...] (emphasis, effect, a moment, etc.) → 1.5s
-        text = re.sub(
-            r"\[\s*pause\s+for\s+[^\]]+\]",
-            ' <break time="1.5s" /> ',
-            text,
-            flags=re.IGNORECASE,
-        )
-
-        # [Brief pause ...] → 0.5s
-        text = re.sub(
-            r"\[\s*brief\s+pause[^\]]*\]",
-            ' <break time="0.5s" /> ',
             text,
             flags=re.IGNORECASE,
         )
@@ -321,6 +291,32 @@ class SpeechProcessor:
             flags=re.IGNORECASE,
         )
 
+        # [Pause, ...] or [Pauses, ...] → 1.0s (target comma variants)
+        text = re.sub(
+            r"\[\s*pauses?\s*,[^\]]*\]",
+            ' <break time="1.0s" /> ',
+            text,
+            flags=re.IGNORECASE,
+        )
+
+        # Process exact matches next
+
+        # Exact [Slight pause]
+        text = re.sub(
+            r"\[\s*slight\s+pause\s*\]",
+            ' <break time="0.5s" /> ',
+            text,
+            flags=re.IGNORECASE,
+        )
+
+        # Exact [Pause]
+        text = re.sub(
+            r"\[\s*pause\s*\]",
+            ' <break time="1.0s" /> ',
+            text,
+            flags=re.IGNORECASE,
+        )
+
         # [Pauses thoughtfully] → 1.5s
         text = re.sub(
             r"\[\s*pauses\s+thoughtfully\s*\]",
@@ -329,10 +325,20 @@ class SpeechProcessor:
             flags=re.IGNORECASE,
         )
 
-        # [Pauses, ...] → 1.0s (target only comma variant)
+        # Process more general patterns last
+
+        # [Pause for X...] (emphasis, effect, a moment, etc.) → 1.5s
         text = re.sub(
-            r"\[\s*pauses\s*,[^\]]*\]",
-            ' <break time="1.0s" /> ',
+            r"\[\s*pause\s+for\s+[^\]]+\]",
+            ' <break time="1.5s" /> ',
+            text,
+            flags=re.IGNORECASE,
+        )
+
+        # [Brief pause ...] → 0.5s (general case, after comma variant)
+        text = re.sub(
+            r"\[\s*brief\s+pause[^\]]*\]",
+            ' <break time="0.5s" /> ',
             text,
             flags=re.IGNORECASE,
         )

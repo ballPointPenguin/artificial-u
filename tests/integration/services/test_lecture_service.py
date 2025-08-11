@@ -479,9 +479,9 @@ class TestLectureService:
         content_service.generate_text.return_value = "<output><invalid>XML</invalid></output>"
         with pytest.raises(ContentGenerationError) as exc_info:
             await lecture_service.generate_lecture({"course_id": course.id, "topic_id": topic.id})
-        # This error comes from extract_xml_content trying to get <lecture>
-        # from <invalid>XML</invalid>
-        assert "Failed to extract valid <content> from generated XML" in str(exc_info.value)
+        # This error comes from parse_lecture_xml trying to parse <invalid>XML</invalid>
+        # which is not valid XML and has no <lecture> tags
+        assert "Could not parse lecture XML" in str(exc_info.value)
 
         # Test empty response (after output tag extraction)
         # This case means <output> was found, but it was empty, so <lecture> would not be found.

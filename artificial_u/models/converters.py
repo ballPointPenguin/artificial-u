@@ -661,11 +661,172 @@ def parse_professor_xml(professor_xml: str) -> Dict[str, Any]:
         raise ValueError(f"Error parsing professor XML: {e}")
 
 
+def _repair_lecture_xml(xml_str: str) -> str:
+    """Repair common XML issues in lecture XML.
+
+    Args:
+        xml_str: The potentially malformed XML string
+
+    Returns:
+        str: Repaired XML string
+    """
+    import html
+
+    # Fix common HTML entities that might not be properly escaped
+    xml_str = xml_str.replace("&amp;", "&")  # Temporarily simplify
+    xml_str = html.escape(xml_str, quote=False)  # Re-escape properly
+
+    # Fix common unclosed tags by ensuring proper nesting
+    # Count opening and closing tags
+    title_open = xml_str.count("<title>")
+    title_close = xml_str.count("</title>")
+    content_open = xml_str.count("<content>")
+    content_close = xml_str.count("</content>")
+
+    # Add missing closing tags
+    if title_open > title_close:
+        # Find position to insert </title> - before <content> or at end
+        content_pos = xml_str.find("<content>")
+        if content_pos > 0:
+            xml_str = xml_str[:content_pos] + "</title>" + xml_str[content_pos:]
+        else:
+            xml_str = xml_str.replace("</lecture>", "</title></lecture>")
+
+    if content_open > content_close:
+        # Add missing </content> before </lecture>
+        xml_str = xml_str.replace("</lecture>", "</content></lecture>")
+
+    return xml_str
+
+
+def _extract_lecture_xml_portion(lecture_xml: str) -> str:
+    """Extract the <lecture>...</lecture> portion from the response.
+
+    Args:
+        lecture_xml: The full XML response that may contain extra content
+
+    Returns:
+        str: Just the lecture XML portion
+
+    Raises:
+        ValueError: If lecture tags are not found or malformed
+    """
+    lecture_start = lecture_xml.find("<lecture>")
+    lecture_end = lecture_xml.find("</lecture>")
+
+    if lecture_start == -1:
+        raise ValueError("No <lecture> opening tag found in response")
+    if lecture_end == -1:
+        # Maybe the closing tag is malformed, try to find partial
+        lecture_end = lecture_xml.find("</lectur")
+        if lecture_end == -1:
+            raise ValueError("No </lecture> closing tag found in response")
+        # Adjust to include the full closing tag
+        lecture_end = lecture_xml.find(">", lecture_end)
+
+    if lecture_end <= lecture_start:
+        raise ValueError("Invalid lecture tag structure")
+
+    # Extract just the lecture XML portion
+    lecture_only_xml = lecture_xml[lecture_start : lecture_end + 1]
+    if not lecture_only_xml.endswith("</lecture>"):
+        lecture_only_xml = lecture_only_xml.replace("</lectur", "</lecture")
+        if not lecture_only_xml.endswith(">"):
+            lecture_only_xml += ">"
+
+    return lecture_only_xml
+
+
+def _parse_lecture_xml_with_et(lecture_only_xml: str) -> Dict[str, Any]:
+    """Parse lecture XML using ElementTree.
+
+    Args:
+        lecture_only_xml: The cleaned lecture XML portion
+
+    Returns:
+        Dict[str, Any]: Parsed lecture data
+
+    Raises:
+        ET.ParseError: If XML parsing fails
+        ValueError: If structure is invalid
+    """
+    # Try to parse as-is first
+    try:
+        root = ET.fromstring(lecture_only_xml.strip())
+    except ET.ParseError:
+        # Try to repair common issues
+        lecture_only_xml = _repair_lecture_xml(lecture_only_xml)
+        root = ET.fromstring(lecture_only_xml.strip())
+
+    # The root element should be the lecture
+    if root.tag != "lecture":
+        raise ValueError("Root element must be <lecture>")
+
+    lecture_data = {}
+
+    # Process title and content fields
+    lecture_data["title"] = _parse_text_field(root.find("title"))
+    lecture_data["content"] = _parse_text_field(root.find("content"))
+
+    return lecture_data
+
+
+def _parse_lecture_xml_with_regex(lecture_xml: str) -> Dict[str, Any]:
+    """Parse lecture XML using regex as a fallback strategy.
+
+    Args:
+        lecture_xml: The full XML response
+
+    Returns:
+        Dict[str, Any]: Parsed lecture data
+
+    Raises:
+        ValueError: If no content could be extracted
+    """
+    import html
+    import re
+
+    lecture_data = {}
+
+    # Try to extract title with regex (handle unclosed tags)
+    title_match = re.search(
+        r"<title>\s*(.*?)(?:</title>|<content>|</lecture>)",
+        lecture_xml,
+        re.DOTALL | re.IGNORECASE,
+    )
+    if title_match:
+        title = title_match.group(1).strip()
+        # Unescape any HTML entities
+        title = html.unescape(title)
+        lecture_data["title"] = title
+
+    # Try to extract content with regex (handle unclosed tags)
+    content_match = re.search(
+        r"<content>\s*(.*?)(?:</content>|</lecture>|$)", lecture_xml, re.DOTALL | re.IGNORECASE
+    )
+
+    if content_match:
+        content = content_match.group(1).strip()
+        # Unescape any HTML entities
+        content = html.unescape(content)
+        lecture_data["content"] = content
+
+    # If we got at least content, consider it a success
+    if lecture_data.get("content"):
+        return lecture_data
+
+    raise ValueError("Could not extract content using regex fallback")
+
+
 def parse_lecture_xml(lecture_xml: str) -> Dict[str, Any]:
     """Parse lecture XML from LLM response into a dictionary.
 
+    This function is robust and extracts only the <lecture> portion from the response,
+    ignoring any content before or after the lecture tags (like outlines or other text).
+    It also attempts to repair common XML issues.
+
     Args:
-        lecture_xml: The XML string to parse
+        lecture_xml: The XML string to parse (may contain extra content)
 
     Returns:
         Dict[str, Any]: The parsed lecture attributes
@@ -673,21 +834,14 @@ def parse_lecture_xml(lecture_xml: str) -> Dict[str, Any]:
     Raises:
         ValueError: If the XML is invalid or missing required elements
     """
+    # Strategy 1: Try to extract and parse clean XML
     try:
-        root = ET.fromstring(lecture_xml.strip())
-        # The root element should be the lecture
-        if root.tag != "lecture":
-            raise ValueError("Root element must be <lecture>")
-
-        lecture_data = {}
-
-        # Process title and content fields
-        lecture_data["title"] = _parse_text_field(root.find("title"))
-        lecture_data["content"] = _parse_text_field(root.find("content"))
-
-        return lecture_data
-
-    except ET.ParseError as e:
-        raise ValueError(f"Invalid XML format: {e}")
-    except Exception as e:
-        raise ValueError(f"Error parsing lecture XML: {e}")
+        lecture_only_xml = _extract_lecture_xml_portion(lecture_xml)
+        return _parse_lecture_xml_with_et(lecture_only_xml)
+    except (ET.ParseError, ValueError) as e:
+        # Strategy 2: Try regex-based extraction as fallback
+        try:
+            return _parse_lecture_xml_with_regex(lecture_xml)
+        except ValueError:
+            # If all strategies failed, raise the original error
+            raise ValueError(f"Could not parse lecture XML: {e}")
