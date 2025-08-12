@@ -267,6 +267,7 @@ class SpeechProcessor:
         Rules (case-insensitive):
         - [Pause] → <break time="1.0s" />
         - [Slight pause] → <break time="0.5s" />
+        - [Slight pause for ...] → <break time="1.0s" /> (special case)
         - [Pause for ...] (e.g., emphasis/effect/a moment) → <break time="1.5s" />
         - [Brief pause ...] → <break time="0.5s" />
         - [Pauses thoughtfully] → <break time="1.5s" />
@@ -327,10 +328,26 @@ class SpeechProcessor:
 
         # Process more general patterns last
 
+        # [Slight pause for X...] → 1.0s (special case for "slight pause for")
+        text = re.sub(
+            r"\[\s*slight\s+pause\s+for\s+[^\]]+\]",
+            ' <break time="1.0s" /> ',
+            text,
+            flags=re.IGNORECASE,
+        )
+
         # [Pause for X...] (emphasis, effect, a moment, etc.) → 1.5s
         text = re.sub(
             r"\[\s*pause\s+for\s+[^\]]+\]",
             ' <break time="1.5s" /> ',
+            text,
+            flags=re.IGNORECASE,
+        )
+
+        # [Slight pause ...] → 0.5s (general case, after comma variant)
+        text = re.sub(
+            r"\[\s*slight\s+pause[^\]]*\]",
+            ' <break time="0.5s" /> ',
             text,
             flags=re.IGNORECASE,
         )

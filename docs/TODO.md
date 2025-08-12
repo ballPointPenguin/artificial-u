@@ -7,6 +7,7 @@
 - [x] Generate lecture audio
 - [x] Preview and modify professor voices
 - [ ] Generate lecture summary
+- [ ] Generate prof image automatically
 - [ ] Generate single topic
 - [ ] Integrate freeform prompts for everything
 - [ ] Manage multiple async generations
@@ -27,3 +28,5 @@
 - [ ] Update stylebook
 - [ ] Frontend tests
 - [ ] End-to-end tests
+- [ ] Production-ready deployment
+- [ ] Explore Hosting Options

@@ -207,6 +207,21 @@ More content"""
             assert '<break time="1.5s" />' in out
 
     @pytest.mark.unit
+    def test_slight_pause_for_variants(self, processor):
+        """[Slight pause for ...] maps to a 1.0s break (special case)."""
+        for phrase in [
+            "[Slight pause for emphasis]",
+            "[Slight pause for effect]",
+            "[Slight pause for dramatic effect]",
+        ]:
+            out = processor.normalize_text(f"Intro. {phrase} Outro.")
+            assert '<break time="1.0s" />' in out
+
+        # Ensure regular [Slight pause] still maps to 0.5s
+        out = processor.normalize_text("Intro. [Slight pause] Outro.")
+        assert '<break time="0.5s" />' in out
+
+    @pytest.mark.unit
     def test_pauses_with_comma(self, processor):
         """[Pause, ...] and [Pauses, ...] both map to a 1.0s break."""
         # Test plural "pauses"

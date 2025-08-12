@@ -1,5 +1,5 @@
 import { A, useNavigate, useParams } from '@solidjs/router'
-import { type Component, createResource, createSignal, Show } from 'solid-js'
+import { type Component, createMemo, createResource, createSignal, Show } from 'solid-js'
 import { courseService } from '../api/services/course-service.js'
 import { lectureService } from '../api/services/lecture-service.js'
 import { topicService } from '../api/services/topic-service.js'
@@ -111,32 +111,51 @@ const LectureDetail = () => {
   const [audioTimeout, setAudioTimeout] = createSignal(false)
 
   // Parse IDs from URL params
-  const courseId = Number.parseInt(params.courseId, 10)
-  const lectureId = Number.parseInt(params.lectureId, 10)
+  const courseId = createMemo(() => Number.parseInt(params.courseId, 10))
+  const lectureId = createMemo(() => Number.parseInt(params.lectureId, 10))
 
-  const isValidIds = !Number.isNaN(courseId) && !Number.isNaN(lectureId)
+  const isValidIds = createMemo(() => !Number.isNaN(courseId()) && !Number.isNaN(lectureId()))
 
   // Fetch lecture, course, and topic data
   const [lecture, { refetch: refetchLecture }] = createResource(
-    () => (isValidIds ? lectureId : null),
+    () => (isValidIds() ? lectureId() : null),
     lectureService.getLecture
   )
 
-  const [course] = createResource(() => (isValidIds ? courseId : null), courseService.getCourse)
+  const [course] = createResource(() => (isValidIds() ? courseId() : null), courseService.getCourse)
 
   const [topic] = createResource(
-    () => (isValidIds && lecture() ? lecture()?.topic_id : null),
+    () => (isValidIds() && lecture() ? lecture()?.topic_id : null),
     topicService.getTopic
   )
 
+  // For prev/next topic nav: fetch topics for the lecture's course
+  const [topicsList] = createResource(
+    () => (isValidIds() ? courseId() : null),
+    (cid) => topicService.listTopicsByCourse(cid, 1, 100)
+  )
+
+  const compareTopics = (
+    a: { week: number; order: number; id: number },
+    b: {
+      week: number
+      order: number
+      id: number
+    }
+  ) => {
+    if (a.week !== b.week) return a.week - b.week
+    if (a.order !== b.order) return a.order - b.order
+    return a.id - b.id
+  }
+
   const handleSubmitUpdate = async (formData: LectureUpdate) => {
-    if (!isValidIds) return
+    if (!isValidIds()) return
 
     setIsSubmitting(true)
     setError('')
 
     try {
-      await lectureService.updateLecture(lectureId, formData)
+      await lectureService.updateLecture(lectureId(), formData)
       setIsEditing(false)
     } catch (error) {
       setError(error instanceof Error ? error.message : 'Failed to update lecture')
@@ -151,19 +170,19 @@ const LectureDetail = () => {
   }
 
   const handleDeleteLecture = async () => {
-    if (!isValidIds) return
+    if (!isValidIds()) return
 
     setIsDeleting(true)
     setDeleteError('')
 
     try {
-      await lectureService.deleteLecture(lectureId)
+      await lectureService.deleteLecture(lectureId())
       // Navigate back to the topic page
-      const topicId = lecture()?.topic_id
-      if (topicId) {
-        navigate(`/courses/${String(courseId)}/topics/${String(topicId)}`)
+      const topicIdVal = lecture()?.topic_id
+      if (topicIdVal) {
+        navigate(`/courses/${String(courseId())}/topics/${String(topicIdVal)}`)
       } else {
-        navigate(`/courses/${String(courseId)}`)
+        navigate(`/courses/${String(courseId())}`)
       }
     } catch (error) {
       setDeleteError(error instanceof Error ? error.message : 'Failed to delete lecture')
@@ -174,14 +193,14 @@ const LectureDetail = () => {
   }
 
   const handleGenerateAudio = async () => {
-    if (!isValidIds) return
+    if (!isValidIds()) return
 
     setIsGeneratingAudio(true)
     setAudioError('')
     setAudioTimeout(false)
 
     try {
-      await lectureService.generateLectureAudio(lectureId, () => setAudioTimeout(true))
+      await lectureService.generateLectureAudio(lectureId(), () => setAudioTimeout(true))
       await refetchLecture()
     } catch (error) {
       setAudioError(error instanceof Error ? error.message : 'Failed to generate audio')
@@ -192,7 +211,10 @@ const LectureDetail = () => {
 
   return (
     <div class="container mx-auto px-4 py-8">
-      <Show when={isValidIds} fallback={<div class="text-parchment-100">Invalid Lecture ID.</div>}>
+      <Show
+        when={isValidIds()}
+        fallback={<div class="text-parchment-100">Invalid Lecture ID.</div>}
+      >
         <Show
           when={!lecture.loading}
           fallback={<div class="text-center py-8 text-parchment-300">Loading lecture...</div>}
@@ -210,13 +232,59 @@ const LectureDetail = () => {
               {(lectureData) => (
                 <div>
                   {/* Breadcrumb navigation */}
-                  <div class="mb-6">
-                    <A
-                      href={`/courses/${String(courseId)}/topics/${String(lectureData.topic_id)}`}
-                      class="text-mystic-500 hover:text-mystic-300"
-                    >
-                      ← Back to Topic
-                    </A>
+                  <div class="mb-6 flex items-center justify-between text-sm">
+                    <div class="flex items-center space-x-4">
+                      <A
+                        href={`/courses/${String(courseId())}`}
+                        class="text-mystic-500 hover:text-mystic-300"
+                      >
+                        ← Back to Course
+                      </A>
+                      <span class="text-parchment-600">•</span>
+                      <A
+                        href={`/courses/${String(courseId())}/topics/${String(lectureData.topic_id)}`}
+                        class="text-mystic-500 hover:text-mystic-300"
+                      >
+                        Back to Topic
+                      </A>
+                    </div>
+
+                    {/* Prev/Next Topic navigation */}
+                    <Show when={topicsList() && topic()}>
+                      {(() => {
+                        const items = topicsList()!.items.slice().sort(compareTopics)
+                        const currentIndex = items.findIndex((t) => t.id === topic()!.id)
+                        const prev = currentIndex > 0 ? items[currentIndex - 1] : null
+                        const next =
+                          currentIndex >= 0 && currentIndex < items.length - 1
+                            ? items[currentIndex + 1]
+                            : null
+                        return (
+                          <div class="flex items-center gap-3">
+                            <Show when={prev}>
+                              {(p) => (
+                                <A
+                                  href={`/courses/${String(courseId())}/topics/${String(p().id)}`}
+                                  class="text-mystic-500 hover:text-mystic-300"
+                                >
+                                  ← Previous Topic
+                                </A>
+                              )}
+                            </Show>
+                            <Show when={next}>
+                              {(n) => (
+                                <A
+                                  href={`/courses/${String(courseId())}/topics/${String(n().id)}`}
+                                  class="text-mystic-500 hover:text-mystic-300"
+                                >
+                                  Next Topic →
+                                </A>
+                              )}
+                            </Show>
+                          </div>
+                        )
+                      })()}
+                    </Show>
                   </div>
 
                   {/* Course and Topic context */}
@@ -233,7 +301,10 @@ const LectureDetail = () => {
                   <Show when={topic()}>
                     {(topicData) => (
                       <div class="mb-6">
-                        <h3 class="text-md text-parchment-400">Topic: {topicData().title}</h3>
+                        <h3 class="text-md text-parchment-400">
+                          Topic: Week {topicData().week} · Lecture {topicData().order} —{' '}
+                          {topicData().title}
+                        </h3>
                       </div>
                     )}
                   </Show>
@@ -268,7 +339,7 @@ const LectureDetail = () => {
                     when={!isEditing()}
                     fallback={
                       <LectureForm
-                        courseId={courseId}
+                        courseId={courseId()}
                         existingLecture={lectureData}
                         onSubmit={handleSubmitUpdate}
                         onCancel={handleCancelEdit}

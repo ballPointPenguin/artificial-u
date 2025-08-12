@@ -1,5 +1,5 @@
 import { A, useParams } from '@solidjs/router'
-import { createResource, createSignal, Show } from 'solid-js'
+import { createMemo, createResource, createSignal, Show } from 'solid-js'
 import { courseService } from '../api/services/course-service.js'
 import { lectureService } from '../api/services/lecture-service.js'
 import { topicService } from '../api/services/topic-service.js'
@@ -20,19 +20,38 @@ const TopicDetail = () => {
   const [generationTimeout, setGenerationTimeout] = createSignal(false)
 
   // Parse IDs from URL params
-  const courseId = Number.parseInt(params.courseId, 10)
-  const topicId = Number.parseInt(params.topicId, 10)
+  const courseId = createMemo(() => Number.parseInt(params.courseId, 10))
+  const topicId = createMemo(() => Number.parseInt(params.topicId, 10))
 
-  const isValidIds = !Number.isNaN(courseId) && !Number.isNaN(topicId)
+  const isValidIds = createMemo(() => !Number.isNaN(courseId()) && !Number.isNaN(topicId()))
 
   // Fetch topic and course data
-  const [topic] = createResource(() => (isValidIds ? topicId : null), topicService.getTopic)
+  const [topic] = createResource(() => (isValidIds() ? topicId() : null), topicService.getTopic)
 
-  const [course] = createResource(() => (isValidIds ? courseId : null), courseService.getCourse)
+  const [course] = createResource(() => (isValidIds() ? courseId() : null), courseService.getCourse)
+
+  // Fetch topics for this course to enable prev/next navigation
+  const [topicsList] = createResource(
+    () => (isValidIds() ? courseId() : null),
+    (cid) => topicService.listTopicsByCourse(cid, 1, 100)
+  )
+
+  const compareTopics = (
+    a: { week: number; order: number; id: number },
+    b: {
+      week: number
+      order: number
+      id: number
+    }
+  ) => {
+    if (a.week !== b.week) return a.week - b.week
+    if (a.order !== b.order) return a.order - b.order
+    return a.id - b.id
+  }
 
   // Fetch lecture for this topic
   const [lecture, { refetch: refetchLecture }] = createResource(
-    () => (isValidIds ? { courseId, topicId } : null),
+    () => (isValidIds() ? { courseId: courseId(), topicId: topicId() } : null),
     async ({ courseId, topicId }) => {
       try {
         const response = await lectureService.listLectures({
@@ -50,13 +69,13 @@ const TopicDetail = () => {
   )
 
   const handleSubmitUpdate = async (formData: TopicUpdate) => {
-    if (!isValidIds) return
+    if (!isValidIds()) return
 
     setIsSubmitting(true)
     setError('')
 
     try {
-      await topicService.updateTopic(topicId, formData)
+      await topicService.updateTopic(topicId(), formData)
       setIsEditing(false)
     } catch (error) {
       setError(error instanceof Error ? error.message : 'Failed to update topic')
@@ -81,7 +100,7 @@ const TopicDetail = () => {
   }
 
   const handleGenerateLecture = async () => {
-    if (!isValidIds) return
+    if (!isValidIds()) return
 
     setIsGeneratingLecture(true)
     setLectureError('')
@@ -131,7 +150,7 @@ const TopicDetail = () => {
                   {/* Breadcrumb navigation */}
                   <div class="mb-6">
                     <A
-                      href={`/courses/${String(courseId)}`}
+                      href={`/courses/${String(courseId())}`}
                       class="text-mystic-500 hover:text-mystic-300"
                     >
                       ← Back to Course
@@ -149,6 +168,47 @@ const TopicDetail = () => {
                     )}
                   </Show>
 
+                  {/* Prev/Next Topic navigation */}
+                  <Show when={topicsList() && topic()}>
+                    {(() => {
+                      const items = topicsList()!.items.slice().sort(compareTopics)
+                      const currentIndex = items.findIndex((t) => t.id === topic()!.id)
+                      const prev = currentIndex > 0 ? items[currentIndex - 1] : null
+                      const next =
+                        currentIndex >= 0 && currentIndex < items.length - 1
+                          ? items[currentIndex + 1]
+                          : null
+                      return (
+                        <div class="mb-4 flex items-center justify-between gap-3">
+                          <div>
+                            <Show when={prev}>
+                              {(p) => (
+                                <A
+                                  href={`/courses/${String(courseId())}/topics/${String(p().id)}`}
+                                  class="text-mystic-500 hover:text-mystic-300"
+                                >
+                                  ← Previous Topic
+                                </A>
+                              )}
+                            </Show>
+                          </div>
+                          <div>
+                            <Show when={next}>
+                              {(n) => (
+                                <A
+                                  href={`/courses/${String(courseId())}/topics/${String(n().id)}`}
+                                  class="text-mystic-500 hover:text-mystic-300"
+                                >
+                                  Next Topic →
+                                </A>
+                              )}
+                            </Show>
+                          </div>
+                        </div>
+                      )
+                    })()}
+                  </Show>
+
                   {/* Error Display */}
                   <Show when={error()}>
                     <Alert variant="danger" class="mb-4">
@@ -160,7 +220,7 @@ const TopicDetail = () => {
                     when={!isEditing()}
                     fallback={
                       <TopicForm
-                        courseId={courseId}
+                        courseId={courseId()}
                         existingTopic={topicData}
                         onSubmit={handleSubmitUpdate}
                         onCancel={handleCancelEdit}
@@ -211,8 +271,8 @@ const TopicDetail = () => {
                       <div class="lg:col-span-1 mt-6 lg:mt-0">
                         <LectureSection
                           lecture={lecture}
-                          courseId={courseId}
-                          topicId={topicId}
+                          courseId={courseId()}
+                          topicId={topicId()}
                           lectureError={lectureError()}
                           isGeneratingLecture={isGeneratingLecture()}
                           generationTimeout={generationTimeout()}

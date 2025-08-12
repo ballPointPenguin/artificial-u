@@ -312,7 +312,7 @@ class StorageService:
         Returns:
             Object key for S3/MinIO
         """
-        return f"{course_code}/week{week_number}/lecture{lecture_order}.{extension}"
+        return f"{course_code}/{course_code}_{week_number}_{lecture_order}.{extension}"
 
     def generate_lecture_key(
         self,
@@ -333,4 +333,4 @@ class StorageService:
         Returns:
             Object key for S3/MinIO
         """
-        return f"{course_code}/week{week_number}/lecture{lecture_order}.{extension}"
+        return f"{course_code}/{course_code}_{week_number}_{lecture_order}.{extension}"

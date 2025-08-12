@@ -64,12 +64,27 @@ export const LectureSection: Component<LectureSectionProps> = (props) => {
   return (
     <div class="arcane-card">
       <div class="flex justify-between items-center mb-4">
-        <h3 class="text-xl font-display text-parchment-100">Lecture</h3>
+        <h3 class="text-xl font-display text-parchment-100 pr-4">Lecture</h3>
         <Show when={props.lecture()}>
           {(lectureData) => (
-            <div class="flex space-x-2">
+            <div class="flex flex-wrap gap-2 items-center">
+              {/* Audio actions: listen if available */}
+              <Show when={lectureData().audio_url}>
+                <a
+                  href={lectureData().audio_url || undefined}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="inline-block"
+                >
+                  <Button variant="outline" size="sm" class="h-8">
+                    Listen
+                  </Button>
+                </a>
+              </Show>
               <MagicButton
                 variant="primary"
+                size="sm"
+                class="h-8"
                 onClick={() => void handleGenerateAudio()}
                 disabled={isGeneratingAudio()}
               >
@@ -83,13 +98,14 @@ export const LectureSection: Component<LectureSectionProps> = (props) => {
                 href={`/courses/${String(props.courseId)}/lectures/${String(lectureData().id)}`}
                 class="inline-block"
               >
-                <Button variant="primary" size="sm">
+                <Button variant="primary" size="sm" class="h-8">
                   View
                 </Button>
               </A>
               <Button
                 variant="danger"
                 size="sm"
+                class="h-8"
                 onClick={() => setShowDeleteModal(true)}
                 disabled={isDeleting()}
               >
