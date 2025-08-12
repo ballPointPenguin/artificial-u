@@ -110,8 +110,8 @@ const TopicDetail = () => {
       const newLecture = await lectureService.generateLecture(
         {
           partial_attributes: {
-            course_id: courseId,
-            topic_id: topicId,
+            course_id: courseId(),
+            topic_id: topicId(),
           },
         },
         () => {
@@ -121,7 +121,7 @@ const TopicDetail = () => {
       )
 
       // Navigate to the generated lecture
-      window.location.href = `/courses/${String(courseId)}/lectures/${String(newLecture.id)}`
+      window.location.href = `/courses/${String(courseId())}/lectures/${String(newLecture.id)}`
     } catch (error) {
       setLectureError(error instanceof Error ? error.message : 'Failed to generate lecture')
     } finally {
@@ -131,7 +131,7 @@ const TopicDetail = () => {
 
   return (
     <div class="container mx-auto px-4 py-8">
-      <Show when={isValidIds} fallback={<div class="text-parchment-100">Invalid Topic ID.</div>}>
+      <Show when={isValidIds()} fallback={<div class="text-parchment-100">Invalid Topic ID.</div>}>
         <Show
           when={!topic.loading}
           fallback={<div class="text-center py-8 text-parchment-300">Loading topic...</div>}

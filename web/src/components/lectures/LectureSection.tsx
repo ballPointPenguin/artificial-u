@@ -147,6 +147,11 @@ export const LectureSection: Component<LectureSectionProps> = (props) => {
             <div>
               <h4 class="text-lg font-medium text-parchment-200">{lectureData().title}</h4>
               <p class="text-sm text-parchment-400">Revision {lectureData().revision}</p>
+              <Show when={lectureData().summary}>
+                <p class="mt-3 text-parchment-200 font-serif whitespace-pre-wrap">
+                  {lectureData().summary}
+                </p>
+              </Show>
             </div>
           </div>
         )}

@@ -381,26 +381,24 @@ class ContentService:
         if prefill:
             self.logger.warning("Prefill parameter provided but not supported for OpenAI models")
         try:
-            messages = []
-            if system_prompt:
-                messages.append({"role": "system", "content": system_prompt})
-            messages.append({"role": "user", "content": prompt})
-
             # Determine which parameters to use based on the model
+            newer_model_prefixes = ("gpt-5", "o1-", "o3-", "gpt-4o-2024-08-06")
+            is_newer_model = any(model.startswith(prefix) for prefix in newer_model_prefixes)
+
+            # Build chat messages, mapping system prompt to 'developer' for newer models
+            system_role = "developer" if is_newer_model else "system"
+            messages = self._build_openai_messages(system_prompt, prompt, system_role=system_role)
+
             # Build base parameters
             completion_params = {
                 "model": model,
                 "messages": messages,
             }
 
-            # Check if this is a newer model that requires special handling
-            # Models that require max_completion_tokens: gpt-5-*, o1-*, o3-*
-            # Note: gpt-5-nano also doesn't support custom temperature values
-            newer_model_prefixes = ("gpt-5", "o1-", "o3-", "gpt-4o-2024-08-06")
-            is_newer_model = any(model.startswith(prefix) for prefix in newer_model_prefixes)
-
             # Handle token limits
             if is_newer_model:
+                completion_params["response_format"] = {"type": "text"}
+                # For GPT-5/o1/o3 via Chat Completions, use max_completion_tokens
                 completion_params["max_completion_tokens"] = (
                     max_tokens if max_tokens is not None else DEFAULT_MAX_TOKENS
                 )
@@ -421,7 +419,7 @@ class ContentService:
                 )
 
             response = await openai_client.chat.completions.create(**completion_params)
-            response_text = response.choices[0].message.content
+            response_text = self._extract_openai_text(response)
         except openai.BadRequestError as e:
             # Log the specific error details for bad requests
             self.logger.error(f"OpenAI BadRequestError for model {model}: {str(e)}")
@@ -445,6 +443,39 @@ class ContentService:
         )
 
         return response_text
+
+    def _build_openai_messages(
+        self, system_prompt: str | None, prompt: str, *, system_role: str = "system"
+    ) -> list:
+        messages: list = []
+        if system_prompt:
+            messages.append({"role": system_role, "content": system_prompt})
+        messages.append({"role": "user", "content": prompt})
+        return messages
+
+    def _extract_openai_text(self, response) -> str:
+        """Extract assistant text from OpenAI ChatCompletion response robustly."""
+        try:
+            return response.choices[0].message.content or ""
+        except Exception:
+            pass
+        try:
+            msg = response.choices[0].message
+            content = getattr(msg, "content", None)
+            if isinstance(content, list):
+                parts = []
+                for part in content:
+                    text_val = None
+                    if isinstance(part, dict):
+                        text_val = part.get("text") or part.get("output_text")
+                    else:
+                        text_val = getattr(part, "text", None)
+                    if text_val:
+                        parts.append(text_val)
+                return "\n".join(parts)
+        except Exception:
+            pass
+        return ""
 
     async def _generate_gemini(
         self, prompt, model, system_prompt, temperature, max_tokens, prefill, **kwargs

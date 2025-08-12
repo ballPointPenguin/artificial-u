@@ -5,16 +5,14 @@ Command-Line Interface for ArtificialU.
 A simplified CLI providing access to core system functionality.
 """
 
-import asyncio
 import os
-import traceback
 
 import click
 from dotenv import load_dotenv
 from rich.console import Console
 from rich.markdown import Markdown
 from rich.panel import Panel
-from rich.progress import BarColumn, Progress, SpinnerColumn, TextColumn, TimeElapsedColumn
+from rich.progress import Progress, SpinnerColumn, TextColumn
 from rich.prompt import Confirm
 from rich.table import Table
 
@@ -64,6 +62,95 @@ def cli():
 
 
 @cli.command()
+@click.option("--lecture-id", "lecture_id", type=int, required=True, help="Lecture ID")
+def summarize_lecture(lecture_id):
+    """Generate and store a summary for a lecture by ID."""
+    try:
+        system = get_system()
+        console.print(Panel(f"Generating summary for lecture ID: {lecture_id}"))
+        # Run summary generation
+        import asyncio
+
+        async def run():
+            await system.lecture_service.generate_lecture_summary(lecture_id)
+            updated = system.lecture_service.get_lecture(lecture_id)
+            return updated
+
+        updated_lecture = asyncio.run(run())
+        if updated_lecture.summary:
+            console.print("[green]Summary generated successfully.[/green]")
+            console.print(Panel(updated_lecture.summary, subtitle="<summary>"))
+        else:
+            console.print(
+                "[yellow]No summary generated (empty content or model returned nothing).[/yellow]"
+            )
+    except Exception as e:
+        console.print(f"[red]Error generating summary:[/red] {str(e)}")
+
+
+def _should_summarize(lecture) -> bool:
+    """Return True if the lecture needs a summary and has content."""
+    has_summary = lecture.summary and str(lecture.summary).strip()
+    has_content = lecture.content and str(lecture.content).strip()
+    return (not has_summary) and bool(has_content)
+
+
+async def _generate_one_summary(system, lecture_id: int) -> None:
+    await system.lecture_service.generate_lecture_summary(lecture_id)
+
+
+def _collect_lectures_to_summarize(repo, limit: int) -> list[int]:
+    to_process: list[int] = []
+    page = 1
+    size = min(100, limit)
+    while len(to_process) < limit:
+        lectures = repo.list(page=page, size=size)
+        if not lectures:
+            break
+        for lec in lectures:
+            if len(to_process) >= limit:
+                break
+            if _should_summarize(lec):
+                to_process.append(lec.id)
+            elif not (lec.content and str(lec.content).strip()):
+                console.print(
+                    f"[yellow]Skipping lecture {lec.id}: no content to summarize[/yellow]"
+                )
+        if len(lectures) < size:
+            break
+        page += 1
+    return to_process
+
+
+async def _run_backfill(system, ids: list[int]) -> int:
+    processed_local = 0
+    for lid in ids:
+        console.print(f"Generating summary for lecture {lid}…")
+        await system.lecture_service.generate_lecture_summary(lid)
+        processed_local += 1
+    return processed_local
+
+
+@cli.command()
+@click.option("--limit", default=20, help="Max lectures to process (without summaries)")
+def backfill_summaries(limit):
+    """Backfill summaries for lectures that don't have one yet (best effort)."""
+    try:
+        system = get_system()
+        repo = system.repository_factory.lecture
+        console.print(Panel(f"Backfilling up to {limit} lecture summaries"))
+        to_process = _collect_lectures_to_summarize(repo, limit)
+        if not to_process:
+            console.print("[yellow]No lectures need summaries.[/yellow]")
+            return
+        import asyncio
+
+        processed = asyncio.run(_run_backfill(system, to_process))
+        console.print(f"[green]Backfill complete. Processed {processed} lecture(s).[/green]")
+    except Exception as e:
+        console.print(f"[red]Error during backfill:[/red] {str(e)}")
+
+
 @click.option("--department", "-d", required=True, help="Department name")
 @click.option("--title", "-t", required=True, help="Course title")
 @click.option("--code", "-c", required=True, help="Course code")
@@ -287,87 +374,6 @@ def list_lectures(course_code, limit, model):
 
     except Exception as e:
         console.print(f"[red]Error listing lectures:[/red] {str(e)}")
-
-
-@cli.command()
-@click.option("--course-code", "-c", required=True, help="Course code")
-@click.option("--week", "-w", required=True, type=int, help="Week number")
-@click.option("--number", "-n", default=1, type=int, help="Lecture number within the week")
-def play_lecture(course_code, week, number):
-    """Play audio for an existing lecture."""
-    try:
-        system = get_system()
-
-        # Check if lecture exists
-        lectures = system.get_lecture_preview(course_code=course_code)
-        lecture = next(
-            (
-                lecture_preview
-                for lecture_preview in lectures
-                if lecture_preview["course_code"] == course_code
-                and lecture_preview["week"] == week
-                and lecture_preview["number"] == number
-            ),
-            None,
-        )
-
-        if not lecture:
-            console.print(
-                f"[red]Error:[/red] Lecture not found for "
-                f"{course_code}, Week {week}, Number {number}"
-            )
-            return
-
-        if not lecture.get("audio_url"):
-            console.print("[yellow]No audio available for this lecture.[/yellow]")
-
-            # Ask if user wants to generate audio
-            if Confirm.ask("Generate audio now?"):
-                with Progress(
-                    SpinnerColumn(),
-                    TextColumn("[bold blue]{task.description}"),
-                    BarColumn(),
-                    TimeElapsedColumn(),
-                    console=console,
-                ) as progress:
-                    task = progress.add_task("Generating audio...", total=1)
-
-                    # Create the audio using asyncio
-                    loop = asyncio.get_event_loop()
-                    audio_url, _ = loop.run_until_complete(
-                        system.create_lecture_audio(
-                            course_code=course_code, week=week, number=number
-                        )
-                    )
-
-                    progress.update(task, advance=1)
-
-                console.print(f"[green]Audio created at URL:[/green] {audio_url}")
-
-                # Update the lecture info with the new audio url
-                lecture["audio_url"] = audio_url
-            else:
-                return
-
-        audio_url = lecture["audio_url"]
-        console.print(
-            Panel(
-                f"Playing audio for [bold]{lecture['title']}[/bold]",
-                subtitle=f"{course_code}, Week {week}, Lecture {number}",
-            )
-        )
-
-        # Play the audio using asyncio
-        try:
-            console.print("[green]Playing...[/green]")
-            loop = asyncio.get_event_loop()
-            loop.run_until_complete(system.play_audio(audio_url))
-        except Exception as e:
-            console.print(f"[red]Error playing audio:[/red] {str(e)}")
-
-    except Exception as e:
-        console.print(f"[red]Error:[/red] {str(e)}")
-        traceback.print_exc()
 
 
 @cli.command()

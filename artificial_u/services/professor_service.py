@@ -2,6 +2,7 @@
 Professor management service for ArtificialU.
 """
 
+import asyncio
 import logging
 import xml.etree.ElementTree as ET
 from typing import Any, Dict, List, Optional
@@ -76,6 +77,22 @@ class ProfessorService:
         try:
             saved_professor = self.repository_factory.professor.create(professor)
             self.logger.info(f"Professor created successfully with ID: {saved_professor.id}")
+            # Trigger image generation in background if no image yet (skip during tests)
+            if not get_settings().testing:
+                try:
+                    if not getattr(saved_professor, "image_url", None):
+                        self._schedule_professor_image_generation(saved_professor.id)
+                    else:
+                        self.logger.debug(
+                            "Skipping image generation on create: professor %s already has image",
+                            saved_professor.id,
+                        )
+                except Exception as bg_e:
+                    self.logger.error(
+                        "Failed to schedule image generation for professor %s: %s",
+                        saved_professor.id,
+                        bg_e,
+                    )
             return saved_professor
         except Exception as e:
             error_msg = f"Failed to save professor '{professor.name}': {str(e)}"
@@ -727,3 +744,34 @@ class ProfessorService:
 
         self.logger.debug(f"Parsed professor attributes from XML: {profile}")
         return profile
+
+    def _schedule_professor_image_generation(
+        self, professor_id: int, aspect_ratio: str = "1:1"
+    ) -> None:
+        """Schedule async image generation for the professor without blocking."""
+        try:
+            loop = asyncio.get_running_loop()
+            loop.create_task(self.generate_and_set_professor_image(professor_id, aspect_ratio))
+            self.logger.debug(
+                "Scheduled image generation task for professor %s on running loop",
+                professor_id,
+            )
+        except RuntimeError:
+            # No running loop; run in a background thread
+            import threading
+
+            def runner():
+                try:
+                    asyncio.run(self.generate_and_set_professor_image(professor_id, aspect_ratio))
+                except Exception as e:
+                    self.logger.error(
+                        "Background image generation failed for professor %s: %s",
+                        professor_id,
+                        e,
+                    )
+
+            threading.Thread(target=runner, daemon=True).start()
+            self.logger.debug(
+                "Started background thread to generate image for professor %s",
+                professor_id,
+            )

@@ -2,6 +2,7 @@
 Lecture management service for ArtificialU.
 """
 
+import asyncio
 import logging
 from typing import Any, Dict, List, Optional
 
@@ -18,6 +19,8 @@ from artificial_u.prompts import (
     get_lecture_prompt,
     get_system_prompt,
 )
+from artificial_u.prompts.summary import get_summary_prompt
+from artificial_u.prompts.system import SUMMARY_SYSTEM_PROMPT
 from artificial_u.utils import (
     ContentGenerationError,
     DatabaseError,
@@ -107,6 +110,24 @@ class LectureService:
             # Save to database using repository
             created_lecture = self.repository_factory.lecture.create(lecture)
             self.logger.info(f"Created lecture for topic {topic_id}, course {course_id}")
+
+            # Trigger summary generation in background if content present
+            if not get_settings().testing:
+                try:
+                    if created_lecture.content and str(created_lecture.content).strip():
+                        self._schedule_summary_generation(created_lecture.id)
+                    else:
+                        self.logger.debug(
+                            "Skipping summary generation on create: empty content for lecture %s",
+                            created_lecture.id,
+                        )
+                except Exception as bg_e:
+                    self.logger.error(
+                        "Failed to schedule summary generation for lecture %s: %s",
+                        created_lecture.id,
+                        bg_e,
+                    )
+
             return created_lecture
         except Exception as e:
             error_msg = f"Failed to create lecture: {str(e)}"
@@ -223,6 +244,7 @@ class LectureService:
         """
         # Get existing lecture
         lecture = self.get_lecture(lecture_id)
+        previous_content = lecture.content
 
         # Update fields
         for key, value in update_data.items():
@@ -235,6 +257,29 @@ class LectureService:
             # Save changes
             updated_lecture = self.repository_factory.lecture.update(lecture)
             self.logger.info(f"Updated lecture {lecture_id}")
+
+            # Trigger summary generation in background if content changed and is non-empty
+            if not get_settings().testing:
+                try:
+                    content_changed = (previous_content or "") != (updated_lecture.content or "")
+                    has_content = updated_lecture.content and str(updated_lecture.content).strip()
+                    if content_changed and has_content:
+                        self._schedule_summary_generation(updated_lecture.id)
+                    else:
+                        self.logger.debug(
+                            "Skipping summary generation on update for lecture %s "
+                            "(changed=%s, empty=%s)",
+                            updated_lecture.id,
+                            content_changed,
+                            not has_content,
+                        )
+                except Exception as bg_e:
+                    self.logger.error(
+                        "Failed to schedule summary generation after update for lecture %s: %s",
+                        updated_lecture.id,
+                        bg_e,
+                    )
+
             return updated_lecture
         except Exception as e:
             error_msg = f"Failed to update lecture: {str(e)}"
@@ -592,6 +637,88 @@ class LectureService:
         except Exception as e:
             self.logger.error(f"Unexpected error during lecture generation: {e}", exc_info=True)
             raise ContentGenerationError(f"An unexpected error occurred: {e}")
+
+    async def generate_lecture_summary(self, lecture_id: int) -> Dict[str, Any]:
+        """Generate and store a concise summary for a lecture.
+
+        Args:
+            lecture_id: The ID of the lecture to summarize
+
+        Returns:
+            Dict[str, Any]: A dictionary containing the lecture ID and generated summary
+
+        Raises:
+            ContentGenerationError: If summary generation fails or content is missing
+            LectureNotFoundError: If the lecture cannot be found
+        """
+        # Fetch lecture and validate content exists
+        lecture = self.get_lecture(lecture_id)
+        if not lecture:
+            raise LectureNotFoundError(f"Lecture with ID {lecture_id} not found")
+        if not lecture.content or not str(lecture.content).strip():
+            self.logger.warning(
+                "Skipping summary generation: lecture %s has no content",
+                lecture_id,
+            )
+            return {"lecture_id": lecture_id, "summary": None}
+
+        # Build prompt and system instruction
+        prompt = get_summary_prompt(lecture_content=lecture.content)
+        system_prompt = SUMMARY_SYSTEM_PROMPT
+
+        # Generate summary via content service
+        self.logger.info("Calling content service to generate lecture summary...")
+        raw_response = await self.content_service.generate_text(
+            model=get_settings().LECTURE_SUMMARY_MODEL,
+            prompt=prompt,
+            system_prompt=system_prompt,
+        )
+        self.logger.info("Received summary response from content service.")
+
+        # Extract the inner content from <summary> tag
+        summary_text = extract_xml_between_tags(raw_response, "summary")
+        if not summary_text:
+            error_msg = (
+                "Could not extract <summary> tag from response:\n" f"{raw_response[:300]}..."
+            )
+            self.logger.error(error_msg)
+            raise ContentGenerationError(error_msg)
+
+        # Update lecture with generated summary
+        lecture.summary = summary_text
+        updated = self.repository_factory.lecture.update(lecture)
+        self.logger.info("Generated summary for lecture %s", lecture_id)
+
+        return {"lecture_id": updated.id, "summary": updated.summary}
+
+    def _schedule_summary_generation(self, lecture_id: int) -> None:
+        """Schedule the async summary generation without blocking the caller."""
+        try:
+            loop = asyncio.get_running_loop()
+            loop.create_task(self.generate_lecture_summary(lecture_id))
+            self.logger.debug(
+                "Scheduled summary generation task for lecture %s on running loop",
+                lecture_id,
+            )
+        except RuntimeError:
+            # No running loop; run in a background thread with its own loop
+            import threading
+
+            def runner():
+                try:
+                    asyncio.run(self.generate_lecture_summary(lecture_id))
+                except Exception as e:
+                    self.logger.error(
+                        "Background summary generation failed for lecture %s: %s",
+                        lecture_id,
+                        e,
+                    )
+
+            threading.Thread(target=runner, daemon=True).start()
+            self.logger.debug(
+                "Started background thread to generate summary for lecture %s",
+                lecture_id,
+            )
 
     # ===== Audio Generation (helpers) ===== #
 

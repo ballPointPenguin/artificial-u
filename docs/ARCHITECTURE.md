@@ -54,14 +54,6 @@ The `TTSService` orchestrates the text-to-speech process by:
 - Managing audio file storage and organization
 - Providing playback capabilities
 
-#### AudioService
-
-The `AudioService` provides high-level audio functionality to the application:
-
-- Creates audio for lectures based on repository data
-- Handles storage and playback of audio files
-- Provides voice listing and selection capabilities
-
 #### VoiceService
 
 The `VoiceService` integrates voices from ElevenLabs and the database:
@@ -124,8 +116,7 @@ The core domain model consists of these primary entities:
 4. VoiceService updates the professor with the voice ID
 5. SpeechProcessor prepares the text for optimal speech conversion
 6. TTSService converts text to speech using ElevenLabsClient
-7. AudioService stores the audio file and updates the lecture record
-8. Repository updates the lecture with the audio URL
+7. Repository updates the lecture with the audio URL
 
 ## Future Architecture Enhancements
 

@@ -20,7 +20,6 @@
   - `GET /v1/lectures/{id}/audio` returns a 307 JSON redirect to storage URL
 - Services
   - `artificial_u/services/tts_service.py`: Orchestrates TTS using ElevenLabs client, chunking, enhancement
-  - `artificial_u/services/audio_service.py`: Generates and stores audio keyed by `(course_code, week, number)`; updates `lecture.audio_url`
   - `artificial_u/services/voice_service.py`: Voice selection and DB sync with ElevenLabs
   - `artificial_u/services/storage_service.py`: Uploads to MinIO/S3; constructs public URLs
   - `artificial_u/services/lecture_service.py`: Core lecture service implements `generate_lecture_audio(lecture_id)` with helpers for entity fetching, voice resolution, TTS, and storage upload
@@ -71,11 +70,11 @@
      - Ensure/resolve `el_voice_id` (select voice if missing)
      - Call `TTSService.generate_lecture_audio`
      - Compute storage key from `(course.code, topic.week, topic.order)`; upload; update `lecture.audio_url`
-   - Implemented directly in `LectureService` with small helpers; no reuse of legacy `AudioService` path
+   - Implemented directly in `LectureService` with small helpers
 
 2. Storage key convention (COMPLETED)
    - Use `StorageService.generate_audio_key(course_code: str, week_number: int, lecture_order: int)`
-   - Uses `course.code` for the path segment (matches `AudioService` usage)
+   - Uses `course.code` for the path segment
 
 3. Voice resolution (COMPLETED)
    - If `professor.voice_id` exists, map to ElevenLabs `el_voice_id` via `VoiceRepository.get`

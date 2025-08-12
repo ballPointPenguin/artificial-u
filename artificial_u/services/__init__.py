@@ -7,7 +7,6 @@ service connections. Services should be instantiated through the dependency
 injection system rather than using global state.
 """
 
-from artificial_u.services.audio_service import AudioService
 from artificial_u.services.content_service import ContentService
 from artificial_u.services.course_service import CourseService
 from artificial_u.services.department_service import DepartmentService
@@ -32,6 +31,5 @@ __all__ = [
     "ProfessorService",
     "TopicService",
     # Infrastructure services
-    "AudioService",
     "StorageService",
 ]

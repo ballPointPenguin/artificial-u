@@ -17,27 +17,6 @@ DEPARTMENT_XML_STRUCTURE = """
 </output>
 """
 
-# Example of a filled department
-EXAMPLE_DEPARTMENT_1 = """
-<department>
-  <name>Mathematics</name>
-  <code>MTH</code>
-  <faculty>Science and Technology</faculty>
-  <description>The Department of Mathematics is responsible for teaching and research in
-mathematics and its applications.</description>
-</department>
-"""
-
-EXAMPLE_DEPARTMENT_2 = """
-<department>
-  <name>History</name>
-  <code>HIS</code>
-  <faculty>Arts and Humanities</faculty>
-  <description>The Department of History focuses on the study and research of past events
-and societies.</description>
-</department>
-"""
-
 # Unified department prompt that handles both structured and freeform inputs
 DEPARTMENT_PROMPT = PromptTemplate(
     template=f"""

@@ -6,16 +6,24 @@
 - [x] Ensure lecture revision handling
 - [x] Generate lecture audio
 - [x] Preview and modify professor voices
-- [ ] Generate lecture summary
-- [ ] Generate prof image automatically
+- [x] Generate lecture summary
+- [x] Generate prof image automatically
+- [ ] Manage multiple async generations
+- [ ] General Async Job management
+- [ ] Auth0 integration
+- [ ] User roles
+- [ ] Invite codes
+- [ ] Fake tuition system for limiting user generation requests
+- [ ] Monitoring and analytics
 - [ ] Generate single topic
 - [ ] Integrate freeform prompts for everything
-- [ ] Manage multiple async generations
 - [ ] Enable structured imports of syllabi
 - [ ] Enable import/export of everything
 - [ ] Content checking for user input (toxicity, stupidity, typos)
 - [ ] Spell checking for user input
 - [ ] Normalize user input
+- [ ] Better contrast in all themes
+- [ ] Wabi-Sabi theme to be more wabi-sabi-esque
 - [ ] Advanced ElevenLabs voice controls
 - [ ] Enable Suggested Professors
 - [ ] Enable Suggested Departments
@@ -24,8 +32,8 @@
 - [ ] Enable multi-department professors
 - [ ] Enable multi-professor courses
 - [ ] Enable one-click course generation (w/ professor, topics, department)
-- [ ] Enable image-generation when professor is created
 - [ ] Update stylebook
+- [ ] Update CLI
 - [ ] Frontend tests
 - [ ] End-to-end tests
 - [ ] Production-ready deployment

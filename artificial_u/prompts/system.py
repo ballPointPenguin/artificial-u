@@ -43,6 +43,11 @@ TOPICS_SYSTEM_PROMPT = (
     "Do not include any explanations, notes, or text outside the XML block."
 )
 
+SUMMARY_SYSTEM_PROMPT = (
+    "Begin with a concise checklist (3-7 bullets) of what you will do; keep "
+    "items conceptual, not implementation-level. "
+)
+
 # Dictionary to easily access system prompts by type
 SYSTEM_PROMPTS: Dict[str, str] = {
     "generic": GENERIC_XML_SYSTEM_PROMPT,
@@ -51,6 +56,7 @@ SYSTEM_PROMPTS: Dict[str, str] = {
     "lecture": LECTURE_SYSTEM_PROMPT,
     "professor": PROFESSOR_SYSTEM_PROMPT,
     "topics": TOPICS_SYSTEM_PROMPT,
+    "summary": SUMMARY_SYSTEM_PROMPT,
 }
 
 

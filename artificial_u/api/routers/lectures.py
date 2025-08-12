@@ -287,6 +287,33 @@ async def generate_lecture_audio(
 
 
 @router.post(
+    "/{lecture_id}/generate-summary",
+    response_model=Lecture,
+    status_code=status.HTTP_200_OK,
+    summary="Generate lecture summary",
+    description=(
+        "Triggers generation of a concise summary for the specified lecture and returns "
+        "the updated lecture."
+    ),
+    responses={
+        404: {"description": "Lecture not found"},
+        500: {"description": "Summary generation failed"},
+    },
+)
+async def generate_lecture_summary(
+    lecture_id: int = Path(..., description="The ID of the lecture to generate a summary for"),
+    lecture_service: LectureApiService = Depends(get_lecture_api_service),
+):
+    """
+    Generate a summary for a specific lecture.
+
+    - **lecture_id**: The unique identifier of the lecture
+    - Triggers the summary generation process and returns the updated lecture
+    """
+    return await lecture_service.generate_lecture_summary(lecture_id)
+
+
+@router.post(
     "/generate",
     response_model=Lecture,
     status_code=status.HTTP_200_OK,

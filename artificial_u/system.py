@@ -11,7 +11,6 @@ from artificial_u.integrations import elevenlabs
 from artificial_u.models.core import Course, Department, Lecture, Professor
 from artificial_u.models.repositories import RepositoryFactory
 from artificial_u.services import (
-    AudioService,
     ContentService,
     CourseService,
     ImageService,
@@ -227,17 +226,7 @@ class UniversitySystem:
             content_service=self.content_service,
             professor_service=self.professor_service,
             course_service=self.course_service,
-            storage_service=self.storage_service,
             logger=logging.getLogger("artificial_u.services.lecture_service"),
-        )
-
-        # Initialize AudioService
-        self.audio_service = AudioService(
-            repository_factory=self.repository_factory,
-            api_key=self.settings.ELEVENLABS_API_KEY,
-            tts_service=self.tts_service,
-            storage_service=self.storage_service,
-            logger=logging.getLogger("artificial_u.services.audio_service"),
         )
 
     # === Professor Methods ===
@@ -279,16 +268,6 @@ class UniversitySystem:
     def get_lecture_preview(self, **kwargs) -> List[Dict[str, Any]]:
         """Get a preview of lectures with relevant metadata."""
         return self.lecture_service.get_lecture_preview(**kwargs)
-
-    # === Audio Methods ===
-
-    async def create_lecture_audio(self, **kwargs) -> Tuple[str, Lecture]:
-        """Create audio for a lecture."""
-        return await self.audio_service.create_lecture_audio(**kwargs)
-
-    async def play_audio(self, audio_data_or_path):
-        """Play audio from data or file path."""
-        await self.audio_service.play_audio(audio_data_or_path)
 
     # === Voice Methods ===
 

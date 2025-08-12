@@ -341,6 +341,32 @@ class LectureApiService(BaseApiService[CoreLecture, Lecture, LectureListResponse
         except Exception as e:
             self._handle_general_error("generate lecture audio", e)
 
+    async def generate_lecture_summary(self, lecture_id: int) -> Lecture:
+        """Trigger summary generation for a lecture, then return the updated lecture."""
+        try:
+            # Ensure the lecture exists first
+            self.core_service.get_lecture(lecture_id)
+
+            # Delegate to core service for summary generation
+            await self.core_service.generate_lecture_summary(lecture_id)
+
+            # Fetch and return updated lecture
+            updated_core = self.core_service.get_lecture(lecture_id)
+            return Lecture.model_validate(updated_core)
+        except LectureNotFoundError:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Lecture with ID {lecture_id} not found",
+            )
+        except (ContentGenerationError, DatabaseError, ValueError) as e:
+            self.logger.error(f"Summary generation failed for lecture {lecture_id}: {e}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Failed to generate summary for lecture {lecture_id}: {e}",
+            )
+        except Exception as e:
+            self._handle_general_error("generate lecture summary", e)
+
     async def _upload_transcript_and_get_url(
         self,
         course_id: int,
