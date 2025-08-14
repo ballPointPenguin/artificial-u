@@ -135,3 +135,25 @@ class VoiceModel(Base):
         # We'll create the text search index manually after migrations
         # to avoid Alembic issues with REGCONFIG type
     )
+
+
+class JobModel(Base):
+    __tablename__ = "jobs"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    kind = Column(String, nullable=False)
+    payload = Column(JSONB, nullable=False)
+    status = Column(String, nullable=False, default="queued")
+    priority = Column(Integer, nullable=False, default=0)
+    run_after = Column(DateTime, nullable=False, default=datetime.now)
+    attempts = Column(Integer, nullable=False, default=0)
+    max_attempts = Column(Integer, nullable=False, default=5)
+    last_error = Column(Text, nullable=True)
+    result = Column(JSONB, nullable=True)
+    created_at = Column(DateTime, nullable=False, default=datetime.now)
+    updated_at = Column(DateTime, nullable=False, default=datetime.now)
+
+    __table_args__ = (
+        Index("idx_jobs_status_priority_runafter", "status", "priority", "run_after"),
+        Index("idx_jobs_status_updatedat", "status", "updated_at"),
+    )

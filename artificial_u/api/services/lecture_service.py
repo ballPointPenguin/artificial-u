@@ -60,14 +60,31 @@ class LectureApiService(BaseApiService[CoreLecture, Lecture, LectureListResponse
         super().__init__(logger)
         self.repository_factory = repository_factory  # Keep repository factory
 
-        # Initialize core service with dependencies it requires
+        # Initialize core service (CRUD only) and generator service
         self.core_service = CoreLectureService(
             repository_factory=repository_factory,
-            professor_service=professor_service,
-            course_service=course_service,
+            logger=self.logger,
+        )
+
+        # Initialize generator service for AI generation workflows
+        from artificial_u.services.job_enqueue_service import JobEnqueueService
+        from artificial_u.services.lecture_generator_service import LectureGeneratorService
+
+        # Create job enqueue service for background processing
+        job_enqueue_service = JobEnqueueService(
+            repository_factory=repository_factory,
+            logger=self.logger,
+        )
+
+        self.generator_service = LectureGeneratorService(
+            lecture_service=self.core_service,
             content_service=content_service,
+            course_service=course_service,
+            professor_service=professor_service,
+            repository_factory=repository_factory,
             topic_service=topic_service,
-            # storage_service is not passed to core service currently
+            job_enqueue_service=job_enqueue_service,
+            storage_service=storage_service,
             logger=self.logger,
         )
         # Keep references if needed, though core service should handle most logic
@@ -321,8 +338,8 @@ class LectureApiService(BaseApiService[CoreLecture, Lecture, LectureListResponse
             # Ensure the lecture exists first
             self.core_service.get_lecture(lecture_id)
 
-            # Delegate to core service for audio generation
-            await self.core_service.generate_lecture_audio(lecture_id)
+            # Delegate to generator service for audio generation
+            await self.generator_service.generate_lecture_audio(lecture_id)
 
             # Fetch and return updated lecture
             updated_core = self.core_service.get_lecture(lecture_id)
@@ -347,8 +364,8 @@ class LectureApiService(BaseApiService[CoreLecture, Lecture, LectureListResponse
             # Ensure the lecture exists first
             self.core_service.get_lecture(lecture_id)
 
-            # Delegate to core service for summary generation
-            await self.core_service.generate_lecture_summary(lecture_id)
+            # Delegate to generator service for summary generation
+            await self.generator_service.generate_lecture_summary(lecture_id)
 
             # Fetch and return updated lecture
             updated_core = self.core_service.get_lecture(lecture_id)
@@ -366,51 +383,6 @@ class LectureApiService(BaseApiService[CoreLecture, Lecture, LectureListResponse
             )
         except Exception as e:
             self._handle_general_error("generate lecture summary", e)
-
-    async def _upload_transcript_and_get_url(
-        self,
-        course_id: int,
-        topic_id: int,
-        content_text: str,
-    ) -> Optional[str]:
-        """Upload generated lecture text to storage and return its URL.
-
-        The text is normalized for TTS compatibility before being uploaded as a transcript.
-        This ensures that users can submit the transcript to external TTS services
-        and get good results.
-        """
-        try:
-            if not content_text:
-                return None
-
-            # Normalize text for TTS compatibility before uploading as transcript
-            from artificial_u.audio.speech_processor import SpeechProcessor
-
-            speech_processor = SpeechProcessor(logger=self.logger)
-            normalized_text = speech_processor.normalize_text(content_text)
-            course = self.course_service.get_course(course_id)
-            topic = self.topic_service.get_topic(topic_id)
-
-            course_code = str(getattr(course, "code", None) or getattr(course, "id"))
-            week_number = int(getattr(topic, "week", 1))
-            lecture_order = int(getattr(topic, "order", 1))
-
-            object_key = self.storage_service.generate_lecture_key(
-                course_code=course_code,
-                week_number=week_number,
-                lecture_order=lecture_order,
-                extension="txt",
-            )
-
-            success, url = await self.storage_service.upload_lecture_file(
-                file_data=normalized_text.encode("utf-8"),
-                object_name=object_key,
-                content_type="text/plain",
-            )
-            return url if success else None
-        except Exception as e:
-            self.logger.error("Transcript upload failed: %s", e, exc_info=True)
-            return None
 
     async def generate_lecture(self, generation_data: LectureGenerate) -> Lecture:
         """
@@ -436,69 +408,14 @@ class LectureApiService(BaseApiService[CoreLecture, Lecture, LectureListResponse
         )
         try:
             # Prepare attributes for the core service
-            partial_attrs = generation_data.partial_attributes or {}  # Start with partial attrs
-            if generation_data.freeform_prompt:  # Add prompt if provided
+            partial_attrs = generation_data.partial_attributes or {}
+            if generation_data.freeform_prompt:
                 partial_attrs["freeform_prompt"] = generation_data.freeform_prompt
 
-            # Call the core service to generate the lecture content dictionary
-            # The core service generate_lecture returns a dict
-            generated_dict = await self.core_service.generate_lecture(
+            # Use the generator service's method that handles complete processing
+            core_lecture = await self.generator_service.generate_and_save_lecture(
                 partial_attributes=partial_attrs
             )
-
-            # Convert the dictionary to the API response model
-            # The core LectureService.generate_lecture returns a dict like:
-            # {"course_id": ..., "topic_id": ..., "content": ..., "summary": ..., "title": ...}
-            # This dict is used to populate api_lecture_data for validation.
-
-            # Revision should come from generated_dict if available.
-            # Content, summary, and title must be in generated_dict.
-            # course_id and topic_id are in partial_attributes and should be in generated_dict.
-
-            # Create a core Lecture object with the generated data
-            # Provide default revision if not present (similar to repository logic)
-            revision = generated_dict.get("revision")
-            if revision is None:
-                # Calculate next revision for the topic (similar to repository.create logic)
-                try:
-                    # Get the maximum revision for this specific topic
-                    topic_lectures = self.repository_factory.lecture.list_by_topic(
-                        generated_dict.get("topic_id")
-                    )
-                    max_revision = (
-                        max([lecture.revision for lecture in topic_lectures])
-                        if topic_lectures
-                        else 0
-                    )
-                    revision = max_revision + 1
-                except Exception:
-                    # Fallback to 1 if we can't calculate
-                    revision = 1
-
-            # Create the lecture using the core service
-            core_lecture = self.core_service.create_lecture(
-                course_id=generated_dict.get("course_id"),
-                topic_id=generated_dict.get("topic_id"),
-                title=generated_dict.get("title"),
-                content=generated_dict.get("content"),
-                summary=generated_dict.get("summary"),
-                audio_url=generated_dict.get("audio_url"),
-                transcript_url=generated_dict.get("transcript_url"),
-                revision=revision,
-            )
-
-            # Upload generated lecture content as plain text and set transcript_url
-            content_text = generated_dict.get("content")
-            upload_url = await self._upload_transcript_and_get_url(
-                course_id=generated_dict.get("course_id"),
-                topic_id=generated_dict.get("topic_id"),
-                content_text=content_text,
-            )
-            if upload_url:
-                core_lecture = self.core_service.update_lecture(
-                    lecture_id=core_lecture.id,
-                    update_data={"transcript_url": upload_url},
-                )
 
             # Convert to API model and return
             response = Lecture.model_validate(core_lecture)

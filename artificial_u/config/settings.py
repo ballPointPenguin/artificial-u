@@ -129,6 +129,12 @@ class Settings(BaseSettings):
     # Example values: "eleven_flash_v2_5", "eleven_multilingual_v2"
     TTS_VOICE_MODEL: str = "eleven_flash_v2_5"
 
+    # Async worker and rate limiting
+    WORKER_POLL_IDLE_SEC: float = 0.75
+    WORKER_VISIBILITY_TIMEOUT_SEC: int = 600
+    WORKER_MAX_CONCURRENCY: int = 2
+    OUTBOUND_RPS: int = 1
+
     # Configure Pydantic to use .env files
     model_config = SettingsConfigDict(
         env_file=".env",

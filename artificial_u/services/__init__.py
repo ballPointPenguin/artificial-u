@@ -11,6 +11,7 @@ from artificial_u.services.content_service import ContentService
 from artificial_u.services.course_service import CourseService
 from artificial_u.services.department_service import DepartmentService
 from artificial_u.services.image_service import ImageService
+from artificial_u.services.job_service import JobService
 from artificial_u.services.lecture_service import LectureService
 from artificial_u.services.professor_service import ProfessorService
 from artificial_u.services.storage_service import StorageService
@@ -22,6 +23,7 @@ __all__ = [
     # Content generation services
     "ContentService",
     "ImageService",
+    "JobService",
     "TTSService",
     "VoiceService",
     # Domain services

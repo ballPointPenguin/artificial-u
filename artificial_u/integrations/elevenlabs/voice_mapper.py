@@ -289,10 +289,10 @@ class VoiceMapper:
 
         # Prioritize premade voices highest
         if voice.get("category") == "premade":
-            quality_score += 0.4
+            quality_score += 0.45
         # Then high_quality and professional
         elif voice.get("category") == "high_quality":
-            quality_score += 0.3
+            quality_score += 0.35
         elif voice.get("category") == "professional":
             quality_score += 0.25
 

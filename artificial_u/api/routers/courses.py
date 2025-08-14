@@ -6,7 +6,7 @@ from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
 
-from artificial_u.api.dependencies import get_course_api_service
+from artificial_u.api.dependencies import get_course_api_service, get_repository_factory
 from artificial_u.api.models import (
     CourseCreate,
     CourseDepartmentBrief,
@@ -19,6 +19,7 @@ from artificial_u.api.models import (
     GeneratedCourseData,
 )
 from artificial_u.api.services import CourseApiService
+from artificial_u.models.repositories.factory import RepositoryFactory
 
 # Create the router
 router = APIRouter(
@@ -301,3 +302,38 @@ async def generate_course(
         The generated course data (not saved to the database), potentially partial.
     """
     return await course_service.generate_course(generation_data)
+
+
+@router.post(
+    "/generate/enqueue",
+    status_code=status.HTTP_202_ACCEPTED,
+    summary="Enqueue course generation job",
+    description=(
+        "Enqueue an async job to generate course data using AI. Returns a job id to poll via "
+        "GET /api/v1/jobs/{id}."
+    ),
+)
+async def enqueue_generate_course(
+    generation_data: CourseGenerate,
+    repository_factory: RepositoryFactory = Depends(get_repository_factory),
+):
+    """
+    Enqueue a job with kind 'generate_course'. The payload mirrors CourseGenerate.
+    """
+    payload = {
+        "partial_attributes": generation_data.partial_attributes or {},
+        "freeform_prompt": generation_data.freeform_prompt,
+    }
+    row = repository_factory.job.create(
+        kind="generate_course",
+        payload=payload,
+    )
+    return {
+        "id": row.id,
+        "kind": row.kind,
+        "status": row.status,
+        "attempts": row.attempts,
+        "max_attempts": row.max_attempts,
+        "priority": row.priority,
+        "run_after": row.run_after,
+    }

@@ -66,6 +66,15 @@ export const lectureService = {
     )
   },
 
+  /**
+   * Enqueue lecture audio generation job (async). Returns a job stub with id.
+   */
+  enqueueGenerateLectureAudio: (
+    lectureId: number
+  ): Promise<{ id: number; kind: string; status: string; attempts: number; max_attempts: number; priority?: number; run_after?: string }> => {
+    return httpClient.post(ENDPOINTS.lectures.enqueueGenerateAudio(lectureId), undefined)
+  },
+
   createLecture: (data: LectureCreate): Promise<Lecture> => {
     return httpClient.post<Lecture>(ENDPOINTS.lectures.list, data)
   },
@@ -97,5 +106,14 @@ export const lectureService = {
       timeout: TIMEOUT_CONFIG.generation,
       onTimeout,
     })
+  },
+
+  /**
+   * Enqueue lecture generation job (async). Returns a job stub with id.
+   */
+  enqueueGenerateLecture: (
+    data: LectureGenerateRequest
+  ): Promise<{ id: number; kind: string; status: string; attempts: number; max_attempts: number; priority?: number; run_after?: string }> => {
+    return httpClient.post(ENDPOINTS.lectures.enqueueGenerate, data)
   },
 }

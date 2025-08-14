@@ -60,7 +60,7 @@ const Courses: Component = () => {
       // Assuming CourseForm validation ensures these are numbers when onSubmit is called
       department_id: formData.department_id as number,
       professor_id: formData.professor_id as number,
-      credits: formData.credits === null ? undefined : Number(formData.credits),
+      credits: formData.credits === null ? undefined : formData.credits,
       lectures_per_week:
         formData.lectures_per_week === null ? undefined : Number(formData.lectures_per_week),
       total_weeks: formData.total_weeks === null ? undefined : Number(formData.total_weeks),

@@ -32,6 +32,7 @@ from artificial_u.services import (
     TopicService,
     VoiceService,
 )
+from artificial_u.services.job_enqueue_service import JobEnqueueService
 
 
 def get_repository_factory() -> RepositoryFactory:
@@ -135,36 +136,50 @@ def get_voice_service(
     )
 
 
+def get_job_enqueue_service(
+    repository_factory: RepositoryFactory = Depends(get_repository_factory),
+) -> JobEnqueueService:
+    """
+    Get a job enqueue service instance.
+
+    Args:
+        repository_factory: Repository factory instance
+
+    Returns:
+        JobEnqueueService instance
+    """
+    return JobEnqueueService(
+        repository_factory=repository_factory,
+        logger=logging.getLogger("artificial_u.services.job_enqueue_service"),
+    )
+
+
 def get_professor_service(
     repository_factory: RepositoryFactory = Depends(get_repository_factory),
-    content_service: ContentService = Depends(get_content_service),
-    image_service: ImageService = Depends(get_image_service),
     voice_service: VoiceService = Depends(get_voice_service),
+    job_enqueue_service: JobEnqueueService = Depends(get_job_enqueue_service),
 ) -> ProfessorService:
     """
     Get a professor service instance.
 
     Args:
         repository_factory: Repository factory
-        content_service: Content service
-        image_service: Image service
         voice_service: Voice service
+        job_enqueue_service: Job enqueueing service
 
     Returns:
         ProfessorService instance
     """
     return ProfessorService(
         repository_factory=repository_factory,
-        content_service=content_service,
-        image_service=image_service,
         voice_service=voice_service,
+        job_enqueue_service=job_enqueue_service,
         logger=logging.getLogger("artificial_u.services.professor_service"),
     )
 
 
 def get_course_service(
     repository_factory: RepositoryFactory = Depends(get_repository_factory),
-    content_service: ContentService = Depends(get_content_service),
     professor_service: ProfessorService = Depends(get_professor_service),
 ) -> CourseService:
     """
@@ -172,7 +187,6 @@ def get_course_service(
 
     Args:
         repository_factory: Repository factory
-        content_service: Content service
         professor_service: Professor service
 
     Returns:
@@ -180,7 +194,6 @@ def get_course_service(
     """
     return CourseService(
         repository_factory=repository_factory,
-        content_service=content_service,
         professor_service=professor_service,
         logger=logging.getLogger("artificial_u.services.course_service"),
     )
@@ -190,7 +203,6 @@ def get_department_service(
     repository_factory: RepositoryFactory = Depends(get_repository_factory),
     professor_service: ProfessorService = Depends(get_professor_service),
     course_service: CourseService = Depends(get_course_service),
-    content_service: ContentService = Depends(get_content_service),
 ) -> DepartmentService:
     """
     Get a department service instance.
@@ -199,7 +211,6 @@ def get_department_service(
         repository_factory: Repository factory
         professor_service: Professor service
         course_service: Course service
-        content_service: Content service
 
     Returns:
         DepartmentService instance
@@ -208,60 +219,42 @@ def get_department_service(
         repository_factory=repository_factory,
         professor_service=professor_service,
         course_service=course_service,
-        content_service=content_service,
         logger=logging.getLogger("artificial_u.services.department_service"),
     )
 
 
 def get_lecture_service(
     repository_factory: RepositoryFactory = Depends(get_repository_factory),
-    professor_service: ProfessorService = Depends(get_professor_service),
-    course_service: CourseService = Depends(get_course_service),
-    content_service: ContentService = Depends(get_content_service),
-    storage_service: StorageService = Depends(get_storage_service),
 ) -> LectureService:
     """
     Get a lecture service instance.
 
     Args:
         repository_factory: Repository factory
-        professor_service: Professor service
-        course_service: Course service
-        content_service: Content service
-        storage_service: Storage service
 
     Returns:
         LectureService instance
     """
     return LectureService(
         repository_factory=repository_factory,
-        professor_service=professor_service,
-        course_service=course_service,
-        content_service=content_service,
         logger=logging.getLogger("artificial_u.services.lecture_service"),
     )
 
 
 def get_topic_service(
     repository_factory: RepositoryFactory = Depends(get_repository_factory),
-    content_service: ContentService = Depends(get_content_service),
-    course_service: CourseService = Depends(get_course_service),
 ) -> TopicService:
     """
     Get a core TopicService instance.
 
     Args:
         repository_factory: Repository factory
-        content_service: Content service
-        course_service: Course service
 
     Returns:
         TopicService instance
     """
     return TopicService(
         repository_factory=repository_factory,
-        content_service=content_service,
-        course_service=course_service,
         logger=logging.getLogger("artificial_u.services.topic_service"),
     )
 
@@ -307,6 +300,7 @@ def get_course_api_service(
 
     Args:
         repository_factory: Repository factory
+        content_service: Content service
         professor_service: Professor service
 
     Returns:
@@ -361,8 +355,8 @@ def get_lecture_api_service(
     Args:
         repository_factory: Repository factory
         professor_service: Professor service
-        content_service: Content service
         course_service: Course service
+        content_service: Content service
         storage_service: Storage service
         topic_service: Topic service
 

@@ -6,7 +6,7 @@ from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
 
-from artificial_u.api.dependencies import get_department_api_service
+from artificial_u.api.dependencies import get_department_api_service, get_repository_factory
 from artificial_u.api.models import (
     CoursesListResponse,
     DepartmentCoursesResponse,
@@ -19,6 +19,7 @@ from artificial_u.api.models import (
     ProfessorsListResponse,
 )
 from artificial_u.api.services import DepartmentApiService
+from artificial_u.models.repositories.factory import RepositoryFactory
 
 # Create the router with dependencies that will be applied to all routes
 router = APIRouter(
@@ -311,3 +312,43 @@ async def generate_department(
         The generated department data (not saved to the database).
     """
     return await department_service.generate_department(generation_data)
+
+
+@router.post(
+    "/generate/enqueue",
+    status_code=status.HTTP_202_ACCEPTED,
+    summary="Enqueue department generation job",
+    description=(
+        "Enqueue an async job to generate department data using AI. Returns a job id to poll via "
+        "GET /api/v1/jobs/{id}."
+    ),
+)
+async def enqueue_generate_department(
+    generation_data: DepartmentGenerate,
+    repository_factory: RepositoryFactory = Depends(get_repository_factory),
+):
+    """
+    Enqueue a job with kind 'generate_department'. The payload mirrors DepartmentGenerate.
+    """
+    payload = {
+        "partial_attributes": (generation_data.partial_attributes or {}),
+        "freeform_prompt": generation_data.freeform_prompt,
+        # departmental context if provided in model
+        "department_id": generation_data.department_id,
+    }
+    # Remove keys with None to keep payload concise
+    payload = {k: v for k, v in payload.items() if v is not None}
+
+    row = repository_factory.job.create(
+        kind="generate_department",
+        payload=payload,
+    )
+    return {
+        "id": row.id,
+        "kind": row.kind,
+        "status": row.status,
+        "attempts": row.attempts,
+        "max_attempts": row.max_attempts,
+        "priority": row.priority,
+        "run_after": row.run_after,
+    }

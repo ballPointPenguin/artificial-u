@@ -7,7 +7,7 @@ from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
 from fastapi.responses import JSONResponse, PlainTextResponse
 
-from artificial_u.api.dependencies import get_lecture_api_service
+from artificial_u.api.dependencies import get_lecture_api_service, get_repository_factory
 from artificial_u.api.models import (
     Lecture,
     LectureCreate,
@@ -16,6 +16,7 @@ from artificial_u.api.models import (
     LectureUpdate,
 )
 from artificial_u.api.services import LectureApiService
+from artificial_u.models.repositories.factory import RepositoryFactory
 
 # Create the router with dependencies that will be applied to all routes
 router = APIRouter(
@@ -287,6 +288,35 @@ async def generate_lecture_audio(
 
 
 @router.post(
+    "/{lecture_id}/generate-audio/enqueue",
+    status_code=status.HTTP_202_ACCEPTED,
+    summary="Enqueue lecture audio generation job",
+    description=(
+        "Enqueue an async job to generate audio for a lecture. Returns a job id to poll via "
+        "GET /api/v1/jobs/{id}."
+    ),
+)
+async def enqueue_generate_lecture_audio(
+    lecture_id: int = Path(..., description="The ID of the lecture to generate audio for"),
+    repository_factory: RepositoryFactory = Depends(get_repository_factory),
+):
+    payload = {"lecture_id": lecture_id}
+    row = repository_factory.job.create(
+        kind="generate_lecture_audio",
+        payload=payload,
+    )
+    return {
+        "id": row.id,
+        "kind": row.kind,
+        "status": row.status,
+        "attempts": row.attempts,
+        "max_attempts": row.max_attempts,
+        "priority": row.priority,
+        "run_after": row.run_after,
+    }
+
+
+@router.post(
     "/{lecture_id}/generate-summary",
     response_model=Lecture,
     status_code=status.HTTP_200_OK,
@@ -339,3 +369,40 @@ async def generate_lecture(
         The generated lecture data (not saved to the database).
     """
     return await lecture_service.generate_lecture(generation_data)
+
+
+@router.post(
+    "/generate/enqueue",
+    status_code=status.HTTP_202_ACCEPTED,
+    summary="Enqueue lecture generation job",
+    description=(
+        "Enqueue an async job to generate lecture data using AI. Returns a job id to poll via "
+        "GET /api/v1/jobs/{id}."
+    ),
+)
+async def enqueue_generate_lecture(
+    generation_data: LectureGenerate,
+    repository_factory: RepositoryFactory = Depends(get_repository_factory),
+):
+    """
+    Enqueue a job with kind 'generate_lecture'. Payload mirrors LectureGenerate.
+    """
+    payload = {
+        "partial_attributes": (generation_data.partial_attributes or {}),
+        "freeform_prompt": generation_data.freeform_prompt,
+    }
+    payload = {k: v for k, v in payload.items() if v is not None}
+
+    row = repository_factory.job.create(
+        kind="generate_lecture",
+        payload=payload,
+    )
+    return {
+        "id": row.id,
+        "kind": row.kind,
+        "status": row.status,
+        "attempts": row.attempts,
+        "max_attempts": row.max_attempts,
+        "priority": row.priority,
+        "run_after": row.run_after,
+    }

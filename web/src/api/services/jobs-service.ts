@@ -1,0 +1,34 @@
+import { httpClient } from '../client'
+import { ENDPOINTS } from '../config'
+
+export type JobStatus = 'queued' | 'running' | 'done' | 'failed' | 'cancelled'
+
+export interface JobRow {
+  id: number
+  kind: string
+  status: JobStatus
+  attempts: number
+  max_attempts: number
+  priority?: number
+  run_after?: string
+  last_error?: string | null
+  result?: unknown
+  created_at?: string
+  updated_at?: string
+}
+
+export async function listJobs(params?: { status?: JobStatus; limit?: number }): Promise<JobRow[]> {
+  const qs = new URLSearchParams()
+  if (params?.status) qs.set('status', params.status)
+  if (params?.limit) qs.set('limit', String(params.limit))
+  const endpoint = `${ENDPOINTS.jobs.list}${qs.toString() ? `?${qs.toString()}` : ''}`
+  return httpClient.get<JobRow[]>(endpoint)
+}
+
+export async function getJob(jobId: number): Promise<JobRow> {
+  return httpClient.get<JobRow>(ENDPOINTS.jobs.detail(jobId))
+}
+
+export async function getJobsSummary(): Promise<Record<JobStatus, number>> {
+  return httpClient.get<Record<JobStatus, number>>(ENDPOINTS.jobs.summary)
+}

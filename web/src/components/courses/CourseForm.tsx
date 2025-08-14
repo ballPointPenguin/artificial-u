@@ -116,7 +116,7 @@ const CourseForm: Component<CourseFormProps> = (props) => {
     if (data.department_id === null) errors.department_id = 'Department is required.'
     if (data.professor_id === null) errors.professor_id = 'Professor is required.'
     if (!data.level.trim()) errors.level = 'Course level is required.'
-    if (data.credits === null || Number(data.credits) <= 0)
+    if (data.credits === null || data.credits <= 0)
       errors.credits = 'Credits must be a positive number.'
     if (!data.description.trim()) errors.description = 'Description is required.'
     // Optional fields like lectures_per_week, total_weeks can be validated if they have specific rules when provided

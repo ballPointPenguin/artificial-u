@@ -60,11 +60,29 @@ class CourseApiService(BaseApiService[CoreCourse, CourseResponse, CoursesListRes
         super().__init__(logger)
         self.repository_factory = repository_factory
 
-        # Initialize core service with dependencies
+        # Initialize core service (CRUD only) with correct dependencies
         self.core_service = CourseService(
             repository_factory=repository_factory,
-            content_service=content_service,
             professor_service=professor_service,
+            logger=self.logger,
+        )
+
+        # Initialize generator service for AI generation workflows
+        from artificial_u.services.course_generator_service import CourseGeneratorService
+        from artificial_u.services.job_enqueue_service import JobEnqueueService
+
+        # Create job enqueue service for background processing
+        job_enqueue_service = JobEnqueueService(
+            repository_factory=repository_factory,
+            logger=self.logger,
+        )
+
+        self.generator_service = CourseGeneratorService(
+            course_service=self.core_service,
+            professor_service=professor_service,
+            content_service=content_service,
+            repository_factory=repository_factory,
+            job_enqueue_service=job_enqueue_service,
             logger=self.logger,
         )
         # Keep reference to core professor service if needed for direct lookups
@@ -423,8 +441,8 @@ class CourseApiService(BaseApiService[CoreCourse, CourseResponse, CoursesListRes
             if generation_data.freeform_prompt:  # Add prompt if provided
                 partial_attrs["freeform_prompt"] = generation_data.freeform_prompt
 
-            # Call the core service to generate the course content dictionary
-            generated_dict = await self.core_service.generate_course(
+            # Call the generator service to generate the course content dictionary
+            generated_dict = await self.generator_service.generate_course(
                 partial_attributes=partial_attrs
             )
 

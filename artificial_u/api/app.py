@@ -1,3 +1,5 @@
+from contextlib import asynccontextmanager
+
 from fastapi import Depends, FastAPI
 
 from artificial_u.api.config import get_settings
@@ -11,12 +13,14 @@ from artificial_u.api.routers.departments import router as departments_router
 # Import routers
 from artificial_u.api.routers.health import router as health_router
 from artificial_u.api.routers.index import router as index_router
+from artificial_u.api.routers.jobs import router as jobs_router
 from artificial_u.api.routers.lectures import router as lectures_router
 from artificial_u.api.routers.professors import router as professors_router
 from artificial_u.api.routers.topics import router as topics_router
 from artificial_u.api.routers.topics import router_for_course_topics
 from artificial_u.api.routers.voice import router as voice_router
 from artificial_u.api.utils.logging import setup_logging
+from artificial_u.api.worker import Worker
 from artificial_u.config.settings import Environment
 
 
@@ -28,6 +32,18 @@ def create_application() -> FastAPI:
 
     # Setup logging first
     setup_logging(settings)
+
+    # Prepare worker now so it's available in lifespan closure
+    repository_factory = get_repository_factory()
+    worker = Worker(repository_factory)
+
+    @asynccontextmanager
+    async def lifespan(app: FastAPI):
+        await worker.start()
+        try:
+            yield
+        finally:
+            await worker.stop()
 
     app = FastAPI(
         title="Artificial University API",
@@ -42,6 +58,7 @@ def create_application() -> FastAPI:
         dependencies=[Depends(get_repository_factory)],
         # Use debug mode only in development environment
         debug=settings.environment == Environment.DEVELOPMENT,
+        lifespan=lifespan,
     )
 
     # Configure CORS
@@ -65,6 +82,7 @@ def create_application() -> FastAPI:
 
     # Include the new voice router
     app.include_router(voice_router, prefix="/api/v1")
+    app.include_router(jobs_router, prefix="/api/v1")
 
     return app
 
