@@ -2,15 +2,15 @@
 Integration tests for ProfessorService.
 """
 
+import logging
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from artificial_u.config import get_settings
 from artificial_u.models.core import Professor
 from artificial_u.models.repositories import RepositoryFactory
 from artificial_u.services import DepartmentService, ProfessorService
-from artificial_u.utils import GenerationError, ProfessorNotFoundError
+from artificial_u.utils import ProfessorNotFoundError
 
 # Example AI-generated XML response for professor
 MOCK_PROFESSOR_XML = """
@@ -39,7 +39,7 @@ def repository_factory():
 
 
 @pytest.fixture
-def department_service(repository_factory, content_service):
+def department_service(repository_factory):
     """Create a DepartmentService with mocked dependent services."""
     professor_service_mock = MagicMock()
     course_service_mock = MagicMock()
@@ -48,18 +48,24 @@ def department_service(repository_factory, content_service):
         repository_factory=repository_factory,
         professor_service=professor_service_mock,
         course_service=course_service_mock,
-        content_service=content_service,
+        logger=logging.getLogger(__name__),
     )
 
 
 @pytest.fixture
-def professor_service(repository_factory, content_service, image_service, voice_service):
+def professor_service(repository_factory, voice_service):
     """Create a ProfessorService with mocked dependent services."""
+    from artificial_u.services.job_enqueue_service import JobEnqueueService
+
+    job_enqueue_service = JobEnqueueService(
+        repository_factory=repository_factory,
+        logger=logging.getLogger(__name__),
+    )
+
     return ProfessorService(
         repository_factory=repository_factory,
-        content_service=content_service,
-        image_service=image_service,
         voice_service=voice_service,
+        job_enqueue_service=job_enqueue_service,
     )
 
 
@@ -253,103 +259,3 @@ class TestProfessorService:
         # Verify it's gone
         with pytest.raises(ProfessorNotFoundError):
             professor_service.get_professor(professor.id)
-
-    @pytest.mark.asyncio
-    async def test_generate_professor_profile(self, professor_service, department_service):
-        """Test generating professor profile with mocked AI response."""
-        # Create a department first
-        department = department_service.create_department(
-            name="Computer Science",
-            code="CS",
-            faculty="Engineering",
-        )
-
-        # Mock the content service's generate_text method
-        professor_service.content_service.generate_text.return_value = MOCK_PROFESSOR_XML
-
-        # Generate professor profile
-        professor_data = await professor_service.generate_professor(
-            {"department_id": department.id, "freeform_prompt": "Focus on AI expertise"}
-        )
-
-        # Verify the generated content
-        assert professor_data["name"] == "Dr. Maria Garcia"
-        assert professor_data["title"] == "Associate Professor"
-        assert professor_data["specialization"] == "Artificial Intelligence"
-        assert professor_data["gender"] == "Female"
-        assert professor_data["age"] == 42
-        assert professor_data["accent"] == "Spanish"
-        assert "AI" in professor_data["description"]
-
-        # Verify content service was called with correct arguments
-        professor_service.content_service.generate_text.assert_called_once()
-        call_args = professor_service.content_service.generate_text.call_args
-        assert call_args.kwargs["model"] == get_settings().PROFESSOR_GENERATION_MODEL
-        assert "system_prompt" in call_args.kwargs
-
-    @pytest.mark.asyncio
-    async def test_generate_professor_profile_error_handling(self, professor_service):
-        """Test error handling in professor profile generation."""
-        # Test invalid XML response
-        professor_service.content_service.generate_text = AsyncMock(
-            return_value="<invalid>XML</invalid>"
-        )
-
-        with pytest.raises(GenerationError) as exc_info:
-            await professor_service.generate_professor({})
-        assert "Failed to parse AI-generated professor profile." in str(exc_info.value)
-
-        # Test empty response
-        professor_service.content_service.generate_text = AsyncMock(return_value="")
-
-        with pytest.raises(GenerationError) as exc_info:
-            await professor_service.generate_professor({})
-        assert "AI generation returned empty content" in str(exc_info.value)
-
-        # Test exception in content service
-        professor_service.content_service.generate_text = AsyncMock(
-            side_effect=Exception("API Error")
-        )
-
-        with pytest.raises(GenerationError) as exc_info:
-            await professor_service.generate_professor({})
-        assert "AI content generation call failed" in str(exc_info.value)
-
-    @pytest.mark.asyncio
-    async def test_generate_and_set_professor_image(self, professor_service, department_service):
-        """Test generating and setting professor image."""
-        # Create a department and professor first
-        department = department_service.create_department(
-            name="Computer Science",
-            code="CS",
-            faculty="Engineering",
-        )
-
-        professor = professor_service.create_professor(
-            Professor(
-                name="Dr. Test Image",
-                title="Professor",
-                department_id=department.id,
-                specialization="Image Processing",
-                gender="Other",
-            )
-        )
-
-        # Generate and set image
-        updated_professor = await professor_service.generate_and_set_professor_image(
-            professor_id=professor.id, aspect_ratio="1:1"
-        )
-
-        # Verify the image was set
-        assert (
-            updated_professor.image_url
-            == "https://storage.example.com/professors/test-image-key.jpg"
-        )
-
-        # Verify service calls
-        professor_service.image_service.generate_professor_image.assert_called_once_with(
-            professor=professor, aspect_ratio="1:1"
-        )
-        professor_service.image_service.storage_service.get_file_url.assert_called_once_with(
-            bucket="test-bucket", object_name="professors/test-image-key.jpg"
-        )
