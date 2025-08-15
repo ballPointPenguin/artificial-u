@@ -7,6 +7,7 @@ from typing import Dict, Optional, Type, TypeVar
 from artificial_u.models.repositories.base import BaseRepository
 from artificial_u.models.repositories.course import CourseRepository
 from artificial_u.models.repositories.department import DepartmentRepository
+from artificial_u.models.repositories.job import JobRepository
 from artificial_u.models.repositories.lecture import LectureRepository
 from artificial_u.models.repositories.professor import ProfessorRepository
 from artificial_u.models.repositories.topic import TopicRepository
@@ -80,6 +81,11 @@ class RepositoryFactory:
     def voice(self) -> VoiceRepository:
         """Get the voice repository."""
         return self.get_repository(VoiceRepository)
+
+    @property
+    def job(self) -> JobRepository:
+        """Get the job repository."""
+        return self.get_repository(JobRepository)
 
     def create_tables(self):
         """Create all database tables if they don't exist."""

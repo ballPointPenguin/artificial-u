@@ -18,9 +18,6 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 from artificial_u.config.defaults import (
     DEFAULT_CONTENT_BACKEND,
     DEFAULT_CONTENT_LOGS_PATH,
-    DEFAULT_CONTENT_MAX_RETRIES,
-    DEFAULT_CONTENT_RETRY_DELAY,
-    DEFAULT_CONTENT_RETRY_EXPONENTIAL_BASE,
     DEFAULT_DB_URL,
     DEFAULT_LOG_LEVEL,
     DEFAULT_OLLAMA_MODEL,
@@ -102,11 +99,6 @@ class Settings(BaseSettings):
     content_backend: str = DEFAULT_CONTENT_BACKEND
     content_model: Optional[str] = None
 
-    # Content generation retry settings
-    content_max_retries: int = DEFAULT_CONTENT_MAX_RETRIES
-    content_retry_delay: float = DEFAULT_CONTENT_RETRY_DELAY
-    content_retry_exponential_base: float = DEFAULT_CONTENT_RETRY_EXPONENTIAL_BASE
-
     # Integration service endpoints
     OLLAMA_HOST: str = "http://localhost:11434"
 
@@ -128,6 +120,12 @@ class Settings(BaseSettings):
     # Text-to-speech voice model (ElevenLabs)
     # Example values: "eleven_flash_v2_5", "eleven_multilingual_v2"
     TTS_VOICE_MODEL: str = "eleven_flash_v2_5"
+
+    # Async worker and rate limiting
+    WORKER_POLL_IDLE_SEC: float = 0.75
+    WORKER_VISIBILITY_TIMEOUT_SEC: int = 600
+    WORKER_MAX_CONCURRENCY: int = 3
+    OUTBOUND_RPS: int = 1
 
     # Configure Pydantic to use .env files
     model_config = SettingsConfigDict(

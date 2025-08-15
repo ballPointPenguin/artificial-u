@@ -1,8 +1,7 @@
-import asyncio
 import logging
 import uuid
 from enum import Enum
-from typing import Any, List, Optional
+from typing import List, Optional
 
 import httpx  # Added httpx import
 import openai  # Added openai import
@@ -87,11 +86,6 @@ class ImageService:
         self.model_name = self.settings.IMAGE_GENERATION_MODEL
         self.backend = self._determine_backend(self.model_name)
 
-        # Configure retry settings
-        self.max_retries = 3
-        self.retry_delay = 2.0  # seconds
-        self.retry_exponential_base = 2.0
-
         logger.info(
             f"ImageService initialized with model: {self.model_name} (backend: {self.backend})"
         )
@@ -163,35 +157,6 @@ class ImageService:
         elif isinstance(error, openai.BadRequestError):
             return ImageGenerationErrorType.PERMANENT
         return ImageGenerationErrorType.TRANSIENT
-
-    async def _retry_with_backoff(self, func, *args, **kwargs) -> Any:
-        """Retry a function with exponential backoff."""
-        last_error = None
-
-        for attempt in range(self.max_retries):
-            try:
-                return await func(*args, **kwargs)
-            except Exception as e:
-                last_error = e
-                error_type = self._categorize_error(e, self.backend)
-
-                # Don't retry for permanent errors
-                if error_type == ImageGenerationErrorType.PERMANENT:
-                    logger.info(f"Permanent error detected, not retrying: {e}")
-                    break
-
-                if attempt < self.max_retries - 1:
-                    delay = self.retry_delay * (self.retry_exponential_base**attempt)
-                    logger.info(
-                        f"Attempt {attempt + 1} failed with {error_type.value} error: {e}. "
-                        f"Retrying in {delay:.1f} seconds..."
-                    )
-                    await asyncio.sleep(delay)
-                else:
-                    logger.error(f"All {self.max_retries} attempts failed. Last error: {e}")
-
-        # If we get here, all attempts failed
-        raise last_error
 
     def _map_aspect_ratio_to_openai_size(self, aspect_ratio: str) -> str:
         """Maps a common aspect ratio string to OpenAI's required size string."""
@@ -383,9 +348,7 @@ class ImageService:
 
         # Try backend with retry logic
         try:
-            image_bytes_list = await self._retry_with_backoff(
-                self._generate_with_backend, prompt, aspect_ratio, self.backend
-            )
+            image_bytes_list = await self._generate_with_backend(prompt, aspect_ratio, self.backend)
 
             if image_bytes_list:
                 # Upload images to storage

@@ -115,14 +115,16 @@ def partial_professor_to_xml(
 
 
 def professors_to_xml(professors: List[Dict[str, str]]) -> str:
-    # Format a list of professors (dicts with name, specialization)
+    # Format a list of professors (dicts with id, name, title, specialization)
     # as XML for prompt context.
     if not professors:
         return "<no_existing_professors />"
     lines = ["<existing_professors>"]
     for prof in professors:
         lines.append(
-            f"  <professor><name>{prof.get('name', '')}</name>"
+            f"  <professor><id>{prof.get('id', '')}</id>"
+            f"<name>{prof.get('name', '')}</name>"
+            f"<title>{prof.get('title', '')}</title>"
             f"<specialization>{prof.get('specialization', '')}</specialization></professor>"
         )
     lines.append("</existing_professors>")
@@ -151,13 +153,15 @@ def departments_to_xml(departments: List[Dict[str, str]]) -> str:
     """Format a list of department dictionaries as XML for prompt context.
 
     Args:
-        departments: List of department dictionaries containing 'name', 'code', and 'faculty' keys.
+        departments: List of department dictionaries containing 'id', 'name',
+                    'code', and 'faculty' keys.
     """
     if not departments:
         return "<no_existing_departments />"
     lines = ["<existing_departments>"]
     for dept in departments:
         lines.append("  <department>")
+        lines.append(f"    <id>{dept.get('id', '')}</id>")
         lines.append(f"    <name>{dept.get('name', '')}</name>")
         lines.append(f"    <code>{dept.get('code', '')}</code>")
         lines.append(f"    <faculty>{dept.get('faculty', '')}</faculty>")

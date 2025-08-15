@@ -24,9 +24,9 @@ class TTSService:
     DEFAULT_VOICE_SETTINGS = {
         "similarity_boost": 0.0,
         "speed": 1.0,
-        "stability": 0.4,
+        "stability": 0.5,
         "style": 0.0,
-        "use_speaker_boost": False,
+        "use_speaker_boost": True,
     }
 
     def __init__(

@@ -46,6 +46,7 @@ class CourseApiService(BaseApiService[CoreCourse, CourseResponse, CoursesListRes
         content_service: ContentService,
         professor_service: ProfessorService,
         repository_factory: RepositoryFactory,
+        course_service: CourseService,
         logger=None,
     ):
         """
@@ -55,16 +56,31 @@ class CourseApiService(BaseApiService[CoreCourse, CourseResponse, CoursesListRes
             repository_factory: RepositoryFactory instance.
             content_service: Content generation service instance.
             professor_service: Core ProfessorService instance.
+            course_service: Core CourseService instance with smart selection.
             logger: Optional logger instance.
         """
         super().__init__(logger)
         self.repository_factory = repository_factory
 
-        # Initialize core service with dependencies
-        self.core_service = CourseService(
+        # Use the provided core service (already configured with smart selection)
+        self.core_service = course_service
+
+        # Initialize generator service for AI generation workflows
+        from artificial_u.services.course_generator_service import CourseGeneratorService
+        from artificial_u.services.job_enqueue_service import JobEnqueueService
+
+        # Create job enqueue service for background processing
+        job_enqueue_service = JobEnqueueService(
             repository_factory=repository_factory,
-            content_service=content_service,
+            logger=self.logger,
+        )
+
+        self.generator_service = CourseGeneratorService(
+            course_service=self.core_service,
             professor_service=professor_service,
+            content_service=content_service,
+            repository_factory=repository_factory,
+            job_enqueue_service=job_enqueue_service,
             logger=self.logger,
         )
         # Keep reference to core professor service if needed for direct lookups
@@ -166,25 +182,23 @@ class CourseApiService(BaseApiService[CoreCourse, CourseResponse, CoursesListRes
         except Exception as e:
             self._handle_general_error("get course by code", e)
 
-    def create_course(self, course_data: CourseCreate) -> CourseResponse:
+    async def create_course(self, course_data: CourseCreate) -> CourseResponse:
         """
-        Create a new course using the core service.
+        Create a new course using the core service with smart selection.
         """
         try:
-            # Core service expects individual arguments
-            # Department ID might need conversion if core expects int vs str
-            # Professor ID might need conversion if core expects int vs str
-            created_course_model, _ = self.core_service.create_course(
+            # Core service expects Optional[int] for department_id and professor_id
+            # Smart selection will resolve these if they're None
+            created_course_model, _ = await self.core_service.create_course(
                 title=course_data.title,
                 code=course_data.code,
-                department_id=str(course_data.department_id),  # Assuming core needs str
+                department_id=course_data.department_id,  # Can be None for smart selection
                 level=course_data.level,
-                professor_id=str(course_data.professor_id),  # Assuming core needs str
+                professor_id=course_data.professor_id,  # Can be None for smart selection
                 description=course_data.description,
                 credits=course_data.credits,
                 weeks=course_data.total_weeks,
                 lectures_per_week=course_data.lectures_per_week,
-                # topics=None # Pass if needed and supported by API model
             )
             # Convert the returned CourseModel to the API response model
             return CourseResponse.model_validate(created_course_model)
@@ -193,6 +207,19 @@ class CourseApiService(BaseApiService[CoreCourse, CourseResponse, CoursesListRes
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Professor with ID {course_data.professor_id} not found.",
+            )
+        except ContentGenerationError as e:
+            self.logger.error(f"Smart selection failed during course creation: {e}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Smart selection failed: {e}",
+            )
+        except ValueError as e:
+            # Handle cases where smart selection services are not available
+            self.logger.error(f"Course creation failed with ValueError: {e}")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Course creation failed: {e}",
             )
         except DatabaseError as e:
             self._handle_database_error("create course", e)
@@ -207,12 +234,7 @@ class CourseApiService(BaseApiService[CoreCourse, CourseResponse, CoursesListRes
             # Core service expects a dictionary of fields to update
             update_data = course_data.model_dump(exclude_unset=True)
 
-            # Convert IDs if necessary (assuming core service needs int/str consistently)
-            if "department_id" in update_data:
-                update_data["department_id"] = str(update_data["department_id"])
-            if "professor_id" in update_data:
-                update_data["professor_id"] = str(update_data["professor_id"])
-
+            # Core service handles integer IDs, no conversion needed
             updated_course_model = self.core_service.update_course(course_id, update_data)
 
             # Convert the returned CourseModel to the API response model
@@ -423,8 +445,8 @@ class CourseApiService(BaseApiService[CoreCourse, CourseResponse, CoursesListRes
             if generation_data.freeform_prompt:  # Add prompt if provided
                 partial_attrs["freeform_prompt"] = generation_data.freeform_prompt
 
-            # Call the core service to generate the course content dictionary
-            generated_dict = await self.core_service.generate_course(
+            # Call the generator service to generate the course content dictionary
+            generated_dict = await self.generator_service.generate_course(
                 partial_attributes=partial_attrs
             )
 

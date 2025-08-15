@@ -55,7 +55,7 @@ or generated ones if marked as [GENERATE].
 XML Structure:
 {COURSE_XML_STRUCTURE}
 
-Existing courses in this department (for context and to avoid repetition):
+Existing courses (for context and to avoid repetition):
 {{existing_courses_xml}}
 
 Department Information:
@@ -109,8 +109,8 @@ def get_course_prompt(
     """
     # Use converters to generate XML sections
     existing_courses_xml_str = courses_to_xml(existing_courses)
-    department_xml_str = department_to_xml(department_data)
-    professor_xml_str = professor_to_xml(professor_data)
+    department_xml_str = department_to_xml(department_data, missing_marker="[unspecified]")
+    professor_xml_str = professor_to_xml(professor_data, missing_marker="[unspecified]")
     partial_course_xml_str = partial_course_to_xml(partial_course_attrs)
 
     # Format freeform prompt if provided

@@ -35,6 +35,13 @@ When you need to make changes to the database schema:
 2. Generate a new migration:
 
    ```sh
+   # Option 1: Using the helper script (recommended)
+   python scripts/run_alembic.py revision --autogenerate -m "Description of changes"
+
+   # Option 2: Using hatch run
+   hatch run alembic revision --autogenerate -m "Description of changes"
+
+   # Option 3: Direct alembic command (only works within hatch shell)
    alembic revision --autogenerate -m "Description of changes"
    ```
 
@@ -43,6 +50,13 @@ When you need to make changes to the database schema:
 4. Apply the migration:
 
    ```sh
+   # Option 1: Using the helper script (recommended)
+   python scripts/run_alembic.py upgrade head
+
+   # Option 2: Using hatch run
+   hatch run alembic upgrade head
+
+   # Option 3: Direct alembic command (only works within hatch shell)
    alembic upgrade head
    ```
 

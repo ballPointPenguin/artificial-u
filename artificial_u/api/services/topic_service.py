@@ -33,16 +33,42 @@ class TopicApiService(BaseApiService[CoreTopic, Topic, TopicListResponse]):
         self,
         core_topic_service: CoreTopicService,
         repository_factory: RepositoryFactory,  # For potential direct use, e.g. counts if added
+        course_service,  # Injected course service with smart selection
         logger: Optional[logging.Logger] = None,
     ):
         super().__init__(logger)
-        self.core_topic_service = core_topic_service
         self.repository_factory = repository_factory
+
+        # Initialize core service (CRUD only) - rename for consistency
+        self.core_service = core_topic_service
+
+        # Initialize generator service for AI generation workflows
+        from artificial_u.services.content_service import ContentService
+        from artificial_u.services.job_enqueue_service import JobEnqueueService
+        from artificial_u.services.topic_generator_service import TopicGeneratorService
+
+        # Create job enqueue service for background processing
+        job_enqueue_service = JobEnqueueService(
+            repository_factory=repository_factory,
+            logger=self.logger,
+        )
+
+        # Create content service for TopicGeneratorService dependency
+        content_service = ContentService(logger=self.logger)
+
+        self.generator_service = TopicGeneratorService(
+            topic_service=self.core_service,
+            course_service=course_service,
+            content_service=content_service,
+            repository_factory=repository_factory,
+            job_enqueue_service=job_enqueue_service,
+            logger=self.logger,
+        )
 
     def get_topic(self, topic_id: int) -> Topic:
         """Get a topic by its ID."""
         try:
-            core_topic = self.core_topic_service.get_topic(topic_id)
+            core_topic = self.core_service.get_topic(topic_id)
             if not core_topic:
                 raise TopicNotFoundError(f"Topic with ID {topic_id} not found")
             return Topic.model_validate(core_topic)
@@ -58,7 +84,7 @@ class TopicApiService(BaseApiService[CoreTopic, Topic, TopicListResponse]):
         """List topics for a course with pagination."""
         try:
             # Core service currently returns all topics for the course
-            all_core_topics = self.core_topic_service.list_topics_by_course(course_id)
+            all_core_topics = self.core_service.list_topics_by_course(course_id)
 
             total_count = len(all_core_topics)
             start = (page - 1) * size
@@ -86,7 +112,7 @@ class TopicApiService(BaseApiService[CoreTopic, Topic, TopicListResponse]):
     def create_topic(self, topic_data: TopicCreate) -> Topic:
         """Create a new topic."""
         try:
-            core_topic = self.core_topic_service.create_topic(
+            core_topic = self.core_service.create_topic(
                 title=topic_data.title,
                 course_id=topic_data.course_id,
                 week=topic_data.week,
@@ -103,7 +129,7 @@ class TopicApiService(BaseApiService[CoreTopic, Topic, TopicListResponse]):
         """Update an existing topic."""
         try:
             # Get existing core topic to update
-            core_topic_to_update = self.core_topic_service.get_topic(topic_id)
+            core_topic_to_update = self.core_service.get_topic(topic_id)
             if not core_topic_to_update:
                 raise TopicNotFoundError(f"Topic with ID {topic_id} not found for update.")
 
@@ -120,7 +146,7 @@ class TopicApiService(BaseApiService[CoreTopic, Topic, TopicListResponse]):
             )
 
             # Call core service update method
-            persisted_topic = self.core_topic_service.update_topic(updated_core_topic)
+            persisted_topic = self.core_service.update_topic(updated_core_topic)
             return Topic.model_validate(persisted_topic)
         except TopicNotFoundError as e:
             self.logger.warning(f"Topic not found for update: {e}")
@@ -133,7 +159,7 @@ class TopicApiService(BaseApiService[CoreTopic, Topic, TopicListResponse]):
     def delete_topic(self, topic_id: int) -> bool:
         """Delete a topic."""
         try:
-            deleted = self.core_topic_service.delete_topic(topic_id)
+            deleted = self.core_service.delete_topic(topic_id)
             if not deleted:
                 # Core service delete_topic returns False if not found,
                 # but doesn't raise TopicNotFound.
@@ -152,12 +178,12 @@ class TopicApiService(BaseApiService[CoreTopic, Topic, TopicListResponse]):
             self._handle_general_error("delete topic", e)
 
     async def generate_topics_for_course(self, generation_data: TopicGenerate) -> List[Topic]:
-        """Generate topics for a course using the core service."""
+        """Generate topics for a course using the generator service."""
         try:
             self.logger.info(
                 f"API Service: Generating topics for course ID: {generation_data.course_id}"
             )
-            core_topics = await self.core_topic_service.generate_topics_for_course(
+            core_topics = await self.generator_service.generate_topics_for_course(
                 course_id=generation_data.course_id,
                 freeform_prompt=generation_data.freeform_prompt,
             )

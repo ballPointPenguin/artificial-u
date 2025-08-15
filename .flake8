@@ -13,5 +13,6 @@ exclude =
     web
 per-file-ignores =
     __init__.py: F401,
-    tests/api/*: C901
+    tests/api/*: C901,
+    alembic/env.py: E402
 max-complexity = 10

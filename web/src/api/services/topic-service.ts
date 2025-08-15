@@ -47,4 +47,29 @@ export const topicService = {
       { timeout: TIMEOUT_CONFIG.generation, onTimeout }
     )
   },
+
+  enqueueGenerateTopicsForCourse: (
+    courseId: number,
+    data?: TopicsGenerateRequest
+  ): Promise<{
+    id: number
+    kind: string
+    status: string
+    attempts: number
+    max_attempts: number
+    priority?: number
+    run_after?: string
+  }> => {
+    let queryString = ''
+    if (data?.freeform_prompt) {
+      const queryParams = new URLSearchParams()
+      queryParams.set('freeform_prompt', data.freeform_prompt)
+      queryString = `?${queryParams.toString()}`
+    }
+    const requestBody = undefined
+    return httpClient.post(
+      `${ENDPOINTS.topics.enqueueGenerateForCourse(courseId)}${queryString}`,
+      requestBody
+    )
+  },
 }

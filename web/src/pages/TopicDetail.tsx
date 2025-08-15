@@ -16,6 +16,7 @@ const TopicDetail = () => {
   const [isSubmitting, setIsSubmitting] = createSignal(false)
   const [error, setError] = createSignal('')
   const [lectureError, setLectureError] = createSignal('')
+  const [lectureInfo, setLectureInfo] = createSignal('')
   const [isGeneratingLecture, setIsGeneratingLecture] = createSignal(false)
   const [generationTimeout, setGenerationTimeout] = createSignal(false)
 
@@ -104,24 +105,19 @@ const TopicDetail = () => {
 
     setIsGeneratingLecture(true)
     setLectureError('')
+    setLectureInfo('')
     setGenerationTimeout(false)
 
     try {
-      const newLecture = await lectureService.generateLecture(
-        {
-          partial_attributes: {
-            course_id: courseId(),
-            topic_id: topicId(),
-          },
+      const job = await lectureService.enqueueGenerateLecture({
+        partial_attributes: {
+          course_id: courseId(),
+          topic_id: topicId(),
         },
-        () => {
-          setGenerationTimeout(true)
-          setLectureError('Generation timed out. Please try again.')
-        }
+      })
+      setLectureInfo(
+        `Lecture generation enqueued as Job #${String(job.id)}. Check the Jobs bar for progress.`
       )
-
-      // Navigate to the generated lecture
-      window.location.href = `/courses/${String(courseId())}/lectures/${String(newLecture.id)}`
     } catch (error) {
       setLectureError(error instanceof Error ? error.message : 'Failed to generate lecture')
     } finally {
@@ -209,10 +205,15 @@ const TopicDetail = () => {
                     })()}
                   </Show>
 
-                  {/* Error Display */}
+                  {/* Error/Info Display */}
                   <Show when={error()}>
                     <Alert variant="danger" class="mb-4">
                       {error()}
+                    </Alert>
+                  </Show>
+                  <Show when={lectureInfo()}>
+                    <Alert variant="info" class="mb-4">
+                      {lectureInfo()}
                     </Alert>
                   </Show>
 

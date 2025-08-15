@@ -155,7 +155,7 @@ def backfill_summaries(limit):
 @click.option("--title", "-t", required=True, help="Course title")
 @click.option("--code", "-c", required=True, help="Course code")
 @click.option("--professor-id", "-p", help="Specify professor ID (creates new if not specified)")
-@click.option("--weeks", default=14, type=int, help="Number of weeks")
+@click.option("--weeks", default=12, type=int, help="Number of weeks")
 @click.option("--lectures-per-week", default=1, type=int, help="Lectures per week")
 @click.option("--description", help="Course description (auto-generated if not provided)")
 def create_course(department, title, code, professor_id, weeks, lectures_per_week, description):

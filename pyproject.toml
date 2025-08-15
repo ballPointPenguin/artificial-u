@@ -22,15 +22,16 @@ classifiers = [
 ]
 keywords = ["education", "ai", "text-to-speech", "lecture"]
 dependencies = [
+    "aiolimiter>=1.2.1",
     "alembic>=1.16.4",
-    "anthropic>=0.63.0",
+    "anthropic>=0.64.0",
     "azure-cognitiveservices-speech>=1.45.0",
-    "boto3>=1.40.6",
+    "boto3>=1.40.9",
     "click>=8.2.0",
     "elevenlabs>=2.9.2",
     "fastapi>=0.116.0",
     "google-api-core>=2.25.0",
-    "google-genai>=1.29.0",
+    "google-genai>=1.30.0",
     "httpx>=0.28.0",
     "ollama>=0.5.3",
     "openai>=1.99.9",
@@ -40,7 +41,7 @@ dependencies = [
     "python-dotenv>=1.0.0",
     "python-multipart>=0.0.6",
     "rich>=14.1.0",
-    "sqlalchemy>=2.0.42",
+    "sqlalchemy>=2.0.43",
     "uvicorn[standard]>=0.35.0",
 ]
 
@@ -51,7 +52,7 @@ dev = [
     "isort>=5.12.0",
     "mypy>=1.17.1",
     "ollama>=0.5.3",
-    "pip-tools>=7.4.1",
+    "pip-tools>=7.5.0",
     "pre-commit>=4.3.0",
     "pytest>=8.4.0",
     "pytest-asyncio>=1.1.0",

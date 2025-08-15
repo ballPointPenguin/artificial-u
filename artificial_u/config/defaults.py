@@ -10,11 +10,6 @@ DEFAULT_CONTENT_BACKEND = "anthropic"
 DEFAULT_OLLAMA_MODEL = "qwen3:0.6b"
 DEFAULT_CONTENT_LOGS_PATH = "content_logs"
 
-# Content generation retry defaults
-DEFAULT_CONTENT_MAX_RETRIES = 3
-DEFAULT_CONTENT_RETRY_DELAY = 2.0  # seconds
-DEFAULT_CONTENT_RETRY_EXPONENTIAL_BASE = 2.0
-
 # Storage defaults (MinIO/S3)
 DEFAULT_STORAGE_TYPE = "minio"  # "minio" or "s3"
 DEFAULT_STORAGE_ENDPOINT_URL = "http://localhost:9000"

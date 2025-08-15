@@ -6,7 +6,7 @@ from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
 
-from artificial_u.api.dependencies import get_professor_api_service
+from artificial_u.api.dependencies import get_professor_api_service, get_repository_factory
 from artificial_u.api.models import (
     ProfessorCoursesResponse,
     ProfessorCreate,
@@ -17,6 +17,7 @@ from artificial_u.api.models import (
     ProfessorUpdate,
 )
 from artificial_u.api.services import ProfessorApiService
+from artificial_u.models.repositories.factory import RepositoryFactory
 
 # Create the router with dependencies that will be applied to all routes
 router = APIRouter(
@@ -349,3 +350,59 @@ async def generate_professor(
     """
     # The service method already handles exceptions and converts to HTTPException
     return await service.generate_professor(generation_data)
+
+
+@router.post(
+    "/generate/enqueue",
+    status_code=status.HTTP_202_ACCEPTED,
+    summary="Enqueue professor generation job",
+    description=(
+        "Enqueue an async job to generate a professor using AI. Returns a job id to poll via "
+        "GET /api/v1/jobs/{id}."
+    ),
+)
+async def enqueue_generate_professor(
+    generation_data: ProfessorGenerate,
+    repository_factory: RepositoryFactory = Depends(get_repository_factory),
+):
+    payload = {
+        "partial_attributes": generation_data.partial_attributes or {},
+        "freeform_prompt": generation_data.freeform_prompt,
+    }
+    payload = {k: v for k, v in payload.items() if v is not None}
+    row = repository_factory.job.create(kind="generate_professor", payload=payload)
+    return {
+        "id": row.id,
+        "kind": row.kind,
+        "status": row.status,
+        "attempts": row.attempts,
+        "max_attempts": row.max_attempts,
+        "priority": row.priority,
+        "run_after": row.run_after,
+    }
+
+
+@router.post(
+    "/{professor_id}/generate-image/enqueue",
+    status_code=status.HTTP_202_ACCEPTED,
+    summary="Enqueue professor image generation job",
+    description=(
+        "Enqueue an async job to generate a professor image. Returns a job id to poll via "
+        "GET /api/v1/jobs/{id}."
+    ),
+)
+async def enqueue_generate_professor_image(
+    professor_id: int = Path(..., description="The ID of the professor to generate an image for"),
+    repository_factory: RepositoryFactory = Depends(get_repository_factory),
+):
+    payload = {"professor_id": professor_id}
+    row = repository_factory.job.create(kind="generate_professor_image", payload=payload)
+    return {
+        "id": row.id,
+        "kind": row.kind,
+        "status": row.status,
+        "attempts": row.attempts,
+        "max_attempts": row.max_attempts,
+        "priority": row.priority,
+        "run_after": row.run_after,
+    }

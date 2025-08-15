@@ -6,7 +6,7 @@ from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
 
-from artificial_u.api.dependencies import get_course_api_service
+from artificial_u.api.dependencies import get_course_api_service, get_repository_factory
 from artificial_u.api.models import (
     CourseCreate,
     CourseDepartmentBrief,
@@ -19,6 +19,7 @@ from artificial_u.api.models import (
     GeneratedCourseData,
 )
 from artificial_u.api.services import CourseApiService
+from artificial_u.models.repositories.factory import RepositoryFactory
 
 # Create the router
 router = APIRouter(
@@ -112,7 +113,7 @@ async def get_course_by_code(
     response_model=CourseResponse,
     status_code=status.HTTP_201_CREATED,
     summary="Create course",
-    description="Create a new course.",
+    description="Create a new course with optional smart selection for department/professor.",
     responses={  # Add specific error responses
         404: {"description": "Professor or Department not found"},
         500: {"description": "Internal server error during creation"},
@@ -123,10 +124,11 @@ async def create_course(
     course_service: CourseApiService = Depends(get_course_api_service),
 ):
     """
-    Create a new course.
-    The service handles looking up dependencies and potential errors.
+    Create a new course with optional smart selection.
+    If department_id or professor_id are not provided, the system will
+    intelligently select existing ones or generate new ones using AI.
     """
-    return course_service.create_course(course_data)
+    return await course_service.create_course(course_data)
 
 
 @router.put(
@@ -301,3 +303,80 @@ async def generate_course(
         The generated course data (not saved to the database), potentially partial.
     """
     return await course_service.generate_course(generation_data)
+
+
+@router.post(
+    "/generate/enqueue",
+    status_code=status.HTTP_202_ACCEPTED,
+    summary="Enqueue course generation job",
+    description=(
+        "Enqueue an async job to generate course data using AI. Returns a job id to poll via "
+        "GET /api/v1/jobs/{id}."
+    ),
+)
+async def enqueue_generate_course(
+    generation_data: CourseGenerate,
+    repository_factory: RepositoryFactory = Depends(get_repository_factory),
+):
+    """
+    Enqueue a job with kind 'generate_course'. The payload mirrors CourseGenerate.
+    """
+    payload = {
+        "partial_attributes": generation_data.partial_attributes or {},
+        "freeform_prompt": generation_data.freeform_prompt,
+    }
+    row = repository_factory.job.create(
+        kind="generate_course",
+        payload=payload,
+    )
+    return {
+        "id": row.id,
+        "kind": row.kind,
+        "status": row.status,
+        "attempts": row.attempts,
+        "max_attempts": row.max_attempts,
+        "priority": row.priority,
+        "run_after": row.run_after,
+    }
+
+
+@router.post(
+    "/create/enqueue",
+    status_code=status.HTTP_202_ACCEPTED,
+    summary="Enqueue smart course creation job",
+    description=(
+        "Enqueue an async job that performs smart department/professor selection/generation "
+        "and creates the course. Returns a job id to poll via GET /api/v1/jobs/{id}."
+    ),
+)
+async def enqueue_create_course(
+    course_data: CourseCreate,
+    repository_factory: RepositoryFactory = Depends(get_repository_factory),
+):
+    """
+    Enqueue a job with kind 'create_course'. The payload mirrors CourseCreate fields.
+    """
+    payload = {
+        "code": course_data.code,
+        "title": course_data.title,
+        "department_id": course_data.department_id,
+        "level": course_data.level,
+        "credits": course_data.credits,
+        "professor_id": course_data.professor_id,
+        "description": course_data.description,
+        "lectures_per_week": course_data.lectures_per_week,
+        "total_weeks": course_data.total_weeks,
+    }
+    row = repository_factory.job.create(
+        kind="create_course",
+        payload=payload,
+    )
+    return {
+        "id": row.id,
+        "kind": row.kind,
+        "status": row.status,
+        "attempts": row.attempts,
+        "max_attempts": row.max_attempts,
+        "priority": row.priority,
+        "run_after": row.run_after,
+    }

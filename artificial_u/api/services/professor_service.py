@@ -59,12 +59,31 @@ class ProfessorApiService(BaseApiService[CoreProfessor, ProfessorResponse, Profe
         super().__init__(logger)
         self.repository_factory = repository_factory
 
-        # Initialize core service with all required dependencies
+        # Initialize job enqueue service for background processing
+        from artificial_u.services.job_enqueue_service import JobEnqueueService
+
+        job_enqueue_service = JobEnqueueService(
+            repository_factory=repository_factory,
+            logger=self.logger,
+        )
+
+        # Initialize core service (CRUD only) and generator service
         self.core_service = ProfessorService(
             repository_factory=repository_factory,
+            voice_service=voice_service,
+            job_enqueue_service=job_enqueue_service,
+            logger=self.logger,
+        )
+
+        # Initialize generator service for AI generation workflows
+        from artificial_u.services.professor_generator_service import ProfessorGeneratorService
+
+        self.generator_service = ProfessorGeneratorService(
+            professor_service=self.core_service,
             content_service=content_service,
             image_service=image_service,
-            voice_service=voice_service,
+            repository_factory=repository_factory,
+            job_enqueue_service=job_enqueue_service,
             logger=self.logger,
         )
 
@@ -118,7 +137,7 @@ class ProfessorApiService(BaseApiService[CoreProfessor, ProfessorResponse, Profe
             ProfessorResponse or None if not found
         """
         try:
-            professor = self.core_service.get_professor(str(professor_id))
+            professor = self.core_service.get_professor(professor_id)
             return ProfessorResponse.model_validate(professor.model_dump())
         except ProfessorNotFoundError:
             return None
@@ -173,7 +192,7 @@ class ProfessorApiService(BaseApiService[CoreProfessor, ProfessorResponse, Profe
             update_data = {k: v for k, v in professor_data.model_dump().items() if v is not None}
 
             # Use core service to update
-            updated_professor = self.core_service.update_professor(str(professor_id), update_data)
+            updated_professor = self.core_service.update_professor(professor_id, update_data)
 
             # Convert to response model
             return ProfessorResponse.model_validate(updated_professor.model_dump())
@@ -281,9 +300,9 @@ class ProfessorApiService(BaseApiService[CoreProfessor, ProfessorResponse, Profe
             The updated ProfessorResponse if successful, None otherwise
         """
         try:
-            # Call the core service method
-            updated_professor = await self.core_service.generate_and_set_professor_image(
-                professor_id=str(professor_id)
+            # Call the generator service method
+            updated_professor = await self.generator_service.generate_and_set_professor_image(
+                professor_id=professor_id
             )
 
             if updated_professor:
@@ -327,7 +346,7 @@ class ProfessorApiService(BaseApiService[CoreProfessor, ProfessorResponse, Profe
             if hasattr(generation_data, "freeform_prompt") and generation_data.freeform_prompt:
                 partial_attrs["freeform_prompt"] = generation_data.freeform_prompt
 
-            generated_dict = await self.core_service.generate_professor(
+            generated_dict = await self.generator_service.generate_professor(
                 partial_attributes=partial_attrs
             )
 

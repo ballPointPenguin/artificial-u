@@ -24,6 +24,19 @@ This project uses [Hatch](https://hatch.pypa.io/latest/) for managing Python env
 
     *(Within the hatch shell, you can run Python, pip, pytest, etc., directly)*
 
+4. **Running Alembic Commands:** When working with database migrations, use one of these approaches:
+
+    ```bash
+    # Option 1: Using the helper script (recommended)
+    python scripts/run_alembic.py upgrade head
+
+    # Option 2: Using hatch run
+    hatch run alembic upgrade head
+
+    # Option 3: Direct alembic command (only works within hatch shell)
+    alembic upgrade head
+    ```
+
 ### Optional: Generating Lockfiles with pip-tools
 
 For highly reproducible environments, especially for CI or specific deployment scenarios, you can generate pinned dependency lockfiles using `pip-tools` (which is included in the dev dependencies).

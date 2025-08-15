@@ -25,7 +25,7 @@ class CourseModel(Base):
     description = Column(Text, nullable=True)
     lectures_per_week = Column(Integer, nullable=True, default=1)
     level = Column(String, nullable=True)
-    total_weeks = Column(Integer, nullable=True, default=14)
+    total_weeks = Column(Integer, nullable=True, default=12)
     department_id = Column(Integer, ForeignKey("departments.id"), nullable=True)
     professor_id = Column(Integer, ForeignKey("professors.id"), nullable=True)
 
@@ -134,4 +134,26 @@ class VoiceModel(Base):
         Index("idx_voices_language", "language"),
         # We'll create the text search index manually after migrations
         # to avoid Alembic issues with REGCONFIG type
+    )
+
+
+class JobModel(Base):
+    __tablename__ = "jobs"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    kind = Column(String, nullable=False)
+    payload = Column(JSONB, nullable=False)
+    status = Column(String, nullable=False, default="queued")
+    priority = Column(Integer, nullable=False, default=0)
+    run_after = Column(DateTime, nullable=False, default=datetime.now)
+    attempts = Column(Integer, nullable=False, default=0)
+    max_attempts = Column(Integer, nullable=False, default=5)
+    last_error = Column(Text, nullable=True)
+    result = Column(JSONB, nullable=True)
+    created_at = Column(DateTime, nullable=False, default=datetime.now)
+    updated_at = Column(DateTime, nullable=False, default=datetime.now)
+
+    __table_args__ = (
+        Index("idx_jobs_status_priority_runafter", "status", "priority", "run_after"),
+        Index("idx_jobs_status_updatedat", "status", "updated_at"),
     )

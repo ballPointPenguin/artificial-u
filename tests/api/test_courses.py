@@ -62,7 +62,7 @@ def mock_api_service(monkeypatch):
         "get_courses": MagicMock(),
         "get_course": MagicMock(),
         "get_course_by_code": MagicMock(),
-        "create_course": MagicMock(),
+        "create_course": AsyncMock(),  # Now async
         "update_course": MagicMock(),
         "delete_course": MagicMock(),
         "get_course_professor": MagicMock(),

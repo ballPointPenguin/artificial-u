@@ -13,8 +13,10 @@ from artificial_u.models.repositories import RepositoryFactory
 from artificial_u.services import (
     ContentService,
     CourseService,
+    DepartmentSelectorService,
     ImageService,
     LectureService,
+    ProfessorSelectorService,
     ProfessorService,
     StorageService,
     TTSService,
@@ -203,20 +205,72 @@ class UniversitySystem:
             logger=logging.getLogger("artificial_u.services.voice_service"),
         )
 
-        # Initialize ProfessorService
+        # Initialize ProfessorService (with voice and job dependencies)
+        from artificial_u.services.job_enqueue_service import JobEnqueueService
+
+        job_enqueue_service = JobEnqueueService(
+            repository_factory=self.repository_factory,
+            logger=logging.getLogger("artificial_u.services.job_enqueue_service"),
+        )
+
         self.professor_service = ProfessorService(
             repository_factory=self.repository_factory,
-            content_service=self.content_service,
-            image_service=self.image_service,
             voice_service=self.voice_service,
+            job_enqueue_service=job_enqueue_service,
             logger=logging.getLogger("artificial_u.services.professor_service"),
         )
 
-        # Initialize CourseService
+        # Initialize generator services needed by selectors
+        from artificial_u.services.department_generator_service import DepartmentGeneratorService
+        from artificial_u.services.department_service import DepartmentService
+        from artificial_u.services.professor_generator_service import ProfessorGeneratorService
+
+        department_service = DepartmentService(
+            repository_factory=self.repository_factory,
+            professor_service=self.professor_service,
+            course_service=None,  # Will be set after CourseService is created
+            logger=logging.getLogger("artificial_u.services.department_service"),
+        )
+
+        self.department_generator_service = DepartmentGeneratorService(
+            department_service=department_service,
+            content_service=self.content_service,
+            repository_factory=self.repository_factory,
+            job_enqueue_service=job_enqueue_service,
+            logger=logging.getLogger("artificial_u.services.department_generator_service"),
+        )
+
+        self.professor_generator_service = ProfessorGeneratorService(
+            professor_service=self.professor_service,
+            content_service=self.content_service,
+            image_service=self.image_service,
+            repository_factory=self.repository_factory,
+            job_enqueue_service=job_enqueue_service,
+            logger=logging.getLogger("artificial_u.services.professor_generator_service"),
+        )
+
+        # Initialize selector services
+        self.department_selector_service = DepartmentSelectorService(
+            content_service=self.content_service,
+            repository_factory=self.repository_factory,
+            department_generator_service=self.department_generator_service,
+            logger=logging.getLogger("artificial_u.services.department_selector_service"),
+        )
+
+        self.professor_selector_service = ProfessorSelectorService(
+            content_service=self.content_service,
+            repository_factory=self.repository_factory,
+            professor_generator_service=self.professor_generator_service,
+            professor_service=self.professor_service,
+            logger=logging.getLogger("artificial_u.services.professor_selector_service"),
+        )
+
+        # Initialize CourseService with selector services
         self.course_service = CourseService(
             repository_factory=self.repository_factory,
             professor_service=self.professor_service,
-            content_service=self.content_service,
+            department_selector_service=self.department_selector_service,
+            professor_selector_service=self.professor_selector_service,
             logger=logging.getLogger("artificial_u.services.course_service"),
         )
 

@@ -5,6 +5,7 @@ This service abstracts storage operations for files, allowing the application
 to work with either local MinIO (development) or AWS S3 (production).
 """
 
+import asyncio
 import io
 import logging
 from typing import Any, Dict, List, Optional, Tuple
@@ -91,8 +92,10 @@ class StorageService:
             if content_type:
                 extra_args["ContentType"] = content_type
 
-            # Upload to S3/MinIO
-            self.client.upload_fileobj(file_obj, bucket, object_name, ExtraArgs=extra_args)
+            # Upload to S3/MinIO (blocking) in a thread
+            await asyncio.to_thread(
+                self.client.upload_fileobj, file_obj, bucket, object_name, ExtraArgs=extra_args
+            )
 
             # Generate URL
             url = self.get_file_url(bucket, object_name)
@@ -183,12 +186,14 @@ class StorageService:
             # Create a file-like object to hold the downloaded content
             file_obj = io.BytesIO()
 
-            # Get content type
-            response = self.client.head_object(Bucket=bucket, Key=object_name)
+            # Get content type (blocking)
+            response = await asyncio.to_thread(
+                self.client.head_object, Bucket=bucket, Key=object_name
+            )
             content_type = response.get("ContentType", "application/octet-stream")
 
-            # Download file
-            self.client.download_fileobj(bucket, object_name, file_obj)
+            # Download file (blocking)
+            await asyncio.to_thread(self.client.download_fileobj, bucket, object_name, file_obj)
             file_obj.seek(0)
 
             self.logger.info(f"Downloaded file from {bucket}/{object_name}")
@@ -241,7 +246,7 @@ class StorageService:
             Success flag
         """
         try:
-            self.client.delete_object(Bucket=bucket, Key=object_name)
+            await asyncio.to_thread(self.client.delete_object, Bucket=bucket, Key=object_name)
             self.logger.info(f"Deleted file from {bucket}/{object_name}")
             return True
         except Exception as e:
@@ -268,15 +273,17 @@ class StorageService:
             if prefix:
                 params["Prefix"] = prefix
 
-            # List objects
-            response = self.client.list_objects_v2(**params)
+            # List objects (blocking)
+            response = await asyncio.to_thread(self.client.list_objects_v2, **params)
 
             # Process results
             files = []
             if "Contents" in response:
                 for obj in response["Contents"]:
-                    # Get additional metadata
-                    head = self.client.head_object(Bucket=bucket, Key=obj["Key"])
+                    # Get additional metadata (blocking)
+                    head = await asyncio.to_thread(
+                        self.client.head_object, Bucket=bucket, Key=obj["Key"]
+                    )
 
                     files.append(
                         {

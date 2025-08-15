@@ -1,5 +1,6 @@
 import { A } from '@solidjs/router'
-import { type Component, createSignal, Show } from 'solid-js'
+import { type Component, createSignal, onCleanup, onMount, Show } from 'solid-js'
+import { subscribeJobEvents } from '../../api/services/jobs-service.js'
 import { lectureService } from '../../api/services/lecture-service.js'
 import type { Lecture } from '../../api/types.js'
 import { Alert, Button, ConfirmationModal, LoadingSpinner, MagicButton } from '../ui'
@@ -22,7 +23,29 @@ export const LectureSection: Component<LectureSectionProps> = (props) => {
   const [deleteError, setDeleteError] = createSignal('')
   const [isGeneratingAudio, setIsGeneratingAudio] = createSignal(false)
   const [audioError, setAudioError] = createSignal('')
+  const [audioInfo, setAudioInfo] = createSignal('')
   const [audioTimeout, setAudioTimeout] = createSignal(false)
+  const [anyJobActive, setAnyJobActive] = createSignal(false)
+
+  // SSE: subscribe to any job events for this lecture/topic
+  onMount(() => {
+    const lec = props.lecture()
+    const stop = subscribeJobEvents(
+      lec ? { lecture_id: lec.id } : { topic_id: props.topicId },
+      (ev) => {
+        const st = ev.status
+        if (st === 'queued' || st === 'running') {
+          setAnyJobActive(true)
+        }
+        if (st === 'done' || st === 'failed' || st === 'cancelled') {
+          setAnyJobActive(false)
+        }
+      }
+    )
+    onCleanup(() => {
+      stop()
+    })
+  })
 
   const handleDeleteLecture = async () => {
     const lecture = props.lecture()
@@ -49,11 +72,14 @@ export const LectureSection: Component<LectureSectionProps> = (props) => {
 
     setIsGeneratingAudio(true)
     setAudioError('')
+    setAudioInfo('')
     setAudioTimeout(false)
 
     try {
-      await lectureService.generateLectureAudio(lecture.id, () => setAudioTimeout(true))
-      props.onLectureUpdated?.()
+      const job = await lectureService.enqueueGenerateLectureAudio(lecture.id)
+      setAudioInfo(
+        `Audio generation enqueued as Job #${String(job.id)}. Check the Jobs bar for progress.`
+      )
     } catch (error) {
       setAudioError(error instanceof Error ? error.message : 'Failed to generate audio')
     } finally {
@@ -86,7 +112,7 @@ export const LectureSection: Component<LectureSectionProps> = (props) => {
                 size="sm"
                 class="h-8"
                 onClick={() => void handleGenerateAudio()}
-                disabled={isGeneratingAudio()}
+                disabled={isGeneratingAudio() || anyJobActive()}
               >
                 {isGeneratingAudio()
                   ? 'Generating Audio...'
@@ -125,6 +151,12 @@ export const LectureSection: Component<LectureSectionProps> = (props) => {
       <Show when={deleteError()}>
         <Alert variant="danger" class="mb-4">
           {deleteError()}
+        </Alert>
+      </Show>
+
+      <Show when={audioInfo()}>
+        <Alert variant="info" class="mb-4">
+          {audioInfo()}
         </Alert>
       </Show>
 
@@ -172,7 +204,7 @@ export const LectureSection: Component<LectureSectionProps> = (props) => {
             <MagicButton
               variant="primary"
               onClick={props.onGenerateLecture}
-              disabled={props.isGeneratingLecture}
+              disabled={props.isGeneratingLecture || anyJobActive()}
             >
               {props.isGeneratingLecture ? 'Generating...' : 'Generate Lecture'}
             </MagicButton>

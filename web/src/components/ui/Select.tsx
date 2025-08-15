@@ -123,11 +123,11 @@ const Select: Component<SelectProps> = (props) => {
         }
       >
         <KSelect.Value<SelectOption>>
-          {(state) =>
-            state.selectedOption().label || (
-              <span class="text-muted">{local.placeholder || 'Select...'}</span>
-            )
-          }
+          {(state) => {
+            const selected = state.selectedOption() as SelectOption | undefined
+            const label = selected?.label || local.placeholder || 'Select...'
+            return <span class="truncate">{label}</span>
+          }}
         </KSelect.Value>
         <KSelect.Icon class="ml-2">
           <ChevronDown size={16} class="opacity-75" />
@@ -136,10 +136,10 @@ const Select: Component<SelectProps> = (props) => {
 
       <KSelect.Portal>
         <KSelect.Content
-          class={`bg-surface border border-border rounded-sm shadow-lg p-1 z-50 ${local.contentClass || ''}`}
+          class={`bg-surface text-foreground border border-border rounded-sm shadow-lg p-1 z-50 ${local.contentClass || ''}`}
         >
           {/* Listbox does not take itemComponent, it's rendered by Root based on options */}
-          <KSelect.Listbox<SelectOption> class="max-h-60 overflow-y-auto" />
+          <KSelect.Listbox<SelectOption> class="max-h-60 overflow-y-auto text-foreground" />
         </KSelect.Content>
       </KSelect.Portal>
     </KSelect.Root>

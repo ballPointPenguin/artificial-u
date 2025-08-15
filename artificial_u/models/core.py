@@ -141,7 +141,7 @@ class Course(BaseModel):
                 "description": "Foundational concepts and techniques in AI.",
                 "lectures_per_week": 1,
                 "level": "Undergraduate",
-                "total_weeks": 14,
+                "total_weeks": 12,
                 "department_id": 1,
                 "professor_id": 1,
             }
@@ -155,7 +155,7 @@ class Course(BaseModel):
     description: Optional[str] = None
     lectures_per_week: int = 1
     level: Optional[str] = None
-    total_weeks: int = 14
+    total_weeks: int = 12
     department_id: Optional[int] = None
     professor_id: Optional[int] = None
 

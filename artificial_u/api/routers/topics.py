@@ -6,7 +6,10 @@ from typing import List, Optional
 
 from fastapi import APIRouter, Depends, Path, Query, status
 
-from artificial_u.api.dependencies import get_topic_api_service  # Will be created later
+from artificial_u.api.dependencies import (  # Will be created later
+    get_repository_factory,
+    get_topic_api_service,
+)
 from artificial_u.api.models.topics import (
     Topic,
     TopicCreate,
@@ -15,6 +18,7 @@ from artificial_u.api.models.topics import (
     TopicUpdate,
 )
 from artificial_u.api.services.topic_service import TopicApiService
+from artificial_u.models.repositories.factory import RepositoryFactory
 
 router = APIRouter(
     prefix="/topics",
@@ -130,3 +134,35 @@ async def generate_topics_for_course(
     # Current TopicApiService.generate_topics_for_course expects a TopicGenerate object.
     generation_data = TopicGenerate(course_id=course_id, freeform_prompt=freeform_prompt)
     return await topic_service.generate_topics_for_course(generation_data)
+
+
+@router_for_course_topics.post(
+    "/generate/enqueue",
+    status_code=status.HTTP_202_ACCEPTED,
+    summary="Enqueue topic generation job",
+    description=(
+        "Enqueue an async job to generate topics for a course. Returns a job id to poll via "
+        "GET /api/v1/jobs/{id}."
+    ),
+)
+async def enqueue_generate_topics_for_course(
+    course_id: int = Path(..., description="The ID of the course to generate topics for"),
+    freeform_prompt: Optional[str] = Query(None, description="Optional prompt for generation"),
+    repository_factory: RepositoryFactory = Depends(get_repository_factory),
+):
+    payload = {"course_id": course_id}
+    if freeform_prompt:
+        payload["freeform_prompt"] = freeform_prompt
+    row = repository_factory.job.create(
+        kind="generate_topics_for_course",
+        payload=payload,
+    )
+    return {
+        "id": row.id,
+        "kind": row.kind,
+        "status": row.status,
+        "attempts": row.attempts,
+        "max_attempts": row.max_attempts,
+        "priority": row.priority,
+        "run_after": row.run_after,
+    }

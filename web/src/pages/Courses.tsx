@@ -1,6 +1,7 @@
 import { A } from '@solidjs/router'
 import { type Component, createResource, createSignal, For, Show } from 'solid-js'
 import { courseService } from '../api/services/course-service.js'
+import { subscribeJobEvents } from '../api/services/jobs-service.js'
 import type { Course, CourseCreate } from '../api/types.js'
 import CourseForm from '../components/courses/CourseForm.jsx'
 import type { CourseFormData } from '../components/courses/types.jsx'
@@ -60,19 +61,33 @@ const Courses: Component = () => {
       // Assuming CourseForm validation ensures these are numbers when onSubmit is called
       department_id: formData.department_id as number,
       professor_id: formData.professor_id as number,
-      credits: formData.credits === null ? undefined : Number(formData.credits),
+      credits: formData.credits === null ? undefined : formData.credits,
       lectures_per_week:
         formData.lectures_per_week === null ? undefined : Number(formData.lectures_per_week),
       total_weeks: formData.total_weeks === null ? undefined : Number(formData.total_weeks),
     }
 
     try {
-      await courseService.createCourse(createPayload) // Use validated/typed payload
-      setShowCreateForm(false)
-      void refetch()
+      // Enqueue smart course creation job
+      const job = await courseService.enqueueCreateCourse(createPayload)
+
+      // Subscribe to SSE for create_course events and react when done/failed
+      const unsubscribe = subscribeJobEvents({ kinds: ['create_course'] }, (ev) => {
+        if (ev.id !== job.id) return
+        if (ev.status === 'done') {
+          // Refresh list and close form
+          setShowCreateForm(false)
+          void refetch()
+          unsubscribe()
+          setSubmitting(false)
+        } else if (ev.status === 'failed' || ev.status === 'cancelled') {
+          setFormError(ev.last_error || 'Course creation failed')
+          unsubscribe()
+          setSubmitting(false)
+        }
+      })
     } catch (error) {
-      setFormError(error instanceof Error ? error.message : 'Failed to create course')
-    } finally {
+      setFormError(error instanceof Error ? error.message : 'Failed to enqueue course creation')
       setSubmitting(false)
     }
   }

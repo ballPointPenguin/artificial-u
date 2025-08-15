@@ -7,12 +7,13 @@ from sqlalchemy import engine_from_config, pool
 
 from alembic import context
 
-# Import your models here
-# from artificial_u.models import Base
-from artificial_u.models.database import Base
+# Add the project root directory to the Python path BEFORE importing models
+PROJECT_ROOT = os.path.dirname(os.path.dirname(__file__))
+if PROJECT_ROOT not in sys.path:
+    sys.path.append(PROJECT_ROOT)
 
-# Add the project root directory to the Python path
-sys.path.append(os.path.dirname(os.path.dirname(__file__)))
+# Now import the models after the path is set up
+from artificial_u.models.database import Base
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

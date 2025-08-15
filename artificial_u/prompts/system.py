@@ -8,10 +8,8 @@ GENERIC_XML_SYSTEM_PROMPT = (
 )
 
 COURSE_SYSTEM_PROMPT = (
-    "You are an expert at creating detailed, academic courses and "
-    "curricula for a wide range of subjects. "
-    "You always respond in valid, indented XML format. "
-    "Do not include any explanations, notes, or text outside the XML block."
+    "Create an academic course or curriculum in detailed XML format following the schema provided. "
+    "Do not include any explanations or text outside the XML block."
 )
 
 DEPARTMENT_SYSTEM_PROMPT = (

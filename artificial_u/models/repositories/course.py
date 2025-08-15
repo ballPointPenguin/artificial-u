@@ -102,6 +102,29 @@ class CourseRepository(BaseRepository):
                 for course in db_courses
             ]
 
+    def list_recent(self, limit: int = 20) -> List[Course]:
+        """List most recent courses ordered by ID descending."""
+        with self.get_session() as session:
+            db_courses = (
+                session.query(CourseModel).order_by(CourseModel.id.desc()).limit(limit).all()
+            )
+
+            return [
+                Course(
+                    id=course.id,
+                    code=course.code,
+                    title=course.title,
+                    credits=course.credits,
+                    description=course.description,
+                    lectures_per_week=course.lectures_per_week,
+                    level=course.level,
+                    total_weeks=course.total_weeks,
+                    department_id=course.department_id,
+                    professor_id=course.professor_id,
+                )
+                for course in db_courses
+            ]
+
     def update(self, course: Course) -> Course:
         """Update an existing course."""
         with self.get_session() as session:
