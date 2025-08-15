@@ -1,0 +1,2238 @@
+{
+  "request_url": "https://api.us.elevenlabs.io/v1/shared-voices?language=it&gender=female&sort=trending&search=&page_size=30&page=0",
+  "voices": [
+    {
+      "public_owner_id": "dc4239b369528b467450ffbeafe24e08966d7e852eaddc7cdc5e4354d7905b39",
+      "voice_id": "QttbagfgqUCm9K0VgUyT",
+      "date_unix": 1745758868,
+      "name": "Aida -  Italian promotional content ",
+      "accent": "standard",
+      "gender": "female",
+      "age": "middle_aged",
+      "descriptive": "upbeat",
+      "use_case": "advertisement",
+      "category": "high_quality",
+      "language": "it",
+      "locale": "it-IT",
+      "description": "Italian professional female voice, dynamic and engaging, full of charismatic energy, ideal for product promotional content, Tik Tok and social media, video ads and commercials, marketing, demonstrations, tutorials. Video testimonials and user generated content.",
+      "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/GNqGwAvcm9T2ztiUnKdevR5QaPE2/voices/QttbagfgqUCm9K0VgUyT/OpZVlI6efCIAg4ueP9yr.mp3",
+      "usage_character_count_1y": 10959892,
+      "usage_character_count_7d": 1444113,
+      "play_api_usage_character_count_1y": 3924235,
+      "cloned_by_count": 3640,
+      "rate": 1.0,
+      "fiat_rate": null,
+      "free_users_allowed": true,
+      "live_moderation_enabled": false,
+      "featured": false,
+      "verified_languages": [
+        {
+          "language": "it",
+          "model_id": "eleven_turbo_v2_5",
+          "accent": "standard",
+          "locale": "it-IT",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/GNqGwAvcm9T2ztiUnKdevR5QaPE2/voices/QttbagfgqUCm9K0VgUyT/OpZVlI6efCIAg4ueP9yr.mp3"
+        },
+        {
+          "language": "it",
+          "model_id": "eleven_v2_5_flash",
+          "accent": "standard",
+          "locale": "it-IT",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/GNqGwAvcm9T2ztiUnKdevR5QaPE2/voices/QttbagfgqUCm9K0VgUyT/OpZVlI6efCIAg4ueP9yr.mp3"
+        },
+        {
+          "language": "it",
+          "model_id": "eleven_flash_v2_5",
+          "accent": "standard",
+          "locale": "it-IT",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/GNqGwAvcm9T2ztiUnKdevR5QaPE2/voices/QttbagfgqUCm9K0VgUyT/OpZVlI6efCIAg4ueP9yr.mp3"
+        },
+        {
+          "language": "it",
+          "model_id": "eleven_multilingual_v2",
+          "accent": "standard",
+          "locale": "it-IT",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/GNqGwAvcm9T2ztiUnKdevR5QaPE2/voices/QttbagfgqUCm9K0VgUyT/OpZVlI6efCIAg4ueP9yr.mp3"
+        },
+        {
+          "language": "it",
+          "model_id": "eleven_multilingual_sts_v2",
+          "accent": "standard",
+          "locale": "it-IT",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/GNqGwAvcm9T2ztiUnKdevR5QaPE2/voices/QttbagfgqUCm9K0VgUyT/OpZVlI6efCIAg4ueP9yr.mp3"
+        },
+        {
+          "language": "hi",
+          "model_id": "eleven_multilingual_v2",
+          "accent": "standard",
+          "locale": "hi-IN",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/GNqGwAvcm9T2ztiUnKdevR5QaPE2/voices/QttbagfgqUCm9K0VgUyT/2709a84f-2b28-4e0a-bad6-9fad979615e5.mp3"
+        },
+        {
+          "language": "es",
+          "model_id": "eleven_turbo_v2_5",
+          "accent": "standard",
+          "locale": null,
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/GNqGwAvcm9T2ztiUnKdevR5QaPE2/voices/QttbagfgqUCm9K0VgUyT/6abff93e-9a7d-4d83-aff1-ec58a89d356f.mp3"
+        },
+        {
+          "language": "es",
+          "model_id": "eleven_multilingual_v2",
+          "accent": "peninsular",
+          "locale": "es-ES",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/GNqGwAvcm9T2ztiUnKdevR5QaPE2/voices/QttbagfgqUCm9K0VgUyT/06f0c3d7-a941-4aaa-9b8d-e0d2c96f417f.mp3"
+        },
+        {
+          "language": "pt",
+          "model_id": "eleven_multilingual_v2",
+          "accent": "brazilian",
+          "locale": "pt-BR",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/GNqGwAvcm9T2ztiUnKdevR5QaPE2/voices/QttbagfgqUCm9K0VgUyT/9642304f-7b8f-45ee-8c37-dc5b1204032b.mp3"
+        },
+        {
+          "language": "pl",
+          "model_id": "eleven_multilingual_v2",
+          "accent": "standard",
+          "locale": "pl-PL",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/GNqGwAvcm9T2ztiUnKdevR5QaPE2/voices/QttbagfgqUCm9K0VgUyT/7e368fcd-5580-4f82-8897-147c7c5d9c67.mp3"
+        },
+        {
+          "language": "it",
+          "model_id": "eleven_multilingual_v2",
+          "accent": "standard",
+          "locale": "it-IT",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/GNqGwAvcm9T2ztiUnKdevR5QaPE2/voices/QttbagfgqUCm9K0VgUyT/d31af76e-ffdf-446a-8183-c54040459423.mp3"
+        },
+        {
+          "language": "cs",
+          "model_id": "eleven_multilingual_v2",
+          "accent": "standard",
+          "locale": "cs-CZ",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/GNqGwAvcm9T2ztiUnKdevR5QaPE2/voices/QttbagfgqUCm9K0VgUyT/ddfcfe4e-ac60-4d7c-b16e-edf8bb53f59a.mp3"
+        }
+      ],
+      "notice_period": 730,
+      "instagram_username": null,
+      "twitter_username": null,
+      "youtube_username": null,
+      "tiktok_username": null,
+      "image_url": "",
+      "is_added_by_user": false
+    },
+    {
+      "public_owner_id": "dc4239b369528b467450ffbeafe24e08966d7e852eaddc7cdc5e4354d7905b39",
+      "voice_id": "kAzI34nYjizE0zON6rXv",
+      "date_unix": 1737104650,
+      "name": "Sami - Italian female ",
+      "accent": "standard",
+      "gender": "female",
+      "age": "middle_aged",
+      "descriptive": "classy",
+      "use_case": "narrative_story",
+      "category": "high_quality",
+      "language": "it",
+      "locale": "it-IT",
+      "description": "Italian female voice, soft or energetic, young or mature, smiling and stern.",
+      "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/GNqGwAvcm9T2ztiUnKdevR5QaPE2/voices/kAzI34nYjizE0zON6rXv/vHiJzuSD9fkw9hc1QNlA.mp3",
+      "usage_character_count_1y": 18055789,
+      "usage_character_count_7d": 1746811,
+      "play_api_usage_character_count_1y": 19270790,
+      "cloned_by_count": 4176,
+      "rate": 1.0,
+      "fiat_rate": null,
+      "free_users_allowed": true,
+      "live_moderation_enabled": false,
+      "featured": false,
+      "verified_languages": [
+        {
+          "language": "it",
+          "model_id": "eleven_flash_v2_5",
+          "accent": "standard",
+          "locale": "it-IT",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/GNqGwAvcm9T2ztiUnKdevR5QaPE2/voices/kAzI34nYjizE0zON6rXv/vHiJzuSD9fkw9hc1QNlA.mp3"
+        },
+        {
+          "language": "it",
+          "model_id": "eleven_multilingual_v2",
+          "accent": "standard",
+          "locale": "it-IT",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/GNqGwAvcm9T2ztiUnKdevR5QaPE2/voices/kAzI34nYjizE0zON6rXv/vHiJzuSD9fkw9hc1QNlA.mp3"
+        },
+        {
+          "language": "it",
+          "model_id": "eleven_multilingual_sts_v2",
+          "accent": "standard",
+          "locale": "it-IT",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/GNqGwAvcm9T2ztiUnKdevR5QaPE2/voices/kAzI34nYjizE0zON6rXv/vHiJzuSD9fkw9hc1QNlA.mp3"
+        },
+        {
+          "language": "it",
+          "model_id": "eleven_turbo_v2_5",
+          "accent": "standard",
+          "locale": "it-IT",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/GNqGwAvcm9T2ztiUnKdevR5QaPE2/voices/kAzI34nYjizE0zON6rXv/vHiJzuSD9fkw9hc1QNlA.mp3"
+        },
+        {
+          "language": "it",
+          "model_id": "eleven_v2_5_flash",
+          "accent": "standard",
+          "locale": "it-IT",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/GNqGwAvcm9T2ztiUnKdevR5QaPE2/voices/kAzI34nYjizE0zON6rXv/vHiJzuSD9fkw9hc1QNlA.mp3"
+        }
+      ],
+      "notice_period": 730,
+      "instagram_username": null,
+      "twitter_username": null,
+      "youtube_username": null,
+      "tiktok_username": null,
+      "image_url": "",
+      "is_added_by_user": false
+    },
+    {
+      "public_owner_id": "6e409d2173d2b6167e28254070153cf9c6898ab33ebd92599a97ae13b9539b83",
+      "voice_id": "Dzlw1nIlAqiOOW6J7qo1",
+      "date_unix": 1753658702,
+      "name": "Chiara - Intensity in Every Word",
+      "accent": "standard",
+      "gender": "female",
+      "age": "young",
+      "descriptive": "cute",
+      "use_case": "narrative_story",
+      "category": "professional",
+      "language": "it",
+      "locale": "it-IT",
+      "description": "Chiara’s voice hits with emotion and precision. Her delivery is smooth but powerful, ideal for storytelling, branding, and voiceovers that need real presence — not just sound, but feeling.",
+      "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/dlw0wrVq9iYOs8pHTSlmNKfBrAb2/voices/Dzlw1nIlAqiOOW6J7qo1/G8iLYHAC3E14jtkJykmR.mp3",
+      "usage_character_count_1y": 1025619,
+      "usage_character_count_7d": 169182,
+      "play_api_usage_character_count_1y": 0,
+      "cloned_by_count": 639,
+      "rate": 1.0,
+      "fiat_rate": null,
+      "free_users_allowed": true,
+      "live_moderation_enabled": false,
+      "featured": false,
+      "verified_languages": [
+        {
+          "language": "it",
+          "model_id": "eleven_turbo_v2_5",
+          "accent": "standard",
+          "locale": "it-IT",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/dlw0wrVq9iYOs8pHTSlmNKfBrAb2/voices/Dzlw1nIlAqiOOW6J7qo1/G8iLYHAC3E14jtkJykmR.mp3"
+        },
+        {
+          "language": "it",
+          "model_id": "eleven_v2_5_flash",
+          "accent": "standard",
+          "locale": "it-IT",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/dlw0wrVq9iYOs8pHTSlmNKfBrAb2/voices/Dzlw1nIlAqiOOW6J7qo1/G8iLYHAC3E14jtkJykmR.mp3"
+        },
+        {
+          "language": "it",
+          "model_id": "eleven_flash_v2_5",
+          "accent": "standard",
+          "locale": "it-IT",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/dlw0wrVq9iYOs8pHTSlmNKfBrAb2/voices/Dzlw1nIlAqiOOW6J7qo1/G8iLYHAC3E14jtkJykmR.mp3"
+        },
+        {
+          "language": "it",
+          "model_id": "eleven_multilingual_v2",
+          "accent": "standard",
+          "locale": "it-IT",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/dlw0wrVq9iYOs8pHTSlmNKfBrAb2/voices/Dzlw1nIlAqiOOW6J7qo1/G8iLYHAC3E14jtkJykmR.mp3"
+        }
+      ],
+      "notice_period": 730,
+      "instagram_username": null,
+      "twitter_username": null,
+      "youtube_username": null,
+      "tiktok_username": null,
+      "image_url": "",
+      "is_added_by_user": false
+    },
+    {
+      "public_owner_id": "136391b37c76c590e5a8337fee0ade3148d010535925031b132ae20221553dc6",
+      "voice_id": "gfKKsLN1k0oYYN9n2dXX",
+      "date_unix": 1741365661,
+      "name": "Violetta",
+      "accent": "standard",
+      "gender": "female",
+      "age": "middle_aged",
+      "descriptive": "professional",
+      "use_case": "narrative_story",
+      "category": "high_quality",
+      "language": "it",
+      "locale": "it-IT",
+      "description": "A warm, clear, and engaging middle-aged Italien female voice. With a smooth, natural tone, this voice is perfect for narrations, audiobooks, or informative audio content. Its expressive quality makes it ideal for storytelling, while remaining professional and easy to follow.",
+      "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/Mxxy1mLEQkeyXX75dokAIWz8bel1/voices/gfKKsLN1k0oYYN9n2dXX/Z2oJ1Jb0O555Pu7XDZv4.mp3",
+      "usage_character_count_1y": 51145493,
+      "usage_character_count_7d": 2361247,
+      "play_api_usage_character_count_1y": 0,
+      "cloned_by_count": 6616,
+      "rate": 1.0,
+      "fiat_rate": null,
+      "free_users_allowed": true,
+      "live_moderation_enabled": false,
+      "featured": false,
+      "verified_languages": [
+        {
+          "language": "it",
+          "model_id": "eleven_turbo_v2_5",
+          "accent": "standard",
+          "locale": "it-IT",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/Mxxy1mLEQkeyXX75dokAIWz8bel1/voices/gfKKsLN1k0oYYN9n2dXX/Z2oJ1Jb0O555Pu7XDZv4.mp3"
+        },
+        {
+          "language": "it",
+          "model_id": "eleven_v2_5_flash",
+          "accent": "standard",
+          "locale": "it-IT",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/Mxxy1mLEQkeyXX75dokAIWz8bel1/voices/gfKKsLN1k0oYYN9n2dXX/Z2oJ1Jb0O555Pu7XDZv4.mp3"
+        },
+        {
+          "language": "it",
+          "model_id": "eleven_flash_v2_5",
+          "accent": "standard",
+          "locale": "it-IT",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/Mxxy1mLEQkeyXX75dokAIWz8bel1/voices/gfKKsLN1k0oYYN9n2dXX/Z2oJ1Jb0O555Pu7XDZv4.mp3"
+        },
+        {
+          "language": "it",
+          "model_id": "eleven_multilingual_v2",
+          "accent": "standard",
+          "locale": "it-IT",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/Mxxy1mLEQkeyXX75dokAIWz8bel1/voices/gfKKsLN1k0oYYN9n2dXX/Z2oJ1Jb0O555Pu7XDZv4.mp3"
+        },
+        {
+          "language": "it",
+          "model_id": "eleven_multilingual_sts_v2",
+          "accent": "standard",
+          "locale": "it-IT",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/Mxxy1mLEQkeyXX75dokAIWz8bel1/voices/gfKKsLN1k0oYYN9n2dXX/Z2oJ1Jb0O555Pu7XDZv4.mp3"
+        },
+        {
+          "language": "pl",
+          "model_id": "eleven_multilingual_v2",
+          "accent": "standard",
+          "locale": "pl-PL",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/Mxxy1mLEQkeyXX75dokAIWz8bel1/voices/gfKKsLN1k0oYYN9n2dXX/c4a60ae9-e2a2-4dd7-a584-5e2e757f0f23.mp3"
+        },
+        {
+          "language": "en",
+          "model_id": "eleven_multilingual_v2",
+          "accent": null,
+          "locale": "en-US",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/Mxxy1mLEQkeyXX75dokAIWz8bel1/voices/gfKKsLN1k0oYYN9n2dXX/bb3fc21f-7db6-473b-854a-bd826ee2546f.mp3"
+        },
+        {
+          "language": "ko",
+          "model_id": "eleven_multilingual_v2",
+          "accent": "standard",
+          "locale": "ko-KR",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/Mxxy1mLEQkeyXX75dokAIWz8bel1/voices/gfKKsLN1k0oYYN9n2dXX/d69d387b-110c-4cec-af94-fedafc6276c7.mp3"
+        },
+        {
+          "language": "es",
+          "model_id": "eleven_multilingual_v2",
+          "accent": "peninsular",
+          "locale": "es-ES",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/Mxxy1mLEQkeyXX75dokAIWz8bel1/voices/gfKKsLN1k0oYYN9n2dXX/96fa19da-f87d-4993-8589-71021189d19d.mp3"
+        }
+      ],
+      "notice_period": 730,
+      "instagram_username": null,
+      "twitter_username": null,
+      "youtube_username": null,
+      "tiktok_username": null,
+      "image_url": "",
+      "is_added_by_user": false
+    },
+    {
+      "public_owner_id": "dc4239b369528b467450ffbeafe24e08966d7e852eaddc7cdc5e4354d7905b39",
+      "voice_id": "fNmw8sukfGuvWVOp33Ge",
+      "date_unix": 1749831773,
+      "name": "Tosca - Old & Deep",
+      "accent": "standard",
+      "gender": "female",
+      "age": "old",
+      "descriptive": "deep",
+      "use_case": "narrative_story",
+      "category": "professional",
+      "language": "it",
+      "locale": "it-IT",
+      "description": "Deep Italian female voice. Mature, calm. Perfect for audiobook, storytelling, podcast, and dubbing.",
+      "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/GNqGwAvcm9T2ztiUnKdevR5QaPE2/voices/fNmw8sukfGuvWVOp33Ge/pEyoDlZNSfk32LUM6xmw.mp3",
+      "usage_character_count_1y": 3059550,
+      "usage_character_count_7d": 278430,
+      "play_api_usage_character_count_1y": 0,
+      "cloned_by_count": 1475,
+      "rate": 1.0,
+      "fiat_rate": null,
+      "free_users_allowed": true,
+      "live_moderation_enabled": false,
+      "featured": false,
+      "verified_languages": [
+        {
+          "language": "it",
+          "model_id": "eleven_turbo_v2_5",
+          "accent": "standard",
+          "locale": "it-IT",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/GNqGwAvcm9T2ztiUnKdevR5QaPE2/voices/fNmw8sukfGuvWVOp33Ge/pEyoDlZNSfk32LUM6xmw.mp3"
+        },
+        {
+          "language": "it",
+          "model_id": "eleven_v2_5_flash",
+          "accent": "standard",
+          "locale": "it-IT",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/GNqGwAvcm9T2ztiUnKdevR5QaPE2/voices/fNmw8sukfGuvWVOp33Ge/pEyoDlZNSfk32LUM6xmw.mp3"
+        },
+        {
+          "language": "it",
+          "model_id": "eleven_flash_v2_5",
+          "accent": "standard",
+          "locale": "it-IT",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/GNqGwAvcm9T2ztiUnKdevR5QaPE2/voices/fNmw8sukfGuvWVOp33Ge/pEyoDlZNSfk32LUM6xmw.mp3"
+        },
+        {
+          "language": "it",
+          "model_id": "eleven_multilingual_v2",
+          "accent": "standard",
+          "locale": "it-IT",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/GNqGwAvcm9T2ztiUnKdevR5QaPE2/voices/fNmw8sukfGuvWVOp33Ge/pEyoDlZNSfk32LUM6xmw.mp3"
+        },
+        {
+          "language": "it",
+          "model_id": "eleven_multilingual_sts_v2",
+          "accent": "standard",
+          "locale": "it-IT",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/GNqGwAvcm9T2ztiUnKdevR5QaPE2/voices/fNmw8sukfGuvWVOp33Ge/pEyoDlZNSfk32LUM6xmw.mp3"
+        }
+      ],
+      "notice_period": 730,
+      "instagram_username": null,
+      "twitter_username": null,
+      "youtube_username": null,
+      "tiktok_username": null,
+      "image_url": "",
+      "is_added_by_user": false
+    },
+    {
+      "public_owner_id": "dc4239b369528b467450ffbeafe24e08966d7e852eaddc7cdc5e4354d7905b39",
+      "voice_id": "CiwzbDpaN3pQXjTgx3ML",
+      "date_unix": 1739904957,
+      "name": "Aida - Deep female Italian voice",
+      "accent": "standard",
+      "gender": "female",
+      "age": "middle_aged",
+      "descriptive": "meditative",
+      "use_case": "conversational",
+      "category": "high_quality",
+      "language": "it",
+      "locale": "it-IT",
+      "description": "An intimate, sultry deep Italian female voice, perfect for audiobooks, narrations, podcasts, ads, meditation, personal growth. Chills down your spine...",
+      "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/GNqGwAvcm9T2ztiUnKdevR5QaPE2/voices/CiwzbDpaN3pQXjTgx3ML/A9wKSKVo9UNRrLqSy8L2.mp3",
+      "usage_character_count_1y": 30412315,
+      "usage_character_count_7d": 1547402,
+      "play_api_usage_character_count_1y": 62581763,
+      "cloned_by_count": 4830,
+      "rate": 1.0,
+      "fiat_rate": null,
+      "free_users_allowed": true,
+      "live_moderation_enabled": false,
+      "featured": false,
+      "verified_languages": [
+        {
+          "language": "it",
+          "model_id": "eleven_flash_v2_5",
+          "accent": "standard",
+          "locale": "it-IT",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/GNqGwAvcm9T2ztiUnKdevR5QaPE2/voices/CiwzbDpaN3pQXjTgx3ML/A9wKSKVo9UNRrLqSy8L2.mp3"
+        },
+        {
+          "language": "it",
+          "model_id": "eleven_multilingual_v2",
+          "accent": "standard",
+          "locale": "it-IT",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/GNqGwAvcm9T2ztiUnKdevR5QaPE2/voices/CiwzbDpaN3pQXjTgx3ML/A9wKSKVo9UNRrLqSy8L2.mp3"
+        },
+        {
+          "language": "it",
+          "model_id": "eleven_multilingual_sts_v2",
+          "accent": "standard",
+          "locale": "it-IT",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/GNqGwAvcm9T2ztiUnKdevR5QaPE2/voices/CiwzbDpaN3pQXjTgx3ML/A9wKSKVo9UNRrLqSy8L2.mp3"
+        },
+        {
+          "language": "it",
+          "model_id": "eleven_turbo_v2_5",
+          "accent": "standard",
+          "locale": "it-IT",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/GNqGwAvcm9T2ztiUnKdevR5QaPE2/voices/CiwzbDpaN3pQXjTgx3ML/A9wKSKVo9UNRrLqSy8L2.mp3"
+        },
+        {
+          "language": "it",
+          "model_id": "eleven_v2_5_flash",
+          "accent": "standard",
+          "locale": "it-IT",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/GNqGwAvcm9T2ztiUnKdevR5QaPE2/voices/CiwzbDpaN3pQXjTgx3ML/A9wKSKVo9UNRrLqSy8L2.mp3"
+        }
+      ],
+      "notice_period": 730,
+      "instagram_username": null,
+      "twitter_username": null,
+      "youtube_username": null,
+      "tiktok_username": null,
+      "image_url": "",
+      "is_added_by_user": false
+    },
+    {
+      "public_owner_id": "dc4239b369528b467450ffbeafe24e08966d7e852eaddc7cdc5e4354d7905b39",
+      "voice_id": "b8jhBTcGAq4kQGWmKprT",
+      "date_unix": 1742934525,
+      "name": "Sami - Italian News Anchorwoman",
+      "accent": "standard",
+      "gender": "female",
+      "age": "middle_aged",
+      "descriptive": "professional",
+      "use_case": "informative_educational",
+      "category": "high_quality",
+      "language": "it",
+      "locale": "it-IT",
+      "description": "Italian female voice for your radio or social news, newscasts, reports, documentaries, investigative or crime programmes. Professional, gritty, clear. \r\n",
+      "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/GNqGwAvcm9T2ztiUnKdevR5QaPE2/voices/b8jhBTcGAq4kQGWmKprT/fnO0Ds2VimNULRAczDa0.mp3",
+      "usage_character_count_1y": 8490476,
+      "usage_character_count_7d": 821063,
+      "play_api_usage_character_count_1y": 6595996,
+      "cloned_by_count": 2611,
+      "rate": 1.0,
+      "fiat_rate": null,
+      "free_users_allowed": true,
+      "live_moderation_enabled": false,
+      "featured": false,
+      "verified_languages": [
+        {
+          "language": "it",
+          "model_id": "eleven_turbo_v2_5",
+          "accent": "standard",
+          "locale": "it-IT",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/GNqGwAvcm9T2ztiUnKdevR5QaPE2/voices/b8jhBTcGAq4kQGWmKprT/fnO0Ds2VimNULRAczDa0.mp3"
+        },
+        {
+          "language": "it",
+          "model_id": "eleven_v2_5_flash",
+          "accent": "standard",
+          "locale": "it-IT",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/GNqGwAvcm9T2ztiUnKdevR5QaPE2/voices/b8jhBTcGAq4kQGWmKprT/fnO0Ds2VimNULRAczDa0.mp3"
+        },
+        {
+          "language": "it",
+          "model_id": "eleven_flash_v2_5",
+          "accent": "standard",
+          "locale": "it-IT",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/GNqGwAvcm9T2ztiUnKdevR5QaPE2/voices/b8jhBTcGAq4kQGWmKprT/fnO0Ds2VimNULRAczDa0.mp3"
+        },
+        {
+          "language": "it",
+          "model_id": "eleven_multilingual_v2",
+          "accent": "standard",
+          "locale": "it-IT",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/GNqGwAvcm9T2ztiUnKdevR5QaPE2/voices/b8jhBTcGAq4kQGWmKprT/fnO0Ds2VimNULRAczDa0.mp3"
+        },
+        {
+          "language": "it",
+          "model_id": "eleven_multilingual_sts_v2",
+          "accent": "standard",
+          "locale": "it-IT",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/GNqGwAvcm9T2ztiUnKdevR5QaPE2/voices/b8jhBTcGAq4kQGWmKprT/fnO0Ds2VimNULRAczDa0.mp3"
+        }
+      ],
+      "notice_period": 730,
+      "instagram_username": null,
+      "twitter_username": null,
+      "youtube_username": null,
+      "tiktok_username": null,
+      "image_url": "",
+      "is_added_by_user": false
+    },
+    {
+      "public_owner_id": "bfb338aec65fabefa66c56c155780c076070e4407adb17f1e8027cd670076a9a",
+      "voice_id": "oVJbgLwL0s5pk9e2U6QH",
+      "date_unix": 1743087511,
+      "name": "Manuela",
+      "accent": "standard",
+      "gender": "female",
+      "age": "middle_aged",
+      "descriptive": "pleasant",
+      "use_case": "narrative_story",
+      "category": "professional",
+      "language": "it",
+      "locale": "it-IT",
+      "description": "Warm, clear and versatile Italian real PRO actress voice, perfect for narration, commercials, e-learning and conversational voiceovers. \r\nVoice characteristics: Female, Italian, warm, clear, professional, friendly, versatile, engaging, smooth, trustworthy, actress, narrator, commercial, conversational.",
+      "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/9jJ4AmSUUfhy6LqHRJuQleIIRuU2/voices/oVJbgLwL0s5pk9e2U6QH/Xbrapy5qoTlEKEWC6QKa.mp3",
+      "usage_character_count_1y": 16809783,
+      "usage_character_count_7d": 1325530,
+      "play_api_usage_character_count_1y": 0,
+      "cloned_by_count": 3177,
+      "rate": 1.0,
+      "fiat_rate": null,
+      "free_users_allowed": true,
+      "live_moderation_enabled": false,
+      "featured": false,
+      "verified_languages": [
+        {
+          "language": "it",
+          "model_id": "eleven_turbo_v2_5",
+          "accent": "standard",
+          "locale": "it-IT",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/9jJ4AmSUUfhy6LqHRJuQleIIRuU2/voices/oVJbgLwL0s5pk9e2U6QH/Xbrapy5qoTlEKEWC6QKa.mp3"
+        },
+        {
+          "language": "it",
+          "model_id": "eleven_v2_5_flash",
+          "accent": "standard",
+          "locale": "it-IT",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/9jJ4AmSUUfhy6LqHRJuQleIIRuU2/voices/oVJbgLwL0s5pk9e2U6QH/Xbrapy5qoTlEKEWC6QKa.mp3"
+        },
+        {
+          "language": "it",
+          "model_id": "eleven_flash_v2_5",
+          "accent": "standard",
+          "locale": "it-IT",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/9jJ4AmSUUfhy6LqHRJuQleIIRuU2/voices/oVJbgLwL0s5pk9e2U6QH/Xbrapy5qoTlEKEWC6QKa.mp3"
+        },
+        {
+          "language": "it",
+          "model_id": "eleven_multilingual_v2",
+          "accent": "standard",
+          "locale": "it-IT",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/9jJ4AmSUUfhy6LqHRJuQleIIRuU2/voices/oVJbgLwL0s5pk9e2U6QH/Xbrapy5qoTlEKEWC6QKa.mp3"
+        },
+        {
+          "language": "it",
+          "model_id": "eleven_multilingual_sts_v2",
+          "accent": "standard",
+          "locale": "it-IT",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/9jJ4AmSUUfhy6LqHRJuQleIIRuU2/voices/oVJbgLwL0s5pk9e2U6QH/Xbrapy5qoTlEKEWC6QKa.mp3"
+        }
+      ],
+      "notice_period": 180,
+      "instagram_username": null,
+      "twitter_username": null,
+      "youtube_username": null,
+      "tiktok_username": null,
+      "image_url": "",
+      "is_added_by_user": false
+    },
+    {
+      "public_owner_id": "fc55ec33b891751a2d001382938ea9bdd9d0e073002b8c1676f6079de7579d3e",
+      "voice_id": "201hPjDVu4Q5DUV7tMQJ",
+      "date_unix": 1732901242,
+      "name": "Marcella",
+      "accent": "standard",
+      "gender": "female",
+      "age": "middle_aged",
+      "descriptive": "confident",
+      "use_case": "narrative_story",
+      "category": "professional",
+      "language": "it",
+      "locale": "it-IT",
+      "description": "Professional Italian female voice. Great for Narrations.",
+      "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/2OgofQdV1heyiPg6SHLHiP2Cz4w1/voices/201hPjDVu4Q5DUV7tMQJ/JnEbV6SGafBmmdomL1ez.mp3",
+      "usage_character_count_1y": 18307936,
+      "usage_character_count_7d": 295678,
+      "play_api_usage_character_count_1y": 0,
+      "cloned_by_count": 1363,
+      "rate": 2.0,
+      "fiat_rate": 0.2,
+      "free_users_allowed": false,
+      "live_moderation_enabled": false,
+      "featured": false,
+      "verified_languages": [
+        {
+          "language": "it",
+          "model_id": "eleven_turbo_v2_5",
+          "accent": "standard",
+          "locale": "it-IT",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/2OgofQdV1heyiPg6SHLHiP2Cz4w1/voices/201hPjDVu4Q5DUV7tMQJ/JnEbV6SGafBmmdomL1ez.mp3"
+        },
+        {
+          "language": "it",
+          "model_id": "eleven_multilingual_sts_v2",
+          "accent": "standard",
+          "locale": "it-IT",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/2OgofQdV1heyiPg6SHLHiP2Cz4w1/voices/201hPjDVu4Q5DUV7tMQJ/JnEbV6SGafBmmdomL1ez.mp3"
+        },
+        {
+          "language": "it",
+          "model_id": "eleven_multilingual_v2",
+          "accent": "standard",
+          "locale": "it-IT",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/2OgofQdV1heyiPg6SHLHiP2Cz4w1/voices/201hPjDVu4Q5DUV7tMQJ/JnEbV6SGafBmmdomL1ez.mp3"
+        },
+        {
+          "language": "it",
+          "model_id": "eleven_v2_5_flash",
+          "accent": "standard",
+          "locale": "it-IT",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/2OgofQdV1heyiPg6SHLHiP2Cz4w1/voices/201hPjDVu4Q5DUV7tMQJ/JnEbV6SGafBmmdomL1ez.mp3"
+        },
+        {
+          "language": "it",
+          "model_id": "eleven_flash_v2_5",
+          "accent": "standard",
+          "locale": "it-IT",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/2OgofQdV1heyiPg6SHLHiP2Cz4w1/voices/201hPjDVu4Q5DUV7tMQJ/JnEbV6SGafBmmdomL1ez.mp3"
+        }
+      ],
+      "notice_period": 90,
+      "instagram_username": null,
+      "twitter_username": null,
+      "youtube_username": null,
+      "tiktok_username": null,
+      "image_url": "",
+      "is_added_by_user": false
+    },
+    {
+      "public_owner_id": "429404dd9e1822272fc8b0d5d2aab7ed357d8dc8f32fff53695c7c31654d818e",
+      "voice_id": "x89KUxIfWuOxMog310Aq",
+      "date_unix": 1740177575,
+      "name": "Viola",
+      "accent": "standard",
+      "gender": "female",
+      "age": "middle_aged",
+      "descriptive": "professional",
+      "use_case": "advertisement",
+      "category": "professional",
+      "language": "it",
+      "locale": "it-IT",
+      "description": "Middle-aged female voice. Suitable for Commercials.",
+      "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/NpKkbr6NYVcgimRNIHCfb8FI13E2/voices/x89KUxIfWuOxMog310Aq/452ab3e5-12cf-4ae8-a70d-22c2824de521.mp3",
+      "usage_character_count_1y": 3288101,
+      "usage_character_count_7d": 56486,
+      "play_api_usage_character_count_1y": 0,
+      "cloned_by_count": 818,
+      "rate": 1.0,
+      "fiat_rate": 0.06,
+      "free_users_allowed": false,
+      "live_moderation_enabled": false,
+      "featured": false,
+      "verified_languages": [
+        {
+          "language": "it",
+          "model_id": "eleven_multilingual_v2",
+          "accent": "standard",
+          "locale": "it-IT",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/NpKkbr6NYVcgimRNIHCfb8FI13E2/voices/x89KUxIfWuOxMog310Aq/452ab3e5-12cf-4ae8-a70d-22c2824de521.mp3"
+        },
+        {
+          "language": "it",
+          "model_id": "eleven_turbo_v2_5",
+          "accent": "standard",
+          "locale": "it-IT",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/NpKkbr6NYVcgimRNIHCfb8FI13E2/voices/x89KUxIfWuOxMog310Aq/452ab3e5-12cf-4ae8-a70d-22c2824de521.mp3"
+        },
+        {
+          "language": "it",
+          "model_id": "eleven_v2_5_flash",
+          "accent": "standard",
+          "locale": "it-IT",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/NpKkbr6NYVcgimRNIHCfb8FI13E2/voices/x89KUxIfWuOxMog310Aq/452ab3e5-12cf-4ae8-a70d-22c2824de521.mp3"
+        },
+        {
+          "language": "it",
+          "model_id": "eleven_flash_v2_5",
+          "accent": "standard",
+          "locale": "it-IT",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/NpKkbr6NYVcgimRNIHCfb8FI13E2/voices/x89KUxIfWuOxMog310Aq/452ab3e5-12cf-4ae8-a70d-22c2824de521.mp3"
+        },
+        {
+          "language": "it",
+          "model_id": "eleven_multilingual_sts_v2",
+          "accent": "standard",
+          "locale": "it-IT",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/NpKkbr6NYVcgimRNIHCfb8FI13E2/voices/x89KUxIfWuOxMog310Aq/452ab3e5-12cf-4ae8-a70d-22c2824de521.mp3"
+        }
+      ],
+      "notice_period": 730,
+      "instagram_username": null,
+      "twitter_username": null,
+      "youtube_username": null,
+      "tiktok_username": null,
+      "image_url": "",
+      "is_added_by_user": false
+    },
+    {
+      "public_owner_id": "263e492123ebbbd12e29697910b5ee1ced7192731a3c12bf8c19eb1e22ac842f",
+      "voice_id": "jlhiuC3oLEP3JDAx1ECk",
+      "date_unix": 1739375043,
+      "name": "Romans - Italian Female Voice",
+      "accent": "neapolitan",
+      "gender": "female",
+      "age": "young",
+      "descriptive": "calm",
+      "use_case": "conversational",
+      "category": "professional",
+      "language": "it",
+      "locale": "it-IT",
+      "description": "Italian young female - warm, convincing, and fascinating voice.",
+      "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/sKiIoALNAxTmxpi675Gbl7T9V373/voices/jlhiuC3oLEP3JDAx1ECk/tPSzFl5MdMujjt4AhaZ1.mp3",
+      "usage_character_count_1y": 621868,
+      "usage_character_count_7d": 40408,
+      "play_api_usage_character_count_1y": 0,
+      "cloned_by_count": 203,
+      "rate": 1.0,
+      "fiat_rate": 0.06,
+      "free_users_allowed": false,
+      "live_moderation_enabled": false,
+      "featured": false,
+      "verified_languages": [
+        {
+          "language": "it",
+          "model_id": "eleven_flash_v2_5",
+          "accent": "neapolitan",
+          "locale": "it-IT",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/sKiIoALNAxTmxpi675Gbl7T9V373/voices/jlhiuC3oLEP3JDAx1ECk/tPSzFl5MdMujjt4AhaZ1.mp3"
+        },
+        {
+          "language": "it",
+          "model_id": "eleven_multilingual_v2",
+          "accent": "neapolitan",
+          "locale": "it-IT",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/sKiIoALNAxTmxpi675Gbl7T9V373/voices/jlhiuC3oLEP3JDAx1ECk/tPSzFl5MdMujjt4AhaZ1.mp3"
+        },
+        {
+          "language": "it",
+          "model_id": "eleven_multilingual_sts_v2",
+          "accent": "neapolitan",
+          "locale": "it-IT",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/sKiIoALNAxTmxpi675Gbl7T9V373/voices/jlhiuC3oLEP3JDAx1ECk/tPSzFl5MdMujjt4AhaZ1.mp3"
+        },
+        {
+          "language": "it",
+          "model_id": "eleven_turbo_v2_5",
+          "accent": "neapolitan",
+          "locale": "it-IT",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/sKiIoALNAxTmxpi675Gbl7T9V373/voices/jlhiuC3oLEP3JDAx1ECk/tPSzFl5MdMujjt4AhaZ1.mp3"
+        },
+        {
+          "language": "it",
+          "model_id": "eleven_v2_5_flash",
+          "accent": "neapolitan",
+          "locale": "it-IT",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/sKiIoALNAxTmxpi675Gbl7T9V373/voices/jlhiuC3oLEP3JDAx1ECk/tPSzFl5MdMujjt4AhaZ1.mp3"
+        }
+      ],
+      "notice_period": 730,
+      "instagram_username": null,
+      "twitter_username": null,
+      "youtube_username": null,
+      "tiktok_username": null,
+      "image_url": "",
+      "is_added_by_user": false
+    },
+    {
+      "public_owner_id": "dc4239b369528b467450ffbeafe24e08966d7e852eaddc7cdc5e4354d7905b39",
+      "voice_id": "fQmr8dTaOQq116mo2X7F",
+      "date_unix": 1738410982,
+      "name": "Samanta  - Warm Italian voice",
+      "accent": "standard",
+      "gender": "female",
+      "age": "middle_aged",
+      "descriptive": "confident",
+      "use_case": "narrative_story",
+      "category": "high_quality",
+      "language": "it",
+      "locale": "it-IT",
+      "description": "An adult, warm and deep Italian female voice, clear, reassuring and vibrant. Perfect for audio books, ads, podcasts, late night radio, narratives, stories...",
+      "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/GNqGwAvcm9T2ztiUnKdevR5QaPE2/voices/fQmr8dTaOQq116mo2X7F/ohr3Oy4QHzzrbwm1BcEi.mp3",
+      "usage_character_count_1y": 70434495,
+      "usage_character_count_7d": 3047736,
+      "play_api_usage_character_count_1y": 93400743,
+      "cloned_by_count": 6340,
+      "rate": 1.0,
+      "fiat_rate": null,
+      "free_users_allowed": true,
+      "live_moderation_enabled": false,
+      "featured": false,
+      "verified_languages": [
+        {
+          "language": "it",
+          "model_id": "eleven_flash_v2_5",
+          "accent": "standard",
+          "locale": "it-IT",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/GNqGwAvcm9T2ztiUnKdevR5QaPE2/voices/fQmr8dTaOQq116mo2X7F/ohr3Oy4QHzzrbwm1BcEi.mp3"
+        },
+        {
+          "language": "it",
+          "model_id": "eleven_multilingual_v2",
+          "accent": "standard",
+          "locale": "it-IT",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/GNqGwAvcm9T2ztiUnKdevR5QaPE2/voices/fQmr8dTaOQq116mo2X7F/ohr3Oy4QHzzrbwm1BcEi.mp3"
+        },
+        {
+          "language": "it",
+          "model_id": "eleven_multilingual_sts_v2",
+          "accent": "standard",
+          "locale": "it-IT",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/GNqGwAvcm9T2ztiUnKdevR5QaPE2/voices/fQmr8dTaOQq116mo2X7F/ohr3Oy4QHzzrbwm1BcEi.mp3"
+        },
+        {
+          "language": "it",
+          "model_id": "eleven_turbo_v2_5",
+          "accent": "standard",
+          "locale": "it-IT",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/GNqGwAvcm9T2ztiUnKdevR5QaPE2/voices/fQmr8dTaOQq116mo2X7F/ohr3Oy4QHzzrbwm1BcEi.mp3"
+        },
+        {
+          "language": "it",
+          "model_id": "eleven_v2_5_flash",
+          "accent": "standard",
+          "locale": "it-IT",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/GNqGwAvcm9T2ztiUnKdevR5QaPE2/voices/fQmr8dTaOQq116mo2X7F/ohr3Oy4QHzzrbwm1BcEi.mp3"
+        }
+      ],
+      "notice_period": 730,
+      "instagram_username": null,
+      "twitter_username": null,
+      "youtube_username": null,
+      "tiktok_username": null,
+      "image_url": "",
+      "is_added_by_user": false
+    },
+    {
+      "public_owner_id": "e9a6840c69b79812b77ea81fa11d55aaf80dcf1938fa0137bf7f514f67f75c99",
+      "voice_id": "3DPhHWXDY263XJ1d2EPN",
+      "date_unix": 1721747171,
+      "name": "Linda Fiore",
+      "accent": "standard",
+      "gender": "female",
+      "age": "young",
+      "descriptive": "gentle",
+      "use_case": "narrative_story",
+      "category": "high_quality",
+      "language": "it",
+      "locale": "it-IT",
+      "description": "A young, dynamic and cheerful woman's voice. Perfect for audiobooks, advertising, podcasts.",
+      "preview_url": "https://storage.googleapis.com/eleven-public-prod/custom/voices/3DPhHWXDY263XJ1d2EPN/YcN8v5oIOX09iQfWoPXH.mp3",
+      "usage_character_count_1y": 195167309,
+      "usage_character_count_7d": 8687181,
+      "play_api_usage_character_count_1y": 48471093,
+      "cloned_by_count": 15385,
+      "rate": 1.0,
+      "fiat_rate": null,
+      "free_users_allowed": true,
+      "live_moderation_enabled": false,
+      "featured": false,
+      "verified_languages": [
+        {
+          "language": "it",
+          "model_id": "eleven_turbo_v2_5",
+          "accent": "standard",
+          "locale": "it-IT",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/custom/voices/3DPhHWXDY263XJ1d2EPN/YcN8v5oIOX09iQfWoPXH.mp3"
+        },
+        {
+          "language": "it",
+          "model_id": "eleven_multilingual_sts_v2",
+          "accent": "standard",
+          "locale": "it-IT",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/custom/voices/3DPhHWXDY263XJ1d2EPN/YcN8v5oIOX09iQfWoPXH.mp3"
+        },
+        {
+          "language": "it",
+          "model_id": "eleven_multilingual_v2",
+          "accent": "standard",
+          "locale": "it-IT",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/custom/voices/3DPhHWXDY263XJ1d2EPN/YcN8v5oIOX09iQfWoPXH.mp3"
+        },
+        {
+          "language": "it",
+          "model_id": "eleven_v2_5_flash",
+          "accent": "standard",
+          "locale": "it-IT",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/custom/voices/3DPhHWXDY263XJ1d2EPN/YcN8v5oIOX09iQfWoPXH.mp3"
+        },
+        {
+          "language": "it",
+          "model_id": "eleven_flash_v2_5",
+          "accent": "standard",
+          "locale": "it-IT",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/custom/voices/3DPhHWXDY263XJ1d2EPN/YcN8v5oIOX09iQfWoPXH.mp3"
+        },
+        {
+          "language": "ar",
+          "model_id": "eleven_multilingual_v2",
+          "accent": "modern",
+          "locale": null,
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/8RYUsFHsalUXjwVG0LjhNwH1j022/voices/3DPhHWXDY263XJ1d2EPN/c58a43a1-8224-43f9-984a-e51cac1a615b.mp3"
+        },
+        {
+          "language": "es",
+          "model_id": "eleven_multilingual_v2",
+          "accent": "peninsular",
+          "locale": "es-ES",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/8RYUsFHsalUXjwVG0LjhNwH1j022/voices/3DPhHWXDY263XJ1d2EPN/e78827b1-8ef2-45f5-83b8-132d0f06cce2.mp3"
+        },
+        {
+          "language": "it",
+          "model_id": "eleven_multilingual_v2",
+          "accent": "standard",
+          "locale": "it-IT",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/8RYUsFHsalUXjwVG0LjhNwH1j022/voices/3DPhHWXDY263XJ1d2EPN/ecf70966-0f78-475a-ad08-e99b9bf44d6f.mp3"
+        },
+        {
+          "language": "el",
+          "model_id": "eleven_multilingual_v2",
+          "accent": "standard",
+          "locale": "el-GR",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/8RYUsFHsalUXjwVG0LjhNwH1j022/voices/3DPhHWXDY263XJ1d2EPN/316473a2-e896-440d-b980-d7f7fa0a1271.mp3"
+        },
+        {
+          "language": "hi",
+          "model_id": "eleven_multilingual_v2",
+          "accent": "standard",
+          "locale": "hi-IN",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/8RYUsFHsalUXjwVG0LjhNwH1j022/voices/3DPhHWXDY263XJ1d2EPN/18b8c84c-003d-45c8-acaf-374ae063e2b6.mp3"
+        },
+        {
+          "language": "pt",
+          "model_id": "eleven_multilingual_v2",
+          "accent": "brazilian",
+          "locale": "pt-BR",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/8RYUsFHsalUXjwVG0LjhNwH1j022/voices/3DPhHWXDY263XJ1d2EPN/50dfbc95-53fa-43c3-8d9b-803a7abf6802.mp3"
+        },
+        {
+          "language": "fi",
+          "model_id": "eleven_multilingual_v2",
+          "accent": "standard",
+          "locale": "fi-FI",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/8RYUsFHsalUXjwVG0LjhNwH1j022/voices/3DPhHWXDY263XJ1d2EPN/42bdf854-b5d1-43c2-ad3b-92c4ddd42662.mp3"
+        },
+        {
+          "language": "id",
+          "model_id": "eleven_multilingual_v2",
+          "accent": "standard",
+          "locale": "id-ID",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/8RYUsFHsalUXjwVG0LjhNwH1j022/voices/3DPhHWXDY263XJ1d2EPN/f9b0f722-46da-4b6a-81cd-79682037d93b.mp3"
+        }
+      ],
+      "notice_period": 730,
+      "instagram_username": null,
+      "twitter_username": null,
+      "youtube_username": null,
+      "tiktok_username": null,
+      "image_url": "",
+      "is_added_by_user": false
+    },
+    {
+      "public_owner_id": "7270d404b5dd6a0a515adf7101de786d012dfc16bda178826f362cd9aaab7276",
+      "voice_id": "C5LTSOApZPquEl9UP0mT",
+      "date_unix": 1749580584,
+      "name": "Martina - Confident female",
+      "accent": "romanesco",
+      "gender": "female",
+      "age": "young",
+      "descriptive": "confident",
+      "use_case": "informative_educational",
+      "category": "professional",
+      "language": "it",
+      "locale": null,
+      "description": "Young female voice. Perfect for informative videos.",
+      "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/TmXezA7vkceDBBMEhVuQaYIgHdz1/voices/C5LTSOApZPquEl9UP0mT/83ad892a-a212-4a19-9cb2-fcffa760d727.mp3",
+      "usage_character_count_1y": 1749660,
+      "usage_character_count_7d": 70487,
+      "play_api_usage_character_count_1y": 0,
+      "cloned_by_count": 1115,
+      "rate": 1.0,
+      "fiat_rate": null,
+      "free_users_allowed": true,
+      "live_moderation_enabled": false,
+      "featured": false,
+      "verified_languages": [
+        {
+          "language": "it",
+          "model_id": "eleven_multilingual_v2",
+          "accent": "romanesco",
+          "locale": null,
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/TmXezA7vkceDBBMEhVuQaYIgHdz1/voices/C5LTSOApZPquEl9UP0mT/83ad892a-a212-4a19-9cb2-fcffa760d727.mp3"
+        },
+        {
+          "language": "it",
+          "model_id": "eleven_turbo_v2_5",
+          "accent": "romanesco",
+          "locale": null,
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/TmXezA7vkceDBBMEhVuQaYIgHdz1/voices/C5LTSOApZPquEl9UP0mT/83ad892a-a212-4a19-9cb2-fcffa760d727.mp3"
+        },
+        {
+          "language": "it",
+          "model_id": "eleven_v2_5_flash",
+          "accent": "romanesco",
+          "locale": null,
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/TmXezA7vkceDBBMEhVuQaYIgHdz1/voices/C5LTSOApZPquEl9UP0mT/83ad892a-a212-4a19-9cb2-fcffa760d727.mp3"
+        },
+        {
+          "language": "it",
+          "model_id": "eleven_flash_v2_5",
+          "accent": "romanesco",
+          "locale": null,
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/TmXezA7vkceDBBMEhVuQaYIgHdz1/voices/C5LTSOApZPquEl9UP0mT/83ad892a-a212-4a19-9cb2-fcffa760d727.mp3"
+        }
+      ],
+      "notice_period": 180,
+      "instagram_username": null,
+      "twitter_username": null,
+      "youtube_username": null,
+      "tiktok_username": null,
+      "image_url": "",
+      "is_added_by_user": false
+    },
+    {
+      "public_owner_id": "a3dc47e00bbe95c219ebb06ef6d9cdcff82aebb32e6299e1c59e55dbbd255348",
+      "voice_id": "WVJI5NRFBdCIchxnRZxs",
+      "date_unix": 1734667150,
+      "name": "Follemente Innamorata",
+      "accent": "standard",
+      "gender": "female",
+      "age": "young",
+      "descriptive": "calm",
+      "use_case": "conversational",
+      "category": "professional",
+      "language": "it",
+      "locale": "it-IT",
+      "description": "A voice that comforts and connects...\nThis voice is gentle and soothing, with nurturing tones offering reassurance and a safe, intimate connection, ideal for both children and adults seeking comfort.",
+      "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/workspace/27e74b9434a5499c8c86b040acf7d0f9/voices/WVJI5NRFBdCIchxnRZxs/c6c13f7b-b50d-4be2-952d-7a575d2174fa.mp3",
+      "usage_character_count_1y": 1349390,
+      "usage_character_count_7d": 34082,
+      "play_api_usage_character_count_1y": 0,
+      "cloned_by_count": 760,
+      "rate": 1.0,
+      "fiat_rate": null,
+      "free_users_allowed": true,
+      "live_moderation_enabled": false,
+      "featured": false,
+      "verified_languages": [
+        {
+          "language": "it",
+          "model_id": "eleven_turbo_v2_5",
+          "accent": "standard",
+          "locale": "it-IT",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/workspace/27e74b9434a5499c8c86b040acf7d0f9/voices/WVJI5NRFBdCIchxnRZxs/c6c13f7b-b50d-4be2-952d-7a575d2174fa.mp3"
+        },
+        {
+          "language": "it",
+          "model_id": "eleven_multilingual_v2",
+          "accent": "standard",
+          "locale": "it-IT",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/workspace/27e74b9434a5499c8c86b040acf7d0f9/voices/WVJI5NRFBdCIchxnRZxs/c6c13f7b-b50d-4be2-952d-7a575d2174fa.mp3"
+        },
+        {
+          "language": "it",
+          "model_id": "eleven_flash_v2_5",
+          "accent": "standard",
+          "locale": "it-IT",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/workspace/27e74b9434a5499c8c86b040acf7d0f9/voices/WVJI5NRFBdCIchxnRZxs/c6c13f7b-b50d-4be2-952d-7a575d2174fa.mp3"
+        },
+        {
+          "language": "it",
+          "model_id": "eleven_v2_5_flash",
+          "accent": "standard",
+          "locale": "it-IT",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/workspace/27e74b9434a5499c8c86b040acf7d0f9/voices/WVJI5NRFBdCIchxnRZxs/c6c13f7b-b50d-4be2-952d-7a575d2174fa.mp3"
+        }
+      ],
+      "notice_period": 180,
+      "instagram_username": null,
+      "twitter_username": null,
+      "youtube_username": null,
+      "tiktok_username": null,
+      "image_url": "",
+      "is_added_by_user": false
+    },
+    {
+      "public_owner_id": "db0191991e4ec918ac5e94e8133103a75ae605fdd72e6c8c80d03091e5646c52",
+      "voice_id": "Kq9pDHHIMmJsG9PEqOtv",
+      "date_unix": 1727552842,
+      "name": "Kina - Cute happy girl",
+      "accent": "standard",
+      "gender": "female",
+      "age": "young",
+      "descriptive": "cute",
+      "use_case": "social_media",
+      "category": "professional",
+      "language": "it",
+      "locale": "it-IT",
+      "description": "Upbeat and happy girl voice. Good for Social Media and for narration.\r\n",
+      "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/vUO77kbiYIXQD416ny1BtAuqTsh2/voices/Kq9pDHHIMmJsG9PEqOtv/8YSsPmjE7oZ9p5FzMwHk.mp3",
+      "usage_character_count_1y": 29512606,
+      "usage_character_count_7d": 1121705,
+      "play_api_usage_character_count_1y": 0,
+      "cloned_by_count": 3617,
+      "rate": 1.0,
+      "fiat_rate": null,
+      "free_users_allowed": true,
+      "live_moderation_enabled": false,
+      "featured": false,
+      "verified_languages": [
+        {
+          "language": "it",
+          "model_id": "eleven_turbo_v2_5",
+          "accent": "standard",
+          "locale": "it-IT",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/vUO77kbiYIXQD416ny1BtAuqTsh2/voices/Kq9pDHHIMmJsG9PEqOtv/8YSsPmjE7oZ9p5FzMwHk.mp3"
+        },
+        {
+          "language": "it",
+          "model_id": "eleven_multilingual_sts_v2",
+          "accent": "standard",
+          "locale": "it-IT",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/vUO77kbiYIXQD416ny1BtAuqTsh2/voices/Kq9pDHHIMmJsG9PEqOtv/8YSsPmjE7oZ9p5FzMwHk.mp3"
+        },
+        {
+          "language": "it",
+          "model_id": "eleven_multilingual_v2",
+          "accent": "standard",
+          "locale": "it-IT",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/vUO77kbiYIXQD416ny1BtAuqTsh2/voices/Kq9pDHHIMmJsG9PEqOtv/8YSsPmjE7oZ9p5FzMwHk.mp3"
+        },
+        {
+          "language": "it",
+          "model_id": "eleven_v2_5_flash",
+          "accent": "standard",
+          "locale": "it-IT",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/vUO77kbiYIXQD416ny1BtAuqTsh2/voices/Kq9pDHHIMmJsG9PEqOtv/8YSsPmjE7oZ9p5FzMwHk.mp3"
+        },
+        {
+          "language": "it",
+          "model_id": "eleven_flash_v2_5",
+          "accent": "standard",
+          "locale": "it-IT",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/vUO77kbiYIXQD416ny1BtAuqTsh2/voices/Kq9pDHHIMmJsG9PEqOtv/8YSsPmjE7oZ9p5FzMwHk.mp3"
+        }
+      ],
+      "notice_period": null,
+      "instagram_username": null,
+      "twitter_username": null,
+      "youtube_username": null,
+      "tiktok_username": null,
+      "image_url": "",
+      "is_added_by_user": false
+    },
+    {
+      "public_owner_id": "8c1eb93b01b2243b1a83bea7be4b45cf5e9c1c48bf35058db4bddb5b6d9e86b0",
+      "voice_id": "ZzFXkjuO1rPntDj6At5C",
+      "date_unix": 1748622607,
+      "name": "Roberta Agent",
+      "accent": "romanesco",
+      "gender": "female",
+      "age": "young",
+      "descriptive": "confident",
+      "use_case": "advertisement",
+      "category": "professional",
+      "language": "it",
+      "locale": null,
+      "description": "Young Italian female voice. Great for commercials.",
+      "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/workspace/78c9a068f68a41609f973c86967cfa1b/voices/ZzFXkjuO1rPntDj6At5C/247d380b-3db4-4f2f-b323-88e915d4f296.mp3",
+      "usage_character_count_1y": 12069978,
+      "usage_character_count_7d": 89915,
+      "play_api_usage_character_count_1y": 0,
+      "cloned_by_count": 2472,
+      "rate": 1.0,
+      "fiat_rate": null,
+      "free_users_allowed": true,
+      "live_moderation_enabled": false,
+      "featured": false,
+      "verified_languages": [
+        {
+          "language": "it",
+          "model_id": "eleven_multilingual_v2",
+          "accent": "romanesco",
+          "locale": null,
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/workspace/78c9a068f68a41609f973c86967cfa1b/voices/ZzFXkjuO1rPntDj6At5C/247d380b-3db4-4f2f-b323-88e915d4f296.mp3"
+        },
+        {
+          "language": "it",
+          "model_id": "eleven_turbo_v2_5",
+          "accent": "romanesco",
+          "locale": null,
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/workspace/78c9a068f68a41609f973c86967cfa1b/voices/ZzFXkjuO1rPntDj6At5C/247d380b-3db4-4f2f-b323-88e915d4f296.mp3"
+        },
+        {
+          "language": "it",
+          "model_id": "eleven_v2_5_flash",
+          "accent": "romanesco",
+          "locale": null,
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/workspace/78c9a068f68a41609f973c86967cfa1b/voices/ZzFXkjuO1rPntDj6At5C/247d380b-3db4-4f2f-b323-88e915d4f296.mp3"
+        },
+        {
+          "language": "it",
+          "model_id": "eleven_flash_v2_5",
+          "accent": "romanesco",
+          "locale": null,
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/workspace/78c9a068f68a41609f973c86967cfa1b/voices/ZzFXkjuO1rPntDj6At5C/247d380b-3db4-4f2f-b323-88e915d4f296.mp3"
+        }
+      ],
+      "notice_period": 365,
+      "instagram_username": null,
+      "twitter_username": null,
+      "youtube_username": null,
+      "tiktok_username": null,
+      "image_url": "",
+      "is_added_by_user": false
+    },
+    {
+      "public_owner_id": "a1e47e357c0b97d1f0841053edd5f990443293fd66838f4324db5d2786f4fb9b",
+      "voice_id": "MLpDWJvrjFIdb63xbJp8",
+      "date_unix": 1745821606,
+      "name": "Angelina - Storyteller",
+      "accent": "standard",
+      "gender": "female",
+      "age": "old",
+      "descriptive": "gentle",
+      "use_case": "narrative_story",
+      "category": "professional",
+      "language": "it",
+      "locale": "it-IT",
+      "description": "A warm and gentle storyteller voice, perfect for creating a calm, reassuring atmosphere. Angelina’s soft and soothing tone invites listeners into every story with tenderness and serenity, making her ideal for fairy tales, reflective narratives, and comforting audio experiences.",
+      "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/HiH52RMfH2cF3qziPhSRKPuflW52/voices/MLpDWJvrjFIdb63xbJp8/BEfwUxKX04LN58zyXpWI.mp3",
+      "usage_character_count_1y": 15211599,
+      "usage_character_count_7d": 299469,
+      "play_api_usage_character_count_1y": 0,
+      "cloned_by_count": 3144,
+      "rate": 1.0,
+      "fiat_rate": null,
+      "free_users_allowed": true,
+      "live_moderation_enabled": false,
+      "featured": false,
+      "verified_languages": [
+        {
+          "language": "it",
+          "model_id": "eleven_turbo_v2_5",
+          "accent": "standard",
+          "locale": "it-IT",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/HiH52RMfH2cF3qziPhSRKPuflW52/voices/MLpDWJvrjFIdb63xbJp8/BEfwUxKX04LN58zyXpWI.mp3"
+        },
+        {
+          "language": "it",
+          "model_id": "eleven_v2_5_flash",
+          "accent": "standard",
+          "locale": "it-IT",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/HiH52RMfH2cF3qziPhSRKPuflW52/voices/MLpDWJvrjFIdb63xbJp8/BEfwUxKX04LN58zyXpWI.mp3"
+        },
+        {
+          "language": "it",
+          "model_id": "eleven_flash_v2_5",
+          "accent": "standard",
+          "locale": "it-IT",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/HiH52RMfH2cF3qziPhSRKPuflW52/voices/MLpDWJvrjFIdb63xbJp8/BEfwUxKX04LN58zyXpWI.mp3"
+        },
+        {
+          "language": "it",
+          "model_id": "eleven_multilingual_v2",
+          "accent": "standard",
+          "locale": "it-IT",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/HiH52RMfH2cF3qziPhSRKPuflW52/voices/MLpDWJvrjFIdb63xbJp8/BEfwUxKX04LN58zyXpWI.mp3"
+        },
+        {
+          "language": "it",
+          "model_id": "eleven_multilingual_sts_v2",
+          "accent": "standard",
+          "locale": "it-IT",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/HiH52RMfH2cF3qziPhSRKPuflW52/voices/MLpDWJvrjFIdb63xbJp8/BEfwUxKX04LN58zyXpWI.mp3"
+        }
+      ],
+      "notice_period": 730,
+      "instagram_username": null,
+      "twitter_username": null,
+      "youtube_username": null,
+      "tiktok_username": null,
+      "image_url": "",
+      "is_added_by_user": false
+    },
+    {
+      "public_owner_id": "366871cf0a60813a07d6a507204db1db71282872dacfffdb58294719ac9c4e51",
+      "voice_id": "BZc8d1MPTdZkyGbE9Sin",
+      "date_unix": 1722438151,
+      "name": "Luna",
+      "accent": "standard",
+      "gender": "female",
+      "age": "young",
+      "descriptive": "calm",
+      "use_case": "informative_educational",
+      "category": "high_quality",
+      "language": "it",
+      "locale": "it-IT",
+      "description": "Young Italian female voice. Perfect for narration.",
+      "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/cyxYiJpRy1bfYi1msPdogUfgPW93/voices/BZc8d1MPTdZkyGbE9Sin/XhFC4pOm79oDu9cbaogM.mp3",
+      "usage_character_count_1y": 126224312,
+      "usage_character_count_7d": 1140217,
+      "play_api_usage_character_count_1y": 126570,
+      "cloned_by_count": 2125,
+      "rate": 2.0,
+      "fiat_rate": 0.2,
+      "free_users_allowed": false,
+      "live_moderation_enabled": false,
+      "featured": false,
+      "verified_languages": [
+        {
+          "language": "it",
+          "model_id": "eleven_turbo_v2_5",
+          "accent": "standard",
+          "locale": "it-IT",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/cyxYiJpRy1bfYi1msPdogUfgPW93/voices/BZc8d1MPTdZkyGbE9Sin/XhFC4pOm79oDu9cbaogM.mp3"
+        },
+        {
+          "language": "it",
+          "model_id": "eleven_multilingual_sts_v2",
+          "accent": "standard",
+          "locale": "it-IT",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/cyxYiJpRy1bfYi1msPdogUfgPW93/voices/BZc8d1MPTdZkyGbE9Sin/XhFC4pOm79oDu9cbaogM.mp3"
+        },
+        {
+          "language": "it",
+          "model_id": "eleven_multilingual_v2",
+          "accent": "standard",
+          "locale": "it-IT",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/cyxYiJpRy1bfYi1msPdogUfgPW93/voices/BZc8d1MPTdZkyGbE9Sin/XhFC4pOm79oDu9cbaogM.mp3"
+        },
+        {
+          "language": "it",
+          "model_id": "eleven_v2_5_flash",
+          "accent": "standard",
+          "locale": "it-IT",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/cyxYiJpRy1bfYi1msPdogUfgPW93/voices/BZc8d1MPTdZkyGbE9Sin/XhFC4pOm79oDu9cbaogM.mp3"
+        },
+        {
+          "language": "it",
+          "model_id": "eleven_flash_v2_5",
+          "accent": "standard",
+          "locale": "it-IT",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/cyxYiJpRy1bfYi1msPdogUfgPW93/voices/BZc8d1MPTdZkyGbE9Sin/XhFC4pOm79oDu9cbaogM.mp3"
+        },
+        {
+          "language": "en",
+          "model_id": "eleven_multilingual_v2",
+          "accent": null,
+          "locale": "en-US",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/cyxYiJpRy1bfYi1msPdogUfgPW93/voices/BZc8d1MPTdZkyGbE9Sin/6de59033-09c8-43a2-9ff4-71ad59011adc.mp3"
+        },
+        {
+          "language": "es",
+          "model_id": "eleven_multilingual_v2",
+          "accent": "argentine",
+          "locale": "es-AR",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/cyxYiJpRy1bfYi1msPdogUfgPW93/voices/BZc8d1MPTdZkyGbE9Sin/53dadd33-afa2-4dda-8cb0-069815ae7da2.mp3"
+        },
+        {
+          "language": "pl",
+          "model_id": "eleven_multilingual_v2",
+          "accent": "standard",
+          "locale": "pl-PL",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/cyxYiJpRy1bfYi1msPdogUfgPW93/voices/BZc8d1MPTdZkyGbE9Sin/ab51f883-6ae6-456b-8c65-8b724f08dc70.mp3"
+        },
+        {
+          "language": "hi",
+          "model_id": "eleven_multilingual_v2",
+          "accent": "standard",
+          "locale": "hi-IN",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/cyxYiJpRy1bfYi1msPdogUfgPW93/voices/BZc8d1MPTdZkyGbE9Sin/5245e0d2-9954-4ced-8c9c-29867359f0f0.mp3"
+        },
+        {
+          "language": "hr",
+          "model_id": "eleven_multilingual_v2",
+          "accent": "standard",
+          "locale": "hr-HR",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/cyxYiJpRy1bfYi1msPdogUfgPW93/voices/BZc8d1MPTdZkyGbE9Sin/00de4067-0c02-453e-8f22-06b1b0eac984.mp3"
+        }
+      ],
+      "notice_period": 90,
+      "instagram_username": null,
+      "twitter_username": null,
+      "youtube_username": null,
+      "tiktok_username": null,
+      "image_url": "",
+      "is_added_by_user": false
+    },
+    {
+      "public_owner_id": "22143da09120db3605cb93f90b6a50c94451763cc1ea308a44483257f40d0628",
+      "voice_id": "QQpLisLueobAksl21CaK",
+      "date_unix": 1742753697,
+      "name": "Vanna Isaia",
+      "accent": "standard",
+      "gender": "female",
+      "age": "middle_aged",
+      "descriptive": "intense",
+      "use_case": "narrative_story",
+      "category": "professional",
+      "language": "it",
+      "locale": "it-IT",
+      "description": "A female Italian voice suitable for narration. Round and understandable",
+      "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/WIxLfUzQwDefgXJDitEOMmWvdky1/voices/QQpLisLueobAksl21CaK/Q7fFitaSyjYwxx1sJ1dO.mp3",
+      "usage_character_count_1y": 2463228,
+      "usage_character_count_7d": 176013,
+      "play_api_usage_character_count_1y": 0,
+      "cloned_by_count": 884,
+      "rate": 1.0,
+      "fiat_rate": null,
+      "free_users_allowed": true,
+      "live_moderation_enabled": true,
+      "featured": false,
+      "verified_languages": [
+        {
+          "language": "it",
+          "model_id": "eleven_turbo_v2_5",
+          "accent": "standard",
+          "locale": "it-IT",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/WIxLfUzQwDefgXJDitEOMmWvdky1/voices/QQpLisLueobAksl21CaK/Q7fFitaSyjYwxx1sJ1dO.mp3"
+        },
+        {
+          "language": "it",
+          "model_id": "eleven_v2_5_flash",
+          "accent": "standard",
+          "locale": "it-IT",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/WIxLfUzQwDefgXJDitEOMmWvdky1/voices/QQpLisLueobAksl21CaK/Q7fFitaSyjYwxx1sJ1dO.mp3"
+        },
+        {
+          "language": "it",
+          "model_id": "eleven_flash_v2_5",
+          "accent": "standard",
+          "locale": "it-IT",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/WIxLfUzQwDefgXJDitEOMmWvdky1/voices/QQpLisLueobAksl21CaK/Q7fFitaSyjYwxx1sJ1dO.mp3"
+        },
+        {
+          "language": "it",
+          "model_id": "eleven_multilingual_v2",
+          "accent": "standard",
+          "locale": "it-IT",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/WIxLfUzQwDefgXJDitEOMmWvdky1/voices/QQpLisLueobAksl21CaK/Q7fFitaSyjYwxx1sJ1dO.mp3"
+        },
+        {
+          "language": "it",
+          "model_id": "eleven_multilingual_sts_v2",
+          "accent": "standard",
+          "locale": "it-IT",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/WIxLfUzQwDefgXJDitEOMmWvdky1/voices/QQpLisLueobAksl21CaK/Q7fFitaSyjYwxx1sJ1dO.mp3"
+        }
+      ],
+      "notice_period": 30,
+      "instagram_username": null,
+      "twitter_username": null,
+      "youtube_username": null,
+      "tiktok_username": null,
+      "image_url": "",
+      "is_added_by_user": false
+    },
+    {
+      "public_owner_id": "6475d6640151a99df168172d3fd657883964c9005065508dbe247d29066a1a38",
+      "voice_id": "PS6wM7QnnPTUDE3t4bbl",
+      "date_unix": 1739089482,
+      "name": "Serena",
+      "accent": "standard",
+      "gender": "female",
+      "age": "young",
+      "descriptive": "soft",
+      "use_case": "narrative_story",
+      "category": "professional",
+      "language": "it",
+      "locale": "it-IT",
+      "description": "A soothing, young female voice with a gentle and relaxing tone. Soft yet expressive, my voice carries warmth and clarity, making it perfect for podcasts, audiobooks, and engaging voiceovers. Smooth, natural cadence that feels comforting and immersive, ideal for storytelling, guided meditations, and branded content.",
+      "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/PAbjG8QO4kaNmL0Y5axL8iKLq3i1/voices/PS6wM7QnnPTUDE3t4bbl/8a110004-dbb4-4708-ba3f-d7ee4e47d5cd.mp3",
+      "usage_character_count_1y": 6851833,
+      "usage_character_count_7d": 156530,
+      "play_api_usage_character_count_1y": 0,
+      "cloned_by_count": 1946,
+      "rate": 1.0,
+      "fiat_rate": null,
+      "free_users_allowed": true,
+      "live_moderation_enabled": false,
+      "featured": false,
+      "verified_languages": [
+        {
+          "language": "it",
+          "model_id": "eleven_multilingual_v2",
+          "accent": "standard",
+          "locale": "it-IT",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/PAbjG8QO4kaNmL0Y5axL8iKLq3i1/voices/PS6wM7QnnPTUDE3t4bbl/8a110004-dbb4-4708-ba3f-d7ee4e47d5cd.mp3"
+        },
+        {
+          "language": "it",
+          "model_id": "eleven_flash_v2_5",
+          "accent": "standard",
+          "locale": "it-IT",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/PAbjG8QO4kaNmL0Y5axL8iKLq3i1/voices/PS6wM7QnnPTUDE3t4bbl/8a110004-dbb4-4708-ba3f-d7ee4e47d5cd.mp3"
+        },
+        {
+          "language": "it",
+          "model_id": "eleven_multilingual_sts_v2",
+          "accent": "standard",
+          "locale": "it-IT",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/PAbjG8QO4kaNmL0Y5axL8iKLq3i1/voices/PS6wM7QnnPTUDE3t4bbl/8a110004-dbb4-4708-ba3f-d7ee4e47d5cd.mp3"
+        },
+        {
+          "language": "it",
+          "model_id": "eleven_turbo_v2_5",
+          "accent": "standard",
+          "locale": "it-IT",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/PAbjG8QO4kaNmL0Y5axL8iKLq3i1/voices/PS6wM7QnnPTUDE3t4bbl/8a110004-dbb4-4708-ba3f-d7ee4e47d5cd.mp3"
+        },
+        {
+          "language": "it",
+          "model_id": "eleven_v2_5_flash",
+          "accent": "standard",
+          "locale": "it-IT",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/PAbjG8QO4kaNmL0Y5axL8iKLq3i1/voices/PS6wM7QnnPTUDE3t4bbl/8a110004-dbb4-4708-ba3f-d7ee4e47d5cd.mp3"
+        }
+      ],
+      "notice_period": null,
+      "instagram_username": null,
+      "twitter_username": null,
+      "youtube_username": null,
+      "tiktok_username": null,
+      "image_url": "",
+      "is_added_by_user": false
+    },
+    {
+      "public_owner_id": "74072602ea6dce8736c73ea50cab9d7d02996bc1274aa2e7710faeaaec8ef485",
+      "voice_id": "uV2Bhcm1HwmAqPqkbjfl",
+      "date_unix": 1738257622,
+      "name": "Sara - E-learning and audiobook",
+      "accent": "standard",
+      "gender": "female",
+      "age": "young",
+      "descriptive": "relaxed",
+      "use_case": "informative_educational",
+      "category": "professional",
+      "language": "it",
+      "locale": "it-IT",
+      "description": "My voice is warm, clear, and versatile, with a natural tone that conveys professionalism and approachability. It has a mid-range pitch, making it adaptable to various projects, from e-learning and audiobooks.",
+      "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/kmx9meKfLGTvpKiXa7haE6C8VVp2/voices/uV2Bhcm1HwmAqPqkbjfl/NACx88nx48kk9RAyRuWb.mp3",
+      "usage_character_count_1y": 9970480,
+      "usage_character_count_7d": 132715,
+      "play_api_usage_character_count_1y": 0,
+      "cloned_by_count": 5061,
+      "rate": 1.0,
+      "fiat_rate": null,
+      "free_users_allowed": true,
+      "live_moderation_enabled": false,
+      "featured": false,
+      "verified_languages": [
+        {
+          "language": "it",
+          "model_id": "eleven_multilingual_v2",
+          "accent": "standard",
+          "locale": "it-IT",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/kmx9meKfLGTvpKiXa7haE6C8VVp2/voices/uV2Bhcm1HwmAqPqkbjfl/NACx88nx48kk9RAyRuWb.mp3"
+        },
+        {
+          "language": "it",
+          "model_id": "eleven_flash_v2_5",
+          "accent": "standard",
+          "locale": "it-IT",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/kmx9meKfLGTvpKiXa7haE6C8VVp2/voices/uV2Bhcm1HwmAqPqkbjfl/NACx88nx48kk9RAyRuWb.mp3"
+        },
+        {
+          "language": "it",
+          "model_id": "eleven_multilingual_sts_v2",
+          "accent": "standard",
+          "locale": "it-IT",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/kmx9meKfLGTvpKiXa7haE6C8VVp2/voices/uV2Bhcm1HwmAqPqkbjfl/NACx88nx48kk9RAyRuWb.mp3"
+        },
+        {
+          "language": "it",
+          "model_id": "eleven_turbo_v2_5",
+          "accent": "standard",
+          "locale": "it-IT",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/kmx9meKfLGTvpKiXa7haE6C8VVp2/voices/uV2Bhcm1HwmAqPqkbjfl/NACx88nx48kk9RAyRuWb.mp3"
+        },
+        {
+          "language": "it",
+          "model_id": "eleven_v2_5_flash",
+          "accent": "standard",
+          "locale": "it-IT",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/kmx9meKfLGTvpKiXa7haE6C8VVp2/voices/uV2Bhcm1HwmAqPqkbjfl/NACx88nx48kk9RAyRuWb.mp3"
+        }
+      ],
+      "notice_period": 365,
+      "instagram_username": null,
+      "twitter_username": null,
+      "youtube_username": null,
+      "tiktok_username": null,
+      "image_url": "",
+      "is_added_by_user": false
+    },
+    {
+      "public_owner_id": "7b71f44d9e13513fa8ec86f2ea43272c93e4fba12b161c578c463fc9882edfba",
+      "voice_id": "8KInRSd4DtD5L5gK7itu",
+      "date_unix": 1742228081,
+      "name": "VIP-Giusy",
+      "accent": "sicilian",
+      "gender": "female",
+      "age": "middle_aged",
+      "descriptive": "chill",
+      "use_case": "conversational",
+      "category": "professional",
+      "language": "it",
+      "locale": null,
+      "description": "Giusy is the ideal sales and customer support professional, speaking impeccable Italian with a persuasive yet warm tone. She reacts swiftly to any query, combining empathy and precision to instantly build trust. Her confident yet friendly approach ensures clients feel valued, making every interaction both efficient and engaging.",
+      "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/e2zT7dnENuXnz5SAZDyijTb0wVi2/voices/8KInRSd4DtD5L5gK7itu/xaChfKaUTDz90Q2amPgO.mp3",
+      "usage_character_count_1y": 56467191,
+      "usage_character_count_7d": 1821943,
+      "play_api_usage_character_count_1y": 0,
+      "cloned_by_count": 2948,
+      "rate": 1.0,
+      "fiat_rate": null,
+      "free_users_allowed": true,
+      "live_moderation_enabled": false,
+      "featured": false,
+      "verified_languages": [
+        {
+          "language": "it",
+          "model_id": "eleven_multilingual_v2",
+          "accent": "sicilian",
+          "locale": null,
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/e2zT7dnENuXnz5SAZDyijTb0wVi2/voices/8KInRSd4DtD5L5gK7itu/xaChfKaUTDz90Q2amPgO.mp3"
+        },
+        {
+          "language": "it",
+          "model_id": "eleven_turbo_v2_5",
+          "accent": "sicilian",
+          "locale": null,
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/e2zT7dnENuXnz5SAZDyijTb0wVi2/voices/8KInRSd4DtD5L5gK7itu/xaChfKaUTDz90Q2amPgO.mp3"
+        },
+        {
+          "language": "it",
+          "model_id": "eleven_v2_5_flash",
+          "accent": "sicilian",
+          "locale": null,
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/e2zT7dnENuXnz5SAZDyijTb0wVi2/voices/8KInRSd4DtD5L5gK7itu/xaChfKaUTDz90Q2amPgO.mp3"
+        },
+        {
+          "language": "it",
+          "model_id": "eleven_flash_v2_5",
+          "accent": "sicilian",
+          "locale": null,
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/e2zT7dnENuXnz5SAZDyijTb0wVi2/voices/8KInRSd4DtD5L5gK7itu/xaChfKaUTDz90Q2amPgO.mp3"
+        },
+        {
+          "language": "it",
+          "model_id": "eleven_multilingual_sts_v2",
+          "accent": "sicilian",
+          "locale": null,
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/e2zT7dnENuXnz5SAZDyijTb0wVi2/voices/8KInRSd4DtD5L5gK7itu/xaChfKaUTDz90Q2amPgO.mp3"
+        }
+      ],
+      "notice_period": 730,
+      "instagram_username": null,
+      "twitter_username": null,
+      "youtube_username": null,
+      "tiktok_username": null,
+      "image_url": "",
+      "is_added_by_user": false
+    },
+    {
+      "public_owner_id": "61890d8a8df5e117f409a3dbb8081d085658963628bb442f7f1a5b12884e436c",
+      "voice_id": "6KQ52XTjdNd1FfUgGmV6",
+      "date_unix": 1714850376,
+      "name": "Anna",
+      "accent": "standard",
+      "gender": "female",
+      "age": "middle_aged",
+      "descriptive": "neutral",
+      "use_case": "conversational",
+      "category": "professional",
+      "language": "it",
+      "locale": "it-IT",
+      "description": "Middle aged female with a simple and informal voice, with a touch of professionalism and narrative, empathetic and relaxed, reassuring in any context. Ideal for: inbound and outbound calls, YouTube or social media videos, tutorials, and agents.",
+      "preview_url": "https://storage.googleapis.com/eleven-public-prod/custom/voices/6KQ52XTjdNd1FfUgGmV6/MR0ci3ebumaFLDcMQAuP.mp3",
+      "usage_character_count_1y": 17626394,
+      "usage_character_count_7d": 69330,
+      "play_api_usage_character_count_1y": 0,
+      "cloned_by_count": 3590,
+      "rate": 1.0,
+      "fiat_rate": null,
+      "free_users_allowed": true,
+      "live_moderation_enabled": true,
+      "featured": false,
+      "verified_languages": [
+        {
+          "language": "it",
+          "model_id": "eleven_turbo_v2_5",
+          "accent": "standard",
+          "locale": "it-IT",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/custom/voices/6KQ52XTjdNd1FfUgGmV6/MR0ci3ebumaFLDcMQAuP.mp3"
+        },
+        {
+          "language": "it",
+          "model_id": "eleven_multilingual_v2",
+          "accent": "standard",
+          "locale": "it-IT",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/custom/voices/6KQ52XTjdNd1FfUgGmV6/MR0ci3ebumaFLDcMQAuP.mp3"
+        },
+        {
+          "language": "it",
+          "model_id": "eleven_flash_v2_5",
+          "accent": "standard",
+          "locale": "it-IT",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/custom/voices/6KQ52XTjdNd1FfUgGmV6/MR0ci3ebumaFLDcMQAuP.mp3"
+        },
+        {
+          "language": "it",
+          "model_id": "eleven_v2_5_flash",
+          "accent": "standard",
+          "locale": "it-IT",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/custom/voices/6KQ52XTjdNd1FfUgGmV6/MR0ci3ebumaFLDcMQAuP.mp3"
+        }
+      ],
+      "notice_period": 730,
+      "instagram_username": null,
+      "twitter_username": null,
+      "youtube_username": null,
+      "tiktok_username": null,
+      "image_url": "",
+      "is_added_by_user": false
+    },
+    {
+      "public_owner_id": "e9c3088333329f7495993baa8c73def88177e001daa047acacf370526be3ebe0",
+      "voice_id": "Ilze0lNihfxGj7pq9g7s",
+      "date_unix": 1752080614,
+      "name": "Patty",
+      "accent": "standard",
+      "gender": "female",
+      "age": "middle_aged",
+      "descriptive": "casual",
+      "use_case": "conversational",
+      "category": "professional",
+      "language": "it",
+      "locale": "it-IT",
+      "description": "Middle-aged female Hoarse voice.",
+      "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/9YAsNpEPFsbzKC45fpd897tQeOw1/voices/Ilze0lNihfxGj7pq9g7s/2cabbe8e-11a0-4e40-95ef-4cf55f11bb14.mp3",
+      "usage_character_count_1y": 946527,
+      "usage_character_count_7d": 16620,
+      "play_api_usage_character_count_1y": 0,
+      "cloned_by_count": 327,
+      "rate": 1.0,
+      "fiat_rate": null,
+      "free_users_allowed": true,
+      "live_moderation_enabled": false,
+      "featured": false,
+      "verified_languages": [
+        {
+          "language": "it",
+          "model_id": "eleven_multilingual_v2",
+          "accent": "standard",
+          "locale": "it-IT",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/9YAsNpEPFsbzKC45fpd897tQeOw1/voices/Ilze0lNihfxGj7pq9g7s/2cabbe8e-11a0-4e40-95ef-4cf55f11bb14.mp3"
+        },
+        {
+          "language": "it",
+          "model_id": "eleven_turbo_v2_5",
+          "accent": "standard",
+          "locale": "it-IT",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/9YAsNpEPFsbzKC45fpd897tQeOw1/voices/Ilze0lNihfxGj7pq9g7s/2cabbe8e-11a0-4e40-95ef-4cf55f11bb14.mp3"
+        },
+        {
+          "language": "it",
+          "model_id": "eleven_v2_5_flash",
+          "accent": "standard",
+          "locale": "it-IT",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/9YAsNpEPFsbzKC45fpd897tQeOw1/voices/Ilze0lNihfxGj7pq9g7s/2cabbe8e-11a0-4e40-95ef-4cf55f11bb14.mp3"
+        },
+        {
+          "language": "it",
+          "model_id": "eleven_flash_v2_5",
+          "accent": "standard",
+          "locale": "it-IT",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/9YAsNpEPFsbzKC45fpd897tQeOw1/voices/Ilze0lNihfxGj7pq9g7s/2cabbe8e-11a0-4e40-95ef-4cf55f11bb14.mp3"
+        }
+      ],
+      "notice_period": 180,
+      "instagram_username": null,
+      "twitter_username": null,
+      "youtube_username": null,
+      "tiktok_username": null,
+      "image_url": "",
+      "is_added_by_user": false
+    },
+    {
+      "public_owner_id": "ed946993f4131be9d72dbbd317be5987816d101d90bee8c99a5683b82294135a",
+      "voice_id": "YQ36DZjvxVXPUHeSwvFK",
+      "date_unix": 1741211725,
+      "name": "Valentina",
+      "accent": "standard",
+      "gender": "female",
+      "age": "young",
+      "descriptive": "calm",
+      "use_case": "narrative_story",
+      "category": "professional",
+      "language": "it",
+      "locale": "it-IT",
+      "description": "Young Fresh Italian female voice.",
+      "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/03ORhweyrLe0tdX7v9DTK5qJ9zj2/voices/YQ36DZjvxVXPUHeSwvFK/pWYm3d3dJDAILVEtvbhj.mp3",
+      "usage_character_count_1y": 8270861,
+      "usage_character_count_7d": 202240,
+      "play_api_usage_character_count_1y": 0,
+      "cloned_by_count": 3873,
+      "rate": 1.0,
+      "fiat_rate": null,
+      "free_users_allowed": true,
+      "live_moderation_enabled": true,
+      "featured": false,
+      "verified_languages": [
+        {
+          "language": "it",
+          "model_id": "eleven_multilingual_v2",
+          "accent": "standard",
+          "locale": "it-IT",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/03ORhweyrLe0tdX7v9DTK5qJ9zj2/voices/YQ36DZjvxVXPUHeSwvFK/pWYm3d3dJDAILVEtvbhj.mp3"
+        },
+        {
+          "language": "it",
+          "model_id": "eleven_multilingual_sts_v2",
+          "accent": "standard",
+          "locale": "it-IT",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/03ORhweyrLe0tdX7v9DTK5qJ9zj2/voices/YQ36DZjvxVXPUHeSwvFK/pWYm3d3dJDAILVEtvbhj.mp3"
+        },
+        {
+          "language": "it",
+          "model_id": "eleven_turbo_v2_5",
+          "accent": "standard",
+          "locale": "it-IT",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/03ORhweyrLe0tdX7v9DTK5qJ9zj2/voices/YQ36DZjvxVXPUHeSwvFK/pWYm3d3dJDAILVEtvbhj.mp3"
+        },
+        {
+          "language": "it",
+          "model_id": "eleven_flash_v2_5",
+          "accent": "standard",
+          "locale": "it-IT",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/03ORhweyrLe0tdX7v9DTK5qJ9zj2/voices/YQ36DZjvxVXPUHeSwvFK/pWYm3d3dJDAILVEtvbhj.mp3"
+        },
+        {
+          "language": "it",
+          "model_id": "eleven_v2_5_flash",
+          "accent": "standard",
+          "locale": "it-IT",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/03ORhweyrLe0tdX7v9DTK5qJ9zj2/voices/YQ36DZjvxVXPUHeSwvFK/pWYm3d3dJDAILVEtvbhj.mp3"
+        }
+      ],
+      "notice_period": null,
+      "instagram_username": null,
+      "twitter_username": null,
+      "youtube_username": null,
+      "tiktok_username": null,
+      "image_url": "",
+      "is_added_by_user": false
+    },
+    {
+      "public_owner_id": "a1e47e357c0b97d1f0841053edd5f990443293fd66838f4324db5d2786f4fb9b",
+      "voice_id": "RZ9oBlQ97k7Ug7uU1Ij0",
+      "date_unix": 1734595351,
+      "name": "Giulia Pro - upbeat & clear",
+      "accent": "standard",
+      "gender": "female",
+      "age": "young",
+      "descriptive": "upbeat",
+      "use_case": "advertisement",
+      "category": "professional",
+      "language": "it",
+      "locale": "it-IT",
+      "description": "A young, female voice, clear and upbeat, perfect for engaging social media content, capable of capturing and holding the listener's attention.",
+      "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/HiH52RMfH2cF3qziPhSRKPuflW52/voices/RZ9oBlQ97k7Ug7uU1Ij0/pAjZgYOY8peU6N470Oqw.mp3",
+      "usage_character_count_1y": 13490279,
+      "usage_character_count_7d": 1388582,
+      "play_api_usage_character_count_1y": 0,
+      "cloned_by_count": 981,
+      "rate": 2.0,
+      "fiat_rate": 0.2,
+      "free_users_allowed": false,
+      "live_moderation_enabled": false,
+      "featured": false,
+      "verified_languages": [
+        {
+          "language": "it",
+          "model_id": "eleven_turbo_v2_5",
+          "accent": "standard",
+          "locale": "it-IT",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/HiH52RMfH2cF3qziPhSRKPuflW52/voices/RZ9oBlQ97k7Ug7uU1Ij0/pAjZgYOY8peU6N470Oqw.mp3"
+        },
+        {
+          "language": "it",
+          "model_id": "eleven_multilingual_v2",
+          "accent": "standard",
+          "locale": "it-IT",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/HiH52RMfH2cF3qziPhSRKPuflW52/voices/RZ9oBlQ97k7Ug7uU1Ij0/pAjZgYOY8peU6N470Oqw.mp3"
+        },
+        {
+          "language": "it",
+          "model_id": "eleven_multilingual_sts_v2",
+          "accent": "standard",
+          "locale": "it-IT",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/HiH52RMfH2cF3qziPhSRKPuflW52/voices/RZ9oBlQ97k7Ug7uU1Ij0/pAjZgYOY8peU6N470Oqw.mp3"
+        },
+        {
+          "language": "it",
+          "model_id": "eleven_flash_v2_5",
+          "accent": "standard",
+          "locale": "it-IT",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/HiH52RMfH2cF3qziPhSRKPuflW52/voices/RZ9oBlQ97k7Ug7uU1Ij0/pAjZgYOY8peU6N470Oqw.mp3"
+        },
+        {
+          "language": "it",
+          "model_id": "eleven_v2_5_flash",
+          "accent": "standard",
+          "locale": "it-IT",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/HiH52RMfH2cF3qziPhSRKPuflW52/voices/RZ9oBlQ97k7Ug7uU1Ij0/pAjZgYOY8peU6N470Oqw.mp3"
+        }
+      ],
+      "notice_period": 730,
+      "instagram_username": null,
+      "twitter_username": null,
+      "youtube_username": null,
+      "tiktok_username": null,
+      "image_url": "",
+      "is_added_by_user": false
+    },
+    {
+      "public_owner_id": "799f374df409a4f68be401c3bd21c61b2b2218bede407a045fbdd2fe2da57a01",
+      "voice_id": "CnVVMwhKmKZ6hKBAkL6Y",
+      "date_unix": 1716441094,
+      "name": "Giulia - sweet and soothing",
+      "accent": "standard",
+      "gender": "female",
+      "age": "middle_aged",
+      "descriptive": "gentle",
+      "use_case": "informative_educational",
+      "category": "professional",
+      "language": "it",
+      "locale": "it-IT",
+      "description": "A young Italian female voice with a sweet and soothing tone, characterized by a gentle timbre that instantly relaxes and comforts the listener.",
+      "preview_url": "https://storage.googleapis.com/eleven-public-prod/custom/voices/CnVVMwhKmKZ6hKBAkL6Y/k59zHJYJOcdtOUvl2rwP.mp3",
+      "usage_character_count_1y": 101488586,
+      "usage_character_count_7d": 988254,
+      "play_api_usage_character_count_1y": 0,
+      "cloned_by_count": 1552,
+      "rate": 2.0,
+      "fiat_rate": 0.2,
+      "free_users_allowed": false,
+      "live_moderation_enabled": false,
+      "featured": false,
+      "verified_languages": [
+        {
+          "language": "it",
+          "model_id": "eleven_turbo_v2_5",
+          "accent": "standard",
+          "locale": "it-IT",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/custom/voices/CnVVMwhKmKZ6hKBAkL6Y/k59zHJYJOcdtOUvl2rwP.mp3"
+        },
+        {
+          "language": "it",
+          "model_id": "eleven_multilingual_sts_v2",
+          "accent": "standard",
+          "locale": "it-IT",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/custom/voices/CnVVMwhKmKZ6hKBAkL6Y/k59zHJYJOcdtOUvl2rwP.mp3"
+        },
+        {
+          "language": "it",
+          "model_id": "eleven_multilingual_v2",
+          "accent": "standard",
+          "locale": "it-IT",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/custom/voices/CnVVMwhKmKZ6hKBAkL6Y/k59zHJYJOcdtOUvl2rwP.mp3"
+        },
+        {
+          "language": "it",
+          "model_id": "eleven_v2_5_flash",
+          "accent": "standard",
+          "locale": "it-IT",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/custom/voices/CnVVMwhKmKZ6hKBAkL6Y/k59zHJYJOcdtOUvl2rwP.mp3"
+        },
+        {
+          "language": "it",
+          "model_id": "eleven_flash_v2_5",
+          "accent": "standard",
+          "locale": "it-IT",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/custom/voices/CnVVMwhKmKZ6hKBAkL6Y/k59zHJYJOcdtOUvl2rwP.mp3"
+        }
+      ],
+      "notice_period": 730,
+      "instagram_username": null,
+      "twitter_username": null,
+      "youtube_username": null,
+      "tiktok_username": null,
+      "image_url": "",
+      "is_added_by_user": false
+    },
+    {
+      "public_owner_id": "aaa36b013b230c4bd3c1e18a70fe7221f65342b162d02c0d9a5903a58c8d2fbe",
+      "voice_id": "ko0CPqOV7GGUcPkJMPej",
+      "date_unix": 1748711403,
+      "name": "Vera Verissima",
+      "accent": "milanese",
+      "gender": "female",
+      "age": "young",
+      "descriptive": "confident",
+      "use_case": "narrative_story",
+      "category": "professional",
+      "language": "it",
+      "locale": null,
+      "description": "Calm, warm and conversational female Italian with charming and captivating tone. Age 32, ideal for conversations and narrative. ",
+      "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/pTwY4AIaPchJquyha3rb2U7ZUe52/voices/ko0CPqOV7GGUcPkJMPej/5pzZJTZpjpZItmAZi1Oa.mp3",
+      "usage_character_count_1y": 2470186,
+      "usage_character_count_7d": 359436,
+      "play_api_usage_character_count_1y": 0,
+      "cloned_by_count": 906,
+      "rate": 1.0,
+      "fiat_rate": null,
+      "free_users_allowed": true,
+      "live_moderation_enabled": false,
+      "featured": false,
+      "verified_languages": [
+        {
+          "language": "it",
+          "model_id": "eleven_turbo_v2_5",
+          "accent": "milanese",
+          "locale": null,
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/pTwY4AIaPchJquyha3rb2U7ZUe52/voices/ko0CPqOV7GGUcPkJMPej/5pzZJTZpjpZItmAZi1Oa.mp3"
+        },
+        {
+          "language": "it",
+          "model_id": "eleven_v2_5_flash",
+          "accent": "milanese",
+          "locale": null,
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/pTwY4AIaPchJquyha3rb2U7ZUe52/voices/ko0CPqOV7GGUcPkJMPej/5pzZJTZpjpZItmAZi1Oa.mp3"
+        },
+        {
+          "language": "it",
+          "model_id": "eleven_flash_v2_5",
+          "accent": "milanese",
+          "locale": null,
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/pTwY4AIaPchJquyha3rb2U7ZUe52/voices/ko0CPqOV7GGUcPkJMPej/5pzZJTZpjpZItmAZi1Oa.mp3"
+        },
+        {
+          "language": "it",
+          "model_id": "eleven_multilingual_v2",
+          "accent": "milanese",
+          "locale": null,
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/pTwY4AIaPchJquyha3rb2U7ZUe52/voices/ko0CPqOV7GGUcPkJMPej/5pzZJTZpjpZItmAZi1Oa.mp3"
+        },
+        {
+          "language": "it",
+          "model_id": "eleven_multilingual_sts_v2",
+          "accent": "milanese",
+          "locale": null,
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/pTwY4AIaPchJquyha3rb2U7ZUe52/voices/ko0CPqOV7GGUcPkJMPej/5pzZJTZpjpZItmAZi1Oa.mp3"
+        }
+      ],
+      "notice_period": 365,
+      "instagram_username": null,
+      "twitter_username": null,
+      "youtube_username": null,
+      "tiktok_username": null,
+      "image_url": "",
+      "is_added_by_user": false
+    },
+    {
+      "public_owner_id": "1905655a2a81722144b43943bfb5c91ad3849a09939f01bea6dcabced426ecff",
+      "voice_id": "u0TsaWvt0v8migutHM3M",
+      "date_unix": 1735046344,
+      "name": "GHIZLANE",
+      "accent": "modern standard",
+      "gender": "female",
+      "age": "middle_aged",
+      "descriptive": "",
+      "use_case": "narrative_story",
+      "category": "high_quality",
+      "language": "ar",
+      "locale": "ar-SA",
+      "description": "A smooth, balanced, and tranquil female voice, perfectly suited for podcasts, YouTube content, and news broadcasts. Its clear and pristine quality is paired with an exceptional ability to communicate information with precision and professionalism. Versatile for a diverse range of content, including educational, news, and entertainment, this voice brings a calming, refined touch to any Arabic audio endeavor.",
+      "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/FLoNmOwfdyVstAmMeF1WDQhJF6k2/voices/u0TsaWvt0v8migutHM3M/oxi7BOeX3pB7YElCrYvu.mp3",
+      "usage_character_count_1y": 81206845,
+      "usage_character_count_7d": 7938092,
+      "play_api_usage_character_count_1y": 59660531,
+      "cloned_by_count": 26172,
+      "rate": 1.0,
+      "fiat_rate": null,
+      "free_users_allowed": true,
+      "live_moderation_enabled": true,
+      "featured": false,
+      "verified_languages": [
+        {
+          "language": "ar",
+          "model_id": "eleven_flash_v2_5",
+          "accent": "modern standard",
+          "locale": "ar-SA",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/FLoNmOwfdyVstAmMeF1WDQhJF6k2/voices/u0TsaWvt0v8migutHM3M/oxi7BOeX3pB7YElCrYvu.mp3"
+        },
+        {
+          "language": "ar",
+          "model_id": "eleven_multilingual_v2",
+          "accent": "modern standard",
+          "locale": "ar-SA",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/FLoNmOwfdyVstAmMeF1WDQhJF6k2/voices/u0TsaWvt0v8migutHM3M/oxi7BOeX3pB7YElCrYvu.mp3"
+        },
+        {
+          "language": "ar",
+          "model_id": "eleven_multilingual_sts_v2",
+          "accent": "modern standard",
+          "locale": "ar-SA",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/FLoNmOwfdyVstAmMeF1WDQhJF6k2/voices/u0TsaWvt0v8migutHM3M/oxi7BOeX3pB7YElCrYvu.mp3"
+        },
+        {
+          "language": "ar",
+          "model_id": "eleven_turbo_v2_5",
+          "accent": "modern standard",
+          "locale": "ar-SA",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/FLoNmOwfdyVstAmMeF1WDQhJF6k2/voices/u0TsaWvt0v8migutHM3M/oxi7BOeX3pB7YElCrYvu.mp3"
+        },
+        {
+          "language": "ar",
+          "model_id": "eleven_v2_5_flash",
+          "accent": "modern standard",
+          "locale": "ar-SA",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/FLoNmOwfdyVstAmMeF1WDQhJF6k2/voices/u0TsaWvt0v8migutHM3M/oxi7BOeX3pB7YElCrYvu.mp3"
+        },
+        {
+          "language": "pt",
+          "model_id": "eleven_multilingual_v2",
+          "accent": "brazilian",
+          "locale": "pt-BR",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/FLoNmOwfdyVstAmMeF1WDQhJF6k2/voices/u0TsaWvt0v8migutHM3M/b921c8dc-5353-41d8-a37c-6704741bdef1.mp3"
+        },
+        {
+          "language": "cs",
+          "model_id": "eleven_multilingual_v2",
+          "accent": "standard",
+          "locale": "cs-CZ",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/FLoNmOwfdyVstAmMeF1WDQhJF6k2/voices/u0TsaWvt0v8migutHM3M/18ff6bf0-47fc-49e6-b1c3-58237ee00da9.mp3"
+        },
+        {
+          "language": "es",
+          "model_id": "eleven_multilingual_v2",
+          "accent": "argentine",
+          "locale": "es-AR",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/FLoNmOwfdyVstAmMeF1WDQhJF6k2/voices/u0TsaWvt0v8migutHM3M/3b2ffc4b-93e8-4d22-b6c3-1b05e86fd278.mp3"
+        },
+        {
+          "language": "it",
+          "model_id": "eleven_multilingual_v2",
+          "accent": "standard",
+          "locale": "it-IT",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/FLoNmOwfdyVstAmMeF1WDQhJF6k2/voices/u0TsaWvt0v8migutHM3M/68a6d7e9-ab55-497d-9762-d432493890f1.mp3"
+        },
+        {
+          "language": "hi",
+          "model_id": "eleven_multilingual_v2",
+          "accent": "standard",
+          "locale": "hi-IN",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/database/user/FLoNmOwfdyVstAmMeF1WDQhJF6k2/voices/u0TsaWvt0v8migutHM3M/a58b8932-95eb-4ffa-a9be-1741b87e0d55.mp3"
+        }
+      ],
+      "notice_period": 730,
+      "instagram_username": null,
+      "twitter_username": null,
+      "youtube_username": null,
+      "tiktok_username": null,
+      "image_url": "",
+      "is_added_by_user": false
+    }
+  ],
+  "has_more": true,
+  "last_sort_id": null
+}

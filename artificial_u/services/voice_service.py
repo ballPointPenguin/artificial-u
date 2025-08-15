@@ -218,6 +218,37 @@ class VoiceService:
 
         return voices
 
+    def _ensure_language_population(self, language: str) -> None:
+        """If our DB has very few voices for a target language, proactively fetch some.
+
+        This helps non-English professors get matched to appropriate voices by
+        warming the local catalog from the Shared Voices API.
+        """
+        try:
+            existing_count = self.repository_factory.voice.count(language=language)
+        except Exception:
+            existing_count = 0
+
+        # If almost empty (e.g., < 20), pull a few pages of shared voices for that language
+        if existing_count < 20:
+            self.logger.info(
+                f"Language '{language}' under-populated in DB (count={existing_count}). "
+                "Fetching additional shared voices."
+            )
+            page = 0
+            pages_to_fetch = 3
+            while page < pages_to_fetch:
+                page_voices, has_more = self.client.get_shared_voices(
+                    language=language,
+                    page_size=100,
+                    page=page,
+                )
+                for voice in page_voices:
+                    self._save_voice_to_db(voice)
+                if not has_more:
+                    break
+                page += 1
+
     def _filter_and_store_premade_voices(
         self,
         voices: List[Dict[str, Any]],
@@ -418,6 +449,9 @@ class VoiceService:
         attributes = self.mapper.extract_profile_attributes(professor)
         self.logger.info(f"Extracted attributes: {attributes}")
 
+        # Warm catalog for the professor's language if needed
+        self._ensure_language_population(attributes.get("language", "en"))
+
         # Step 1: Try to find suitable voices in database
         self.logger.debug("Step 2: Searching for voices in database with extracted attributes")
         voices = self._find_voices_in_db(attributes)
@@ -456,15 +490,6 @@ class VoiceService:
         self.logger.debug("Step 6: Ranking voices based on match criteria")
         ranked_voices = self.mapper.rank_voices(voices, attributes, used_voice_ids)
         self.logger.info(f"Ranked {len(ranked_voices)} voices")
-
-        # Log top 3 ranked voices for debugging
-        if ranked_voices:
-            self.logger.debug("Top 3 ranked voices:")
-            for i, voice in enumerate(ranked_voices[:3]):
-                voice_name = voice.get("name", "Unknown")
-                voice_id = voice.get("el_voice_id", "Unknown")
-                score = voice.get("match_score", "N/A")
-                self.logger.debug(f"  {i+1}. {voice_name} (ID: {voice_id}) - Score: {score}")
 
         # Step 6: Select voice using the specified strategy
         self.logger.debug(f"Step 7: Selecting voice using strategy: {selection_strategy}")

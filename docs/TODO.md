@@ -14,12 +14,16 @@
 - [x] Select OR Generate Department for Course
 - [x] Better contrast in all themes
 - [x] Update CLI
+- [x] Better voice mapping
 - [ ] Auth0 integration
 - [ ] User roles
 - [ ] Invite codes
 - [ ] Sort and filter courses
 - [ ] Sort and filter departments
 - [ ] Sort and filter professors
+- [ ] Enqueue topic generation
+- [ ] Troubleshoot sluggish api responses when jobs are running
+- [ ] Enable manual voice ID entry
 - [ ] User Profiles
 - [ ] User Interests
 - [ ] Rating & Feedback system
