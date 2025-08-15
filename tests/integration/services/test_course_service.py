@@ -87,11 +87,47 @@ def department_service(repository_factory):
 
 
 @pytest.fixture
-def course_service(repository_factory, professor_service):
-    """Create a CourseService with actual ProfessorService."""
+def department_generator_service(repository_factory, content_service):
+    """Create a mock DepartmentGeneratorService."""
+    mock_service = MagicMock()
+    mock_service.generate_department = AsyncMock(return_value=1)  # Mock department ID
+    return mock_service
+
+
+@pytest.fixture
+def professor_generator_service(repository_factory, content_service):
+    """Create a mock ProfessorGeneratorService."""
+    mock_service = MagicMock()
+    mock_service.generate_professor = AsyncMock(return_value=1)  # Mock professor ID
+    return mock_service
+
+
+@pytest.fixture
+def department_selector_service(content_service, repository_factory, department_generator_service):
+    """Create a mock DepartmentSelectorService."""
+    mock_service = MagicMock()
+    mock_service.resolve_department = AsyncMock(return_value=1)  # Mock department ID
+    return mock_service
+
+
+@pytest.fixture
+def professor_selector_service(content_service, repository_factory, professor_generator_service):
+    """Create a mock ProfessorSelectorService."""
+    mock_service = MagicMock()
+    mock_service.resolve_professor = AsyncMock(return_value=1)  # Mock professor ID
+    return mock_service
+
+
+@pytest.fixture
+def course_service(
+    repository_factory, professor_service, department_selector_service, professor_selector_service
+):
+    """Create a CourseService with selector services."""
     return CourseService(
         repository_factory=repository_factory,
         professor_service=professor_service,
+        department_selector_service=department_selector_service,
+        professor_selector_service=professor_selector_service,
         logger=logging.getLogger(__name__),
     )
 
@@ -100,7 +136,10 @@ def course_service(repository_factory, professor_service):
 class TestCourseService:
     """Integration tests for CourseService."""
 
-    def test_create_and_get_course(self, course_service, department_service, professor_service):
+    @pytest.mark.asyncio
+    async def test_create_and_get_course(
+        self, course_service, department_service, professor_service
+    ):
         """Test creating and retrieving a course."""
         # First create a department
         department = department_service.create_department(
@@ -123,7 +162,7 @@ class TestCourseService:
         )
 
         # Create a new course
-        course = course_service.create_course(
+        course_result = await course_service.create_course(
             title="Introduction to Programming",
             code="CS101",
             department_id=department.id,
@@ -133,9 +172,8 @@ class TestCourseService:
             credits=3,
             weeks=14,
             lectures_per_week=2,
-        )[
-            0
-        ]  # The create_course method returns a tuple (course, professor)
+        )
+        course = course_result[0]  # The create_course method returns a tuple (course, professor)
 
         # Verify it was created with an ID
         assert course.id is not None
@@ -150,7 +188,8 @@ class TestCourseService:
         assert retrieved.title == "Introduction to Programming"
         assert retrieved.code == "CS101"
 
-    def test_get_course_by_code(self, course_service, department_service, professor_service):
+    @pytest.mark.asyncio
+    async def test_get_course_by_code(self, course_service, department_service, professor_service):
         """Test retrieving a course by its code."""
         # First create a department
         department = department_service.create_department(
@@ -172,13 +211,14 @@ class TestCourseService:
 
         # Create a new course with a unique code
         course_code = "PHYS101"
-        course = course_service.create_course(
+        course_result = await course_service.create_course(
             title="Introduction to Physics",
             code=course_code,
             department_id=department.id,
             level="Undergraduate",
             professor_id=professor.id,
-        )[0]
+        )
+        course = course_result[0]
 
         # Verify retrieval by code
         retrieved = course_service.get_course_by_code(course_code)
@@ -186,7 +226,8 @@ class TestCourseService:
         assert retrieved.title == "Introduction to Physics"
         assert retrieved.code == course_code
 
-    def test_update_course(self, course_service, department_service, professor_service):
+    @pytest.mark.asyncio
+    async def test_update_course(self, course_service, department_service, professor_service):
         """Test updating a course."""
         # First create a department
         department = department_service.create_department(
@@ -207,7 +248,7 @@ class TestCourseService:
         )
 
         # Create a new course
-        course = course_service.create_course(
+        course_result = await course_service.create_course(
             title="Calculus I",
             code="MATH201",
             department_id=department.id,
@@ -215,7 +256,8 @@ class TestCourseService:
             professor_id=professor.id,
             description="Introduction to differential calculus",
             credits=4,
-        )[0]
+        )
+        course = course_result[0]
 
         # Update the course
         updated = course_service.update_course(
@@ -242,7 +284,8 @@ class TestCourseService:
         assert retrieved.description == "In-depth study of differential calculus"
         assert retrieved.credits == 5
 
-    def test_list_courses(self, course_service, department_service, professor_service):
+    @pytest.mark.asyncio
+    async def test_list_courses(self, course_service, department_service, professor_service):
         """Test listing courses with/without department filter."""
         # Create departments
         cs_dept = department_service.create_department(
@@ -279,7 +322,7 @@ class TestCourseService:
         )
 
         # Create courses in different departments
-        course_service.create_course(
+        await course_service.create_course(
             title="Algorithms",
             code="CS301",
             department_id=cs_dept.id,
@@ -287,7 +330,7 @@ class TestCourseService:
             professor_id=cs_prof.id,
         )
 
-        course_service.create_course(
+        await course_service.create_course(
             title="Data Structures",
             code="CS302",
             department_id=cs_dept.id,
@@ -295,7 +338,7 @@ class TestCourseService:
             professor_id=cs_prof.id,
         )
 
-        course_service.create_course(
+        await course_service.create_course(
             title="Game Theory",
             code="MATH401",
             department_id=math_dept.id,
@@ -323,7 +366,8 @@ class TestCourseService:
         with pytest.raises(CourseNotFoundError):
             course_service.get_course(999999)
 
-    def test_delete_course(self, course_service, department_service, professor_service):
+    @pytest.mark.asyncio
+    async def test_delete_course(self, course_service, department_service, professor_service):
         """Test deleting a course."""
         # First create a department
         department = department_service.create_department(
@@ -343,13 +387,14 @@ class TestCourseService:
         )
 
         # Create a course to delete
-        course = course_service.create_course(
+        course_result = await course_service.create_course(
             title="Course to Delete",
             code="DELETE101",
             department_id=department.id,
             level="Undergraduate",
             professor_id=professor.id,
-        )[0]
+        )
+        course = course_result[0]
 
         # Verify it exists
         retrieved = course_service.get_course(course.id)

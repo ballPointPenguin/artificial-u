@@ -3,7 +3,7 @@ Integration tests for TopicService.
 """
 
 import logging
-from unittest.mock import MagicMock
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
@@ -52,11 +52,31 @@ def professor_service(repository_factory):
 
 
 @pytest.fixture
-def course_service(repository_factory, professor_service):
-    """Create a CourseService with actual ProfessorService."""
+def department_selector_service():
+    """Create a mock DepartmentSelectorService."""
+    mock_service = MagicMock()
+    mock_service.resolve_department = AsyncMock(return_value=1)  # Mock department ID
+    return mock_service
+
+
+@pytest.fixture
+def professor_selector_service():
+    """Create a mock ProfessorSelectorService."""
+    mock_service = MagicMock()
+    mock_service.resolve_professor = AsyncMock(return_value=1)  # Mock professor ID
+    return mock_service
+
+
+@pytest.fixture
+def course_service(
+    repository_factory, professor_service, department_selector_service, professor_selector_service
+):
+    """Create a CourseService with selector services."""
     return CourseService(
         repository_factory=repository_factory,
         professor_service=professor_service,
+        department_selector_service=department_selector_service,
+        professor_selector_service=professor_selector_service,
         logger=logging.getLogger(__name__),
     )
 
@@ -81,7 +101,8 @@ def topic_service(repository_factory):
 class TestTopicService:
     """Integration tests for TopicService."""
 
-    def test_create_and_get_topic(
+    @pytest.mark.asyncio
+    async def test_create_and_get_topic(
         self, topic_service, course_service, department_service, professor_service
     ):
         """Test creating and retrieving a topic."""
@@ -106,7 +127,7 @@ class TestTopicService:
         )
 
         # Create a course
-        course = course_service.create_course(
+        course_result = await course_service.create_course(
             title="Introduction to Programming",
             code="CS101",
             department_id=department.id,
@@ -116,7 +137,8 @@ class TestTopicService:
             credits=3,
             weeks=14,
             lectures_per_week=2,
-        )[0]
+        )
+        course = course_result[0]
 
         # Create a new topic
         topic = topic_service.create_topic(
@@ -141,7 +163,8 @@ class TestTopicService:
         assert retrieved.week == 1
         assert retrieved.order == 1
 
-    def test_create_topics_batch(
+    @pytest.mark.asyncio
+    async def test_create_topics_batch(
         self, topic_service, course_service, department_service, professor_service
     ):
         """Test creating multiple topics in a batch."""
@@ -164,13 +187,14 @@ class TestTopicService:
         )
 
         # Create a course
-        course = course_service.create_course(
+        course_result = await course_service.create_course(
             title="Introduction to Programming",
             code="CS101",
             department_id=department.id,
             level="Undergraduate",
             professor_id=professor.id,
-        )[0]
+        )
+        course = course_result[0]
 
         # Create multiple topics
         topics = [
@@ -201,7 +225,8 @@ class TestTopicService:
             assert retrieved.id == topic.id
             assert retrieved.title == topic.title
 
-    def test_get_topic_by_course_week_order(
+    @pytest.mark.asyncio
+    async def test_get_topic_by_course_week_order(
         self, topic_service, course_service, department_service, professor_service
     ):
         """Test getting a topic by course ID, week, and order."""
@@ -224,13 +249,14 @@ class TestTopicService:
         )
 
         # Create a course
-        course = course_service.create_course(
+        course_result = await course_service.create_course(
             title="Introduction to Programming",
             code="CS101",
             department_id=department.id,
             level="Undergraduate",
             professor_id=professor.id,
-        )[0]
+        )
+        course = course_result[0]
 
         # Create a topic
         topic = topic_service.create_topic(
@@ -251,7 +277,8 @@ class TestTopicService:
         assert retrieved.id == topic.id
         assert retrieved.title == "Advanced Python"
 
-    def test_list_topics_by_course(
+    @pytest.mark.asyncio
+    async def test_list_topics_by_course(
         self, topic_service, course_service, department_service, professor_service
     ):
         """Test listing all topics for a course."""
@@ -274,21 +301,23 @@ class TestTopicService:
         )
 
         # Create two courses
-        course1 = course_service.create_course(
+        course1_result = await course_service.create_course(
             title="Introduction to Programming",
             code="CS101",
             department_id=department.id,
             level="Undergraduate",
             professor_id=professor.id,
-        )[0]
+        )
+        course1 = course1_result[0]
 
-        course2 = course_service.create_course(
+        course2_result = await course_service.create_course(
             title="Advanced Programming",
             code="CS201",
             department_id=department.id,
             level="Undergraduate",
             professor_id=professor.id,
-        )[0]
+        )
+        course2 = course2_result[0]
 
         # Create topics for course 1
         topic_service.create_topic(title="Topic 1", course_id=course1.id, week=1, order=1)
@@ -302,7 +331,8 @@ class TestTopicService:
         assert len(topics) >= 2  # At least our 2 topics (could be more if DB has existing data)
         assert all(t.course_id == course1.id for t in topics)
 
-    def test_list_topics_by_course_week(
+    @pytest.mark.asyncio
+    async def test_list_topics_by_course_week(
         self, topic_service, course_service, department_service, professor_service
     ):
         """Test listing topics for a specific course and week."""
@@ -325,13 +355,14 @@ class TestTopicService:
         )
 
         # Create a course
-        course = course_service.create_course(
+        course_result = await course_service.create_course(
             title="Introduction to Programming",
             code="CS101",
             department_id=department.id,
             level="Undergraduate",
             professor_id=professor.id,
-        )[0]
+        )
+        course = course_result[0]
 
         # Create topics for different weeks
         topic_service.create_topic(title="Week 1 Topic", course_id=course.id, week=1, order=1)
@@ -343,7 +374,8 @@ class TestTopicService:
         assert len(topics) >= 2  # At least our 2 topics for week 1
         assert all(t.week == 1 for t in topics)
 
-    def test_update_topic(
+    @pytest.mark.asyncio
+    async def test_update_topic(
         self, topic_service, course_service, department_service, professor_service
     ):
         """Test updating a topic."""
@@ -366,13 +398,14 @@ class TestTopicService:
         )
 
         # Create a course
-        course = course_service.create_course(
+        course_result = await course_service.create_course(
             title="Introduction to Programming",
             code="CS101",
             department_id=department.id,
             level="Undergraduate",
             professor_id=professor.id,
-        )[0]
+        )
+        course = course_result[0]
 
         # Create a topic
         topic = topic_service.create_topic(
@@ -396,7 +429,8 @@ class TestTopicService:
         assert retrieved.title == "Updated Title"
         assert retrieved.week == 2
 
-    def test_delete_topic(
+    @pytest.mark.asyncio
+    async def test_delete_topic(
         self, topic_service, course_service, department_service, professor_service
     ):
         """Test deleting a topic."""
@@ -419,13 +453,14 @@ class TestTopicService:
         )
 
         # Create a course
-        course = course_service.create_course(
+        course_result = await course_service.create_course(
             title="Introduction to Programming",
             code="CS101",
             department_id=department.id,
             level="Undergraduate",
             professor_id=professor.id,
-        )[0]
+        )
+        course = course_result[0]
 
         # Create a topic
         topic = topic_service.create_topic(
@@ -442,7 +477,8 @@ class TestTopicService:
         # Verify it's gone
         assert topic_service.get_topic(topic.id) is None
 
-    def test_delete_topics_by_course(
+    @pytest.mark.asyncio
+    async def test_delete_topics_by_course(
         self, topic_service, course_service, department_service, professor_service
     ):
         """Test deleting all topics for a course."""
@@ -465,21 +501,23 @@ class TestTopicService:
         )
 
         # Create two courses
-        course1 = course_service.create_course(
+        course1_result = await course_service.create_course(
             title="Introduction to Programming",
             code="CS101",
             department_id=department.id,
             level="Undergraduate",
             professor_id=professor.id,
-        )[0]
+        )
+        course1 = course1_result[0]
 
-        course2 = course_service.create_course(
+        course2_result = await course_service.create_course(
             title="Advanced Programming",
             code="CS201",
             department_id=department.id,
             level="Undergraduate",
             professor_id=professor.id,
-        )[0]
+        )
+        course2 = course2_result[0]
 
         # Create topics for course 1
         topic_service.create_topic(title="Topic 1", course_id=course1.id, week=1, order=1)

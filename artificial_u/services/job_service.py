@@ -251,6 +251,8 @@ class JobService:
             self._course_service = CourseService(
                 repository_factory=self.repository_factory,
                 professor_service=self._professor_service_instance(),
+                department_selector_service=self._department_selector_service_instance(),
+                professor_selector_service=self._professor_selector_service_instance(),
                 logger=self.logger,
             )
         return self._course_service
@@ -332,6 +334,37 @@ class JobService:
                 logger=self.logger,
             )
         return self._department_generator_service
+
+    def _department_selector_service_instance(self):
+        if (
+            not hasattr(self, "_department_selector_service")
+            or self._department_selector_service is None
+        ):
+            from artificial_u.services.department_selector_service import DepartmentSelectorService
+
+            self._department_selector_service = DepartmentSelectorService(
+                content_service=self._content_service_instance(),
+                repository_factory=self.repository_factory,
+                department_generator_service=self._department_generator_service_instance(),
+                logger=self.logger,
+            )
+        return self._department_selector_service
+
+    def _professor_selector_service_instance(self):
+        if (
+            not hasattr(self, "_professor_selector_service")
+            or self._professor_selector_service is None
+        ):
+            from artificial_u.services.professor_selector_service import ProfessorSelectorService
+
+            self._professor_selector_service = ProfessorSelectorService(
+                content_service=self._content_service_instance(),
+                repository_factory=self.repository_factory,
+                professor_generator_service=self._professor_generator_service_instance(),
+                professor_service=self._professor_service_instance(),
+                logger=self.logger,
+            )
+        return self._professor_selector_service
 
     def _topic_generator_service_instance(self):
         if self._topic_generator_service is None:

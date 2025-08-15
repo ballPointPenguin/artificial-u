@@ -99,11 +99,31 @@ def department_service(repository_factory):
 
 
 @pytest.fixture
-def course_service(repository_factory, professor_service):
-    """Create a CourseService with actual ProfessorService."""
+def department_selector_service():
+    """Create a mock DepartmentSelectorService."""
+    mock_service = MagicMock()
+    mock_service.resolve_department = AsyncMock(return_value=1)  # Mock department ID
+    return mock_service
+
+
+@pytest.fixture
+def professor_selector_service():
+    """Create a mock ProfessorSelectorService."""
+    mock_service = MagicMock()
+    mock_service.resolve_professor = AsyncMock(return_value=1)  # Mock professor ID
+    return mock_service
+
+
+@pytest.fixture
+def course_service(
+    repository_factory, professor_service, department_selector_service, professor_selector_service
+):
+    """Create a CourseService with selector services."""
     return CourseService(
         repository_factory=repository_factory,
         professor_service=professor_service,
+        department_selector_service=department_selector_service,
+        professor_selector_service=professor_selector_service,
         logger=logging.getLogger(__name__),
     )
 
@@ -131,7 +151,7 @@ def lecture_service(repository_factory):
 class TestLectureService:
     """Integration tests for LectureService."""
 
-    def _create_prerequisites(
+    async def _create_prerequisites(
         self, department_service, professor_service, course_service, topic_service
     ):
         department = department_service.create_department(
@@ -147,13 +167,14 @@ class TestLectureService:
                 specialization="Testology",
             )
         )
-        course, _ = course_service.create_course(
+        course_result = await course_service.create_course(
             title="Test Course for Lectures",
             code="TCL101",
             department_id=department.id,
             level="Undergraduate",
             professor_id=professor.id,
         )
+        course = course_result[0]
         topic = topic_service.create_topic(
             title="Test Topic 1",
             course_id=course.id,
@@ -162,11 +183,12 @@ class TestLectureService:
         )
         return department, professor, course, topic
 
-    def test_create_and_get_lecture(
+    @pytest.mark.asyncio
+    async def test_create_and_get_lecture(
         self, lecture_service, course_service, department_service, professor_service, topic_service
     ):
         """Test creating and retrieving a lecture."""
-        _, _, course, topic = self._create_prerequisites(
+        _, _, course, topic = await self._create_prerequisites(
             department_service, professor_service, course_service, topic_service
         )
 
@@ -199,11 +221,12 @@ class TestLectureService:
         assert retrieved.summary == lecture_summary
         assert retrieved.revision == 1
 
-    def test_list_lectures(
+    @pytest.mark.asyncio
+    async def test_list_lectures(
         self, lecture_service, course_service, department_service, professor_service, topic_service
     ):
         """Test listing lectures with various filters."""
-        _, professor, course, topic1 = self._create_prerequisites(
+        _, professor, course, topic1 = await self._create_prerequisites(
             department_service, professor_service, course_service, topic_service
         )
         topic2 = topic_service.create_topic(
@@ -243,11 +266,12 @@ class TestLectureService:
         search_results_summary = lecture_service.list_lectures(search_query="Summary 2")
         assert any(lec.content == "Content for lecture 2" for lec in search_results_summary)
 
-    def test_update_lecture(
+    @pytest.mark.asyncio
+    async def test_update_lecture(
         self, lecture_service, course_service, department_service, professor_service, topic_service
     ):
         """Test updating a lecture."""
-        _, _, course, topic = self._create_prerequisites(
+        _, _, course, topic = await self._create_prerequisites(
             department_service, professor_service, course_service, topic_service
         )
 
@@ -291,11 +315,12 @@ class TestLectureService:
         assert retrieved.revision == updated_revision
         assert retrieved.title == updated_title
 
-    def test_delete_lecture(
+    @pytest.mark.asyncio
+    async def test_delete_lecture(
         self, lecture_service, course_service, department_service, professor_service, topic_service
     ):
         """Test deleting a lecture."""
-        _, _, course, topic = self._create_prerequisites(
+        _, _, course, topic = await self._create_prerequisites(
             department_service, professor_service, course_service, topic_service
         )
 

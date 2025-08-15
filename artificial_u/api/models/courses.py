@@ -13,10 +13,14 @@ class CourseBase(BaseModel):
 
     code: str = Field(..., description="Course code (e.g., CS101, MATH201)")
     title: str = Field(..., description="Course title")
-    department_id: int = Field(..., description="ID of the department offering the course")
+    department_id: Optional[int] = Field(
+        None, description="ID of the department offering the course (optional for smart selection)"
+    )
     level: str = Field(..., description="Course level (e.g., Undergraduate, Graduate)")
     credits: int = Field(default=3, ge=0, description="Number of credit hours")
-    professor_id: int = Field(..., description="ID of the professor teaching the course")
+    professor_id: Optional[int] = Field(
+        None, description="ID of the professor teaching the course (optional for smart selection)"
+    )
     description: str = Field(..., description="Course description and overview")
     lectures_per_week: int = Field(default=14, description="Number of lectures per week")
     total_weeks: int = Field(default=1, description="Total number of weeks in the course")
@@ -50,6 +54,9 @@ class CourseResponse(CourseBase):
     """Model for course responses."""
 
     id: int = Field(..., description="Unique course identifier")
+    # Override to make these required in responses (should be populated after creation)
+    department_id: int = Field(..., description="ID of the department offering the course")
+    professor_id: int = Field(..., description="ID of the professor teaching the course")
 
     class Config:
         from_attributes = True

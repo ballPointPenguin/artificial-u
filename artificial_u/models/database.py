@@ -25,7 +25,7 @@ class CourseModel(Base):
     description = Column(Text, nullable=True)
     lectures_per_week = Column(Integer, nullable=True, default=1)
     level = Column(String, nullable=True)
-    total_weeks = Column(Integer, nullable=True, default=14)
+    total_weeks = Column(Integer, nullable=True, default=12)
     department_id = Column(Integer, ForeignKey("departments.id"), nullable=True)
     professor_id = Column(Integer, ForeignKey("professors.id"), nullable=True)
 

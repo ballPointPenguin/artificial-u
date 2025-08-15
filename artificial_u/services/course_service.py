@@ -29,6 +29,8 @@ class CourseService:
         self,
         repository_factory: RepositoryFactory,
         professor_service: ProfessorService,
+        department_selector_service,
+        professor_selector_service,
         logger=None,
     ):
         """
@@ -37,52 +39,112 @@ class CourseService:
         Args:
             repository_factory: Repository factory instance
             professor_service: Service for professor operations
+            department_selector_service: Service for smart department selection
+            professor_selector_service: Service for smart professor selection
             logger: Optional logger instance
         """
         self.repository_factory = repository_factory
-        self.professor_service = professor_service  # Needed for create_course
+        self.professor_service = professor_service
+        self.department_selector_service = department_selector_service
+        self.professor_selector_service = professor_selector_service
         self.logger = logger or logging.getLogger(__name__)
 
     # --- CRUD Methods --- #
 
-    def create_course(
+    async def create_course(
         self,
         title: str,
         code: str,
-        department_id: str,
         level: str,
-        professor_id: Optional[str] = None,
-        description: Optional[str] = None,
         credits: Optional[int] = 3,
-        weeks: int = 14,
+        weeks: int = 12,
         lectures_per_week: int = 1,
+        department_id: Optional[int] = None,
+        professor_id: Optional[int] = None,
+        description: Optional[str] = None,
     ) -> Tuple[Course, Professor]:
         """
-        Create a new course without generating content.
+        Create a new course with optional smart selection for department/professor.
 
         Args:
             title: Course title
             code: Course code (e.g., "CS101")
-            department_id: ID of existing department
             level: Course level (Undergraduate, Graduate, etc.)
-            professor_id: ID of existing professor
-            description: Course description
             credits: Number of credits for the course (default: 3)
             weeks: Number of weeks in the course
             lectures_per_week: Number of lectures per week
+            department_id: ID of existing department (will be selected if not provided)
+            professor_id: ID of existing professor (will be selected if not provided)
+            description: Course description
 
         Returns:
             Tuple: (Course, Professor) - The created course and its professor
         """
         self.logger.info(f"Creating new course: {code} - {title}")
 
+        # Build course attributes for smart selection
+        course_attributes = {
+            "title": title,
+            "code": code,
+            "level": level,
+            "credits": credits,
+            "description": description,
+        }
+
+        # Resolve department and professor IDs (with smart selection if needed)
+        resolved_department_id = await self._resolve_department_id(department_id, course_attributes)
+        resolved_professor_id = await self._resolve_professor_id(
+            professor_id, course_attributes, resolved_department_id
+        )
+
+        # Get professor and create course
+        professor = self._get_professor(resolved_professor_id)
+        course = self._create_course_model(
+            code,
+            title,
+            level,
+            credits,
+            weeks,
+            lectures_per_week,
+            resolved_department_id,
+            professor.id,
+            description,
+        )
+
+        # Save course
+        return self._save_course(course, professor, code)
+
+    async def _resolve_department_id(
+        self, department_id: Optional[int], course_attributes: dict
+    ) -> int:
+        """Resolve department ID using smart selection if needed."""
+        if department_id:
+            return department_id
+
+        self.logger.info("Department ID not provided, using smart selection")
+        return await self.department_selector_service.resolve_department(course_attributes)
+
+    async def _resolve_professor_id(
+        self, professor_id: Optional[int], course_attributes: dict, department_id: int
+    ) -> int:
+        """Resolve professor ID using smart selection if needed."""
+        if professor_id:
+            return professor_id
+
+        self.logger.info("Professor ID not provided, using smart selection")
+        return await self.professor_selector_service.resolve_professor(
+            course_attributes, department_id
+        )
+
+    def _get_professor(self, professor_id: int):
+        """Get professor by ID with error handling."""
         try:
             professor = self.professor_service.get_professor(professor_id)
             if not professor:
                 raise ProfessorNotFoundError(
                     f"Professor ID {professor_id} not found for course creation."
                 )
-
+            return professor
         except ProfessorNotFoundError as e:
             self.logger.error(f"Professor not found: {e}")
             raise
@@ -90,22 +152,34 @@ class CourseService:
             self.logger.error(f"Error getting professor {professor_id}: {e}")
             raise DatabaseError(f"Error retrieving professor {professor_id}")
 
-        # Create basic course model
-        course = Course(
+    def _create_course_model(
+        self,
+        code: str,
+        title: str,
+        level: str,
+        credits: int,
+        weeks: int,
+        lectures_per_week: int,
+        department_id: int,
+        professor_id: int,
+        description: Optional[str],
+    ) -> Course:
+        """Create Course model with given attributes."""
+        return Course(
             code=code,
             title=title,
             department_id=department_id,
             level=level,
-            professor_id=professor.id,
+            professor_id=professor_id,
             description=description,
             credits=credits,
             total_weeks=weeks,
             lectures_per_week=lectures_per_week,
         )
 
-        # Save using the repository factory
+    def _save_course(self, course: Course, professor, code: str) -> Tuple[Course, Any]:
+        """Save course to database with error handling."""
         try:
-            # Use the course repository directly
             created_course = self.repository_factory.course.create(course)
             self.logger.info(f"Course created with ID: {created_course.id}")
             return created_course, professor

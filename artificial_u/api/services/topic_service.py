@@ -33,6 +33,7 @@ class TopicApiService(BaseApiService[CoreTopic, Topic, TopicListResponse]):
         self,
         core_topic_service: CoreTopicService,
         repository_factory: RepositoryFactory,  # For potential direct use, e.g. counts if added
+        course_service,  # Injected course service with smart selection
         logger: Optional[logging.Logger] = None,
     ):
         super().__init__(logger)
@@ -43,48 +44,12 @@ class TopicApiService(BaseApiService[CoreTopic, Topic, TopicListResponse]):
 
         # Initialize generator service for AI generation workflows
         from artificial_u.services.content_service import ContentService
-        from artificial_u.services.course_service import CourseService
         from artificial_u.services.job_enqueue_service import JobEnqueueService
         from artificial_u.services.topic_generator_service import TopicGeneratorService
 
         # Create job enqueue service for background processing
         job_enqueue_service = JobEnqueueService(
             repository_factory=repository_factory,
-            logger=self.logger,
-        )
-
-        # Create minimal professor service for CourseService dependency
-        # Get ElevenLabs client if available (same pattern as dependencies.py)
-        from artificial_u.config import get_settings
-        from artificial_u.integrations import elevenlabs
-        from artificial_u.services.professor_service import ProfessorService
-        from artificial_u.services.voice_service import VoiceService
-
-        settings = get_settings()
-        elevenlabs_client = None
-        if settings.ELEVENLABS_API_KEY:
-            try:
-                elevenlabs_client = elevenlabs.ElevenLabsClient(api_key=settings.ELEVENLABS_API_KEY)
-            except Exception:
-                pass  # Continue without client
-
-        voice_service = VoiceService(
-            repository_factory=repository_factory,
-            client=elevenlabs_client,
-            logger=self.logger,
-        )
-
-        professor_service = ProfessorService(
-            repository_factory=repository_factory,
-            voice_service=voice_service,
-            job_enqueue_service=job_enqueue_service,
-            logger=self.logger,
-        )
-
-        # Create course service for TopicGeneratorService dependency
-        course_service = CourseService(
-            repository_factory=repository_factory,
-            professor_service=professor_service,
             logger=self.logger,
         )
 

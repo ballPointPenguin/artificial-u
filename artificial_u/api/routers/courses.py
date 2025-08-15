@@ -113,7 +113,7 @@ async def get_course_by_code(
     response_model=CourseResponse,
     status_code=status.HTTP_201_CREATED,
     summary="Create course",
-    description="Create a new course.",
+    description="Create a new course with optional smart selection for department/professor.",
     responses={  # Add specific error responses
         404: {"description": "Professor or Department not found"},
         500: {"description": "Internal server error during creation"},
@@ -124,10 +124,11 @@ async def create_course(
     course_service: CourseApiService = Depends(get_course_api_service),
 ):
     """
-    Create a new course.
-    The service handles looking up dependencies and potential errors.
+    Create a new course with optional smart selection.
+    If department_id or professor_id are not provided, the system will
+    intelligently select existing ones or generate new ones using AI.
     """
-    return course_service.create_course(course_data)
+    return await course_service.create_course(course_data)
 
 
 @router.put(
