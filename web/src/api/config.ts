@@ -70,6 +70,7 @@ export const ENDPOINTS = {
     code: (code: string | number) => `/v1/courses/code/${String(code)}`,
     generate: '/v1/courses/generate',
     enqueueGenerate: '/v1/courses/generate/enqueue',
+    enqueueCreate: '/v1/courses/create/enqueue',
   },
   jobs: {
     list: '/v1/jobs',

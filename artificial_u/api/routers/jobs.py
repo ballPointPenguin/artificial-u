@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import StreamingResponse
@@ -83,6 +83,29 @@ def jobs_summary(
     return {k: v for k, v in counts}
 
 
+@router.get("/stream")
+async def jobs_stream(
+    request: Request,
+    lecture_id: Optional[int] = None,
+    topic_id: Optional[int] = None,
+):
+    """SSE stream for job events.
+
+    Query params:
+      - kinds: can be provided multiple times (kinds=a&kinds=b) or once (kinds=a).
+    """
+    # Parse kinds robustly to avoid validation quirks
+    kinds_list = request.query_params.getlist("kinds")
+    hub: JobEventHub = request.app.state.job_events
+    gen = sse_stream(hub, lecture_id=lecture_id, topic_id=topic_id, kinds=kinds_list)
+    headers = {
+        "Cache-Control": "no-cache",
+        "Connection": "keep-alive",
+        "X-Accel-Buffering": "no",
+    }
+    return StreamingResponse(gen, media_type="text/event-stream", headers=headers)
+
+
 @router.get("/{job_id}")
 def get_job(
     job_id: int,
@@ -106,20 +129,3 @@ def get_job(
         "created_at": row.created_at,
         "updated_at": row.updated_at,
     }
-
-
-@router.get("/stream")
-async def jobs_stream(
-    request: Request,
-    lecture_id: Optional[int] = None,
-    topic_id: Optional[int] = None,
-    kinds: Optional[List[str]] = None,
-):
-    hub: JobEventHub = request.app.state.job_events
-    gen = sse_stream(hub, lecture_id=lecture_id, topic_id=topic_id, kinds=kinds)
-    headers = {
-        "Cache-Control": "no-cache",
-        "Connection": "keep-alive",
-        "X-Accel-Buffering": "no",
-    }
-    return StreamingResponse(gen, media_type="text/event-stream", headers=headers)

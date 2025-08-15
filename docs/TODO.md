@@ -10,11 +10,19 @@
 - [x] Generate prof image automatically
 - [x] Manage multiple async generations
 - [x] General Async Job management
-- [ ] Select OR Generate Professor for Course
-- [ ] Select OR Generate Department for Course
+- [x] Select OR Generate Professor for Course
+- [x] Select OR Generate Department for Course
+- [x] Better contrast in all themes
+- [x] Update CLI
 - [ ] Auth0 integration
 - [ ] User roles
 - [ ] Invite codes
+- [ ] Sort and filter courses
+- [ ] Sort and filter departments
+- [ ] Sort and filter professors
+- [ ] User Profiles
+- [ ] User Interests
+- [ ] Rating & Feedback system
 - [ ] Fake tuition system for limiting user generation requests
 - [ ] Monitoring and analytics
 - [ ] Generate single topic
@@ -24,18 +32,17 @@
 - [ ] Content checking for user input (toxicity, stupidity, typos)
 - [ ] Spell checking for user input
 - [ ] Normalize user input
-- [ ] Better contrast in all themes
 - [ ] Wabi-Sabi theme to be more wabi-sabi-esque
 - [ ] Advanced ElevenLabs voice controls
 - [ ] Enable Suggested Professors
 - [ ] Enable Suggested Departments
 - [ ] Organize Depeartments under Faculties
+- [ ] Browser Notifications for jobs
 - [ ] Enable multi-department courses
 - [ ] Enable multi-department professors
 - [ ] Enable multi-professor courses
 - [ ] Enable one-click course generation (w/ professor, topics, department)
 - [ ] Update stylebook
-- [ ] Update CLI
 - [ ] Frontend tests
 - [ ] End-to-end tests
 - [ ] Production-ready deployment

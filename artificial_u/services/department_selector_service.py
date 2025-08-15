@@ -84,9 +84,11 @@ class DepartmentSelectorService:
             elif decision["action"] == "GENERATE":
                 self.logger.info(f"Generating new department: {decision['reasoning']}")
 
+                freeform_prompt = decision["reasoning"] or course_attributes["description"]
+
                 # Delegate to existing generator service
                 department_attrs = await self.department_generator_service.generate_department(
-                    partial_attributes=course_attributes
+                    freeform_prompt=freeform_prompt
                 )
 
                 # Create the department using the core service

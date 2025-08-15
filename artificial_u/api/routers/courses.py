@@ -338,3 +338,45 @@ async def enqueue_generate_course(
         "priority": row.priority,
         "run_after": row.run_after,
     }
+
+
+@router.post(
+    "/create/enqueue",
+    status_code=status.HTTP_202_ACCEPTED,
+    summary="Enqueue smart course creation job",
+    description=(
+        "Enqueue an async job that performs smart department/professor selection/generation "
+        "and creates the course. Returns a job id to poll via GET /api/v1/jobs/{id}."
+    ),
+)
+async def enqueue_create_course(
+    course_data: CourseCreate,
+    repository_factory: RepositoryFactory = Depends(get_repository_factory),
+):
+    """
+    Enqueue a job with kind 'create_course'. The payload mirrors CourseCreate fields.
+    """
+    payload = {
+        "code": course_data.code,
+        "title": course_data.title,
+        "department_id": course_data.department_id,
+        "level": course_data.level,
+        "credits": course_data.credits,
+        "professor_id": course_data.professor_id,
+        "description": course_data.description,
+        "lectures_per_week": course_data.lectures_per_week,
+        "total_weeks": course_data.total_weeks,
+    }
+    row = repository_factory.job.create(
+        kind="create_course",
+        payload=payload,
+    )
+    return {
+        "id": row.id,
+        "kind": row.kind,
+        "status": row.status,
+        "attempts": row.attempts,
+        "max_attempts": row.max_attempts,
+        "priority": row.priority,
+        "run_after": row.run_after,
+    }

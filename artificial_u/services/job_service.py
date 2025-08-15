@@ -75,6 +75,7 @@ class JobService:
         return {
             # Generation tasks (lightweight return values; some persist internally)
             "generate_course": self._handle_generate_course,
+            "create_course": self._handle_create_course,
             "generate_department": self._handle_generate_department,
             "generate_professor": self._handle_generate_professor,
             "generate_topics_for_course": self._handle_generate_topics_for_course,
@@ -89,6 +90,46 @@ class JobService:
         partial = payload.get("partial_attributes") or {}
         result = await service.generate_course(partial)
         return {"generated_course": result}
+
+    async def _handle_create_course(self, payload: Dict[str, Any]) -> Dict[str, Any]:
+        """Create a course using smart department/professor selection/generation.
+
+        Expects payload with fields matching CourseService.create_course signature.
+        Accepts either 'weeks' or 'total_weeks' for compatibility with API schema.
+        """
+        service = self._course_service_instance()
+
+        # Payload normalization
+        title = payload.get("title")
+        code = payload.get("code")
+        level = payload.get("level")
+        credits = payload.get("credits", 3)
+        weeks = payload.get("weeks", payload.get("total_weeks", 12))
+        lectures_per_week = payload.get("lectures_per_week", 1)
+        department_id = payload.get("department_id")
+        professor_id = payload.get("professor_id")
+        description = payload.get("description")
+
+        if not title or not code or not level:
+            raise ValueError("title, code, and level are required to create a course")
+
+        course, professor = await service.create_course(
+            title=title,
+            code=code,
+            level=level,
+            credits=credits,
+            weeks=weeks,
+            lectures_per_week=lectures_per_week,
+            department_id=department_id,
+            professor_id=professor_id,
+            description=description,
+        )
+
+        return {
+            "course_id": course.id,
+            "department_id": course.department_id,
+            "professor_id": professor.id,
+        }
 
     async def _handle_generate_department(self, payload: Dict[str, Any]) -> Dict[str, Any]:
         service = self._department_generator_service_instance()
@@ -326,8 +367,12 @@ class JobService:
                 DepartmentGeneratorService,
             )
 
+            # Note: Avoid injecting DepartmentService here to prevent a dependency cycle:
+            # CourseService -> DepartmentSelectorService -> DepartmentGeneratorService
+            # -> DepartmentService -> CourseService. DepartmentGeneratorService does not
+            # currently use department_service, so pass None.
             self._department_generator_service = DepartmentGeneratorService(
-                department_service=self._department_service_instance(),
+                department_service=None,  # break circular dependency
                 content_service=self._content_service_instance(),
                 repository_factory=self.repository_factory,
                 job_enqueue_service=self._job_enqueue_service_instance(),

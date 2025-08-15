@@ -101,10 +101,12 @@ class ProfessorSelectorService:
             elif decision["action"] == "GENERATE":
                 self.logger.info(f"Generating new professor: {decision['reasoning']}")
 
+                freeform_prompt = decision["reasoning"] or course_attributes["description"]
+
                 # Delegate to existing generator service
                 professor_attrs = await self.professor_generator_service.generate_professor(
                     partial_attributes={
-                        **course_attributes,
+                        "freeform_prompt": freeform_prompt,
                         "department_id": department_id,
                     }
                 )

@@ -1,6 +1,7 @@
 import { A } from '@solidjs/router'
 import { type Component, createResource, createSignal, For, Show } from 'solid-js'
 import { courseService } from '../api/services/course-service.js'
+import { subscribeJobEvents } from '../api/services/jobs-service.js'
 import type { Course, CourseCreate } from '../api/types.js'
 import CourseForm from '../components/courses/CourseForm.jsx'
 import type { CourseFormData } from '../components/courses/types.jsx'
@@ -67,12 +68,26 @@ const Courses: Component = () => {
     }
 
     try {
-      await courseService.createCourse(createPayload) // Use validated/typed payload
-      setShowCreateForm(false)
-      void refetch()
+      // Enqueue smart course creation job
+      const job = await courseService.enqueueCreateCourse(createPayload)
+
+      // Subscribe to SSE for create_course events and react when done/failed
+      const unsubscribe = subscribeJobEvents({ kinds: ['create_course'] }, (ev) => {
+        if (ev.id !== job.id) return
+        if (ev.status === 'done') {
+          // Refresh list and close form
+          setShowCreateForm(false)
+          void refetch()
+          unsubscribe()
+          setSubmitting(false)
+        } else if (ev.status === 'failed' || ev.status === 'cancelled') {
+          setFormError(ev.last_error || 'Course creation failed')
+          unsubscribe()
+          setSubmitting(false)
+        }
+      })
     } catch (error) {
-      setFormError(error instanceof Error ? error.message : 'Failed to create course')
-    } finally {
+      setFormError(error instanceof Error ? error.message : 'Failed to enqueue course creation')
       setSubmitting(false)
     }
   }
