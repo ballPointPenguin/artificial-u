@@ -6,6 +6,7 @@ from pydantic import BaseModel
 
 from artificial_u.api.dependencies import get_repository_factory
 from artificial_u.api.events import JobEventHub, sse_stream
+from artificial_u.api.security.auth0 import require_auth
 from artificial_u.models.repositories.factory import RepositoryFactory
 
 router = APIRouter(prefix="/jobs", tags=["jobs"])
@@ -18,7 +19,7 @@ class EnqueueJob(BaseModel):
     max_attempts: int = 5
 
 
-@router.post("")
+@router.post("", dependencies=[Depends(require_auth)])
 def enqueue(
     job: EnqueueJob,
     repository_factory: RepositoryFactory = Depends(get_repository_factory),

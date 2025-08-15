@@ -18,6 +18,7 @@ from artificial_u.api.models import (
     DepartmentUpdate,
     ProfessorsListResponse,
 )
+from artificial_u.api.security.auth0 import require_auth
 from artificial_u.api.services import DepartmentApiService
 from artificial_u.models.repositories.factory import RepositoryFactory
 
@@ -90,6 +91,7 @@ async def get_department(
     status_code=status.HTTP_201_CREATED,
     summary="Create department",
     description="Create a new department.",
+    dependencies=[Depends(require_auth)],
 )
 async def create_department(
     department_data: DepartmentCreate,
@@ -110,6 +112,7 @@ async def create_department(
     summary="Update department",
     description="Update an existing department.",
     responses={404: {"description": "Department not found"}},
+    dependencies=[Depends(require_auth)],
 )
 async def update_department(
     department_data: DepartmentUpdate,
@@ -140,6 +143,7 @@ async def update_department(
     responses={
         404: {"description": "Department not found"},
     },
+    dependencies=[Depends(require_auth)],
 )
 async def delete_department(
     department_id: int = Path(..., description="The ID of the department to delete"),
@@ -295,6 +299,7 @@ async def list_department_courses(
     responses={
         500: {"description": "Department generation failed"},
     },
+    dependencies=[Depends(require_auth)],
 )
 async def generate_department(
     generation_data: DepartmentGenerate,
@@ -322,6 +327,7 @@ async def generate_department(
         "Enqueue an async job to generate department data using AI. Returns a job id to poll via "
         "GET /api/v1/jobs/{id}."
     ),
+    dependencies=[Depends(require_auth)],
 )
 async def enqueue_generate_department(
     generation_data: DepartmentGenerate,

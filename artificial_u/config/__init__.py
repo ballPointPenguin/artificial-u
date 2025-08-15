@@ -19,7 +19,6 @@ from artificial_u.config.defaults import (
     DEFAULT_STORAGE_REGION,
     DEFAULT_STORAGE_SECRET_KEY,
     DEFAULT_STORAGE_TYPE,
-    DEPARTMENTS,
 )
 
 # Export the consolidated settings functionality
@@ -55,5 +54,4 @@ __all__ = [
     "DEFAULT_LECTURE_WORD_COUNT",
     # System defaults
     "DEFAULT_LOG_LEVEL",
-    "DEPARTMENTS",
 ]

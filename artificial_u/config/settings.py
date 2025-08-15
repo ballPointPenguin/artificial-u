@@ -58,11 +58,9 @@ class Settings(BaseSettings):
     # CORS settings
     cors_origins: List[str] = Field(
         default=[
-            "http://localhost:8000",
-            "http://localhost:3000",
             "http://localhost:5173",
-            "https://artificial-u.example.com",
-            "https://*.artificial-u.example.com",
+            "https://artificial-u.com",
+            "https://*.artificial-u.com",
             "https://aliencyborg.share.zrok.io",
         ]
     )
@@ -80,6 +78,11 @@ class Settings(BaseSettings):
     OPENAI_API_KEY: Optional[str] = None
     SPEECH_KEY: Optional[str] = None
     SPEECH_REGION: Optional[str] = None
+
+    # Auth0 (API resource protection)
+    AUTH0_DOMAIN: Optional[str] = None
+    AUTH0_AUDIENCE: Optional[str] = None
+    AUTH0_ALG: str = "RS256"
 
     # Temporary storage paths
     CONTENT_LOGS_PATH: str = DEFAULT_CONTENT_LOGS_PATH

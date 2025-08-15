@@ -13,10 +13,8 @@ from rich.console import Console
 from rich.markdown import Markdown
 from rich.panel import Panel
 from rich.progress import Progress, SpinnerColumn, TextColumn
-from rich.prompt import Confirm
 from rich.table import Table
 
-from artificial_u.config.defaults import DEPARTMENTS
 from artificial_u.system import UniversitySystem
 
 # Load environment variables
@@ -162,21 +160,6 @@ def create_course(department, title, code, professor_id, weeks, lectures_per_wee
     """Create a new course."""
     try:
         system = get_system()
-
-        # Validate department
-        if department not in DEPARTMENTS:
-            if not Confirm.ask(
-                f"[yellow]Warning:[/yellow] '{department}' is not a standard department. Continue?",
-                default=True,
-            ):
-                return
-
-        console.print(
-            Panel(
-                f"Creating course: [bold]{title}[/bold]",
-                subtitle=f"Department: {department}, Code: {code}",
-            )
-        )
 
         # Create progress display
         with Progress(

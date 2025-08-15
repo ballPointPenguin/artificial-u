@@ -16,6 +16,7 @@ from artificial_u.api.models import (
     ProfessorsListResponse,
     ProfessorUpdate,
 )
+from artificial_u.api.security.auth0 import require_auth
 from artificial_u.api.services import ProfessorApiService
 from artificial_u.models.repositories.factory import RepositoryFactory
 
@@ -108,6 +109,7 @@ async def get_professor(
     status_code=status.HTTP_201_CREATED,
     summary="Create professor",
     description="Create a new professor.",
+    dependencies=[Depends(require_auth)],
 )
 async def create_professor(
     professor_data: ProfessorCreate,
@@ -128,6 +130,7 @@ async def create_professor(
     summary="Update professor",
     description="Update an existing professor.",
     responses={404: {"description": "Professor not found"}},
+    dependencies=[Depends(require_auth)],
 )
 async def update_professor(
     professor_data: ProfessorUpdate,
@@ -160,6 +163,7 @@ async def update_professor(
         404: {"description": "Professor not found"},
         500: {"description": "Voice assignment failed"},
     },
+    dependencies=[Depends(require_auth)],
 )
 async def assign_voice_to_professor(
     professor_id: int = Path(..., description="The ID of the professor to assign a voice to"),
@@ -201,6 +205,7 @@ async def assign_voice_to_professor(
         404: {"description": "Professor not found"},
         409: {"description": "Cannot delete professor with associated courses"},
     },
+    dependencies=[Depends(require_auth)],
 )
 async def delete_professor(
     professor_id: int = Path(..., description="The ID of the professor to delete"),
@@ -284,6 +289,7 @@ async def get_professor_lectures(
         404: {"description": "Professor not found"},
         500: {"description": "Image generation failed"},
     },
+    dependencies=[Depends(require_auth)],
 )
 async def generate_professor_image(
     professor_id: int = Path(..., description="The ID of the professor to generate an image for"),
@@ -329,6 +335,7 @@ async def generate_professor_image(
     responses={
         500: {"description": "Profile generation failed"},
     },
+    dependencies=[Depends(require_auth)],
 )
 async def generate_professor(
     generation_data: ProfessorGenerate,  # Updated model
@@ -360,6 +367,7 @@ async def generate_professor(
         "Enqueue an async job to generate a professor using AI. Returns a job id to poll via "
         "GET /api/v1/jobs/{id}."
     ),
+    dependencies=[Depends(require_auth)],
 )
 async def enqueue_generate_professor(
     generation_data: ProfessorGenerate,
@@ -390,6 +398,7 @@ async def enqueue_generate_professor(
         "Enqueue an async job to generate a professor image. Returns a job id to poll via "
         "GET /api/v1/jobs/{id}."
     ),
+    dependencies=[Depends(require_auth)],
 )
 async def enqueue_generate_professor_image(
     professor_id: int = Path(..., description="The ID of the professor to generate an image for"),
