@@ -97,7 +97,13 @@ async def jobs_stream(
     # Parse kinds robustly to avoid validation quirks
     kinds_list = request.query_params.getlist("kinds")
     hub: JobEventHub = request.app.state.job_events
-    gen = sse_stream(hub, lecture_id=lecture_id, topic_id=topic_id, kinds=kinds_list)
+    gen = sse_stream(
+        hub,
+        request=request,
+        lecture_id=lecture_id,
+        topic_id=topic_id,
+        kinds=kinds_list,
+    )
     headers = {
         "Cache-Control": "no-cache",
         "Connection": "keep-alive",

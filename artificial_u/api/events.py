@@ -2,6 +2,21 @@ import asyncio
 import json
 from typing import Any, AsyncIterator, Dict, Iterable, Optional, Set
 
+from starlette.requests import Request
+
+_STREAM_CLOSED = object()
+
+
+async def _next_event_with_timeout(
+    events: AsyncIterator[Dict[str, Any]], timeout: float
+) -> Dict[str, Any] | None | object:
+    try:
+        return await asyncio.wait_for(events.__anext__(), timeout=timeout)
+    except asyncio.TimeoutError:
+        return None
+    except StopAsyncIteration:
+        return _STREAM_CLOSED
+
 
 class JobEventHub:
     """
@@ -56,28 +71,52 @@ def _event_matches(
 async def sse_stream(
     hub: JobEventHub,
     *,
+    request: Optional[Request] = None,
     lecture_id: Optional[int] = None,
     topic_id: Optional[int] = None,
     kinds: Optional[Iterable[str]] = None,
     heartbeat_secs: int = 20,
 ) -> AsyncIterator[str]:
-    """Yield Server-Sent Events strings filtered by optional params."""
+    """Yield Server-Sent Events strings filtered by optional params.
+
+    Designed to be resilient to disconnects and cooperative with shutdown/reload.
+    """
 
     kinds_set: Set[str] = set(kinds or [])
     events = hub.subscribe()
-    next_heartbeat = asyncio.get_event_loop().time() + heartbeat_secs
+    loop = asyncio.get_event_loop()
+    next_heartbeat = loop.time() + heartbeat_secs
 
     try:
         while True:
-            # Heartbeat
-            now = asyncio.get_event_loop().time()
+            # Detect client disconnect cooperatively
+            if request is not None and await request.is_disconnected():
+                break
+
+            # Try to read next event with a short timeout so we can emit heartbeats
+            # and re-check disconnect/shutdown regularly.
+            ev = await _next_event_with_timeout(events, 1.0)
+            if ev is _STREAM_CLOSED:
+                # Upstream iterator was closed (e.g., during shutdown). Exit cleanly.
+                break
+
+            # Emit heartbeat on schedule regardless of whether we received events
+            now = loop.time()
             if now >= next_heartbeat:
                 yield "event: ping\ndata: {}\n\n"
                 next_heartbeat = now + heartbeat_secs
 
-            ev = await events.__anext__()
-            if _event_matches(ev, lecture_id=lecture_id, topic_id=topic_id, kinds_set=kinds_set):
+            if ev is not None and _event_matches(
+                ev, lecture_id=lecture_id, topic_id=topic_id, kinds_set=kinds_set
+            ):
                 data = json.dumps(ev, default=str)
                 yield f"event: job\ndata: {data}\n\n"
     except asyncio.CancelledError:
+        # Shutdown/reload path: exit quietly
         return
+    finally:
+        # Ensure we unsubscribe to avoid leaking subscriber queues across reloads
+        try:
+            await events.aclose()  # type: ignore[attr-defined]
+        except Exception:
+            pass
