@@ -43,6 +43,11 @@ export type JobEvent = {
   last_error?: string
 }
 
+// Shared EventSource manager keyed by query string so we only open one SSE per unique stream
+type Listener = (e: JobEvent) => void
+
+const sseRegistry = new Map<string, { es: EventSource; listeners: Set<Listener> }>()
+
 export function subscribeJobEvents(
   params: { lecture_id?: number; topic_id?: number; kinds?: string[] },
   onEvent: (e: JobEvent) => void
@@ -56,23 +61,47 @@ export function subscribeJobEvents(
     })
   }
 
-  const query = qs.toString()
   const base = ENDPOINTS.jobs.stream
+  const query = qs.toString()
   const path = query ? `${base}?${query}` : base
   const url = createUrl(path)
-  const es = new EventSource(url)
-  es.addEventListener('job', (ev) => {
-    try {
-      const me = ev as MessageEvent<string>
-      const raw: string = typeof me.data === 'string' ? me.data : String(me.data)
-      const parsed = JSON.parse(raw) as unknown
-      const data = parsed as JobEvent
-      onEvent(data)
-    } catch {
-      // ignore malformed
+
+  // Reuse or create EventSource per URL key
+  let entry = sseRegistry.get(url)
+  if (!entry) {
+    const es = new EventSource(url)
+    const listeners = new Set<Listener>()
+    // Route only 'job' events to registered listeners
+    es.addEventListener('job', (ev) => {
+      try {
+        const me = ev as MessageEvent<string>
+        const raw: string = typeof me.data === 'string' ? me.data : String(me.data)
+        const data = JSON.parse(raw) as JobEvent
+        listeners.forEach((fn) => {
+          fn(data)
+        })
+      } catch {
+        // ignore
+      }
+    })
+    // Keep quiet on errors; the browser auto-reconnects EventSource
+    es.onerror = () => {
+      // noop
     }
-  })
+    entry = { es, listeners }
+    sseRegistry.set(url, entry)
+  }
+
+  entry.listeners.add(onEvent)
+
+  // Return unsubscribe; close actual EventSource when last listener unsubscribes
   return () => {
-    es.close()
+    const e = sseRegistry.get(url)
+    if (!e) return
+    e.listeners.delete(onEvent)
+    if (e.listeners.size === 0) {
+      e.es.close()
+      sseRegistry.delete(url)
+    }
   }
 }

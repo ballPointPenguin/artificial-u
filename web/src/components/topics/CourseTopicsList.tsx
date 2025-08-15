@@ -1,5 +1,6 @@
 import { A } from '@solidjs/router'
 import { createEffect, createSignal, For, on, Show } from 'solid-js'
+import { subscribeJobEvents } from '../../api/services/jobs-service.js'
 import { topicService } from '../../api/services/topic-service.js'
 import type { APIError, Topic, TopicCreate, TopicUpdate } from '../../api/types.js'
 import { Alert } from '../ui/Alert.jsx'
@@ -24,6 +25,7 @@ export function CourseTopicsList(props: CourseTopicsListProps) {
   const [isSubmitting, setIsSubmitting] = createSignal(false)
   const [generationError, setGenerationError] = createSignal<APIError | null>(null)
   const [isGenerating, setIsGenerating] = createSignal(false)
+  const [generationInfo, setGenerationInfo] = createSignal('')
 
   createEffect(
     on(
@@ -117,21 +119,39 @@ export function CourseTopicsList(props: CourseTopicsListProps) {
   const handleGenerateTopics = async () => {
     setIsGenerating(true)
     setGenerationError(null)
+    setGenerationInfo('')
     try {
-      const generatedTopics = await topicService.generateTopicsForCourse(props.courseId, {
+      // Enqueue async job instead of direct generation
+      const job = await topicService.enqueueGenerateTopicsForCourse(props.courseId, {
         course_id: props.courseId,
       })
-      if (generatedTopics.length > 0) {
-        setListVersion((v) => v + 1)
-      } else {
-        console.info('Topic generation resulted in no new topics or an empty list.')
-      }
-    } catch (err) {
-      console.error('Failed to generate topics:', err)
-      setGenerationError(
-        err instanceof Error ? { detail: err.message } : { detail: 'Failed to generate topics' }
+      setGenerationInfo(
+        `Topic generation enqueued as Job #${String(job.id)}. You can continue browsing; this will update when complete.`
       )
-    } finally {
+
+      const unsubscribe = subscribeJobEvents({ kinds: ['generate_topics_for_course'] }, (ev) => {
+        // Only react to this job id
+        if (ev.id !== job.id) return
+        if (ev.status === 'done') {
+          setGenerationInfo('Topic generation completed.')
+          setIsGenerating(false)
+          setListVersion((v) => v + 1)
+          unsubscribe()
+        } else if (ev.status === 'failed' || ev.status === 'cancelled') {
+          setGenerationError({
+            detail: ev.last_error || 'Topic generation failed',
+          })
+          setIsGenerating(false)
+          unsubscribe()
+        }
+      })
+    } catch (err) {
+      console.error('Failed to enqueue topic generation:', err)
+      setGenerationError(
+        err instanceof Error
+          ? { detail: err.message }
+          : { detail: 'Failed to enqueue topic generation' }
+      )
       setIsGenerating(false)
     }
   }
@@ -162,6 +182,11 @@ export function CourseTopicsList(props: CourseTopicsListProps) {
       <Show when={generationError()}>
         <Alert variant="danger" class="mb-4" title="Topic Generation Failed">
           {generationError()?.detail}
+        </Alert>
+      </Show>
+      <Show when={generationInfo()}>
+        <Alert variant="info" class="mb-4">
+          {generationInfo()}
         </Alert>
       </Show>
 

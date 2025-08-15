@@ -124,7 +124,7 @@ class Settings(BaseSettings):
     # Async worker and rate limiting
     WORKER_POLL_IDLE_SEC: float = 0.75
     WORKER_VISIBILITY_TIMEOUT_SEC: int = 600
-    WORKER_MAX_CONCURRENCY: int = 2
+    WORKER_MAX_CONCURRENCY: int = 3
     OUTBOUND_RPS: int = 1
 
     # Configure Pydantic to use .env files

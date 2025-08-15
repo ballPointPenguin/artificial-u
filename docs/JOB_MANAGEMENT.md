@@ -194,9 +194,9 @@ class Settings(BaseSettings):
     DATABASE_URL: str = Field(..., description="Postgres URL, e.g. postgresql://user:pass@localhost:5432/db")
 
     # worker tuning
-    WORKER_POLL_IDLE_SEC: float = 0.75      # sleep when no job reserved
-    WORKER_VISIBILITY_TIMEOUT_SEC: int = 600 # consider running jobs stuck after this
-    WORKER_MAX_CONCURRENCY: int = 2          # local concurrency for job execution
+    WORKER_POLL_IDLE_SEC: float = 0.75        # sleep when no job reserved
+    WORKER_VISIBILITY_TIMEOUT_SEC: int = 600  # consider running jobs stuck after this
+    WORKER_MAX_CONCURRENCY: int = 3           # local concurrency for job execution
 
     # rate limiting to external providers (simple global token bucket)
     OUTBOUND_RPS: int = 1

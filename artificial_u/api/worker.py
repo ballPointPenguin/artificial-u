@@ -67,8 +67,9 @@ class Worker:
             loop_count += 1
             try:
                 # Sweep stuck jobs periodically
-                swept_count = repo.sweep_stuck(
-                    visibility_timeout_seconds=self.settings.WORKER_VISIBILITY_TIMEOUT_SEC
+                swept_count = await asyncio.to_thread(
+                    repo.sweep_stuck,
+                    visibility_timeout_seconds=self.settings.WORKER_VISIBILITY_TIMEOUT_SEC,
                 )
                 if swept_count > 0:
                     self.logger.warning(f"Swept {swept_count} stuck jobs back to queued status")
@@ -76,7 +77,7 @@ class Worker:
                 # Try to reserve jobs up to max concurrency
                 tasks = []
                 for _ in range(self.settings.WORKER_MAX_CONCURRENCY):
-                    row = repo.reserve_one_skip_locked_atomic()
+                    row = await asyncio.to_thread(repo.reserve_one_skip_locked_atomic)
                     if not row:
                         break
                     self.logger.info(f"Reserved job {row.id} (kind: {row.kind})")
@@ -99,7 +100,7 @@ class Worker:
 
     async def _run_one(self, job_id: int):
         repo = self.repository_factory.job
-        row = repo.get(job_id)
+        row = await asyncio.to_thread(repo.get, job_id)
         if not row:
             self.logger.warning(f"Job {job_id} not found when trying to process")
             return
@@ -124,7 +125,7 @@ class Worker:
                 return
 
             # Success path
-            repo.mark_done(job_id, result)
+            await asyncio.to_thread(repo.mark_done, job_id, result)
             self.logger.info(f"Job {job_id} marked as done")
             await self._publish_event(job_id, kind, "done", payload, result=result)
 
@@ -149,10 +150,11 @@ class Worker:
         error_msg = f"Job {job_id} timed out after 300 seconds"
         self.logger.error(error_msg)
         delay = self.job_service.compute_backoff_seconds(attempts)
-        repo.mark_failed_or_retry(
+        await asyncio.to_thread(
+            repo.mark_failed_or_retry,
             job_id,
-            attempts=attempts,
-            max_attempts=max_attempts,
+            attempts,
+            max_attempts,
             last_error=error_msg,
             delay_seconds=delay,
         )
@@ -188,10 +190,11 @@ class Worker:
                 f"Job {job_id} will retry in {delay:.2f}s (attempt {next_attempt}/{max_attempts})"
             )
 
-        repo.mark_failed_or_retry(
+        await asyncio.to_thread(
+            repo.mark_failed_or_retry,
             job_id,
-            attempts=attempts,
-            max_attempts=max_attempts,
+            attempts,
+            max_attempts,
             last_error=str(exc),
             delay_seconds=delay,
         )

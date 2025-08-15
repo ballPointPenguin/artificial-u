@@ -6,6 +6,7 @@ audio generation, summary generation, and associated workflows like file uploads
 and background job enqueueing.
 """
 
+import asyncio
 import logging
 from typing import Any, Dict, List, Optional
 
@@ -367,8 +368,10 @@ class LectureGeneratorService:
         # 2. Ensure we have an ElevenLabs voice id
         el_voice_id = self._ensure_professor_el_voice_id(professor)
 
-        # 3. Generate audio bytes
-        audio_bytes = self._generate_audio_bytes(lecture, professor, el_voice_id)
+        # 3. Generate audio bytes (blocking TTS executed in a thread)
+        audio_bytes = await asyncio.to_thread(
+            self._generate_audio_bytes, lecture, professor, el_voice_id
+        )
 
         # 4. Upload to storage and get public URL
         audio_url = await self._upload_audio_and_get_url(course, topic, audio_bytes)

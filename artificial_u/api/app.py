@@ -1,3 +1,5 @@
+import asyncio
+from concurrent.futures import ThreadPoolExecutor
 from contextlib import asynccontextmanager
 
 from fastapi import Depends, FastAPI
@@ -43,6 +45,11 @@ def create_application() -> FastAPI:
     async def lifespan(app: FastAPI):
         # attach event hub to app state for routers and worker to use
         app.state.job_events = job_events
+        # Increase default executor for blocking offloads
+        loop = asyncio.get_running_loop()
+        if not hasattr(app.state, "default_executor"):
+            app.state.default_executor = ThreadPoolExecutor(max_workers=8)
+        loop.set_default_executor(app.state.default_executor)
         await worker.start()
         try:
             yield

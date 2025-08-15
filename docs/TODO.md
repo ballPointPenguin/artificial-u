@@ -15,6 +15,8 @@
 - [x] Better contrast in all themes
 - [x] Update CLI
 - [x] Better voice mapping
+- [x] Troubleshoot sluggish api responses when jobs are running
+- [ ] Enable one-click course generation (w/ professor, topics, department)
 - [ ] Auth0 integration
 - [ ] User roles
 - [ ] Invite codes
@@ -22,7 +24,6 @@
 - [ ] Sort and filter departments
 - [ ] Sort and filter professors
 - [ ] Enqueue topic generation
-- [ ] Troubleshoot sluggish api responses when jobs are running
 - [ ] Enable manual voice ID entry
 - [ ] User Profiles
 - [ ] User Interests
@@ -38,14 +39,16 @@
 - [ ] Normalize user input
 - [ ] Wabi-Sabi theme to be more wabi-sabi-esque
 - [ ] Advanced ElevenLabs voice controls
+- [ ] Volume normalization
+- [ ] Web-based audio player with playlists
 - [ ] Enable Suggested Professors
 - [ ] Enable Suggested Departments
 - [ ] Organize Depeartments under Faculties
+- [ ] Lecture Configuration Options
 - [ ] Browser Notifications for jobs
 - [ ] Enable multi-department courses
 - [ ] Enable multi-department professors
 - [ ] Enable multi-professor courses
-- [ ] Enable one-click course generation (w/ professor, topics, department)
 - [ ] Update stylebook
 - [ ] Frontend tests
 - [ ] End-to-end tests
