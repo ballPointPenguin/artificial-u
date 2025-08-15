@@ -278,19 +278,33 @@ class CourseGeneratorService:
             ) from e
 
     async def _get_existing_courses(self, department: Optional[Department]) -> List[Course]:
-        """Fetches existing courses for a given department using the repository."""
-        if not department:
-            return []
+        """Fetches existing courses for a given department using the repository.
+
+        If no department is provided, returns the 20 most recent courses from any department
+        (determined by highest course.id values).
+        """
         try:
-            # Use the repository directly
-            # Assumes CourseRepository.list handles potential None department_id
-            # if department is None and eager loads lectures as needed
-            return self.repository_factory.course.list(department_id=department.id)
+            if not department:
+                # Return 20 most recent courses from any department
+                self.logger.info(
+                    "No department provided, fetching 20 most recent courses from any department"
+                )
+                return self.repository_factory.course.list_recent(limit=20)
+            else:
+                # Use the repository directly for department-specific courses
+                return self.repository_factory.course.list(department_id=department.id)
         except Exception as e:
-            self.logger.error(
-                f"Repository error fetching courses for department {department.id}: {e}",
-                exc_info=True,
-            )
-            raise DatabaseError(
-                f"Error fetching courses for department {department.id} from repository."
-            ) from e
+            if department:
+                self.logger.error(
+                    f"Repository error fetching courses for department {department.id}: {e}",
+                    exc_info=True,
+                )
+                raise DatabaseError(
+                    f"Error fetching courses for department {department.id} from repository."
+                ) from e
+            else:
+                self.logger.error(
+                    f"Repository error fetching recent courses: {e}",
+                    exc_info=True,
+                )
+                raise DatabaseError("Error fetching recent courses from repository.") from e

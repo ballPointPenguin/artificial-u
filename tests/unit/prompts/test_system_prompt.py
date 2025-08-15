@@ -9,7 +9,7 @@ from artificial_u.prompts.system import get_system_prompt
 def test_system_prompt_course():
     """Test getting course system prompt."""
     prompt = get_system_prompt("course")
-    assert "academic courses" in prompt
+    assert "academic course" in prompt
     assert "XML format" in prompt
 
 

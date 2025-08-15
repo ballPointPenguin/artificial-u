@@ -128,21 +128,6 @@ if prefill:
     messages.append({"role": "assistant", "content": prefill})
 ```
 
-## Examples and Testing
-
-Run the prefill demonstration script to see various use cases:
-
-```bash
-python examples/prefill_demo.py
-```
-
-This script demonstrates:
-
-- XML structure prefilling
-- Consistent formatting
-- Role-playing character maintenance
-- Behavior with non-Anthropic models
-
 ## References
 
 - [Anthropic Documentation - Prefill Claude's Response](https://docs.anthropic.com/en/docs/test-and-evaluate/strengthen-guardrails/increase-consistency#prefill-claude%E2%80%99s-response)
