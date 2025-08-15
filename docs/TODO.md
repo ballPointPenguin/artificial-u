@@ -8,8 +8,10 @@
 - [x] Preview and modify professor voices
 - [x] Generate lecture summary
 - [x] Generate prof image automatically
-- [ ] Manage multiple async generations
-- [ ] General Async Job management
+- [x] Manage multiple async generations
+- [x] General Async Job management
+- [ ] Select OR Generate Professor for Course
+- [ ] Select OR Generate Department for Course
 - [ ] Auth0 integration
 - [ ] User roles
 - [ ] Invite codes

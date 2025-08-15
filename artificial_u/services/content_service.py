@@ -1,4 +1,3 @@
-import asyncio
 import json
 import logging
 import os
@@ -32,11 +31,6 @@ class ContentService:
         self.default_backend = settings.content_backend
         self.default_model = settings.content_model
         self.content_logs_path = settings.CONTENT_LOGS_PATH
-
-        # Configure retry settings from settings
-        self.max_retries = settings.content_max_retries
-        self.retry_delay = settings.content_retry_delay
-        self.retry_exponential_base = settings.content_retry_exponential_base
 
         self.logger.info(
             f"ContentService initialized with default backend: {self.default_backend}, "
@@ -165,38 +159,6 @@ class ContentService:
 
         return "transient"
 
-    async def _retry_with_backoff(self, func, *args, **kwargs):
-        """Retry a function with exponential backoff."""
-        last_error = None
-        backend = kwargs.get("backend", "unknown")
-
-        for attempt in range(self.max_retries):
-            try:
-                return await func(*args, **kwargs)
-            except Exception as e:
-                last_error = e
-                error_type = self._categorize_error(e, backend)
-
-                # Don't retry for permanent or configuration errors
-                if error_type in ["permanent", "configuration"]:
-                    self.logger.info(
-                        f"Non-retryable error detected ({error_type}), not retrying: {e}"
-                    )
-                    break
-
-                if attempt < self.max_retries - 1:
-                    delay = self.retry_delay * (self.retry_exponential_base**attempt)
-                    self.logger.info(
-                        f"Attempt {attempt + 1} failed with {error_type} error: {e}. "
-                        f"Retrying in {delay:.1f} seconds..."
-                    )
-                    await asyncio.sleep(delay)
-                else:
-                    self.logger.error(f"All {self.max_retries} attempts failed. Last error: {e}")
-
-        # If we get here, all attempts failed
-        raise last_error
-
     async def generate_text(
         self,
         prompt: str,
@@ -255,8 +217,7 @@ class ContentService:
 
         try:
             generation_method = backend_methods[backend]
-            return await self._retry_with_backoff(
-                generation_method,
+            return await generation_method(
                 prompt,
                 target_model,
                 system_prompt,

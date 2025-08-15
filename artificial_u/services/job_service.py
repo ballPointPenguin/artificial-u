@@ -173,7 +173,9 @@ class JobService:
         if self._content_service is None:
             from artificial_u.services.content_service import ContentService
 
-            self._content_service = ContentService(logger=self.logger)
+            self._content_service = ContentService(
+                logger=self.logger,
+            )
         return self._content_service
 
     def _storage_service_instance(self):
@@ -187,7 +189,9 @@ class JobService:
         if self._image_service is None:
             from artificial_u.services.image_service import ImageService
 
-            self._image_service = ImageService(storage_service=self._storage_service_instance())
+            self._image_service = ImageService(
+                storage_service=self._storage_service_instance(),
+            )
         return self._image_service
 
     def _voice_service_instance(self):

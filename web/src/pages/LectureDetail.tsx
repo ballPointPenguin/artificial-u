@@ -1,6 +1,15 @@
 import { A, useNavigate, useParams } from '@solidjs/router'
-import { type Component, createMemo, createResource, createSignal, Show } from 'solid-js'
+import {
+  type Component,
+  createMemo,
+  createResource,
+  createSignal,
+  onCleanup,
+  onMount,
+  Show,
+} from 'solid-js'
 import { courseService } from '../api/services/course-service.js'
+import { subscribeJobEvents } from '../api/services/jobs-service.js'
 import { lectureService } from '../api/services/lecture-service.js'
 import { topicService } from '../api/services/topic-service.js'
 import type { Lecture, LectureUpdate } from '../api/types.js'
@@ -109,6 +118,7 @@ const LectureDetail = () => {
   const [isGeneratingAudio, setIsGeneratingAudio] = createSignal(false)
   const [audioError, setAudioError] = createSignal('')
   const [audioTimeout, setAudioTimeout] = createSignal(false)
+  const [anyJobActive, setAnyJobActive] = createSignal(false)
 
   // Parse IDs from URL params
   const courseId = createMemo(() => Number.parseInt(params.courseId, 10))
@@ -208,6 +218,25 @@ const LectureDetail = () => {
       setIsGeneratingAudio(false)
     }
   }
+
+  // Subscribe to job events for this lecture to disable actions while active
+  onMount(() => {
+    const id = lectureId()
+    if (!Number.isNaN(id)) {
+      const stop = subscribeJobEvents({ lecture_id: id }, (ev) => {
+        const st = ev.status
+        if (st === 'queued' || st === 'running') {
+          setAnyJobActive(true)
+        }
+        if (st === 'done' || st === 'failed' || st === 'cancelled') {
+          setAnyJobActive(false)
+        }
+      })
+      onCleanup(() => {
+        stop()
+      })
+    }
+  })
 
   return (
     <div class="container mx-auto px-4 py-8">
@@ -351,11 +380,15 @@ const LectureDetail = () => {
                     {/* Lecture Detail View */}
                     <LectureDetailView
                       lecture={lectureData}
-                      onEdit={() => setIsEditing(true)}
-                      onDelete={() => setShowDeleteModal(true)}
+                      onEdit={() => {
+                        setIsEditing(true)
+                      }}
+                      onDelete={() => {
+                        setShowDeleteModal(true)
+                      }}
                       isDeleting={isDeleting()}
                       onGenerateAudio={handleGenerateAudio}
-                      isGeneratingAudio={isGeneratingAudio()}
+                      isGeneratingAudio={isGeneratingAudio() || anyJobActive()}
                     />
                   </Show>
 

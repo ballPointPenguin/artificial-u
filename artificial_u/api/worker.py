@@ -6,6 +6,7 @@ from typing import Any, Awaitable, Callable, Dict
 from aiolimiter import AsyncLimiter  # type: ignore
 
 from artificial_u.api.config import get_settings
+from artificial_u.api.events import JobEventHub
 from artificial_u.models.repositories.factory import RepositoryFactory
 from artificial_u.services.job_service import JobService
 
@@ -19,7 +20,7 @@ def compute_backoff_seconds(attempts: int) -> float:
 
 
 class Worker:
-    def __init__(self, repository_factory: RepositoryFactory):
+    def __init__(self, repository_factory: RepositoryFactory, event_hub: JobEventHub | None = None):
         self.settings = get_settings()
         self.repository_factory = repository_factory
         self.limiter = AsyncLimiter(self.settings.OUTBOUND_RPS, 1)
@@ -28,6 +29,7 @@ class Worker:
         self._stopped = asyncio.Event()
         self.job_service = JobService(repository_factory)
         self.logger = logging.getLogger("artificial_u.api.worker")
+        self.event_hub = event_hub
 
     async def start(self):
         if self._task and not self._task.done():
@@ -113,47 +115,118 @@ class Worker:
 
         async with self.semaphore:
             try:
-                async with self.limiter:
-                    self.logger.debug(f"Dispatching job {job_id} to handler for kind: {kind}")
-                    result = await asyncio.wait_for(
-                        self.job_service.dispatch(kind, payload), timeout=300
-                    )
-                    self.logger.info(f"Job {job_id} completed successfully")
-                repo.mark_done(job_id, result)
-                self.logger.info(f"Job {job_id} marked as done")
-
+                result = await self._execute_job(job_id, kind, payload)
             except asyncio.TimeoutError:
-                error_msg = f"Job {job_id} timed out after 300 seconds"
-                self.logger.error(error_msg)
-                delay = self.job_service.compute_backoff_seconds(attempts)
-                repo.mark_failed_or_retry(
-                    job_id,
-                    attempts=attempts,
-                    max_attempts=max_attempts,
-                    last_error=error_msg,
-                    delay_seconds=delay,
-                )
+                await self._handle_timeout(repo, job_id, kind, payload, attempts, max_attempts)
+                return
+            except Exception as e:  # noqa: BLE001
+                await self._handle_exception(repo, job_id, kind, payload, attempts, max_attempts, e)
+                return
 
-            except Exception as e:
-                error_msg = f"Job {job_id} failed: {str(e)}"
-                self.logger.error(error_msg, exc_info=True)
-                delay = self.job_service.compute_backoff_seconds(attempts)
+            # Success path
+            repo.mark_done(job_id, result)
+            self.logger.info(f"Job {job_id} marked as done")
+            await self._publish_event(job_id, kind, "done", payload, result=result)
 
-                if attempts >= max_attempts:
-                    self.logger.error(
-                        f"Job {job_id} reached max attempts ({max_attempts}), " f"marking as failed"
-                    )
-                else:
-                    next_attempt = attempts + 1
-                    self.logger.info(
-                        f"Job {job_id} will retry in {delay:.2f}s "
-                        f"(attempt {next_attempt}/{max_attempts})"
-                    )
+    async def _execute_job(self, job_id: int, kind: str, payload: Dict[str, Any]) -> Dict[str, Any]:
+        """Run a single job under rate-limit, publish running, and return result."""
+        async with self.limiter:
+            self.logger.debug(f"Dispatching job {job_id} to handler for kind: {kind}")
+            await self._publish_event(job_id, kind, "running", payload)
+            result = await asyncio.wait_for(self.job_service.dispatch(kind, payload), timeout=300)
+            self.logger.info(f"Job {job_id} completed successfully")
+            return result
 
-                repo.mark_failed_or_retry(
-                    job_id,
-                    attempts=attempts,
-                    max_attempts=max_attempts,
-                    last_error=str(e),
-                    delay_seconds=delay,
-                )
+    async def _handle_timeout(
+        self,
+        repo,
+        job_id: int,
+        kind: str,
+        payload: Dict[str, Any],
+        attempts: int,
+        max_attempts: int,
+    ) -> None:
+        error_msg = f"Job {job_id} timed out after 300 seconds"
+        self.logger.error(error_msg)
+        delay = self.job_service.compute_backoff_seconds(attempts)
+        repo.mark_failed_or_retry(
+            job_id,
+            attempts=attempts,
+            max_attempts=max_attempts,
+            last_error=error_msg,
+            delay_seconds=delay,
+        )
+        await self._publish_event(
+            job_id,
+            kind,
+            "queued" if attempts < max_attempts else "failed",
+            payload,
+            last_error=error_msg,
+        )
+
+    async def _handle_exception(
+        self,
+        repo,
+        job_id: int,
+        kind: str,
+        payload: Dict[str, Any],
+        attempts: int,
+        max_attempts: int,
+        exc: Exception,
+    ) -> None:
+        error_msg = f"Job {job_id} failed: {str(exc)}"
+        self.logger.error(error_msg, exc_info=True)
+        delay = self.job_service.compute_backoff_seconds(attempts)
+
+        if attempts >= max_attempts:
+            self.logger.error(
+                f"Job {job_id} reached max attempts ({max_attempts}), marking as failed"
+            )
+        else:
+            next_attempt = attempts + 1
+            self.logger.info(
+                f"Job {job_id} will retry in {delay:.2f}s (attempt {next_attempt}/{max_attempts})"
+            )
+
+        repo.mark_failed_or_retry(
+            job_id,
+            attempts=attempts,
+            max_attempts=max_attempts,
+            last_error=str(exc),
+            delay_seconds=delay,
+        )
+        await self._publish_event(
+            job_id,
+            kind,
+            "queued" if attempts < max_attempts else "failed",
+            payload,
+            last_error=str(exc),
+        )
+
+    async def _publish_event(
+        self,
+        job_id: int,
+        kind: str,
+        status: str,
+        payload: Dict[str, Any],
+        *,
+        result: Dict[str, Any] | None = None,
+        last_error: str | None = None,
+    ) -> None:
+        if not self.event_hub:
+            return
+        try:
+            event: Dict[str, Any] = {
+                "id": job_id,
+                "kind": kind,
+                "status": status,
+                "payload": payload,
+            }
+            if result is not None:
+                event["result"] = result
+            if last_error is not None:
+                event["last_error"] = last_error
+            await self.event_hub.publish(event)
+        except Exception:  # noqa: BLE001
+            # Never fail the worker due to SSE publish errors
+            pass

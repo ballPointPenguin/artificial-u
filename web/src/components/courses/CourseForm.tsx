@@ -64,6 +64,21 @@ const CourseForm: Component<CourseFormProps> = (props) => {
     }
   })
 
+  // Handle resource errors in tracked scopes
+  createEffect(() => {
+    const depError: unknown = departmentsResource.error
+    if (depError) {
+      props.setError?.('Failed to load departments')
+    }
+  })
+
+  createEffect(() => {
+    const profError: unknown = professorsResource.error
+    if (profError) {
+      props.setError?.('Failed to load professors')
+    }
+  })
+
   // Fetch departments for Select
   const [departmentsResource] = createResource(async () => {
     try {
@@ -73,24 +88,33 @@ const CourseForm: Component<CourseFormProps> = (props) => {
         label: `${dept.name} (${dept.code})`,
       })) as SelectOption[]
     } catch {
-      props.setError?.('Failed to load departments')
-      return []
+      // Don't access reactive props inside async functions
+      // Let the component handle the error state through resource.error
+      throw new Error('Failed to load departments')
     }
   })
 
-  // Fetch professors for Select
-  const [professorsResource] = createResource(async () => {
-    try {
-      const response = await professorService.listProfessors({ page: 1, size: 100 })
-      return response.items.map((prof: Professor) => ({
-        value: prof.id,
-        label: prof.name || 'Unnamed Professor',
-      })) as SelectOption[]
-    } catch {
-      props.setError?.('Failed to load professors')
-      return []
+  // Fetch professors for Select, filtered by department when selected
+  const [professorsResource] = createResource(
+    () => formData().department_id,
+    async (departmentId) => {
+      try {
+        const response = await professorService.listProfessors({
+          page: 1,
+          size: 100,
+          ...(departmentId ? { departmentId } : {}),
+        })
+        return response.items.map((prof: Professor) => ({
+          value: prof.id,
+          label: prof.name || 'Unnamed Professor',
+        })) as SelectOption[]
+      } catch {
+        // Don't access reactive props inside async functions
+        // Let the component handle the error state through resource.error
+        throw new Error('Failed to load professors')
+      }
     }
-  })
+  )
 
   const handleInputChange = (fieldName: keyof CourseFormData, value: string | number | null) => {
     setFormData((prev) => ({ ...prev, [fieldName]: value }))
@@ -113,8 +137,7 @@ const CourseForm: Component<CourseFormProps> = (props) => {
     const errors: Record<string, string> = {}
     if (!data.code.trim()) errors.code = 'Course code is required.'
     if (!data.title.trim()) errors.title = 'Course title is required.'
-    if (data.department_id === null) errors.department_id = 'Department is required.'
-    if (data.professor_id === null) errors.professor_id = 'Professor is required.'
+    // department_id and professor_id are now optional - no validation needed
     if (!data.level.trim()) errors.level = 'Course level is required.'
     if (data.credits === null || data.credits <= 0)
       errors.credits = 'Credits must be a positive number.'
@@ -226,30 +249,21 @@ const CourseForm: Component<CourseFormProps> = (props) => {
             required
           />
         </FormField>
-        <FormField
-          label="Department"
-          name="department_id"
-          required
-          error={validationErrors().department_id}
-        >
+        <FormField label="Department" name="department_id" error={validationErrors().department_id}>
           <Select
             name="department_id"
             options={departmentsResource() || []}
             value={formData().department_id}
             onChange={(v) => {
               handleInputChange('department_id', v === '' ? null : Number(v))
+              // Clear professor selection when department changes to avoid mismatch
+              setFormData((prev) => ({ ...prev, professor_id: null }))
             }}
-            placeholder="-- Select Department --"
+            placeholder="-- Select Department (Optional) --"
             disabled={departmentsResource.loading || isDisabled()}
-            required
           />
         </FormField>
-        <FormField
-          label="Professor"
-          name="professor_id"
-          required
-          error={validationErrors().professor_id}
-        >
+        <FormField label="Professor" name="professor_id" error={validationErrors().professor_id}>
           <Select
             name="professor_id"
             options={professorsResource() || []}
@@ -257,9 +271,8 @@ const CourseForm: Component<CourseFormProps> = (props) => {
             onChange={(v) => {
               handleInputChange('professor_id', v === '' ? null : Number(v))
             }}
-            placeholder="-- Select Professor --"
+            placeholder="-- Select Professor (Optional) --"
             disabled={professorsResource.loading || isDisabled()}
-            required
           />
         </FormField>
         <FormField label="Course Level" name="level" required error={validationErrors().level}>

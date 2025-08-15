@@ -71,7 +71,15 @@ export const lectureService = {
    */
   enqueueGenerateLectureAudio: (
     lectureId: number
-  ): Promise<{ id: number; kind: string; status: string; attempts: number; max_attempts: number; priority?: number; run_after?: string }> => {
+  ): Promise<{
+    id: number
+    kind: string
+    status: string
+    attempts: number
+    max_attempts: number
+    priority?: number
+    run_after?: string
+  }> => {
     return httpClient.post(ENDPOINTS.lectures.enqueueGenerateAudio(lectureId), undefined)
   },
 
@@ -113,7 +121,15 @@ export const lectureService = {
    */
   enqueueGenerateLecture: (
     data: LectureGenerateRequest
-  ): Promise<{ id: number; kind: string; status: string; attempts: number; max_attempts: number; priority?: number; run_after?: string }> => {
+  ): Promise<{
+    id: number
+    kind: string
+    status: string
+    attempts: number
+    max_attempts: number
+    priority?: number
+    run_after?: string
+  }> => {
     return httpClient.post(ENDPOINTS.lectures.enqueueGenerate, data)
   },
 }

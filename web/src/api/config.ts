@@ -75,6 +75,7 @@ export const ENDPOINTS = {
     list: '/v1/jobs',
     detail: (id: number) => `/v1/jobs/${String(id)}`,
     summary: '/v1/jobs/summary',
+    stream: '/v1/jobs/stream',
   },
   lectures: {
     list: '/v1/lectures',

@@ -4,6 +4,7 @@ from fastapi import Depends, FastAPI
 
 from artificial_u.api.config import get_settings
 from artificial_u.api.dependencies import get_repository_factory
+from artificial_u.api.events import JobEventHub
 from artificial_u.api.middlewares.cors_middleware import setup_cors
 from artificial_u.api.middlewares.error_handler import add_error_handlers
 from artificial_u.api.middlewares.logging_middleware import LoggingMiddleware
@@ -35,10 +36,13 @@ def create_application() -> FastAPI:
 
     # Prepare worker now so it's available in lifespan closure
     repository_factory = get_repository_factory()
-    worker = Worker(repository_factory)
+    job_events = JobEventHub()
+    worker = Worker(repository_factory, event_hub=job_events)
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
+        # attach event hub to app state for routers and worker to use
+        app.state.job_events = job_events
         await worker.start()
         try:
             yield

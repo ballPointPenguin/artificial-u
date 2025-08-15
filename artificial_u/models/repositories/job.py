@@ -40,16 +40,42 @@ class JobRepository(BaseRepository):
         with self.get_session() as session:
             return session.get(JobModel, job_id)
 
-    def list(self, *, status: Optional[str] = None, limit: int = 50) -> List[JobModel]:
+    def list(
+        self,
+        *,
+        status: Optional[str] = None,
+        limit: int = 50,
+        kind: Optional[str] = None,
+        lecture_id: Optional[int] = None,
+        topic_id: Optional[int] = None,
+    ) -> List[JobModel]:
         with self.get_session() as session:
-            stmt = select(JobModel).order_by(desc(JobModel.created_at)).limit(limit)
+            stmt = select(JobModel)
             if status:
-                stmt = (
-                    select(JobModel)
-                    .where(JobModel.status == status)
-                    .order_by(desc(JobModel.created_at))
-                    .limit(limit)
+                stmt = stmt.where(JobModel.status == status)
+            if kind:
+                stmt = stmt.where(JobModel.kind == kind)
+
+            # JSONB payload filters (best-effort on Postgres)
+            if lecture_id is not None:
+                from sqlalchemy import Integer, cast
+
+                stmt = stmt.where(
+                    cast(JobModel.payload["lecture_id"].astext, Integer) == int(lecture_id)
                 )
+
+            if topic_id is not None:
+                from sqlalchemy import Integer, cast, or_
+
+                stmt = stmt.where(
+                    or_(
+                        cast(JobModel.payload["topic_id"].astext, Integer) == int(topic_id),
+                        cast(JobModel.payload["partial_attributes"]["topic_id"].astext, Integer)
+                        == int(topic_id),
+                    )
+                )
+
+            stmt = stmt.order_by(desc(JobModel.created_at)).limit(limit)
             return list(session.execute(stmt).scalars())
 
     def reserve_one_skip_locked(self) -> Optional[JobModel]:

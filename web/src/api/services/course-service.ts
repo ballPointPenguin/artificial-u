@@ -76,7 +76,15 @@ export const courseService = {
 
   enqueueGenerateCourse: (
     data: CourseGenerateRequest
-  ): Promise<{ id: number; kind: string; status: string; attempts: number; max_attempts: number; priority?: number; run_after?: string }> => {
+  ): Promise<{
+    id: number
+    kind: string
+    status: string
+    attempts: number
+    max_attempts: number
+    priority?: number
+    run_after?: string
+  }> => {
     return httpClient.post(ENDPOINTS.courses.enqueueGenerate, data)
   },
 }

@@ -1,9 +1,11 @@
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
 from artificial_u.api.dependencies import get_repository_factory
+from artificial_u.api.events import JobEventHub, sse_stream
 from artificial_u.models.repositories.factory import RepositoryFactory
 
 router = APIRouter(prefix="/jobs", tags=["jobs"])
@@ -43,10 +45,19 @@ def enqueue(
 def list_jobs(
     status: Optional[str] = None,
     limit: int = 50,
+    kind: Optional[str] = None,
+    lecture_id: Optional[int] = None,
+    topic_id: Optional[int] = None,
     repository_factory: RepositoryFactory = Depends(get_repository_factory),
 ):
     repo = repository_factory.job
-    rows = repo.list(status=status, limit=limit)
+    rows = repo.list(
+        status=status,
+        limit=limit,
+        kind=kind,
+        lecture_id=lecture_id,
+        topic_id=topic_id,
+    )
     return [
         {
             "id": r.id,
@@ -95,3 +106,20 @@ def get_job(
         "created_at": row.created_at,
         "updated_at": row.updated_at,
     }
+
+
+@router.get("/stream")
+async def jobs_stream(
+    request: Request,
+    lecture_id: Optional[int] = None,
+    topic_id: Optional[int] = None,
+    kinds: Optional[List[str]] = None,
+):
+    hub: JobEventHub = request.app.state.job_events
+    gen = sse_stream(hub, lecture_id=lecture_id, topic_id=topic_id, kinds=kinds)
+    headers = {
+        "Cache-Control": "no-cache",
+        "Connection": "keep-alive",
+        "X-Accel-Buffering": "no",
+    }
+    return StreamingResponse(gen, media_type="text/event-stream", headers=headers)

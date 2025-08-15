@@ -68,13 +68,29 @@ export const professorService = {
 
   enqueueGenerateProfessor: (
     data: ProfessorGenerateRequest
-  ): Promise<{ id: number; kind: string; status: string; attempts: number; max_attempts: number; priority?: number; run_after?: string }> => {
+  ): Promise<{
+    id: number
+    kind: string
+    status: string
+    attempts: number
+    max_attempts: number
+    priority?: number
+    run_after?: string
+  }> => {
     return httpClient.post(ENDPOINTS.professors.enqueueGenerate, data)
   },
 
   enqueueGenerateProfessorImage: (
     professorId: number
-  ): Promise<{ id: number; kind: string; status: string; attempts: number; max_attempts: number; priority?: number; run_after?: string }> => {
+  ): Promise<{
+    id: number
+    kind: string
+    status: string
+    attempts: number
+    max_attempts: number
+    priority?: number
+    run_after?: string
+  }> => {
     return httpClient.post(ENDPOINTS.professors.enqueueGenerateImage(professorId), {})
   },
 

@@ -68,7 +68,15 @@ export const departmentService = {
 
   enqueueGenerateDepartment: (
     data: DepartmentGenerateRequest
-  ): Promise<{ id: number; kind: string; status: string; attempts: number; max_attempts: number; priority?: number; run_after?: string }> => {
+  ): Promise<{
+    id: number
+    kind: string
+    status: string
+    attempts: number
+    max_attempts: number
+    priority?: number
+    run_after?: string
+  }> => {
     return httpClient.post(ENDPOINTS.departments.enqueueGenerate, data)
   },
 }
