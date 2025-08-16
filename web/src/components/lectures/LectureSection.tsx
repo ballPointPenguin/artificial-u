@@ -3,6 +3,7 @@ import { type Component, createSignal, onCleanup, onMount, Show } from 'solid-js
 import { subscribeJobEvents } from '../../api/services/jobs-service.js'
 import { lectureService } from '../../api/services/lecture-service.js'
 import type { Lecture } from '../../api/types.js'
+import { RequireAuth } from '../../auth/RequireAuth'
 import { Alert, Button, ConfirmationModal, LoadingSpinner, MagicButton } from '../ui'
 
 interface LectureSectionProps {
@@ -107,19 +108,21 @@ export const LectureSection: Component<LectureSectionProps> = (props) => {
                   </Button>
                 </a>
               </Show>
-              <MagicButton
-                variant="primary"
-                size="sm"
-                class="h-8"
-                onClick={() => void handleGenerateAudio()}
-                disabled={isGeneratingAudio() || anyJobActive()}
-              >
-                {isGeneratingAudio()
-                  ? 'Generating Audio...'
-                  : lectureData().audio_url
-                    ? 'Regenerate Audio'
-                    : 'Generate Audio'}
-              </MagicButton>
+              <RequireAuth>
+                <MagicButton
+                  variant="primary"
+                  size="sm"
+                  class="h-8"
+                  onClick={() => void handleGenerateAudio()}
+                  disabled={isGeneratingAudio() || anyJobActive()}
+                >
+                  {isGeneratingAudio()
+                    ? 'Generating Audio...'
+                    : lectureData().audio_url
+                      ? 'Regenerate Audio'
+                      : 'Generate Audio'}
+                </MagicButton>
+              </RequireAuth>
               <A
                 href={`/courses/${String(props.courseId)}/lectures/${String(lectureData().id)}`}
                 class="inline-block"
@@ -128,15 +131,17 @@ export const LectureSection: Component<LectureSectionProps> = (props) => {
                   View
                 </Button>
               </A>
-              <Button
-                variant="danger"
-                size="sm"
-                class="h-8"
-                onClick={() => setShowDeleteModal(true)}
-                disabled={isDeleting()}
-              >
-                {isDeleting() ? 'Deleting...' : 'Delete'}
-              </Button>
+              <RequireAuth>
+                <Button
+                  variant="danger"
+                  size="sm"
+                  class="h-8"
+                  onClick={() => setShowDeleteModal(true)}
+                  disabled={isDeleting()}
+                >
+                  {isDeleting() ? 'Deleting...' : 'Delete'}
+                </Button>
+              </RequireAuth>
             </div>
           )}
         </Show>
@@ -195,19 +200,21 @@ export const LectureSection: Component<LectureSectionProps> = (props) => {
             No lecture has been created for this topic yet.
           </p>
           <div class="flex justify-center space-x-4">
-            <A
-              href={`/courses/${String(props.courseId)}/topics/${String(props.topicId)}/lectures/new`}
-              class="inline-block"
-            >
-              <Button variant="outline">New Lecture</Button>
-            </A>
-            <MagicButton
-              variant="primary"
-              onClick={props.onGenerateLecture}
-              disabled={props.isGeneratingLecture || anyJobActive()}
-            >
-              {props.isGeneratingLecture ? 'Generating...' : 'Generate Lecture'}
-            </MagicButton>
+            <RequireAuth>
+              <A
+                href={`/courses/${String(props.courseId)}/topics/${String(props.topicId)}/lectures/new`}
+                class="inline-block"
+              >
+                <Button variant="outline">New Lecture</Button>
+              </A>
+              <MagicButton
+                variant="primary"
+                onClick={props.onGenerateLecture}
+                disabled={props.isGeneratingLecture || anyJobActive()}
+              >
+                {props.isGeneratingLecture ? 'Generating...' : 'Generate Lecture'}
+              </MagicButton>
+            </RequireAuth>
           </div>
         </div>
       </Show>
@@ -219,9 +226,7 @@ export const LectureSection: Component<LectureSectionProps> = (props) => {
             <LoadingSpinner />
             <span class="text-sm text-parchment-300">Generating lecture...</span>
           </div>
-          <p class="text-xs text-parchment-400 mt-3 text-center">
-            This may take several minutes. Please don't close this page.
-          </p>
+          <p class="text-xs text-parchment-400 mt-3 text-center">This may take several minutes.</p>
         </div>
       </Show>
 

@@ -293,12 +293,12 @@ Wrap protected pages/routes with `RequireAuth`.
 - [x] Backend: add `/api/v1/me` endpoint and include router in `app.py`
 - [x] Backend: apply `Depends(require_auth)`/`require_scope(...)` to protected routes
 - [x] Backend: tighten `cors_origins` to match actual SPA hosts
-- [ ] Frontend: `pnpm add @auth0/auth0-spa-js`
-- [ ] Frontend: add `VITE_AUTH0_DOMAIN`, `VITE_AUTH0_CLIENT_ID`, `VITE_AUTH0_AUDIENCE`
-- [ ] Frontend: create `src/auth/auth0.ts` and `src/auth/AuthProvider.tsx`, wrap app
-- [ ] Frontend: implement token injection (Option B) in `src/api/client.ts`, expose `setTokenProvider`
-- [ ] Frontend: optionally add `RequireAuth` guard for protected pages
-- [ ] Verify: login flow, token in requests, API validation, scope enforcement
+- [x] Frontend: `pnpm add @auth0/auth0-spa-js`
+- [x] Frontend: add `VITE_AUTH0_DOMAIN`, `VITE_AUTH0_CLIENT_ID`, `VITE_AUTH0_AUDIENCE`
+- [x] Frontend: create `src/auth/auth0.ts` and `src/auth/AuthProvider.tsx`, wrap app
+- [x] Frontend: implement token injection (Option B) in `src/api/client.ts`, expose `setTokenProvider`
+- [x] Frontend: optionally add `RequireAuth` guard for protected pages
+- [x] Verify: login flow, token in requests, API validation, scope enforcement
 - [ ] Tests: unit test JWT dependency with a mocked token; smoke test a protected endpoint, fix api tests
 
 ## Alternatives (later, if needed)

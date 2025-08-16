@@ -9,6 +9,7 @@ import type {
   ProfessorCourseBrief,
   ProfessorCoursesResponse,
 } from '../../api/types.js'
+import { RequireAuth } from '../../auth/RequireAuth'
 import { Alert, Button, ConfirmationModal, LoadingSpinner, MagicButton } from '../ui'
 import ProfessorForm, { type ProfessorFormData } from './ProfessorForm.js'
 
@@ -266,14 +267,16 @@ export default function ProfessorDetail() {
             when={!isEditing()}
             fallback={
               <div>
-                <h2 class="text-xl font-semibold mb-4">Edit Professor</h2>
-                <ProfessorForm
-                  professor={professorResource() as Professor}
-                  onSubmit={handleSubmitUpdate}
-                  onCancel={() => setIsEditing(false)}
-                  isSubmitting={isSubmitting()}
-                  error={error()}
-                />
+                <RequireAuth>
+                  <h2 class="text-xl font-semibold mb-4">Edit Professor</h2>
+                  <ProfessorForm
+                    professor={professorResource() as Professor}
+                    onSubmit={handleSubmitUpdate}
+                    onCancel={() => setIsEditing(false)}
+                    isSubmitting={isSubmitting()}
+                    error={error()}
+                  />
+                </RequireAuth>
               </div>
             }
           >
@@ -283,28 +286,30 @@ export default function ProfessorDetail() {
                   {professorResource()?.name}
                 </h1>
                 <div class="flex space-x-2 items-center">
-                  <Show when={!isGeneratingImage()}>
-                    <MagicButton
-                      variant="ghost"
+                  <RequireAuth>
+                    <Show when={!isGeneratingImage()}>
+                      <MagicButton
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => void handleGenerateImage()}
+                        isLoading={isGeneratingImage()}
+                        loadingText="Generating..."
+                      >
+                        Generate Image
+                      </MagicButton>
+                    </Show>
+                    <Button variant="secondary" size="sm" onClick={() => setIsEditing(true)}>
+                      Edit
+                    </Button>
+                    <Button
+                      variant="outline"
                       size="sm"
-                      onClick={() => void handleGenerateImage()}
-                      isLoading={isGeneratingImage()}
-                      loadingText="Generating..."
+                      onClick={() => setIsDeleting(true)}
+                      class="text-danger border-danger hover:bg-danger-bg hover:text-foreground"
                     >
-                      Generate Image
-                    </MagicButton>
-                  </Show>
-                  <Button variant="secondary" size="sm" onClick={() => setIsEditing(true)}>
-                    Edit
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setIsDeleting(true)}
-                    class="text-danger border-danger hover:bg-danger-bg hover:text-foreground"
-                  >
-                    Delete
-                  </Button>
+                      Delete
+                    </Button>
+                  </RequireAuth>
                 </div>
               </div>
 
@@ -548,16 +553,18 @@ export default function ProfessorDetail() {
                             {voiceAssignError()}
                           </Alert>
                         </Show>
-                        <MagicButton
-                          variant="secondary"
-                          size="sm"
-                          onClick={() => void handleAssignVoice()}
-                          disabled={isAssigningVoice()}
-                          isLoading={isAssigningVoice()}
-                          loadingText="Assigning..."
-                        >
-                          {professorResource()?.voice_id ? 'Reassign Voice' : 'Assign Voice'}
-                        </MagicButton>
+                        <RequireAuth>
+                          <MagicButton
+                            variant="secondary"
+                            size="sm"
+                            onClick={() => void handleAssignVoice()}
+                            disabled={isAssigningVoice()}
+                            isLoading={isAssigningVoice()}
+                            loadingText="Assigning..."
+                          >
+                            {professorResource()?.voice_id ? 'Reassign Voice' : 'Assign Voice'}
+                          </MagicButton>
+                        </RequireAuth>
                       </div>
                     </div>
                   </div>

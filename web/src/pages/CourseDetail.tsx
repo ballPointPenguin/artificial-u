@@ -9,6 +9,7 @@ import type {
   ProfessorBrief,
   TopicList,
 } from '../api/types.js'
+import { RequireAuth } from '../auth/RequireAuth'
 import CourseForm from '../components/courses/CourseForm.jsx'
 import type { CourseFormData } from '../components/courses/types.jsx'
 import { Alert, Button } from '../components/ui'
@@ -286,14 +287,16 @@ const CourseDetail: Component = () => {
                     ← Back to Courses
                   </A>
                   <Show when={!isEditing()}>
-                    <div class="flex gap-2">
-                      <Button variant="primary" onClick={() => setIsEditing(true)}>
-                        Edit Course
-                      </Button>
-                      <Button variant="secondary" onClick={() => setShowDeleteConfirm(true)}>
-                        Delete
-                      </Button>
-                    </div>
+                    <RequireAuth>
+                      <div class="flex gap-2">
+                        <Button variant="primary" onClick={() => setIsEditing(true)}>
+                          Edit Course
+                        </Button>
+                        <Button variant="secondary" onClick={() => setShowDeleteConfirm(true)}>
+                          Delete
+                        </Button>
+                      </div>
+                    </RequireAuth>
                   </Show>
                 </div>
 
@@ -306,47 +309,51 @@ const CourseDetail: Component = () => {
 
                 {/* Delete Confirmation Dialog */}
                 <Show when={showDeleteConfirm()}>
-                  <div class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-                    <div class="arcane-card p-6 max-w-md w-full">
-                      <h2 class="text-xl font-semibold mb-4 text-parchment-100">
-                        Confirm Deletion
-                      </h2>
-                      <p class="text-parchment-200 mb-6">
-                        Are you sure you want to delete this course? This action cannot be undone.
-                      </p>
-                      <div class="flex justify-end gap-3">
-                        <Button
-                          variant="outline"
-                          onClick={() => setShowDeleteConfirm(false)}
-                          disabled={isDeleting()}
-                        >
-                          Cancel
-                        </Button>
-                        <Button
-                          variant="secondary"
-                          onClick={handleDeleteCourse}
-                          disabled={isDeleting()}
-                        >
-                          {isDeleting() ? 'Deleting...' : 'Delete Course'}
-                        </Button>
+                  <RequireAuth>
+                    <div class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+                      <div class="arcane-card p-6 max-w-md w-full">
+                        <h2 class="text-xl font-semibold mb-4 text-parchment-100">
+                          Confirm Deletion
+                        </h2>
+                        <p class="text-parchment-200 mb-6">
+                          Are you sure you want to delete this course? This action cannot be undone.
+                        </p>
+                        <div class="flex justify-end gap-3">
+                          <Button
+                            variant="outline"
+                            onClick={() => setShowDeleteConfirm(false)}
+                            disabled={isDeleting()}
+                          >
+                            Cancel
+                          </Button>
+                          <Button
+                            variant="secondary"
+                            onClick={handleDeleteCourse}
+                            disabled={isDeleting()}
+                          >
+                            {isDeleting() ? 'Deleting...' : 'Delete Course'}
+                          </Button>
+                        </div>
                       </div>
                     </div>
-                  </div>
+                  </RequireAuth>
                 </Show>
 
                 <Show
                   when={!isEditing()}
                   fallback={
-                    <div class="arcane-card p-6 mb-8">
-                      <h2 class="text-xl font-semibold mb-4 text-parchment-100">Edit Course</h2>
-                      <CourseForm
-                        course={course()}
-                        onSubmit={handleUpdateCourse}
-                        onCancel={handleCancelEdit}
-                        isSubmitting={isSubmitting()}
-                        error={error()}
-                      />
-                    </div>
+                    <RequireAuth>
+                      <div class="arcane-card p-6 mb-8">
+                        <h2 class="text-xl font-semibold mb-4 text-parchment-100">Edit Course</h2>
+                        <CourseForm
+                          course={course()}
+                          onSubmit={handleUpdateCourse}
+                          onCancel={handleCancelEdit}
+                          isSubmitting={isSubmitting()}
+                          error={error()}
+                        />
+                      </div>
+                    </RequireAuth>
                   }
                 >
                   <h1 class="text-3xl font-display text-parchment-100 mb-3">

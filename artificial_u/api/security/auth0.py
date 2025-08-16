@@ -4,7 +4,8 @@ from typing import Any, Dict, List, Optional
 import httpx
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from jose import jwk, jwt
+from jose import jwt
+from jose.exceptions import ExpiredSignatureError, JWTClaimsError, JWTError
 
 from artificial_u.config.settings import get_settings
 
@@ -40,17 +41,30 @@ def require_auth(
                 status_code=status.HTTP_401_UNAUTHORIZED, detail="Signing key not found"
             )
 
-        # python-jose supports passing JWKS directly for RS256
+        # Pass RSA key params dict directly (kty,n,e) to python-jose
+        rsa_key = {
+            "kty": jwk_data.get("kty"),
+            "kid": jwk_data.get("kid"),
+            "use": jwk_data.get("use"),
+            "n": jwk_data.get("n"),
+            "e": jwk_data.get("e"),
+        }
+
         payload = jwt.decode(
             token,
-            jwk.construct(jwk_data),  # type: ignore[arg-type]
+            rsa_key,
             algorithms=[settings.AUTH0_ALG],
             audience=settings.AUTH0_AUDIENCE,
             issuer=f"https://{settings.AUTH0_DOMAIN}/",
         )
         return payload  # contains sub, scope, etc.
-    except Exception:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
+    except ExpiredSignatureError:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token expired")
+    except JWTClaimsError as e:
+        # covers audience/issuer and other claims problems
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=f"Invalid claims: {e}")
+    except JWTError as e:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=f"Invalid token: {e}")
 
 
 def require_scope(scope: str):

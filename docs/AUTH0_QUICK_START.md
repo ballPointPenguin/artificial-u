@@ -73,7 +73,7 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jose import jwt
 import requests
 
-AUTH0_DOMAIN = "artificial-u.auth0.com"
+AUTH0_DOMAIN = "your-auth0-tenant.auth0.com"
 API_AUDIENCE = "https://artificial-u.com/"
 ALGS = ["RS256"]
 ```
