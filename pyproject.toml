@@ -39,6 +39,7 @@ dependencies = [
     "pydantic-settings>=2.10.0",
     "pydantic>=2.11.7",
     "python-dotenv>=1.0.0",
+    "python-jose[cryptography]>=3.5.0",
     "python-multipart>=0.0.6",
     "rich>=14.1.0",
     "sqlalchemy>=2.0.43",

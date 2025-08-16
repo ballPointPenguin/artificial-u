@@ -3,6 +3,7 @@ import { type Component, createResource, createSignal, For, Show } from 'solid-j
 import { courseService } from '../api/services/course-service.js'
 import { subscribeJobEvents } from '../api/services/jobs-service.js'
 import type { Course, CourseCreate } from '../api/types.js'
+import { RequireAuth } from '../auth/RequireAuth'
 import CourseForm from '../components/courses/CourseForm.jsx'
 import type { CourseFormData } from '../components/courses/types.jsx'
 import { Button } from '../components/ui'
@@ -48,14 +49,6 @@ const Courses: Component = () => {
     setSubmitting(true)
     setFormError('')
 
-    // The following check is redundant if CourseForm validation is robust.
-    // CourseForm's validateForm checks for null department_id and professor_id.
-    // if (formData.department_id === null || formData.professor_id === null) {
-    //   setFormError('Department and Professor are required to create a course.')
-    //   setSubmitting(false)
-    //   return
-    // }
-
     const createPayload: CourseCreate = {
       ...formData,
       // Assuming CourseForm validation ensures these are numbers when onSubmit is called
@@ -96,21 +89,25 @@ const Courses: Component = () => {
     <div class="container mx-auto p-6">
       <div class="flex justify-between items-center mb-6">
         <h1 class="text-3xl font-display text-parchment-100 mb-6">Academic Courses</h1>
-        <Button variant="primary" onClick={() => setShowCreateForm(true)}>
-          Add Course
-        </Button>
+        <RequireAuth>
+          <Button variant="primary" onClick={() => setShowCreateForm(true)}>
+            Add Course
+          </Button>
+        </RequireAuth>
       </div>
 
       <Show when={showCreateForm()}>
-        <div class="arcane-card p-6 mb-8">
-          <h2 class="text-xl font-semibold mb-4 text-parchment-100">Create New Course</h2>
-          <CourseForm
-            onSubmit={handleSubmitCreate}
-            onCancel={() => setShowCreateForm(false)}
-            isSubmitting={submitting()}
-            error={formError()}
-          />
-        </div>
+        <RequireAuth>
+          <div class="arcane-card p-6 mb-8">
+            <h2 class="text-xl font-semibold mb-4 text-parchment-100">Create New Course</h2>
+            <CourseForm
+              onSubmit={handleSubmitCreate}
+              onCancel={() => setShowCreateForm(false)}
+              isSubmitting={submitting()}
+              error={formError()}
+            />
+          </div>
+        </RequireAuth>
       </Show>
 
       <Show

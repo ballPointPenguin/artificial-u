@@ -8,6 +8,9 @@ importers:
 
   .:
     dependencies:
+      '@auth0/auth0-spa-js':
+        specifier: ^2.3.0
+        version: 2.3.0
       '@kobalte/core':
         specifier: ^0.13.11
         version: 0.13.11(solid-js@1.9.9)
@@ -108,6 +111,9 @@ packages:
 
   '@asamuzakjp/css-color@3.1.1':
     resolution: {integrity: sha512-hpRD68SV2OMcZCsrbdkccTw5FXjNDLo5OuqSHyHZfwweGsDWZwDJ2+gONyNAbazZclobMirACLw0lk8WVxIqxA==}
+
+  '@auth0/auth0-spa-js@2.3.0':
+    resolution: {integrity: sha512-zAW6w79UO+G1+3AxboVQIUIZy05xluSOb1ymGg2dqG0pIi0JxEtZGec05BOf2LJ9SehzW4WeCYUQsYD9BjrVpQ==}
 
   '@babel/code-frame@7.26.2':
     resolution: {integrity: sha512-RJlIHRueQgwWitWgF8OdFYGZX328Ax5BCemNGlqHfplnRT9ESi8JkFlvaVYbS+UubVY6dpv87Fs2u5M29iNFVQ==}
@@ -2875,6 +2881,8 @@ snapshots:
       '@csstools/css-parser-algorithms': 3.0.4(@csstools/css-tokenizer@3.0.3)
       '@csstools/css-tokenizer': 3.0.3
       lru-cache: 10.4.3
+
+  '@auth0/auth0-spa-js@2.3.0': {}
 
   '@babel/code-frame@7.26.2':
     dependencies:

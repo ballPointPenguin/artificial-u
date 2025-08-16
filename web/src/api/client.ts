@@ -4,6 +4,22 @@
 import { API_CONFIG, DEFAULT_HEADERS } from './config'
 import type { APIError } from './types'
 
+// Optional token provider set by the app to attach Authorization headers
+export let getAuthToken: null | (() => Promise<string | null>) = null
+export const setTokenProvider = (fn: () => Promise<string | null>) => {
+  getAuthToken = fn
+}
+
+async function attachAuthHeader(headers: Headers): Promise<void> {
+  if (!getAuthToken) return
+  try {
+    const token = await getAuthToken()
+    if (token) headers.set('Authorization', `Bearer ${token}`)
+  } catch {
+    // ignore token retrieval errors; proceed without auth header
+  }
+}
+
 export class ApiError extends Error {
   status: number
   data?: APIError
@@ -177,6 +193,7 @@ export const httpClient = {
       }
     }
 
+    await attachAuthHeader(headers)
     return fetchWithTimeout<T>(url, {
       method: 'GET',
       headers,
@@ -209,6 +226,7 @@ export const httpClient = {
       }
     }
 
+    await attachAuthHeader(headers)
     return fetchWithTimeout<T>(url, {
       method: 'POST',
       headers,
@@ -246,6 +264,7 @@ export const httpClient = {
       }
     }
 
+    await attachAuthHeader(headers)
     return fetchWithExtendedTimeout<T>(url, {
       method: 'POST',
       headers,
@@ -279,6 +298,7 @@ export const httpClient = {
       }
     }
 
+    await attachAuthHeader(headers)
     return fetchWithTimeout<T>(url, {
       method: 'PUT',
       headers,
@@ -312,6 +332,7 @@ export const httpClient = {
       }
     }
 
+    await attachAuthHeader(headers)
     return fetchWithTimeout<T>(url, {
       method: 'DELETE',
       headers,
@@ -344,6 +365,7 @@ export const httpClient = {
       }
     }
 
+    await attachAuthHeader(headers)
     return fetchWithTimeout<T>(url, {
       method: 'PATCH',
       headers,

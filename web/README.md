@@ -16,6 +16,18 @@ This directory contains the SolidJS frontend for the Artificial-U project.
    pnpm install
    ```
 
+3. Create a `.env.local` file:
+
+   ```bash
+   cp .env.local.example .env.local
+   ```
+
+4. Edit the `.env.local` file with your own values.
+
+   ```bash
+   pnpm env:init
+   ```
+
 ## Development
 
 To start the development server:

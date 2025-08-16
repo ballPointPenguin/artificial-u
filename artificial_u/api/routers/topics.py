@@ -17,6 +17,7 @@ from artificial_u.api.models.topics import (
     TopicListResponse,
     TopicUpdate,
 )
+from artificial_u.api.security.auth0 import require_auth
 from artificial_u.api.services.topic_service import TopicApiService
 from artificial_u.models.repositories.factory import RepositoryFactory
 
@@ -33,6 +34,7 @@ router = APIRouter(
     status_code=status.HTTP_201_CREATED,
     summary="Create topic",
     description="Create a new topic.",
+    dependencies=[Depends(require_auth)],
 )
 def create_topic(
     topic_data: TopicCreate,
@@ -77,6 +79,7 @@ def list_topics_by_course(
     response_model=Topic,
     summary="Update topic",
     description="Update an existing topic.",
+    dependencies=[Depends(require_auth)],
 )
 def update_topic(
     topic_data: TopicUpdate,
@@ -92,6 +95,7 @@ def update_topic(
     status_code=status.HTTP_204_NO_CONTENT,
     summary="Delete topic",
     description="Delete a topic by its ID.",
+    dependencies=[Depends(require_auth)],
 )
 def delete_topic(
     topic_id: int = Path(..., description="The ID of the topic to delete"),
@@ -108,19 +112,20 @@ def delete_topic(
 # This keeps individual topic CRUD under /topics/
 # and course-specific batch operations like generation under /courses/{course_id}/topics/
 
-router_for_course_topics = APIRouter(
+course_topics_router = APIRouter(
     prefix="/courses/{course_id}/topics",
     tags=["topics", "courses"],
     responses={404: {"description": "Course or Topic not found"}},
 )
 
 
-@router_for_course_topics.post(
+@course_topics_router.post(
     "/generate",
     response_model=List[Topic],
     status_code=status.HTTP_200_OK,
     summary="Generate topics for a course",
     description="Generates a list of topics for a specified course using AI.",
+    dependencies=[Depends(require_auth)],
 )
 async def generate_topics_for_course(
     course_id: int = Path(..., description="The ID of the course to generate topics for"),
@@ -136,7 +141,7 @@ async def generate_topics_for_course(
     return await topic_service.generate_topics_for_course(generation_data)
 
 
-@router_for_course_topics.post(
+@course_topics_router.post(
     "/generate/enqueue",
     status_code=status.HTTP_202_ACCEPTED,
     summary="Enqueue topic generation job",
@@ -144,6 +149,7 @@ async def generate_topics_for_course(
         "Enqueue an async job to generate topics for a course. Returns a job id to poll via "
         "GET /api/v1/jobs/{id}."
     ),
+    dependencies=[Depends(require_auth)],
 )
 async def enqueue_generate_topics_for_course(
     course_id: int = Path(..., description="The ID of the course to generate topics for"),

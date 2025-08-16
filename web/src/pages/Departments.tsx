@@ -2,6 +2,7 @@ import { A } from '@solidjs/router'
 import { createResource, createSignal, For, Show } from 'solid-js'
 import { departmentService } from '../api/services/department-service.js'
 import type { Department, DepartmentCreate } from '../api/types.js'
+import { RequireAuth } from '../auth/RequireAuth'
 import DepartmentForm from '../components/departments/DepartmentForm.js'
 import { Button, Input } from '../components/ui'
 
@@ -72,21 +73,25 @@ const DepartmentsPage = () => {
     <div class="container mx-auto px-4 py-8">
       <div class="flex justify-between items-center mb-6">
         <h1 class="text-3xl font-bold text-parchment-100">Departments</h1>
-        <Button variant="primary" onClick={() => setShowCreateForm(true)}>
-          Add Department
-        </Button>
+        <RequireAuth>
+          <Button variant="primary" onClick={() => setShowCreateForm(true)}>
+            Add Department
+          </Button>
+        </RequireAuth>
       </div>
 
       <Show when={showCreateForm()}>
-        <div class="arcane-card p-6 mb-8">
-          <h2 class="text-xl font-semibold mb-4 text-parchment-100">Create New Department</h2>
-          <DepartmentForm
-            onSubmit={(formData) => void handleSubmitCreate(formData)}
-            onCancel={() => setShowCreateForm(false)}
-            isSubmitting={submitting()}
-            error={formError()}
-          />
-        </div>
+        <RequireAuth>
+          <div class="arcane-card p-6 mb-8">
+            <h2 class="text-xl font-semibold mb-4 text-parchment-100">Create New Department</h2>
+            <DepartmentForm
+              onSubmit={(formData) => void handleSubmitCreate(formData)}
+              onCancel={() => setShowCreateForm(false)}
+              isSubmitting={submitting()}
+              error={formError()}
+            />
+          </div>
+        </RequireAuth>
       </Show>
 
       <form onSubmit={handleSearch} class="mb-8">

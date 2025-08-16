@@ -6,6 +6,7 @@ import type {
   DepartmentProfessorsResponse,
   DepartmentUpdate,
 } from '../api/types.js'
+import { RequireAuth } from '../auth/RequireAuth'
 import DepartmentForm from '../components/departments/DepartmentForm.js'
 import { Button, ConfirmationModal } from '../components/ui'
 
@@ -245,14 +246,16 @@ const DepartmentDetail = () => {
               <Show when={department()} keyed>
                 {(dept) => (
                   <div class="bg-arcanum-900 border border-parchment-800/30 rounded-lg p-6">
-                    <h2 class="text-xl font-semibold mb-4">Edit Department</h2>
-                    <DepartmentForm
-                      department={dept}
-                      onSubmit={(fd) => void handleSubmitUpdate(fd)}
-                      onCancel={() => setIsEditing(false)}
-                      isSubmitting={isSubmitting()}
-                      error={error()}
-                    />
+                    <RequireAuth>
+                      <h2 class="text-xl font-semibold mb-4">Edit Department</h2>
+                      <DepartmentForm
+                        department={dept}
+                        onSubmit={(fd) => void handleSubmitUpdate(fd)}
+                        onCancel={() => setIsEditing(false)}
+                        isSubmitting={isSubmitting()}
+                        error={error()}
+                      />
+                    </RequireAuth>
                   </div>
                 )}
               </Show>
@@ -266,12 +269,14 @@ const DepartmentDetail = () => {
                     <div class="flex justify-between items-center mb-4">
                       <h1 class="text-3xl font-bold">{dept.name}</h1>
                       <div class="flex space-x-2">
-                        <Button variant="secondary" size="sm" onClick={() => setIsEditing(true)}>
-                          Edit
-                        </Button>
-                        <Button variant="danger" size="sm" onClick={() => setIsDeleting(true)}>
-                          Delete
-                        </Button>
+                        <RequireAuth>
+                          <Button variant="secondary" size="sm" onClick={() => setIsEditing(true)}>
+                            Edit
+                          </Button>
+                          <Button variant="danger" size="sm" onClick={() => setIsDeleting(true)}>
+                            Delete
+                          </Button>
+                        </RequireAuth>
                       </div>
                     </div>
 

@@ -33,3 +33,18 @@
 9. hr - Croatian
 10. ro - Romanian
 11. uk - Ukrainian
+
+## Top 12 Languages of Higher Education (estimated)
+
+1. en - English
+2. zh - Chinese
+3. es - Spanish
+4. hi - Hindi
+5. ar - Arabic
+6. pt - Portuguese
+7. ru - Russian
+8. fr - French
+9. de - German
+10. id - Indonesian
+11. ja - Japanese
+12. bn - Bengali      # Not supported by ElevenLabs

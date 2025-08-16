@@ -10,18 +10,17 @@ from artificial_u.api.events import JobEventHub
 from artificial_u.api.middlewares.cors_middleware import setup_cors
 from artificial_u.api.middlewares.error_handler import add_error_handlers
 from artificial_u.api.middlewares.logging_middleware import LoggingMiddleware
+from artificial_u.api.routers.auth import router as auth_router
 from artificial_u.api.routers.courses import router as courses_router
 from artificial_u.api.routers.departments import router as departments_router
-
-# Import routers
 from artificial_u.api.routers.health import router as health_router
 from artificial_u.api.routers.index import router as index_router
 from artificial_u.api.routers.jobs import router as jobs_router
 from artificial_u.api.routers.lectures import router as lectures_router
 from artificial_u.api.routers.professors import router as professors_router
+from artificial_u.api.routers.topics import course_topics_router
 from artificial_u.api.routers.topics import router as topics_router
-from artificial_u.api.routers.topics import router_for_course_topics
-from artificial_u.api.routers.voice import router as voice_router
+from artificial_u.api.routers.voices import router as voice_router
 from artificial_u.api.utils.logging import setup_logging
 from artificial_u.api.worker import Worker
 from artificial_u.config.settings import Environment
@@ -84,16 +83,15 @@ def create_application() -> FastAPI:
     # Include routers with proper prefixes
     app.include_router(index_router, prefix="/api")
     app.include_router(health_router, prefix="/api/v1")
-    app.include_router(professors_router, prefix="/api/v1")
-    app.include_router(departments_router, prefix="/api/v1")
+    app.include_router(auth_router, prefix="/api/v1")
     app.include_router(courses_router, prefix="/api/v1")
-    app.include_router(lectures_router, prefix="/api/v1")
-    app.include_router(topics_router, prefix="/api/v1")
-    app.include_router(router_for_course_topics, prefix="/api/v1")
-
-    # Include the new voice router
-    app.include_router(voice_router, prefix="/api/v1")
+    app.include_router(departments_router, prefix="/api/v1")
     app.include_router(jobs_router, prefix="/api/v1")
+    app.include_router(lectures_router, prefix="/api/v1")
+    app.include_router(professors_router, prefix="/api/v1")
+    app.include_router(course_topics_router, prefix="/api/v1")
+    app.include_router(topics_router, prefix="/api/v1")
+    app.include_router(voice_router, prefix="/api/v1")
 
     return app
 

@@ -15,6 +15,7 @@ from artificial_u.api.models import (
     LectureListResponse,
     LectureUpdate,
 )
+from artificial_u.api.security.auth0 import require_auth
 from artificial_u.api.services import LectureApiService
 from artificial_u.models.repositories.factory import RepositoryFactory
 
@@ -157,6 +158,7 @@ async def get_lecture_audio(
     status_code=status.HTTP_201_CREATED,
     summary="Create lecture",
     description="Create a new lecture.",
+    dependencies=[Depends(require_auth)],
 )
 async def create_lecture(
     lecture_data: LectureCreate,
@@ -178,6 +180,7 @@ async def create_lecture(
     summary="Update lecture",
     description="Update an existing lecture.",
     responses={404: {"description": "Lecture not found"}},
+    dependencies=[Depends(require_auth)],
 )
 async def update_lecture(
     lecture_data: LectureUpdate,
@@ -209,6 +212,7 @@ async def update_lecture(
         404: {"description": "Lecture not found"},
         400: {"description": "Failed due to database issue (e.g., constraints)"},
     },
+    dependencies=[Depends(require_auth)],
 )
 async def delete_lecture(
     lecture_id: int = Path(..., description="The ID of the lecture to delete"),
@@ -273,6 +277,7 @@ async def download_lecture_content(
         404: {"description": "Lecture not found"},
         500: {"description": "Audio generation failed"},
     },
+    dependencies=[Depends(require_auth)],
 )
 async def generate_lecture_audio(
     lecture_id: int = Path(..., description="The ID of the lecture to generate audio for"),
@@ -295,6 +300,7 @@ async def generate_lecture_audio(
         "Enqueue an async job to generate audio for a lecture. Returns a job id to poll via "
         "GET /api/v1/jobs/{id}."
     ),
+    dependencies=[Depends(require_auth)],
 )
 async def enqueue_generate_lecture_audio(
     lecture_id: int = Path(..., description="The ID of the lecture to generate audio for"),
@@ -329,6 +335,7 @@ async def enqueue_generate_lecture_audio(
         404: {"description": "Lecture not found"},
         500: {"description": "Summary generation failed"},
     },
+    dependencies=[Depends(require_auth)],
 )
 async def generate_lecture_summary(
     lecture_id: int = Path(..., description="The ID of the lecture to generate a summary for"),
@@ -352,6 +359,7 @@ async def generate_lecture_summary(
     responses={
         500: {"description": "Lecture generation failed"},
     },
+    dependencies=[Depends(require_auth)],
 )
 async def generate_lecture(
     generation_data: LectureGenerate,
@@ -379,6 +387,7 @@ async def generate_lecture(
         "Enqueue an async job to generate lecture data using AI. Returns a job id to poll via "
         "GET /api/v1/jobs/{id}."
     ),
+    dependencies=[Depends(require_auth)],
 )
 async def enqueue_generate_lecture(
     generation_data: LectureGenerate,

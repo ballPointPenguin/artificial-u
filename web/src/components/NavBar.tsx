@@ -1,9 +1,11 @@
 import { A } from '@solidjs/router'
 import { createSignal, Show } from 'solid-js'
+import { useAuth } from '../auth/AuthProvider'
 
 export function NavBar() {
   const [isScrolled, setIsScrolled] = createSignal(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = createSignal(false)
+  const auth = useAuth()
 
   if (typeof window !== 'undefined') {
     window.addEventListener('scroll', () => {
@@ -64,6 +66,22 @@ export function NavBar() {
             >
               Courses
             </A>
+            <Show when={!auth.isAuthenticated()}>
+              <A
+                href="/login"
+                class="text-parchment-200 hover:text-parchment-100 tracking-wide font-serif uppercase text-shadow-golden text-sm"
+              >
+                Login
+              </A>
+            </Show>
+            <Show when={auth.isAuthenticated()}>
+              <button
+                class="text-parchment-200 hover:text-parchment-100 tracking-wide font-serif uppercase text-shadow-golden text-sm"
+                onClick={() => void auth.logout()}
+              >
+                Logout
+              </button>
+            </Show>
           </div>
 
           {/* Mobile menu button */}
@@ -142,6 +160,26 @@ export function NavBar() {
             >
               Courses
             </A>
+            <Show when={!auth.isAuthenticated()}>
+              <A
+                href="/login"
+                class="block text-parchment-200 hover:text-parchment-100 py-2 tracking-wide font-serif uppercase text-sm"
+                onClick={toggleMobileMenu}
+              >
+                Login
+              </A>
+            </Show>
+            <Show when={auth.isAuthenticated()}>
+              <button
+                class="block text-parchment-200 hover:text-parchment-100 py-2 tracking-wide font-serif uppercase text-sm"
+                onClick={() => {
+                  toggleMobileMenu()
+                  void auth.logout()
+                }}
+              >
+                Logout
+              </button>
+            </Show>
           </div>
         </div>
       </Show>

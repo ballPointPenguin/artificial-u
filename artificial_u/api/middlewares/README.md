@@ -13,13 +13,11 @@ The CORS (Cross-Origin Resource Sharing) middleware handles cross-origin request
 CORS settings are defined in `artificial_u/config/settings.py` under the `cors_origins` property. The default configuration includes:
 
 - Development origins:
-  - `http://localhost:8000` (API server)
-  - `http://localhost:3000` (Frontend development server)
   - `http://localhost:5173` (Vite development server)
-
+  - `https://aliencyborg.share.zrok.io` (Zrok development server)
 - Production origins:
-  - `https://artificial-u.example.com`
-  - `https://*.artificial-u.example.com`
+  - `https://artificial-u.com`
+  - `https://*.artificial-u.com`
 
 #### Environment-specific Settings
 

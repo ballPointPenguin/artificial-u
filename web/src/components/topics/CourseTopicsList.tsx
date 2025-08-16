@@ -3,6 +3,7 @@ import { createEffect, createSignal, For, on, Show } from 'solid-js'
 import { subscribeJobEvents } from '../../api/services/jobs-service.js'
 import { topicService } from '../../api/services/topic-service.js'
 import type { APIError, Topic, TopicCreate, TopicUpdate } from '../../api/types.js'
+import { RequireAuth } from '../../auth/RequireAuth.js'
 import { Alert } from '../ui/Alert.jsx'
 import { Button } from '../ui/Button.jsx'
 import { MagicButton } from '../ui/MagicButton.jsx'
@@ -161,21 +162,23 @@ export function CourseTopicsList(props: CourseTopicsListProps) {
       <div class="flex justify-between items-center">
         <h2 class="text-2xl font-display text-parchment-100">Course Topics</h2>
         <div class="flex space-x-2">
-          <MagicButton
-            type="button"
-            onClick={() => {
-              void handleGenerateTopics()
-            }}
-            variant="secondary"
-            disabled={isGenerating() || isLoading()}
-            isLoading={isGenerating()}
-            loadingText="Generating..."
-          >
-            Generate Topics
-          </MagicButton>
-          <Button onClick={handleAddTopic} variant="primary" disabled={isLoading()}>
-            Add New Topic
-          </Button>
+          <RequireAuth>
+            <MagicButton
+              type="button"
+              onClick={() => {
+                void handleGenerateTopics()
+              }}
+              variant="secondary"
+              disabled={isGenerating() || isLoading()}
+              isLoading={isGenerating()}
+              loadingText="Generating..."
+            >
+              Generate Topics
+            </MagicButton>
+            <Button onClick={handleAddTopic} variant="primary" disabled={isLoading()}>
+              Add New Topic
+            </Button>
+          </RequireAuth>
         </div>
       </div>
 
@@ -191,14 +194,16 @@ export function CourseTopicsList(props: CourseTopicsListProps) {
       </Show>
 
       <Show when={showForm()}>
-        <TopicForm
-          courseId={props.courseId}
-          existingTopic={editingTopic()}
-          onSubmit={handleSubmitForm}
-          onCancel={handleCancelForm}
-          isLoading={isSubmitting()}
-          error={formError()}
-        />
+        <RequireAuth>
+          <TopicForm
+            courseId={props.courseId}
+            existingTopic={editingTopic()}
+            onSubmit={handleSubmitForm}
+            onCancel={handleCancelForm}
+            isLoading={isSubmitting()}
+            error={formError()}
+          />
+        </RequireAuth>
       </Show>
 
       <Show when={isLoading() && topics().length === 0 && !showForm()}>
@@ -240,25 +245,27 @@ export function CourseTopicsList(props: CourseTopicsListProps) {
                   </div>
                 </div>
                 <div class="flex justify-end space-x-2 pt-3 border-t border-parchment-800/30">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => {
-                      handleEditTopic(topic)
-                    }}
-                  >
-                    Edit
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    class="text-danger-foreground border-danger-border hover:bg-danger-bg/20 hover:text-danger-foreground"
-                    onClick={() => {
-                      void handleDeleteTopic(topic.id)
-                    }}
-                  >
-                    Delete
-                  </Button>
+                  <RequireAuth>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        handleEditTopic(topic)
+                      }}
+                    >
+                      Edit
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      class="text-danger-foreground border-danger-border hover:bg-danger-bg/20 hover:text-danger-foreground"
+                      onClick={() => {
+                        void handleDeleteTopic(topic.id)
+                      }}
+                    >
+                      Delete
+                    </Button>
+                  </RequireAuth>
                 </div>
               </div>
             )}

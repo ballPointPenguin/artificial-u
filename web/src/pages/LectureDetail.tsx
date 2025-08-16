@@ -13,6 +13,7 @@ import { subscribeJobEvents } from '../api/services/jobs-service.js'
 import { lectureService } from '../api/services/lecture-service.js'
 import { topicService } from '../api/services/topic-service.js'
 import type { Lecture, LectureUpdate } from '../api/types.js'
+import { RequireAuth } from '../auth/RequireAuth'
 import { LectureForm } from '../components/lectures/LectureForm.jsx'
 import { Alert, Button, ConfirmationModal, MagicButton } from '../components/ui'
 
@@ -60,26 +61,28 @@ const LectureDetailView: Component<{
               </Button>
             </a>
           </Show>
-          <MagicButton
-            variant="primary"
-            size="sm"
-            onClick={() => {
-              void props.onGenerateAudio()
-            }}
-            disabled={props.isGeneratingAudio}
-          >
-            {props.isGeneratingAudio
-              ? 'Generating Audio...'
-              : props.lecture.audio_url
-                ? 'Regenerate Audio'
-                : 'Generate Audio'}
-          </MagicButton>
-          <Button variant="outline" onClick={props.onEdit}>
-            Edit
-          </Button>
-          <Button variant="danger" onClick={props.onDelete} disabled={props.isDeleting}>
-            {props.isDeleting ? 'Deleting...' : 'Delete'}
-          </Button>
+          <RequireAuth>
+            <MagicButton
+              variant="primary"
+              size="sm"
+              onClick={() => {
+                void props.onGenerateAudio()
+              }}
+              disabled={props.isGeneratingAudio}
+            >
+              {props.isGeneratingAudio
+                ? 'Generating Audio...'
+                : props.lecture.audio_url
+                  ? 'Regenerate Audio'
+                  : 'Generate Audio'}
+            </MagicButton>
+            <Button variant="outline" onClick={props.onEdit}>
+              Edit
+            </Button>
+            <Button variant="danger" onClick={props.onDelete} disabled={props.isDeleting}>
+              {props.isDeleting ? 'Deleting...' : 'Delete'}
+            </Button>
+          </RequireAuth>
         </div>
       </div>
 
@@ -367,14 +370,16 @@ const LectureDetail = () => {
                   <Show
                     when={!isEditing()}
                     fallback={
-                      <LectureForm
-                        courseId={courseId()}
-                        existingLecture={lectureData}
-                        onSubmit={handleSubmitUpdate}
-                        onCancel={handleCancelEdit}
-                        isLoading={isSubmitting()}
-                        error={error() ? { detail: error() } : null}
-                      />
+                      <RequireAuth>
+                        <LectureForm
+                          courseId={courseId()}
+                          existingLecture={lectureData}
+                          onSubmit={handleSubmitUpdate}
+                          onCancel={handleCancelEdit}
+                          isLoading={isSubmitting()}
+                          error={error() ? { detail: error() } : null}
+                        />
+                      </RequireAuth>
                     }
                   >
                     {/* Lecture Detail View */}

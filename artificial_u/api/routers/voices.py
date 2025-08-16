@@ -12,6 +12,7 @@ from artificial_u.api.models.voice import (
     VoiceListResponse,
     VoiceResponse,
 )
+from artificial_u.api.security.auth0 import require_auth
 from artificial_u.services.voice_service import VoiceService
 
 router = APIRouter(
@@ -21,7 +22,7 @@ router = APIRouter(
 )
 
 
-@router.post("/{professor_id}/assign_voice", status_code=204)
+@router.post("/{professor_id}/assign_voice", status_code=204, dependencies=[Depends(require_auth)])
 async def manual_assign_voice(
     professor_id: str = Path(..., description="ID of the professor to assign voice to"),
     assignment_request: ManualVoiceAssignmentRequest = Body(...),
