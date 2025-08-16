@@ -23,9 +23,9 @@ services:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
     command: server --console-address ":9001" /data
-    ports:
-      - "9000:9000"
-      - "9001:9001"
+    expose:
+      - "9000"
+      - "9001"
     volumes:
       - minio_data:/data
     healthcheck:
@@ -49,26 +49,13 @@ services:
       dockerfile: Dockerfile.api
     container_name: artificial_u_api
     depends_on:
-      - db
-      - minio
+      db:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    env_file:
+      - .env.api
     environment:
-      # Database
-      DATABASE_URL: ${DATABASE_URL:-postgresql://postgres:postgres@db:5432/artificial_u}
-      # Auth0
-      AUTH0_DOMAIN: ${AUTH0_DOMAIN}
-      AUTH0_AUDIENCE: ${AUTH0_AUDIENCE}
-      AUTH0_ALG: RS256
-      # Storage (MinIO)
-      STORAGE_TYPE: minio
-      STORAGE_ENDPOINT_URL: http://minio:9000
-      STORAGE_PUBLIC_URL: ${STORAGE_PUBLIC_URL:-http://minio:9000}
-      STORAGE_ACCESS_KEY: ${MINIO_ROOT_USER:-minioadmin}
-      STORAGE_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-minioadmin}
-      STORAGE_REGION: us-east-1
-      STORAGE_AUDIO_BUCKET: artificial-u-audio
-      STORAGE_LECTURES_BUCKET: artificial-u-lectures
-      STORAGE_IMAGES_BUCKET: artificial-u-images
-      # App env
       ENV: production
     expose:
       - "8000"
@@ -88,7 +75,8 @@ services:
         VITE_AUTH0_DOMAIN: ${VITE_AUTH0_DOMAIN}
     container_name: artificial_u_web
     depends_on:
-      - api
+      api:
+        condition: service_healthy
     environment:
       # Integration with nginx-proxy + letsencrypt-companion on the host
       VIRTUAL_HOST: ${PUBLIC_HOST}

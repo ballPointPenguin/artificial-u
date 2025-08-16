@@ -19,6 +19,9 @@
 - [x] Enqueue topic generation
 - [x] Auth0 integration
 - [ ] Enable one-click course generation (w/ professor, topics, department)
+- [ ] Re-Write Home and About pages
+- [ ] General UI Cleanup
+- [ ] FAQ on About page
 - [ ] User roles
 - [ ] Invite codes
 - [ ] Privelges for admin scope
