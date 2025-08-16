@@ -67,6 +67,8 @@ google-genai==1.30.0
     # via artificial-u (pyproject.toml)
 googleapis-common-protos==1.70.0
     # via google-api-core
+gunicorn==23.0.0
+    # via artificial-u (pyproject.toml)
 h11==0.16.0
     # via
     #   httpcore
@@ -108,6 +110,8 @@ ollama==0.5.3
     # via artificial-u (pyproject.toml)
 openai==1.99.9
     # via artificial-u (pyproject.toml)
+packaging==25.0
+    # via gunicorn
 proto-plus==1.26.1
     # via google-api-core
 protobuf==6.31.1

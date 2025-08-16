@@ -83,6 +83,8 @@ google-genai==1.30.0
     # via artificial-u (pyproject.toml)
 googleapis-common-protos==1.70.0
     # via google-api-core
+gunicorn==23.0.0
+    # via artificial-u (pyproject.toml)
 h11==0.16.0
     # via
     #   httpcore
@@ -144,6 +146,7 @@ packaging==25.0
     # via
     #   black
     #   build
+    #   gunicorn
     #   pytest
 pathspec==0.12.1
     # via

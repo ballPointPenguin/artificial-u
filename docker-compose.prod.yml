@@ -1,0 +1,103 @@
+# Run with `docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build`
+
+services:
+  db:
+    image: postgres:17
+    container_name: artificial_u_postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: artificial_u
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  minio:
+    image: minio/minio:latest
+    container_name: artificial_u_minio
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
+    command: server --console-address ":9001" /data
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+
+  mc:
+    image: minio/mc:latest
+    container_name: artificial_u_mc
+    depends_on:
+      - minio
+    volumes:
+      - ./scripts/mc_setup.sh:/usr/bin/mc_setup.sh
+    entrypoint: ["sh", "/usr/bin/mc_setup.sh"]
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    container_name: artificial_u_api
+    depends_on:
+      - db
+      - minio
+    environment:
+      # Database
+      DATABASE_URL: ${DATABASE_URL:-postgresql://postgres:postgres@db:5432/artificial_u}
+      # Auth0
+      AUTH0_DOMAIN: ${AUTH0_DOMAIN}
+      AUTH0_AUDIENCE: ${AUTH0_AUDIENCE}
+      AUTH0_ALG: RS256
+      # Storage (MinIO)
+      STORAGE_TYPE: minio
+      STORAGE_ENDPOINT_URL: http://minio:9000
+      STORAGE_PUBLIC_URL: ${STORAGE_PUBLIC_URL:-http://minio:9000}
+      STORAGE_ACCESS_KEY: ${MINIO_ROOT_USER:-minioadmin}
+      STORAGE_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-minioadmin}
+      STORAGE_REGION: us-east-1
+      STORAGE_AUDIO_BUCKET: artificial-u-audio
+      STORAGE_LECTURES_BUCKET: artificial-u-lectures
+      STORAGE_IMAGES_BUCKET: artificial-u-images
+      # App env
+      ENV: production
+    expose:
+      - "8000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  web:
+    build:
+      context: ./web
+      dockerfile: Dockerfile
+      args:
+        VITE_AUTH0_AUDIENCE: ${VITE_AUTH0_AUDIENCE}
+        VITE_AUTH0_CLIENT_ID: ${VITE_AUTH0_CLIENT_ID}
+        VITE_AUTH0_DOMAIN: ${VITE_AUTH0_DOMAIN}
+    container_name: artificial_u_web
+    depends_on:
+      - api
+    environment:
+      # Integration with nginx-proxy + letsencrypt-companion on the host
+      VIRTUAL_HOST: ${PUBLIC_HOST}
+      VIRTUAL_PORT: "80"
+      LETSENCRYPT_HOST: ${PUBLIC_HOST}
+      LETSENCRYPT_EMAIL: ${LETSENCRYPT_EMAIL}
+    expose:
+      - "80"
+
+volumes:
+  postgres_data:
+  minio_data:
