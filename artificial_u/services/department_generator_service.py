@@ -52,12 +52,18 @@ class DepartmentGeneratorService:
         self.job_enqueue_service = job_enqueue_service
         self.logger = logger or logging.getLogger(__name__)
 
-    async def generate_department(self, partial_attributes: Optional[Dict] = None) -> dict:
+    async def generate_department(
+        self,
+        partial_attributes: Optional[Dict] = None,
+        freeform_prompt: Optional[str] = None,
+    ) -> dict:
         """
         Generate a department using AI based on provided partial attributes.
 
         Args:
             partial_attributes: Optional dictionary containing attributes to guide generation
+            freeform_prompt: Optional freeform guidance text (can also be provided inside
+                partial_attributes as key 'freeform_prompt')
 
         Returns:
             dict: The generated department attributes
@@ -93,8 +99,12 @@ class DepartmentGeneratorService:
                 department_model_to_dict(d) for d in existing_departments_models
             ]
 
-            # Extract freeform prompt if present
-            freeform_prompt = partial_attributes.pop("freeform_prompt", None)
+            # Extract freeform prompt if present either as explicit arg or within partials
+            if freeform_prompt is None:
+                freeform_prompt = partial_attributes.pop("freeform_prompt", None)
+            else:
+                # Ensure we don't pass it along inside partials if it was also present there
+                partial_attributes.pop("freeform_prompt", None)
 
             # Get the prompt using the helper function
             prompt = get_department_prompt(

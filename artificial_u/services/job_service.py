@@ -134,7 +134,11 @@ class JobService:
     async def _handle_generate_department(self, payload: Dict[str, Any]) -> Dict[str, Any]:
         service = self._department_generator_service_instance()
         partial = payload.get("partial_attributes") or {}
-        result = await service.generate_department(partial)
+        freeform = payload.get("freeform_prompt")
+        result = await service.generate_department(
+            partial_attributes=partial,
+            freeform_prompt=freeform,
+        )
         return {"generated_department": result}
 
     async def _handle_generate_professor(self, payload: Dict[str, Any]) -> Dict[str, Any]:
