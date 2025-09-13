@@ -1,0 +1,80 @@
+- name: Deploy ArtificialU
+  hosts: beast
+  become: true
+  vars:
+    app_dir: /home/hank/code/src/github.com/ballPointPenguin/artificial-u
+    git_repo: https://github.com/ballPointPenguin/artificial-u.git
+    git_version: main
+    # Public DNS for the SPA
+    PUBLIC_HOST: artificial-u.com
+    LETSENCRYPT_EMAIL: admin@aliencyb.org
+    # Backend secrets
+    AUTH0_DOMAIN: dev-ck0tfyuetc55642a.us.auth0.com
+    AUTH0_AUDIENCE: https://artificial-u.com
+    DATABASE_URL: postgresql://postgres:postgres@db:5432/artificial_u
+    MINIO_ROOT_USER: minioadmin
+    MINIO_ROOT_PASSWORD: minioadmin
+  tasks:
+    - name: Ensure packages present (Docker + Compose plugin)
+      ansible.builtin.package:
+        name:
+          - docker.io
+          - docker-compose-plugin
+        state: present
+
+    - name: Ensure Docker service running
+      ansible.builtin.service:
+        name: docker
+        state: started
+        enabled: true
+
+    - name: Create app directory
+      ansible.builtin.file:
+        path: "{{ app_dir }}"
+        state: directory
+        mode: "0755"
+
+    - name: Check out repository
+      ansible.builtin.git:
+        repo: "{{ git_repo }}"
+        dest: "{{ app_dir }}"
+        version: "{{ git_version }}"
+        force: true
+
+    - name: Write .env.prod for Compose
+      ansible.builtin.copy:
+        dest: "{{ app_dir }}/.env.prod"
+        mode: "0600"
+        content: |
+          PUBLIC_HOST={{ PUBLIC_HOST }}
+          LETSENCRYPT_EMAIL={{ LETSENCRYPT_EMAIL }}
+          AUTH0_DOMAIN={{ AUTH0_DOMAIN }}
+          AUTH0_AUDIENCE={{ AUTH0_AUDIENCE }}
+          DATABASE_URL={{ DATABASE_URL }}
+          MINIO_ROOT_USER={{ MINIO_ROOT_USER }}
+          MINIO_ROOT_PASSWORD={{ MINIO_ROOT_PASSWORD }}
+
+    - name: Build and start containers
+      community.docker.docker_compose_v2:
+        project_src: "{{ app_dir }}"
+        files:
+          - docker-compose.prod.yml
+        env_files:
+          - .env.prod
+        state: present
+        build: always
+        pull: always
+
+    - name: Run DB migrations (alembic) using the API image
+      ansible.builtin.command:
+        chdir: "{{ app_dir }}"
+        cmd: docker compose -f docker-compose.prod.yml run --rm api alembic upgrade head
+
+    - name: Restart API after migration
+      community.docker.docker_compose_v2:
+        project_src: "{{ app_dir }}"
+        files:
+          - docker-compose.prod.yml
+        state: restarted
+        services:
+          - api
