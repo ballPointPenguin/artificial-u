@@ -1,3 +1,5 @@
+# Authentication
+
 ## Auth0 Authentication Plan (FastAPI API + SolidJS SPA)
 
 **Approach:** OAuth 2.0 Authorization Code with PKCE. The SolidJS SPA obtains an Access Token from Auth0 (audience = API identifier) and sends it as `Authorization: Bearer <token>` to the FastAPI API. The API validates the JWT (issuer, audience, signature via JWKS) and enforces scopes/roles per route.

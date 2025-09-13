@@ -1,5 +1,5 @@
 import type { Auth0Client, User } from '@auth0/auth0-spa-js'
-import { createContext, createSignal, JSX, onMount, useContext } from 'solid-js'
+import { createContext, createSignal, type JSX, onCleanup, onMount, useContext } from 'solid-js'
 import { setTokenProvider } from '../api/client'
 import { createClient } from './auth0'
 
@@ -34,9 +34,25 @@ export function AuthProvider(props: { children: JSX.Element }) {
         await c.handleRedirectCallback()
         history.replaceState({}, document.title, location.pathname)
       }
-      const authed = await c.isAuthenticated()
-      setIsAuthenticated(authed)
-      if (authed) setUser((await c.getUser()) ?? null)
+      const refreshState = async () => {
+        const authedNow = await c.isAuthenticated()
+        setIsAuthenticated(authedNow)
+        setUser(authedNow ? (await c.getUser()) ?? null : null)
+      }
+      await refreshState()
+
+      // Cross-tab sync: listen for Auth0 localStorage updates
+      const onStorage = (e: StorageEvent) => {
+        // Auth0 SDK keys usually contain "auth0." or start with "@@auth0"
+        if (!e.key) return
+        if (e.key.includes('auth0')) {
+          void refreshState()
+        }
+      }
+      window.addEventListener('storage', onStorage)
+      onCleanup(() => {
+        window.removeEventListener('storage', onStorage)
+      })
     })()
   })
 

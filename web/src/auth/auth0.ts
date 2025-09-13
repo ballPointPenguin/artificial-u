@@ -10,6 +10,7 @@ export function createClient(): Promise<Auth0Client> {
       scope: 'openid profile email',
     },
     useRefreshTokens: true,
-    cacheLocation: 'memory',
+    // Persist tokens across refreshes and tabs (accepting localStorage XSS trade-offs)
+    cacheLocation: 'localstorage',
   })
 }
