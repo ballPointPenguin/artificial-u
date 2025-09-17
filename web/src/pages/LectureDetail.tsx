@@ -9,13 +9,14 @@ import {
   Show,
 } from 'solid-js'
 import { courseService } from '../api/services/course-service.js'
-import { subscribeJobEvents } from '../api/services/jobs-service.js'
+import { type JobRow, listJobs } from '../api/services/jobs-service.js'
 import { lectureService } from '../api/services/lecture-service.js'
 import { topicService } from '../api/services/topic-service.js'
 import type { Lecture, LectureUpdate } from '../api/types.js'
 import { RequireAuth } from '../auth/RequireAuth'
 import { LectureForm } from '../components/lectures/LectureForm.jsx'
 import { Alert, Button, ConfirmationModal, MagicButton } from '../components/ui'
+import { getJobEventHub } from '../utils/job-events-hub.js'
 
 // Lecture Detail View Component
 const LectureDetailView: Component<{
@@ -224,9 +225,27 @@ const LectureDetail = () => {
 
   // Subscribe to job events for this lecture to disable actions while active
   onMount(() => {
+    // Initial snapshot of any in-flight jobs for this lecture
+    void (async () => {
+      try {
+        const inflight: JobRow[] = await listJobs({
+          status: 'running',
+          lecture_id: lectureId(),
+        })
+        const queued: JobRow[] = await listJobs({
+          status: 'queued',
+          lecture_id: lectureId(),
+        })
+        setAnyJobActive([...inflight, ...queued].length > 0)
+      } catch {
+        // ignore
+      }
+    })()
+
     const id = lectureId()
     if (!Number.isNaN(id)) {
-      const stop = subscribeJobEvents({ lecture_id: id }, (ev) => {
+      const hub = getJobEventHub()
+      const unsubscribe = hub.subscribe({ lectureId: id }, (ev) => {
         const st = ev.status
         if (st === 'queued' || st === 'running') {
           setAnyJobActive(true)
@@ -236,7 +255,7 @@ const LectureDetail = () => {
         }
       })
       onCleanup(() => {
-        stop()
+        unsubscribe()
       })
     }
   })
@@ -284,8 +303,12 @@ const LectureDetail = () => {
                     {/* Prev/Next Topic navigation */}
                     <Show when={topicsList() && topic()}>
                       {(() => {
-                        const items = topicsList()!.items.slice().sort(compareTopics)
-                        const currentIndex = items.findIndex((t) => t.id === topic()!.id)
+                        const list = topicsList()
+                        const curTopic = topic()
+                        const items = list ? list.items.slice().sort(compareTopics) : []
+                        const currentIndex = curTopic
+                          ? items.findIndex((t) => t.id === curTopic.id)
+                          : -1
                         const prev = currentIndex > 0 ? items[currentIndex - 1] : null
                         const next =
                           currentIndex >= 0 && currentIndex < items.length - 1

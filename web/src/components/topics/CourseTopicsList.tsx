@@ -1,9 +1,9 @@
 import { A } from '@solidjs/router'
 import { createEffect, createSignal, For, on, Show } from 'solid-js'
-import { subscribeJobEvents } from '../../api/services/jobs-service.js'
 import { topicService } from '../../api/services/topic-service.js'
 import type { APIError, Topic, TopicCreate, TopicUpdate } from '../../api/types.js'
 import { RequireAuth } from '../../auth/RequireAuth.js'
+import { getJobEventHub } from '../../utils/job-events-hub.js'
 import { Alert } from '../ui/Alert.jsx'
 import { Button } from '../ui/Button.jsx'
 import { MagicButton } from '../ui/MagicButton.jsx'
@@ -130,7 +130,8 @@ export function CourseTopicsList(props: CourseTopicsListProps) {
         `Topic generation enqueued as Job #${String(job.id)}. You can continue browsing; this will update when complete.`
       )
 
-      const unsubscribe = subscribeJobEvents({ kinds: ['generate_topics_for_course'] }, (ev) => {
+      const hub = getJobEventHub()
+      const unsubscribe = hub.subscribe({ kinds: ['generate_topics_for_course'] }, (ev) => {
         // Only react to this job id
         if (ev.id !== job.id) return
         if (ev.status === 'done') {

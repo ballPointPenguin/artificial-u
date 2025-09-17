@@ -9,6 +9,7 @@ import { LectureSection } from '../components/lectures/LectureSection.jsx'
 import { TopicContentRenderer } from '../components/topics/TopicContentRenderer.jsx'
 import { TopicForm } from '../components/topics/TopicForm.jsx'
 import { Alert, Button } from '../components/ui'
+import { createJobTracker, getJobMessage } from '../utils/job-management.js'
 
 const TopicDetail = () => {
   const params = useParams()
@@ -17,7 +18,6 @@ const TopicDetail = () => {
   const [isSubmitting, setIsSubmitting] = createSignal(false)
   const [error, setError] = createSignal('')
   const [lectureError, setLectureError] = createSignal('')
-  const [lectureInfo, setLectureInfo] = createSignal('')
   const [isGeneratingLecture, setIsGeneratingLecture] = createSignal(false)
   const [generationTimeout, setGenerationTimeout] = createSignal(false)
 
@@ -70,6 +70,54 @@ const TopicDetail = () => {
     }
   )
 
+  // Track jobs for this topic - pass reactive accessor
+  const jobTracker = createJobTracker({
+    topicId: () => (isValidIds() ? topicId() : undefined),
+    kinds: ['generate_lecture', 'generate_lecture_audio', 'generate_lecture_summary'],
+    onJobComplete: (event) => {
+      if (import.meta.env.DEV) {
+        console.log('[TopicDetail] Job completed:', event.kind, event.id)
+      }
+
+      if (event.kind === 'generate_lecture') {
+        setGenerationTimeout(false)
+        setIsGeneratingLecture(false)
+
+        // Refresh lecture data when generation completes
+        // Use setTimeout to ensure state updates happen after SSE processing
+        setTimeout(() => {
+          void refetchLecture()
+        }, 100)
+      } else if (
+        event.kind === 'generate_lecture_audio' ||
+        event.kind === 'generate_lecture_summary'
+      ) {
+        // Also refresh for audio/summary completion
+        setTimeout(() => {
+          void refetchLecture()
+        }, 100)
+      }
+    },
+    onJobFail: (event) => {
+      if (import.meta.env.DEV) {
+        console.log('[TopicDetail] Job failed:', event.kind, event.id)
+      }
+
+      if (event.kind === 'generate_lecture') {
+        setIsGeneratingLecture(false)
+        setLectureError(getJobMessage(event.kind, 'failed'))
+      }
+    },
+    onJobStart: (event) => {
+      if (import.meta.env.DEV) {
+        console.log('[TopicDetail] Job started:', event.kind, event.id, event.status)
+      }
+
+      // Job start events logged but no UI message needed
+      // The Jobs bar handles status display
+    },
+  })
+
   const handleSubmitUpdate = async (formData: TopicUpdate) => {
     if (!isValidIds()) return
 
@@ -106,22 +154,30 @@ const TopicDetail = () => {
 
     setIsGeneratingLecture(true)
     setLectureError('')
-    setLectureInfo('')
     setGenerationTimeout(false)
 
     try {
+      // Prevent duplicate enqueue if a job is already active for this topic
+      if (jobTracker.hasActiveJobs()) {
+        setIsGeneratingLecture(false)
+        return
+      }
+
       const job = await lectureService.enqueueGenerateLecture({
         partial_attributes: {
           course_id: courseId(),
           topic_id: topicId(),
         },
       })
-      setLectureInfo(
-        `Lecture generation enqueued as Job #${String(job.id)}. Check the Jobs bar for progress.`
-      )
+
+      if (import.meta.env.DEV) {
+        console.log('[TopicDetail] Enqueued lecture generation job:', job.id)
+      }
+
+      // Note: Don't set isGeneratingLecture to false here - wait for job completion
+      // The jobTracker will handle clearing it when the job completes
     } catch (error) {
       setLectureError(error instanceof Error ? error.message : 'Failed to generate lecture')
-    } finally {
       setIsGeneratingLecture(false)
     }
   }
@@ -168,8 +224,12 @@ const TopicDetail = () => {
                   {/* Prev/Next Topic navigation */}
                   <Show when={topicsList() && topic()}>
                     {(() => {
-                      const items = topicsList()!.items.slice().sort(compareTopics)
-                      const currentIndex = items.findIndex((t) => t.id === topic()!.id)
+                      const list = topicsList()
+                      const curTopic = topic()
+                      const items = list ? list.items.slice().sort(compareTopics) : []
+                      const currentIndex = curTopic
+                        ? items.findIndex((t) => t.id === curTopic.id)
+                        : -1
                       const prev = currentIndex > 0 ? items[currentIndex - 1] : null
                       const next =
                         currentIndex >= 0 && currentIndex < items.length - 1
@@ -179,26 +239,32 @@ const TopicDetail = () => {
                         <div class="mb-4 flex items-center justify-between gap-3">
                           <div>
                             <Show when={prev}>
-                              {(p) => (
-                                <A
-                                  href={`/courses/${String(courseId())}/topics/${String(p().id)}`}
-                                  class="text-mystic-500 hover:text-mystic-300"
-                                >
-                                  ← Previous Topic
-                                </A>
-                              )}
+                              {(p) => {
+                                const prevId = p().id
+                                return (
+                                  <A
+                                    href={`/courses/${String(courseId())}/topics/${String(prevId)}`}
+                                    class="text-mystic-500 hover:text-mystic-300"
+                                  >
+                                    ← Previous Topic
+                                  </A>
+                                )
+                              }}
                             </Show>
                           </div>
                           <div>
                             <Show when={next}>
-                              {(n) => (
-                                <A
-                                  href={`/courses/${String(courseId())}/topics/${String(n().id)}`}
-                                  class="text-mystic-500 hover:text-mystic-300"
-                                >
-                                  Next Topic →
-                                </A>
-                              )}
+                              {(n) => {
+                                const nextId = n().id
+                                return (
+                                  <A
+                                    href={`/courses/${String(courseId())}/topics/${String(nextId)}`}
+                                    class="text-mystic-500 hover:text-mystic-300"
+                                  >
+                                    Next Topic →
+                                  </A>
+                                )
+                              }}
                             </Show>
                           </div>
                         </div>
@@ -206,15 +272,10 @@ const TopicDetail = () => {
                     })()}
                   </Show>
 
-                  {/* Error/Info Display */}
+                  {/* Error Display */}
                   <Show when={error()}>
                     <Alert variant="danger" class="mb-4">
                       {error()}
-                    </Alert>
-                  </Show>
-                  <Show when={lectureInfo()}>
-                    <Alert variant="info" class="mb-4">
-                      {lectureInfo()}
                     </Alert>
                   </Show>
 
@@ -282,9 +343,12 @@ const TopicDetail = () => {
                           lectureError={lectureError()}
                           isGeneratingLecture={isGeneratingLecture()}
                           generationTimeout={generationTimeout()}
-                          onGenerateLecture={() => void handleGenerateLecture()}
+                          onGenerateLecture={() => {
+                            void handleGenerateLecture()
+                          }}
                           onLectureDeleted={handleLectureDeleted}
                           onLectureUpdated={handleLectureUpdated}
+                          externalJobActive={jobTracker.hasActiveJobs}
                         />
                       </div>
                     </div>

@@ -1,10 +1,10 @@
 import { A } from '@solidjs/router'
-import { type Component, createSignal, onCleanup, onMount, Show } from 'solid-js'
-import { subscribeJobEvents } from '../../api/services/jobs-service.js'
+import { type Component, createSignal, Show } from 'solid-js'
 import { lectureService } from '../../api/services/lecture-service.js'
 import type { Lecture } from '../../api/types.js'
 import { RequireAuth } from '../../auth/RequireAuth'
-import { Alert, Button, ConfirmationModal, LoadingSpinner, MagicButton } from '../ui'
+import { createJobTracker, getJobMessage } from '../../utils/job-management.js'
+import { Alert, Button, ConfirmationModal, MagicButton } from '../ui'
 
 interface LectureSectionProps {
   lecture: () => Lecture | null | undefined
@@ -16,6 +16,7 @@ interface LectureSectionProps {
   onGenerateLecture: () => void
   onLectureDeleted?: () => void
   onLectureUpdated?: () => void
+  externalJobActive?: () => boolean
 }
 
 export const LectureSection: Component<LectureSectionProps> = (props) => {
@@ -24,29 +25,53 @@ export const LectureSection: Component<LectureSectionProps> = (props) => {
   const [deleteError, setDeleteError] = createSignal('')
   const [isGeneratingAudio, setIsGeneratingAudio] = createSignal(false)
   const [audioError, setAudioError] = createSignal('')
-  const [audioInfo, setAudioInfo] = createSignal('')
   const [audioTimeout, setAudioTimeout] = createSignal(false)
-  const [anyJobActive, setAnyJobActive] = createSignal(false)
 
-  // SSE: subscribe to any job events for this lecture/topic
-  onMount(() => {
-    const lec = props.lecture()
-    const stop = subscribeJobEvents(
-      lec ? { lecture_id: lec.id } : { topic_id: props.topicId },
-      (ev) => {
-        const st = ev.status
-        if (st === 'queued' || st === 'running') {
-          setAnyJobActive(true)
-        }
-        if (st === 'done' || st === 'failed' || st === 'cancelled') {
-          setAnyJobActive(false)
-        }
+  // Track jobs for this topic AND lecture (lecture ID will be undefined initially,
+  // then change when created)
+  const jobTracker = createJobTracker({
+    topicId: () => props.topicId,
+    lectureId: () => props.lecture()?.id, // This will reactively update when lecture is created
+    kinds: ['generate_lecture', 'generate_lecture_audio', 'generate_lecture_summary'],
+    onJobComplete: (event) => {
+      if (import.meta.env.DEV) {
+        console.log('[LectureSection] Job completed:', event.kind, event.id)
       }
-    )
-    onCleanup(() => {
-      stop()
-    })
+
+      // Clear error messages when jobs complete
+      if (event.kind === 'generate_lecture_audio') {
+        setAudioError('')
+      }
+
+      // Always refresh lecture data when any lecture-related job completes
+      // Use setTimeout to ensure state updates happen after SSE processing
+      setTimeout(() => {
+        props.onLectureUpdated?.()
+      }, 100)
+    },
+    onJobFail: (event) => {
+      if (import.meta.env.DEV) {
+        console.log('[LectureSection] Job failed:', event.kind, event.id)
+      }
+
+      if (event.kind === 'generate_lecture_audio') {
+        setAudioError(getJobMessage(event.kind, 'failed'))
+      }
+    },
+    onJobStart: (event) => {
+      if (import.meta.env.DEV) {
+        console.log('[LectureSection] Job started:', event.kind, event.id, event.status)
+      }
+    },
   })
+
+  // Combined job active check including external jobs - needs to be reactive
+  const anyJobActive = () => {
+    const trackerActive = jobTracker.hasActiveJobs()
+    const externalActive = props.externalJobActive?.() ?? false
+    const generatingLecture = props.isGeneratingLecture
+    return trackerActive || externalActive || generatingLecture
+  }
 
   const handleDeleteLecture = async () => {
     const lecture = props.lecture()
@@ -73,14 +98,10 @@ export const LectureSection: Component<LectureSectionProps> = (props) => {
 
     setIsGeneratingAudio(true)
     setAudioError('')
-    setAudioInfo('')
     setAudioTimeout(false)
 
     try {
-      const job = await lectureService.enqueueGenerateLectureAudio(lecture.id)
-      setAudioInfo(
-        `Audio generation enqueued as Job #${String(job.id)}. Check the Jobs bar for progress.`
-      )
+      await lectureService.enqueueGenerateLectureAudio(lecture.id)
     } catch (error) {
       setAudioError(error instanceof Error ? error.message : 'Failed to generate audio')
     } finally {
@@ -159,12 +180,6 @@ export const LectureSection: Component<LectureSectionProps> = (props) => {
         </Alert>
       </Show>
 
-      <Show when={audioInfo()}>
-        <Alert variant="info" class="mb-4">
-          {audioInfo()}
-        </Alert>
-      </Show>
-
       {/* Audio generation error/timeout messages */}
       <Show when={audioError()}>
         <Alert variant="danger" class="mb-4">
@@ -201,32 +216,30 @@ export const LectureSection: Component<LectureSectionProps> = (props) => {
           </p>
           <div class="flex justify-center space-x-4">
             <RequireAuth>
-              <A
-                href={`/courses/${String(props.courseId)}/topics/${String(props.topicId)}/lectures/new`}
-                class="inline-block"
+              <Show
+                when={!anyJobActive()}
+                fallback={
+                  <Button variant="outline" disabled={true}>
+                    New Lecture
+                  </Button>
+                }
               >
-                <Button variant="outline">New Lecture</Button>
-              </A>
+                <A
+                  href={`/courses/${String(props.courseId)}/topics/${String(props.topicId)}/lectures/new`}
+                  class="inline-block"
+                >
+                  <Button variant="outline">New Lecture</Button>
+                </A>
+              </Show>
               <MagicButton
                 variant="primary"
                 onClick={props.onGenerateLecture}
-                disabled={props.isGeneratingLecture || anyJobActive()}
+                disabled={anyJobActive()}
               >
                 {props.isGeneratingLecture ? 'Generating...' : 'Generate Lecture'}
               </MagicButton>
             </RequireAuth>
           </div>
-        </div>
-      </Show>
-
-      {/* Loading indicator for generation */}
-      <Show when={props.isGeneratingLecture}>
-        <div class="mt-6 p-4 bg-mystic-900/30 border border-mystic-700 rounded-lg">
-          <div class="flex items-center justify-center space-x-3">
-            <LoadingSpinner />
-            <span class="text-sm text-parchment-300">Generating lecture...</span>
-          </div>
-          <p class="text-xs text-parchment-400 mt-3 text-center">This may take several minutes.</p>
         </div>
       </Show>
 

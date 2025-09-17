@@ -30,15 +30,20 @@ export function MagicButton(props: MagicButtonProps) {
     'isLoading',
     'loadingText',
     'iconOnly',
+    'disabled',
   ])
 
   return (
-    <Button {...others} class={`relative overflow-hidden magic-button group ${local.class || ''}`}>
+    <Button
+      {...others}
+      disabled={local.disabled}
+      class={`relative overflow-hidden magic-button group ${local.class || ''}`}
+    >
       <span class="relative z-10 flex items-center gap-2">
         <span class="inline-block align-middle magic-icon magic-button-icon">
           <svg
             xmlns="http://www.w3.org/2000/svg"
-            class="w-5 h-5 transition-transform duration-500 group-hover:rotate-12"
+            class={`w-5 h-5 transition-transform duration-500 ${local.disabled ? '' : 'group-hover:rotate-12'}`}
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -70,17 +75,14 @@ export function MagicButton(props: MagicButtonProps) {
         </Show>
       </span>
 
-      <span class="absolute -inset-px rounded overflow-hidden">
-        <span class="absolute inset-0 opacity-50 group-hover:opacity-100 transition-opacity duration-500 magic-sparkle-overlay" />
-
-        {/* Temporarily make pulse-1 always visible and not pulsing for diagnosis */}
-        <span class="absolute h-10 w-10 -top-5 -left-5 rounded-full blur-xl transform scale-100 transition-transform duration-700 magic-sparkle-pulse-1" />
-
-        <span class="absolute h-8 w-8 -bottom-4 -right-4 rounded-full blur-lg transform scale-0 group-hover:scale-100 group-hover:animate-pulse transition-transform duration-700 delay-100 magic-sparkle-pulse-2" />
-
-        {/* Temporarily make shimmer always visible and animating for diagnosis */}
-        <span class="absolute inset-0 opacity-100 animate-shimmer magic-sparkle-shimmer-overlay" />
-      </span>
+      <Show when={!local.disabled}>
+        <span class="absolute -inset-px rounded overflow-hidden">
+          <span class="absolute inset-0 opacity-50 group-hover:opacity-100 transition-opacity duration-500 magic-sparkle-overlay" />
+          <span class="absolute h-10 w-10 -top-5 -left-5 rounded-full blur-xl transform scale-0 group-hover:scale-100 transition-transform duration-700 magic-sparkle-pulse-1" />
+          <span class="absolute h-8 w-8 -bottom-4 -right-4 rounded-full blur-lg transform scale-0 group-hover:scale-100 group-hover:animate-pulse transition-transform duration-700 delay-100 magic-sparkle-pulse-2" />
+          <span class="absolute inset-0 opacity-0 group-hover:opacity-100 animate-shimmer magic-sparkle-shimmer-overlay" />
+        </span>
+      </Show>
     </Button>
   )
 }

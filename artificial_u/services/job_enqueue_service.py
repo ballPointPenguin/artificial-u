@@ -68,7 +68,9 @@ class JobEnqueueService:
             self.logger.error(error_msg, exc_info=True)
             raise DatabaseError(error_msg) from e
 
-    def enqueue_lecture_summary_generation(self, lecture_id: int) -> None:
+    def enqueue_lecture_summary_generation(
+        self, lecture_id: int, *, topic_id: int | None = None
+    ) -> None:
         """
         Enqueue a background job to generate a lecture summary.
 
@@ -84,10 +86,10 @@ class JobEnqueueService:
 
         try:
             job_repo = self.repository_factory.job
-            job = job_repo.create(
-                kind="generate_lecture_summary",
-                payload={"lecture_id": lecture_id},
-            )
+            payload = {"lecture_id": lecture_id}
+            if topic_id is not None:
+                payload["topic_id"] = topic_id
+            job = job_repo.create(kind="generate_lecture_summary", payload=payload)
             job_id = job.id
             self.logger.info(f"Enqueued lecture summary job {job_id} for lecture {lecture_id}")
         except Exception as e:
@@ -95,7 +97,9 @@ class JobEnqueueService:
             self.logger.error(error_msg, exc_info=True)
             raise DatabaseError(error_msg) from e
 
-    def enqueue_lecture_audio_generation(self, lecture_id: int) -> None:
+    def enqueue_lecture_audio_generation(
+        self, lecture_id: int, *, topic_id: int | None = None
+    ) -> None:
         """
         Enqueue a background job to generate lecture audio.
 
@@ -111,10 +115,10 @@ class JobEnqueueService:
 
         try:
             job_repo = self.repository_factory.job
-            job = job_repo.create(
-                kind="generate_lecture_audio",
-                payload={"lecture_id": lecture_id},
-            )
+            payload = {"lecture_id": lecture_id}
+            if topic_id is not None:
+                payload["topic_id"] = topic_id
+            job = job_repo.create(kind="generate_lecture_audio", payload=payload)
             job_id = job.id
             self.logger.info(f"Enqueued lecture audio job {job_id} for lecture {lecture_id}")
         except Exception as e:

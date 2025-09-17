@@ -192,19 +192,9 @@ class LectureService:
             LectureNotFoundError: If lecture not found
             DatabaseError: If there's an error updating the database
         """
-        # Get existing lecture
-        lecture = self.get_lecture(lecture_id)
-
-        # Update fields
-        for key, value in update_data.items():
-            if hasattr(lecture, key):
-                setattr(lecture, key, value)
-            else:
-                self.logger.warning(f"Ignoring unknown field: {key}")
-
         try:
-            # Save changes
-            updated_lecture = self.repository_factory.lecture.update(lecture)
+            # Perform partial update to avoid overwriting concurrent changes
+            updated_lecture = self.repository_factory.lecture.update_fields(lecture_id, update_data)
             self.logger.info(f"Updated lecture {lecture_id}")
             return updated_lecture
         except Exception as e:

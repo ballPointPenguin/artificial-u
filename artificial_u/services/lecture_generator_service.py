@@ -289,7 +289,9 @@ class LectureGeneratorService:
 
         # Enqueue summary generation job
         try:
-            self.job_enqueue_service.enqueue_lecture_summary_generation(saved_lecture.id)
+            self.job_enqueue_service.enqueue_lecture_summary_generation(
+                saved_lecture.id, topic_id=saved_lecture.topic_id
+            )
         except Exception as e:
             self.logger.error(
                 "Failed to enqueue summary generation for generated lecture %s: %s",
@@ -299,7 +301,9 @@ class LectureGeneratorService:
 
         # Enqueue audio generation job (can run in parallel to summary)
         try:
-            self.job_enqueue_service.enqueue_lecture_audio_generation(saved_lecture.id)
+            self.job_enqueue_service.enqueue_lecture_audio_generation(
+                saved_lecture.id, topic_id=saved_lecture.topic_id
+            )
         except Exception as e:
             self.logger.error(
                 "Failed to enqueue audio generation for generated lecture %s: %s",
@@ -353,12 +357,14 @@ class LectureGeneratorService:
             self.logger.error(error_msg)
             raise ContentGenerationError(error_msg)
 
-        # Update lecture with generated summary
-        lecture.summary = summary_text
-        updated = self.repository_factory.lecture.update(lecture)
+        # Partial update to avoid clobbering concurrent changes
+        updated = self.repository_factory.lecture.update_fields(
+            lecture_id=lecture_id,
+            update_data={"summary": summary_text},
+        )
         self.logger.info("Generated summary for lecture %s", lecture_id)
 
-        return {"lecture_id": updated.id, "summary": updated.summary}
+        return {"lecture_id": updated.id, "topic_id": updated.topic_id, "summary": updated.summary}
 
     async def generate_lecture_audio(self, lecture_id: int) -> Dict[str, Any]:
         """Generate and store audio for the given lecture, updating audio_url."""
@@ -376,16 +382,22 @@ class LectureGeneratorService:
         # 4. Upload to storage and get public URL
         audio_url = await self._upload_audio_and_get_url(course, topic, audio_bytes)
 
-        # 5. Update lecture with audio URL (force update if one existed)
-        lecture.audio_url = audio_url
-        updated = self.repository_factory.lecture.update(lecture)
+        # 5. Partial update lecture with audio URL (avoid clobbering summary)
+        updated = self.repository_factory.lecture.update_fields(
+            lecture_id=lecture_id,
+            update_data={"audio_url": audio_url},
+        )
         self.logger.info(
             "Generated audio for lecture %s and uploaded to storage: %s",
             lecture_id,
             audio_url,
         )
 
-        return {"lecture_id": updated.id, "audio_url": updated.audio_url}
+        return {
+            "lecture_id": updated.id,
+            "topic_id": updated.topic_id,
+            "audio_url": updated.audio_url,
+        }
 
     # --- Helper Methods for Generation --- #
 

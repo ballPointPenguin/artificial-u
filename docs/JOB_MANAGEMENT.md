@@ -634,6 +634,44 @@ versions that return a job id immediately.
 * **Security**: gate admin endpoints; don’t expose raw errors in prod.
 * **SSE/WebSockets**: later, add a channel to push state changes; start with polling for simplicity.
 
+### Debug notes and SSE implementation (2025-09)
+
+#### SSE Connection Stability Issues and Resolution
+
+**Problem**: SSE connections were closing every 1-4 seconds, causing constant reconnections and "stream" requests.
+
+**Root Cause Discovery**:
+
+1. Initial attempts to call `events.aclose()` on the async iterator failed (no such method)
+2. The real issue: Using `asyncio.wait_for()` directly on `events.__anext__()` was **cancelling the async generator** when timeouts occurred
+3. When an async generator is cancelled, it permanently breaks and raises `StopAsyncIteration` on all future calls
+
+**Solution**: Redesigned event handling to avoid timeouts on the generator:
+
+* Created a separate `event_reader()` task that consumes the hub's async generator without timeouts
+* Main SSE loop uses `queue.get_nowait()` to check for events without blocking
+* Continuous data flow with keepalives every 200ms ensures connection stability
+* **Critical lesson**: Never use `asyncio.wait_for()` directly on async generator methods
+
+**Best Practices Applied**:
+
+* SSE requires continuous data flow - even comments (`:`) keep connections alive
+* Send initial "connected" event to establish the stream
+* Use heartbeat/ping events for connection health
+* Clean up reader tasks properly in finally blocks
+
+#### Job Payload Normalization
+
+* Generate_lecture jobs use `{ "partial_attributes": { "topic_id": N, "course_id": M } }` format
+* Audio/summary generation now includes both `lecture_id` and `topic_id` at top level for consistent filtering
+* Repository layer supports querying by both `payload.topic_id` and `payload.partial_attributes.topic_id`
+
+#### Concurrent Update Protection
+
+* Added `update_fields()` method to LectureRepository for partial updates
+* Prevents race conditions when audio and summary generation run in parallel
+* Each job only updates its specific fields without overwriting others
+
 ## Async Generation Jobs
 
 * generate_course

@@ -1,21 +1,11 @@
 import asyncio
 import json
+import logging
 from typing import Any, AsyncIterator, Dict, Iterable, Optional, Set
 
 from starlette.requests import Request
 
 _STREAM_CLOSED = object()
-
-
-async def _next_event_with_timeout(
-    events: AsyncIterator[Dict[str, Any]], timeout: float
-) -> Dict[str, Any] | None | object:
-    try:
-        return await asyncio.wait_for(events.__anext__(), timeout=timeout)
-    except asyncio.TimeoutError:
-        return None
-    except StopAsyncIteration:
-        return _STREAM_CLOSED
 
 
 class JobEventHub:
@@ -37,13 +27,21 @@ class JobEventHub:
                     q.put_nowait(event)
 
     async def subscribe(self) -> AsyncIterator[Dict[str, Any]]:
+        """Subscribe to job events. Yields events as they are published."""
         queue: asyncio.Queue = asyncio.Queue(maxsize=256)
+
         async with self._lock:
             self._subscribers.add(queue)
+
         try:
             while True:
                 event = await queue.get()
                 yield event
+        except asyncio.CancelledError:
+            raise
+        except Exception as e:
+            logging.getLogger(__name__).error(f"Subscribe error: {e}", exc_info=True)
+            raise
         finally:
             async with self._lock:
                 self._subscribers.discard(queue)
@@ -68,6 +66,17 @@ def _event_matches(
     return True
 
 
+async def _event_reader(events: AsyncIterator[Dict[str, Any]], event_queue: asyncio.Queue) -> None:
+    """Read events from the hub and put them in a local queue."""
+    logger = logging.getLogger(__name__)
+    try:
+        async for event in events:
+            await event_queue.put(event)
+    except Exception as e:
+        logger.error(f"Event reader error: {e}")
+        await event_queue.put(_STREAM_CLOSED)
+
+
 async def sse_stream(
     hub: JobEventHub,
     *,
@@ -75,48 +84,68 @@ async def sse_stream(
     lecture_id: Optional[int] = None,
     topic_id: Optional[int] = None,
     kinds: Optional[Iterable[str]] = None,
-    heartbeat_secs: int = 20,
+    heartbeat_secs: int = 5,
 ) -> AsyncIterator[str]:
     """Yield Server-Sent Events strings filtered by optional params.
 
     Designed to be resilient to disconnects and cooperative with shutdown/reload.
     """
-
+    logger = logging.getLogger(__name__)
     kinds_set: Set[str] = set(kinds or [])
+
     events = hub.subscribe()
     loop = asyncio.get_event_loop()
     next_heartbeat = loop.time() + heartbeat_secs
 
+    # Send initial connection message to establish SSE stream
+    yield 'event: connected\ndata: {"message": "SSE stream connected"}\n\n'
+
+    iteration_count = 0
+    logger.debug(f"SSE stream started for topic_id={topic_id}, lecture_id={lecture_id}")
+
+    # Create a task to read events without blocking the main loop
+    event_queue: asyncio.Queue = asyncio.Queue()
+    reader_task = asyncio.create_task(_event_reader(events, event_queue))
+
     try:
         while True:
-            # Detect client disconnect cooperatively
-            if request is not None and await request.is_disconnected():
-                break
+            iteration_count += 1
 
-            # Try to read next event with a short timeout so we can emit heartbeats
-            # and re-check disconnect/shutdown regularly.
-            ev = await _next_event_with_timeout(events, 1.0)
-            if ev is _STREAM_CLOSED:
-                # Upstream iterator was closed (e.g., during shutdown). Exit cleanly.
-                break
+            # Send keepalive to maintain connection
+            yield f": keepalive {iteration_count}\n\n"
 
-            # Emit heartbeat on schedule regardless of whether we received events
+            # Check for events without blocking
+            try:
+                ev = event_queue.get_nowait()
+                if ev is _STREAM_CLOSED:
+                    logger.debug("SSE stream closed - hub shutdown")
+                    break
+
+                if _event_matches(
+                    ev, lecture_id=lecture_id, topic_id=topic_id, kinds_set=kinds_set
+                ):
+                    yield f"event: job\ndata: {json.dumps(ev, default=str)}\n\n"
+            except asyncio.QueueEmpty:
+                pass
+
+            # Send periodic ping events
             now = loop.time()
             if now >= next_heartbeat:
-                yield "event: ping\ndata: {}\n\n"
+                yield f"event: ping\ndata: {json.dumps({'time': now})}\n\n"
                 next_heartbeat = now + heartbeat_secs
 
-            if ev is not None and _event_matches(
-                ev, lecture_id=lecture_id, topic_id=topic_id, kinds_set=kinds_set
-            ):
-                data = json.dumps(ev, default=str)
-                yield f"event: job\ndata: {data}\n\n"
+            await asyncio.sleep(0.2)
+
     except asyncio.CancelledError:
-        # Shutdown/reload path: exit quietly
-        return
+        raise
+    except Exception as e:
+        logger.error(f"SSE stream error: {e}", exc_info=True)
+        raise
     finally:
-        # Ensure we unsubscribe to avoid leaking subscriber queues across reloads
-        try:
-            await events.aclose()  # type: ignore[attr-defined]
-        except Exception:
-            pass
+        # Clean up the reader task
+        if "reader_task" in locals() and not reader_task.done():
+            reader_task.cancel()
+            try:
+                await reader_task
+            except asyncio.CancelledError:
+                pass

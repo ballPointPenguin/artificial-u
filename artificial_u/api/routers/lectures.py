@@ -306,7 +306,17 @@ async def enqueue_generate_lecture_audio(
     lecture_id: int = Path(..., description="The ID of the lecture to generate audio for"),
     repository_factory: RepositoryFactory = Depends(get_repository_factory),
 ):
+    # Look up the topic_id from the lecture so SSE events can be properly filtered
+    lecture = repository_factory.lecture.get(lecture_id)
+    if not lecture:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"Lecture {lecture_id} not found"
+        )
+
     payload = {"lecture_id": lecture_id}
+    if lecture.topic_id:
+        payload["topic_id"] = lecture.topic_id
+
     row = repository_factory.job.create(
         kind="generate_lecture_audio",
         payload=payload,

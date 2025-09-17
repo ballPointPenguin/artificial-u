@@ -2,7 +2,7 @@
 Lecture repository for database operations.
 """
 
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 from sqlalchemy import func, or_
 
@@ -357,6 +357,58 @@ class LectureRepository(BaseRepository):
             session.commit()
 
             return lecture
+
+    def update_fields(self, lecture_id: int, update_data: Dict[str, any]) -> Lecture:
+        """
+        Partially update fields on an existing lecture, avoiding lost updates.
+
+        Only the fields provided in update_data will be modified.
+
+        Args:
+            lecture_id: ID of the lecture to update
+            update_data: Mapping of column names to new values
+
+        Returns:
+            Lecture: The updated lecture model
+
+        Raises:
+            ValueError: If the lecture does not exist
+        """
+        with self.get_session() as session:
+            db_lecture = session.get(LectureModel, lecture_id)
+            if not db_lecture:
+                raise ValueError(f"Lecture with ID {lecture_id} not found")
+
+            # Apply only provided fields
+            allowed_fields = {
+                "content",
+                "revision",
+                "summary",
+                "title",
+                "audio_url",
+                "transcript_url",
+                "course_id",
+                "topic_id",
+            }
+            for key, value in update_data.items():
+                if key in allowed_fields:
+                    setattr(db_lecture, key, value)
+
+            session.add(db_lecture)
+            session.commit()
+            session.refresh(db_lecture)
+
+            return Lecture(
+                id=db_lecture.id,
+                revision=db_lecture.revision,
+                content=db_lecture.content,
+                summary=db_lecture.summary,
+                title=db_lecture.title,
+                audio_url=db_lecture.audio_url,
+                transcript_url=db_lecture.transcript_url,
+                course_id=db_lecture.course_id,
+                topic_id=db_lecture.topic_id,
+            )
 
     def delete(self, lecture_id: int) -> bool:
         """

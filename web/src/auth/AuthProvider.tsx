@@ -37,7 +37,7 @@ export function AuthProvider(props: { children: JSX.Element }) {
       const refreshState = async () => {
         const authedNow = await c.isAuthenticated()
         setIsAuthenticated(authedNow)
-        setUser(authedNow ? (await c.getUser()) ?? null : null)
+        setUser(authedNow ? ((await c.getUser()) ?? null) : null)
       }
       await refreshState()
 

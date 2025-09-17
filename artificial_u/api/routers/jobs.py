@@ -98,19 +98,24 @@ async def jobs_stream(
     # Parse kinds robustly to avoid validation quirks
     kinds_list = request.query_params.getlist("kinds")
     hub: JobEventHub = request.app.state.job_events
-    gen = sse_stream(
+
+    headers = {
+        "Cache-Control": "no-cache, no-store, must-revalidate",
+        "Connection": "keep-alive",
+        "X-Accel-Buffering": "no",  # Disable Nginx buffering
+        "Content-Type": "text/event-stream",
+    }
+
+    # Pass the generator directly without wrapper
+    generator = sse_stream(
         hub,
-        request=request,
+        request=None,  # Don't pass request to avoid disconnect issues
         lecture_id=lecture_id,
         topic_id=topic_id,
         kinds=kinds_list,
     )
-    headers = {
-        "Cache-Control": "no-cache",
-        "Connection": "keep-alive",
-        "X-Accel-Buffering": "no",
-    }
-    return StreamingResponse(gen, media_type="text/event-stream", headers=headers)
+
+    return StreamingResponse(generator, media_type="text/event-stream", headers=headers)
 
 
 @router.get("/{job_id}")

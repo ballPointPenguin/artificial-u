@@ -1,12 +1,12 @@
 import { A } from '@solidjs/router'
 import { type Component, createResource, createSignal, For, Show } from 'solid-js'
 import { courseService } from '../api/services/course-service.js'
-import { subscribeJobEvents } from '../api/services/jobs-service.js'
 import type { Course, CourseCreate } from '../api/types.js'
 import { RequireAuth } from '../auth/RequireAuth'
 import CourseForm from '../components/courses/CourseForm.jsx'
 import type { CourseFormData } from '../components/courses/types.jsx'
 import { Button } from '../components/ui'
+import { getJobEventHub } from '../utils/job-events-hub.js'
 
 const Courses: Component = () => {
   const [page, setPage] = createSignal(1)
@@ -65,7 +65,8 @@ const Courses: Component = () => {
       const job = await courseService.enqueueCreateCourse(createPayload)
 
       // Subscribe to SSE for create_course events and react when done/failed
-      const unsubscribe = subscribeJobEvents({ kinds: ['create_course'] }, (ev) => {
+      const hub = getJobEventHub()
+      const unsubscribe = hub.subscribe({ kinds: ['create_course'] }, (ev) => {
         if (ev.id !== job.id) return
         if (ev.status === 'done') {
           // Refresh list and close form
