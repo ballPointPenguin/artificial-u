@@ -6,11 +6,11 @@
 #
 aiolimiter==1.2.1
     # via artificial-u (pyproject.toml)
-alembic==1.16.4
+alembic==1.16.5
     # via artificial-u (pyproject.toml)
 annotated-types==0.7.0
     # via pydantic
-anthropic==0.64.0
+anthropic==0.68.0
     # via artificial-u (pyproject.toml)
 anyio==4.9.0
     # via
@@ -20,13 +20,13 @@ anyio==4.9.0
     #   openai
     #   starlette
     #   watchfiles
-azure-cognitiveservices-speech==1.45.0
+azure-cognitiveservices-speech==1.46.0
     # via artificial-u (pyproject.toml)
 azure-core==1.34.0
     # via azure-cognitiveservices-speech
-boto3==1.40.9
+boto3==1.40.35
     # via artificial-u (pyproject.toml)
-botocore==1.40.9
+botocore==1.40.35
     # via
     #   boto3
     #   s3transfer
@@ -51,11 +51,13 @@ distro==1.9.0
     # via
     #   anthropic
     #   openai
+docstring-parser==0.17.0
+    # via anthropic
 ecdsa==0.19.1
     # via python-jose
-elevenlabs==2.9.2
+elevenlabs==2.16.0
     # via artificial-u (pyproject.toml)
-fastapi==0.116.1
+fastapi==0.116.2
     # via artificial-u (pyproject.toml)
 google-api-core==2.25.1
     # via artificial-u (pyproject.toml)
@@ -63,7 +65,7 @@ google-auth==2.40.3
     # via
     #   google-api-core
     #   google-genai
-google-genai==1.30.0
+google-genai==1.38.0
     # via artificial-u (pyproject.toml)
 googleapis-common-protos==1.70.0
     # via google-api-core
@@ -106,9 +108,9 @@ markupsafe==3.0.2
     # via mako
 mdurl==0.1.2
     # via markdown-it-py
-ollama==0.5.3
+ollama==0.5.4
     # via artificial-u (pyproject.toml)
-openai==1.99.9
+openai==1.108.1
     # via artificial-u (pyproject.toml)
 packaging==25.0
     # via gunicorn
@@ -130,7 +132,7 @@ pyasn1-modules==0.4.2
     # via google-auth
 pycparser==2.22
     # via cffi
-pydantic==2.11.7
+pydantic==2.11.9
     # via
     #   anthropic
     #   artificial-u (pyproject.toml)
@@ -173,7 +175,7 @@ rsa==4.9.1
     # via
     #   google-auth
     #   python-jose
-s3transfer==0.13.0
+s3transfer==0.14.0
     # via boto3
 six==1.17.0
     # via
@@ -216,7 +218,7 @@ urllib3==2.5.0
     # via
     #   botocore
     #   requests
-uvicorn[standard]==0.35.0
+uvicorn[standard]==0.36.0
     # via artificial-u (pyproject.toml)
 uvloop==0.21.0
     # via uvicorn
