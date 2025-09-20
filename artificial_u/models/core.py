@@ -224,3 +224,14 @@ class Lecture(BaseModel):
     transcript_url: Optional[str] = None
     course_id: int
     topic_id: int
+
+
+class Student(BaseModel):
+    """
+    Student model representing an authenticated user profile in our system.
+    """
+
+    id: Optional[int] = None
+    name: str
+    email: Optional[str] = None
+    auth0_sub: Optional[str] = None

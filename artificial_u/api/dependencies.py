@@ -12,6 +12,7 @@ from typing import Optional
 from fastapi import Depends
 
 from artificial_u.api.config import get_settings
+from artificial_u.api.security.auth0 import require_auth
 from artificial_u.api.services import (
     CourseApiService,
     DepartmentApiService,
@@ -20,6 +21,7 @@ from artificial_u.api.services import (
     TopicApiService,
 )
 from artificial_u.integrations import elevenlabs
+from artificial_u.models.core import Student
 from artificial_u.models.repositories import RepositoryFactory
 from artificial_u.services import (
     ContentService,
@@ -46,6 +48,36 @@ def get_repository_factory() -> RepositoryFactory:
     """
     settings = get_settings()
     return RepositoryFactory(db_url=settings.DATABASE_URL)
+
+
+def ensure_student(
+    payload: dict = Depends(require_auth),
+    repository_factory: RepositoryFactory = Depends(get_repository_factory),
+) -> Student:
+    """
+    Ensure a Student exists for the current Auth0 user and return it.
+
+    Uses the JWT `sub` claim as `auth0_sub`. Falls back to `name` or `nickname` or `email`
+    claims to seed the initial name. Email is captured if present.
+    """
+    sub = payload.get("sub")
+    email = payload.get("email")
+    # Prefer name->nickname->email->sub for initial display name
+    display_name = (
+        payload.get("name")
+        or payload.get("nickname")
+        or (email if isinstance(email, str) else None)
+        or (sub if isinstance(sub, str) else "User")
+    )
+
+    if not isinstance(sub, str):
+        # Should not happen if token is valid, but guard anyway
+        sub = "unknown"
+
+    student = repository_factory.student.get_or_create_by_auth0(
+        auth0_sub=sub, default_name=display_name, email=email if isinstance(email, str) else None
+    )
+    return student
 
 
 def get_content_service() -> ContentService:

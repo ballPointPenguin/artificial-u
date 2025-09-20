@@ -28,6 +28,8 @@ class CourseModel(Base):
     total_weeks = Column(Integer, nullable=True, default=12)
     department_id = Column(Integer, ForeignKey("departments.id"), nullable=True)
     professor_id = Column(Integer, ForeignKey("professors.id"), nullable=True)
+    created_at = Column(DateTime, nullable=False, default=datetime.now)
+    updated_at = Column(DateTime, nullable=False, default=datetime.now)
 
     department = relationship("DepartmentModel", back_populates="courses")
     professor = relationship("ProfessorModel", back_populates="courses")
@@ -43,6 +45,8 @@ class DepartmentModel(Base):
     code = Column(String, nullable=False, unique=True)
     faculty = Column(String, nullable=True)
     description = Column(Text, nullable=True)
+    created_at = Column(DateTime, nullable=False, default=datetime.now)
+    updated_at = Column(DateTime, nullable=False, default=datetime.now)
 
     professors = relationship("ProfessorModel", back_populates="department")
     courses = relationship("CourseModel", back_populates="department")
@@ -60,6 +64,8 @@ class LectureModel(Base):
     transcript_url = Column(String, nullable=True)
     course_id = Column(Integer, ForeignKey("courses.id"), nullable=False)
     topic_id = Column(Integer, ForeignKey("topics.id"), nullable=False)
+    created_at = Column(DateTime, nullable=False, default=datetime.now)
+    updated_at = Column(DateTime, nullable=False, default=datetime.now)
 
     course = relationship("CourseModel", back_populates="lectures")
     topic = relationship("TopicModel", back_populates="lectures")
@@ -82,6 +88,8 @@ class ProfessorModel(Base):
     image_url = Column(String, nullable=True)
     department_id = Column(Integer, ForeignKey("departments.id"), nullable=True)
     voice_id = Column(Integer, ForeignKey("voices.id"), nullable=True)
+    created_at = Column(DateTime, nullable=False, default=datetime.now)
+    updated_at = Column(DateTime, nullable=False, default=datetime.now)
 
     department = relationship("DepartmentModel", back_populates="professors")
     courses = relationship("CourseModel", back_populates="professor")
@@ -97,6 +105,8 @@ class TopicModel(Base):
     week = Column(Integer, nullable=False, index=True)
     content = Column(JSONB, nullable=True)
     course_id = Column(Integer, ForeignKey("courses.id"), nullable=False, index=True)
+    created_at = Column(DateTime, nullable=False, default=datetime.now)
+    updated_at = Column(DateTime, nullable=False, default=datetime.now)
 
     course = relationship("CourseModel", back_populates="topics")
     lectures = relationship("LectureModel", back_populates="topic")
@@ -157,3 +167,16 @@ class JobModel(Base):
         Index("idx_jobs_status_priority_runafter", "status", "priority", "run_after"),
         Index("idx_jobs_status_updatedat", "status", "updated_at"),
     )
+
+
+class StudentModel(Base):
+    __tablename__ = "students"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    name = Column(String, nullable=False)
+    email = Column(String, nullable=True)
+    auth0_sub = Column(String, nullable=True, unique=True)
+    created_at = Column(DateTime, nullable=False, default=datetime.now)
+    updated_at = Column(DateTime, nullable=False, default=datetime.now)
+
+    __table_args__ = (Index("idx_students_email", "email"),)
