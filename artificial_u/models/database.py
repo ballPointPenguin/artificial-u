@@ -28,6 +28,9 @@ class CourseModel(Base):
     total_weeks = Column(Integer, nullable=True, default=12)
     department_id = Column(Integer, ForeignKey("departments.id"), nullable=True)
     professor_id = Column(Integer, ForeignKey("professors.id"), nullable=True)
+    # New attribution fields
+    created_by = Column(Integer, ForeignKey("students.id"), nullable=True)
+    created_with = Column(String, nullable=True)
     created_at = Column(DateTime, nullable=False, default=datetime.now)
     updated_at = Column(DateTime, nullable=False, default=datetime.now)
 

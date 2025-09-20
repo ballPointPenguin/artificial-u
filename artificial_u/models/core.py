@@ -158,6 +158,9 @@ class Course(BaseModel):
     total_weeks: int = 12
     department_id: Optional[int] = None
     professor_id: Optional[int] = None
+    # Attribution
+    created_by: Optional[int] = None
+    created_with: Optional[str] = None
 
 
 class Topic(BaseModel):

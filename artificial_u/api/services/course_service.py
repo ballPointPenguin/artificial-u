@@ -182,7 +182,13 @@ class CourseApiService(BaseApiService[CoreCourse, CourseResponse, CoursesListRes
         except Exception as e:
             self._handle_general_error("get course by code", e)
 
-    async def create_course(self, course_data: CourseCreate) -> CourseResponse:
+    async def create_course(
+        self,
+        course_data: CourseCreate,
+        *,
+        created_by: Optional[int] = None,
+        created_with: Optional[str] = None,
+    ) -> CourseResponse:
         """
         Create a new course using the core service with smart selection.
         """
@@ -199,6 +205,8 @@ class CourseApiService(BaseApiService[CoreCourse, CourseResponse, CoursesListRes
                 credits=course_data.credits,
                 weeks=course_data.total_weeks,
                 lectures_per_week=course_data.lectures_per_week,
+                created_by=created_by,
+                created_with=created_with,
             )
             # Convert the returned CourseModel to the API response model
             return CourseResponse.model_validate(created_course_model)

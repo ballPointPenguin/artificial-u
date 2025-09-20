@@ -25,6 +25,9 @@ class CourseBase(BaseModel):
     lectures_per_week: int = Field(default=14, description="Number of lectures per week")
     total_weeks: int = Field(default=1, description="Total number of weeks in the course")
     topics: Optional[List[Dict[str, Any]]] = Field(None, description="List of course topics")
+    # Attribution (not required for create)
+    created_by: Optional[int] = Field(None, description="Student ID who created the course")
+    created_with: Optional[str] = Field(None, description="Name of LLM used, if any")
 
 
 # Course creation model
@@ -57,6 +60,8 @@ class CourseResponse(CourseBase):
     # Override to make these required in responses (should be populated after creation)
     department_id: int = Field(..., description="ID of the department offering the course")
     professor_id: int = Field(..., description="ID of the professor teaching the course")
+    created_by: Optional[int] = Field(None, description="Student ID who created the course")
+    created_with: Optional[str] = Field(None, description="Name of LLM used, if any")
 
     class Config:
         from_attributes = True

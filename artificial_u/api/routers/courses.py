@@ -6,7 +6,11 @@ from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
 
-from artificial_u.api.dependencies import get_course_api_service, get_repository_factory
+from artificial_u.api.dependencies import (
+    ensure_student,
+    get_course_api_service,
+    get_repository_factory,
+)
 from artificial_u.api.models import (
     CourseCreate,
     CourseDepartmentBrief,
@@ -124,13 +128,14 @@ async def get_course_by_code(
 async def create_course(
     course_data: CourseCreate,
     course_service: CourseApiService = Depends(get_course_api_service),
+    student=Depends(ensure_student),
 ):
     """
     Create a new course with optional smart selection.
     If department_id or professor_id are not provided, the system will
     intelligently select existing ones or generate new ones using AI.
     """
-    return await course_service.create_course(course_data)
+    return await course_service.create_course(course_data, created_by=student.id)
 
 
 @router.put(
@@ -359,6 +364,7 @@ async def enqueue_generate_course(
 async def enqueue_create_course(
     course_data: CourseCreate,
     repository_factory: RepositoryFactory = Depends(get_repository_factory),
+    student=Depends(ensure_student),
 ):
     """
     Enqueue a job with kind 'create_course'. The payload mirrors CourseCreate fields.
@@ -373,6 +379,7 @@ async def enqueue_create_course(
         "description": course_data.description,
         "lectures_per_week": course_data.lectures_per_week,
         "total_weeks": course_data.total_weeks,
+        "created_by": student.id,
     }
     row = repository_factory.job.create(
         kind="create_course",

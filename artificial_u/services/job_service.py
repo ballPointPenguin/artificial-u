@@ -109,6 +109,7 @@ class JobService:
         department_id = payload.get("department_id")
         professor_id = payload.get("professor_id")
         description = payload.get("description")
+        created_by = payload.get("created_by")
 
         if not title or not code or not level:
             raise ValueError("title, code, and level are required to create a course")
@@ -123,6 +124,7 @@ class JobService:
             department_id=department_id,
             professor_id=professor_id,
             description=description,
+            created_by=created_by,
         )
 
         return {

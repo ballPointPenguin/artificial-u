@@ -25,6 +25,8 @@ class CourseRepository(BaseRepository):
                 total_weeks=course.total_weeks,
                 department_id=course.department_id,
                 professor_id=course.professor_id,
+                created_by=course.created_by,
+                created_with=course.created_with,
             )
 
             session.add(db_course)
@@ -53,6 +55,8 @@ class CourseRepository(BaseRepository):
                 total_weeks=db_course.total_weeks,
                 department_id=db_course.department_id,
                 professor_id=db_course.professor_id,
+                created_by=db_course.created_by,
+                created_with=db_course.created_with,
             )
 
     def get_by_code(self, code: str) -> Optional[Course]:
@@ -74,6 +78,8 @@ class CourseRepository(BaseRepository):
                 total_weeks=db_course.total_weeks,
                 department_id=db_course.department_id,
                 professor_id=db_course.professor_id,
+                created_by=db_course.created_by,
+                created_with=db_course.created_with,
             )
 
     def list(self, department_id: Optional[int] = None) -> List[Course]:
@@ -98,6 +104,8 @@ class CourseRepository(BaseRepository):
                     total_weeks=course.total_weeks,
                     department_id=course.department_id,
                     professor_id=course.professor_id,
+                    created_by=course.created_by,
+                    created_with=course.created_with,
                 )
                 for course in db_courses
             ]
@@ -121,6 +129,8 @@ class CourseRepository(BaseRepository):
                     total_weeks=course.total_weeks,
                     department_id=course.department_id,
                     professor_id=course.professor_id,
+                    created_by=course.created_by,
+                    created_with=course.created_with,
                 )
                 for course in db_courses
             ]
@@ -143,6 +153,8 @@ class CourseRepository(BaseRepository):
             db_course.total_weeks = course.total_weeks
             db_course.department_id = course.department_id
             db_course.professor_id = course.professor_id
+            db_course.created_by = course.created_by
+            db_course.created_with = course.created_with
 
             session.commit()
             return course

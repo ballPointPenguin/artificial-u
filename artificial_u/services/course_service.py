@@ -62,6 +62,8 @@ class CourseService:
         department_id: Optional[int] = None,
         professor_id: Optional[int] = None,
         description: Optional[str] = None,
+        created_by: Optional[int] = None,
+        created_with: Optional[str] = None,
     ) -> Tuple[Course, Professor]:
         """
         Create a new course with optional smart selection for department/professor.
@@ -110,6 +112,10 @@ class CourseService:
             professor.id,
             description,
         )
+
+        # Set attribution fields if provided
+        course.created_by = created_by
+        course.created_with = created_with
 
         # Save course
         return self._save_course(course, professor, code)
