@@ -1,145 +1,451 @@
 # ArtificialU System Architecture
 
-This document provides an overview of the ArtificialU system architecture, explaining the key components and how they interact.
+This document provides a comprehensive overview of the ArtificialU system architecture, explaining the key components, technology stack, and how they interact.
 
-## System Overview
+## Project Overview
 
-ArtificialU is designed with a modular architecture that separates concerns into distinct components:
+ArtificialU is an AI-powered educational content platform that generates university lectures with distinct professor personalities, converting them to audio for an immersive learning experience. The system creates virtual professors with unique teaching styles who deliver engaging lectures across various academic disciplines.
 
-1. **Content Generation Layer** - Creates educational content using a variety of models
-2. **Audio Processing Layer** - Converts lecture text to speech using the ElevenLabs API
-3. **Data Layer** - Manages persistence of professors, courses, lectures, and other entities
-4. **User Interface Layer** - Provides interfaces for interacting with the system (CLI and future web interface)
+## Technology Stack
 
-## Key Components
+### Backend
 
-### UniversitySystem
+- **Runtime**: Python 3.13+
+- **Web Framework**: FastAPI (async REST API)
+- **Database**: PostgreSQL 17
+- **ORM**: SQLAlchemy 2.0
+- **Migrations**: Alembic
+- **Validation**: Pydantic v2
+- **Authentication**: Auth0 (JWT-based)
+- **Job Queue**: Custom async worker with PostgreSQL-backed job system
+- **Package Management**: Hatch (with optional pip-tools for lockfiles)
 
-The `UniversitySystem` class acts as the central orchestrator, integrating the other components and providing a unified API for application features. It coordinates the workflow between content generation, audio processing, and data storage.
+### Frontend
 
-### Audio Processing Components
+- **Framework**: SolidJS (reactive UI library)
+- **Language**: TypeScript
+- **Build Tool**: Vite
+- **Router**: @solidjs/router
+- **UI Components**: Kobalte (headless UI library)
+- **Styling**: TailwindCSS v4 + PostCSS
+- **Authentication**: Auth0 SPA SDK
+- **HTTP Client**: Custom fetch wrapper with timeout/retry logic
+- **State Management**: SolidJS signals and contexts
 
-The audio processing layer has been modularized into several specialized components:
+### AI & Integrations
+
+- **Content Generation**:
+  - Anthropic Claude API (primary)
+  - Google Gemini API
+  - OpenAI GPT API
+  - Ollama (local models)
+- **Text-to-Speech**:
+  - ElevenLabs API (primary)
+  - Azure Cognitive Services Speech
+- **Image Generation**: Integration-ready (professor portraits)
+- **Storage**: MinIO (development) / AWS S3 (production)
+
+### Infrastructure
+
+- **Container Orchestration**: Docker Compose
+- **Development Database**: PostgreSQL in Docker
+- **Object Storage**: MinIO in Docker
+- **Local LLM**: Ollama in Docker (optional)
+- **CI/CD**: GitHub Actions (planned)
+- **Deployment**: Ansible playbooks (planned)
+
+## System Architecture
+
+The system follows a modern three-tier architecture with clear separation of concerns:
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                     Web Client (SolidJS)                    │
+│  - Responsive UI with multiple themes                       │
+│  - Real-time job status updates via SSE                     │
+│  - Auth0 authentication integration                         │
+└───────────────────────────┬─────────────────────────────────┘
+                            │ HTTPS/REST API
+┌───────────────────────────┴─────────────────────────────────┐
+│                    FastAPI Backend                          │
+│  ┌─────────────────────────────────────────────────────┐    │
+│  │              API Layer (Routers)                    │    │
+│  │  /auth  /courses  /departments  /professors         │    │
+│  │  /lectures  /topics  /voices  /jobs  /health        │    │
+│  └──────────────────────┬──────────────────────────────┘    │
+│  ┌──────────────────────┴──────────────────────────────┐    │
+│  │           Service Layer (Business Logic)            │    │
+│  │  - API Services (request handling)                  │    │
+│  │  - Core Services (domain logic)                     │    │
+│  │  - Generator Services (AI workflows)                │    │
+│  │  - Job Enqueue Service (background tasks)           │    │
+│  └──────────────────────┬──────────────────────────────┘    │
+│  ┌──────────────────────┴──────────────────────────────┐    │
+│  │          Repository Layer (Data Access)             │    │
+│  │  - Repository Factory (dependency injection)        │    │
+│  │  - Entity Repositories (CRUD operations)            │    │
+│  │  - SQLAlchemy Models & Sessions                     │    │
+│  └──────────────────────┬──────────────────────────────┘    │
+│                         │                                   │
+│  ┌──────────────────────┴───────────────────────────────┐   │
+│  │            Background Worker System                  │   │
+│  │  - Async job processing                              │   │
+│  │  - Rate limiting & concurrency control               │   │
+│  │  - Job event broadcasting (SSE)                      │   │
+│  └──────────────────────────────────────────────────────┘   │
+└───────────────────────────┬─────────────────────────────────┘
+                            │
+    ┌───────────────────────┼───────────────────────────┐
+    │                       │                           │
+┌───▼────────┐  ┌───────────▼────────┐  ┌──────────────▼──────┐
+│ PostgreSQL │  │ MinIO/S3 Storage   │  │ External APIs       │
+│            │  │ - Audio files      │  │ - Anthropic Claude  │
+│ - Courses  │  │ - Lecture content  │  │ - ElevenLabs TTS    │
+│ - Lectures │  │ - Professor images │  │ - Google Gemini     │
+│ - Topics   │  └────────────────────┘  │ - OpenAI GPT        │
+│ - Jobs     │                          │ - Auth0             │
+│ - Students │                          └─────────────────────┘
+└────────────┘
+```
+
+## Core Domain Model
+
+The system revolves around these primary entities:
+
+### Academic Entities
+
+- **Department**: Academic departments (Computer Science, Philosophy, etc.)
+  - Has many professors and courses
+  - Defines the organizational structure
+
+- **Professor**: Virtual faculty members with unique personalities
+  - Personality traits, teaching style, background
+  - Voice mapping (ElevenLabs voice ID)
+  - Department affiliation
+  - Profile images (planned)
+
+- **Course**: Academic courses with structured content
+  - Course code, title, description, credits
+  - Associated with a professor and department
+  - Contains multiple topics across weeks
+
+- **Topic**: Weekly course subjects
+  - Ordered within a course week
+  - Can have multiple lecture implementations
+  - Stores content metadata (JSON)
+
+- **Lecture**: Individual class sessions
+  - Generated content in professor's style
+  - Audio file URLs (after TTS conversion)
+  - Associated with a specific topic
+
+### Supporting Entities
+
+- **Voice**: ElevenLabs voice configurations
+  - Voice characteristics (accent, gender, age)
+  - Quality ratings and use counts
+  - Mapped to professors
+
+- **Student**: User accounts
+  - Auth0 integration (auth0_sub)
+  - Email and profile information
+  - Access control for content creation
+
+- **Job**: Background task queue
+  - Job types: content generation, audio conversion
+  - Status tracking and error handling
+  - Result storage (JSONB)
+
+## API Architecture
+
+### FastAPI Application Structure
+
+```
+artificial_u/api/
+├── app.py                # Application factory and configuration
+├── config.py             # API-specific settings
+├── dependencies.py       # Dependency injection setup
+├── events.py             # SSE event hub for real-time updates
+├── worker.py             # Background job processor
+├── routers/              # API endpoint definitions
+│   ├── auth.py           # Authentication endpoints
+│   ├── courses.py        # Course CRUD and generation
+│   ├── departments.py    # Department management
+│   ├── lectures.py       # Lecture generation and audio
+│   ├── professors.py     # Professor management
+│   ├── topics.py         # Topic operations
+│   ├── voices.py         # Voice management
+│   └── jobs.py           # Job queue monitoring
+├── services/             # Business logic layer
+│   ├── base_service.py   # Generic service patterns
+│   ├── course_service.py
+│   ├── lecture_service.py
+│   └── ... (other services)
+├── models/               # Pydantic request/response models
+├── middlewares/          # Request/response processing
+│   ├── cors_middleware.py
+│   ├── error_handler.py
+│   └── logging_middleware.py
+└── security/             # Authentication/authorization
+    └── auth0.py          # JWT validation
+```
+
+### API Features
+
+- **RESTful Design**: Resource-based URLs with standard HTTP methods
+- **Pagination**: Consistent pagination for list endpoints
+- **Filtering & Sorting**: Query parameter-based filtering
+- **Validation**: Pydantic models for request/response validation
+- **Error Handling**: Standardized error responses with error codes
+- **OpenAPI Documentation**: Auto-generated at `/api/docs`
+- **Real-time Updates**: SSE endpoint for job status updates
+- **Authentication**: JWT-based Auth0 integration
+
+### Service Layer Architecture
+
+The service layer is organized into three types:
+
+1. **API Services** (`artificial_u/api/services/`)
+   - Handle HTTP request/response logic
+   - Coordinate between multiple core services
+   - Manage pagination and filtering
+   - Example: `CourseApiService`, `ProfessorApiService`
+
+2. **Core Services** (`artificial_u/services/`)
+   - Implement domain business logic
+   - Direct repository interactions
+   - No HTTP-specific concerns
+   - Example: `CourseService`, `ContentService`
+
+3. **Generator Services** (`artificial_u/services/`)
+   - Orchestrate AI content generation workflows
+   - Manage multi-step generation processes
+   - Queue background jobs
+   - Example: `CourseGeneratorService`, `LectureGeneratorService`
+
+## Web Client Architecture
+
+### SolidJS Application Structure
+
+```
+web/src/
+├── App.tsx               # Main application component with routes
+├── index.tsx             # Application entry point
+├── api/                  # API integration layer
+│   ├── client.ts         # HTTP client with auth & error handling
+│   ├── config.ts         # API configuration
+│   └── services/         # Service-specific API calls
+├── auth/                 # Authentication
+│   ├── AuthProvider.tsx  # Auth0 context provider
+│   ├── RequireAuth.tsx   # Route protection
+│   └── auth0.ts          # Auth0 client setup
+├── components/           # Reusable UI components
+│   ├── ui/               # Base UI components (buttons, forms, etc.)
+│   ├── Layout.tsx        # Application layout
+│   ├── NavBar.tsx        # Navigation
+│   └── ... (feature components)
+├── pages/                # Route page components
+│   ├── Home.tsx
+│   ├── Courses.tsx
+│   ├── CourseDetail.tsx
+│   ├── LectureDetail.tsx
+│   └── ... (other pages)
+├── utils/                # Utilities
+│   ├── theme.ts          # Theme management
+│   ├── job-events-hub.ts # SSE job updates
+│   └── ... (other utilities)
+└── styles/               # CSS and styling
+```
+
+### Client Features
+
+- **Reactive UI**: SolidJS signals for state management
+- **Code Splitting**: Lazy loading of route components
+- **Theming System**: Multiple themes (dark-academia, vaporwave, etc.)
+- **Responsive Design**: Mobile-first with TailwindCSS
+- **Authentication**: Auth0 SPA SDK with cross-tab sync
+- **Real-time Updates**: Server-Sent Events for job status
+- **Error Boundaries**: Graceful error handling
+- **Type Safety**: Full TypeScript coverage
+
+## Infrastructure Services
+
+### Database Layer
+
+- **PostgreSQL 17**: Primary data store
+- **Alembic Migrations**: Version-controlled schema changes
+- **SQLAlchemy ORM**: Type-safe database access
+- **Connection Pooling**: Optimized connection management
+
+### Storage Layer
+
+- **MinIO/S3**: Object storage for files
+  - Audio files from TTS conversion
+  - Lecture content backups
+  - Professor profile images
+- **Bucket Organization**:
+  - `artificial-u-audio`: Audio files
+  - `artificial-u-lectures`: Lecture documents
+  - `artificial-u-images`: Images and media
+
+### Job Processing System
+
+- **PostgreSQL-backed Queue**: Jobs table with status tracking
+- **Async Worker**: Background processing with concurrency control
+- **Rate Limiting**: API rate limit compliance (configurable RPS)
+- **Event Broadcasting**: Real-time status updates via SSE
+- **Job Types**:
+  - Content generation (professors, courses, lectures)
+  - Audio conversion (TTS processing)
+  - Voice assignment and mapping
+
+### Authentication & Security
+
+- **Auth0 Integration**:
+  - JWT-based authentication
+  - RS256 token validation
+  - Scope-based authorization
+- **Security Middleware**:
+  - CORS configuration
+  - Request logging
+  - Error sanitization
+
+## Key Service Components
+
+### Audio Processing Pipeline
+
+The audio processing system consists of specialized components working together:
 
 #### SpeechProcessor
 
-The `SpeechProcessor` prepares text for optimal speech synthesis by:
-
-- Enhancing text with speech markup for pronunciation of technical terms
-- Handling mathematical notation and special characters
-- Adding discipline-specific enhancements based on professor's department
-- Splitting text into appropriately sized chunks for processing
+- **Text Enhancement**: Adds pronunciation hints for technical terms
+- **Mathematical Notation**: Converts formulas to speakable text
+- **Discipline-Specific**: Applies department-specific enhancements
+- **Chunking**: Splits content into optimal segments for TTS
 
 #### VoiceMapper
 
-The `VoiceMapper` matches professor profiles to appropriate ElevenLabs voices:
-
-- Maps professor attributes (gender, accent, age) to ElevenLabs voice categories
-- Selects voices based on quality and appropriate characteristics
-- Provides fallback mechanisms when ideal voice matches aren't available
+- **Voice Matching**: Maps professor attributes to voice characteristics
+- **Quality Selection**: Prioritizes high-quality voices
+- **Fallback Logic**: Provides alternatives when ideal match unavailable
+- **Attribute Mapping**: Gender, accent, age to voice categories
 
 #### ElevenLabsClient
 
-The `ElevenLabsClient` provides low-level access to the ElevenLabs API:
-
-- Retrieves available voices and voice details
-- Performs text-to-speech conversion
-- Handles API authentication, retries, and error handling
+- **API Integration**: Direct interface to ElevenLabs services
+- **Voice Management**: Retrieves and caches voice information
+- **TTS Conversion**: Handles text-to-speech requests
+- **Error Handling**: Retry logic and rate limiting
 
 #### TTSService
 
-The `TTSService` orchestrates the text-to-speech process by:
+- **Orchestration**: Coordinates the complete TTS workflow
+- **File Management**: Handles audio storage and retrieval
+- **Caching**: Prevents duplicate conversions
+- **Playback Support**: Provides audio streaming capabilities
 
-- Coordinating between SpeechProcessor, VoiceMapper, and ElevenLabsClient
-- Managing audio file storage and organization
-- Providing playback capabilities
+### Content Generation Services
 
-#### VoiceService
+#### ContentService
 
-The `VoiceService` integrates voices from ElevenLabs and the database:
+- **AI Model Selection**: Routes to appropriate provider (Claude, GPT, etc.)
+- **Prompt Engineering**: Maintains consistent generation patterns
+- **Response Processing**: Formats and validates AI responses
+- **Context Management**: Maintains conversation history
 
-- Calls the ElevenLabsClient to get voices
-- Searches the database for matching voices
-- Updates the database with new voices
-- Calls the VoiceMapper to map voices to professors
-- Updates the professor with the voice ID
+#### UniversitySystem
 
-### Repository
+- **Central Orchestrator**: Integrates all service components
+- **Workflow Management**: Coordinates multi-step operations
+- **State Management**: Tracks generation progress
+- **Error Recovery**: Handles failures gracefully
 
-The `Repository` implements data persistence using SQLAlchemy with PostgreSQL as the database backend. It:
+### Repository Pattern
 
-- Provides CRUD operations for all domain entities
-- Manages relationships between entities
-- Handles data retrieval and querying
-- Ensures data integrity and consistency
+- **Factory Pattern**: Centralized repository creation
+- **Entity Repositories**: One repository per domain entity
+- **Transaction Management**: Ensures data consistency
+- **Query Optimization**: Efficient data retrieval patterns
 
-### Command-Line Interface
+## Development Workflow
 
-The CLI provides a user-friendly way to interact with the system through the terminal. It offers commands for:
+### Environment Management
 
-- Creating courses and professors
-- Generating lectures
-- Converting lectures to audio
-- Browsing and playing content
+- **Hatch**: Python environment and dependency management
+- **Docker Compose**: Local service orchestration
+- **Configuration**: Environment variables via `.env` files
+- **Hot Reload**: Development servers with auto-restart
 
-## Data Model
+### Code Quality
 
-The core domain model consists of these primary entities:
+- **Linting**: Flake8 (Python), ESLint + BiomeJS (TypeScript)
+- **Formatting**: Black (Python), BiomeJS (TypeScript)
+- **Type Checking**: MyPy (Python), TypeScript
+- **Testing**: Pytest (backend), Vitest (frontend)
+- **Pre-commit Hooks**: Automated quality checks
 
-- **Professor** - A virtual faculty member with a unique personality and teaching style
-- **Course** - An academic course a series of topics
-- **Lecture** - A single class session with content and optional audio
-- **Department** - An academic department containing related courses
-- **Voice** - Represents an ElevenLabs voice with attributes and mapping to professors
+### API Development Flow
 
-## Workflow Examples
+1. Define Pydantic models for request/response
+2. Create router endpoints with OpenAPI documentation
+3. Implement service layer business logic
+4. Add repository methods for data access
+5. Queue background jobs for long operations
+6. Write integration tests
 
-### Creating a New Course
+### Frontend Development Flow
 
-1. User provides course details (title, code, department)
-2. System creates or assigns a professor with appropriate expertise
-3. ContentService creates course topics
-4. Repository stores the course and topics
+1. Create TypeScript interfaces for API types
+2. Implement API service functions
+3. Build SolidJS components with Kobalte UI
+4. Add routing and page components
+5. Style with TailwindCSS utilities
+6. Test across multiple themes
 
-### Generating a Lecture
+## Content Generation Pipeline
 
-1. User selects a course and lecture topic
-2. System retrieves course and professor information
-3. ContentService creates lecture content in the professor's style
-4. Repository stores the lecture text
+### Lecture Generation Workflow
 
-### Converting a Lecture to Audio
+1. **Course Creation**:
+   - Generate or assign professor
+   - Create course topics
+   - Store in PostgreSQL
 
-1. User selects a lecture to convert to audio
-2. System retrieves lecture content and professor information
-3. VoiceMapper selects an appropriate voice for the professor
-4. VoiceService updates the professor with the voice ID
-5. SpeechProcessor prepares the text for optimal speech conversion
-6. TTSService converts text to speech using ElevenLabsClient
-7. Repository updates the lecture with the audio URL
+2. **Content Generation**:
+   - Queue job for lecture generation
+   - Select appropriate AI model
+   - Generate content in professor's style
+   - Apply discipline-specific enhancements
 
-## Future Architecture Enhancements
+3. **Audio Conversion**:
+   - Map professor to voice
+   - Process text for optimal TTS
+   - Convert via ElevenLabs API
+   - Store audio in S3/MinIO
 
-### Web Interface
+4. **Delivery**:
+   - Serve content via API
+   - Stream audio to web client
+   - Track usage and feedback
 
-A planned Flask/FastAPI web application will provide a more user-friendly interface with:
+### AI Model Integration
 
-- RESTful API exposing core functionality
-- Responsive frontend for course catalog and lecture playback
-- User authentication and personalization
+The system supports multiple AI providers through a unified interface:
 
-### Async Processing
+- Model selection based on task requirements
+- Fallback chains for reliability
+- Response caching for efficiency
+- Prompt engineering for consistency
 
-Future enhancements will include:
+## Summary
 
-- Background workers for content and audio generation
-- Message queues for task management
-- Progress tracking for long-running tasks
+ArtificialU is a modern, full-stack application built with a focus on:
 
-### Enhanced Content
+- **Clean Architecture**: Clear separation of concerns across layers
+- **Developer Experience**: Modern tooling and hot reload
+- **Type Safety**: End-to-end type checking
+- **Scalability**: Async processing and job queues
+- **Extensibility**: Modular design for easy feature addition
+- **User Experience**: Responsive UI with real-time updates
 
-Advanced features will include:
-
-- Image generation for professor portraits
-- Slide generation based on lecture content
-- Video generation with AI avatars
+The architecture supports rapid iteration while maintaining code quality, making it suitable for both development and future production deployment.

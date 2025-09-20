@@ -1,9 +1,6 @@
 ---
-description:
-globs: ./web/*
 alwaysApply: false
 ---
-
 ## Code Style for JS, TS, JSX, TSX
 
 - code is linted according to eslint (./eslint.config.js)
