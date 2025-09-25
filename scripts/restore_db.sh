@@ -49,7 +49,7 @@ if [[ "$BACKUP_FILE" == *.sql.gz ]]; then
     docker exec $CONTAINER_NAME psql -U $DB_USER -c "CREATE DATABASE $DB_NAME;"
     # Restore
     gunzip -c "$BACKUP_FILE" | docker exec -i $CONTAINER_NAME psql -U $DB_USER -d $DB_NAME
-    
+
 elif [[ "$BACKUP_FILE" == *.dump ]]; then
     echo "Restoring from custom format backup..."
     # Drop and recreate database
@@ -59,7 +59,7 @@ elif [[ "$BACKUP_FILE" == *.dump ]]; then
     docker cp "$BACKUP_FILE" $CONTAINER_NAME:/tmp/restore.dump
     docker exec $CONTAINER_NAME pg_restore -U $DB_USER -d $DB_NAME -v /tmp/restore.dump
     docker exec $CONTAINER_NAME rm /tmp/restore.dump
-    
+
 elif [[ "$BACKUP_FILE" == *.sql ]]; then
     if [[ $(basename "$BACKUP_FILE") == backup_all_* ]]; then
         echo "Restoring all databases..."

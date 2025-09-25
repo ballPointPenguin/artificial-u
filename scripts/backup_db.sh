@@ -31,28 +31,28 @@ case $BACKUP_TYPE in
         docker exec $CONTAINER_NAME pg_dump -U $DB_USER -d $DB_NAME > "$BACKUP_FILE"
         echo "Backup created: $BACKUP_FILE"
         ;;
-    
+
     "compressed")
         echo "Creating compressed backup..."
         BACKUP_FILE="$BACKUP_DIR/backup_${TIMESTAMP}.sql.gz"
         docker exec $CONTAINER_NAME pg_dump -U $DB_USER -d $DB_NAME | gzip > "$BACKUP_FILE"
         echo "Backup created: $BACKUP_FILE"
         ;;
-    
+
     "custom")
         echo "Creating custom format backup..."
         BACKUP_FILE="$BACKUP_DIR/backup_${TIMESTAMP}.dump"
         docker exec $CONTAINER_NAME pg_dump -U $DB_USER -d $DB_NAME -Fc > "$BACKUP_FILE"
         echo "Backup created: $BACKUP_FILE"
         ;;
-    
+
     "all")
         echo "Creating backup of all databases..."
         BACKUP_FILE="$BACKUP_DIR/backup_all_${TIMESTAMP}.sql"
         docker exec $CONTAINER_NAME pg_dumpall -U $DB_USER > "$BACKUP_FILE"
         echo "Backup created: $BACKUP_FILE"
         ;;
-    
+
     *)
         echo "Usage: $0 [sql|compressed|custom|all]"
         echo ""
