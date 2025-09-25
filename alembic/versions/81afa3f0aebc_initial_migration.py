@@ -1,17 +1,18 @@
 """Initial migration
 
-Revision ID: a49c9875c8a8
+Revision ID: 81afa3f0aebc
 Revises:
-Create Date: 2025-05-06 01:41:19.971453
+Create Date: 2025-09-25 03:46:15.017624
 
 """
 
 import sqlalchemy as sa
+from sqlalchemy.dialects import postgresql
 
 from alembic import op
 
 # revision identifiers, used by Alembic.
-revision = "a49c9875c8a8"
+revision = "81afa3f0aebc"
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -26,10 +27,47 @@ def upgrade() -> None:
         sa.Column("code", sa.String(), nullable=False),
         sa.Column("faculty", sa.String(), nullable=True),
         sa.Column("description", sa.Text(), nullable=True),
+        sa.Column("created_at", sa.DateTime(), nullable=False),
+        sa.Column("updated_at", sa.DateTime(), nullable=False),
         sa.PrimaryKeyConstraint("id"),
         sa.UniqueConstraint("code"),
         sa.UniqueConstraint("name"),
     )
+    op.create_table(
+        "jobs",
+        sa.Column("id", sa.Integer(), autoincrement=True, nullable=False),
+        sa.Column("kind", sa.String(), nullable=False),
+        sa.Column("payload", postgresql.JSONB(astext_type=sa.Text()), nullable=False),
+        sa.Column("status", sa.String(), nullable=False),
+        sa.Column("priority", sa.Integer(), nullable=False),
+        sa.Column("run_after", sa.DateTime(), nullable=False),
+        sa.Column("attempts", sa.Integer(), nullable=False),
+        sa.Column("max_attempts", sa.Integer(), nullable=False),
+        sa.Column("last_error", sa.Text(), nullable=True),
+        sa.Column("result", postgresql.JSONB(astext_type=sa.Text()), nullable=True),
+        sa.Column("created_at", sa.DateTime(), nullable=False),
+        sa.Column("updated_at", sa.DateTime(), nullable=False),
+        sa.PrimaryKeyConstraint("id"),
+    )
+    op.create_index(
+        "idx_jobs_status_priority_runafter",
+        "jobs",
+        ["status", "priority", "run_after"],
+        unique=False,
+    )
+    op.create_index("idx_jobs_status_updatedat", "jobs", ["status", "updated_at"], unique=False)
+    op.create_table(
+        "students",
+        sa.Column("id", sa.Integer(), autoincrement=True, nullable=False),
+        sa.Column("name", sa.String(), nullable=False),
+        sa.Column("email", sa.String(), nullable=True),
+        sa.Column("auth0_sub", sa.String(), nullable=True),
+        sa.Column("created_at", sa.DateTime(), nullable=False),
+        sa.Column("updated_at", sa.DateTime(), nullable=False),
+        sa.PrimaryKeyConstraint("id"),
+        sa.UniqueConstraint("auth0_sub"),
+    )
+    op.create_index("idx_students_email", "students", ["email"], unique=False)
     op.create_table(
         "voices",
         sa.Column("id", sa.Integer(), autoincrement=True, nullable=False),
@@ -46,7 +84,7 @@ def upgrade() -> None:
         sa.Column("popularity_score", sa.Integer(), nullable=True),
         sa.Column("preview_url", sa.Text(), nullable=True),
         sa.Column("use_case", sa.String(length=100), nullable=True),
-        sa.Column("verified_languages", sa.JSON(), nullable=True),
+        sa.Column("verified_languages", postgresql.JSONB(astext_type=sa.Text()), nullable=True),
         sa.Column("last_updated", sa.DateTime(), nullable=False),
         sa.PrimaryKeyConstraint("id"),
         sa.UniqueConstraint("el_voice_id"),
@@ -68,6 +106,8 @@ def upgrade() -> None:
         sa.Column("image_url", sa.String(), nullable=True),
         sa.Column("department_id", sa.Integer(), nullable=True),
         sa.Column("voice_id", sa.Integer(), nullable=True),
+        sa.Column("created_at", sa.DateTime(), nullable=False),
+        sa.Column("updated_at", sa.DateTime(), nullable=False),
         sa.ForeignKeyConstraint(
             ["department_id"],
             ["departments.id"],
@@ -90,6 +130,14 @@ def upgrade() -> None:
         sa.Column("total_weeks", sa.Integer(), nullable=True),
         sa.Column("department_id", sa.Integer(), nullable=True),
         sa.Column("professor_id", sa.Integer(), nullable=True),
+        sa.Column("created_by", sa.Integer(), nullable=True),
+        sa.Column("created_with", sa.String(), nullable=True),
+        sa.Column("created_at", sa.DateTime(), nullable=False),
+        sa.Column("updated_at", sa.DateTime(), nullable=False),
+        sa.ForeignKeyConstraint(
+            ["created_by"],
+            ["students.id"],
+        ),
         sa.ForeignKeyConstraint(
             ["department_id"],
             ["departments.id"],
@@ -107,12 +155,16 @@ def upgrade() -> None:
         sa.Column("title", sa.String(), nullable=False),
         sa.Column("order", sa.Integer(), nullable=False),
         sa.Column("week", sa.Integer(), nullable=False),
+        sa.Column("content", postgresql.JSONB(astext_type=sa.Text()), nullable=True),
         sa.Column("course_id", sa.Integer(), nullable=False),
+        sa.Column("created_at", sa.DateTime(), nullable=False),
+        sa.Column("updated_at", sa.DateTime(), nullable=False),
         sa.ForeignKeyConstraint(
             ["course_id"],
             ["courses.id"],
         ),
         sa.PrimaryKeyConstraint("id"),
+        sa.UniqueConstraint("course_id", "week", "order", name="uq_topic_course_week_order"),
     )
     op.create_index(op.f("ix_topics_course_id"), "topics", ["course_id"], unique=False)
     op.create_index(op.f("ix_topics_week"), "topics", ["week"], unique=False)
@@ -122,10 +174,13 @@ def upgrade() -> None:
         sa.Column("revision", sa.Integer(), nullable=False),
         sa.Column("content", sa.Text(), nullable=True),
         sa.Column("summary", sa.Text(), nullable=True),
+        sa.Column("title", sa.String(), nullable=False),
         sa.Column("audio_url", sa.String(), nullable=True),
         sa.Column("transcript_url", sa.String(), nullable=True),
         sa.Column("course_id", sa.Integer(), nullable=False),
         sa.Column("topic_id", sa.Integer(), nullable=False),
+        sa.Column("created_at", sa.DateTime(), nullable=False),
+        sa.Column("updated_at", sa.DateTime(), nullable=False),
         sa.ForeignKeyConstraint(
             ["course_id"],
             ["courses.id"],
@@ -149,5 +204,10 @@ def downgrade() -> None:
     op.drop_table("professors")
     op.drop_index("idx_voices_language", table_name="voices")
     op.drop_table("voices")
+    op.drop_index("idx_students_email", table_name="students")
+    op.drop_table("students")
+    op.drop_index("idx_jobs_status_updatedat", table_name="jobs")
+    op.drop_index("idx_jobs_status_priority_runafter", table_name="jobs")
+    op.drop_table("jobs")
     op.drop_table("departments")
     # ### end Alembic commands ###
