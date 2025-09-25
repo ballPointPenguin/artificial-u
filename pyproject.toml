@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "artificial-u"
+name = "artificial_u"
 version = "0.1.0"
 description = "AI-powered educational content platform"
 readme = "README.md"
@@ -76,7 +76,7 @@ test = [
 "Bug Tracker" = "https://github.com/ballPointPenguin/artificial-u/issues"
 
 [project.scripts]
-artificial-u = "artificial_u.cli:cli"
+artificial_u = "artificial_u.cli:cli"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -133,3 +133,9 @@ warn_unused_configs = true
 disallow_untyped_defs = false
 disallow_incomplete_defs = false
 follow_imports = "silent"
+exclude = [
+    "alembic",
+    "scripts",
+    "tests",
+    "web"
+]

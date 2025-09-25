@@ -2,6 +2,7 @@
 API router for voice-related operations.
 """
 
+from math import ceil
 from typing import Optional
 
 from fastapi import APIRouter, Body, Depends, HTTPException, Path, Query
@@ -73,11 +74,16 @@ async def list_voices(
         category=category,
     )
 
+    # Calculate pagination values
+    page = offset // limit + 1
+    pages = ceil(total_count / limit) if total_count > 0 else 1
+
     return VoiceListResponse(
         items=[VoiceResponse(**voice) for voice in voices_data],
         total=total_count,
-        limit=limit,
-        offset=offset,
+        page=page,
+        size=limit,
+        pages=pages,
     )
 
 

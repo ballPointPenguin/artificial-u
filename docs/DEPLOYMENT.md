@@ -281,7 +281,7 @@ Create `ansible/deploy.yml` in this repo to provision Docker, pull/build images,
   hosts: artificialu
   become: true
   vars:
-    app_dir: /opt/artificial-u
+    app_dir: /opt/artificial_u
     git_repo: https://github.com/your-org/artificial-u.git
     git_version: main
     # Public DNS for the SPA

@@ -42,7 +42,7 @@ pipx install hatch
 
     ```bash
     git clone https://github.com/ballPointPenguin/artificial-u.git
-    cd artificial-u
+    cd artificial_u
     ```
 
 2. **Install Project & Dependencies:**
@@ -88,26 +88,26 @@ The CLI interface, defined as a script in `pyproject.toml`, can be run using `ha
 
 ```bash
 # Example: Create a course
-hatch run artificial-u create-course -d "Computer Science" -t "Introduction to Artificial Intelligence" -c "CS4511"
+hatch run artificial_u create-course -d "Computer Science" -t "Introduction to Artificial Intelligence" -c "CS4511"
 
 # Example: Create audio for a lecture
-hatch run artificial-u create-audio -c "CS4511" -w 1 -n 1
+hatch run artificial_u create-audio -c "CS4511" -w 1 -n 1
 
 # Example: List available courses
-hatch run artificial-u list-courses
+hatch run artificial_u list-courses
 
 # Example: Play a lecture (if available)
-hatch run artificial-u play-lecture -c "CS4511" -w 1 -n 1
+hatch run artificial_u play-lecture -c "CS4511" -w 1 -n 1
 
 # Example: Show lecture content
-hatch run artificial-u show-lecture -c "CS4511" -w 1 -n 1
+hatch run artificial_u show-lecture -c "CS4511" -w 1 -n 1
 ```
 
 For more details on any command, use the `--help` option:
 
 ```bash
-hatch run artificial-u --help
-hatch run artificial-u create-course --help
+hatch run artificial_u --help
+hatch run artificial_u create-course --help
 ```
 
 ## Testing
@@ -173,7 +173,7 @@ scripts/                   # Utility scripts (DB setup, etc.)
 .gitignore                 # Git ignore patterns
 .pre-commit-config.yaml    # Pre-commit hook configuration
 LICENSE                    # Project license
-Makefile                   # Optional: Common development tasks
+Makefile                   # Common development tasks and shortcuts
 pyproject.toml             # Project metadata, dependencies, tool config
 README.md                  # This file
 requirements.txt           # Optional: Pinned production dependencies

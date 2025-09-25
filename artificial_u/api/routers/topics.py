@@ -2,7 +2,7 @@
 Topic router for handling topic-related API endpoints.
 """
 
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, Depends, Path, Query, status
 
@@ -156,7 +156,7 @@ async def enqueue_generate_topics_for_course(
     freeform_prompt: Optional[str] = Query(None, description="Optional prompt for generation"),
     repository_factory: RepositoryFactory = Depends(get_repository_factory),
 ):
-    payload = {"course_id": course_id}
+    payload: Dict[str, Any] = {"course_id": course_id}
     if freeform_prompt:
         payload["freeform_prompt"] = freeform_prompt
     row = repository_factory.job.create(

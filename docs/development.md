@@ -121,3 +121,63 @@ Pre-commit hooks are configured in `.pre-commit-config.yaml` to automatically ru
 2. **Install hooks:** `pre-commit install`
 
 This ensures that code pushed to the repository adheres to the defined quality standards.
+
+## Makefile Commands
+
+The project includes a comprehensive `Makefile` that provides shortcuts for common development tasks. Run `make help` to see all available commands:
+
+```bash
+make help                 # Show all available commands
+```
+
+### Essential Commands
+
+```bash
+# Environment Setup
+make setup               # Set up development environment
+make dev-setup          # Complete development setup (includes Docker services and database)
+
+# Code Quality
+make format             # Format code with black and isort
+make lint               # Run all linting checks
+make check              # Run linting and tests
+
+# Testing
+make test               # Run all tests
+make test-unit          # Run unit tests only
+make test-cov           # Run tests with coverage report
+
+# Dependencies
+make deps-upgrade       # Upgrade and compile requirements files
+make deps-compile       # Compile requirements files using pip-tools
+
+# Database
+make db-setup           # Set up development database
+make db-migrate         # Run database migrations
+
+# Docker Services
+make services-up        # Start Docker services
+make services-down      # Stop Docker services
+
+# Application
+make run-api            # Run the FastAPI application
+make cli CLI="--help"   # Run CLI commands
+```
+
+### Quick Development Workflow
+
+For new developers or after pulling changes:
+
+```bash
+make dev-setup          # One-time setup
+make check              # Verify everything works
+make run-api            # Start developing
+```
+
+### CI Pipeline Locally
+
+To run the same checks that CI runs:
+
+```bash
+make ci                 # Run full CI pipeline locally
+```

@@ -4,7 +4,7 @@ Base service class providing standardized patterns for API services.
 
 import logging
 from math import ceil
-from typing import Any, Dict, Generic, List, Optional, Type, TypeVar
+from typing import Any, Dict, Generic, List, NoReturn, Optional, Type, TypeVar
 
 from fastapi import HTTPException, status
 from pydantic import BaseModel
@@ -66,7 +66,7 @@ class BaseApiService(Generic[T, R, L]):
             pages=pages,
         )
 
-    def _handle_database_error(self, operation: str, error: Exception) -> None:
+    def _handle_database_error(self, operation: str, error: Exception) -> NoReturn:
         """
         Standardized database error handling.
 
@@ -83,7 +83,7 @@ class BaseApiService(Generic[T, R, L]):
             detail=f"Database error during {operation}: {error}",
         )
 
-    def _handle_general_error(self, operation: str, error: Exception) -> None:
+    def _handle_general_error(self, operation: str, error: Exception) -> NoReturn:
         """
         Standardized general error handling.
 

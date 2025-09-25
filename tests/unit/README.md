@@ -7,7 +7,7 @@ This directory contains unit tests that can be run without external API calls or
 To run only unit tests:
 
 ```bash
-cd /path/to/artificial-u
+cd /path/to/artificial_u
 python -m pytest -m unit
 ```
 

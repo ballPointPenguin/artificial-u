@@ -87,7 +87,7 @@ raise NotFoundError(message="Professor not found", error_code="PROFESSOR_NOT_FOU
 
 # Include additional details
 raise ValidationError(
-    message="Invalid professor data", 
+    message="Invalid professor data",
     error_code="VALIDATION_ERROR",
     details=[
         {"loc": ["body", "name"], "msg": "Name too short", "type": "value_error.any_str.min_length"}
