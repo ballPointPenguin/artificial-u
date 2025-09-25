@@ -343,7 +343,7 @@ class ContentService:
             self.logger.warning("Prefill parameter provided but not supported for OpenAI models")
         try:
             # Determine which parameters to use based on the model
-            newer_model_prefixes = ("gpt-5", "o1-", "o3-", "gpt-4o-2024-08-06")
+            newer_model_prefixes = ("gpt-5", "o1-", "o3-")
             is_newer_model = any(model.startswith(prefix) for prefix in newer_model_prefixes)
 
             # Build chat messages, mapping system prompt to 'developer' for newer models

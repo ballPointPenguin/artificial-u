@@ -92,7 +92,7 @@ class ImageService:
 
     def _determine_backend(self, model_name: str) -> str:
         """Determine the backend based on the model name."""
-        if model_name.startswith("imagen-"):
+        if model_name.startswith("imagen-") or model_name.startswith("gemini-"):
             return "gemini"
         elif model_name.startswith("dall-e-") or model_name.startswith("gpt-"):
             return "openai"

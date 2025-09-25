@@ -97,16 +97,16 @@ ArtificialU allows configuration of different AI models for various services:
 
 ```python
 # Course generation model
-COURSE_GENERATION_MODEL=gpt-4.1-nano
+COURSE_GENERATION_MODEL=gpt-5-nano
 
 # Department generation model
-DEPARTMENT_GENERATION_MODEL=gpt-4.1-nano
+DEPARTMENT_GENERATION_MODEL=gpt-5-nano
 
 # Lecture generation model
-LECTURE_GENERATION_MODEL=claude-sonnet-4-0
+LECTURE_GENERATION_MODEL=claude-sonnet-4-20250514
 
 # Professor generation model
-PROFESSOR_GENERATION_MODEL=gpt-4.1-nano
+PROFESSOR_GENERATION_MODEL=gpt-5-nano
 
 # Topics generation model
 TOPICS_GENERATION_MODEL=gemini-2.5-flash
@@ -166,10 +166,10 @@ TESTING=true
 | `LOG_LEVEL` | Logging level | `INFO` | No |
 | `content_backend` | Backend for content generation | `anthropic` | No |
 | `content_model` | Model for chosen backend | Depends on backend | No |
-| `COURSE_GENERATION_MODEL` | Model for course generation | `claude-sonnet-4-0` | No |
-| `DEPARTMENT_GENERATION_MODEL` | Model for department generation | `gpt-4.1-nano` | No |
-| `PROFESSOR_GENERATION_MODEL` | Model for professor generation | `gpt-4.1-nano` | No |
-| `IMAGE_GENERATION_MODEL` | Model for image generation | `imagen-3.0-generate-002` | No |
+| `COURSE_GENERATION_MODEL` | Model for course generation | `claude-sonnet-4-20250514` | No |
+| `DEPARTMENT_GENERATION_MODEL` | Model for department generation | `gpt-5-nano` | No |
+| `PROFESSOR_GENERATION_MODEL` | Model for professor generation | `gpt-5-nano` | No |
+| `IMAGE_GENERATION_MODEL` | Model for image generation | `imagen-4.0-generate-preview-06-06` | No |
 | `STORAGE_TYPE` | Storage type ("minio" or "s3") | `minio` | No |
 | `STORAGE_ENDPOINT_URL` | MinIO endpoint URL | `http://localhost:9000` | No |
 | `STORAGE_PUBLIC_URL` | Public URL for MinIO | `http://localhost:9000` | No |
