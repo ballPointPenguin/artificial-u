@@ -9,7 +9,7 @@ show_usage() {
     echo ""
     echo "USAGE:"
     echo "  $0 upload [--overwrite]     Upload ./backups/ to MinIO buckets"
-    echo "  $0 download [DIR]           Download all buckets (default: ./downloads/)"
+    echo "  $0 download [DIR]           Download all buckets (default: ./backups/)"
     echo "  $0 audio-only [up|down]     Sync only audio files"
     echo "  $0 status                   Show MinIO container status"
     echo "  $0 console                  Open MinIO web console"
@@ -18,7 +18,7 @@ show_usage() {
     echo "EXAMPLES:"
     echo "  $0 upload                   # Upload backups to MinIO"
     echo "  $0 upload --overwrite       # Force overwrite existing files"
-    echo "  $0 download                 # Download all to ./downloads/"
+    echo "  $0 download                 # Download all to ./backups/"
     echo "  $0 download ./restore       # Download all to ./restore/"
     echo "  $0 audio-only down          # Download only audio files"
     echo "  $0 list                     # Show what's in each bucket"
@@ -59,9 +59,13 @@ case "${1:-}" in
         ;;
     download)
         check_minio
-        local output_dir="${2:-./downloads}"
-        echo "📥 Downloading all buckets to ${output_dir}..."
-        "${SCRIPT_DIR}/download_backups.sh" --output "${output_dir}"
+        if [[ "${2:-}" == "--help" ]]; then
+            "${SCRIPT_DIR}/download_backups.sh" --help
+        else
+            output_dir="${2:-./backups}"
+            echo "📥 Downloading all buckets to ${output_dir}..."
+            "${SCRIPT_DIR}/download_backups.sh" --output "${output_dir}"
+        fi
         ;;
     audio-only)
         check_minio

@@ -4,7 +4,7 @@ set -e
 echo "Starting backup download from MinIO..."
 
 # Configuration
-BACKUP_BASE="./downloads"
+BACKUP_BASE="./backups"
 MC_ALIAS="myminio"
 
 # Function to download a bucket to a local directory
@@ -40,11 +40,11 @@ show_usage() {
     echo "  --audio             Download only artificial-u-audio bucket"
     echo "  --images            Download only artificial-u-images bucket"
     echo "  --lectures          Download only artificial-u-lectures bucket"
-    echo "  --output DIR        Set output directory (default: ./downloads)"
+    echo "  --output DIR        Set output directory (default: ./backups)"
     echo "  --help              Show this help message"
     echo ""
     echo "EXAMPLES:"
-    echo "  $0                                    # Download all buckets to ./downloads/"
+    echo "  $0                                    # Download all buckets to ./backups/"
     echo "  $0 --audio                           # Download only audio files"
     echo "  $0 --output ./restore                # Download to ./restore/ directory"
     echo "  $0 --audio --output ./audio-backup   # Download audio to specific directory"
