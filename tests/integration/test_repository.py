@@ -100,6 +100,7 @@ def sample_lecture(db_course, db_topic):
     return Lecture(
         course_id=db_course.id,
         revision=1,
+        title="Introduction to Unit Testing",
         content="In this lecture, we will explore the fundamentals of unit testing...",
         summary="This lecture covers the basics of unit testing",
         audio_url="storage://test_audio.mp3",
@@ -294,8 +295,17 @@ def test_topic_crud(repository, sample_topic):
 @pytest.mark.integration
 def test_topic_create_batch(repository, sample_topic):
     """Test creating a batch of topics."""
+    # Create topics with different order values to avoid unique constraint violation
+    topic1 = sample_topic
+    topic2 = Topic(
+        title="Advanced Unit Testing",
+        order=2,  # Different order
+        week=1,
+        course_id=sample_topic.course_id,
+    )
+
     # Create batch
-    created_topics = repository.topic.create_batch([sample_topic, sample_topic])
+    created_topics = repository.topic.create_batch([topic1, topic2])
     assert len(created_topics) == 2
     assert all(topic.id is not None for topic in created_topics)
 

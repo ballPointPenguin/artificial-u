@@ -67,6 +67,22 @@ def require_auth(
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=f"Invalid token: {e}")
 
 
+# Mock JWT payload for testing
+MOCK_JWT_PAYLOAD = {
+    "sub": "test-user-123",
+    "email": "test@example.com",
+    "name": "Test User",
+    "nickname": "testuser",
+    "scope": "read:courses write:courses read:professors write:professors read:departments write:departments "
+    + "read:lectures write:lectures read:topics write:topics",
+}
+
+
+def mock_require_auth() -> Dict[str, Any]:
+    """Mock authentication function that returns test JWT payload."""
+    return MOCK_JWT_PAYLOAD
+
+
 def require_scope(scope: str):
     def _checker(payload: Dict[str, Any] = Depends(require_auth)) -> Dict[str, Any]:
         scopes = (payload.get("scope") or "").split()

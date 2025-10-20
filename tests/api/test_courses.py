@@ -91,10 +91,12 @@ def mock_api_service(monkeypatch):
     mock_service["get_course_by_code"].side_effect = _mock_get_course_by_code
 
     # CREATE Course
-    def _mock_create_course(course_data: CourseCreate):
+    def _mock_create_course(course_data: CourseCreate, created_by: int):
         new_id = 5  # Simulate next ID
         # Simulate successful creation, return data resembling a saved course
-        return CourseResponse(id=new_id, **course_data.model_dump())
+        course_dict = course_data.model_dump()
+        course_dict["created_by"] = created_by  # Override with the passed created_by
+        return CourseResponse(id=new_id, **course_dict)
 
     mock_service["create_course"].side_effect = _mock_create_course
 
@@ -268,7 +270,7 @@ def test_create_course(client: TestClient, mock_api_service):
         "topics": [],
     }
     # Mock configured to return ID 5
-    expected_response_data = {"id": 5, **new_course_data}
+    expected_response_data = {"id": 5, **new_course_data, "created_by": 1, "created_with": None}
 
     response = client.post("/api/v1/courses", json=new_course_data)
     assert response.status_code == 201
@@ -277,7 +279,9 @@ def test_create_course(client: TestClient, mock_api_service):
     mock_api_service["create_course"].assert_called_once()
     call_args = mock_api_service["create_course"].call_args[0]
     assert isinstance(call_args[0], CourseCreate)
-    assert call_args[0].model_dump() == new_course_data
+    # CourseCreate includes created_by and created_with fields by default
+    expected_course_data = {**new_course_data, "created_by": None, "created_with": None}
+    assert call_args[0].model_dump() == expected_course_data
 
 
 @pytest.mark.unit

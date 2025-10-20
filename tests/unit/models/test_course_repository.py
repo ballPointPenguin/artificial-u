@@ -34,6 +34,8 @@ class TestCourseRepository:
         mock_course.total_weeks = 14
         mock_course.department_id = 1
         mock_course.professor_id = 1
+        mock_course.created_by = 1
+        mock_course.created_with = "test-llm"
         return mock_course
 
     def test_create(self, course_repository, mock_session):
@@ -98,6 +100,8 @@ class TestCourseRepository:
         assert result.total_weeks == 14
         assert result.department_id == 1
         assert result.professor_id == 1
+        assert result.created_by == 1
+        assert result.created_with == "test-llm"
 
     def test_get_not_found(self, course_repository, mock_session):
         """Test getting a non-existent course returns None."""
@@ -125,6 +129,8 @@ class TestCourseRepository:
         query_mock.filter_by.assert_called_once_with(code="CS101")
         assert result.id == 1
         assert result.code == "CS101"
+        assert result.created_by == 1
+        assert result.created_with == "test-llm"
 
     def test_list(self, course_repository, mock_session):
         """Test listing courses."""
@@ -140,6 +146,8 @@ class TestCourseRepository:
         mock_course1.total_weeks = 14
         mock_course1.department_id = 1
         mock_course1.professor_id = 1
+        mock_course1.created_by = 1
+        mock_course1.created_with = "test-llm"
 
         mock_course2 = MagicMock(spec=CourseModel)
         mock_course2.id = 2
@@ -152,6 +160,8 @@ class TestCourseRepository:
         mock_course2.total_weeks = 14
         mock_course2.department_id = 1
         mock_course2.professor_id = 2
+        mock_course2.created_by = 2
+        mock_course2.created_with = "test-llm-2"
 
         query_mock = mock_session.query.return_value
         query_mock.all.return_value = [mock_course1, mock_course2]
@@ -164,8 +174,12 @@ class TestCourseRepository:
         assert len(result) == 2
         assert result[0].id == 1
         assert result[0].code == "CS101"
+        assert result[0].created_by == 1
+        assert result[0].created_with == "test-llm"
         assert result[1].id == 2
         assert result[1].code == "CS102"
+        assert result[1].created_by == 2
+        assert result[1].created_with == "test-llm-2"
 
     def test_list_with_department_filter(self, course_repository, mock_session):
         """Test listing courses with department filter."""
@@ -181,6 +195,8 @@ class TestCourseRepository:
         mock_course.total_weeks = 14
         mock_course.department_id = 1
         mock_course.professor_id = 1
+        mock_course.created_by = 1
+        mock_course.created_with = "test-llm"
 
         query_mock = mock_session.query.return_value
         query_mock.filter_by.return_value.all.return_value = [mock_course]
@@ -194,6 +210,8 @@ class TestCourseRepository:
         assert len(result) == 1
         assert result[0].id == 1
         assert result[0].department_id == 1
+        assert result[0].created_by == 1
+        assert result[0].created_with == "test-llm"
 
     def test_update(self, course_repository, mock_session, mock_course_model):
         """Test updating a course."""
