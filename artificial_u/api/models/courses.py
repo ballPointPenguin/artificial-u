@@ -154,6 +154,7 @@ class GeneratedCourseData(BaseModel):
     lectures_per_week: Optional[int] = Field(None, description="Generated lectures per week")
     total_weeks: Optional[int] = Field(None, description="Generated total weeks")
     topics: Optional[List[Dict[str, Any]]] = Field(None, description="Generated course topics")
+    created_with: Optional[str] = Field(None, description="Name of LLM used for generation")
 
     class Config:
         from_attributes = True

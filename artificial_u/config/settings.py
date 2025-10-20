@@ -110,7 +110,7 @@ class Settings(BaseSettings):
     # Department generation model
     DEPARTMENT_GENERATION_MODEL: str = "gpt-5-nano"
     # Lecture generation model
-    LECTURE_GENERATION_MODEL: str = "claude-sonnet-4-20250514"
+    LECTURE_GENERATION_MODEL: str = "claude-sonnet-4-5-20250929"
     # Lecture summary generation model
     LECTURE_SUMMARY_MODEL: str = "gpt-5-nano"
     # Professor generation model

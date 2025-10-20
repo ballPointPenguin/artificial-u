@@ -103,7 +103,7 @@ COURSE_GENERATION_MODEL=gpt-5-nano
 DEPARTMENT_GENERATION_MODEL=gpt-5-nano
 
 # Lecture generation model
-LECTURE_GENERATION_MODEL=claude-sonnet-4-20250514
+LECTURE_GENERATION_MODEL=claude-sonnet-4-5-20250929
 
 # Professor generation model
 PROFESSOR_GENERATION_MODEL=gpt-5-nano
@@ -166,7 +166,7 @@ TESTING=true
 | `LOG_LEVEL` | Logging level | `INFO` | No |
 | `content_backend` | Backend for content generation | `anthropic` | No |
 | `content_model` | Model for chosen backend | Depends on backend | No |
-| `COURSE_GENERATION_MODEL` | Model for course generation | `claude-sonnet-4-20250514` | No |
+| `COURSE_GENERATION_MODEL` | Model for course generation | `claude-sonnet-4-5-20250929` | No |
 | `DEPARTMENT_GENERATION_MODEL` | Model for department generation | `gpt-5-nano` | No |
 | `PROFESSOR_GENERATION_MODEL` | Model for professor generation | `gpt-5-nano` | No |
 | `IMAGE_GENERATION_MODEL` | Model for image generation | `imagen-4.0-generate-preview-06-06` | No |

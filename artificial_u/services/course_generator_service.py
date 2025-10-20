@@ -124,7 +124,11 @@ class CourseGeneratorService:
                     if key != "topics":
                         final_course_data[key] = value
 
-            # 7. Filter final dictionary to only include valid Course fields
+            # 7. Set created_with to the model used for generation
+            settings = get_settings()
+            final_course_data["created_with"] = settings.COURSE_GENERATION_MODEL
+
+            # 8. Filter final dictionary to only include valid Course fields
             # Get valid fields from Course.__annotations__ or CourseModel.__table__.columns
             from artificial_u.models.database import CourseModel
 
