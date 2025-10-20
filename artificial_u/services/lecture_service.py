@@ -42,6 +42,8 @@ class LectureService:
         audio_url: Optional[str] = None,
         transcript_url: Optional[str] = None,
         revision: Optional[int] = None,
+        created_by: Optional[int] = None,
+        created_with: Optional[str] = None,
     ) -> Lecture:
         """
         Create a new lecture.
@@ -55,6 +57,8 @@ class LectureService:
             audio_url: Optional URL to audio content
             transcript_url: Optional URL to transcript content
             revision: Optional revision number for the lecture
+            created_by: Optional ID of the student who created this lecture
+            created_with: Optional AI model used to generate this lecture
 
         Returns:
             Lecture: The created lecture
@@ -72,6 +76,8 @@ class LectureService:
             summary=summary,
             audio_url=audio_url,
             transcript_url=transcript_url,
+            created_by=created_by,
+            created_with=created_with,
         )
 
         try:

@@ -27,6 +27,8 @@ sample_lectures_base = [
         summary=f"Summary for lecture {i}",
         audio_url=f"https://example.com/audio/lecture_{i}.mp3" if i % 2 == 0 else None,
         transcript_url=f"https://example.com/transcript/lecture_{i}.txt" if i % 3 == 0 else None,
+        created_by=None,
+        created_with=None,
     )
     for i in range(1, 5)
 ]
@@ -60,7 +62,7 @@ def mock_api_service(monkeypatch):
     mock_service["get_lecture"].side_effect = _mock_get_lecture
 
     # CREATE Lecture
-    def _mock_create_lecture(lecture_data: LectureCreate):
+    def _mock_create_lecture(lecture_data: LectureCreate, created_by=None):
         new_id = 5  # Simulate next ID
         return Lecture(
             id=new_id,
@@ -72,6 +74,8 @@ def mock_api_service(monkeypatch):
             summary=lecture_data.summary,
             audio_url=lecture_data.audio_url,
             transcript_url=lecture_data.transcript_url,
+            created_by=created_by,
+            created_with=lecture_data.created_with,
         )
 
     mock_service["create_lecture"].side_effect = _mock_create_lecture
@@ -125,6 +129,8 @@ def mock_api_service(monkeypatch):
         summary=sample_lectures_base[0].summary,
         audio_url=sample_lectures_base[0].audio_url,
         transcript_url=sample_lectures_base[0].transcript_url,
+        created_by=sample_lectures_base[0].created_by,
+        created_with=sample_lectures_base[0].created_with,
     )
     mock_service["generate_lecture"].return_value = generated_lecture_mock
 
@@ -278,6 +284,8 @@ def test_create_lecture(client: TestClient, mock_api_service):
         "summary": new_lecture_data["summary"],
         "audio_url": new_lecture_data["audio_url"],
         "transcript_url": new_lecture_data["transcript_url"],
+        "created_by": 1,  # Set from authenticated student fixture
+        "created_with": None,
     }
 
     response = client.post("/api/v1/lectures", json=new_lecture_data)
@@ -287,7 +295,10 @@ def test_create_lecture(client: TestClient, mock_api_service):
     mock_api_service["create_lecture"].assert_called_once()
     call_args = mock_api_service["create_lecture"].call_args[0]
     assert isinstance(call_args[0], LectureCreate)
-    assert call_args[0].model_dump() == new_lecture_data
+    # Check core fields match (model includes created_by and created_with fields now)
+    lecture_dump = call_args[0].model_dump()
+    for key, value in new_lecture_data.items():
+        assert lecture_dump[key] == value
 
 
 @pytest.mark.unit

@@ -7,7 +7,11 @@ from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
 from fastapi.responses import JSONResponse, PlainTextResponse
 
-from artificial_u.api.dependencies import get_lecture_api_service, get_repository_factory
+from artificial_u.api.dependencies import (
+    ensure_student,
+    get_lecture_api_service,
+    get_repository_factory,
+)
 from artificial_u.api.models import (
     Lecture,
     LectureCreate,
@@ -163,6 +167,7 @@ async def get_lecture_audio(
 async def create_lecture(
     lecture_data: LectureCreate,
     lecture_service: LectureApiService = Depends(get_lecture_api_service),
+    student=Depends(ensure_student),
 ):
     """
     Create a new lecture.
@@ -170,7 +175,7 @@ async def create_lecture(
     - Request body contains all required lecture information
     - Returns the created lecture with its assigned ID
     """
-    lecture = lecture_service.create_lecture(lecture_data)
+    lecture = lecture_service.create_lecture(lecture_data, created_by=student.id)
     return lecture
 
 

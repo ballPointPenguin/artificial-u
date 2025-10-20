@@ -186,12 +186,15 @@ class LectureApiService(BaseApiService[CoreLecture, Lecture, LectureListResponse
         except Exception as e:
             self._handle_general_error("get lecture", e)
 
-    def create_lecture(self, lecture_data: LectureCreate) -> Lecture:
+    def create_lecture(
+        self, lecture_data: LectureCreate, created_by: Optional[int] = None
+    ) -> Lecture:
         """
         Create a new lecture using the core service.
 
         Args:
             lecture_data: The lecture data (API model) to create
+            created_by: Optional student ID who created this lecture
 
         Returns:
             Lecture: The created lecture (API model)
@@ -203,7 +206,7 @@ class LectureApiService(BaseApiService[CoreLecture, Lecture, LectureListResponse
         try:
             # Create lecture using core service, passing individual args
             # Core service create_lecture expects: course_id, topic_id, content, summary, title,
-            # audio_url, transcript_url, revision
+            # audio_url, transcript_url, revision, created_by, created_with
             core_lecture = self.core_service.create_lecture(
                 course_id=lecture_data.course_id,
                 topic_id=lecture_data.topic_id,
@@ -213,6 +216,8 @@ class LectureApiService(BaseApiService[CoreLecture, Lecture, LectureListResponse
                 audio_url=lecture_data.audio_url,
                 transcript_url=lecture_data.transcript_url,
                 revision=lecture_data.revision,
+                created_by=created_by or lecture_data.created_by,
+                created_with=lecture_data.created_with,
             )
             return Lecture.model_validate(core_lecture)
         except DatabaseError as e:

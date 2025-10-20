@@ -35,6 +35,8 @@ class LectureRepository(BaseRepository):
                 transcript_url=lecture.transcript_url,
                 course_id=lecture.course_id,
                 topic_id=lecture.topic_id,
+                created_by=lecture.created_by,
+                created_with=lecture.created_with,
             )
 
             session.add(db_lecture)
@@ -69,6 +71,8 @@ class LectureRepository(BaseRepository):
                 transcript_url=db_lecture.transcript_url,
                 course_id=db_lecture.course_id,
                 topic_id=db_lecture.topic_id,
+                created_by=db_lecture.created_by,
+                created_with=db_lecture.created_with,
             )
 
     def get_content(self, lecture_id: int) -> Optional[str]:
@@ -136,6 +140,8 @@ class LectureRepository(BaseRepository):
                     transcript_url=lecture.transcript_url,
                     course_id=lecture.course_id,
                     topic_id=lecture.topic_id,
+                    created_by=lecture.created_by,
+                    created_with=lecture.created_with,
                 )
                 for lecture in query.all()
             ]
@@ -324,6 +330,8 @@ class LectureRepository(BaseRepository):
                     transcript_url=lecture.transcript_url,
                     course_id=lecture.course_id,
                     topic_id=lecture.topic_id,
+                    created_by=lecture.created_by,
+                    created_with=lecture.created_with,
                 )
                 for lecture in db_lectures
             ]
@@ -352,6 +360,8 @@ class LectureRepository(BaseRepository):
             db_lecture.transcript_url = lecture.transcript_url
             db_lecture.course_id = lecture.course_id
             db_lecture.topic_id = lecture.topic_id
+            db_lecture.created_by = lecture.created_by
+            db_lecture.created_with = lecture.created_with
 
             session.add(db_lecture)
             session.commit()
@@ -389,6 +399,8 @@ class LectureRepository(BaseRepository):
                 "transcript_url",
                 "course_id",
                 "topic_id",
+                "created_by",
+                "created_with",
             }
             for key, value in update_data.items():
                 if key in allowed_fields:
@@ -408,6 +420,8 @@ class LectureRepository(BaseRepository):
                 transcript_url=db_lecture.transcript_url,
                 course_id=db_lecture.course_id,
                 topic_id=db_lecture.topic_id,
+                created_by=db_lecture.created_by,
+                created_with=db_lecture.created_with,
             )
 
     def delete(self, lecture_id: int) -> bool:

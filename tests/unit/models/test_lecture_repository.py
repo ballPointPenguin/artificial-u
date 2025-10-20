@@ -33,6 +33,8 @@ class TestLectureRepository:
             transcript_url="test_transcript_url",
             course_id=1,
             topic_id=1,
+            created_by=None,
+            created_with=None,
         )
 
     @pytest.fixture
@@ -48,6 +50,8 @@ class TestLectureRepository:
         lecture.transcript_url = "test_transcript_url"
         lecture.course_id = 1
         lecture.topic_id = 1
+        lecture.created_by = None
+        lecture.created_with = None
         return lecture
 
     @pytest.fixture
@@ -414,6 +418,8 @@ class TestLectureRepository:
         lecture1.transcript_url = "old_transcript_url"
         lecture1.course_id = 1
         lecture1.topic_id = 1
+        lecture1.created_by = None
+        lecture1.created_with = None
 
         lecture2 = MagicMock()
         lecture2.id = 2
@@ -425,6 +431,8 @@ class TestLectureRepository:
         lecture2.transcript_url = "new_transcript_url"
         lecture2.course_id = 1
         lecture2.topic_id = 1
+        lecture2.created_by = None
+        lecture2.created_with = None
 
         # Configure mock behavior for subquery
         subquery_mock = MagicMock()

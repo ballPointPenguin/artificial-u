@@ -240,6 +240,7 @@ class LectureGeneratorService:
         self, generated_dict: Dict[str, Any], revision: int
     ) -> Lecture:
         """Create and save a lecture from generated data."""
+        settings = get_settings()
         return self.lecture_service.create_lecture(
             course_id=generated_dict.get("course_id"),
             topic_id=generated_dict.get("topic_id"),
@@ -249,6 +250,8 @@ class LectureGeneratorService:
             audio_url=generated_dict.get("audio_url"),
             transcript_url=generated_dict.get("transcript_url"),
             revision=revision,
+            created_by=generated_dict.get("created_by"),
+            created_with=settings.LECTURE_GENERATION_MODEL,
         )
 
     async def _upload_and_update_transcript(

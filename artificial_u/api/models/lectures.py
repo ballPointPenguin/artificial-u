@@ -18,6 +18,10 @@ class LectureBase(BaseModel):
     title: str = Field(..., description="Title of the lecture")
     audio_url: Optional[str] = Field(None, description="URL to audio file if available")
     transcript_url: Optional[str] = Field(None, description="URL to transcript file if available")
+    created_by: Optional[int] = Field(
+        None, description="ID of the student who created this lecture"
+    )
+    created_with: Optional[str] = Field(None, description="AI model used to generate this lecture")
 
 
 class LectureCreate(LectureBase):
@@ -41,6 +45,8 @@ class LectureUpdate(BaseModel):
     audio_url: Optional[str] = Field(None, description="Updated audio URL")
     transcript_url: Optional[str] = Field(None, description="Updated transcript URL")
     revision: Optional[int] = Field(None, description="Updated revision number")
+    created_by: Optional[int] = Field(None, description="Updated student ID")
+    created_with: Optional[str] = Field(None, description="Updated AI model name")
 
 
 class Lecture(LectureBase):

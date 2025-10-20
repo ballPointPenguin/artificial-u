@@ -67,6 +67,9 @@ class LectureModel(Base):
     transcript_url = Column(String, nullable=True)
     course_id = Column(Integer, ForeignKey("courses.id"), nullable=False)
     topic_id = Column(Integer, ForeignKey("topics.id"), nullable=False)
+    # Attribution fields
+    created_by = Column(Integer, ForeignKey("students.id"), nullable=True)
+    created_with = Column(String, nullable=True)
     created_at = Column(DateTime, nullable=False, default=datetime.now)
     updated_at = Column(DateTime, nullable=False, default=datetime.now)
 
