@@ -16,6 +16,7 @@ const CourseTopics = lazy(() => import('./pages/CourseTopics'))
 const TopicDetail = lazy(() => import('./pages/TopicDetail'))
 const LectureDetail = lazy(() => import('./pages/LectureDetail'))
 const LectureCreate = lazy(() => import('./pages/LectureCreate'))
+const Profile = lazy(() => import('./pages/Profile'))
 const Stylebook = lazy(() => import('./pages/Stylebook'))
 const Login = lazy(() => import('./pages/Login'))
 
@@ -26,6 +27,16 @@ const App: Component = () => {
       <Route path="/about" component={About} />
       <Route path="/stylebook" component={Stylebook} />
       <Route path="/login" component={Login} />
+
+      {/* Profile route - requires authentication */}
+      <Route
+        path="/profile"
+        component={() => (
+          <RequireAuth fallback={<LoginPrompt />}>
+            <Profile />
+          </RequireAuth>
+        )}
+      />
 
       {/* Departments routes */}
       <Route path="/departments" component={Departments} />

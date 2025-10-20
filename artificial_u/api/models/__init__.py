@@ -68,6 +68,12 @@ from artificial_u.api.models.professors import (
     ProfessorUpdate,
 )
 
+# Student model
+from artificial_u.api.models.students import (
+    StudentResponse,
+    StudentUpdate,
+)
+
 # Topic model
 from artificial_u.api.models.topics import (
     Topic,
@@ -141,6 +147,9 @@ __all__ = [
     "VoiceResponse",
     "VoiceListResponse",
     "ManualVoiceAssignmentRequest",
+    # Student model
+    "StudentResponse",
+    "StudentUpdate",
     # Error codes
     "ErrorDetail",
     "ErrorResponse",

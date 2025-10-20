@@ -66,6 +66,14 @@ export function NavBar() {
             >
               Courses
             </A>
+            <Show when={auth.isAuthenticated()}>
+              <A
+                href="/profile"
+                class="text-parchment-200 hover:text-parchment-100 tracking-wide font-serif uppercase text-shadow-golden text-sm"
+              >
+                Profile
+              </A>
+            </Show>
             <Show when={!auth.isAuthenticated()}>
               <A
                 href="/login"
@@ -77,6 +85,7 @@ export function NavBar() {
             <Show when={auth.isAuthenticated()}>
               <button
                 class="text-parchment-200 hover:text-parchment-100 tracking-wide font-serif uppercase text-shadow-golden text-sm"
+                type="button"
                 onClick={() => void auth.logout()}
               >
                 Logout
@@ -160,6 +169,15 @@ export function NavBar() {
             >
               Courses
             </A>
+            <Show when={auth.isAuthenticated()}>
+              <A
+                href="/profile"
+                class="block text-parchment-200 hover:text-parchment-100 py-2 tracking-wide font-serif uppercase text-sm"
+                onClick={toggleMobileMenu}
+              >
+                Profile
+              </A>
+            </Show>
             <Show when={!auth.isAuthenticated()}>
               <A
                 href="/login"
@@ -172,6 +190,7 @@ export function NavBar() {
             <Show when={auth.isAuthenticated()}>
               <button
                 class="block text-parchment-200 hover:text-parchment-100 py-2 tracking-wide font-serif uppercase text-sm"
+                type="button"
                 onClick={() => {
                   toggleMobileMenu()
                   void auth.logout()

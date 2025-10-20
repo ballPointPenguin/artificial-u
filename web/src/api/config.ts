@@ -101,4 +101,7 @@ export const ENDPOINTS = {
     listVoices: '/v1/voices/',
     getVoice: (voiceId: number) => `/v1/voices/${String(voiceId)}`,
   },
+  students: {
+    me: '/v1/students/me',
+  },
 }

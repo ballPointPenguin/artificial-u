@@ -404,3 +404,16 @@ export interface APIError {
   path?: string
   timestamp?: string
 }
+
+// Student types
+export interface Student {
+  id: number
+  name: string
+  email: string | null
+  auth0_sub: string | null
+}
+
+export interface StudentUpdate {
+  name?: string
+  email?: string
+}

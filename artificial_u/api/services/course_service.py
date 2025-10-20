@@ -66,7 +66,9 @@ class CourseApiService(BaseApiService[CoreCourse, CourseResponse, CoursesListRes
         self.core_service = course_service
 
         # Initialize generator service for AI generation workflows
-        from artificial_u.services.course_generator_service import CourseGeneratorService
+        from artificial_u.services.course_generator_service import (
+            CourseGeneratorService,
+        )
         from artificial_u.services.job_enqueue_service import JobEnqueueService
 
         # Create job enqueue service for background processing
