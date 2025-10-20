@@ -6,7 +6,7 @@ from typing import List
 class PromptTemplate:
     """Base class for prompt templates."""
 
-    def __init__(self, template: str, required_vars: List[str] = None):
+    def __init__(self, template: str, required_vars: List[str]):
         """Initialize a prompt template.
 
         Args:
