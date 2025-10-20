@@ -287,9 +287,9 @@
   }
 
   body {
-    color: hsl(var(--color-foreground));
+    color: var(--color-foreground);
     font-family: var(--font-serif);
-    background-color: hsl(var(--color-background));
+    background-color: var(--color-background);
     min-height: 100vh;
   }
 
@@ -299,7 +299,7 @@
   h4,
   h5,
   h6 {
-    color: hsl(var(--color-foreground));
+    color: var(--color-foreground);
     font-family: var(--font-display);
 
     @apply tracking-wide;
@@ -308,13 +308,13 @@
   }
 
   a {
-    color: hsl(var(--color-accent));
+    color: var(--color-accent);
 
     @apply transition-colors duration-200;
   }
 
   a:hover {
-    color: hsl(var(--color-primary));
+    color: var(--color-primary);
   }
 }
 

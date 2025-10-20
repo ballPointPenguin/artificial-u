@@ -2,6 +2,7 @@
 API models for Course resources.
 """
 
+from datetime import datetime
 from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, Field
@@ -28,6 +29,9 @@ class CourseBase(BaseModel):
     # Attribution (not required for create)
     created_by: Optional[int] = Field(None, description="Student ID who created the course")
     created_with: Optional[str] = Field(None, description="Name of LLM used, if any")
+    # Timestamps
+    created_at: Optional[datetime] = Field(None, description="Course creation timestamp")
+    updated_at: Optional[datetime] = Field(None, description="Course last update timestamp")
 
 
 # Course creation model
@@ -52,6 +56,37 @@ class CourseUpdate(BaseModel):
     total_weeks: Optional[int] = Field(None, description="Updated total weeks")
 
 
+# Student brief info model for course responses
+class StudentBrief(BaseModel):
+    """Brief student information for course responses."""
+
+    id: int = Field(..., description="Student ID")
+    name: str = Field(..., description="Student name")
+    email: Optional[str] = Field(None, description="Student email")
+
+
+# Professor brief info model for course responses
+class ProfessorBrief(BaseModel):
+    """Brief professor information for course responses."""
+
+    id: int = Field(..., description="Professor ID")
+    name: str = Field(..., description="Professor name")
+    title: str = Field(..., description="Academic title")
+    department_id: int = Field(..., description="Department ID")
+    specialization: str = Field(..., description="Area of specialization")
+    image_url: Optional[str] = Field(None, description="URL of the professor's image")
+
+
+# Department brief info model for course responses
+class DepartmentBrief(BaseModel):
+    """Brief department information for course responses."""
+
+    id: int = Field(..., description="Department ID")
+    name: str = Field(..., description="Department name")
+    code: str = Field(..., description="Department code")
+    faculty: str = Field(..., description="Faculty name")
+
+
 # Course response model
 class CourseResponse(CourseBase):
     """Model for course responses."""
@@ -62,6 +97,11 @@ class CourseResponse(CourseBase):
     professor_id: int = Field(..., description="ID of the professor teaching the course")
     created_by: Optional[int] = Field(None, description="Student ID who created the course")
     created_with: Optional[str] = Field(None, description="Name of LLM used, if any")
+    student: Optional[StudentBrief] = Field(None, description="Student who created the course")
+    professor: Optional[ProfessorBrief] = Field(None, description="Professor teaching the course")
+    department: Optional[DepartmentBrief] = Field(
+        None, description="Department offering the course"
+    )
 
     class Config:
         from_attributes = True
@@ -76,18 +116,6 @@ class CoursesListResponse(BaseModel):
     page: int = Field(..., description="Current page number")
     size: int = Field(..., description="Number of items per page")
     pages: int = Field(..., description="Total number of pages")
-
-
-# Professor brief info model for course's professor endpoint
-class ProfessorBrief(BaseModel):
-    """Brief professor information for course's professor endpoint."""
-
-    id: int = Field(..., description="Unique professor identifier")
-    name: str = Field(..., description="Professor's name")
-    title: str = Field(..., description="Academic title")
-    department_id: int = Field(..., description="Department ID")
-    specialization: str = Field(..., description="Area of specialization")
-    image_url: Optional[str] = Field(None, description="URL of the professor's image")
 
 
 # Lecture brief info model for course's lectures endpoint
@@ -108,16 +136,6 @@ class CourseLecturesResponse(BaseModel):
     course_id: int = Field(..., description="ID of the course")
     lectures: List[LectureBrief] = Field(..., description="List of lectures in the course")
     total: int = Field(..., description="Total number of lectures")
-
-
-# Course's department brief info model
-class DepartmentBrief(BaseModel):
-    """Brief department information for course's department endpoint."""
-
-    id: int = Field(..., description="Unique department identifier")
-    name: str = Field(..., description="Department name")
-    code: str = Field(..., description="Department code")
-    faculty: str = Field(..., description="Faculty name")
 
 
 # Model for generating a course

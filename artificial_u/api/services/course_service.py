@@ -136,11 +136,20 @@ class CourseApiService(BaseApiService[CoreCourse, CourseResponse, CoursesListRes
             paginated_items = self._paginate_items(filtered_courses, page, size)
 
             # Convert the 'course' dictionary part to response models
-            course_responses = [
-                CourseResponse.model_validate(item["course"])
-                for item in paginated_items
-                if "course" in item
-            ]
+            course_responses = []
+            for item in paginated_items:
+                if "course" in item:
+                    course_data = item["course"].copy()
+                    # Add student information if available
+                    if "student" in item and item["student"]:
+                        course_data["student"] = item["student"]
+                    # Add professor information if available
+                    if "professor" in item and item["professor"]:
+                        course_data["professor"] = item["professor"]
+                    # Add department information if available
+                    if "department" in item and item["department"]:
+                        course_data["department"] = item["department"]
+                    course_responses.append(CourseResponse.model_validate(course_data))
 
             return self._create_list_response(
                 course_responses, total, page, size, CoursesListResponse

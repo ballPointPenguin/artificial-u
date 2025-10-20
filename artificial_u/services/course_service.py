@@ -236,13 +236,13 @@ class CourseService:
 
     def list_courses(self, department_id: Optional[int] = None) -> List[Dict[str, Any]]:
         """
-        List all courses with professor information, using repository factory.
+        List all courses with professor and student information, using repository factory.
 
         Args:
             department_id: Optional department ID to filter by.
 
         Returns:
-            List[Dict]: List of courses with professor information.
+            List[Dict]: List of courses with professor and student information.
         """
         self.logger.info(
             f"Listing courses{f' for department {department_id}' if department_id else ''}"
@@ -254,11 +254,39 @@ class CourseService:
             for course in courses:
                 # Fetch professor using the repository directly
                 professor = self.repository_factory.professor.get(course.professor_id)
+
+                # Fetch department using the repository directly
+                department = self.repository_factory.department.get(course.department_id)
+
+                # Fetch student information if created_by is present
+                student = None
+                if course.created_by:
+                    student = self.repository_factory.student.get(course.created_by)
+
                 result.append(
                     {
-                        # Convert models to dicts for consistent output?
+                        # Convert models to dicts for consistent output
                         "course": course_model_to_dict(course),
                         "professor": professor_model_to_dict(professor),
+                        "department": (
+                            {
+                                "id": department.id,
+                                "name": department.name,
+                                "code": department.code,
+                                "faculty": department.faculty,
+                            }
+                            if department
+                            else None
+                        ),
+                        "student": (
+                            {
+                                "id": student.id,
+                                "name": student.name,
+                                "email": student.email,
+                            }
+                            if student
+                            else None
+                        ),
                     }
                 )
             self.logger.debug(f"Found {len(result)} courses")

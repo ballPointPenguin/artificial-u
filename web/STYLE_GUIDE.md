@@ -22,8 +22,8 @@ The styling approach prioritizes:
   - Key plugins include:
     - `postcss-color-hsl`: Allows using HSL color functions.
     - `postcss-preset-env`: Enables modern CSS features, transpiling them for broader compatibility (Stage 3 features are enabled).
-- **BiomeJS**: Used for code formatting. Run `pnpm run format` to format.
-- **ESLint**: Used for linting. Run `pnpm run lint` to check code. Configuration is in `./eslint.config.js`.
+- **BiomeJS**: Used for code formatting. Run `pnpm format` to format.
+- **ESLint**: Used for linting. Run `pnpm lint` to check code. Configuration is in `./eslint.config.js`.
 
 ## Theming System
 
@@ -111,7 +111,7 @@ These semantic colors are then available as Tailwind utility classes (e.g., `bg-
   - Utilize the `Stylebook.tsx` page to experiment with and verify component styles across different themes.
   - Adhere to the `web-code` guidelines (ESM, TypeScript, Vite, SolidJS, `.js`/`.jsx` suffixes for local imports).
   - Remember the `greenfield` development philosophy: move fast, refactor aggressively, and prioritize iteration speed.
-  - Run `pnpm run format` and `pnpm run lint` regularly.
+  - Run `pnpm format` and `pnpm lint` regularly.
 - **Adding New Styles/Components**:
   - Prefer Tailwind utility classes for styling.
   - If new global styles or variables are needed, add them to `src/index.css`, considering how they fit into the existing theming system.

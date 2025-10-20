@@ -57,6 +57,8 @@ class CourseRepository(BaseRepository):
                 professor_id=db_course.professor_id,
                 created_by=db_course.created_by,
                 created_with=db_course.created_with,
+                created_at=db_course.created_at,
+                updated_at=db_course.updated_at,
             )
 
     def get_by_code(self, code: str) -> Optional[Course]:
@@ -80,6 +82,8 @@ class CourseRepository(BaseRepository):
                 professor_id=db_course.professor_id,
                 created_by=db_course.created_by,
                 created_with=db_course.created_with,
+                created_at=db_course.created_at,
+                updated_at=db_course.updated_at,
             )
 
     def list(self, department_id: Optional[int] = None) -> List[Course]:
@@ -106,6 +110,8 @@ class CourseRepository(BaseRepository):
                     professor_id=course.professor_id,
                     created_by=course.created_by,
                     created_with=course.created_with,
+                    created_at=course.created_at,
+                    updated_at=course.updated_at,
                 )
                 for course in db_courses
             ]
@@ -131,6 +137,8 @@ class CourseRepository(BaseRepository):
                     professor_id=course.professor_id,
                     created_by=course.created_by,
                     created_with=course.created_with,
+                    created_at=course.created_at,
+                    updated_at=course.updated_at,
                 )
                 for course in db_courses
             ]

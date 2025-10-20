@@ -1,4 +1,5 @@
 ---
+globs: web/*
 alwaysApply: false
 ---
 ## Code Style for JS, TS, JSX, TSX
@@ -9,9 +10,9 @@ alwaysApply: false
 - Default "tab" spacing is 2 spaces
 - single quotes '' preferred
 - trailing commas use 'es5' conditions
-- run `pnpm run format` to re-format
-- run `pnpm run lint` to lint
-- validate the build with `pnpm run build`
+- run `pnpm format` to re-format
+- run `pnpm lint` to lint
+- validate the build with `pnpm build`
 - local imports should use `.js` or `.jsx` suffix (even for .ts & .tsx files)
 
 ## Libraries in use

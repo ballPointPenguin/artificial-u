@@ -38,6 +38,29 @@ export interface Course {
   description: string
   lectures_per_week: number
   total_weeks: number
+  created_by?: number | null
+  created_with?: string | null
+  created_at?: string | null
+  updated_at?: string | null
+  student?: {
+    id: number
+    name: string
+    email: string | null
+  } | null
+  professor?: {
+    id: number
+    name: string
+    title: string
+    department_id: number
+    specialization: string
+    image_url: string | null
+  } | null
+  department?: {
+    id: number
+    name: string
+    code: string
+    faculty: string
+  } | null
 }
 
 export type CoursesList = PaginatedResponse<Course>

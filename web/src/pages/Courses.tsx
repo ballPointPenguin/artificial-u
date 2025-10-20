@@ -15,6 +15,39 @@ const Courses: Component = () => {
   const [submitting, setSubmitting] = createSignal(false)
   const [formError, setFormError] = createSignal('')
 
+  // Helper function to get student name safely
+  const getStudentName = (course: Course): string => {
+    const studentName = course.student?.name
+    return studentName || '—'
+  }
+
+  // Helper function to get professor name safely
+  const getProfessorName = (course: Course): string => {
+    const professorName = course.professor?.name
+    return professorName || '—'
+  }
+
+  // Helper function to get department name safely
+  const getDepartmentName = (course: Course): string => {
+    const departmentName = course.department?.name
+    return departmentName || '—'
+  }
+
+  // Helper function to format date safely
+  const formatDate = (dateString: string | null | undefined): string => {
+    if (!dateString) return '—'
+    try {
+      const date = new Date(dateString)
+      return date.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+      })
+    } catch {
+      return '—'
+    }
+  }
+
   const [coursesData, { refetch }] = createResource(
     () => ({ page: page(), size: size() }),
     ({ page, size }) => courseService.listCourses({ page, size })
@@ -123,28 +156,50 @@ const Courses: Component = () => {
             <table class="min-w-full">
               <thead>
                 <tr class="border-b border-parchment-800/30">
-                  <th class="py-3 px-4 text-left font-display text-parchment-200">Code</th>
-                  <th class="py-3 px-4 text-left font-display text-parchment-200">Title</th>
-                  <th class="py-3 px-4 text-left font-display text-parchment-200">Level</th>
-                  <th class="py-3 px-4 text-left font-display text-parchment-200">Credits</th>
-                  <th class="py-3 px-4 text-left font-display text-parchment-200">Actions</th>
+                  <th class="py-3 px-4 align-middle text-left font-display text-parchment-200">
+                    Code
+                  </th>
+                  <th class="py-3 px-4 align-middle text-left font-display text-parchment-200">
+                    Title
+                  </th>
+                  <th class="py-3 px-4 align-middle text-left font-display text-parchment-200">
+                    Teacher
+                  </th>
+                  <th class="py-3 px-4 align-middle text-left font-display text-parchment-200">
+                    Department
+                  </th>
+                  <th class="py-3 px-4 align-middle text-left font-display text-parchment-200">
+                    Creator
+                  </th>
+                  <th class="py-3 px-4 align-middle text-left font-display text-parchment-200">
+                    Last Update
+                  </th>
                 </tr>
               </thead>
               <tbody>
                 <For each={coursesData()?.items}>
                   {(course: Course) => (
                     <tr class="border-b border-parchment-800/20 hover:bg-arcanum-800/50 transition-colors">
-                      <td class="py-3 px-4 text-parchment-100">{course.code}</td>
-                      <td class="py-3 px-4 text-parchment-100">{course.title}</td>
-                      <td class="py-3 px-4 text-parchment-100">{course.level}</td>
-                      <td class="py-3 px-4 text-parchment-100">{course.credits}</td>
-                      <td class="py-3 px-4">
+                      <td class="py-3 px-4 align-middle text-parchment-100">{course.code}</td>
+                      <td class="py-3 px-4 align-middle text-parchment-100">
                         <A
                           href={`/courses/${String(course.id)}`}
-                          class="text-mystic-400 hover:text-mystic-300 transition-colors"
+                          class="text-parchment-100 hover:text-mystic-300 transition-colors"
                         >
-                          View Details
+                          {course.title}
                         </A>
+                      </td>
+                      <td class="py-3 px-4 align-middle text-parchment-100">
+                        {getProfessorName(course)}
+                      </td>
+                      <td class="py-3 px-4 align-middle text-parchment-100">
+                        {getDepartmentName(course)}
+                      </td>
+                      <td class="py-3 px-4 align-middle text-parchment-100">
+                        {getStudentName(course)}
+                      </td>
+                      <td class="py-3 px-4 align-middle text-parchment-100">
+                        {formatDate(course.updated_at)}
                       </td>
                     </tr>
                   )}

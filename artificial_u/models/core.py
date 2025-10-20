@@ -161,6 +161,9 @@ class Course(BaseModel):
     # Attribution
     created_by: Optional[int] = None
     created_with: Optional[str] = None
+    # Timestamps
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
 
 
 class Topic(BaseModel):
