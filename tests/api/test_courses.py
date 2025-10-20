@@ -202,7 +202,14 @@ def test_list_courses(client: TestClient, mock_api_service):
     assert data["items"][0]["created_at"] is not None
     assert data["items"][0]["updated_at"] is not None
     mock_api_service["get_courses"].assert_called_once_with(
-        page=1, size=10, department_id=None, professor_id=None, level=None, title=None
+        page=1,
+        size=10,
+        department_id=None,
+        professor_id=None,
+        level=None,
+        title=None,
+        sort_by="updated_at",
+        order="desc",
     )
 
 
@@ -221,7 +228,39 @@ def test_list_courses_with_filters(client: TestClient, mock_api_service):
     assert len(data["items"]) == len(filtered_courses)
     assert data["total"] == len(filtered_courses)
     mock_api_service["get_courses"].assert_called_once_with(
-        page=1, size=10, department_id=1, professor_id=None, level="Undergraduate", title=None
+        page=1,
+        size=10,
+        department_id=1,
+        professor_id=None,
+        level="Undergraduate",
+        title=None,
+        sort_by="updated_at",
+        order="desc",
+    )
+
+
+@pytest.mark.unit
+def test_list_courses_with_sorting(client: TestClient, mock_api_service):
+    """Test listing courses with sorting parameters."""
+    # Simulate sorted response from service
+    sorted_courses = sorted(sample_courses_base, key=lambda c: c.code)
+    mock_api_service["get_courses"].return_value = CoursesListResponse(
+        items=sorted_courses, total=len(sorted_courses), page=1, size=10, pages=1
+    )
+
+    response = client.get("/api/v1/courses?sort_by=code&order=asc")
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data["items"]) == len(sorted_courses)
+    mock_api_service["get_courses"].assert_called_once_with(
+        page=1,
+        size=10,
+        department_id=None,
+        professor_id=None,
+        level=None,
+        title=None,
+        sort_by="code",
+        order="asc",
     )
 
 

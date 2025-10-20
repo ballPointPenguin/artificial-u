@@ -88,6 +88,80 @@ class CourseApiService(BaseApiService[CoreCourse, CourseResponse, CoursesListRes
         # Keep reference to core professor service if needed for direct lookups
         self.professor_service = professor_service
 
+    def _filter_courses(
+        self,
+        courses: List[dict],
+        professor_id: Optional[int] = None,
+        level: Optional[str] = None,
+        title: Optional[str] = None,
+    ) -> List[dict]:
+        """Apply additional filters to courses list."""
+        filtered_courses = courses
+
+        if professor_id:
+            filtered_courses = [
+                item
+                for item in filtered_courses
+                if item.get("course", {}).get("professor_id") == professor_id
+            ]
+        if level:
+            filtered_courses = [
+                item for item in filtered_courses if item.get("course", {}).get("level") == level
+            ]
+        if title:
+            filtered_courses = [
+                item
+                for item in filtered_courses
+                if title.lower() in item.get("course", {}).get("title", "").lower()
+            ]
+
+        return filtered_courses
+
+    def _sort_courses(
+        self,
+        courses: List[dict],
+        sort_by: Optional[str] = None,
+        order: Optional[str] = "desc",
+    ) -> List[dict]:
+        """Apply sorting to courses list."""
+        if not sort_by:
+            return courses
+
+        reverse = order == "desc"
+        valid_sort_fields = [
+            "code",
+            "title",
+            "level",
+            "credits",
+            "updated_at",
+            "created_at",
+        ]
+
+        if sort_by in valid_sort_fields:
+            return sorted(
+                courses,
+                key=lambda item: item.get("course", {}).get(sort_by) or "",
+                reverse=reverse,
+            )
+
+        return courses
+
+    def _convert_to_course_responses(self, items: List[dict]) -> List[CourseResponse]:
+        """Convert course items to CourseResponse models."""
+        course_responses = []
+        for item in items:
+            if "course" in item:
+                course_data = item["course"].copy()
+                # Add related information if available
+                if "student" in item and item["student"]:
+                    course_data["student"] = item["student"]
+                if "professor" in item and item["professor"]:
+                    course_data["professor"] = item["professor"]
+                if "department" in item and item["department"]:
+                    course_data["department"] = item["department"]
+                course_responses.append(CourseResponse.model_validate(course_data))
+        return course_responses
+
     def get_courses(
         self,
         page: int = 1,
@@ -96,60 +170,32 @@ class CourseApiService(BaseApiService[CoreCourse, CourseResponse, CoursesListRes
         professor_id: Optional[int] = None,
         level: Optional[str] = None,
         title: Optional[str] = None,
+        sort_by: Optional[str] = "updated_at",
+        order: Optional[str] = "desc",
     ) -> CoursesListResponse:
         """
-        Get a paginated list of courses with optional filtering.
+        Get a paginated list of courses with optional filtering and sorting.
         Filters by department in the core service, others applied here.
         """
         try:
             # Get courses from core service (only filters by department_id)
             # Core service returns List[Dict[str, Any]] with 'course' and 'professor' keys
-            # The 'course' value is a dict representation from course_model_to_dict
             core_courses_list = self.core_service.list_courses(department_id=department_id)
 
-            filtered_courses = core_courses_list
+            # Apply additional filters
+            filtered_courses = self._filter_courses(core_courses_list, professor_id, level, title)
 
-            # Apply additional filters manually
-            if professor_id:
-                filtered_courses = [
-                    item
-                    for item in filtered_courses
-                    if item.get("course", {}).get("professor_id") == professor_id
-                ]
-            if level:
-                filtered_courses = [
-                    item
-                    for item in filtered_courses
-                    if item.get("course", {}).get("level") == level
-                ]
-            if title:
-                filtered_courses = [
-                    item
-                    for item in filtered_courses
-                    if title.lower() in item.get("course", {}).get("title", "").lower()
-                ]
+            # Apply sorting
+            sorted_courses = self._sort_courses(filtered_courses, sort_by, order)
 
             # Count total after filtering
-            total = len(filtered_courses)
+            total = len(sorted_courses)
 
-            # Apply pagination to the filtered list
-            paginated_items = self._paginate_items(filtered_courses, page, size)
+            # Apply pagination
+            paginated_items = self._paginate_items(sorted_courses, page, size)
 
-            # Convert the 'course' dictionary part to response models
-            course_responses = []
-            for item in paginated_items:
-                if "course" in item:
-                    course_data = item["course"].copy()
-                    # Add student information if available
-                    if "student" in item and item["student"]:
-                        course_data["student"] = item["student"]
-                    # Add professor information if available
-                    if "professor" in item and item["professor"]:
-                        course_data["professor"] = item["professor"]
-                    # Add department information if available
-                    if "department" in item and item["department"]:
-                        course_data["department"] = item["department"]
-                    course_responses.append(CourseResponse.model_validate(course_data))
+            # Convert to response models
+            course_responses = self._convert_to_course_responses(paginated_items)
 
             return self._create_list_response(
                 course_responses, total, page, size, CoursesListResponse

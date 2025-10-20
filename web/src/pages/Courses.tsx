@@ -1,16 +1,25 @@
 import { A } from '@solidjs/router'
 import { type Component, createResource, createSignal, For, Show } from 'solid-js'
 import { courseService } from '../api/services/course-service.js'
+import { departmentService } from '../api/services/department-service.js'
 import type { Course, CourseCreate } from '../api/types.js'
 import { RequireAuth } from '../auth/RequireAuth'
 import CourseForm from '../components/courses/CourseForm.jsx'
 import type { CourseFormData } from '../components/courses/types.jsx'
 import { Button } from '../components/ui'
+import type { SelectOption } from '../components/ui/Select.jsx'
+import Select from '../components/ui/Select.jsx'
 import { getJobEventHub } from '../utils/job-events-hub.js'
+
+type SortField = 'code' | 'title' | 'level' | 'credits' | 'updated_at' | 'created_at'
+type SortOrder = 'asc' | 'desc'
 
 const Courses: Component = () => {
   const [page, setPage] = createSignal(1)
   const [size] = createSignal(10)
+  const [sortBy, setSortBy] = createSignal<SortField>('updated_at')
+  const [order, setOrder] = createSignal<SortOrder>('desc')
+  const [departmentFilter, setDepartmentFilter] = createSignal<number | null>(null)
   const [showCreateForm, setShowCreateForm] = createSignal(false)
   const [submitting, setSubmitting] = createSignal(false)
   const [formError, setFormError] = createSignal('')
@@ -48,10 +57,104 @@ const Courses: Component = () => {
     }
   }
 
-  const [coursesData, { refetch }] = createResource(
-    () => ({ page: page(), size: size() }),
-    ({ page, size }) => courseService.listCourses({ page, size })
+  // Fetch departments for filter dropdown
+  const [departmentsData] = createResource(() =>
+    departmentService.listDepartments({ page: 1, size: 100 })
   )
+
+  // Department options for Select component
+  const departmentOptions = (): SelectOption[] => {
+    const depts = departmentsData()?.items || []
+    // Sort departments alphabetically by name
+    const sortedDepts = [...depts].sort((a, b) => a.name.localeCompare(b.name))
+    return [
+      { value: 0, label: 'All Departments' },
+      ...sortedDepts.map((dept) => ({
+        value: dept.id,
+        label: dept.name,
+      })),
+    ]
+  }
+
+  const [coursesData, { refetch }] = createResource(
+    () => ({
+      page: page(),
+      size: size(),
+      sortBy: sortBy(),
+      order: order(),
+      departmentId: departmentFilter(),
+    }),
+    ({ page, size, sortBy, order, departmentId }) =>
+      courseService.listCourses({
+        page,
+        size,
+        sortBy,
+        order,
+        departmentId: departmentId || undefined,
+      })
+  )
+
+  // Handle sorting - if clicking same column, toggle order; otherwise set new column with desc
+  const handleSort = (field: SortField) => {
+    if (sortBy() === field) {
+      // Toggle order
+      setOrder(order() === 'asc' ? 'desc' : 'asc')
+    } else {
+      // New column, default to descending
+      setSortBy(field)
+      setOrder('desc')
+    }
+    // Reset to first page when sorting changes
+    setPage(1)
+  }
+
+  // Handle department filter change
+  const handleDepartmentFilterChange = (value: number | string | null) => {
+    const deptId = typeof value === 'number' ? value : null
+    setDepartmentFilter(deptId === 0 ? null : deptId)
+    // Reset to first page when filter changes
+    setPage(1)
+  }
+
+  // Sortable column header component
+  const SortableHeader: Component<{ field: SortField; label: string }> = (props) => {
+    const isActive = () => sortBy() === props.field
+    const currentOrder = () => (isActive() ? order() : null)
+
+    return (
+      <th class="py-3 px-4 align-middle text-left font-display text-parchment-200">
+        <button
+          type="button"
+          onClick={() => {
+            handleSort(props.field)
+          }}
+          class="flex items-center gap-2 hover:text-parchment-100 transition-colors cursor-pointer select-none"
+        >
+          <span>{props.label}</span>
+          <span class="inline-flex flex-col text-xs leading-none">
+            <span
+              class={
+                isActive() && currentOrder() === 'asc'
+                  ? 'text-mystic-300'
+                  : 'text-parchment-600 opacity-50'
+              }
+            >
+              ▲
+            </span>
+            <span
+              class={
+                isActive() && currentOrder() === 'desc'
+                  ? 'text-mystic-300'
+                  : 'text-parchment-600 opacity-50'
+              }
+            >
+              ▼
+            </span>
+          </span>
+        </button>
+      </th>
+    )
+  }
 
   // Helper function to get pages safely
   const getPages = () => {
@@ -148,6 +251,32 @@ const Courses: Component = () => {
         when={!coursesData.loading}
         fallback={<div class="text-parchment-200 font-serif p-4">Loading courses...</div>}
       >
+        {/* Filter section */}
+        <div class="mb-6 flex items-center gap-4">
+          <div class="w-64">
+            <Select
+              name="department-filter"
+              label="Filter by Department"
+              value={departmentFilter() || 0}
+              onChange={handleDepartmentFilterChange}
+              options={departmentOptions()}
+              placeholder="All Departments"
+              disabled={departmentsData.loading}
+            />
+          </div>
+          <Show when={departmentFilter() !== null}>
+            <button
+              type="button"
+              onClick={() => {
+                handleDepartmentFilterChange(0)
+              }}
+              class="text-sm text-parchment-300 hover:text-mystic-300 transition-colors"
+            >
+              Clear filter
+            </button>
+          </Show>
+        </div>
+
         <Show
           when={hasCourses()}
           fallback={<div class="arcane-card p-6 text-center">No courses found.</div>}
@@ -156,12 +285,8 @@ const Courses: Component = () => {
             <table class="min-w-full">
               <thead>
                 <tr class="border-b border-parchment-800/30">
-                  <th class="py-3 px-4 align-middle text-left font-display text-parchment-200">
-                    Code
-                  </th>
-                  <th class="py-3 px-4 align-middle text-left font-display text-parchment-200">
-                    Title
-                  </th>
+                  <SortableHeader field="code" label="Code" />
+                  <SortableHeader field="title" label="Title" />
                   <th class="py-3 px-4 align-middle text-left font-display text-parchment-200">
                     Teacher
                   </th>
@@ -171,9 +296,7 @@ const Courses: Component = () => {
                   <th class="py-3 px-4 align-middle text-left font-display text-parchment-200">
                     Creator
                   </th>
-                  <th class="py-3 px-4 align-middle text-left font-display text-parchment-200">
-                    Last Update
-                  </th>
+                  <SortableHeader field="updated_at" label="Last Update" />
                 </tr>
               </thead>
               <tbody>

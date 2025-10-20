@@ -21,6 +21,8 @@ interface ListCoursesParams {
   professorId?: number
   level?: string
   title?: string
+  sortBy?: string
+  order?: 'asc' | 'desc'
 }
 
 export const courseService = {
@@ -33,6 +35,8 @@ export const courseService = {
     if (params.professorId) queryParams.set('professor_id', params.professorId.toString())
     if (params.level) queryParams.set('level', params.level)
     if (params.title) queryParams.set('title', params.title)
+    if (params.sortBy) queryParams.set('sort_by', params.sortBy)
+    if (params.order) queryParams.set('order', params.order)
     return httpClient.get<CoursesListResponse>(
       `${ENDPOINTS.courses.list}?${queryParams.toString()}`
     )

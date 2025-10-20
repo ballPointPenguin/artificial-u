@@ -39,7 +39,7 @@ router = APIRouter(
     "",
     response_model=CoursesListResponse,
     summary="List courses",
-    description="Get a paginated list of courses with optional filtering.",
+    description="Get a paginated list of courses with optional filtering and sorting.",
 )
 async def list_courses(
     page: int = Query(1, ge=1, description="Page number"),
@@ -48,10 +48,17 @@ async def list_courses(
     professor_id: Optional[int] = Query(None, description="Filter by professor ID"),
     level: Optional[str] = Query(None, description="Filter by course level"),
     title: Optional[str] = Query(None, description="Filter by title (partial match)"),
+    sort_by: Optional[str] = Query(
+        "updated_at",
+        description="Field to sort by (code, title, level, credits, updated_at, created_at)",
+    ),
+    order: Optional[str] = Query(
+        "desc", description="Sort order (asc or desc)", pattern="^(asc|desc)$"
+    ),
     course_service: CourseApiService = Depends(get_course_api_service),
 ):
     """
-    Get a paginated list of courses with filtering options.
+    Get a paginated list of courses with filtering and sorting options.
     """
     return course_service.get_courses(
         page=page,
@@ -60,6 +67,8 @@ async def list_courses(
         professor_id=professor_id,
         level=level,
         title=title,
+        sort_by=sort_by,
+        order=order,
     )
 
 
