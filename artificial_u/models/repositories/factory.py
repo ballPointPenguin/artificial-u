@@ -2,7 +2,7 @@
 Factory for creating and managing repository instances.
 """
 
-from typing import Dict, Optional, Type, TypeVar
+from typing import Dict, Optional, Type, TypeVar, cast
 
 from artificial_u.models.repositories.base import BaseRepository
 from artificial_u.models.repositories.course import CourseRepository
@@ -51,7 +51,7 @@ class RepositoryFactory:
         if repo_name not in self._repositories:
             self._repositories[repo_name] = repo_class(db_url=self.db_url)
 
-        return self._repositories[repo_name]
+        return cast(R, self._repositories[repo_name])
 
     @property
     def course(self) -> CourseRepository:

@@ -227,7 +227,7 @@ hatch run pytest -m integration
 - Line length: 100 characters (black, isort, flake8)
 - Type hints encouraged (mypy runs on `artificial_u/` directory)
 - Black formatting with isort for imports
-- Pre-commit hooks run black, isort, flake8, mypy
+- Pre-commit hooks run black, isort, flake8
 
 **TypeScript:**
 

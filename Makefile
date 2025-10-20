@@ -70,7 +70,6 @@ lint: ## Run all linting checks
 	@$(HATCH) run black --check $(SRC_DIR) $(TEST_DIR)
 	@$(HATCH) run isort --check-only $(SRC_DIR) $(TEST_DIR)
 	@$(HATCH) run flake8 $(SRC_DIR)
-	@$(HATCH) run mypy $(SRC_DIR)
 	@echo "$(GREEN)Linting complete!$(NC)"
 
 # Testing

@@ -4,6 +4,7 @@ Base repository for database operations.
 
 import logging
 import os
+from typing import Optional
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
@@ -17,7 +18,7 @@ class BaseRepository:
     Provides common functionality for all repositories.
     """
 
-    def __init__(self, db_url: str = None):
+    def __init__(self, db_url: Optional[str] = None):
         """
         Initialize the repository.
 
