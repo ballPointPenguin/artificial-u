@@ -10,6 +10,12 @@ export const setTokenProvider = (fn: () => Promise<string | null>) => {
   getAuthToken = fn
 }
 
+// Optional authentication error handler for when tokens expire or auth fails
+export let onAuthError: null | (() => void) = null
+export const setAuthErrorHandler = (fn: () => void) => {
+  onAuthError = fn
+}
+
 async function attachAuthHeader(headers: Headers): Promise<void> {
   if (!getAuthToken) return
   try {
@@ -63,6 +69,12 @@ async function handleResponse<T>(response: Response): Promise<T> {
       // If parsing fails, use a generic error message
       errorMessage = response.statusText || 'An error occurred'
       errorData = { detail: errorMessage }
+    }
+
+    // Handle authentication errors (403 Forbidden)
+    // This indicates the token has expired or become invalid
+    if (response.status === 403 && onAuthError) {
+      onAuthError()
     }
 
     throw new ApiError(errorMessage, response.status, errorData)

@@ -1,6 +1,6 @@
 import type { Auth0Client, User } from '@auth0/auth0-spa-js'
 import { createContext, createSignal, type JSX, onCleanup, onMount, useContext } from 'solid-js'
-import { setTokenProvider } from '../api/client'
+import { setAuthErrorHandler, setTokenProvider } from '../api/client'
 import { createClient } from './auth0'
 
 type AuthContextValue = {
@@ -25,6 +25,13 @@ export function AuthProvider(props: { children: JSX.Element }) {
     void (async () => {
       const c = await createClient()
       setClient(c)
+
+      const refreshState = async () => {
+        const authedNow = await c.isAuthenticated()
+        setIsAuthenticated(authedNow)
+        setUser(authedNow ? ((await c.getUser()) ?? null) : null)
+      }
+
       // Register token provider once the client is available
       setTokenProvider(async () => {
         try {
@@ -33,14 +40,20 @@ export function AuthProvider(props: { children: JSX.Element }) {
           return null
         }
       })
+
+      // Register auth error handler to handle expired/invalid tokens
+      setAuthErrorHandler(() => {
+        // Clear authentication state when receiving 403
+        setIsAuthenticated(false)
+        setUser(null)
+        // Optionally redirect to login page
+        // Uncomment the next line to auto-redirect on auth errors
+        // void c.loginWithRedirect()
+      })
+
       if (location.search.includes('code=') && location.search.includes('state=')) {
         await c.handleRedirectCallback()
         history.replaceState({}, document.title, location.pathname)
-      }
-      const refreshState = async () => {
-        const authedNow = await c.isAuthenticated()
-        setIsAuthenticated(authedNow)
-        setUser(authedNow ? ((await c.getUser()) ?? null) : null)
       }
       await refreshState()
 
