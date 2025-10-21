@@ -142,12 +142,15 @@ class ProfessorApiService(BaseApiService[CoreProfessor, ProfessorResponse, Profe
         except ProfessorNotFoundError:
             return None
 
-    def create_professor(self, professor_data: ProfessorCreate) -> ProfessorResponse:
+    def create_professor(
+        self, professor_data: ProfessorCreate, created_by: int = None
+    ) -> ProfessorResponse:
         """
         Create a new professor.
 
         Args:
             professor_data: Professor data for creation
+            created_by: Optional student ID who created the professor
 
         Returns:
             Created professor with ID
@@ -160,6 +163,10 @@ class ProfessorApiService(BaseApiService[CoreProfessor, ProfessorResponse, Profe
             data = professor_data.model_dump(
                 exclude_unset=True
             )  # Use exclude_unset for partial updates
+
+            # Add created_by if provided
+            if created_by is not None:
+                data["created_by"] = created_by
 
             # Instantiate the core Professor model
             professor_to_create = CoreProfessor(**data)

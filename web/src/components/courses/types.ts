@@ -13,4 +13,5 @@ export interface CourseFormData {
   // Add any other fields that are part of the form but maybe not directly in CourseCreate/Update initially
   // For example, a freeform prompt for generation if not directly mapping all fields to CourseGenerateRequest.partial_attributes
   freeform_prompt?: string
+  created_with?: string | null // LLM model name if generated
 }

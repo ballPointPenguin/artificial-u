@@ -424,12 +424,10 @@ def test_courses_to_xml():
     # Check first course
     assert course_elems[0].find("code").text == "CS101"
     assert course_elems[0].find("title").text == "Introduction to Programming"
-    assert course_elems[0].find("description").text == "Basic programming concepts"
 
     # Check second course
     assert course_elems[1].find("code").text == "CS201"
     assert course_elems[1].find("title").text == "Data Structures"
-    assert course_elems[1].find("description").text == "Advanced data structures"
 
 
 @pytest.mark.unit
@@ -445,7 +443,6 @@ def test_partial_course_to_xml():
     partial_data = {
         "code": "CS101",
         "title": "Introduction to Programming",
-        "description": "Basic programming concepts",
         "level": "Undergraduate",
     }
 
@@ -453,7 +450,6 @@ def test_partial_course_to_xml():
     root = ET.fromstring(xml_str)
     assert root.find("code").text == "CS101"
     assert root.find("title").text == "Introduction to Programming"
-    assert root.find("description").text == "Basic programming concepts"
     assert root.find("level").text == "Undergraduate"
     assert root.find("credits").text == "[GENERATE]"
 

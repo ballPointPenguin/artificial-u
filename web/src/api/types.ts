@@ -84,6 +84,7 @@ export interface CourseCreate {
   description: string
   lectures_per_week?: number
   total_weeks?: number
+  created_with?: string | null
 }
 
 export interface CourseUpdate {

@@ -42,6 +42,8 @@ class TopicService:
         week: int,
         order: int,
         content: Optional[Dict[str, Any]] = None,
+        created_by: Optional[int] = None,
+        created_with: Optional[str] = None,
     ) -> Topic:
         """
         Create a new topic.
@@ -52,6 +54,8 @@ class TopicService:
             week: Week number of the topic
             order: Order of the topic within the week
             content: Optional content dictionary for the topic
+            created_by: Optional student ID who created the topic
+            created_with: Optional LLM model name used for generation
 
         Returns:
             Topic: The created topic
@@ -68,6 +72,8 @@ class TopicService:
             week=week,
             order=order,
             content=content,
+            created_by=created_by,
+            created_with=created_with,
         )
 
         # Save to database

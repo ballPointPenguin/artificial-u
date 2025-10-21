@@ -72,7 +72,7 @@ def test_create_topic_success(client: TestClient, mock_api_service: MagicMock):
 
     assert response.status_code == status.HTTP_201_CREATED
     assert response.json() == expected_topic.model_dump()
-    mock_api_service.create_topic.assert_called_once_with(topic_create_data)
+    mock_api_service.create_topic.assert_called_once_with(topic_create_data, created_by=1)
 
 
 @pytest.mark.unit

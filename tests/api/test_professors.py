@@ -95,7 +95,7 @@ def mock_api_service(monkeypatch):
     mock_service["get_professor"].side_effect = _mock_get_professor
 
     # CREATE Professor
-    def _mock_create_professor(professor_data: ProfessorCreate):
+    def _mock_create_professor(professor_data: ProfessorCreate, created_by: int = None):
         new_id = 5  # Simulate next ID
         return ProfessorResponse(id=new_id, **professor_data.model_dump())
 
@@ -266,11 +266,14 @@ def test_create_professor(client: TestClient, mock_api_service):
     assert "created_with" in data
 
     mock_api_service["create_professor"].assert_called_once()
-    call_args = mock_api_service["create_professor"].call_args[0]
-    assert isinstance(call_args[0], ProfessorCreate)
+    call_args = mock_api_service["create_professor"].call_args
+    # First positional arg should be ProfessorCreate
+    assert isinstance(call_args[0][0], ProfessorCreate)
     # The model_dump should include attribution fields
     expected_with_attribution = {**new_professor_data, "created_by": None, "created_with": None}
-    assert call_args[0].model_dump() == expected_with_attribution
+    assert call_args[0][0].model_dump() == expected_with_attribution
+    # Should also pass created_by as kwarg
+    assert call_args[1] == {"created_by": 1}
 
 
 @pytest.mark.unit

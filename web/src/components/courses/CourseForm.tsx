@@ -39,6 +39,7 @@ const CourseForm: Component<CourseFormProps> = (props) => {
     lectures_per_week: null,
     total_weeks: null,
     freeform_prompt: '',
+    created_with: null,
   })
 
   const [validationErrors, setValidationErrors] = createSignal<Record<string, string>>({})
@@ -197,6 +198,7 @@ const CourseForm: Component<CourseFormProps> = (props) => {
         description: generated.description || prev.description,
         lectures_per_week: generated.lectures_per_week,
         total_weeks: generated.total_weeks,
+        created_with: generated.created_with || prev.created_with,
       }))
     } catch (err) {
       setGenerateError(err instanceof Error ? err.message : 'Failed to generate course details')
@@ -217,6 +219,7 @@ const CourseForm: Component<CourseFormProps> = (props) => {
       lectures_per_week: null,
       total_weeks: null,
       freeform_prompt: '',
+      created_with: null,
     })
     setValidationErrors({})
     setGenerateError(null)

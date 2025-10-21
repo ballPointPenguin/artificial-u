@@ -6,7 +6,11 @@ from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
 
-from artificial_u.api.dependencies import get_professor_api_service, get_repository_factory
+from artificial_u.api.dependencies import (
+    ensure_student,
+    get_professor_api_service,
+    get_repository_factory,
+)
 from artificial_u.api.models import (
     ProfessorCoursesResponse,
     ProfessorCreate,
@@ -114,6 +118,7 @@ async def get_professor(
 async def create_professor(
     professor_data: ProfessorCreate,
     service: ProfessorApiService = Depends(get_professor_api_service),
+    student=Depends(ensure_student),
 ):
     """
     Create a new professor.
@@ -121,7 +126,7 @@ async def create_professor(
     - Request body contains all required professor information
     - Returns the created professor with its assigned ID
     """
-    return service.create_professor(professor_data)
+    return service.create_professor(professor_data, created_by=student.id)
 
 
 @router.put(

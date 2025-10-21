@@ -7,6 +7,7 @@ from typing import Any, Dict, List, Optional
 from fastapi import APIRouter, Depends, Path, Query, status
 
 from artificial_u.api.dependencies import (  # Will be created later
+    ensure_student,
     get_repository_factory,
     get_topic_api_service,
 )
@@ -39,9 +40,10 @@ router = APIRouter(
 def create_topic(
     topic_data: TopicCreate,
     topic_service: TopicApiService = Depends(get_topic_api_service),
+    student=Depends(ensure_student),
 ):
     """Create a new topic for a course."""
-    return topic_service.create_topic(topic_data)
+    return topic_service.create_topic(topic_data, created_by=student.id)
 
 
 @router.get(

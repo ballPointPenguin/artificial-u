@@ -109,7 +109,7 @@ class TopicApiService(BaseApiService[CoreTopic, Topic, TopicListResponse]):
         except DatabaseError as e:
             self._handle_database_error("list topics by course", e)
 
-    def create_topic(self, topic_data: TopicCreate) -> Topic:
+    def create_topic(self, topic_data: TopicCreate, created_by: int = None) -> Topic:
         """Create a new topic."""
         try:
             core_topic = self.core_service.create_topic(
@@ -118,6 +118,8 @@ class TopicApiService(BaseApiService[CoreTopic, Topic, TopicListResponse]):
                 week=topic_data.week,
                 order=topic_data.order,
                 content=topic_data.content,
+                created_by=created_by,
+                created_with=topic_data.created_with,
             )
             return Topic.model_validate(core_topic)
         except DatabaseError as e:

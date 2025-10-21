@@ -205,7 +205,6 @@ def courses_to_xml(courses: List[Dict[str, Any]]) -> str:
         lines.append("  <course>")
         lines.append(f"    <code>{course.get('code', '')}</code>")
         lines.append(f"    <title>{course.get('title', '')}</title>")
-        lines.append(f"    <description>{course.get('description', '')}</description>")
         lines.append("  </course>")
     lines.append("</existing_courses>")
     return "\n".join(lines)
