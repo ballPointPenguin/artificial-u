@@ -67,9 +67,9 @@ docstring-parser==0.17.0
     # via anthropic
 ecdsa==0.19.1
     # via python-jose
-elevenlabs==2.18.0
+elevenlabs==2.19.0
     # via artificial_u (pyproject.toml)
-fastapi==0.119.0
+fastapi==0.119.1
     # via artificial_u (pyproject.toml)
 filelock==3.20.0
     # via virtualenv
@@ -83,7 +83,7 @@ google-auth==2.41.1
     #   google-genai
 google-genai==1.45.0
     # via artificial_u (pyproject.toml)
-googleapis-common-protos==1.70.0
+googleapis-common-protos==1.71.0
     # via google-api-core
 gunicorn==23.0.0
     # via artificial_u (pyproject.toml)
@@ -142,7 +142,7 @@ nodeenv==1.9.1
     # via pre-commit
 ollama==0.6.0
     # via artificial_u (pyproject.toml)
-openai==2.5.0
+openai==2.6.0
     # via artificial_u (pyproject.toml)
 packaging==25.0
     # via
