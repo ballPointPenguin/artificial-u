@@ -1,4 +1,5 @@
 import asyncio
+import logging
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import asynccontextmanager
 
@@ -43,6 +44,8 @@ def create_application() -> FastAPI:
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
+        # Store repository factory in app state for cleanup
+        app.state.repository_factory = repository_factory
         # attach event hub to app state for routers and worker to use
         app.state.job_events = job_events
         # Increase default executor for blocking offloads
@@ -55,6 +58,12 @@ def create_application() -> FastAPI:
             yield
         finally:
             await worker.stop()
+            # Dispose of database engines to close connections
+            try:
+                app.state.repository_factory.dispose_engines()
+            except Exception as e:
+                logger = logging.getLogger(__name__)
+                logger.warning(f"Error disposing repository engines: {e}")
 
     app = FastAPI(
         title="Artificial University API",

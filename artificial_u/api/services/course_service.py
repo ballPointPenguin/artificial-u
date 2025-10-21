@@ -265,6 +265,22 @@ class CourseApiService(BaseApiService[CoreCourse, CourseResponse, CoursesListRes
                 created_by=created_by,
                 created_with=created_with,
             )
+            # After successful course creation, enqueue topic generation
+            try:
+                from artificial_u.services.job_enqueue_service import JobEnqueueService
+
+                job_enqueue_service = JobEnqueueService(
+                    repository_factory=self.repository_factory,
+                    logger=self.logger,
+                )
+                job_enqueue_service.enqueue_topics_generation(created_course_model.id)
+                self.logger.info(f"Enqueued topic generation for course {created_course_model.id}")
+            except Exception as e:
+                self.logger.warning(
+                    f"Failed to enqueue topic generation for course {created_course_model.id}: {e}"
+                )
+                # Don't fail the course creation if topic generation enqueue fails
+
             # Convert the returned CourseModel to the API response model
             return CourseResponse.model_validate(created_course_model)
         except ProfessorNotFoundError as e:

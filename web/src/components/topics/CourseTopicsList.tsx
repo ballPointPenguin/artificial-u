@@ -3,7 +3,7 @@ import { createEffect, createSignal, For, on, Show } from 'solid-js'
 import { topicService } from '../../api/services/topic-service.js'
 import type { APIError, Topic, TopicCreate, TopicUpdate } from '../../api/types.js'
 import { RequireAuth } from '../../auth/RequireAuth.js'
-import { getJobEventHub } from '../../utils/job-events-hub.js'
+import { createJobTracker } from '../../utils/job-management.js'
 import { Alert } from '../ui/Alert.jsx'
 import { Button } from '../ui/Button.jsx'
 import { MagicButton } from '../ui/MagicButton.jsx'
@@ -24,9 +24,36 @@ export function CourseTopicsList(props: CourseTopicsListProps) {
   const [editingTopic, setEditingTopic] = createSignal<Topic | null>(null)
   const [formError, setFormError] = createSignal<APIError | null>(null)
   const [isSubmitting, setIsSubmitting] = createSignal(false)
-  const [generationError, setGenerationError] = createSignal<APIError | null>(null)
-  const [isGenerating, setIsGenerating] = createSignal(false)
-  const [generationInfo, setGenerationInfo] = createSignal('')
+  // Use job tracker for reactive job state management
+  const jobTracker = createJobTracker({
+    courseId: () => props.courseId,
+    kinds: ['generate_topics_for_course'],
+    onJobStart: (event) => {
+      console.log('Topic generation started:', event.id)
+    },
+    onJobComplete: (event) => {
+      console.log('Topic generation completed:', event.id)
+      setListVersion((v) => v + 1)
+    },
+    onJobFail: (event) => {
+      console.error('Topic generation failed:', event.last_error)
+      setError({ detail: event.last_error || 'Topic generation failed' })
+    },
+  })
+
+  const [currentJob, setCurrentJob] = createSignal<{ id: number } | null>(null)
+
+  // Check for existing topic generation jobs on mount
+  createEffect(() => {
+    if (props.courseId && !jobTracker.isInitializing()) {
+      // Look for any running topic generation jobs for this course
+      const activeJobIds = Array.from(jobTracker.activeJobIds())
+      if (activeJobIds.length > 0) {
+        // For simplicity, just track the first active job
+        setCurrentJob({ id: activeJobIds[0] })
+      }
+    }
+  })
 
   createEffect(
     on(
@@ -118,43 +145,21 @@ export function CourseTopicsList(props: CourseTopicsListProps) {
   }
 
   const handleGenerateTopics = async () => {
-    setIsGenerating(true)
-    setGenerationError(null)
-    setGenerationInfo('')
+    setError(null) // Clear any previous errors
     try {
       // Enqueue async job instead of direct generation
       const job = await topicService.enqueueGenerateTopicsForCourse(props.courseId, {
         course_id: props.courseId,
       })
-      setGenerationInfo(
-        `Topic generation enqueued as Job #${String(job.id)}. You can continue browsing; this will update when complete.`
-      )
-
-      const hub = getJobEventHub()
-      const unsubscribe = hub.subscribe({ kinds: ['generate_topics_for_course'] }, (ev) => {
-        // Only react to this job id
-        if (ev.id !== job.id) return
-        if (ev.status === 'done') {
-          setGenerationInfo('Topic generation completed.')
-          setIsGenerating(false)
-          setListVersion((v) => v + 1)
-          unsubscribe()
-        } else if (ev.status === 'failed' || ev.status === 'cancelled') {
-          setGenerationError({
-            detail: ev.last_error || 'Topic generation failed',
-          })
-          setIsGenerating(false)
-          unsubscribe()
-        }
-      })
+      setCurrentJob({ id: job.id })
+      console.log('Enqueued topic generation job:', job.id)
     } catch (err) {
       console.error('Failed to enqueue topic generation:', err)
-      setGenerationError(
+      setError(
         err instanceof Error
           ? { detail: err.message }
           : { detail: 'Failed to enqueue topic generation' }
       )
-      setIsGenerating(false)
     }
   }
 
@@ -170,8 +175,8 @@ export function CourseTopicsList(props: CourseTopicsListProps) {
                 void handleGenerateTopics()
               }}
               variant="secondary"
-              disabled={isGenerating() || isLoading()}
-              isLoading={isGenerating()}
+              disabled={jobTracker.hasActiveJobs() || isLoading()}
+              isLoading={jobTracker.hasActiveJobs()}
               loadingText="Generating..."
             >
               Generate Topics
@@ -183,14 +188,20 @@ export function CourseTopicsList(props: CourseTopicsListProps) {
         </div>
       </div>
 
-      <Show when={generationError()}>
+      <Show when={jobTracker.lastError()}>
         <Alert variant="danger" class="mb-4" title="Topic Generation Failed">
-          {generationError()?.detail}
+          {jobTracker.lastError()}
         </Alert>
       </Show>
-      <Show when={generationInfo()}>
+      <Show when={currentJob() && !jobTracker.hasActiveJobs()}>
+        <Alert variant="success" class="mb-4">
+          Topic generation completed for Job #{currentJob()?.id}
+        </Alert>
+      </Show>
+      <Show when={currentJob() && jobTracker.hasActiveJobs()}>
         <Alert variant="info" class="mb-4">
-          {generationInfo()}
+          Topic generation in progress for Job #{currentJob()?.id}. You can continue browsing; this
+          will update when complete.
         </Alert>
       </Show>
 

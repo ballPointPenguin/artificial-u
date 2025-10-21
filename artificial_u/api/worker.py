@@ -1,6 +1,5 @@
 import asyncio
 import logging
-import random
 from typing import Any, Awaitable, Callable, Dict
 
 from aiolimiter import AsyncLimiter  # type: ignore
@@ -11,12 +10,6 @@ from artificial_u.models.repositories.factory import RepositoryFactory
 from artificial_u.services.job_service import JobService
 
 Handler = Callable[[Dict[str, Any], RepositoryFactory], Awaitable[Dict[str, Any]]]
-
-
-def compute_backoff_seconds(attempts: int) -> float:
-    base = min(2**attempts, 60)
-    jitter = random.uniform(0, 0.25 * base)
-    return base + jitter
 
 
 class Worker:
@@ -90,8 +83,14 @@ class Worker:
                     # Log periodically when no jobs are found
                     if loop_count % 40 == 0:  # Every ~30 seconds with 0.75s sleep
                         self.logger.debug(f"No jobs found after {loop_count} polling cycles")
+                    # Check if we should stop before sleeping
+                    if self._stopped.is_set():
+                        break
                     await asyncio.sleep(self.settings.WORKER_POLL_IDLE_SEC)
 
+            except asyncio.CancelledError:
+                self.logger.info("Worker loop cancelled, shutting down")
+                raise  # Re-raise to properly handle cancellation
             except Exception as e:
                 self.logger.error(f"Error in worker loop: {e}", exc_info=True)
                 await asyncio.sleep(2.0)
@@ -115,6 +114,11 @@ class Worker:
         )
 
         async with self.semaphore:
+            # If the job was cancelled after reservation, honor cancellation
+            if row.status == "cancelled":
+                self.logger.info(f"Job {job_id} was cancelled before execution")
+                await self._publish_event(job_id, kind, "cancelled", payload)
+                return
             try:
                 result = await self._execute_job(job_id, kind, payload)
             except asyncio.TimeoutError:

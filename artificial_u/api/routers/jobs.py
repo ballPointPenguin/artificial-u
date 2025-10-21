@@ -2,6 +2,7 @@ from typing import Any, Dict, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import StreamingResponse
+from fastapi.security import HTTPAuthorizationCredentials
 from pydantic import BaseModel
 
 from artificial_u.api.dependencies import get_repository_factory
@@ -31,6 +32,31 @@ def enqueue(
         priority=job.priority,
         max_attempts=job.max_attempts,
     )
+    # Publish queued event to SSE hub (best-effort)
+    try:
+        # Attempt to access global app instance for event hub
+        # FastAPI doesn't inject app here, so we import the app and use its state
+        from artificial_u.api.app import app  # type: ignore
+
+        hub = getattr(app.state, "job_events", None)
+        if hub is not None:
+            # Publish synchronously; hub.publish is async, schedule and forget
+            import asyncio
+
+            asyncio.create_task(
+                hub.publish(
+                    {
+                        "id": row.id,
+                        "kind": row.kind,
+                        "status": "queued",
+                        "payload": row.payload,
+                    }
+                )
+            )
+    except Exception:
+        # Never fail the enqueue API due to SSE publish errors
+        pass
+
     return {
         "id": row.id,
         "kind": row.kind,
@@ -42,7 +68,7 @@ def enqueue(
     }
 
 
-@router.get("")
+@router.get("", dependencies=[Depends(require_auth)])
 def list_jobs(
     status: Optional[str] = None,
     limit: int = 50,
@@ -70,12 +96,13 @@ def list_jobs(
             "run_after": r.run_after,
             "created_at": r.created_at,
             "updated_at": r.updated_at,
+            "last_error": r.last_error,
         }
         for r in rows
     ]
 
 
-@router.get("/summary")
+@router.get("/summary", dependencies=[Depends(require_auth)])
 def jobs_summary(
     repository_factory: RepositoryFactory = Depends(get_repository_factory),
 ):
@@ -94,7 +121,24 @@ async def jobs_stream(
 
     Query params:
       - kinds: can be provided multiple times (kinds=a&kinds=b) or once (kinds=a).
+      - access_token: JWT access token for authentication (query param for SSE compatibility)
     """
+    # Check for access token in query params (for SSE compatibility)
+    access_token = request.query_params.get("access_token")
+    if access_token:
+        # Validate the token
+        try:
+            require_auth(HTTPAuthorizationCredentials(scheme="Bearer", credentials=access_token))
+            # Token is valid, continue
+        except Exception:
+            raise HTTPException(401, "Invalid access token")
+    else:
+        # No token provided, require auth header
+        try:
+            require_auth(HTTPAuthorizationCredentials(scheme="Bearer", credentials=""))
+        except Exception:
+            raise HTTPException(401, "Authentication required")
+
     # Parse kinds robustly to avoid validation quirks
     kinds_list = request.query_params.getlist("kinds")
     hub: JobEventHub = request.app.state.job_events
@@ -118,7 +162,7 @@ async def jobs_stream(
     return StreamingResponse(generator, media_type="text/event-stream", headers=headers)
 
 
-@router.get("/{job_id}")
+@router.get("/{job_id}", dependencies=[Depends(require_auth)])
 def get_job(
     job_id: int,
     repository_factory: RepositoryFactory = Depends(get_repository_factory),
@@ -141,3 +185,42 @@ def get_job(
         "created_at": row.created_at,
         "updated_at": row.updated_at,
     }
+
+
+@router.post("/{job_id}/cancel", dependencies=[Depends(require_auth)])
+def cancel_job(
+    job_id: int,
+    repository_factory: RepositoryFactory = Depends(get_repository_factory),
+):
+    repo = repository_factory.job
+    row = repo.get(job_id)
+    if not row:
+        raise HTTPException(404, "job not found")
+    if row.status in ("done", "failed", "cancelled"):
+        return {"id": row.id, "status": row.status}
+
+    # Set status to cancelled
+    repo.mark_cancelled(job_id)
+
+    # Publish cancelled event
+    try:
+        from artificial_u.api.app import app  # type: ignore
+
+        hub = getattr(app.state, "job_events", None)
+        if hub is not None:
+            import asyncio
+
+            asyncio.create_task(
+                hub.publish(
+                    {
+                        "id": job_id,
+                        "kind": row.kind,
+                        "status": "cancelled",
+                        "payload": row.payload or {},
+                    }
+                )
+            )
+    except Exception:
+        pass
+
+    return {"id": job_id, "status": "cancelled"}

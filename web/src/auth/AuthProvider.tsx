@@ -18,6 +18,9 @@ export function AuthProvider(props: { children: JSX.Element }) {
   const [isAuthenticated, setIsAuthenticated] = createSignal(false)
   const [user, setUser] = createSignal<User | null>(null)
 
+  // Store the storage listener function in a ref so we can remove it in cleanup
+  let storageListener: ((e: StorageEvent) => void) | null = null
+
   onMount(() => {
     void (async () => {
       const c = await createClient()
@@ -42,18 +45,22 @@ export function AuthProvider(props: { children: JSX.Element }) {
       await refreshState()
 
       // Cross-tab sync: listen for Auth0 localStorage updates
-      const onStorage = (e: StorageEvent) => {
+      storageListener = (e: StorageEvent) => {
         // Auth0 SDK keys usually contain "auth0." or start with "@@auth0"
         if (!e.key) return
         if (e.key.includes('auth0')) {
           void refreshState()
         }
       }
-      window.addEventListener('storage', onStorage)
-      onCleanup(() => {
-        window.removeEventListener('storage', onStorage)
-      })
+      window.addEventListener('storage', storageListener)
     })()
+  })
+
+  // Register cleanup at the component level
+  onCleanup(() => {
+    if (storageListener) {
+      window.removeEventListener('storage', storageListener)
+    }
   })
 
   const value: AuthContextValue = {

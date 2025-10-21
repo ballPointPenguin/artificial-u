@@ -125,3 +125,30 @@ class JobEnqueueService:
             error_msg = f"Failed to enqueue lecture audio job for lecture {lecture_id}: {e}"
             self.logger.error(error_msg, exc_info=True)
             raise DatabaseError(error_msg) from e
+
+    def enqueue_topics_generation(self, course_id: int) -> None:
+        """
+        Enqueue a background job to generate topics for a course.
+
+        Args:
+            course_id: The ID of the course
+
+        Raises:
+            DatabaseError: If job enqueueing fails
+        """
+        if get_settings().testing:
+            self.logger.debug("Skipping topics generation job enqueue: running in test mode")
+            return
+
+        try:
+            job_repo = self.repository_factory.job
+            job = job_repo.create(
+                kind="generate_topics_for_course",
+                payload={"course_id": course_id},
+            )
+            job_id = job.id
+            self.logger.info(f"Enqueued topics generation job {job_id} for course {course_id}")
+        except Exception as e:
+            error_msg = f"Failed to enqueue topics generation job for course {course_id}: {e}"
+            self.logger.error(error_msg, exc_info=True)
+            raise DatabaseError(error_msg) from e

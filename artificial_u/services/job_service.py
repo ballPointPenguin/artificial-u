@@ -127,6 +127,15 @@ class JobService:
             created_by=created_by,
         )
 
+        # After successful course creation, enqueue topic generation
+        try:
+            job_enqueue_service = self._job_enqueue_service_instance()
+            job_enqueue_service.enqueue_topics_generation(course.id)
+            self.logger.info(f"Enqueued topic generation for course {course.id}")
+        except Exception as e:
+            self.logger.warning(f"Failed to enqueue topic generation for course {course.id}: {e}")
+            # Don't fail the course creation if topic generation enqueue fails
+
         return {
             "course_id": course.id,
             "department_id": course.department_id,
@@ -279,7 +288,9 @@ class JobService:
 
     def _professor_generator_service_instance(self):
         if self._professor_generator_service is None:
-            from artificial_u.services.professor_generator_service import ProfessorGeneratorService
+            from artificial_u.services.professor_generator_service import (
+                ProfessorGeneratorService,
+            )
 
             self._professor_generator_service = ProfessorGeneratorService(
                 professor_service=self._professor_service_instance(),
@@ -326,7 +337,9 @@ class JobService:
 
     def _lecture_generator_service_instance(self):
         if self._lecture_generator_service is None:
-            from artificial_u.services.lecture_generator_service import LectureGeneratorService
+            from artificial_u.services.lecture_generator_service import (
+                LectureGeneratorService,
+            )
 
             self._lecture_generator_service = LectureGeneratorService(
                 lecture_service=self._lecture_service_instance(),
@@ -355,7 +368,9 @@ class JobService:
 
     def _course_generator_service_instance(self):
         if self._course_generator_service is None:
-            from artificial_u.services.course_generator_service import CourseGeneratorService
+            from artificial_u.services.course_generator_service import (
+                CourseGeneratorService,
+            )
 
             self._course_generator_service = CourseGeneratorService(
                 course_service=self._course_service_instance(),
@@ -391,7 +406,9 @@ class JobService:
             not hasattr(self, "_department_selector_service")
             or self._department_selector_service is None
         ):
-            from artificial_u.services.department_selector_service import DepartmentSelectorService
+            from artificial_u.services.department_selector_service import (
+                DepartmentSelectorService,
+            )
 
             self._department_selector_service = DepartmentSelectorService(
                 content_service=self._content_service_instance(),
@@ -406,7 +423,9 @@ class JobService:
             not hasattr(self, "_professor_selector_service")
             or self._professor_selector_service is None
         ):
-            from artificial_u.services.professor_selector_service import ProfessorSelectorService
+            from artificial_u.services.professor_selector_service import (
+                ProfessorSelectorService,
+            )
 
             self._professor_selector_service = ProfessorSelectorService(
                 content_service=self._content_service_instance(),
@@ -419,7 +438,9 @@ class JobService:
 
     def _topic_generator_service_instance(self):
         if self._topic_generator_service is None:
-            from artificial_u.services.topic_generator_service import TopicGeneratorService
+            from artificial_u.services.topic_generator_service import (
+                TopicGeneratorService,
+            )
 
             self._topic_generator_service = TopicGeneratorService(
                 topic_service=self._topic_service_instance(),

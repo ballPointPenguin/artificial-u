@@ -173,6 +173,15 @@ class JobRepository(BaseRepository):
                 )
             session.commit()
 
+    def mark_cancelled(self, job_id: int) -> None:
+        with self.get_session() as session:
+            session.execute(
+                update(JobModel)
+                .where(JobModel.id == job_id)
+                .values(status="cancelled", updated_at=func.now())
+            )
+            session.commit()
+
     def summary_counts(self) -> List[Tuple[str, int]]:
         with self.get_session() as session:
             rows = session.execute(

@@ -130,6 +130,10 @@ class Settings(BaseSettings):
     WORKER_MAX_CONCURRENCY: int = 3
     OUTBOUND_RPS: int = 1
 
+    # SSE (Server-Sent Events) tuning
+    SSE_KEEPALIVE_INTERVAL_SEC: float = 0.2
+    SSE_PING_INTERVAL_SEC: int = 5
+
     # Configure Pydantic to use .env files
     model_config = SettingsConfigDict(
         env_file=".env",

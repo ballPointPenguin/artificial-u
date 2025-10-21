@@ -48,3 +48,8 @@ class BaseRepository:
     def create_tables(self):
         """Create database tables if they don't exist."""
         Base.metadata.create_all(self.engine)
+
+    def dispose_engine(self):
+        """Dispose of the database engine and close all connections."""
+        if hasattr(self, "engine"):
+            self.engine.dispose()

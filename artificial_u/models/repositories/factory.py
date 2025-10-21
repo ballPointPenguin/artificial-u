@@ -98,3 +98,8 @@ class RepositoryFactory:
         # We only need to call this once for any repository
         repo = self.get_repository(DepartmentRepository)
         repo.create_tables()
+
+    def dispose_engines(self):
+        """Dispose of all database engines to close connections."""
+        for repo in self._repositories.values():
+            repo.dispose_engine()

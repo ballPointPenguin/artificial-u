@@ -29,7 +29,31 @@ class JobEventHub {
   // Don't connect immediately - wait for first subscriber
   // constructor() { }
 
-  private connect() {
+  private async getAuthToken(): Promise<string | null> {
+    // For now, we'll use a simple approach to get the token
+    // In a real implementation, you might want to use the auth context
+    // or a global auth state
+    try {
+      // Import the API client to use its token provider
+      const { getAuthToken } = await import('../api/client.js')
+      return (await getAuthToken?.()) || null
+    } catch {
+      return null
+    }
+  }
+
+  private createAuthenticatedEventSource(url: string, token: string | null): EventSource {
+    if (token) {
+      // Use the token in the URL as a query parameter (less secure but works)
+      const separator = url.includes('?') ? '&' : '?'
+      const authenticatedUrl = `${url}${separator}access_token=${encodeURIComponent(token)}`
+      return new EventSource(authenticatedUrl)
+    } else {
+      return new EventSource(url)
+    }
+  }
+
+  private async connect() {
     if (this.isConnecting || this.eventSource?.readyState === EventSource.OPEN) {
       return
     }
@@ -40,7 +64,18 @@ class JobEventHub {
     const url = createUrl(ENDPOINTS.jobs.stream)
     jobDebug.log('subscription', `JobEventHub connecting to: ${url}`, null)
 
-    this.eventSource = new EventSource(url)
+    // Get auth token for SSE request
+    let token: string | null = null
+    try {
+      token = await this.getAuthToken()
+    } catch (error) {
+      jobDebug.log('error', 'Failed to get auth token for SSE', error)
+    }
+
+    // Create EventSource with authorization header
+    // Note: EventSource doesn't natively support custom headers in all browsers
+    // We'll use a workaround by creating a custom request
+    this.eventSource = this.createAuthenticatedEventSource(url, token)
 
     this.eventSource.addEventListener('open', () => {
       this.isConnecting = false
@@ -84,7 +119,7 @@ class JobEventHub {
 
     this.reconnectTimer = setTimeout(() => {
       this.reconnectTimer = null
-      this.connect()
+      void this.connect() // Handle async connect
       // Exponential backoff
       this.reconnectDelay = Math.min(this.reconnectDelay * 2, this.maxReconnectDelay)
     }, this.reconnectDelay)
@@ -160,7 +195,7 @@ class JobEventHub {
 
     // Ensure connection is active
     if (!this.eventSource || this.eventSource.readyState === EventSource.CLOSED) {
-      this.connect()
+      void this.connect() // Use void to handle async call
     }
 
     // Return unsubscribe function

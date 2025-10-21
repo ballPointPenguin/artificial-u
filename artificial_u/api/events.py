@@ -5,6 +5,8 @@ from typing import Any, AsyncIterator, Dict, Iterable, Optional, Set
 
 from starlette.requests import Request
 
+from artificial_u.api.config import get_settings
+
 _STREAM_CLOSED = object()
 
 
@@ -95,7 +97,10 @@ async def sse_stream(
 
     events = hub.subscribe()
     loop = asyncio.get_event_loop()
-    next_heartbeat = loop.time() + heartbeat_secs
+    settings = get_settings()
+    keepalive_interval = float(getattr(settings, "SSE_KEEPALIVE_INTERVAL_SEC", 0.2))
+    ping_interval = int(getattr(settings, "SSE_PING_INTERVAL_SEC", 5))
+    next_heartbeat = loop.time() + ping_interval
 
     # Send initial connection message to establish SSE stream
     yield 'event: connected\ndata: {"message": "SSE stream connected"}\n\n'
@@ -132,9 +137,9 @@ async def sse_stream(
             now = loop.time()
             if now >= next_heartbeat:
                 yield f"event: ping\ndata: {json.dumps({'time': now})}\n\n"
-                next_heartbeat = now + heartbeat_secs
+                next_heartbeat = now + ping_interval
 
-            await asyncio.sleep(0.2)
+            await asyncio.sleep(keepalive_interval)
 
     except asyncio.CancelledError:
         raise
@@ -149,3 +154,8 @@ async def sse_stream(
                 await reader_task
             except asyncio.CancelledError:
                 pass
+        # Attempt to close the hub subscription generator
+        try:
+            await events.aclose()  # type: ignore[attr-defined]
+        except Exception:
+            pass
