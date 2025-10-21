@@ -68,6 +68,12 @@ class Worker:
                     await self._idle_or_log(loop_count)
             except asyncio.CancelledError:
                 self.logger.info("Worker loop cancelled, shutting down")
+                # Best-effort cancellation of any tasks created in this iteration
+                try:
+                    if "tasks" in locals() and tasks:
+                        await self._cancel_pending(tasks)
+                except Exception:
+                    pass
                 raise
             except Exception as e:
                 self.logger.error(f"Error in worker loop: {e}", exc_info=True)
@@ -117,15 +123,19 @@ class Worker:
         return tasks
 
     async def _process_tasks(self, tasks: list[asyncio.Task]) -> None:
-        """Process tasks with a timeout and cancel any that overrun."""
+        """Process tasks with an optional timeout and cancel any that overrun."""
         self.logger.info(f"Processing {len(tasks)} jobs concurrently")
+        timeout = self.settings.WORKER_TASKS_PROCESSING_TIMEOUT_SEC
         try:
-            await asyncio.wait_for(
-                asyncio.gather(*tasks, return_exceptions=True),
-                timeout=60.0,
-            )
+            if timeout is None or timeout <= 0:
+                await asyncio.gather(*tasks, return_exceptions=True)
+            else:
+                await asyncio.wait_for(
+                    asyncio.gather(*tasks, return_exceptions=True),
+                    timeout=timeout,
+                )
         except asyncio.TimeoutError:
-            self.logger.warning("Job processing timed out, cancelling remaining tasks")
+            self.logger.warning("Concurrent task batch timed out, cancelling remaining tasks")
             await self._cancel_pending(tasks)
 
     async def _cancel_pending(self, tasks: list[asyncio.Task]) -> None:
@@ -190,7 +200,10 @@ class Worker:
         async with self.limiter:
             self.logger.debug(f"Dispatching job {job_id} to handler for kind: {kind}")
             await self._publish_event(job_id, kind, "running", payload)
-            result = await asyncio.wait_for(self.job_service.dispatch(kind, payload), timeout=300)
+            result = await asyncio.wait_for(
+                self.job_service.dispatch(kind, payload),
+                timeout=self.settings.JOB_EXECUTION_TIMEOUT_SEC,
+            )
             self.logger.info(f"Job {job_id} completed successfully")
             return result
 
@@ -203,7 +216,9 @@ class Worker:
         attempts: int,
         max_attempts: int,
     ) -> None:
-        error_msg = f"Job {job_id} timed out after 300 seconds"
+        error_msg = (
+            f"Job {job_id} timed out after {self.settings.JOB_EXECUTION_TIMEOUT_SEC} seconds"
+        )
         self.logger.error(error_msg)
         delay = self.job_service.compute_backoff_seconds(attempts)
         await asyncio.to_thread(

@@ -133,6 +133,7 @@ async def generate_topics_for_course(
     course_id: int = Path(..., description="The ID of the course to generate topics for"),
     freeform_prompt: Optional[str] = Query(None, description="Optional prompt for generation"),
     topic_service: TopicApiService = Depends(get_topic_api_service),
+    student=Depends(ensure_student),
 ):
     """Generate and save topics for a given course ID."""
     # The API model TopicGenerate includes course_id, but path param is more RESTful here.
@@ -140,7 +141,7 @@ async def generate_topics_for_course(
     # if core service allows.
     # Current TopicApiService.generate_topics_for_course expects a TopicGenerate object.
     generation_data = TopicGenerate(course_id=course_id, freeform_prompt=freeform_prompt)
-    return await topic_service.generate_topics_for_course(generation_data)
+    return await topic_service.generate_topics_for_course(generation_data, created_by=student.id)
 
 
 @course_topics_router.post(

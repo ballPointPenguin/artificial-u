@@ -266,7 +266,9 @@ def test_generate_topics_for_course_success(client: TestClient, mock_api_service
 
     assert response.status_code == status.HTTP_200_OK
     assert response.json() == [topic.model_dump() for topic in expected_topics]
-    mock_api_service.generate_topics_for_course.assert_called_once_with(generation_data_obj)
+    mock_api_service.generate_topics_for_course.assert_called_once_with(
+        generation_data_obj, created_by=1
+    )
 
 
 @pytest.mark.unit  # Added unit marker
@@ -284,7 +286,9 @@ def test_generate_topics_for_course_no_prompt(client: TestClient, mock_api_servi
 
     assert response.status_code == status.HTTP_200_OK
     assert response.json() == [expected_topic.model_dump()]
-    mock_api_service.generate_topics_for_course.assert_called_once_with(generation_data_obj)
+    mock_api_service.generate_topics_for_course.assert_called_once_with(
+        generation_data_obj, created_by=1
+    )
 
 
 @pytest.mark.unit  # Added unit marker

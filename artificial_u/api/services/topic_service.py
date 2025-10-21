@@ -179,7 +179,9 @@ class TopicApiService(BaseApiService[CoreTopic, Topic, TopicListResponse]):
         except Exception as e:
             self._handle_general_error("delete topic", e)
 
-    async def generate_topics_for_course(self, generation_data: TopicGenerate) -> List[Topic]:
+    async def generate_topics_for_course(
+        self, generation_data: TopicGenerate, created_by: int = None
+    ) -> List[Topic]:
         """Generate topics for a course using the generator service."""
         try:
             self.logger.info(
@@ -188,6 +190,7 @@ class TopicApiService(BaseApiService[CoreTopic, Topic, TopicListResponse]):
             core_topics = await self.generator_service.generate_topics_for_course(
                 course_id=generation_data.course_id,
                 freeform_prompt=generation_data.freeform_prompt,
+                created_by=created_by,
             )
             return [Topic.model_validate(topic) for topic in core_topics]
         except CourseNotFoundError as e:

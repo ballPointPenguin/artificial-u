@@ -110,6 +110,7 @@ class JobService:
         professor_id = payload.get("professor_id")
         description = payload.get("description")
         created_by = payload.get("created_by")
+        created_with = payload.get("created_with")
 
         if not title or not code or not level:
             raise ValueError("title, code, and level are required to create a course")
@@ -125,12 +126,13 @@ class JobService:
             professor_id=professor_id,
             description=description,
             created_by=created_by,
+            created_with=created_with,
         )
 
         # After successful course creation, enqueue topic generation
         try:
             job_enqueue_service = self._job_enqueue_service_instance()
-            job_enqueue_service.enqueue_topics_generation(course.id)
+            job_enqueue_service.enqueue_topics_generation(course.id, created_by=created_by)
             self.logger.info(f"Enqueued topic generation for course {course.id}")
         except Exception as e:
             self.logger.warning(f"Failed to enqueue topic generation for course {course.id}: {e}")
@@ -162,9 +164,10 @@ class JobService:
         service = self._topic_generator_service_instance()
         course_id = payload.get("course_id")
         freeform = payload.get("freeform_prompt")
+        created_by = payload.get("created_by")
         if course_id is None:
             raise ValueError("course_id is required")
-        topics = await service.generate_topics_for_course(course_id, freeform)
+        topics = await service.generate_topics_for_course(course_id, freeform, created_by)
         # Convert Topic models to minimal dicts
         return {
             "created_topics": [

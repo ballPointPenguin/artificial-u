@@ -389,6 +389,7 @@ async def enqueue_create_course(
         "lectures_per_week": course_data.lectures_per_week,
         "total_weeks": course_data.total_weeks,
         "created_by": student.id,
+        "created_with": course_data.created_with,
     }
     row = repository_factory.job.create(
         kind="create_course",

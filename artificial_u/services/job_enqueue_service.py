@@ -126,12 +126,13 @@ class JobEnqueueService:
             self.logger.error(error_msg, exc_info=True)
             raise DatabaseError(error_msg) from e
 
-    def enqueue_topics_generation(self, course_id: int) -> None:
+    def enqueue_topics_generation(self, course_id: int, created_by: int = None) -> None:
         """
         Enqueue a background job to generate topics for a course.
 
         Args:
             course_id: The ID of the course
+            created_by: Optional student ID who triggered the generation
 
         Raises:
             DatabaseError: If job enqueueing fails
@@ -142,9 +143,12 @@ class JobEnqueueService:
 
         try:
             job_repo = self.repository_factory.job
+            payload = {"course_id": course_id}
+            if created_by is not None:
+                payload["created_by"] = created_by
             job = job_repo.create(
                 kind="generate_topics_for_course",
-                payload={"course_id": course_id},
+                payload=payload,
             )
             job_id = job.id
             self.logger.info(f"Enqueued topics generation job {job_id} for course {course_id}")

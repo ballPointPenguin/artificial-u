@@ -50,7 +50,9 @@ class ProfessorSelectorService:
         self.professor_service = professor_service
         self.logger = logger or logging.getLogger(__name__)
 
-    async def resolve_professor(self, course_attributes: Dict[str, Any], department_id: int) -> int:
+    async def resolve_professor(
+        self, course_attributes: Dict[str, Any], department_id: int, created_by: int = None
+    ) -> int:
         """
         Resolve professor for a course by selecting existing or generating new.
 
@@ -126,6 +128,8 @@ class ProfessorSelectorService:
                     background=professor_attrs["background"],
                     personality=professor_attrs["personality"],
                     teaching_style=professor_attrs["teaching_style"],
+                    created_by=created_by,
+                    created_with=professor_attrs.get("created_with"),
                 )
 
                 created_professor = self.professor_service.create_professor(professor)

@@ -149,7 +149,7 @@ class LectureGeneratorService:
             }
 
             # Add other relevant fields from partial_attributes if they are valid for Lecture model
-            for key in ["audio_url", "transcript_url"]:
+            for key in ["audio_url", "transcript_url", "created_by"]:
                 if key in partial_attributes:
                     final_lecture_data[key] = partial_attributes[key]
 

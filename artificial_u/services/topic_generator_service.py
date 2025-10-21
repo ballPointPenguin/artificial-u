@@ -61,7 +61,10 @@ class TopicGeneratorService:
         self.logger = logger or logging.getLogger(__name__)
 
     async def generate_topics_for_course(
-        self, course_id: int, freeform_prompt: Optional[str] = None
+        self,
+        course_id: int,
+        freeform_prompt: Optional[str] = None,
+        created_by: Optional[int] = None,
     ) -> List[Topic]:
         """
         Generate a list of topics for a course using AI.
@@ -69,6 +72,7 @@ class TopicGeneratorService:
         Args:
             course_id: ID of the course for which to generate topics.
             freeform_prompt: Optional freeform text to guide topic generation.
+            created_by: Optional student ID who triggered the generation.
 
         Returns:
             List[Topic]: A list of created Topic objects.
@@ -79,7 +83,8 @@ class TopicGeneratorService:
             DatabaseError: If there's an error saving topics to the database.
         """
         self.logger.info(
-            f"Generating topics for course ID: {course_id}, freeform: {bool(freeform_prompt)}"
+            f"Generating topics for course ID: {course_id}, freeform: {bool(freeform_prompt)}, "
+            f"created_by: {created_by}"
         )
 
         try:
@@ -109,7 +114,9 @@ class TopicGeneratorService:
             self.logger.debug(f"Generated XML for topics: {generated_xml_output[:500]}...")
 
             # 4. Parse XML, convert to Topic models, and save to DB
-            created_topics = self._parse_convert_and_save_topics(generated_xml_output, course_id)
+            created_topics = self._parse_convert_and_save_topics(
+                generated_xml_output, course_id, created_by
+            )
 
             self.logger.info(
                 f"Overall success: generated and saved {len(created_topics)} topics for course "
@@ -217,7 +224,7 @@ class TopicGeneratorService:
         return generated_xml_output
 
     def _parse_convert_and_save_topics(
-        self, generated_xml_output: str, course_id: int
+        self, generated_xml_output: str, course_id: int, created_by: Optional[int] = None
     ) -> List[Topic]:
         """
         Parses XML topic data, converts to Topic models, and saves them to the DB.
@@ -227,6 +234,7 @@ class TopicGeneratorService:
         Args:
             generated_xml_output: The XML string containing topic data.
             course_id: The ID of the course these topics belong to.
+            created_by: Optional student ID who triggered the generation.
 
         Returns:
             A list of created Topic objects.
@@ -281,6 +289,7 @@ class TopicGeneratorService:
                 week=week,
                 order=order,
                 content=topic_dict.get("content"),
+                created_by=created_by,
                 created_with=settings.TOPICS_GENERATION_MODEL,
             )
             topic_models_to_create.append(new_topic)

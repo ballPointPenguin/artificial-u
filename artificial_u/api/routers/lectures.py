@@ -407,15 +407,23 @@ async def generate_lecture(
 async def enqueue_generate_lecture(
     generation_data: LectureGenerate,
     repository_factory: RepositoryFactory = Depends(get_repository_factory),
+    student=Depends(ensure_student),
 ):
     """
     Enqueue a job with kind 'generate_lecture'. Payload mirrors LectureGenerate.
     """
+    # Create a new dict to avoid modifying the input
+    partial_attrs = dict(generation_data.partial_attributes or {})
+    # Add created_by to partial attributes
+    partial_attrs["created_by"] = student.id
+
     payload = {
-        "partial_attributes": (generation_data.partial_attributes or {}),
+        "partial_attributes": partial_attrs,
         "freeform_prompt": generation_data.freeform_prompt,
     }
-    payload = {k: v for k, v in payload.items() if v is not None}
+    # Don't filter out partial_attributes even if it's just {"created_by": ...}
+    if payload.get("freeform_prompt") is None:
+        payload.pop("freeform_prompt", None)
 
     row = repository_factory.job.create(
         kind="generate_lecture",
