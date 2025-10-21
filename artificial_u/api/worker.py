@@ -59,43 +59,95 @@ class Worker:
         while not self._stopped.is_set():
             loop_count += 1
             try:
-                # Sweep stuck jobs periodically
-                swept_count = await asyncio.to_thread(
-                    repo.sweep_stuck,
-                    visibility_timeout_seconds=self.settings.WORKER_VISIBILITY_TIMEOUT_SEC,
-                )
-                if swept_count > 0:
-                    self.logger.warning(f"Swept {swept_count} stuck jobs back to queued status")
-
-                # Try to reserve jobs up to max concurrency
-                tasks = []
-                for _ in range(self.settings.WORKER_MAX_CONCURRENCY):
-                    row = await asyncio.to_thread(repo.reserve_one_skip_locked_atomic)
-                    if not row:
-                        break
-                    self.logger.info(f"Reserved job {row.id} (kind: {row.kind})")
-                    tasks.append(asyncio.create_task(self._run_one(row.id)))
-
+                await self._cooperative_yield()
+                await self._sweep_stuck_jobs(repo)
+                tasks = await self._reserve_jobs(repo)
                 if tasks:
-                    self.logger.info(f"Processing {len(tasks)} jobs concurrently")
-                    await asyncio.gather(*tasks, return_exceptions=True)
+                    await self._process_tasks(tasks)
                 else:
-                    # Log periodically when no jobs are found
-                    if loop_count % 40 == 0:  # Every ~30 seconds with 0.75s sleep
-                        self.logger.debug(f"No jobs found after {loop_count} polling cycles")
-                    # Check if we should stop before sleeping
-                    if self._stopped.is_set():
-                        break
-                    await asyncio.sleep(self.settings.WORKER_POLL_IDLE_SEC)
-
+                    await self._idle_or_log(loop_count)
             except asyncio.CancelledError:
                 self.logger.info("Worker loop cancelled, shutting down")
-                raise  # Re-raise to properly handle cancellation
+                raise
             except Exception as e:
                 self.logger.error(f"Error in worker loop: {e}", exc_info=True)
                 await asyncio.sleep(2.0)
 
         self.logger.info("Worker loop stopped")
+
+    async def _cooperative_yield(self) -> None:
+        """Yield control to the event loop to remain responsive to cancellation."""
+        await asyncio.sleep(0)
+
+    async def _sweep_stuck_jobs(self, repo) -> None:
+        """Sweep stuck jobs with a small timeout; log outcomes without raising."""
+        try:
+            swept_count = await asyncio.wait_for(
+                asyncio.to_thread(
+                    repo.sweep_stuck,
+                    visibility_timeout_seconds=self.settings.WORKER_VISIBILITY_TIMEOUT_SEC,
+                ),
+                timeout=5.0,
+            )
+            if swept_count > 0:
+                self.logger.warning(f"Swept {swept_count} stuck jobs back to queued status")
+        except asyncio.TimeoutError:
+            self.logger.warning("Database operation timed out during sweep")
+
+    async def _reserve_jobs(self, repo) -> list[asyncio.Task]:
+        """Reserve up to max concurrency jobs, returning tasks to process them."""
+        tasks: list[asyncio.Task] = []
+        for _ in range(self.settings.WORKER_MAX_CONCURRENCY):
+            if self._stopped.is_set():
+                break
+            try:
+                row = await asyncio.wait_for(
+                    asyncio.to_thread(repo.reserve_one_skip_locked_atomic),
+                    timeout=5.0,
+                )
+            except asyncio.TimeoutError:
+                self.logger.warning("Job reservation timed out")
+                break
+
+            if not row:
+                break
+
+            self.logger.info(f"Reserved job {row.id} (kind: {row.kind})")
+            tasks.append(asyncio.create_task(self._run_one(row.id)))
+        return tasks
+
+    async def _process_tasks(self, tasks: list[asyncio.Task]) -> None:
+        """Process tasks with a timeout and cancel any that overrun."""
+        self.logger.info(f"Processing {len(tasks)} jobs concurrently")
+        try:
+            await asyncio.wait_for(
+                asyncio.gather(*tasks, return_exceptions=True),
+                timeout=60.0,
+            )
+        except asyncio.TimeoutError:
+            self.logger.warning("Job processing timed out, cancelling remaining tasks")
+            await self._cancel_pending(tasks)
+
+    async def _cancel_pending(self, tasks: list[asyncio.Task]) -> None:
+        for task in tasks:
+            if not task.done():
+                task.cancel()
+        await asyncio.gather(*tasks, return_exceptions=True)
+
+    async def _idle_or_log(self, loop_count: int) -> None:
+        """Log occasionally when idle and sleep briefly while remaining cancellable."""
+        if loop_count % 40 == 0:
+            self.logger.debug(f"No jobs found after {loop_count} polling cycles")
+        if self._stopped.is_set():
+            return
+        try:
+            await asyncio.wait_for(
+                asyncio.sleep(self.settings.WORKER_POLL_IDLE_SEC),
+                timeout=self.settings.WORKER_POLL_IDLE_SEC,
+            )
+        except asyncio.TimeoutError:
+            # This shouldn't happen, but handle it just in case
+            pass
 
     async def _run_one(self, job_id: int):
         repo = self.repository_factory.job

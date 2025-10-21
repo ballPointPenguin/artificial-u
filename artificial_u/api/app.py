@@ -57,13 +57,27 @@ def create_application() -> FastAPI:
         try:
             yield
         finally:
+            # Stop worker first
             await worker.stop()
+
+            # Close SSE connections by clearing the hub
+            try:
+                if hasattr(app.state, "job_events") and app.state.job_events:
+                    # Clear all subscribers to close SSE connections
+                    app.state.job_events._subscribers.clear()
+            except Exception as e:
+                logger = logging.getLogger(__name__)
+                logger.warning(f"Error closing SSE connections: {e}")
+
             # Dispose of database engines to close connections
             try:
                 app.state.repository_factory.dispose_engines()
             except Exception as e:
                 logger = logging.getLogger(__name__)
                 logger.warning(f"Error disposing repository engines: {e}")
+
+            # Give a moment for connections to close
+            await asyncio.sleep(0.1)
 
     app = FastAPI(
         title="Artificial University API",
@@ -113,4 +127,11 @@ app = create_application()
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run("artificial_u.api.app:app", host="0.0.0.0", port=8000, reload=True)
+    uvicorn.run(
+        "artificial_u.api.app:app",
+        host="0.0.0.0",
+        port=8000,
+        reload=True,
+        # Add timeout options for better shutdown behavior during development
+        access_log=False,  # Disable access log during development to reduce noise
+    )
