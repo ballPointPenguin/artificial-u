@@ -99,3 +99,21 @@ async def get_voice(
     if not voice:
         raise HTTPException(status_code=404, detail="Voice not found")
     return VoiceResponse(**voice)
+
+
+@router.get("/by_el/{el_voice_id}", response_model=VoiceResponse)
+async def get_voice_by_elevenlabs_id(
+    el_voice_id: str = Path(..., description="ElevenLabs voice_id to retrieve"),
+    voice_service: VoiceService = Depends(get_voice_service),
+):
+    """
+    Get a specific voice by its ElevenLabs voice_id. If not present in DB,
+    fetch from ElevenLabs, persist, and return the DB-backed record.
+    """
+    voice = voice_service.get_voice_by_el_id(el_voice_id)
+    if not voice:
+        raise HTTPException(status_code=404, detail="Voice not found")
+    # Ensure response includes DB id
+    if "id" not in voice or voice.get("id") is None:
+        raise HTTPException(status_code=502, detail="Voice fetched but not persisted")
+    return VoiceResponse(**voice)

@@ -2,7 +2,7 @@ import { A, useNavigate, useParams } from '@solidjs/router'
 import { type Component, createResource, createSignal, For, Show } from 'solid-js'
 import { departmentService } from '../../api/services/department-service.js'
 import { professorService } from '../../api/services/professor-service.js'
-import { getVoice } from '../../api/services/voice-service.js'
+import { getVoice, manualAssignVoice } from '../../api/services/voice-service.js'
 import type {
   LectureBrief,
   Professor,
@@ -75,6 +75,9 @@ export default function ProfessorDetail() {
   const [isImageLoading, setIsImageLoading] = createSignal(false)
   const [isAssigningVoice, setIsAssigningVoice] = createSignal(false)
   const [voiceAssignError, setVoiceAssignError] = createSignal('')
+  // Manual voice entry state
+  const [manualElVoiceId, setManualElVoiceId] = createSignal('')
+  const [isAssigningManual, setIsAssigningManual] = createSignal(false)
 
   const [professorResource, { refetch: refetchProfessor }] = createResource(
     () => {
@@ -238,6 +241,37 @@ export default function ProfessorDetail() {
       setVoiceAssignError(error instanceof Error ? error.message : 'Failed to assign voice')
     } finally {
       setIsAssigningVoice(false)
+    }
+  }
+
+  const handleManualAssign = async () => {
+    setIsAssigningManual(true)
+    setVoiceAssignError('')
+    try {
+      const professorId = Number.parseInt(params.id, 10)
+      if (Number.isNaN(professorId)) throw new Error('Invalid professor ID')
+
+      // Warn if reassigning and there is audio
+      const hasExistingVoice = Boolean(professorResource()?.voice_id)
+      const lecturesResponse = lecturesResource()
+      const lectures: LectureBrief[] | undefined = lecturesResponse?.lectures
+      const hasAudio = Array.isArray(lectures) && lectures.some((l) => l.audio_url != null)
+      if (hasExistingVoice && hasAudio) {
+        const proceed = window.confirm(
+          'This professor already has lectures with generated audio. Reassigning the voice may make future audio sound different. Are you sure you want to continue?'
+        )
+        if (!proceed) return
+      }
+
+      const elId = manualElVoiceId().trim()
+      if (!elId) throw new Error('Please enter a voice_id to assign')
+      await manualAssignVoice(String(professorId), { el_voice_id: elId })
+      setManualElVoiceId('')
+      void refetchProfessor()
+    } catch (error) {
+      setVoiceAssignError(error instanceof Error ? error.message : 'Failed to assign voice')
+    } finally {
+      setIsAssigningManual(false)
     }
   }
 
@@ -546,7 +580,7 @@ export default function ProfessorDetail() {
                         </Show>
                       </Show>
 
-                      {/* Always show assign/reassign action (Phase 1, 2) */}
+                      {/* Assign/reassign & Voice ID Override inline controls */}
                       <div class="mt-3">
                         <Show when={voiceAssignError()}>
                           <Alert variant="danger" class="text-sm mb-2">
@@ -554,16 +588,40 @@ export default function ProfessorDetail() {
                           </Alert>
                         </Show>
                         <RequireAuth>
-                          <MagicButton
-                            variant="secondary"
-                            size="sm"
-                            onClick={() => void handleAssignVoice()}
-                            disabled={isAssigningVoice()}
-                            isLoading={isAssigningVoice()}
-                            loadingText="Assigning..."
-                          >
-                            {professorResource()?.voice_id ? 'Reassign Voice' : 'Assign Voice'}
-                          </MagicButton>
+                          <div class="flex flex-col sm:flex-row sm:items-center sm:space-x-3 space-y-2 sm:space-y-0">
+                            <MagicButton
+                              variant="secondary"
+                              size="sm"
+                              onClick={() => void handleAssignVoice()}
+                              disabled={isAssigningVoice()}
+                              isLoading={isAssigningVoice()}
+                              loadingText="Assigning..."
+                            >
+                              {professorResource()?.voice_id ? 'Reassign Voice' : 'Assign Voice'}
+                            </MagicButton>
+                            <div class="flex items-center space-x-2">
+                              <input
+                                type="text"
+                                class="input input-bordered w-full sm:w-64"
+                                placeholder="Voice ID Override"
+                                value={manualElVoiceId()}
+                                onInput={(e) =>
+                                  setManualElVoiceId((e.target as HTMLInputElement).value)
+                                }
+                                aria-label="Voice ID Override"
+                              />
+                              <MagicButton
+                                size="sm"
+                                variant="primary"
+                                onClick={() => void handleManualAssign()}
+                                disabled={!manualElVoiceId().trim() || isAssigningManual()}
+                                isLoading={isAssigningManual()}
+                                loadingText="Overriding..."
+                              >
+                                Override
+                              </MagicButton>
+                            </div>
+                          </div>
                         </RequireAuth>
                       </div>
                     </div>

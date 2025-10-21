@@ -100,6 +100,7 @@ export const ENDPOINTS = {
     manualAssignVoice: (professorId: string) => `/v1/voices/${professorId}/assign_voice`,
     listVoices: '/v1/voices/',
     getVoice: (voiceId: number) => `/v1/voices/${String(voiceId)}`,
+    getVoiceByElId: (elVoiceId: string) => `/v1/voices/by_el/${encodeURIComponent(elVoiceId)}`,
   },
   students: {
     me: '/v1/students/me',

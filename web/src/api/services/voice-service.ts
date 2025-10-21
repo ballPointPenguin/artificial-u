@@ -64,3 +64,11 @@ export const listVoices = async (params: VoiceListParams = {}): Promise<Paginate
 export const getVoice = async (voiceId: number): Promise<Voice> => {
   return httpClient.get<Voice>(ENDPOINTS.voices.getVoice(voiceId))
 }
+
+/**
+ * Get a specific voice by its ElevenLabs voice_id.
+ * Ensures the response includes a DB id after persistence.
+ */
+export const getVoiceByElId = async (elVoiceId: string): Promise<Voice> => {
+  return httpClient.get<Voice>(ENDPOINTS.voices.getVoiceByElId(elVoiceId))
+}

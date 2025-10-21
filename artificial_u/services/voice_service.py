@@ -623,10 +623,21 @@ class VoiceService:
 
         # Fall back to API
         el_voice_data = self.client.get_el_voice(el_voice_id)
-        if el_voice_data:
-            # Save to database
-            self._save_voice_to_db(el_voice_data)
+        if not el_voice_data:
+            return None
 
+        # Save to database and return the DB-backed record with id
+        try:
+            self._save_voice_to_db(el_voice_data)
+            persisted = self.repository_factory.voice.get_by_elevenlabs_id(el_voice_id)
+            if persisted:
+                return persisted.model_dump()
+        except Exception as e:
+            self.logger.error(f"Failed to persist voice {el_voice_id}: {e}")
+            # As a fallback, return the API data (may not include id)
+            return el_voice_data
+
+        # If persistence unexpectedly failed without exception
         return el_voice_data
 
     def manual_voice_assignment(self, professor_id: str, el_voice_id: str) -> None:
