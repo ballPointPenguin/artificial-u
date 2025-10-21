@@ -33,6 +33,8 @@ class TestTopicRepository:
             "lecture": "Python Basics",
             "objectives": ["Learn Python syntax", "Understand variables"],
         }
+        mock_topic.created_by = None
+        mock_topic.created_with = None
         return mock_topic
 
     def test_create(self, topic_repository, mock_session):
@@ -167,6 +169,8 @@ class TestTopicRepository:
             "readings": ["Topic 1 reading 1", "Topic 1 reading 2"],
             "objectives": ["Topic 1 objective 1", "Topic 1 objective 2"],
         }
+        mock_topic1.created_by = None
+        mock_topic1.created_with = None
 
         mock_topic2 = MagicMock(spec=TopicModel)
         mock_topic2.id = 2
@@ -175,6 +179,8 @@ class TestTopicRepository:
         mock_topic2.week = 1
         mock_topic2.course_id = 1
         mock_topic2.content = None
+        mock_topic2.created_by = None
+        mock_topic2.created_with = None
 
         query_mock = mock_session.query.return_value
         query_mock.filter_by.return_value.order_by.return_value.all.return_value = [
@@ -212,6 +218,8 @@ class TestTopicRepository:
         mock_topic1.content = {
             "lecture": "Topic 1 lecture",
         }
+        mock_topic1.created_by = None
+        mock_topic1.created_with = None
 
         mock_topic2 = MagicMock(spec=TopicModel)
         mock_topic2.id = 2
@@ -220,6 +228,8 @@ class TestTopicRepository:
         mock_topic2.week = 1
         mock_topic2.course_id = 1
         mock_topic2.content = None
+        mock_topic2.created_by = None
+        mock_topic2.created_with = None
 
         query_mock = mock_session.query.return_value
         query_mock.filter_by.return_value.order_by.return_value.all.return_value = [

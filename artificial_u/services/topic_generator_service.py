@@ -249,6 +249,7 @@ class TopicGeneratorService:
 
         topic_models_to_create = []
         replaced_topics_count = 0
+        settings = get_settings()
 
         for topic_dict in parsed_topic_dicts:
             title = topic_dict.get("title")
@@ -280,6 +281,7 @@ class TopicGeneratorService:
                 week=week,
                 order=order,
                 content=topic_dict.get("content"),
+                created_with=settings.TOPICS_GENERATION_MODEL,
             )
             topic_models_to_create.append(new_topic)
 

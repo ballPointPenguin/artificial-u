@@ -38,6 +38,8 @@ class TestProfessorRepository:
         mock_prof.age = 35
         mock_prof.voice_id = 1
         mock_prof.image_url = "https://example.com/smith.jpg"
+        mock_prof.created_by = None
+        mock_prof.created_with = None
         return mock_prof
 
     def test_create(self, professor_repository, mock_session):
@@ -145,6 +147,8 @@ class TestProfessorRepository:
         mock_prof1.age = 35
         mock_prof1.voice_id = 1
         mock_prof1.image_url = "https://example.com/smith.jpg"
+        mock_prof1.created_by = None
+        mock_prof1.created_with = None
 
         mock_prof2 = MagicMock(spec=ProfessorModel)
         mock_prof2.id = 2
@@ -161,6 +165,8 @@ class TestProfessorRepository:
         mock_prof2.age = 45
         mock_prof2.voice_id = 2
         mock_prof2.image_url = "https://example.com/doe.jpg"
+        mock_prof2.created_by = None
+        mock_prof2.created_with = None
 
         query_mock = mock_session.query.return_value
         query_mock.all.return_value = [mock_prof1, mock_prof2]
@@ -198,6 +204,8 @@ class TestProfessorRepository:
         mock_prof.image_url = "https://example.com/image.jpg"
         mock_prof.age = 35
         mock_prof.voice_id = 1
+        mock_prof.created_by = None
+        mock_prof.created_with = None
 
         query_mock = mock_session.query.return_value
         query_mock.filter_by.return_value.all.return_value = [mock_prof]

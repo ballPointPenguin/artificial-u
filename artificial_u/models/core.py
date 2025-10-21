@@ -126,6 +126,9 @@ class Professor(BaseModel):
     image_url: Optional[str] = None
     department_id: Optional[int] = None
     voice_id: Optional[int] = None
+    # Attribution
+    created_by: Optional[int] = None
+    created_with: Optional[str] = None
 
 
 class Course(BaseModel):
@@ -200,6 +203,9 @@ class Topic(BaseModel):
     content: Optional[Dict[str, Any]] = Field(
         default=None, description="Flexible JSONB content for the topic"
     )
+    # Attribution
+    created_by: Optional[int] = None
+    created_with: Optional[str] = None
 
 
 class Lecture(BaseModel):

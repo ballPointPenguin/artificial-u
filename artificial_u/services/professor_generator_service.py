@@ -105,6 +105,7 @@ class ProfessorGeneratorService:
 
         # --- 4. Combine Attributes --- #
         # Start with generated, overlay with provided, prioritize resolved/input values
+        settings = get_settings()
         final_attrs = {
             **generated_attrs,  # Base: Generated values
             **partial_attributes,  # Overlay: User-provided specifics
@@ -112,6 +113,8 @@ class ProfessorGeneratorService:
             "department_name": (
                 resolved_dept_name if resolved_dept_name else generated_attrs.get("department_name")
             ),
+            # Add attribution for AI-generated content
+            "created_with": settings.PROFESSOR_GENERATION_MODEL,
         }
 
         self.logger.info(

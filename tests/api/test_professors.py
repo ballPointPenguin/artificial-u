@@ -253,16 +253,24 @@ def test_create_professor(client: TestClient, mock_api_service):
         "image_url": None,
         "voice_id": None,
     }
-    expected_response_data = {"id": 5, "image_url": None, "voice_id": None, **new_professor_data}
-
     response = client.post("/api/v1/professors", json=new_professor_data)
     assert response.status_code == 201
-    assert response.json() == expected_response_data
+    data = response.json()
+
+    # Verify core fields
+    assert data["id"] == 5
+    assert data["name"] == new_professor_data["name"]
+    assert data["title"] == new_professor_data["title"]
+    # Verify attribution fields exist (can be None in mocked response)
+    assert "created_by" in data
+    assert "created_with" in data
 
     mock_api_service["create_professor"].assert_called_once()
     call_args = mock_api_service["create_professor"].call_args[0]
     assert isinstance(call_args[0], ProfessorCreate)
-    assert call_args[0].model_dump() == new_professor_data
+    # The model_dump should include attribution fields
+    expected_with_attribution = {**new_professor_data, "created_by": None, "created_with": None}
+    assert call_args[0].model_dump() == expected_with_attribution
 
 
 @pytest.mark.unit

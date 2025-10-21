@@ -17,6 +17,9 @@ class TopicBase(BaseModel):
     content: Optional[Dict[str, Any]] = Field(
         default=None, description="Flexible content structure for the topic"
     )
+    # Attribution
+    created_by: Optional[int] = Field(None, description="Student ID who created the topic")
+    created_with: Optional[str] = Field(None, description="Name of LLM used, if any")
 
 
 class TopicCreate(TopicBase):

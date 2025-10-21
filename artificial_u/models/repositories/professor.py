@@ -29,6 +29,8 @@ class ProfessorRepository(BaseRepository):
                 image_url=professor.image_url,
                 department_id=professor.department_id,
                 voice_id=professor.voice_id,
+                created_by=professor.created_by,
+                created_with=professor.created_with,
             )
 
             session.add(db_professor)
@@ -61,6 +63,8 @@ class ProfessorRepository(BaseRepository):
                 image_url=db_professor.image_url,
                 department_id=db_professor.department_id,
                 voice_id=db_professor.voice_id,
+                created_by=db_professor.created_by,
+                created_with=db_professor.created_with,
             )
 
     def list(self) -> List[Professor]:
@@ -84,6 +88,8 @@ class ProfessorRepository(BaseRepository):
                     image_url=p.image_url,
                     department_id=p.department_id,
                     voice_id=p.voice_id,
+                    created_by=p.created_by,
+                    created_with=p.created_with,
                 )
                 for p in db_professors
             ]
@@ -157,6 +163,8 @@ class ProfessorRepository(BaseRepository):
                 image_url=db_professor.image_url,
                 department_id=db_professor.department_id,
                 voice_id=db_professor.voice_id,
+                created_by=db_professor.created_by,
+                created_with=db_professor.created_with,
             )
 
     def delete(self, professor_id: int) -> bool:
@@ -205,6 +213,8 @@ class ProfessorRepository(BaseRepository):
                         "image_url": getattr(p, "image_url", None),
                         "department_id": getattr(p, "department_id", None),
                         "voice_id": getattr(p, "voice_id", None),
+                        "created_by": getattr(p, "created_by", None),
+                        "created_with": getattr(p, "created_with", None),
                     }
                 )
                 for p in db_professors

@@ -21,6 +21,8 @@ class TopicRepository(BaseRepository):
                 week=topic.week,
                 course_id=topic.course_id,
                 content=topic.content,
+                created_by=topic.created_by,
+                created_with=topic.created_with,
             )
 
             session.add(db_topic)
@@ -48,6 +50,8 @@ class TopicRepository(BaseRepository):
                     week=topic.week,
                     course_id=topic.course_id,
                     content=topic.content,
+                    created_by=topic.created_by,
+                    created_with=topic.created_with,
                 )
                 for topic in topics
             ]
@@ -80,6 +84,8 @@ class TopicRepository(BaseRepository):
                 week=db_topic.week,
                 course_id=db_topic.course_id,
                 content=db_topic.content,
+                created_by=db_topic.created_by,
+                created_with=db_topic.created_with,
             )
 
     def get_by_course_week_order(self, course_id: int, week: int, order: int) -> Optional[Topic]:
@@ -101,6 +107,8 @@ class TopicRepository(BaseRepository):
                 week=db_topic.week,
                 course_id=db_topic.course_id,
                 content=db_topic.content,
+                created_by=db_topic.created_by,
+                created_with=db_topic.created_with,
             )
 
     def list_by_course(self, course_id: int) -> List[Topic]:
@@ -121,6 +129,8 @@ class TopicRepository(BaseRepository):
                     week=t.week,
                     course_id=t.course_id,
                     content=t.content,
+                    created_by=t.created_by,
+                    created_with=t.created_with,
                 )
                 for t in db_topics
             ]
@@ -143,6 +153,8 @@ class TopicRepository(BaseRepository):
                     week=t.week,
                     course_id=t.course_id,
                     content=t.content,
+                    created_by=t.created_by,
+                    created_with=t.created_with,
                 )
                 for t in db_topics
             ]

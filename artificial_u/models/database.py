@@ -94,6 +94,9 @@ class ProfessorModel(Base):
     image_url = Column(String, nullable=True)
     department_id = Column(Integer, ForeignKey("departments.id"), nullable=True)
     voice_id = Column(Integer, ForeignKey("voices.id"), nullable=True)
+    # Attribution fields
+    created_by = Column(Integer, ForeignKey("students.id"), nullable=True)
+    created_with = Column(String, nullable=True)
     created_at = Column(DateTime, nullable=False, default=datetime.now)
     updated_at = Column(DateTime, nullable=False, default=datetime.now)
 
@@ -111,6 +114,9 @@ class TopicModel(Base):
     week = Column(Integer, nullable=False, index=True)
     content = Column(JSONB, nullable=True)
     course_id = Column(Integer, ForeignKey("courses.id"), nullable=False, index=True)
+    # Attribution fields
+    created_by = Column(Integer, ForeignKey("students.id"), nullable=True)
+    created_with = Column(String, nullable=True)
     created_at = Column(DateTime, nullable=False, default=datetime.now)
     updated_at = Column(DateTime, nullable=False, default=datetime.now)
 

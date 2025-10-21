@@ -30,6 +30,9 @@ class ProfessorBase(BaseModel):
     age: Optional[int] = Field(None, description="Age of the professor")
     image_url: Optional[str] = Field(None, description="URL to professor's profile image")
     voice_id: Optional[int] = Field(None, description="ID of the voice assigned to this professor")
+    # Attribution
+    created_by: Optional[int] = Field(None, description="Student ID who created the professor")
+    created_with: Optional[str] = Field(None, description="Name of LLM used, if any")
 
 
 # Professor creation model
