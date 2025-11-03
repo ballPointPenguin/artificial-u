@@ -45,6 +45,10 @@ jobs:
           cd cdk
           pip install -r requirements.txt
 
+      - name: Install AWS CDK CLI
+        run: |
+          npm install -g aws-cdk@2
+
       - name: Deploy with AWS CDK
         run: |
           cd cdk
