@@ -11,6 +11,20 @@ const Profile = () => {
   const [error, setError] = createSignal<string | null>(null)
   const [successMessage, setSuccessMessage] = createSignal<string | null>(null)
 
+  // Helper function to map role to enrollment status display
+  const getEnrollmentStatus = (role: string): string => {
+    switch (role) {
+      case 'viewer':
+        return 'Audit Only'
+      case 'creator':
+        return 'Enrolled'
+      case 'admin':
+        return 'Admin'
+      default:
+        return role
+    }
+  }
+
   // Form state
   const [formData, setFormData] = createSignal<StudentUpdate>({
     name: '',
@@ -112,12 +126,12 @@ const Profile = () => {
           <Show when={!isEditing()}>
             <div class="space-y-6">
               <div>
-                <label class="mb-2 block text-sm font-medium opacity-70">Name</label>
+                <div class="mb-2 block text-sm font-medium opacity-70">Name</div>
                 <p class="text-lg">{student()?.name}</p>
               </div>
 
               <div>
-                <label class="mb-2 block text-sm font-medium opacity-70">Email</label>
+                <div class="mb-2 block text-sm font-medium opacity-70">Email</div>
                 <p class="text-lg">{student()?.email || 'Not provided'}</p>
               </div>
 
@@ -184,19 +198,40 @@ const Profile = () => {
           </Show>
         </Card>
 
-        <Card class="bg-muted">
-          <h3 class="text-xl font-semibold mb-4">Account Information</h3>
-          <div class="space-y-2 text-sm opacity-70">
-            <p>
-              <strong>Account ID:</strong> {student()?.id}
-            </p>
-            <Show when={student()?.auth0_sub}>
+        <div class="grid gap-6 md:grid-cols-2">
+          <Card class="bg-muted">
+            <h3 class="text-xl font-semibold mb-4">Enrollment Status</h3>
+            <div class="space-y-4">
+              <div>
+                <div class="mb-1 block text-sm font-medium opacity-70">Status</div>
+                <p class="text-2xl font-semibold">
+                  {getEnrollmentStatus(student()?.role ?? 'viewer')}
+                </p>
+              </div>
+              <div>
+                <div class="mb-1 block text-sm font-medium opacity-70">Coin Balance</div>
+                <p class="text-2xl font-semibold">{student()?.coins ?? 0} coins</p>
+              </div>
+            </div>
+          </Card>
+
+          <Card class="bg-muted">
+            <h3 class="text-xl font-semibold mb-4">Account Information</h3>
+            <div class="space-y-2 text-sm opacity-70">
               <p>
-                <strong>Auth ID:</strong> {student()?.auth0_sub}
+                <strong>Account ID:</strong> {student()?.id}
               </p>
-            </Show>
-          </div>
-        </Card>
+              <Show when={student()?.auth0_sub}>
+                <p>
+                  <strong>Auth ID:</strong> {student()?.auth0_sub}
+                </p>
+              </Show>
+              <p>
+                <strong>Account Active:</strong> {student()?.is_active ? 'Yes' : 'No'}
+              </p>
+            </div>
+          </Card>
+        </div>
       </Show>
     </div>
   )

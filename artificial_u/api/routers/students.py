@@ -34,6 +34,9 @@ def get_current_student_profile(student=Depends(ensure_student)):
         name=student.name,
         email=student.email,
         auth0_sub=student.auth0_sub,
+        role=student.role,
+        coins=student.coins,
+        is_active=student.is_active,
     )
 
 
@@ -67,6 +70,9 @@ def update_current_student_profile(
             name=student.name,
             email=student.email,
             auth0_sub=student.auth0_sub,
+            role=student.role,
+            coins=student.coins,
+            is_active=student.is_active,
         )
 
     try:
@@ -84,6 +90,9 @@ def update_current_student_profile(
             name=updated_student.name,
             email=updated_student.email,
             auth0_sub=updated_student.auth0_sub,
+            role=updated_student.role,
+            coins=updated_student.coins,
+            is_active=updated_student.is_active,
         )
     except Exception as e:
         raise HTTPException(

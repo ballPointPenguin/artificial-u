@@ -31,6 +31,9 @@ class StudentRepository(BaseRepository):
                 name=db_student.name,
                 email=db_student.email,
                 auth0_sub=db_student.auth0_sub,
+                role=db_student.role,
+                coins=db_student.coins,
+                is_active=db_student.is_active,
             )
 
     def get_by_auth0_sub(self, auth0_sub: str) -> Optional[Student]:
@@ -45,6 +48,9 @@ class StudentRepository(BaseRepository):
                 name=db_student.name,
                 email=db_student.email,
                 auth0_sub=db_student.auth0_sub,
+                role=db_student.role,
+                coins=db_student.coins,
+                is_active=db_student.is_active,
             )
 
     def create(self, *, name: str, email: Optional[str], auth0_sub: Optional[str]) -> Student:
@@ -58,6 +64,9 @@ class StudentRepository(BaseRepository):
                 name=db_student.name,
                 email=db_student.email,
                 auth0_sub=db_student.auth0_sub,
+                role=db_student.role,
+                coins=db_student.coins,
+                is_active=db_student.is_active,
             )
 
     def get_or_create_by_auth0(
@@ -90,6 +99,9 @@ class StudentRepository(BaseRepository):
             db_student.name = student.name
             db_student.email = student.email
             db_student.auth0_sub = student.auth0_sub
+            db_student.role = student.role
+            db_student.coins = student.coins
+            db_student.is_active = student.is_active
 
             session.commit()
             session.refresh(db_student)
@@ -98,6 +110,9 @@ class StudentRepository(BaseRepository):
                 name=db_student.name,
                 email=db_student.email,
                 auth0_sub=db_student.auth0_sub,
+                role=db_student.role,
+                coins=db_student.coins,
+                is_active=db_student.is_active,
             )
 
     def update_fields(self, student_id: int, update_data: Dict[str, any]) -> Optional[Student]:
@@ -135,4 +150,115 @@ class StudentRepository(BaseRepository):
                 name=db_student.name,
                 email=db_student.email,
                 auth0_sub=db_student.auth0_sub,
+                role=db_student.role,
+                coins=db_student.coins,
+                is_active=db_student.is_active,
+            )
+
+    def deduct_coins(self, student_id: int, amount: int) -> Student:
+        """
+        Atomically deduct coins from a student's account.
+
+        Args:
+            student_id: ID of the student
+            amount: Number of coins to deduct
+
+        Returns:
+            Updated Student object
+
+        Raises:
+            ValueError: If student not found or insufficient coins
+        """
+        with self.get_session() as session:
+            db_student = session.get(StudentModel, student_id)
+            if not db_student:
+                raise ValueError(f"Student with ID {student_id} not found")
+
+            if db_student.coins < amount:
+                raise ValueError(
+                    f"Insufficient coins. Required: {amount}, Available: {db_student.coins}"
+                )
+
+            db_student.coins -= amount
+            session.commit()
+            session.refresh(db_student)
+
+            return Student(
+                id=db_student.id,
+                name=db_student.name,
+                email=db_student.email,
+                auth0_sub=db_student.auth0_sub,
+                role=db_student.role,
+                coins=db_student.coins,
+                is_active=db_student.is_active,
+            )
+
+    def add_coins(self, student_id: int, amount: int) -> Student:
+        """
+        Add coins to a student's account.
+
+        Args:
+            student_id: ID of the student
+            amount: Number of coins to add
+
+        Returns:
+            Updated Student object
+
+        Raises:
+            ValueError: If student not found
+        """
+        with self.get_session() as session:
+            db_student = session.get(StudentModel, student_id)
+            if not db_student:
+                raise ValueError(f"Student with ID {student_id} not found")
+
+            db_student.coins += amount
+            session.commit()
+            session.refresh(db_student)
+
+            return Student(
+                id=db_student.id,
+                name=db_student.name,
+                email=db_student.email,
+                auth0_sub=db_student.auth0_sub,
+                role=db_student.role,
+                coins=db_student.coins,
+                is_active=db_student.is_active,
+            )
+
+    def update_role(self, student_id: int, role: str) -> Student:
+        """
+        Update a student's role.
+
+        Args:
+            student_id: ID of the student
+            role: New role (viewer, creator, admin)
+
+        Returns:
+            Updated Student object
+
+        Raises:
+            ValueError: If student not found or invalid role
+        """
+        valid_roles = {"viewer", "creator", "admin"}
+        if role not in valid_roles:
+            raise ValueError(f"Invalid role: {role}. Must be one of {valid_roles}")
+
+        with self.get_session() as session:
+            db_student = session.get(StudentModel, student_id)
+            if not db_student:
+                raise ValueError(f"Student with ID {student_id} not found")
+
+            db_student.role = role
+            session.commit()
+            session.refresh(db_student)
+
+            return Student(
+                id=db_student.id,
+                name=db_student.name,
+                email=db_student.email,
+                auth0_sub=db_student.auth0_sub,
+                role=db_student.role,
+                coins=db_student.coins,
+                is_active=db_student.is_active,
             )

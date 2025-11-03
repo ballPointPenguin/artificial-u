@@ -13,7 +13,7 @@ import { type JobRow, listJobs } from '../api/services/jobs-service.js'
 import { lectureService } from '../api/services/lecture-service.js'
 import { topicService } from '../api/services/topic-service.js'
 import type { Lecture, LectureUpdate } from '../api/types.js'
-import { RequireAuth } from '../auth/RequireAuth'
+import { RequireRole } from '../auth/RequireRole'
 import { LectureForm } from '../components/lectures/LectureForm.jsx'
 import { Alert, Button, ConfirmationModal, MagicButton } from '../components/ui'
 import { getJobEventHub } from '../utils/job-events-hub.js'
@@ -62,7 +62,7 @@ const LectureDetailView: Component<{
               </Button>
             </a>
           </Show>
-          <RequireAuth>
+          <RequireRole minRole="creator">
             <MagicButton
               variant="primary"
               size="sm"
@@ -83,7 +83,7 @@ const LectureDetailView: Component<{
             <Button variant="danger" onClick={props.onDelete} disabled={props.isDeleting}>
               {props.isDeleting ? 'Deleting...' : 'Delete'}
             </Button>
-          </RequireAuth>
+          </RequireRole>
         </div>
       </div>
 
@@ -393,7 +393,7 @@ const LectureDetail = () => {
                   <Show
                     when={!isEditing()}
                     fallback={
-                      <RequireAuth>
+                      <RequireRole minRole="creator">
                         <LectureForm
                           courseId={courseId()}
                           existingLecture={lectureData}
@@ -402,7 +402,7 @@ const LectureDetail = () => {
                           isLoading={isSubmitting()}
                           error={error() ? { detail: error() } : null}
                         />
-                      </RequireAuth>
+                      </RequireRole>
                     }
                   >
                     {/* Lecture Detail View */}

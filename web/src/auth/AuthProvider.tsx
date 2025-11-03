@@ -1,11 +1,18 @@
 import type { Auth0Client, User } from '@auth0/auth0-spa-js'
 import { createContext, createSignal, type JSX, onCleanup, onMount, useContext } from 'solid-js'
 import { setAuthErrorHandler, setTokenProvider } from '../api/client'
+import { studentService } from '../api/services'
+import type { Student } from '../api/types'
 import { createClient } from './auth0'
 
 type AuthContextValue = {
   isAuthenticated: () => boolean
   user: () => User | null
+  student: () => Student | null
+  role: () => string
+  canGenerate: () => boolean
+  isCreator: () => boolean
+  isAdmin: () => boolean
   getAccessToken: () => Promise<string | null>
   login: () => Promise<void>
   logout: () => Promise<void>
@@ -17,6 +24,7 @@ export function AuthProvider(props: { children: JSX.Element }) {
   const [client, setClient] = createSignal<Auth0Client | null>(null)
   const [isAuthenticated, setIsAuthenticated] = createSignal(false)
   const [user, setUser] = createSignal<User | null>(null)
+  const [student, setStudent] = createSignal<Student | null>(null)
 
   // Store the storage listener function in a ref so we can remove it in cleanup
   let storageListener: ((e: StorageEvent) => void) | null = null
@@ -30,6 +38,19 @@ export function AuthProvider(props: { children: JSX.Element }) {
         const authedNow = await c.isAuthenticated()
         setIsAuthenticated(authedNow)
         setUser(authedNow ? ((await c.getUser()) ?? null) : null)
+
+        // Fetch student profile if authenticated
+        if (authedNow) {
+          try {
+            const studentData = await studentService.getCurrentStudent()
+            setStudent(studentData)
+          } catch (error) {
+            console.error('Failed to fetch student profile:', error)
+            setStudent(null)
+          }
+        } else {
+          setStudent(null)
+        }
       }
 
       // Register token provider once the client is available
@@ -79,6 +100,11 @@ export function AuthProvider(props: { children: JSX.Element }) {
   const value: AuthContextValue = {
     isAuthenticated,
     user,
+    student,
+    role: () => student()?.role ?? 'viewer',
+    canGenerate: () => ['creator', 'admin'].includes(student()?.role ?? 'viewer'),
+    isCreator: () => student()?.role === 'creator',
+    isAdmin: () => student()?.role === 'admin',
     getAccessToken: async () => {
       const c = client()
       if (!c) return null

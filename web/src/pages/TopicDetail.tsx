@@ -4,7 +4,7 @@ import { courseService } from '../api/services/course-service.js'
 import { lectureService } from '../api/services/lecture-service.js'
 import { topicService } from '../api/services/topic-service.js'
 import type { TopicUpdate } from '../api/types.js'
-import { RequireAuth } from '../auth/RequireAuth'
+import { RequireRole } from '../auth/RequireRole'
 import { LectureSection } from '../components/lectures/LectureSection.jsx'
 import { TopicContentRenderer } from '../components/topics/TopicContentRenderer.jsx'
 import { TopicForm } from '../components/topics/TopicForm.jsx'
@@ -282,7 +282,7 @@ const TopicDetail = () => {
                   <Show
                     when={!isEditing()}
                     fallback={
-                      <RequireAuth>
+                      <RequireRole minRole="creator">
                         <TopicForm
                           courseId={courseId()}
                           existingTopic={topicData}
@@ -291,7 +291,7 @@ const TopicDetail = () => {
                           isLoading={isSubmitting()}
                           error={error() ? { detail: error() } : null}
                         />
-                      </RequireAuth>
+                      </RequireRole>
                     }
                   >
                     {/* Two-column layout for larger screens */}
@@ -310,11 +310,11 @@ const TopicDetail = () => {
                                 <Show when={topicData.order > 1}> • Topic {topicData.order}</Show>
                               </p>
                             </div>
-                            <RequireAuth>
+                            <RequireRole minRole="creator">
                               <Button variant="outline" onClick={() => setIsEditing(true)}>
                                 Edit
                               </Button>
-                            </RequireAuth>
+                            </RequireRole>
                           </div>
 
                           {/* Topic Content */}

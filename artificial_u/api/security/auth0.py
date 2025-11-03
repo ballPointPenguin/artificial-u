@@ -91,3 +91,87 @@ def require_scope(scope: str):
         return payload
 
     return _checker
+
+
+def require_role(min_role: str):
+    """
+    Dependency factory that checks if user has the required role.
+
+    Role hierarchy: viewer < creator < admin
+
+    Args:
+        min_role: Minimum role required (viewer, creator, admin)
+
+    Returns:
+        Dependency function that returns Student if authorized
+
+    Raises:
+        HTTPException: If user lacks required role or account is inactive
+    """
+    from artificial_u.models.core import Student
+
+    ROLE_HIERARCHY = {"viewer": 0, "creator": 1, "admin": 2}
+
+    def _checker(student: Student) -> Student:
+        if not student.is_active:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Account is inactive")
+
+        user_level = ROLE_HIERARCHY.get(student.role, 0)
+        required_level = ROLE_HIERARCHY.get(min_role, 0)
+
+        if user_level < required_level:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN, detail=f"Requires {min_role} role or higher"
+            )
+        return student
+
+    # Import ensure_student to use as dependency
+    from artificial_u.api.dependencies import ensure_student
+
+    return Depends(lambda s=Depends(ensure_student): _checker(s))
+
+
+def require_coins(cost: int):
+    """
+    Dependency factory that checks and deducts coins for operations.
+
+    Admin users bypass coin checks (unlimited).
+
+    Args:
+        cost: Number of coins required for the operation
+
+    Returns:
+        Dependency function that returns Student after deducting coins
+
+    Raises:
+        HTTPException: If user has insufficient coins (402 Payment Required)
+    """
+    from artificial_u.models.core import Student
+    from artificial_u.models.repositories import RepositoryFactory
+
+    def _checker(student: Student, repository_factory: RepositoryFactory) -> Student:
+        # Admin users have unlimited coins
+        if student.role == "admin":
+            return student
+
+        # All generation requires at least 'creator' role
+        if student.role not in ["creator", "admin"]:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Generation features require creator role or higher",
+            )
+
+        # Check and deduct coins atomically (for non-admins)
+        try:
+            updated_student = repository_factory.student.deduct_coins(student.id, cost)
+            return updated_student
+        except ValueError as e:
+            # Insufficient coins or student not found
+            raise HTTPException(status_code=status.HTTP_402_PAYMENT_REQUIRED, detail=str(e))
+
+    # Import dependencies at module scope
+    from artificial_u.api.dependencies import ensure_student, get_repository_factory
+
+    return Depends(
+        lambda s=Depends(ensure_student), rf=Depends(get_repository_factory): _checker(s, rf)
+    )

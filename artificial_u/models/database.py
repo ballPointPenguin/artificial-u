@@ -4,7 +4,17 @@ Database models for ArtificialU.
 
 from datetime import datetime
 
-from sqlalchemy import Column, DateTime, ForeignKey, Index, Integer, String, Text, UniqueConstraint
+from sqlalchemy import (
+    Boolean,
+    Column,
+    DateTime,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+    Text,
+    UniqueConstraint,
+)
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import DeclarativeBase, relationship
 
@@ -188,6 +198,9 @@ class StudentModel(Base):
     name = Column(String, nullable=False)
     email = Column(String, nullable=True)
     auth0_sub = Column(String, nullable=True, unique=True)
+    role = Column(String, nullable=False, default="viewer")
+    coins = Column(Integer, nullable=False, default=0)
+    is_active = Column(Boolean, nullable=False, default=True)
     created_at = Column(DateTime, nullable=False, default=datetime.now)
     updated_at = Column(DateTime, nullable=False, default=datetime.now)
 

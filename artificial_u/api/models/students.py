@@ -14,6 +14,9 @@ class StudentResponse(BaseModel):
     name: str = Field(..., description="Student's name")
     email: Optional[str] = Field(None, description="Student's email address")
     auth0_sub: Optional[str] = Field(None, description="Auth0 subject identifier")
+    role: str = Field(..., description="User role (viewer, creator, admin)")
+    coins: int = Field(..., description="Available coins for generation operations")
+    is_active: bool = Field(..., description="Whether the account is active")
 
     class Config:
         from_attributes = True

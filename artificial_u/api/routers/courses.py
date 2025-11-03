@@ -22,8 +22,9 @@ from artificial_u.api.models import (
     CourseUpdate,
     GeneratedCourseData,
 )
-from artificial_u.api.security.auth0 import require_auth
+from artificial_u.api.security.auth0 import require_coins, require_role
 from artificial_u.api.services import CourseApiService
+from artificial_u.config.settings import get_settings
 from artificial_u.models.repositories.factory import RepositoryFactory
 
 # Create the router
@@ -132,7 +133,7 @@ async def get_course_by_code(
         404: {"description": "Professor or Department not found"},
         500: {"description": "Internal server error during creation"},
     },
-    dependencies=[Depends(require_auth)],
+    dependencies=[require_role("creator")],
 )
 async def create_course(
     course_data: CourseCreate,
@@ -157,7 +158,7 @@ async def create_course(
         400: {"description": "Invalid update data (e.g., bad foreign key)"},
         500: {"description": "Internal server error during update"},
     },
-    dependencies=[Depends(require_auth)],
+    dependencies=[require_role("creator")],
 )
 async def update_course(
     course_data: CourseUpdate,
@@ -189,7 +190,7 @@ async def update_course(
         409: {"description": "Cannot delete course with associated resources (e.g., lectures)"},
         500: {"description": "Internal server error during deletion"},
     },
-    dependencies=[Depends(require_auth)],
+    dependencies=[require_role("creator")],
 )
 async def delete_course(
     course_id: int = Path(..., description="The ID of the course to delete"),
@@ -304,7 +305,7 @@ async def get_course_lectures(
     responses={
         500: {"description": "Course generation failed"},
     },
-    dependencies=[Depends(require_auth)],
+    dependencies=[require_coins(cost=get_settings().COIN_COST_COURSE_GENERATION)],
 )
 async def generate_course(
     generation_data: CourseGenerate,
@@ -332,7 +333,7 @@ async def generate_course(
         "Enqueue an async job to generate course data using AI. Returns a job id to poll via "
         "GET /api/v1/jobs/{id}."
     ),
-    dependencies=[Depends(require_auth)],
+    dependencies=[require_coins(cost=get_settings().COIN_COST_COURSE_GENERATION)],
 )
 async def enqueue_generate_course(
     generation_data: CourseGenerate,
@@ -368,7 +369,7 @@ async def enqueue_generate_course(
         "Enqueue an async job that performs smart department/professor selection/generation "
         "and creates the course. Returns a job id to poll via GET /api/v1/jobs/{id}."
     ),
-    dependencies=[Depends(require_auth)],
+    dependencies=[require_role("creator")],
 )
 async def enqueue_create_course(
     course_data: CourseCreate,

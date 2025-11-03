@@ -435,6 +435,9 @@ export interface Student {
   name: string
   email: string | null
   auth0_sub: string | null
+  role: 'viewer' | 'creator' | 'admin'
+  coins: number
+  is_active: boolean
 }
 
 export interface StudentUpdate {

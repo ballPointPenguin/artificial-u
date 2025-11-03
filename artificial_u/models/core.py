@@ -250,3 +250,6 @@ class Student(BaseModel):
     name: str
     email: Optional[str] = None
     auth0_sub: Optional[str] = None
+    role: str = "viewer"
+    coins: int = 0
+    is_active: bool = True

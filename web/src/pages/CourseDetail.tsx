@@ -9,7 +9,7 @@ import type {
   ProfessorBrief,
   TopicList,
 } from '../api/types.js'
-import { RequireAuth } from '../auth/RequireAuth'
+import { RequireRole } from '../auth/RequireRole'
 import CourseForm from '../components/courses/CourseForm.jsx'
 import type { CourseFormData } from '../components/courses/types.jsx'
 import { Alert, Button } from '../components/ui'
@@ -287,7 +287,7 @@ const CourseDetail: Component = () => {
                     ← Back to Courses
                   </A>
                   <Show when={!isEditing()}>
-                    <RequireAuth>
+                    <RequireRole minRole="creator">
                       <div class="flex gap-2">
                         <Button variant="primary" onClick={() => setIsEditing(true)}>
                           Edit Course
@@ -296,7 +296,7 @@ const CourseDetail: Component = () => {
                           Delete
                         </Button>
                       </div>
-                    </RequireAuth>
+                    </RequireRole>
                   </Show>
                 </div>
 
@@ -309,7 +309,7 @@ const CourseDetail: Component = () => {
 
                 {/* Delete Confirmation Dialog */}
                 <Show when={showDeleteConfirm()}>
-                  <RequireAuth>
+                  <RequireRole minRole="creator">
                     <div class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
                       <div class="arcane-card p-6 max-w-md w-full">
                         <h2 class="text-xl font-semibold mb-4 text-parchment-100">
@@ -336,13 +336,13 @@ const CourseDetail: Component = () => {
                         </div>
                       </div>
                     </div>
-                  </RequireAuth>
+                  </RequireRole>
                 </Show>
 
                 <Show
                   when={!isEditing()}
                   fallback={
-                    <RequireAuth>
+                    <RequireRole minRole="creator">
                       <div class="arcane-card p-6 mb-8">
                         <h2 class="text-xl font-semibold mb-4 text-parchment-100">Edit Course</h2>
                         <CourseForm
@@ -353,7 +353,7 @@ const CourseDetail: Component = () => {
                           error={error()}
                         />
                       </div>
-                    </RequireAuth>
+                    </RequireRole>
                   }
                 >
                   <h1 class="text-3xl font-display text-parchment-100 mb-3">

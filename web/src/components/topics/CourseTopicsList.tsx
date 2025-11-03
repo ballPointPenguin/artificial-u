@@ -2,7 +2,7 @@ import { A } from '@solidjs/router'
 import { createEffect, createSignal, For, on, Show } from 'solid-js'
 import { topicService } from '../../api/services/topic-service.js'
 import type { APIError, Topic, TopicCreate, TopicUpdate } from '../../api/types.js'
-import { RequireAuth } from '../../auth/RequireAuth.js'
+import { RequireRole } from '../../auth/RequireRole.js'
 import { createJobTracker } from '../../utils/job-management.js'
 import { Alert } from '../ui/Alert.jsx'
 import { Button } from '../ui/Button.jsx'
@@ -168,7 +168,7 @@ export function CourseTopicsList(props: CourseTopicsListProps) {
       <div class="flex justify-between items-center">
         <h2 class="text-2xl font-display text-parchment-100">Course Topics</h2>
         <div class="flex space-x-2">
-          <RequireAuth>
+          <RequireRole minRole="creator">
             <MagicButton
               type="button"
               onClick={() => {
@@ -184,7 +184,7 @@ export function CourseTopicsList(props: CourseTopicsListProps) {
             <Button onClick={handleAddTopic} variant="primary" disabled={isLoading()}>
               Add New Topic
             </Button>
-          </RequireAuth>
+          </RequireRole>
         </div>
       </div>
 
@@ -206,7 +206,7 @@ export function CourseTopicsList(props: CourseTopicsListProps) {
       </Show>
 
       <Show when={showForm()}>
-        <RequireAuth>
+        <RequireRole minRole="creator">
           <TopicForm
             courseId={props.courseId}
             existingTopic={editingTopic()}
@@ -215,7 +215,7 @@ export function CourseTopicsList(props: CourseTopicsListProps) {
             isLoading={isSubmitting()}
             error={formError()}
           />
-        </RequireAuth>
+        </RequireRole>
       </Show>
 
       <Show when={isLoading() && topics().length === 0 && !showForm()}>
@@ -257,7 +257,7 @@ export function CourseTopicsList(props: CourseTopicsListProps) {
                   </div>
                 </div>
                 <div class="flex justify-end space-x-2 pt-3 border-t border-parchment-800/30">
-                  <RequireAuth>
+                  <RequireRole minRole="creator">
                     <Button
                       variant="ghost"
                       size="sm"
@@ -277,7 +277,7 @@ export function CourseTopicsList(props: CourseTopicsListProps) {
                     >
                       Delete
                     </Button>
-                  </RequireAuth>
+                  </RequireRole>
                 </div>
               </div>
             )}

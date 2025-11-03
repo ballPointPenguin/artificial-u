@@ -3,7 +3,7 @@ import { type Component, createResource, createSignal, For, Show } from 'solid-j
 import { courseService } from '../api/services/course-service.js'
 import { departmentService } from '../api/services/department-service.js'
 import type { Course, CourseCreate } from '../api/types.js'
-import { RequireAuth } from '../auth/RequireAuth'
+import { RequireRole } from '../auth/RequireRole'
 import CourseForm from '../components/courses/CourseForm.jsx'
 import type { CourseFormData } from '../components/courses/types.jsx'
 import { Button } from '../components/ui'
@@ -227,15 +227,15 @@ const Courses: Component = () => {
     <div class="container mx-auto p-6">
       <div class="flex justify-between items-center mb-6">
         <h1 class="text-3xl font-display text-parchment-100 mb-6">Academic Courses</h1>
-        <RequireAuth>
+        <RequireRole minRole="creator">
           <Button variant="primary" onClick={() => setShowCreateForm(true)}>
             Add Course
           </Button>
-        </RequireAuth>
+        </RequireRole>
       </div>
 
       <Show when={showCreateForm()}>
-        <RequireAuth>
+        <RequireRole minRole="creator">
           <div class="arcane-card p-6 mb-8">
             <h2 class="text-xl font-semibold mb-4 text-parchment-100">Create New Course</h2>
             <CourseForm
@@ -245,7 +245,7 @@ const Courses: Component = () => {
               error={formError()}
             />
           </div>
-        </RequireAuth>
+        </RequireRole>
       </Show>
 
       <Show

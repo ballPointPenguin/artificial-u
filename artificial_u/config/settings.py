@@ -124,6 +124,16 @@ class Settings(BaseSettings):
     # Example values: "eleven_flash_v2_5", "eleven_multilingual_v2"
     TTS_VOICE_MODEL: str = "eleven_flash_v2_5"
 
+    # Coin costs for generation operations (can be tuned via environment variables)
+    COIN_COST_COURSE_GENERATION: int = 1
+    COIN_COST_LECTURE_GENERATION: int = 5
+    COIN_COST_LECTURE_AUDIO: int = 10
+    COIN_COST_LECTURE_SUMMARY: int = 0
+    COIN_COST_TOPIC_GENERATION: int = 3
+    COIN_COST_PROFESSOR_GENERATION: int = 0
+    COIN_COST_PROFESSOR_IMAGE: int = 2
+    COIN_COST_DEPARTMENT_GENERATION: int = 0
+
     # Async worker and rate limiting
     WORKER_POLL_IDLE_SEC: float = 0.75
     WORKER_VISIBILITY_TIMEOUT_SEC: int = 600
@@ -230,6 +240,14 @@ class Settings(BaseSettings):
             "storage_audio_bucket": self.STORAGE_AUDIO_BUCKET,
             "storage_lectures_bucket": self.STORAGE_LECTURES_BUCKET,
             "storage_images_bucket": self.STORAGE_IMAGES_BUCKET,
+            "coin_cost_course_generation": self.COIN_COST_COURSE_GENERATION,
+            "coin_cost_lecture_generation": self.COIN_COST_LECTURE_GENERATION,
+            "coin_cost_lecture_audio": self.COIN_COST_LECTURE_AUDIO,
+            "coin_cost_lecture_summary": self.COIN_COST_LECTURE_SUMMARY,
+            "coin_cost_topic_generation": self.COIN_COST_TOPIC_GENERATION,
+            "coin_cost_professor_generation": self.COIN_COST_PROFESSOR_GENERATION,
+            "coin_cost_professor_image": self.COIN_COST_PROFESSOR_IMAGE,
+            "coin_cost_department_generation": self.COIN_COST_DEPARTMENT_GENERATION,
         }
 
     def log_configuration(self) -> None:

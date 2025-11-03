@@ -2,7 +2,7 @@ import { A } from '@solidjs/router'
 import { type Component, createSignal, Show } from 'solid-js'
 import { lectureService } from '../../api/services/lecture-service.js'
 import type { Lecture } from '../../api/types.js'
-import { RequireAuth } from '../../auth/RequireAuth'
+import { RequireRole } from '../../auth/RequireRole'
 import { createJobTracker, getJobMessage } from '../../utils/job-management.js'
 import { Alert, Button, ConfirmationModal, MagicButton } from '../ui'
 
@@ -129,7 +129,7 @@ export const LectureSection: Component<LectureSectionProps> = (props) => {
                   </Button>
                 </a>
               </Show>
-              <RequireAuth>
+              <RequireRole minRole="creator">
                 <MagicButton
                   variant="primary"
                   size="sm"
@@ -143,7 +143,7 @@ export const LectureSection: Component<LectureSectionProps> = (props) => {
                       ? 'Regenerate Audio'
                       : 'Generate Audio'}
                 </MagicButton>
-              </RequireAuth>
+              </RequireRole>
               <A
                 href={`/courses/${String(props.courseId)}/lectures/${String(lectureData().id)}`}
                 class="inline-block"
@@ -152,7 +152,7 @@ export const LectureSection: Component<LectureSectionProps> = (props) => {
                   View
                 </Button>
               </A>
-              <RequireAuth>
+              <RequireRole minRole="creator">
                 <Button
                   variant="danger"
                   size="sm"
@@ -162,7 +162,7 @@ export const LectureSection: Component<LectureSectionProps> = (props) => {
                 >
                   {isDeleting() ? 'Deleting...' : 'Delete'}
                 </Button>
-              </RequireAuth>
+              </RequireRole>
             </div>
           )}
         </Show>
@@ -215,7 +215,7 @@ export const LectureSection: Component<LectureSectionProps> = (props) => {
             No lecture has been created for this topic yet.
           </p>
           <div class="flex justify-center space-x-4">
-            <RequireAuth>
+            <RequireRole minRole="creator">
               <Show
                 when={!anyJobActive()}
                 fallback={
@@ -238,7 +238,7 @@ export const LectureSection: Component<LectureSectionProps> = (props) => {
               >
                 {props.isGeneratingLecture ? 'Generating...' : 'Generate Lecture'}
               </MagicButton>
-            </RequireAuth>
+            </RequireRole>
           </div>
         </div>
       </Show>

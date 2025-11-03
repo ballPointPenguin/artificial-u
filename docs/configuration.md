@@ -120,6 +120,38 @@ IMAGE_GENERATION_MODEL=gpt-image-1
 TTS_VOICE_MODEL=eleven_flash_v2_5
 ```
 
+## Coin Costs for Generation Operations
+
+ArtificialU uses a virtual currency system ("coins") to control access to expensive AI generation operations. These costs can be configured via environment variables:
+
+```python
+# Cost for course generation (default: 1)
+COIN_COST_COURSE_GENERATION=1
+
+# Cost for lecture generation (default: 5)
+COIN_COST_LECTURE_GENERATION=5
+
+# Cost for lecture audio generation (default: 10)
+COIN_COST_LECTURE_AUDIO=10
+
+# Cost for lecture summary generation (default: 0)
+COIN_COST_LECTURE_SUMMARY=0
+
+# Cost for topic generation (default: 3)
+COIN_COST_TOPIC_GENERATION=3
+
+# Cost for professor generation (default: 0)
+COIN_COST_PROFESSOR_GENERATION=0
+
+# Cost for professor image generation (default: 2)
+COIN_COST_PROFESSOR_IMAGE=2
+
+# Cost for department generation (default: 0)
+COIN_COST_DEPARTMENT_GENERATION=0
+```
+
+These costs are deducted from a user's coin balance when they trigger generation operations. Administrators bypass coin checks entirely.
+
 ## Logging Configuration
 
 Configure logging level:
@@ -179,3 +211,11 @@ TESTING=true
 | `STORAGE_AUDIO_BUCKET` | Bucket for audio files | `artificial-u-audio` | No |
 | `STORAGE_LECTURES_BUCKET` | Bucket for lecture files | `artificial-u-lectures` | No |
 | `STORAGE_IMAGES_BUCKET` | Bucket for image files | `artificial-u-images` | No |
+| `COIN_COST_COURSE_GENERATION` | Coin cost for course generation | `10` | No |
+| `COIN_COST_LECTURE_GENERATION` | Coin cost for lecture generation | `5` | No |
+| `COIN_COST_LECTURE_AUDIO` | Coin cost for lecture audio | `3` | No |
+| `COIN_COST_LECTURE_SUMMARY` | Coin cost for lecture summary | `2` | No |
+| `COIN_COST_TOPIC_GENERATION` | Coin cost for topic generation | `8` | No |
+| `COIN_COST_PROFESSOR_GENERATION` | Coin cost for professor generation | `5` | No |
+| `COIN_COST_PROFESSOR_IMAGE` | Coin cost for professor image | `2` | No |
+| `COIN_COST_DEPARTMENT_GENERATION` | Coin cost for department generation | `5` | No |

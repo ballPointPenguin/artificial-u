@@ -1,7 +1,7 @@
 import { createResource, createSignal, For, Show } from 'solid-js'
 import { professorService } from '../api/services/professor-service.js'
 import type { Professor } from '../api/types.js'
-import { RequireAuth } from '../auth/RequireAuth'
+import { RequireRole } from '../auth/RequireRole'
 import ProfessorForm, { type ProfessorFormData } from '../components/professors/ProfessorForm.js'
 import ProfessorListItem from '../components/professors/ProfessorListItem.js'
 import { Button, Input } from '../components/ui'
@@ -55,15 +55,15 @@ export default function ProfessorsPage() {
     <main class="container mx-auto p-4">
       <div class="flex justify-between items-center mb-6">
         <h1 class="text-3xl font-display mb-6 text-parchment-100 text-shadow-golden">Professors</h1>
-        <RequireAuth>
+        <RequireRole minRole="creator">
           <Button variant="primary" onClick={() => setShowCreateForm(true)}>
             Add Professor
           </Button>
-        </RequireAuth>
+        </RequireRole>
       </div>
 
       <Show when={showCreateForm()}>
-        <RequireAuth>
+        <RequireRole minRole="creator">
           <div class="arcane-card p-6 mb-8">
             <h2 class="text-xl font-semibold mb-4 text-parchment-100">Create New Professor</h2>
             <ProfessorForm
@@ -73,7 +73,7 @@ export default function ProfessorsPage() {
               error={formError()}
             />
           </div>
-        </RequireAuth>
+        </RequireRole>
       </Show>
 
       <form onSubmit={handleSearch} class="mb-8">

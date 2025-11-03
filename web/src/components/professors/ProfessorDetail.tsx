@@ -9,7 +9,7 @@ import type {
   ProfessorCourseBrief,
   ProfessorCoursesResponse,
 } from '../../api/types.js'
-import { RequireAuth } from '../../auth/RequireAuth'
+import { RequireRole } from '../../auth/RequireRole'
 import { Alert, Button, ConfirmationModal, LoadingSpinner, MagicButton } from '../ui'
 import ProfessorForm, { type ProfessorFormData } from './ProfessorForm.js'
 
@@ -301,7 +301,7 @@ export default function ProfessorDetail() {
             when={!isEditing()}
             fallback={
               <div>
-                <RequireAuth>
+                <RequireRole minRole="creator">
                   <h2 class="text-xl font-semibold mb-4">Edit Professor</h2>
                   <ProfessorForm
                     professor={professorResource() as Professor}
@@ -310,7 +310,7 @@ export default function ProfessorDetail() {
                     isSubmitting={isSubmitting()}
                     error={error()}
                   />
-                </RequireAuth>
+                </RequireRole>
               </div>
             }
           >
@@ -320,7 +320,7 @@ export default function ProfessorDetail() {
                   {professorResource()?.name}
                 </h1>
                 <div class="flex space-x-2 items-center">
-                  <RequireAuth>
+                  <RequireRole minRole="creator">
                     <Show when={!isGeneratingImage()}>
                       <MagicButton
                         variant="ghost"
@@ -343,7 +343,7 @@ export default function ProfessorDetail() {
                     >
                       Delete
                     </Button>
-                  </RequireAuth>
+                  </RequireRole>
                 </div>
               </div>
 
@@ -587,7 +587,7 @@ export default function ProfessorDetail() {
                             {voiceAssignError()}
                           </Alert>
                         </Show>
-                        <RequireAuth>
+                        <RequireRole minRole="creator">
                           <div class="flex flex-col sm:flex-row sm:items-center sm:space-x-3 space-y-2 sm:space-y-0">
                             <MagicButton
                               variant="secondary"
@@ -622,7 +622,7 @@ export default function ProfessorDetail() {
                               </MagicButton>
                             </div>
                           </div>
-                        </RequireAuth>
+                        </RequireRole>
                       </div>
                     </div>
                   </div>
