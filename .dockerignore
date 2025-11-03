@@ -1,0 +1,43 @@
+# Git
+.git
+.gitignore
+
+# Docker
+.dockerignore
+Dockerfile*
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+.env
+.venv
+venv/
+env/
+.mypy_cache/
+.pytest_cache/
+.nox/
+
+# CDK
+cdk.out/
+.cdk.staging/
+cdk/
+
+# IDE
+.cursor/
+.vscode/
+.idea/
+
+# Other
+.claude/
+.devcontainer/
+.lsp/
+node_modules/
+
+# Application specific
+content_logs/
+docs/
+examples/
+samples/

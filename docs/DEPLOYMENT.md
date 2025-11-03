@@ -1,416 +1,265 @@
 # Deployment
 
-## Production Deployment (Docker + nginx-proxy/Let's Encrypt + Ansible)
+This document outlines the deployment process for the Artificial University stack to Amazon Web Services (AWS) using the AWS Cloud Development Kit (CDK).
 
-This guide sketches a pragmatic, production-lean deployment for the Artificial University stack on a single Linux host using Docker and Ansible, integrating with an existing `nginx-proxy` + Let's Encrypt setup. It assumes you already run `nginx-proxy` and its Let's Encrypt companion on the host, issuing certificates automatically based on container env vars.
+## Architecture Overview
 
-### TL;DR
+The AWS infrastructure is defined as code using the Python CDK and consists of the following core components:
 
-- **Containers**: FastAPI API, SolidJS static site (served by Nginx), PostgreSQL, MinIO (+ optional mc bootstrap)
-- **Omitted in prod**: Ollama
-- **Public entrypoint**: Only the frontend container is public; it reverse-proxies `/api` to the API container over the Docker network.
-- **Proxy integration**: Set `VIRTUAL_HOST`, `VIRTUAL_PORT=80`, `LETSENCRYPT_HOST`, `LETSENCRYPT_EMAIL` on the frontend container for automatic TLS.
+- **Amazon VPC**: A dedicated Virtual Private Cloud (VPC) to host all network-isolated resources.
+- **Amazon RDS**: A managed PostgreSQL database instance (db.t4g.small) for the application's data persistence.
+- **Amazon S3**:
+  - Three private buckets for application data storage: `audio`, `lectures`, and `images`, replacing the self-hosted MinIO.
+  - One public bucket configured for static website hosting for the SolidJS frontend.
+- **Amazon ECS on AWS Fargate**: A serverless compute engine to run the FastAPI backend container without managing servers.
+- **Application Load Balancer (ALB)**: An internet-facing ALB that fronts the ECS service. The ALB must be public for CloudFront to reach it, as CloudFront cannot connect to internal (VPC-only) load balancers.
+- **Amazon CloudFront**: A global Content Delivery Network (CDN) that provides the public entry point to the application. It is configured with two origins:
+    1. The frontend S3 bucket (default behavior) to serve the web application.
+    2. The public ALB to route `/api/*` requests to the backend ECS service.
+- **AWS Secrets Manager & SSM Parameter Store**: For securely managing database credentials and other application secrets.
+- **Amazon ECR**: A private container registry to store the backend Docker image.
 
----
-
-### Architecture choices
-
-- **Frontend**: Build once and serve static assets with Nginx. Do not run the Vite dev server in production.
-- **Backend**: Run the FastAPI app under `uvicorn` (or `gunicorn` + `uvicorn.workers.UvicornWorker` if you prefer). This guide uses `uvicorn` for simplicity.
-- **Routing**: External traffic hits the public frontend container. The frontend Nginx proxies `/api` to the API container via the internal Docker network. This keeps a single public hostname and aligns with `web/src/api/config.ts` which uses a relative production base URL (`/api`).
-- **Alt (two domains)**: If you prefer `app.example.com` and `api.example.com`, you can expose both containers with their own `VIRTUAL_HOST`/`LETSENCRYPT_HOST`. You would then set the SPA production `API_CONFIG` to absolute `https://api.example.com/api` and tighten CORS accordingly.
-
----
-
-### Backend Dockerfile (FastAPI)
-
-Create `Dockerfile.api` at repo root:
-
-```dockerfile
-FROM python:3.11-slim AS base
-
-ENV PYTHONUNBUFFERED=1 \
-    PIP_NO_CACHE_DIR=1
-
-WORKDIR /app
-
-# System deps (psycopg, build tools as needed)
-RUN apt-get update -y && apt-get install -y --no-install-recommends \
-    build-essential \
-    curl \
-  && rm -rf /var/lib/apt/lists/*
-
-# Copy only requirements first for better caching
-COPY requirements.txt ./
-RUN pip install -r requirements.txt
-
-# Copy the application
-COPY . .
-
-# Expose API port
-EXPOSE 8000
-
-# Healthcheck hits /api/v1/health
-HEALTHCHECK --interval=30s --timeout=5s --retries=5 CMD curl -fsS http://localhost:8000/api/v1/health || exit 1
-
-CMD ["uvicorn", "artificial_u.api.app:app", "--host", "0.0.0.0", "--port", "8000", "--proxy-headers"]
-```
-
-Notes:
-
-- The app already exposes `/api/v1/health` which we use for the container healthcheck.
-- You can replace the final `CMD` with gunicorn if desired.
+This architecture ensures a scalable, secure, and maintainable deployment. The frontend and backend are decoupled, with CloudFront acting as the single point of public access, routing traffic appropriately.
 
 ---
 
-### Frontend Dockerfile (SolidJS + Nginx)
+## Prerequisites
 
-Create `web/Dockerfile` (build context is `web/`):
+Before deploying, ensure you have the following installed and configured:
 
-```dockerfile
-# Build stage
-FROM node:22-alpine AS build
-WORKDIR /app
-ARG VITE_AUTH0_DOMAIN
-ARG VITE_AUTH0_CLIENT_ID
-ARG VITE_AUTH0_AUDIENCE
-ENV VITE_AUTH0_DOMAIN=${VITE_AUTH0_DOMAIN} \
-    VITE_AUTH0_CLIENT_ID=${VITE_AUTH0_CLIENT_ID} \
-    VITE_AUTH0_AUDIENCE=${VITE_AUTH0_AUDIENCE}
-COPY package.json pnpm-lock.yaml ./
-RUN corepack enable && corepack prepare pnpm@10.14.0 --activate
-RUN pnpm install --frozen-lockfile
-COPY . .
-RUN pnpm build
+1. **AWS CLI**: Installed and configured with credentials for your AWS account.
 
-# Runtime stage
-FROM nginx:alpine
-WORKDIR /usr/share/nginx/html
-COPY --from=build /app/dist .
-COPY nginx.conf /etc/nginx/conf.d/default.conf
-EXPOSE 80
-HEALTHCHECK --interval=30s --timeout=5s --retries=5 CMD wget -qO- http://localhost/ >/dev/null || exit 1
-CMD ["nginx", "-g", "daemon off;"]
-```
+    ```bash
+    aws configure
+    ```
 
-Add `web/nginx.conf` to serve the SPA and proxy API to the backend container named `api`:
+2. **Node.js and npm**: Required to install the CDK CLI.
+3. **AWS CDK CLI**:
 
-```nginx
-server {
-    listen 80;
-    server_name _;
+    ```bash
+    npm install -g aws-cdk
+    ```
 
-    # Serve built assets
-    root /usr/share/nginx/html;
-    index index.html;
-
-    # SPA fallback
-    location / {
-        try_files $uri $uri/ /index.html;
-    }
-
-    # Proxy API to the backend service in the same Docker network
-    location /api/ {
-        proxy_http_version 1.1;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection $connection_upgrade;
-        proxy_pass http://api:8000/api/;
-    }
-}
-```
-
-This keeps the SPA and API on the same origin in production, matching `API_CONFIG` which points production to `'/api'`.
+4. **Python 3.11+ and Hatch**: For managing the Python environment. [[memory:6174773]]
+5. **Docker**: The CDK will use Docker to build the API container image locally before pushing it to ECR.
 
 ---
 
-### Production docker compose
+## Deployment Steps
 
-Create `docker-compose.prod.yml` at repo root:
+The entire deployment process is managed by the CDK.
 
-```yaml
-version: "3.9"
+### 1. Bootstrap your AWS Environment
 
-services:
-  db:
-    image: postgres:17
-    container_name: artificial_u_postgres
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: artificial_u
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  minio:
-    image: minio/minio:latest
-    container_name: artificial_u_minio
-    environment:
-      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
-      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
-    command: server --console-address ":9001" /data
-    ports:
-      - "9000:9000"
-      - "9001:9001"
-    volumes:
-      - minio_data:/data
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
-      interval: 30s
-      timeout: 20s
-      retries: 3
-
-  mc:
-    image: minio/mc:latest
-    container_name: artificial_u_mc
-    depends_on:
-      - minio
-    volumes:
-      - ./scripts/mc_setup.sh:/usr/bin/mc_setup.sh
-    entrypoint: ["sh", "/usr/bin/mc_setup.sh"]
-
-  api:
-    build:
-      context: .
-      dockerfile: Dockerfile.api
-    container_name: artificial_u_api
-    depends_on:
-      - db
-      - minio
-    environment:
-      # Database
-      DATABASE_URL: ${DATABASE_URL:-postgresql://postgres:postgres@db:5432/artificial_u}
-      # Auth0
-      AUTH0_DOMAIN: ${AUTH0_DOMAIN}
-      AUTH0_AUDIENCE: ${AUTH0_AUDIENCE}
-      AUTH0_ALG: RS256
-      # Storage (MinIO)
-      STORAGE_TYPE: minio
-      STORAGE_ENDPOINT_URL: http://minio:9000
-      STORAGE_PUBLIC_URL: ${STORAGE_PUBLIC_URL:-http://minio:9000}
-      STORAGE_ACCESS_KEY: ${MINIO_ROOT_USER:-minioadmin}
-      STORAGE_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-minioadmin}
-      STORAGE_REGION: us-east-1
-      STORAGE_AUDIO_BUCKET: artificial-u-audio
-      STORAGE_LECTURES_BUCKET: artificial-u-lectures
-      STORAGE_IMAGES_BUCKET: artificial-u-images
-      # App env
-      ENV: production
-    expose:
-      - "8000"
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-
-  web:
-    build:
-      context: ./web
-      dockerfile: Dockerfile
-    container_name: artificial_u_web
-    depends_on:
-      - api
-    environment:
-      # Integration with nginx-proxy + letsencrypt-companion on the host
-      VIRTUAL_HOST: ${PUBLIC_HOST}
-      VIRTUAL_PORT: "80"
-      LETSENCRYPT_HOST: ${PUBLIC_HOST}
-      LETSENCRYPT_EMAIL: ${LETSENCRYPT_EMAIL}
-    expose:
-      - "80"
-    # If your nginx-proxy expects published ports, you can publish 80:80 instead of expose
-    # ports:
-    #   - "80:80"
-
-volumes:
-  postgres_data:
-  minio_data:
-```
-
-Notes:
-
-- Only `web` is public. `api` is internal and reached via `web`'s Nginx.
-- Set `.env.prod` with `PUBLIC_HOST` and `LETSENCRYPT_EMAIL` (see Ansible section).
-- Omitted `ollama` in production.
-
----
-
-### Environment variables
-
-Backend (`api`):
-
-- `DATABASE_URL` e.g. `postgresql://postgres:postgres@db:5432/artificial_u`
-- `AUTH0_DOMAIN`, `AUTH0_AUDIENCE`, `AUTH0_ALG=RS256`
-- Storage for MinIO: `STORAGE_*` as shown above
-- Optional model API keys per your config
-
-Frontend (`web`):
-
-- For the SPA build, ensure `VITE_AUTH0_*` are baked in at build time if using Auth0 login. When building via the multi-stage Dockerfile, inject using build args or a `.env.production` placed in `web/` (Vite reads `VITE_*`). Example build args approach:
-
-```yaml
-web:
-  build:
-    context: .
-    dockerfile: web/Dockerfile
-    args:
-      VITE_AUTH0_DOMAIN: ${VITE_AUTH0_DOMAIN}
-      VITE_AUTH0_CLIENT_ID: ${VITE_AUTH0_CLIENT_ID}
-      VITE_AUTH0_AUDIENCE: ${VITE_AUTH0_AUDIENCE}
-```
-
-Then in `web/Dockerfile` build stage, add `ARG` lines and export to the env before `pnpm build`.
-
----
-
-### Ansible automation
-
-Create `ansible/deploy.yml` in this repo to provision Docker, pull/build images, create an `.env.prod`, and run Compose. Below is a minimal, idempotent playbook:
-
-```yaml
-- name: Deploy ArtificialU
-  hosts: artificialu
-  become: true
-  vars:
-    app_dir: /opt/artificial_u
-    git_repo: https://github.com/your-org/artificial-u.git
-    git_version: main
-    # Public DNS for the SPA
-    PUBLIC_HOST: app.artificial-u.com
-    LETSENCRYPT_EMAIL: you@example.com
-    # Backend secrets
-    AUTH0_DOMAIN: your-tenant.auth0.com
-    AUTH0_AUDIENCE: https://api.artificial-u.com
-    DATABASE_URL: postgresql://postgres:postgres@db:5432/artificial_u
-    MINIO_ROOT_USER: minioadmin
-    MINIO_ROOT_PASSWORD: minioadmin
-  tasks:
-    - name: Ensure packages present (Docker + Compose plugin)
-      ansible.builtin.package:
-        name:
-          - docker.io
-          - docker-compose-plugin
-        state: present
-
-    - name: Ensure Docker service running
-      ansible.builtin.service:
-        name: docker
-        state: started
-        enabled: true
-
-    - name: Create app directory
-      ansible.builtin.file:
-        path: "{{ app_dir }}"
-        state: directory
-        mode: "0755"
-
-    - name: Check out repository
-      ansible.builtin.git:
-        repo: "{{ git_repo }}"
-        dest: "{{ app_dir }}"
-        version: "{{ git_version }}"
-        force: true
-
-    - name: Write .env.prod for Compose
-      ansible.builtin.copy:
-        dest: "{{ app_dir }}/.env.prod"
-        mode: "0600"
-        content: |
-          PUBLIC_HOST={{ PUBLIC_HOST }}
-          LETSENCRYPT_EMAIL={{ LETSENCRYPT_EMAIL }}
-          AUTH0_DOMAIN={{ AUTH0_DOMAIN }}
-          AUTH0_AUDIENCE={{ AUTH0_AUDIENCE }}
-          DATABASE_URL={{ DATABASE_URL }}
-          MINIO_ROOT_USER={{ MINIO_ROOT_USER }}
-          MINIO_ROOT_PASSWORD={{ MINIO_ROOT_PASSWORD }}
-
-    - name: Build and start containers
-      community.docker.docker_compose_v2:
-        project_src: "{{ app_dir }}"
-        files:
-          - docker-compose.prod.yml
-        env_files:
-          - .env.prod
-        state: present
-        build: always
-        pull: always
-
-    - name: Run DB migrations (alembic) using the API image
-      ansible.builtin.command:
-        chdir: "{{ app_dir }}"
-        cmd: docker compose -f docker-compose.prod.yml run --rm api alembic upgrade head
-
-    - name: Restart API after migration
-      community.docker.docker_compose_v2:
-        project_src: "{{ app_dir }}"
-        files:
-          - docker-compose.prod.yml
-        state: restarted
-        services:
-          - api
-```
-
-Inventory example (`ansible/inventory`):
-
-```ini
-[artificialu]
-your.server.ip.address ansible_user=ubuntu
-```
-
-Run:
+If you've never used CDK in this AWS account and region before, you need to bootstrap it. This one-time command provisions the necessary resources for CDK to perform deployments.
 
 ```bash
-ansible-playbook -i ansible/inventory ansible/deploy.yml
+cdk bootstrap
+```
+
+### 2. Install Dependencies
+
+Navigate to the `cdk/` directory and install the required Python packages.
+
+```bash
+cd cdk
+pip install -r requirements.txt
+```
+
+### 3. (Optional) Synthesize the CloudFormation Template
+
+You can preview the AWS resources that the CDK will create by running `cdk synth`. This generates a CloudFormation template.
+
+```bash
+cdk synth
+```
+
+### 4. Deploy the Stack
+
+Deploy the infrastructure to your AWS account. The CDK will build the Docker image, upload it to ECR, and provision all the AWS resources defined in the stack.
+
+```bash
+cdk deploy
+```
+
+The command will display progress and ask for confirmation before making changes. Once complete, it will output the CloudFront distribution's domain name, which is the public URL for your application.
+
+### 5. Post-Deployment: Configure Secrets
+
+The CDK stack expects several secrets to be present in AWS SSM Parameter Store for the backend application to function correctly. You must create these parameters in the same AWS region where you deployed the stack.
+
+Create the following SSM Parameters of type `String`:
+
+- `/artificial-u/test/ANTHROPIC_API_KEY`
+- `/artificial-u/test/ELEVENLABS_API_KEY`
+- `/artificial-u/test/GOOGLE_API_KEY`
+- `/artificial-u/test/OPENAI_API_KEY`
+- `/artificial-u/test/AUTH0_DOMAIN`
+- `/artificial-u/test/AUTH0_AUDIENCE`
+
+You can create them using the AWS Management Console or the AWS CLI:
+
+```bash
+aws ssm put-parameter --name "/artificial-u/test/OPENAI_API_KEY" --value "your-api-key" --type "String"
+```
+
+After setting the secrets, you may need to restart the ECS service for the new values to be injected into the running containers. You can do this from the ECS console by updating the service and forcing a new deployment.
+
+---
+
+## CI/CD Automation with GitHub Actions
+
+This repository includes a GitHub Actions workflow file at `.github/workflows/deploy.yml` that automates the deployment process. On every push to the `main` branch, the workflow will automatically build the frontend, build the container image, and deploy the CDK stack.
+
+### CI/CD Prerequisites
+
+To enable the workflow to securely authenticate with your AWS account, you need to:
+
+1. **Configure an OIDC identity provider in AWS IAM.** This establishes a trust relationship between your AWS account and GitHub Actions. [Follow the official AWS guide for this one-time setup.](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_providers_create_oidc.html)
+
+2. **Create an IAM Role for GitHub Actions.** This role will have the permissions necessary to deploy your CDK stack. Attach the `AdministratorAccess` policy for simplicity, or create a more fine-grained policy for production. The key is to configure the role's trust policy to allow GitHub's OIDC provider to assume it.
+
+    **Example Trust Policy:**
+
+    ```json
+    {
+        "Version": "2012-10-17",
+        "Statement": [
+            {
+                "Effect": "Allow",
+                "Principal": {
+                    "Federated": "arn:aws:iam::YOUR_AWS_ACCOUNT_ID:oidc-provider/token.actions.githubusercontent.com"
+                },
+                "Action": "sts:AssumeRoleWithWebIdentity",
+                "Condition": {
+                    "StringLike": {
+                        "token.actions.githubusercontent.com:sub": "repo:your-github-org/your-repo-name:*"
+                    }
+                }
+            }
+        ]
+    }
+    ```
+
+    Replace `YOUR_AWS_ACCOUNT_ID`, `your-github-org`, and `your-repo-name`.
+
+3. **Create a GitHub Secret.** In your GitHub repository settings, go to `Secrets and variables` > `Actions` and create a new repository secret named `AWS_ROLE_ARN`. The value should be the ARN of the IAM role you just created.
+
+Once these steps are complete, any push to `main` will automatically trigger a deployment.
+
+---
+
+## Using a Custom Domain (e.g., artificial-u.com)
+
+To associate your application with a custom domain, you need to perform a few manual steps after the initial deployment.
+
+**Important Note on AWS Region**: To use an ACM certificate with CloudFront, the certificate must be created in the **us-east-1 (N. Virginia)** region. For simplicity, this guide assumes your entire CDK stack is deployed to `us-east-1`. Please ensure your AWS profile and CI/CD pipeline are configured for this region.
+
+### 1. Deploy the Stack
+
+Run `cdk deploy`. After a successful deployment, the CDK will output a list of nameservers. It will look something like this:
+
+```txt
+Outputs:
+CdkStack.NameServers = ns-123.awsdns-01.com,ns-456.awsdns-02.net,ns-789.awsdns-03.org,ns-1011.awsdns-04.co.uk
+```
+
+### 2. Update Your Domain Registrar
+
+Log in to your domain registrar (e.g., Hover, GoDaddy) and find the DNS management section for your domain. Change the existing nameservers to the four nameservers provided by the CDK output.
+
+**Note**: DNS changes can take up to 48 hours to propagate across the internet, but it's often much faster.
+
+Once the DNS changes have propagated, your website will be live at your custom domain, complete with HTTPS.
+
+---
+
+## Troubleshooting
+
+### 502 Bad Gateway Errors
+
+If you're experiencing 502 errors when accessing the API through CloudFront, follow these diagnostic steps:
+
+#### 1. Check ECS Task Status
+
+```bash
+# List running tasks
+aws ecs list-tasks --cluster <ClusterName> --service-name <ServiceName>
+
+# Describe task to see status
+aws ecs describe-tasks --cluster <ClusterName> --tasks <TaskArn>
+```
+
+Look for the `lastStatus` (should be `RUNNING`) and `healthStatus` (should be `HEALTHY`).
+
+#### 2. View Container Logs
+
+```bash
+# View logs for the API service
+aws logs tail /aws/ecs/<ServiceName> --follow
+
+# Or use the ECS console to view logs for individual tasks
+```
+
+Common issues in logs:
+
+- Database connection failures (check DB security groups)
+- Missing environment variables or secrets
+- Application startup errors
+
+#### 3. Check ALB Target Health
+
+```bash
+# Get target group ARN
+TG_ARN=$(aws elbv2 describe-target-groups \
+  --query 'TargetGroups[?contains(TargetGroupName, `ApiService`)].TargetGroupArn' \
+  --output text)
+
+# Check target health
+aws elbv2 describe-target-health --target-group-arn $TG_ARN
+```
+
+If targets are `unhealthy`, the health check is failing. Common causes:
+
+- Container not listening on the expected port (8000)
+- Health check path returning non-200 status
+- Security group rules blocking ALB → ECS communication
+- Application failing to start within the grace period
+
+#### 4. Force New Deployment
+
+After fixing configuration issues, force a new deployment to restart tasks:
+
+```bash
+aws ecs update-service --cluster <ClusterName> --service <ServiceName> --force-new-deployment
+```
+
+### Direct URL Access Returns 404
+
+If accessing routes like `/professors` directly returns a 404 or shows an S3 error, the CloudFront custom error responses are not configured. This has been fixed in the latest CDK stack.
+
+After deploying the fix, you may need to invalidate the CloudFront cache:
+
+```bash
+# Get distribution ID
+DIST_ID=$(aws cloudfront list-distributions \
+  --query 'DistributionList.Items[?Aliases.Items[?contains(@, `artificial-u.com`)]].Id' \
+  --output text)
+
+# Create invalidation
+aws cloudfront create-invalidation \
+  --distribution-id $DIST_ID \
+  --paths "/*"
 ```
 
 ---
 
-### nginx-proxy / Let's Encrypt notes
+## Destroying the Stack
 
-- Ensure your host is already running `nginx-proxy` and the `letsencrypt-nginx-proxy-companion`.
-- The `web` container must be reachable by `nginx-proxy` (typically by sharing the `nginx-proxy` Docker network). If your proxy uses a dedicated network (e.g., `proxy`), attach `web` and `api` to it:
+To tear down all the resources created by the CDK, run the following command from the `cdk/` directory. This is useful for cleaning up development or test environments.
 
-```yaml
-networks:
-  proxy:
-    external: true
-
-services:
-  web:
-    networks:
-      - default
-      - proxy
-  api:
-    networks:
-      - default
-      - proxy
+```bash
+cdk destroy
 ```
 
-In this setup, keep only `web` publicly exposed via `VIRTUAL_HOST`. `api` will still be accessible to `web` over the default app network, and optionally accessible to the proxy for advanced routing if needed.
-
----
-
-### Operational checklist
-
-- **Backups**: Snapshot `postgres_data` and `minio_data` volumes on a schedule.
-- **Monitoring**: Container healthchecks are included; add Prometheus/Grafana or external uptime checks as needed.
-- **CORS**: Since SPA and API share the same origin in this plan, CORS can be strict in production.
-- **Auth0**: Configure Allowed Callback URLs, Logout URLs, and Web Origins per `docs/AUTHENTICATION.md`.
-- **Zero-downtime**: Use rolling `docker compose up -d --build` or blue/green (beyond scope here) if the app grows.
-
----
-
-### FAQ
-
-- **Why not serve the SPA from Python?** Keeping static assets on Nginx is simpler and faster. It also centralizes path-based proxying to the API.
-- **Why not expose the API publicly?** You can, but sharing the origin with the SPA simplifies CORS, cookies, and headers.
-- **Can I add a CDN later?** Yes—front the `web` container with a CDN that respects `/.well-known` and `/api/*` pass-through.
+This will remove all the resources, including the database and S3 buckets, as they are configured with a `RemovalPolicy.DESTROY`.

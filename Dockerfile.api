@@ -24,10 +24,6 @@ EXPOSE 8000
 # Healthcheck hits /api/v1/health
 HEALTHCHECK --interval=30s --timeout=5s --retries=5 CMD curl -fsS http://localhost:8000/api/v1/health || exit 1
 
-ENV GUNICORN_WORKERS=2 \
-    GUNICORN_THREADS=8 \
-    GUNICORN_TIMEOUT=120
-
 # Add lightweight entrypoint that initializes DB, seeds voices, then starts the API
 RUN chmod +x scripts/docker-entrypoint.sh || true
 ENTRYPOINT ["sh", "scripts/docker-entrypoint.sh"]

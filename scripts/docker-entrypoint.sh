@@ -3,6 +3,12 @@ set -e
 
 echo "[entrypoint] Starting API container initialization..."
 
+# Construct DATABASE_URL from components if they exist
+if [ -n "$DB_HOST" ] && [ -n "$DB_USER" ] && [ -n "$DB_PASSWORD" ] && [ -n "$DB_PORT" ] && [ -n "$DB_NAME" ]; then
+    export DATABASE_URL="postgresql://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}"
+    echo "[entrypoint] Constructed DATABASE_URL from components."
+fi
+
 # Initialize database (create DB if needed, then run alembic migrations)
 if [ -n "$DATABASE_URL" ]; then
   echo "[entrypoint] Initializing database with DATABASE_URL=$DATABASE_URL"
