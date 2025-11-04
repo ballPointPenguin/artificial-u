@@ -49,6 +49,7 @@ async def list_courses(
     professor_id: Optional[int] = Query(None, description="Filter by professor ID"),
     level: Optional[str] = Query(None, description="Filter by course level"),
     title: Optional[str] = Query(None, description="Filter by title (partial match)"),
+    created_by: Optional[int] = Query(None, description="Filter by creator student ID"),
     sort_by: Optional[str] = Query(
         "updated_at",
         description="Field to sort by (code, title, level, credits, updated_at, created_at)",
@@ -68,6 +69,7 @@ async def list_courses(
         professor_id=professor_id,
         level=level,
         title=title,
+        created_by=created_by,
         sort_by=sort_by,
         order=order,
     )
