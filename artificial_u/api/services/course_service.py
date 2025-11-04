@@ -94,6 +94,7 @@ class CourseApiService(BaseApiService[CoreCourse, CourseResponse, CoursesListRes
         professor_id: Optional[int] = None,
         level: Optional[str] = None,
         title: Optional[str] = None,
+        created_by: Optional[int] = None,
     ) -> List[dict]:
         """Apply additional filters to courses list."""
         filtered_courses = courses
@@ -113,6 +114,12 @@ class CourseApiService(BaseApiService[CoreCourse, CourseResponse, CoursesListRes
                 item
                 for item in filtered_courses
                 if title.lower() in item.get("course", {}).get("title", "").lower()
+            ]
+        if created_by:
+            filtered_courses = [
+                item
+                for item in filtered_courses
+                if item.get("course", {}).get("created_by") == created_by
             ]
 
         return filtered_courses
@@ -170,6 +177,7 @@ class CourseApiService(BaseApiService[CoreCourse, CourseResponse, CoursesListRes
         professor_id: Optional[int] = None,
         level: Optional[str] = None,
         title: Optional[str] = None,
+        created_by: Optional[int] = None,
         sort_by: Optional[str] = "updated_at",
         order: Optional[str] = "desc",
     ) -> CoursesListResponse:
@@ -183,7 +191,9 @@ class CourseApiService(BaseApiService[CoreCourse, CourseResponse, CoursesListRes
             core_courses_list = self.core_service.list_courses(department_id=department_id)
 
             # Apply additional filters
-            filtered_courses = self._filter_courses(core_courses_list, professor_id, level, title)
+            filtered_courses = self._filter_courses(
+                core_courses_list, professor_id, level, title, created_by
+            )
 
             # Apply sorting
             sorted_courses = self._sort_courses(filtered_courses, sort_by, order)

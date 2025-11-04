@@ -3,6 +3,7 @@ import { type Component, createResource, createSignal, For, Show } from 'solid-j
 import { courseService } from '../api/services/course-service.js'
 import { departmentService } from '../api/services/department-service.js'
 import type { Course, CourseCreate } from '../api/types.js'
+import { useAuth } from '../auth/AuthProvider'
 import { RequireRole } from '../auth/RequireRole'
 import CourseForm from '../components/courses/CourseForm.jsx'
 import type { CourseFormData } from '../components/courses/types.jsx'
@@ -15,11 +16,13 @@ type SortField = 'code' | 'title' | 'level' | 'credits' | 'updated_at' | 'create
 type SortOrder = 'asc' | 'desc'
 
 const Courses: Component = () => {
+  const auth = useAuth()
   const [page, setPage] = createSignal(1)
   const [size] = createSignal(10)
   const [sortBy, setSortBy] = createSignal<SortField>('updated_at')
   const [order, setOrder] = createSignal<SortOrder>('desc')
   const [departmentFilter, setDepartmentFilter] = createSignal<number | null>(null)
+  const [myCoursesOnly, setMyCoursesOnly] = createSignal(false)
   const [showCreateForm, setShowCreateForm] = createSignal(false)
   const [submitting, setSubmitting] = createSignal(false)
   const [formError, setFormError] = createSignal('')
@@ -83,14 +86,17 @@ const Courses: Component = () => {
       sortBy: sortBy(),
       order: order(),
       departmentId: departmentFilter(),
+      myCoursesOnly: myCoursesOnly(),
+      studentId: auth.student()?.id,
     }),
-    ({ page, size, sortBy, order, departmentId }) =>
+    ({ page, size, sortBy, order, departmentId, myCoursesOnly, studentId }) =>
       courseService.listCourses({
         page,
         size,
         sortBy,
         order,
         departmentId: departmentId || undefined,
+        createdBy: myCoursesOnly && studentId ? studentId : undefined,
       })
   )
 
@@ -275,6 +281,20 @@ const Courses: Component = () => {
             >
               Clear filter
             </button>
+          </Show>
+          <Show when={auth.isAuthenticated()}>
+            <label class="flex items-center gap-2 cursor-pointer text-parchment-200 hover:text-parchment-100 transition-colors">
+              <input
+                type="checkbox"
+                checked={myCoursesOnly()}
+                onChange={(e) => {
+                  setMyCoursesOnly(e.currentTarget.checked)
+                  setPage(1) // Reset to first page when filter changes
+                }}
+                class="w-4 h-4 rounded border-parchment-600 bg-arcanum-900 text-mystic-500 focus:ring-mystic-500 focus:ring-offset-arcanum-900"
+              />
+              <span class="font-serif text-sm">My Courses</span>
+            </label>
           </Show>
         </div>
 
