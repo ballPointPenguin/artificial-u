@@ -86,6 +86,8 @@ class TopicRepository(BaseRepository):
                 content=db_topic.content,
                 created_by=db_topic.created_by,
                 created_with=db_topic.created_with,
+                created_at=db_topic.created_at,
+                updated_at=db_topic.updated_at,
             )
 
     def get_by_course_week_order(self, course_id: int, week: int, order: int) -> Optional[Topic]:
@@ -109,6 +111,8 @@ class TopicRepository(BaseRepository):
                 content=db_topic.content,
                 created_by=db_topic.created_by,
                 created_with=db_topic.created_with,
+                created_at=db_topic.created_at,
+                updated_at=db_topic.updated_at,
             )
 
     def list_by_course(self, course_id: int) -> List[Topic]:

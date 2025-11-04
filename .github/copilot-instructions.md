@@ -4,7 +4,7 @@ This file provides instructions for GitHub Copilot when working with the Artific
 
 ## Project Overview
 
-ArtificialU is an AI-powered educational content platform that generates university lectures with distinct professor personalities and converts them to audio using text-to-speech. 
+ArtificialU is an AI-powered educational content platform that generates university lectures with distinct professor personalities and converts them to audio using text-to-speech.
 
 ### Technology Stack
 

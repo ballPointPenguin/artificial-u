@@ -184,6 +184,8 @@ class ProfessorRepository(BaseRepository):
                 voice_id=db_professor.voice_id,
                 created_by=db_professor.created_by,
                 created_with=db_professor.created_with,
+                created_at=db_professor.created_at,
+                updated_at=db_professor.updated_at,
             )
 
     def delete(self, professor_id: int) -> bool:
@@ -234,6 +236,8 @@ class ProfessorRepository(BaseRepository):
                         "voice_id": getattr(p, "voice_id", None),
                         "created_by": getattr(p, "created_by", None),
                         "created_with": getattr(p, "created_with", None),
+                        "created_at": getattr(p, "created_at", None),
+                        "updated_at": getattr(p, "updated_at", None),
                     }
                 )
                 for p in db_professors

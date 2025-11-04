@@ -107,4 +107,19 @@ export const courseService = {
   }> => {
     return httpClient.post(ENDPOINTS.courses.enqueueCreate, data)
   },
+
+  exportCourse: (
+    courseId: number
+  ): Promise<{
+    id: number
+    kind: string
+    status: string
+    attempts: number
+    max_attempts: number
+    priority?: number
+    run_after?: string
+    message: string
+  }> => {
+    return httpClient.post(`${ENDPOINTS.courses.detail(courseId)}/export`, {})
+  },
 }

@@ -182,6 +182,9 @@ const CourseDetail: Component = () => {
   const [error, setError] = createSignal('')
   const [showDeleteConfirm, setShowDeleteConfirm] = createSignal(false)
   const [isDeleting, setIsDeleting] = createSignal(false)
+  const [isExporting, setIsExporting] = createSignal(false)
+  const [exportJobId, setExportJobId] = createSignal<number | null>(null)
+  const [exportMessage, setExportMessage] = createSignal('')
 
   // Check if courseId is a valid number before creating resources
   const isValidId = !Number.isNaN(courseId)
@@ -266,6 +269,31 @@ const CourseDetail: Component = () => {
       })
   }
 
+  // Handler for exporting a course
+  const handleExportCourse = () => {
+    if (!isValidId) return
+
+    setIsExporting(true)
+    setError('')
+    setExportMessage('')
+
+    void courseService
+      .exportCourse(courseId)
+      .then((response) => {
+        setExportJobId(response.id)
+        setExportMessage(
+          response.message ||
+            `Export job ${String(response.id)} enqueued. Check the Jobs page for status.`
+        )
+      })
+      .catch((err: unknown) => {
+        setError(err instanceof Error ? err.message : 'Failed to export course')
+      })
+      .finally(() => {
+        setIsExporting(false)
+      })
+  }
+
   return (
     <div class="container mx-auto p-6">
       <Show when={isValidId} fallback={<div class="text-parchment-100">Invalid Course ID.</div>}>
@@ -295,6 +323,15 @@ const CourseDetail: Component = () => {
                         <Button variant="secondary" onClick={() => setShowDeleteConfirm(true)}>
                           Delete
                         </Button>
+                        <RequireRole minRole="admin">
+                          <Button
+                            variant="outline"
+                            onClick={handleExportCourse}
+                            disabled={isExporting()}
+                          >
+                            {isExporting() ? 'Exporting...' : 'Export'}
+                          </Button>
+                        </RequireRole>
                       </div>
                     </RequireRole>
                   </Show>
@@ -304,6 +341,20 @@ const CourseDetail: Component = () => {
                 <Show when={error()}>
                   <Alert variant="danger" class="mb-4">
                     {error()}
+                  </Alert>
+                </Show>
+
+                {/* Export Success Message */}
+                <Show when={exportMessage()}>
+                  <Alert variant="success" class="mb-4">
+                    <div class="flex flex-col gap-2">
+                      <p>{exportMessage()}</p>
+                      <Show when={exportJobId()}>
+                        <A href={`/jobs`} class="text-mystic-400 hover:text-mystic-300 underline">
+                          View job status →
+                        </A>
+                      </Show>
+                    </div>
                   </Alert>
                 </Show>
 

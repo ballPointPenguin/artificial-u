@@ -77,6 +77,7 @@ STORAGE_REGION = "us-east-1"
 STORAGE_AUDIO_BUCKET = "artificial-u-audio"
 STORAGE_LECTURES_BUCKET = "artificial-u-lectures"
 STORAGE_IMAGES_BUCKET = "artificial-u-images"
+STORAGE_EXPORTS_BUCKET = "artificial-u-exports"
 ```
 
 ### AWS S3 Configuration (Production)
@@ -89,6 +90,7 @@ STORAGE_REGION = "your-aws-region"
 STORAGE_AUDIO_BUCKET = "your-audio-bucket"
 STORAGE_LECTURES_BUCKET = "your-lectures-bucket"
 STORAGE_IMAGES_BUCKET = "your-images-bucket"
+STORAGE_EXPORTS_BUCKET = "your-exports-bucket"
 ```
 
 ## Model Selection
@@ -211,6 +213,7 @@ TESTING=true
 | `STORAGE_AUDIO_BUCKET` | Bucket for audio files | `artificial-u-audio` | No |
 | `STORAGE_LECTURES_BUCKET` | Bucket for lecture files | `artificial-u-lectures` | No |
 | `STORAGE_IMAGES_BUCKET` | Bucket for image files | `artificial-u-images` | No |
+| `STORAGE_EXPORTS_BUCKET` | Bucket for course export files | `artificial-u-exports` | No |
 | `COIN_COST_COURSE_GENERATION` | Coin cost for course generation | `10` | No |
 | `COIN_COST_LECTURE_GENERATION` | Coin cost for lecture generation | `5` | No |
 | `COIN_COST_LECTURE_AUDIO` | Coin cost for lecture audio | `3` | No |

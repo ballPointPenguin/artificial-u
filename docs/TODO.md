@@ -33,31 +33,34 @@
 - [x] Integrate freeform prompts for everything
 - [x] Production-ready deployment
 - [x] Explore Hosting Options
+- [x] Enable export of courses with assets and related data
 - [x] Filter courses by "my" courses
 - [x] Jobs UI Page for Admin
+- [x] Display created_by and created_with attributions
+- [x] Privelges for admin scope
+- [ ] Browser Notifications for jobs
+- [ ] Include word-count in summary or somewhere
+- [ ] Action buttons on Topics List
+- [ ] Indicate # of generated lectures for a topic
 - [ ] Sort and filter professors
 - [ ] Sort and filter departments
+- [ ] Generated image model attribution
 - [ ] Better handling of job lifecycles with uvicore reboots
-- [ ] Display created_by and created_with attributions
-- [ ] Action buttons on Topics List
 - [ ] Improve mobile view
 - [ ] Global UI indication of jobs running
-- [ ] Include word-count in summary or somewhere
 - [ ] Re-Write Home and About pages
 - [ ] General UI Cleanup
 - [ ] FAQ on About page
 - [ ] Invite codes / Promo codes -> Coins
 - [ ] Enable purchases and subscriptions for coins
-- [ ] Privelges for admin scope
 - [ ] Record voice (and settings?) id for lecture audio generation
 - [ ] Consider storing full-text of prompts used per record.
 - [ ] User Interests
 - [ ] Rating & Feedback system
 - [ ] Coins/Tuition in UI
 - [ ] Monitoring and analytics
-- [ ] Generate single topic
 - [ ] Enable structured imports of syllabi
-- [ ] Enable import/export of everything
+- [ ] Enable import of courses with assets and related data
 - [ ] Content checking for user input (toxicity, stupidity, typos)
 - [ ] Spell checking for user input
 - [ ] Normalize user input
@@ -73,7 +76,6 @@
 - [ ] Admin UI of student accounts and activity
 - [ ] Admin ability to grant coins to students
 - [ ] Apply for a grant - feature for students to receive coins
-- [ ] Browser Notifications for jobs
 - [ ] Enable multi-department courses
 - [ ] Enable multi-department professors
 - [ ] Enable multi-professor courses
@@ -96,3 +98,7 @@
 - [ ] Gamification badges and achievements
 - [ ] Student Forum (discourse.org maybe)
 - [ ] Student Profile avatars (generated with prompts)
+- [ ] Include information about copyright and usage restrictions
+- [ ] Include information about privacy and data protection
+- [ ] Changelog / Release Notes
+- [ ] Automated versioning

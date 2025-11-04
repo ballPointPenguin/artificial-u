@@ -39,6 +39,7 @@ fi
 upload_backup "artificial-u-audio" "artificial-u-audio"
 upload_backup "artificial-u-images" "artificial-u-images"
 upload_backup "artificial-u-lectures" "artificial-u-lectures"
+upload_backup "artificial-u-exports" "artificial-u-exports"
 
 echo "🎉 All backups uploaded successfully!"
 echo "You can verify uploads at: http://localhost:9001 (minioadmin/minioadmin)"

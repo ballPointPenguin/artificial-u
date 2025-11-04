@@ -119,7 +119,7 @@ case "${1:-}" in
         check_minio
         echo "📋 MinIO Bucket Contents:"
         echo ""
-        for bucket in artificial-u-audio artificial-u-images artificial-u-lectures; do
+        for bucket in artificial-u-audio artificial-u-images artificial-u-lectures artificial-u-exports; do
             echo "🗂️  ${bucket}:"
             run_mc_command "mc ls --summarize myminio/${bucket}" | tail -1
             echo ""

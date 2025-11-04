@@ -29,6 +29,9 @@ class Department(BaseModel):
     code: str
     faculty: Optional[str] = None  # e.g., "Science and Engineering"
     description: Optional[str] = None
+    # Timestamps
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
 
 
 class Voice(BaseModel):
@@ -129,6 +132,7 @@ class Professor(BaseModel):
     # Attribution
     created_by: Optional[int] = None
     created_with: Optional[str] = None
+    # Timestamps
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
     # Related objects
@@ -212,6 +216,9 @@ class Topic(BaseModel):
     # Attribution
     created_by: Optional[int] = None
     created_with: Optional[str] = None
+    # Timestamps
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
 
 
 class Lecture(BaseModel):
@@ -245,6 +252,7 @@ class Lecture(BaseModel):
     # Attribution
     created_by: Optional[int] = None
     created_with: Optional[str] = None
+    # Timestamps
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
     # Related objects

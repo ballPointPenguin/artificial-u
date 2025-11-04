@@ -37,6 +37,7 @@ class StorageService:
         self.audio_bucket = self.settings.STORAGE_AUDIO_BUCKET
         self.lectures_bucket = self.settings.STORAGE_LECTURES_BUCKET
         self.images_bucket = self.settings.STORAGE_IMAGES_BUCKET
+        self.exports_bucket = self.settings.STORAGE_EXPORTS_BUCKET
 
     def _get_s3_client(self):
         """
@@ -139,6 +140,24 @@ class StorageService:
         """
         return await self.upload_file(
             file_data, self.lectures_bucket, object_name, content_type=content_type
+        )
+
+    async def upload_export_file(
+        self, file_data: bytes, object_name: str, content_type: str = "application/zip"
+    ) -> Tuple[bool, Optional[str]]:
+        """
+        Upload export file data to storage.
+
+        Args:
+            file_data: Binary file data
+            object_name: Object key/name
+            content_type: Content type of the export file
+
+        Returns:
+            Tuple of (success, url)
+        """
+        return await self.upload_file(
+            file_data, self.exports_bucket, object_name, content_type=content_type
         )
 
     def get_file_url(self, bucket: str, object_name: str) -> str:
@@ -341,3 +360,49 @@ class StorageService:
             Object key for S3/MinIO
         """
         return f"{course_code}/{course_code}_{week_number}_{lecture_order}.{extension}"
+
+    def parse_storage_url(self, url: str) -> Tuple[Optional[str], Optional[str]]:
+        """
+        Parse a storage URL to extract bucket and object key.
+
+        Args:
+            url: Storage URL (MinIO or S3 format)
+
+        Returns:
+            Tuple of (bucket, object_key) or (None, None) if parsing fails
+        """
+        if not url:
+            return None, None
+
+        try:
+            # Handle MinIO URL format: http://localhost:9000/bucket/key
+            if self.settings.STORAGE_TYPE == "minio":
+                # Remove the base URL
+                base_url = self.settings.STORAGE_PUBLIC_URL.rstrip("/")
+                if url.startswith(base_url):
+                    path = url[len(base_url) :].lstrip("/")
+                    # Split into bucket and key
+                    parts = path.split("/", 1)
+                    if len(parts) == 2:
+                        return parts[0], parts[1]
+
+            # Handle S3 URL format: https://bucket.s3.region.amazonaws.com/key
+            elif ".s3." in url and ".amazonaws.com/" in url:
+                # Extract bucket from subdomain
+                start = url.find("://") + 3
+                end = url.find(".s3.")
+                bucket = url[start:end]
+
+                # Extract key after the domain
+                key_start = url.find(".amazonaws.com/") + 15
+                key = url[key_start:]
+
+                if bucket and key:
+                    return bucket, key
+
+            self.logger.warning(f"Could not parse storage URL: {url}")
+            return None, None
+
+        except Exception as e:
+            self.logger.error(f"Error parsing storage URL {url}: {str(e)}")
+            return None, None
