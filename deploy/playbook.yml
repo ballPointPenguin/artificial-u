@@ -4,7 +4,7 @@
   vars:
     app_dir: /home/hank/code/src/github.com/ballPointPenguin/artificial-u
     git_repo: https://github.com/ballPointPenguin/artificial-u.git
-    git_version: main
+    git_version: prod
     # Public DNS for the SPA
     PUBLIC_HOST: artificial-u.com
     LETSENCRYPT_EMAIL: admin@aliencyb.org

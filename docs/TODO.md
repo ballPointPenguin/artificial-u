@@ -30,6 +30,9 @@
 - [x] Fake tuition system for limiting user generation requests
 - [x] Enable Suggested Professors
 - [x] Enable Suggested Departments
+- [x] Integrate freeform prompts for everything
+- [x] Production-ready deployment
+- [x] Explore Hosting Options
 - [ ] Sort and filter professors
 - [ ] Filter courses by "my" courses
 - [ ] Sort and filter departments
@@ -39,7 +42,7 @@
 - [ ] Action buttons on Topics List
 - [ ] Improve mobile view
 - [ ] Global UI indication of jobs running
-- [ ] Include word-count in summary
+- [ ] Include word-count in summary or somewhere
 - [ ] Re-Write Home and About pages
 - [ ] General UI Cleanup
 - [ ] FAQ on About page
@@ -53,7 +56,6 @@
 - [ ] Coins/Tuition in UI
 - [ ] Monitoring and analytics
 - [ ] Generate single topic
-- [ ] Integrate freeform prompts for everything
 - [ ] Enable structured imports of syllabi
 - [ ] Enable import/export of everything
 - [ ] Content checking for user input (toxicity, stupidity, typos)
@@ -68,6 +70,8 @@
 - [ ] Model Selection UI
 - [ ] Consider utilizing some Ollama models in production
 - [ ] Student Profile to show history of generations/expenses
+- [ ] Admin UI of student accounts and activity
+- [ ] Admin ability to grant coins to students
 - [ ] Apply for a grant - feature for students to receive coins
 - [ ] Browser Notifications for jobs
 - [ ] Enable multi-department courses
@@ -76,8 +80,6 @@
 - [ ] Update stylebook
 - [ ] Frontend tests
 - [ ] End-to-end tests
-- [ ] Production-ready deployment
-- [ ] Explore Hosting Options
 - [ ] update configuration.md
 - [ ] a11y audit and improvements
 - [ ] Audit used and unused routes and route actions
