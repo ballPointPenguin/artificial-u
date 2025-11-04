@@ -1,5 +1,5 @@
 import { createResource, createSignal, For, Show } from 'solid-js'
-import { listJobs, type JobRow, type JobStatus } from '../api/services/jobs-service'
+import { type JobRow, type JobStatus, listJobs } from '../api/services/jobs-service'
 import { Button } from '../components/ui'
 import { formatDate } from '../utils/formatDate'
 
@@ -101,9 +101,7 @@ export default function JobsPage() {
             <div class="text-danger text-center py-8">
               <p>
                 Error loading jobs:{' '}
-                {jobsResource.error instanceof Error
-                  ? jobsResource.error.message
-                  : 'Unknown error'}
+                {jobsResource.error instanceof Error ? jobsResource.error.message : 'Unknown error'}
               </p>
               <Button variant="ghost" onClick={() => void refetch()} class="mt-4">
                 Retry

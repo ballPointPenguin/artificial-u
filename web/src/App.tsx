@@ -47,7 +47,11 @@ const App: Component = () => {
           <RequireAuth fallback={<LoginPrompt />}>
             <RequireRole
               minRole="admin"
-              fallback={<div class="container mx-auto p-4 text-center">Access denied. Admin role required.</div>}
+              fallback={
+                <div class="container mx-auto p-4 text-center">
+                  Access denied. Admin role required.
+                </div>
+              }
             >
               <Jobs />
             </RequireRole>
