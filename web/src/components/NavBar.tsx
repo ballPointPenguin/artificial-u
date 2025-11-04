@@ -74,6 +74,14 @@ export function NavBar() {
                 Profile
               </A>
             </Show>
+            <Show when={auth.isAdmin()}>
+              <A
+                href="/jobs"
+                class="text-parchment-200 hover:text-parchment-100 tracking-wide font-serif uppercase text-shadow-golden text-sm"
+              >
+                Jobs
+              </A>
+            </Show>
             <Show when={!auth.isAuthenticated()}>
               <A
                 href="/login"
@@ -176,6 +184,15 @@ export function NavBar() {
                 onClick={toggleMobileMenu}
               >
                 Profile
+              </A>
+            </Show>
+            <Show when={auth.isAdmin()}>
+              <A
+                href="/jobs"
+                class="block text-parchment-200 hover:text-parchment-100 py-2 tracking-wide font-serif uppercase text-sm"
+                onClick={toggleMobileMenu}
+              >
+                Jobs
               </A>
             </Show>
             <Show when={!auth.isAuthenticated()}>

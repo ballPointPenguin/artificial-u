@@ -1,6 +1,7 @@
 import { Route } from '@solidjs/router'
 import { type Component, lazy } from 'solid-js'
 import { LoginPrompt, RequireAuth } from './auth/RequireAuth'
+import { RequireRole } from './auth/RequireRole'
 import Layout from './components/Layout'
 
 // Lazily load page components
@@ -17,6 +18,7 @@ const TopicDetail = lazy(() => import('./pages/TopicDetail'))
 const LectureDetail = lazy(() => import('./pages/LectureDetail'))
 const LectureCreate = lazy(() => import('./pages/LectureCreate'))
 const Profile = lazy(() => import('./pages/Profile'))
+const Jobs = lazy(() => import('./pages/Jobs'))
 const Stylebook = lazy(() => import('./pages/Stylebook'))
 const Login = lazy(() => import('./pages/Login'))
 
@@ -34,6 +36,21 @@ const App: Component = () => {
         component={() => (
           <RequireAuth fallback={<LoginPrompt />}>
             <Profile />
+          </RequireAuth>
+        )}
+      />
+
+      {/* Jobs route - requires admin role */}
+      <Route
+        path="/jobs"
+        component={() => (
+          <RequireAuth fallback={<LoginPrompt />}>
+            <RequireRole
+              minRole="admin"
+              fallback={<div class="container mx-auto p-4 text-center">Access denied. Admin role required.</div>}
+            >
+              <Jobs />
+            </RequireRole>
           </RequireAuth>
         )}
       />
