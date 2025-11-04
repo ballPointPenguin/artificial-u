@@ -42,11 +42,27 @@ class ProfessorRepository(BaseRepository):
 
     def get(self, professor_id: int) -> Optional[Professor]:
         """Get a professor by ID."""
+        from sqlalchemy.orm import joinedload
+
         with self.get_session() as session:
-            db_professor = session.query(ProfessorModel).filter_by(id=professor_id).first()
+            db_professor = (
+                session.query(ProfessorModel)
+                .options(joinedload(ProfessorModel.student))
+                .filter_by(id=professor_id)
+                .first()
+            )
 
             if not db_professor:
                 return None
+
+            # Build student dict if present
+            student_dict = None
+            if db_professor.student:
+                student_dict = {
+                    "id": db_professor.student.id,
+                    "name": db_professor.student.name,
+                    "email": db_professor.student.email,
+                }
 
             return Professor(
                 id=db_professor.id,
@@ -65,6 +81,9 @@ class ProfessorRepository(BaseRepository):
                 voice_id=db_professor.voice_id,
                 created_by=db_professor.created_by,
                 created_with=db_professor.created_with,
+                created_at=db_professor.created_at,
+                updated_at=db_professor.updated_at,
+                student=student_dict,
             )
 
     def list(self) -> List[Professor]:

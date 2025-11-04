@@ -10,7 +10,7 @@ import type {
   ProfessorCoursesResponse,
 } from '../../api/types.js'
 import { RequireRole } from '../../auth/RequireRole'
-import { Alert, Button, ConfirmationModal, LoadingSpinner, MagicButton } from '../ui'
+import { Alert, Button, ConfirmationModal, LoadingSpinner, MagicButton, MetadataInfo } from '../ui'
 import ProfessorForm, { type ProfessorFormData } from './ProfessorForm.js'
 
 // Professor Courses Component
@@ -413,6 +413,15 @@ export default function ProfessorDetail() {
                       </p>
                     )}
                   </Show>
+
+                  {/* Metadata Section */}
+                  <div class="pt-3 mt-3 border-t border-parchment-800/30">
+                    <MetadataInfo
+                      createdBy={professorResource()?.student}
+                      createdWith={professorResource()?.created_with}
+                      createdAt={professorResource()?.created_at}
+                    />
+                  </div>
 
                   {/* Moved longer attributes here */}
                   <Show when={professorResource()?.description}>

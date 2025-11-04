@@ -12,7 +12,7 @@ import type {
 import { RequireRole } from '../auth/RequireRole'
 import CourseForm from '../components/courses/CourseForm.jsx'
 import type { CourseFormData } from '../components/courses/types.jsx'
-import { Alert, Button } from '../components/ui'
+import { Alert, Button, MetadataInfo } from '../components/ui'
 
 // Department Info Component
 const DepartmentInfo: Component<{
@@ -362,6 +362,14 @@ const CourseDetail: Component = () => {
                   <p class="text-base italic text-parchment-200 mb-6 font-serif">
                     {course().description}
                   </p>
+
+                  {/* Metadata Section */}
+                  <MetadataInfo
+                    createdBy={course().student}
+                    createdWith={course().created_with}
+                    createdAt={course().created_at}
+                    class="mb-6 pb-6 border-b border-parchment-800/30"
+                  />
 
                   <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
                     {/* Course Details Section */}

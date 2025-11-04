@@ -56,10 +56,26 @@ class LectureRepository(BaseRepository):
         Returns:
             Optional[Lecture]: The lecture if found, None otherwise
         """
+        from sqlalchemy.orm import joinedload
+
         with self.get_session() as session:
-            db_lecture = session.query(LectureModel).filter_by(id=lecture_id).first()
+            db_lecture = (
+                session.query(LectureModel)
+                .options(joinedload(LectureModel.student))
+                .filter_by(id=lecture_id)
+                .first()
+            )
             if not db_lecture:
                 return None
+
+            # Build student dict if present
+            student_dict = None
+            if db_lecture.student:
+                student_dict = {
+                    "id": db_lecture.student.id,
+                    "name": db_lecture.student.name,
+                    "email": db_lecture.student.email,
+                }
 
             return Lecture(
                 id=db_lecture.id,
@@ -73,6 +89,9 @@ class LectureRepository(BaseRepository):
                 topic_id=db_lecture.topic_id,
                 created_by=db_lecture.created_by,
                 created_with=db_lecture.created_with,
+                created_at=db_lecture.created_at,
+                updated_at=db_lecture.updated_at,
+                student=student_dict,
             )
 
     def get_content(self, lecture_id: int) -> Optional[str]:

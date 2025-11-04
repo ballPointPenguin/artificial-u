@@ -38,11 +38,27 @@ class CourseRepository(BaseRepository):
 
     def get(self, course_id: int) -> Optional[Course]:
         """Get a course by ID."""
+        from sqlalchemy.orm import joinedload
+
         with self.get_session() as session:
-            db_course = session.query(CourseModel).filter_by(id=course_id).first()
+            db_course = (
+                session.query(CourseModel)
+                .options(joinedload(CourseModel.student))
+                .filter_by(id=course_id)
+                .first()
+            )
 
             if not db_course:
                 return None
+
+            # Build student dict if present
+            student_dict = None
+            if db_course.student:
+                student_dict = {
+                    "id": db_course.student.id,
+                    "name": db_course.student.name,
+                    "email": db_course.student.email,
+                }
 
             return Course(
                 id=db_course.id,
@@ -59,6 +75,7 @@ class CourseRepository(BaseRepository):
                 created_with=db_course.created_with,
                 created_at=db_course.created_at,
                 updated_at=db_course.updated_at,
+                student=student_dict,
             )
 
     def get_by_code(self, code: str) -> Optional[Course]:
