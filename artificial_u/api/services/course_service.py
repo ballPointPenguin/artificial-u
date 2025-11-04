@@ -115,7 +115,7 @@ class CourseApiService(BaseApiService[CoreCourse, CourseResponse, CoursesListRes
                 for item in filtered_courses
                 if title.lower() in item.get("course", {}).get("title", "").lower()
             ]
-        if created_by:
+        if created_by is not None:
             filtered_courses = [
                 item
                 for item in filtered_courses

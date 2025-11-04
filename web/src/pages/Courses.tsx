@@ -87,7 +87,7 @@ const Courses: Component = () => {
       order: order(),
       departmentId: departmentFilter(),
       myCoursesOnly: myCoursesOnly(),
-      studentId: auth.student()?.id,
+      studentId: myCoursesOnly() ? auth.student()?.id : undefined,
     }),
     ({ page, size, sortBy, order, departmentId, myCoursesOnly, studentId }) =>
       courseService.listCourses({
