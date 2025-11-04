@@ -109,7 +109,7 @@ After setting the secrets, you may need to restart the ECS service for the new v
 
 ## CI/CD Automation with GitHub Actions
 
-This repository includes a GitHub Actions workflow file at `.github/workflows/deploy.yml` that automates the deployment process. On every push to the `main` branch, the workflow will automatically build the frontend, build the container image, and deploy the CDK stack.
+This repository includes a GitHub Actions workflow file at `.github/workflows/deploy.yml` that automates the deployment process. On every push to the `prod` branch, the workflow will automatically build the frontend, build the container image, and deploy the CDK stack.
 
 ### CI/CD Prerequisites
 
@@ -145,7 +145,7 @@ To enable the workflow to securely authenticate with your AWS account, you need 
 
 3. **Create a GitHub Secret.** In your GitHub repository settings, go to `Secrets and variables` > `Actions` and create a new repository secret named `AWS_ROLE_ARN`. The value should be the ARN of the IAM role you just created.
 
-Once these steps are complete, any push to `main` will automatically trigger a deployment.
+Once these steps are complete, any push to `prod` will automatically trigger a deployment.
 
 ---
 
