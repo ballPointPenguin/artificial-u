@@ -2,6 +2,7 @@
 API models for Professor resources.
 """
 
+from datetime import datetime
 from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, Field
@@ -33,6 +34,8 @@ class ProfessorBase(BaseModel):
     # Attribution
     created_by: Optional[int] = Field(None, description="Student ID who created the professor")
     created_with: Optional[str] = Field(None, description="Name of LLM used, if any")
+    created_at: Optional[datetime] = Field(None, description="Timestamp when professor was created")
+    updated_at: Optional[datetime] = Field(None, description="Timestamp when professor was last updated")
 
 
 # Professor creation model
@@ -61,6 +64,15 @@ class ProfessorGenerate(BaseModel):
     )
 
 
+# Student brief info model for professor responses
+class StudentBrief(BaseModel):
+    """Brief student information for professor responses."""
+
+    id: int = Field(..., description="Student ID")
+    name: str = Field(..., description="Student name")
+    email: Optional[str] = Field(None, description="Student email")
+
+
 # Professor response model
 class ProfessorResponse(ProfessorBase):
     """Model for professor responses, including generated ones."""
@@ -68,6 +80,7 @@ class ProfessorResponse(ProfessorBase):
     id: Optional[int] = Field(
         None, description="Unique professor identifier"
     )  # Make ID optional for generated responses
+    student: Optional[StudentBrief] = Field(None, description="Student who created the professor")
 
     class Config:
         from_attributes = True

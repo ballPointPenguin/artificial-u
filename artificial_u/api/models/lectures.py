@@ -2,6 +2,7 @@
 Lecture API models for request and response validation.
 """
 
+from datetime import datetime
 from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, Field
@@ -22,6 +23,8 @@ class LectureBase(BaseModel):
         None, description="ID of the student who created this lecture"
     )
     created_with: Optional[str] = Field(None, description="AI model used to generate this lecture")
+    created_at: Optional[datetime] = Field(None, description="Timestamp when lecture was created")
+    updated_at: Optional[datetime] = Field(None, description="Timestamp when lecture was last updated")
 
 
 class LectureCreate(LectureBase):
@@ -49,10 +52,20 @@ class LectureUpdate(BaseModel):
     created_with: Optional[str] = Field(None, description="Updated AI model name")
 
 
+# Student brief info model for lecture responses
+class StudentBrief(BaseModel):
+    """Brief student information for lecture responses."""
+
+    id: int = Field(..., description="Student ID")
+    name: str = Field(..., description="Student name")
+    email: Optional[str] = Field(None, description="Student email")
+
+
 class Lecture(LectureBase):
     """Lecture model matching the core model, including ID."""
 
     id: int = Field(..., description="Unique lecture identifier")
+    student: Optional[StudentBrief] = Field(None, description="Student who created the lecture")
 
     class Config:
         from_attributes = True
