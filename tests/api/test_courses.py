@@ -38,6 +38,9 @@ sample_courses_base = [
         description=f"Description {i}",
         lectures_per_week=2,
         total_weeks=14,
+        created_by=(
+            1 if i in [1, 3] else 2
+        ),  # Student 1 created courses 1 and 3, student 2 created 2 and 4
         created_at=datetime(2025, 1, 1, 12, 0, 0),
         updated_at=datetime(2025, 1, 1, 12, 0, 0),
     )
@@ -208,6 +211,7 @@ def test_list_courses(client: TestClient, mock_api_service):
         professor_id=None,
         level=None,
         title=None,
+        created_by=None,
         sort_by="updated_at",
         order="desc",
     )
@@ -234,6 +238,7 @@ def test_list_courses_with_filters(client: TestClient, mock_api_service):
         professor_id=None,
         level="Undergraduate",
         title=None,
+        created_by=None,
         sort_by="updated_at",
         order="desc",
     )
@@ -259,8 +264,40 @@ def test_list_courses_with_sorting(client: TestClient, mock_api_service):
         professor_id=None,
         level=None,
         title=None,
+        created_by=None,
         sort_by="code",
         order="asc",
+    )
+
+
+@pytest.mark.unit
+def test_list_courses_filter_by_created_by(client: TestClient, mock_api_service):
+    """Test listing courses filtered by creator student ID (My Courses feature)."""
+    # Simulate filtered response - only courses created by student 1
+    student_id = 1
+    filtered_courses = [c for c in sample_courses_base if c.created_by == student_id]
+    mock_api_service["get_courses"].return_value = CoursesListResponse(
+        items=filtered_courses, total=len(filtered_courses), page=1, size=10, pages=1
+    )
+
+    response = client.get(f"/api/v1/courses?created_by={student_id}")
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data["items"]) == 2  # Student 1 created courses 1 and 3
+    assert data["total"] == 2
+    # Verify all returned courses were created by the specified student
+    for course in data["items"]:
+        assert course["created_by"] == student_id
+    mock_api_service["get_courses"].assert_called_once_with(
+        page=1,
+        size=10,
+        department_id=None,
+        professor_id=None,
+        level=None,
+        title=None,
+        created_by=student_id,
+        sort_by="updated_at",
+        order="desc",
     )
 
 
