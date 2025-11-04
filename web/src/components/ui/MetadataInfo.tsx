@@ -33,7 +33,7 @@ const MetadataInfo: Component<MetadataInfoProps> = (props) => {
         </Show>
         <Show when={props.createdAt}>
           <p>
-            <span class="font-medium">Created on:</span> {formatDateSimple(props.createdAt!)}
+            <span class="font-medium">Created on:</span> {formatDateSimple(props.createdAt || '')}
           </p>
         </Show>
       </div>

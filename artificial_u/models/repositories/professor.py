@@ -4,6 +4,8 @@ Professor repository for database operations.
 
 from typing import List, Optional
 
+from sqlalchemy.orm import joinedload
+
 from artificial_u.models.core import Professor
 from artificial_u.models.database import ProfessorModel
 from artificial_u.models.repositories.base import BaseRepository
@@ -42,8 +44,6 @@ class ProfessorRepository(BaseRepository):
 
     def get(self, professor_id: int) -> Optional[Professor]:
         """Get a professor by ID."""
-        from sqlalchemy.orm import joinedload
-
         with self.get_session() as session:
             db_professor = (
                 session.query(ProfessorModel)

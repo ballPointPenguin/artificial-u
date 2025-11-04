@@ -5,6 +5,7 @@ Lecture repository for database operations.
 from typing import Dict, List, Optional
 
 from sqlalchemy import func, or_
+from sqlalchemy.orm import joinedload
 
 from artificial_u.models.core import Lecture
 from artificial_u.models.database import CourseModel, LectureModel
@@ -56,8 +57,6 @@ class LectureRepository(BaseRepository):
         Returns:
             Optional[Lecture]: The lecture if found, None otherwise
         """
-        from sqlalchemy.orm import joinedload
-
         with self.get_session() as session:
             db_lecture = (
                 session.query(LectureModel)

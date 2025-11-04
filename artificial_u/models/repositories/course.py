@@ -4,6 +4,8 @@ Course repository for database operations.
 
 from typing import List, Optional
 
+from sqlalchemy.orm import joinedload
+
 from artificial_u.models.core import Course
 from artificial_u.models.database import CourseModel
 from artificial_u.models.repositories.base import BaseRepository
@@ -38,8 +40,6 @@ class CourseRepository(BaseRepository):
 
     def get(self, course_id: int) -> Optional[Course]:
         """Get a course by ID."""
-        from sqlalchemy.orm import joinedload
-
         with self.get_session() as session:
             db_course = (
                 session.query(CourseModel)
