@@ -24,6 +24,7 @@ from artificial_u.config.defaults import (
     DEFAULT_STORAGE_ACCESS_KEY,
     DEFAULT_STORAGE_AUDIO_BUCKET,
     DEFAULT_STORAGE_ENDPOINT_URL,
+    DEFAULT_STORAGE_EXPORTS_BUCKET,
     DEFAULT_STORAGE_IMAGES_BUCKET,
     DEFAULT_STORAGE_LECTURES_BUCKET,
     DEFAULT_STORAGE_PUBLIC_URL,
@@ -97,6 +98,7 @@ class Settings(BaseSettings):
     STORAGE_AUDIO_BUCKET: str = DEFAULT_STORAGE_AUDIO_BUCKET
     STORAGE_LECTURES_BUCKET: str = DEFAULT_STORAGE_LECTURES_BUCKET
     STORAGE_IMAGES_BUCKET: str = DEFAULT_STORAGE_IMAGES_BUCKET
+    STORAGE_EXPORTS_BUCKET: str = DEFAULT_STORAGE_EXPORTS_BUCKET
 
     # Content generation settings
     content_backend: str = DEFAULT_CONTENT_BACKEND
@@ -240,6 +242,7 @@ class Settings(BaseSettings):
             "storage_audio_bucket": self.STORAGE_AUDIO_BUCKET,
             "storage_lectures_bucket": self.STORAGE_LECTURES_BUCKET,
             "storage_images_bucket": self.STORAGE_IMAGES_BUCKET,
+            "storage_exports_bucket": self.STORAGE_EXPORTS_BUCKET,
             "coin_cost_course_generation": self.COIN_COST_COURSE_GENERATION,
             "coin_cost_lecture_generation": self.COIN_COST_LECTURE_GENERATION,
             "coin_cost_lecture_audio": self.COIN_COST_LECTURE_AUDIO,

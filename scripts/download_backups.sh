@@ -40,6 +40,7 @@ show_usage() {
     echo "  --audio             Download only artificial-u-audio bucket"
     echo "  --images            Download only artificial-u-images bucket"
     echo "  --lectures          Download only artificial-u-lectures bucket"
+    echo "  --exports           Download only artificial-u-exports bucket"
     echo "  --output DIR        Set output directory (default: ./backups)"
     echo "  --help              Show this help message"
     echo ""
@@ -55,6 +56,7 @@ DOWNLOAD_ALL=true
 DOWNLOAD_AUDIO=false
 DOWNLOAD_IMAGES=false
 DOWNLOAD_LECTURES=false
+DOWNLOAD_EXPORTS=false
 
 while [[ $# -gt 0 ]]; do
     case $1 in
@@ -75,6 +77,11 @@ while [[ $# -gt 0 ]]; do
         --lectures)
             DOWNLOAD_ALL=false
             DOWNLOAD_LECTURES=true
+            shift
+            ;;
+        --exports)
+            DOWNLOAD_ALL=false
+            DOWNLOAD_EXPORTS=true
             shift
             ;;
         --output)
@@ -107,6 +114,7 @@ if [[ "$DOWNLOAD_ALL" == "true" ]]; then
     download_backup "artificial-u-audio" "${BACKUP_BASE}/artificial-u-audio"
     download_backup "artificial-u-images" "${BACKUP_BASE}/artificial-u-images"
     download_backup "artificial-u-lectures" "${BACKUP_BASE}/artificial-u-lectures"
+    download_backup "artificial-u-exports" "${BACKUP_BASE}/artificial-u-exports"
 else
     if [[ "$DOWNLOAD_AUDIO" == "true" ]]; then
         download_backup "artificial-u-audio" "${BACKUP_BASE}/artificial-u-audio"
@@ -116,6 +124,9 @@ else
     fi
     if [[ "$DOWNLOAD_LECTURES" == "true" ]]; then
         download_backup "artificial-u-lectures" "${BACKUP_BASE}/artificial-u-lectures"
+    fi
+    if [[ "$DOWNLOAD_EXPORTS" == "true" ]]; then
+        download_backup "artificial-u-exports" "${BACKUP_BASE}/artificial-u-exports"
     fi
 fi
 
@@ -138,4 +149,8 @@ fi
 if [[ -d "${BACKUP_BASE}/artificial-u-lectures" ]]; then
     lecture_count=$(find "${BACKUP_BASE}/artificial-u-lectures" -name "*.txt" 2>/dev/null | wc -l || echo "0")
     echo "   📚 Lecture files: ${lecture_count// /} TXT files"
+fi
+if [[ -d "${BACKUP_BASE}/artificial-u-exports" ]]; then
+    export_count=$(find "${BACKUP_BASE}/artificial-u-exports" -name "*.zip" 2>/dev/null | wc -l || echo "0")
+    echo "   📦 Export files: ${export_count// /} ZIP files"
 fi

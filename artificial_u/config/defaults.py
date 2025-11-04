@@ -20,6 +20,7 @@ DEFAULT_STORAGE_REGION = "us-east-1"
 DEFAULT_STORAGE_AUDIO_BUCKET = "artificial-u-audio"
 DEFAULT_STORAGE_LECTURES_BUCKET = "artificial-u-lectures"
 DEFAULT_STORAGE_IMAGES_BUCKET = "artificial-u-images"
+DEFAULT_STORAGE_EXPORTS_BUCKET = "artificial-u-exports"
 
 # Course defaults
 DEFAULT_LECTURE_WORD_COUNT = 3000

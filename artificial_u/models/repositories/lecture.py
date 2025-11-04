@@ -487,6 +487,8 @@ class LectureRepository(BaseRepository):
                 topic_id=db_lecture.topic_id,
                 created_by=db_lecture.created_by,
                 created_with=db_lecture.created_with,
+                created_at=db_lecture.created_at,
+                updated_at=db_lecture.updated_at,
             )
 
     def delete(self, lecture_id: int) -> bool:

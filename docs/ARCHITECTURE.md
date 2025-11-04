@@ -287,6 +287,7 @@ web/src/
   - `artificial-u-audio`: Audio files
   - `artificial-u-lectures`: Lecture documents
   - `artificial-u-images`: Images and media
+  - `artificial-u-exports`: Course export archives
 
 ### Job Processing System
 

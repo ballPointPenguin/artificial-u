@@ -407,3 +407,65 @@ async def enqueue_create_course(
         "priority": row.priority,
         "run_after": row.run_after,
     }
+
+
+@router.post(
+    "/{course_id}/export",
+    status_code=status.HTTP_202_ACCEPTED,
+    summary="Export course with all related data and assets",
+    description=(
+        "Admin-only endpoint to export a complete course bundle including all related data "
+        "(professor, department, topics, lectures) and assets (audio, transcripts, images). "
+        "Returns a job id to poll via GET /api/v1/jobs/{id}. The job result will contain "
+        "a download URL for the exported zip file."
+    ),
+    dependencies=[require_role("admin")],
+    responses={
+        202: {"description": "Export job enqueued successfully"},
+        403: {"description": "Insufficient permissions (requires admin role)"},
+        404: {"description": "Course not found"},
+    },
+)
+async def export_course(
+    course_id: int = Path(..., description="The ID of the course to export"),
+    repository_factory: RepositoryFactory = Depends(get_repository_factory),
+):
+    """
+    Enqueue a job to export a course with all related data and assets.
+
+    This endpoint is restricted to admin users only. The export will include:
+    - Course data
+    - Professor data (including voice metadata)
+    - Department data
+    - All topics
+    - All lectures
+    - Professor image (if available)
+    - Lecture audio files (if available)
+    - Lecture transcripts (if available)
+
+    The result will be a compressed zip archive stored in the exports bucket.
+    """
+    # Verify course exists
+    course = repository_factory.course.get(course_id)
+    if not course:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Course with ID {course_id} not found.",
+        )
+
+    # Enqueue export job
+    row = repository_factory.job.create(
+        kind="export_course",
+        payload={"course_id": course_id},
+    )
+
+    return {
+        "id": row.id,
+        "kind": row.kind,
+        "status": row.status,
+        "attempts": row.attempts,
+        "max_attempts": row.max_attempts,
+        "priority": row.priority,
+        "run_after": row.run_after,
+        "message": f"Course export job enqueued. Poll GET /api/v1/jobs/{row.id} for status and download URL.",
+    }

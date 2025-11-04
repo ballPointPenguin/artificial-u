@@ -43,6 +43,8 @@ class DepartmentRepository(BaseRepository):
                 code=db_department.code,
                 faculty=db_department.faculty,
                 description=db_department.description,
+                created_at=db_department.created_at,
+                updated_at=db_department.updated_at,
             )
 
     def get_by_code(self, code: str) -> Optional[Department]:
@@ -59,6 +61,8 @@ class DepartmentRepository(BaseRepository):
                 code=db_department.code,
                 faculty=db_department.faculty,
                 description=db_department.description,
+                created_at=db_department.created_at,
+                updated_at=db_department.updated_at,
             )
 
     def list(self, faculty: Optional[str] = None) -> List[Department]:

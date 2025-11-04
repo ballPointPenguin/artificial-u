@@ -13,7 +13,7 @@ until /usr/bin/mc alias set ${MC_ALIAS} ${MC_HOST} ${MC_USER} ${MC_PASS} > /dev/
 done
 echo "MinIO is ready."
 
-BUCKETS="artificial-u-audio artificial-u-lectures artificial-u-images"
+BUCKETS="artificial-u-audio artificial-u-lectures artificial-u-images artificial-u-exports"
 
 for bucket in $BUCKETS; do
     if ! /usr/bin/mc ls "${MC_ALIAS}/${bucket}" >/dev/null 2>&1; then

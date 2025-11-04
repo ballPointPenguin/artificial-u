@@ -462,3 +462,19 @@ export interface StudentUpdate {
   name?: string
   email?: string
 }
+
+// Job types
+export interface JobResponse {
+  id: number
+  kind: string
+  status: string
+  attempts: number
+  max_attempts: number
+  priority?: number
+  run_after?: string
+  message?: string
+}
+
+// Course export types
+export interface CourseExportResponse extends JobResponse {
+}

@@ -8,6 +8,7 @@ injection system rather than using global state.
 """
 
 from artificial_u.services.content_service import ContentService
+from artificial_u.services.course_export_service import CourseExportService
 from artificial_u.services.course_service import CourseService
 from artificial_u.services.department_selector_service import DepartmentSelectorService
 from artificial_u.services.department_service import DepartmentService
@@ -29,6 +30,7 @@ __all__ = [
     "TTSService",
     "VoiceService",
     # Domain services
+    "CourseExportService",
     "CourseService",
     "DepartmentSelectorService",
     "DepartmentService",

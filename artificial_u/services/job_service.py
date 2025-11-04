@@ -30,6 +30,7 @@ class JobService:
         self._professor_generator_service = None
         self._course_service = None
         self._course_generator_service = None
+        self._course_export_service = None
         self._department_service = None
         self._department_generator_service = None
         self._topic_service = None
@@ -83,6 +84,8 @@ class JobService:
             "generate_lecture_summary": self._handle_generate_lecture_summary,
             "generate_lecture_audio": self._handle_generate_lecture_audio,
             "generate_professor_image": self._handle_generate_professor_image,
+            # Export tasks
+            "export_course": self._handle_export_course,
         }.get(kind)
 
     async def _handle_generate_course(self, payload: Dict[str, Any]) -> Dict[str, Any]:
@@ -225,6 +228,15 @@ class JobService:
             professor_id=professor_id, aspect_ratio=aspect_ratio
         )
         return {"professor_id": updated.id, "image_url": getattr(updated, "image_url", None)}
+
+    async def _handle_export_course(self, payload: Dict[str, Any]) -> Dict[str, Any]:
+        """Export a course with all related data and assets."""
+        service = self._course_export_service_instance()
+        course_id = payload.get("course_id")
+        if course_id is None:
+            raise ValueError("course_id is required")
+        result = await service.export_course(course_id)
+        return result
 
     # ---- Service builders (lazy) ----
 
@@ -384,6 +396,19 @@ class JobService:
                 logger=self.logger,
             )
         return self._course_generator_service
+
+    def _course_export_service_instance(self):
+        if self._course_export_service is None:
+            from artificial_u.services.course_export_service import (
+                CourseExportService,
+            )
+
+            self._course_export_service = CourseExportService(
+                repository_factory=self.repository_factory,
+                storage_service=self._storage_service_instance(),
+                logger=self.logger,
+            )
+        return self._course_export_service
 
     def _department_generator_service_instance(self):
         if self._department_generator_service is None:
