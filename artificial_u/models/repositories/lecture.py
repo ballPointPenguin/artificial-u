@@ -5,6 +5,7 @@ Lecture repository for database operations.
 from typing import Dict, List, Optional
 
 from sqlalchemy import func, or_
+from sqlalchemy.orm import joinedload
 
 from artificial_u.models.core import Lecture
 from artificial_u.models.database import CourseModel, LectureModel
@@ -57,9 +58,23 @@ class LectureRepository(BaseRepository):
             Optional[Lecture]: The lecture if found, None otherwise
         """
         with self.get_session() as session:
-            db_lecture = session.query(LectureModel).filter_by(id=lecture_id).first()
+            db_lecture = (
+                session.query(LectureModel)
+                .options(joinedload(LectureModel.student))
+                .filter_by(id=lecture_id)
+                .first()
+            )
             if not db_lecture:
                 return None
+
+            # Build student dict if present
+            student_dict = None
+            if db_lecture.student:
+                student_dict = {
+                    "id": db_lecture.student.id,
+                    "name": db_lecture.student.name,
+                    "email": db_lecture.student.email,
+                }
 
             return Lecture(
                 id=db_lecture.id,
@@ -73,6 +88,9 @@ class LectureRepository(BaseRepository):
                 topic_id=db_lecture.topic_id,
                 created_by=db_lecture.created_by,
                 created_with=db_lecture.created_with,
+                created_at=db_lecture.created_at,
+                updated_at=db_lecture.updated_at,
+                student=student_dict,
             )
 
     def get_content(self, lecture_id: int) -> Optional[str]:
@@ -128,23 +146,41 @@ class LectureRepository(BaseRepository):
                 (LectureModel.topic_id == latest_revisions.c.topic_id)
                 & (LectureModel.revision == latest_revisions.c.max_revision),
             )
+            # Eager-load student relationship for attribution metadata
+            query = query.options(joinedload(LectureModel.student))
 
-            return [
-                Lecture(
-                    id=lecture.id,
-                    revision=lecture.revision,
-                    content=lecture.content,
-                    summary=lecture.summary,
-                    title=lecture.title,
-                    audio_url=lecture.audio_url,
-                    transcript_url=lecture.transcript_url,
-                    course_id=lecture.course_id,
-                    topic_id=lecture.topic_id,
-                    created_by=lecture.created_by,
-                    created_with=lecture.created_with,
+            db_lectures = query.all()
+
+            results: List[Lecture] = []
+            for lecture in db_lectures:
+                student_dict = None
+                if lecture.student:
+                    student_dict = {
+                        "id": lecture.student.id,
+                        "name": lecture.student.name,
+                        "email": lecture.student.email,
+                    }
+
+                results.append(
+                    Lecture(
+                        id=lecture.id,
+                        revision=lecture.revision,
+                        content=lecture.content,
+                        summary=lecture.summary,
+                        title=lecture.title,
+                        audio_url=lecture.audio_url,
+                        transcript_url=lecture.transcript_url,
+                        course_id=lecture.course_id,
+                        topic_id=lecture.topic_id,
+                        created_by=lecture.created_by,
+                        created_with=lecture.created_with,
+                        created_at=lecture.created_at,
+                        updated_at=lecture.updated_at,
+                        student=student_dict,
+                    )
                 )
-                for lecture in query.all()
-            ]
+
+            return results
 
     def list_by_topic(self, topic_id: int) -> List[Lecture]:
         """
@@ -170,12 +206,22 @@ class LectureRepository(BaseRepository):
             # Get the lecture with the latest revision
             db_lecture = (
                 session.query(LectureModel)
+                .options(joinedload(LectureModel.student))
                 .filter(LectureModel.topic_id == topic_id, LectureModel.revision == latest_revision)
                 .first()
             )
 
             if not db_lecture:
                 return []
+
+            # Build student dict if present
+            student_dict = None
+            if db_lecture.student:
+                student_dict = {
+                    "id": db_lecture.student.id,
+                    "name": db_lecture.student.name,
+                    "email": db_lecture.student.email,
+                }
 
             return [
                 Lecture(
@@ -188,6 +234,11 @@ class LectureRepository(BaseRepository):
                     transcript_url=db_lecture.transcript_url,
                     course_id=db_lecture.course_id,
                     topic_id=db_lecture.topic_id,
+                    created_by=db_lecture.created_by,
+                    created_with=db_lecture.created_with,
+                    created_at=db_lecture.created_at,
+                    updated_at=db_lecture.updated_at,
+                    student=student_dict,
                 )
             ]
 
@@ -319,22 +370,36 @@ class LectureRepository(BaseRepository):
             # Execute query
             db_lectures = query.all()
 
-            return [
-                Lecture(
-                    id=lecture.id,
-                    revision=lecture.revision,
-                    content=lecture.content,
-                    summary=lecture.summary,
-                    title=lecture.title,
-                    audio_url=lecture.audio_url,
-                    transcript_url=lecture.transcript_url,
-                    course_id=lecture.course_id,
-                    topic_id=lecture.topic_id,
-                    created_by=lecture.created_by,
-                    created_with=lecture.created_with,
+            results: List[Lecture] = []
+            for lecture in db_lectures:
+                student_dict = None
+                if lecture.student:
+                    student_dict = {
+                        "id": lecture.student.id,
+                        "name": lecture.student.name,
+                        "email": lecture.student.email,
+                    }
+
+                results.append(
+                    Lecture(
+                        id=lecture.id,
+                        revision=lecture.revision,
+                        content=lecture.content,
+                        summary=lecture.summary,
+                        title=lecture.title,
+                        audio_url=lecture.audio_url,
+                        transcript_url=lecture.transcript_url,
+                        course_id=lecture.course_id,
+                        topic_id=lecture.topic_id,
+                        created_by=lecture.created_by,
+                        created_with=lecture.created_with,
+                        created_at=lecture.created_at,
+                        updated_at=lecture.updated_at,
+                        student=student_dict,
+                    )
                 )
-                for lecture in db_lectures
-            ]
+
+            return results
 
     def update(self, lecture: Lecture) -> Lecture:
         """

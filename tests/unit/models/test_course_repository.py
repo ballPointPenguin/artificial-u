@@ -36,6 +36,9 @@ class TestCourseRepository:
         mock_course.professor_id = 1
         mock_course.created_by = 1
         mock_course.created_with = "test-llm"
+        mock_course.created_at = None
+        mock_course.updated_at = None
+        mock_course.student = None  # Mock student relationship
         return mock_course
 
     def test_create(self, course_repository, mock_session):
@@ -80,15 +83,18 @@ class TestCourseRepository:
 
     def test_get(self, course_repository, mock_session, mock_course_model):
         """Test getting a course by ID."""
-        # Configure mock behavior
+        # Configure mock behavior for query with joinedload
         query_mock = mock_session.query.return_value
-        query_mock.filter_by.return_value.first.return_value = mock_course_model
+        query_mock.options.return_value = query_mock  # Mock joinedload options
+        query_mock.filter_by.return_value = query_mock
+        query_mock.first.return_value = mock_course_model
 
         # Exercise
         result = course_repository.get(1)
 
         # Verify
         mock_session.query.assert_called_once_with(CourseModel)
+        query_mock.options.assert_called_once()  # Verify joinedload was called
         query_mock.filter_by.assert_called_once_with(id=1)
         assert result.id == 1
         assert result.code == "CS101"
@@ -105,15 +111,18 @@ class TestCourseRepository:
 
     def test_get_not_found(self, course_repository, mock_session):
         """Test getting a non-existent course returns None."""
-        # Configure mock behavior
+        # Configure mock behavior for query with joinedload
         query_mock = mock_session.query.return_value
-        query_mock.filter_by.return_value.first.return_value = None
+        query_mock.options.return_value = query_mock  # Mock joinedload options
+        query_mock.filter_by.return_value = query_mock
+        query_mock.first.return_value = None
 
         # Exercise
         result = course_repository.get(999)
 
         # Verify
         assert result is None
+        query_mock.options.assert_called_once()  # Verify joinedload was called
 
     def test_get_by_code(self, course_repository, mock_session, mock_course_model):
         """Test getting a course by code."""

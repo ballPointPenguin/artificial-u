@@ -33,10 +33,10 @@
 - [x] Integrate freeform prompts for everything
 - [x] Production-ready deployment
 - [x] Explore Hosting Options
+- [x] Filter courses by "my" courses
+- [x] Jobs UI Page for Admin
 - [ ] Sort and filter professors
-- [ ] Filter courses by "my" courses
 - [ ] Sort and filter departments
-- [ ] Jobs UI Page for Admin
 - [ ] Better handling of job lifecycles with uvicore reboots
 - [ ] Display created_by and created_with attributions
 - [ ] Action buttons on Topics List

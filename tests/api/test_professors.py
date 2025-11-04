@@ -97,7 +97,13 @@ def mock_api_service(monkeypatch):
     # CREATE Professor
     def _mock_create_professor(professor_data: ProfessorCreate, created_by: int = None):
         new_id = 5  # Simulate next ID
-        return ProfessorResponse(id=new_id, **professor_data.model_dump())
+        dump = professor_data.model_dump()
+        dump["id"] = new_id
+        dump["created_by"] = created_by
+        dump["created_at"] = None
+        dump["updated_at"] = None
+        dump["student"] = None
+        return ProfessorResponse(**dump)
 
     mock_service["create_professor"].side_effect = _mock_create_professor
 
@@ -269,8 +275,14 @@ def test_create_professor(client: TestClient, mock_api_service):
     call_args = mock_api_service["create_professor"].call_args
     # First positional arg should be ProfessorCreate
     assert isinstance(call_args[0][0], ProfessorCreate)
-    # The model_dump should include attribution fields
-    expected_with_attribution = {**new_professor_data, "created_by": None, "created_with": None}
+    # The model_dump should include attribution fields and timestamps (even if None)
+    expected_with_attribution = {
+        **new_professor_data,
+        "created_by": None,
+        "created_with": None,
+        "created_at": None,
+        "updated_at": None,
+    }
     assert call_args[0][0].model_dump() == expected_with_attribution
     # Should also pass created_by as kwarg
     assert call_args[1] == {"created_by": 1}

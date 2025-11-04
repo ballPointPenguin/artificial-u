@@ -48,6 +48,7 @@ class CourseModel(Base):
     professor = relationship("ProfessorModel", back_populates="courses")
     lectures = relationship("LectureModel", back_populates="course")
     topics = relationship("TopicModel", back_populates="course")
+    student = relationship("StudentModel", foreign_keys=[created_by])
 
 
 class DepartmentModel(Base):
@@ -85,6 +86,7 @@ class LectureModel(Base):
 
     course = relationship("CourseModel", back_populates="lectures")
     topic = relationship("TopicModel", back_populates="lectures")
+    student = relationship("StudentModel", foreign_keys=[created_by])
 
 
 class ProfessorModel(Base):
@@ -113,6 +115,7 @@ class ProfessorModel(Base):
     department = relationship("DepartmentModel", back_populates="professors")
     courses = relationship("CourseModel", back_populates="professor")
     voice = relationship("VoiceModel", back_populates="professor")
+    student = relationship("StudentModel", foreign_keys=[created_by])
 
 
 class TopicModel(Base):

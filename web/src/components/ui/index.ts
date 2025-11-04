@@ -10,6 +10,7 @@ export { Hero } from './Hero.jsx'
 export { default as Input } from './Input.jsx'
 export { LoadingSpinner } from './LoadingSpinner.jsx'
 export { MagicButton } from './MagicButton.jsx'
+export { default as MetadataInfo } from './MetadataInfo.jsx'
 // Ensure SelectOption is also exported if it's meant to be used externally
 export type { SelectOption } from './Select.jsx'
 export { default as Select } from './Select.jsx'

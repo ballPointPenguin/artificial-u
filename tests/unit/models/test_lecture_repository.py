@@ -52,6 +52,9 @@ class TestLectureRepository:
         lecture.topic_id = 1
         lecture.created_by = None
         lecture.created_with = None
+        lecture.created_at = None
+        lecture.updated_at = None
+        lecture.student = None  # Mock student relationship
         return lecture
 
     @pytest.fixture
@@ -86,9 +89,11 @@ class TestLectureRepository:
 
     def test_get_existing(self, lecture_repository, mock_session, sample_lecture_model):
         """Test getting an existing lecture."""
-        # Configure mock behavior
+        # Configure mock behavior for query with joinedload
         query_mock = mock_session.query.return_value
-        query_mock.filter_by.return_value.first.return_value = sample_lecture_model
+        query_mock.options.return_value = query_mock  # Mock joinedload options
+        query_mock.filter_by.return_value = query_mock
+        query_mock.first.return_value = sample_lecture_model
 
         # Call method
         result = lecture_repository.get(1)
@@ -105,13 +110,16 @@ class TestLectureRepository:
         assert result.course_id == 1
         assert result.topic_id == 1
         mock_session.query.assert_called_once_with(LectureModel)
+        query_mock.options.assert_called_once()  # Verify joinedload was called
         query_mock.filter_by.assert_called_once_with(id=1)
 
     def test_get_nonexistent(self, lecture_repository, mock_session):
         """Test getting a non-existent lecture."""
-        # Configure mock behavior
+        # Configure mock behavior for query with joinedload
         query_mock = mock_session.query.return_value
-        query_mock.filter_by.return_value.first.return_value = None
+        query_mock.options.return_value = query_mock  # Mock joinedload options
+        query_mock.filter_by.return_value = query_mock
+        query_mock.first.return_value = None
 
         # Call method
         result = lecture_repository.get(999)
@@ -119,6 +127,7 @@ class TestLectureRepository:
         # Verify
         assert result is None
         mock_session.query.assert_called_once_with(LectureModel)
+        query_mock.options.assert_called_once()  # Verify joinedload was called
         query_mock.filter_by.assert_called_once_with(id=999)
 
     def test_get_content(self, lecture_repository, mock_session, sample_lecture_model):
@@ -172,6 +181,7 @@ class TestLectureRepository:
         query_mock.group_by.return_value = query_mock
         query_mock.subquery.return_value = subquery_mock
         query_mock.join.return_value = query_mock
+        query_mock.options.return_value = query_mock  # Mock joinedload options
         query_mock.all.return_value = [sample_lecture_model]
 
         # Call method
@@ -197,6 +207,9 @@ class TestLectureRepository:
         query_mock = mock_session.query.return_value
         query_mock.filter.return_value = query_mock
         query_mock.scalar.return_value = 1  # Latest revision is 1
+
+        # Configure mock for main query with joinedload
+        query_mock.options.return_value = query_mock  # Mock joinedload options
         query_mock.first.return_value = sample_lecture_model
 
         # Call method
@@ -229,6 +242,7 @@ class TestLectureRepository:
         query_mock.group_by.return_value = query_mock
         query_mock.subquery.return_value = subquery_mock
         query_mock.join.return_value = query_mock
+        query_mock.options.return_value = query_mock  # Mock joinedload options
         query_mock.order_by.return_value = query_mock
         query_mock.offset.return_value = query_mock
         query_mock.limit.return_value = query_mock
@@ -264,6 +278,7 @@ class TestLectureRepository:
         query_mock.group_by.return_value = query_mock
         query_mock.subquery.return_value = subquery_mock
         query_mock.join.return_value = query_mock
+        query_mock.options.return_value = query_mock  # Mock joinedload options
         query_mock.order_by.return_value = query_mock
         query_mock.offset.return_value = query_mock
         query_mock.limit.return_value = query_mock
@@ -420,6 +435,9 @@ class TestLectureRepository:
         lecture1.topic_id = 1
         lecture1.created_by = None
         lecture1.created_with = None
+        lecture1.created_at = None
+        lecture1.updated_at = None
+        lecture1.student = None
 
         lecture2 = MagicMock()
         lecture2.id = 2
@@ -433,6 +451,9 @@ class TestLectureRepository:
         lecture2.topic_id = 1
         lecture2.created_by = None
         lecture2.created_with = None
+        lecture2.created_at = None
+        lecture2.updated_at = None
+        lecture2.student = None
 
         # Configure mock behavior for subquery
         subquery_mock = MagicMock()
@@ -445,6 +466,7 @@ class TestLectureRepository:
         query_mock.group_by.return_value = query_mock
         query_mock.subquery.return_value = subquery_mock
         query_mock.join.return_value = query_mock
+        query_mock.options.return_value = query_mock  # Mock joinedload options
         query_mock.all.return_value = [lecture2]  # Only return the latest revision
 
         # Call method
@@ -471,11 +493,19 @@ class TestLectureRepository:
         latest_lecture.transcript_url = "latest_transcript_url"
         latest_lecture.course_id = 1
         latest_lecture.topic_id = 1
+        latest_lecture.created_by = None
+        latest_lecture.created_with = None
+        latest_lecture.created_at = None
+        latest_lecture.updated_at = None
+        latest_lecture.student = None
 
         # Configure mock behavior for max revision query
         query_mock = mock_session.query.return_value
         query_mock.filter.return_value = query_mock
         query_mock.scalar.return_value = 2  # Latest revision is 2
+
+        # Configure mock for main query with joinedload
+        query_mock.options.return_value = query_mock  # Mock joinedload options
         query_mock.first.return_value = latest_lecture
 
         # Call method
@@ -504,6 +534,7 @@ class TestLectureRepository:
         query_mock.group_by.return_value = query_mock
         query_mock.subquery.return_value = subquery_mock
         query_mock.join.return_value = query_mock
+        query_mock.options.return_value = query_mock  # Mock joinedload options
         query_mock.order_by.return_value = query_mock
         query_mock.offset.return_value = query_mock
         query_mock.limit.return_value = query_mock

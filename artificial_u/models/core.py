@@ -129,6 +129,10 @@ class Professor(BaseModel):
     # Attribution
     created_by: Optional[int] = None
     created_with: Optional[str] = None
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+    # Related objects
+    student: Optional[Dict[str, Any]] = None
 
 
 class Course(BaseModel):
@@ -167,6 +171,8 @@ class Course(BaseModel):
     # Timestamps
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
+    # Related objects
+    student: Optional[Dict[str, Any]] = None
 
 
 class Topic(BaseModel):
@@ -239,6 +245,10 @@ class Lecture(BaseModel):
     # Attribution
     created_by: Optional[int] = None
     created_with: Optional[str] = None
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+    # Related objects
+    student: Optional[Dict[str, Any]] = None
 
 
 class Student(BaseModel):

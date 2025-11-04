@@ -214,6 +214,15 @@ export interface Lecture {
   summary: string | null
   audio_url: string | null
   transcript_url: string | null
+  created_by?: number | null
+  created_with?: string | null
+  created_at?: string | null
+  updated_at?: string | null
+  student?: {
+    id: number
+    name: string
+    email: string | null
+  } | null
 }
 
 export interface LectureCreate {
@@ -270,6 +279,15 @@ export interface Professor {
   age: number | null
   image_url: string | null
   voice_id?: number | null
+  created_by?: number | null
+  created_with?: string | null
+  created_at?: string | null
+  updated_at?: string | null
+  student?: {
+    id: number
+    name: string
+    email: string | null
+  } | null
 }
 
 export interface ProfessorCreate {

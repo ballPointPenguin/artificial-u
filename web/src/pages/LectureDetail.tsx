@@ -15,7 +15,7 @@ import { topicService } from '../api/services/topic-service.js'
 import type { Lecture, LectureUpdate } from '../api/types.js'
 import { RequireRole } from '../auth/RequireRole'
 import { LectureForm } from '../components/lectures/LectureForm.jsx'
-import { Alert, Button, ConfirmationModal, MagicButton } from '../components/ui'
+import { Alert, Button, ConfirmationModal, MagicButton, MetadataInfo } from '../components/ui'
 import { getJobEventHub } from '../utils/job-events-hub.js'
 
 // Lecture Detail View Component
@@ -86,6 +86,14 @@ const LectureDetailView: Component<{
           </RequireRole>
         </div>
       </div>
+
+      {/* Metadata Section */}
+      <MetadataInfo
+        createdBy={props.lecture.student}
+        createdWith={props.lecture.created_with}
+        createdAt={props.lecture.created_at}
+        class="mb-6 pb-6 border-b border-parchment-800/30"
+      />
 
       {/* Lecture Content */}
       <Show when={props.lecture.content}>

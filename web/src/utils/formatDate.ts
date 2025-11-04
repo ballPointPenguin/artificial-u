@@ -23,3 +23,15 @@ export function getRelativeTimeString(date: Date): string {
 
   return formatDate(date)
 }
+
+/**
+ * Format a date to simple format without time (e.g., "Sep. 12, 2025")
+ */
+export function formatDateSimple(date: Date | string): string {
+  const dateObj = typeof date === 'string' ? new Date(date) : date
+  return dateObj.toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  })
+}
