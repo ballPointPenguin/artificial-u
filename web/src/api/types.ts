@@ -477,5 +477,4 @@ export interface JobResponse {
 
 // Course export types
 export interface CourseExportResponse extends JobResponse {
-  message: string
 }
