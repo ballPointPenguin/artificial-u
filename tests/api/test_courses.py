@@ -612,3 +612,5 @@ def test_export_course_not_found(client: TestClient, monkeypatch):
     response = client.post("/api/v1/courses/999/export")
     # This will still fail with auth issues in unit tests, but the logic is there
     # Full integration test would verify 404 response
+    # Assert that the response status code is 404 (Not Found)
+    assert response.status_code == 404
