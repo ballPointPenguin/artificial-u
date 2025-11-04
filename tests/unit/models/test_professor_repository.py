@@ -40,6 +40,9 @@ class TestProfessorRepository:
         mock_prof.image_url = "https://example.com/smith.jpg"
         mock_prof.created_by = None
         mock_prof.created_with = None
+        mock_prof.created_at = None
+        mock_prof.updated_at = None
+        mock_prof.student = None  # Mock student relationship
         return mock_prof
 
     def test_create(self, professor_repository, mock_session):
@@ -92,15 +95,18 @@ class TestProfessorRepository:
 
     def test_get(self, professor_repository, mock_session, mock_prof_model):
         """Test getting a professor by ID."""
-        # Configure mock behavior
+        # Configure mock behavior for query with joinedload
         query_mock = mock_session.query.return_value
-        query_mock.filter_by.return_value.first.return_value = mock_prof_model
+        query_mock.options.return_value = query_mock  # Mock joinedload options
+        query_mock.filter_by.return_value = query_mock
+        query_mock.first.return_value = mock_prof_model
 
         # Exercise
         result = professor_repository.get(1)
 
         # Verify
         mock_session.query.assert_called_once_with(ProfessorModel)
+        query_mock.options.assert_called_once()  # Verify joinedload was called
         query_mock.filter_by.assert_called_once_with(id=1)
         assert result.id == 1
         assert result.name == "Dr. Jane Smith"
@@ -119,15 +125,18 @@ class TestProfessorRepository:
 
     def test_get_not_found(self, professor_repository, mock_session):
         """Test getting a non-existent professor returns None."""
-        # Configure mock behavior
+        # Configure mock behavior for query with joinedload
         query_mock = mock_session.query.return_value
-        query_mock.filter_by.return_value.first.return_value = None
+        query_mock.options.return_value = query_mock  # Mock joinedload options
+        query_mock.filter_by.return_value = query_mock
+        query_mock.first.return_value = None
 
         # Exercise
         result = professor_repository.get(999)
 
         # Verify
         assert result is None
+        query_mock.options.assert_called_once()  # Verify joinedload was called
 
     def test_list(self, professor_repository, mock_session):
         """Test listing professors."""
