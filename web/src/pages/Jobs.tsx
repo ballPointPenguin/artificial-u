@@ -24,7 +24,6 @@ export default function JobsPage() {
 
   const handleStatusFilter = (status: JobStatus | undefined) => {
     setStatusFilter(status)
-    void refetch()
   }
 
   return (
