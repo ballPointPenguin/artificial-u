@@ -24,7 +24,9 @@ class LectureBase(BaseModel):
     )
     created_with: Optional[str] = Field(None, description="AI model used to generate this lecture")
     created_at: Optional[datetime] = Field(None, description="Timestamp when lecture was created")
-    updated_at: Optional[datetime] = Field(None, description="Timestamp when lecture was last updated")
+    updated_at: Optional[datetime] = Field(
+        None, description="Timestamp when lecture was last updated"
+    )
 
 
 class LectureCreate(LectureBase):

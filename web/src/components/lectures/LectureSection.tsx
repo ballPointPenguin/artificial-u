@@ -4,7 +4,7 @@ import { lectureService } from '../../api/services/lecture-service.js'
 import type { Lecture } from '../../api/types.js'
 import { RequireRole } from '../../auth/RequireRole'
 import { createJobTracker, getJobMessage } from '../../utils/job-management.js'
-import { Alert, Button, ConfirmationModal, MagicButton } from '../ui'
+import { Alert, Button, ConfirmationModal, MagicButton, MetadataInfo } from '../ui'
 
 interface LectureSectionProps {
   lecture: () => Lecture | null | undefined
@@ -204,6 +204,15 @@ export const LectureSection: Component<LectureSectionProps> = (props) => {
                   {lectureData().summary}
                 </p>
               </Show>
+            </div>
+
+            {/* Metadata Section */}
+            <div class="pt-3 mt-3 border-t border-parchment-800/30">
+              <MetadataInfo
+                createdBy={lectureData().student}
+                createdWith={lectureData().created_with}
+                createdAt={lectureData().created_at}
+              />
             </div>
           </div>
         )}

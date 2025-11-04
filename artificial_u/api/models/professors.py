@@ -35,7 +35,9 @@ class ProfessorBase(BaseModel):
     created_by: Optional[int] = Field(None, description="Student ID who created the professor")
     created_with: Optional[str] = Field(None, description="Name of LLM used, if any")
     created_at: Optional[datetime] = Field(None, description="Timestamp when professor was created")
-    updated_at: Optional[datetime] = Field(None, description="Timestamp when professor was last updated")
+    updated_at: Optional[datetime] = Field(
+        None, description="Timestamp when professor was last updated"
+    )
 
 
 # Professor creation model

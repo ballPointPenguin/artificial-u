@@ -146,6 +146,8 @@ class LectureRepository(BaseRepository):
                 (LectureModel.topic_id == latest_revisions.c.topic_id)
                 & (LectureModel.revision == latest_revisions.c.max_revision),
             )
+            # Eager-load student relationship for attribution metadata
+            query = query.options(joinedload(LectureModel.student))
 
             return [
                 Lecture(
@@ -337,22 +339,36 @@ class LectureRepository(BaseRepository):
             # Execute query
             db_lectures = query.all()
 
-            return [
-                Lecture(
-                    id=lecture.id,
-                    revision=lecture.revision,
-                    content=lecture.content,
-                    summary=lecture.summary,
-                    title=lecture.title,
-                    audio_url=lecture.audio_url,
-                    transcript_url=lecture.transcript_url,
-                    course_id=lecture.course_id,
-                    topic_id=lecture.topic_id,
-                    created_by=lecture.created_by,
-                    created_with=lecture.created_with,
+            results: List[Lecture] = []
+            for lecture in db_lectures:
+                student_dict = None
+                if lecture.student:
+                    student_dict = {
+                        "id": lecture.student.id,
+                        "name": lecture.student.name,
+                        "email": lecture.student.email,
+                    }
+
+                results.append(
+                    Lecture(
+                        id=lecture.id,
+                        revision=lecture.revision,
+                        content=lecture.content,
+                        summary=lecture.summary,
+                        title=lecture.title,
+                        audio_url=lecture.audio_url,
+                        transcript_url=lecture.transcript_url,
+                        course_id=lecture.course_id,
+                        topic_id=lecture.topic_id,
+                        created_by=lecture.created_by,
+                        created_with=lecture.created_with,
+                        created_at=lecture.created_at,
+                        updated_at=lecture.updated_at,
+                        student=student_dict,
+                    )
                 )
-                for lecture in db_lectures
-            ]
+
+            return results
 
     def update(self, lecture: Lecture) -> Lecture:
         """
