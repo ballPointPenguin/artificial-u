@@ -227,9 +227,7 @@ class CdkStack(Stack):
             auto_delete_objects=True,
         )
 
-        # 10. Create an Origin Access Identity for CloudFront
-        origin_access_identity = cloudfront.OriginAccessIdentity(self, "OriginAccessIdentity")
-        frontend_bucket.grant_read(origin_access_identity)
+        # 10. (removed) Origin Access Identity is now created automatically by S3BucketOrigin
 
         # 11. (moved below) Deploy frontend assets after the CloudFront distribution is created
 
@@ -240,9 +238,7 @@ class CdkStack(Stack):
             certificate=certificate,
             domain_names=[domain_name, site_domain],
             default_behavior=cloudfront.BehaviorOptions(
-                origin=origins.S3Origin(
-                    frontend_bucket, origin_access_identity=origin_access_identity
-                ),
+                origin=origins.S3BucketOrigin.with_origin_access_identity(frontend_bucket),
                 viewer_protocol_policy=cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
             ),
             # Route API calls to the internal ALB
@@ -304,13 +300,13 @@ class CdkStack(Stack):
             sources=[
                 s3_deployment.Source.asset(
                     "../web/dist",
-                    exclude=["assets/**", "favicon.svg"],
+                    exclude=["assets", "favicon.svg"],
                 )
             ],
             destination_bucket=frontend_bucket,
             prune=False,  # Don't prune to avoid removing assets
             distribution=distribution,
-            distribution_paths=["/", "/index.html", "/*"],
+            distribution_paths=["/", "/index.html"],
             cache_control=[
                 s3_deployment.CacheControl.from_string("no-cache, no-store, must-revalidate"),
             ],
