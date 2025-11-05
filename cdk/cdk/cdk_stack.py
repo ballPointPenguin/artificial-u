@@ -231,13 +231,7 @@ class CdkStack(Stack):
         origin_access_identity = cloudfront.OriginAccessIdentity(self, "OriginAccessIdentity")
         frontend_bucket.grant_read(origin_access_identity)
 
-        # 11. Deploy the frontend assets to the S3 bucket
-        s3_deployment.BucketDeployment(
-            self,
-            "DeployWebApp",
-            sources=[s3_deployment.Source.asset("../web/dist")],
-            destination_bucket=frontend_bucket,
-        )
+        # 11. (moved below) Deploy frontend assets after the CloudFront distribution is created
 
         # 12. Create a CloudFront distribution
         distribution = cloudfront.Distribution(
@@ -281,6 +275,44 @@ class CdkStack(Stack):
                     response_page_path="/index.html",
                     ttl=cdk.Duration.seconds(0),
                 ),
+            ],
+        )
+
+        # 11 (cont.). Deploy the frontend assets and invalidate CloudFront
+        # Split deployment so that assets can be cached long-term while index.html stays non-cacheable
+        s3_deployment.BucketDeployment(
+            self,
+            "DeployWebAppAssets",
+            sources=[
+                s3_deployment.Source.asset(
+                    "../web/dist",
+                    exclude=["index.html"],
+                )
+            ],
+            destination_bucket=frontend_bucket,
+            prune=True,
+            distribution=distribution,
+            distribution_paths=["/assets/*", "/favicon.svg"],
+            cache_control=[
+                s3_deployment.CacheControl.from_string("public,max-age=31536000,immutable"),
+            ],
+        )
+
+        s3_deployment.BucketDeployment(
+            self,
+            "DeployWebAppIndex",
+            sources=[
+                s3_deployment.Source.asset(
+                    "../web/dist",
+                    include=["index.html"],
+                )
+            ],
+            destination_bucket=frontend_bucket,
+            prune=False,
+            distribution=distribution,
+            distribution_paths=["/", "/index.html", "/*"],
+            cache_control=[
+                s3_deployment.CacheControl.from_string("no-cache, no-store, must-revalidate"),
             ],
         )
 
