@@ -11,6 +11,7 @@ from typing import Dict, Optional
 from artificial_u.config import get_settings
 from artificial_u.models.converters import (
     department_model_to_dict,
+    enrich_department_dict_with_faculty,
     extract_xml_content,
     parse_department_xml,
 )
@@ -96,7 +97,10 @@ class DepartmentGeneratorService:
                 )
 
             existing_departments_dicts = [
-                department_model_to_dict(d) for d in existing_departments_models
+                enrich_department_dict_with_faculty(
+                    department_model_to_dict(d), self.repository_factory
+                )
+                for d in existing_departments_models
             ]
 
             # Extract freeform prompt if present either as explicit arg or within partials

@@ -7,7 +7,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from artificial_u.models.core import Course, Professor
+from artificial_u.models.core import Course, Faculty, Professor
 from artificial_u.models.repositories import RepositoryFactory
 from artificial_u.services import DepartmentService
 from artificial_u.utils import DepartmentNotFoundError, DependencyError
@@ -53,17 +53,30 @@ def department_service(repository_factory):
     )
 
 
+@pytest.fixture
+def sample_faculties(repository_factory):
+    """Create sample faculties for testing."""
+    faculties = {}
+    for name in ["Engineering", "Science", "Arts", "Business", "Test"]:
+        faculty = Faculty(name=name, description=f"The {name} faculty.")
+        faculty = repository_factory.faculty.create(faculty)
+        faculties[name] = faculty.id
+    return faculties
+
+
 @pytest.mark.integration
 class TestDepartmentService:
     """Integration tests for DepartmentService."""
 
-    def test_create_and_get_department(self, department_service):
+    def test_create_and_get_department(
+        self, department_service, repository_factory, sample_faculties
+    ):
         """Test creating and retrieving a department."""
         # Create a new department
         dept = department_service.create_department(
             name="Computer Science",
             code="CS",
-            faculty="Engineering",
+            faculty_id=sample_faculties["Engineering"],
             description="Study of computation",
         )
 
@@ -78,11 +91,11 @@ class TestDepartmentService:
         assert retrieved.name == "Computer Science"
         assert retrieved.code == "CS"
 
-    def test_update_department(self, department_service):
+    def test_update_department(self, department_service, repository_factory, sample_faculties):
         """Test updating a department."""
         # Create a department
         dept = department_service.create_department(
-            name="Economics", code="ECON", faculty="Business"
+            name="Economics", code="ECON", faculty_id=sample_faculties["Business"]
         )
 
         # Update the department
@@ -99,25 +112,31 @@ class TestDepartmentService:
         assert retrieved.name == "Economics and Finance"
         assert retrieved.code == "ECONFIN"
 
-    def test_list_departments(self, department_service):
+    def test_list_departments(self, department_service, repository_factory, sample_faculties):
         """Test listing departments with/without faculty filter."""
         # Create departments in different faculties
-        department_service.create_department(name="Physics", code="PHYS", faculty="Science")
-        department_service.create_department(name="Mathematics", code="MATH", faculty="Science")
-        department_service.create_department(name="History", code="HIST", faculty="Arts")
+        department_service.create_department(
+            name="Physics", code="PHYS", faculty_id=sample_faculties["Science"]
+        )
+        department_service.create_department(
+            name="Mathematics", code="MATH", faculty_id=sample_faculties["Science"]
+        )
+        department_service.create_department(
+            name="History", code="HIST", faculty_id=sample_faculties["Arts"]
+        )
 
         # List all departments
         all_depts = department_service.list_departments()
         assert len(all_depts) >= 3  # At least our 3 (could be more if DB has existing data)
 
-        # List by faculty
-        science_depts = department_service.list_departments(faculty="Science")
+        # List by faculty_id
+        science_depts = department_service.list_departments(faculty_id=sample_faculties["Science"])
         assert len(science_depts) >= 2
         codes = [d.code for d in science_depts]
         assert "PHYS" in codes
         assert "MATH" in codes
 
-        arts_depts = department_service.list_departments(faculty="Arts")
+        arts_depts = department_service.list_departments(faculty_id=sample_faculties["Arts"])
         assert len(arts_depts) >= 1
         assert any(d.code == "HIST" for d in arts_depts)
 
@@ -126,11 +145,13 @@ class TestDepartmentService:
         with pytest.raises(DepartmentNotFoundError):
             department_service.get_department("999999")
 
-    def test_department_with_professors(self, department_service, repository_factory):
+    def test_department_with_professors(
+        self, department_service, repository_factory, sample_faculties
+    ):
         """Test department with professors - creates professors, checks dependencies."""
         # Create a department
         dept = department_service.create_department(
-            name="Chemistry", code="CHEM", faculty="Science"
+            name="Chemistry", code="CHEM", faculty_id=sample_faculties["Science"]
         )
 
         # Create a professor in this department
@@ -151,10 +172,14 @@ class TestDepartmentService:
         with pytest.raises(DependencyError):
             department_service.delete_department(dept.id)
 
-    def test_department_with_courses(self, department_service, repository_factory):
+    def test_department_with_courses(
+        self, department_service, repository_factory, sample_faculties
+    ):
         """Test department with courses - creates courses, checks dependencies."""
         # Create a department
-        dept = department_service.create_department(name="Biology", code="BIO", faculty="Science")
+        dept = department_service.create_department(
+            name="Biology", code="BIO", faculty_id=sample_faculties["Science"]
+        )
 
         # Create a course in this department
         course = Course(
@@ -179,13 +204,13 @@ class TestDepartmentService:
         with pytest.raises(DependencyError):
             department_service.delete_department(dept.id)
 
-    def test_delete_department(self, department_service):
+    def test_delete_department(self, department_service, repository_factory, sample_faculties):
         """Test deleting a department with no dependencies."""
         # Create a temporary department
         dept = department_service.create_department(
             name="Temp Dept",
             code="TEMP-DELETE",  # Use unique code to avoid conflicts
-            faculty="Test",
+            faculty_id=sample_faculties["Test"],
         )
 
         # Delete it

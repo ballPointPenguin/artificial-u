@@ -8,6 +8,28 @@ from typing import Any, Dict, List, Optional
 from pydantic import BaseModel, ConfigDict, Field
 
 
+class Faculty(BaseModel):
+    """Faculty model representing an academic faculty."""
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "id": 1,
+                "name": "Science and Engineering",
+                "description": "The Faculty of Science and Engineering encompasses "
+                "departments focused on scientific and technological disciplines.",
+            }
+        }
+    )
+
+    id: Optional[int] = None
+    name: str
+    description: Optional[str] = None
+    # Timestamps
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+
+
 class Department(BaseModel):
     """Department model representing an academic department."""
 
@@ -17,7 +39,7 @@ class Department(BaseModel):
                 "id": 1,
                 "name": "Computer Science",
                 "code": "CS",
-                "faculty": "Science and Engineering",
+                "faculty_id": 1,
                 "description": "The Computer Science department focuses on the theory and "
                 "practice of computation.",
             }
@@ -27,7 +49,7 @@ class Department(BaseModel):
     id: Optional[int] = None
     name: str
     code: str
-    faculty: Optional[str] = None  # e.g., "Science and Engineering"
+    faculty_id: Optional[int] = None
     description: Optional[str] = None
     # Timestamps
     created_at: Optional[datetime] = None

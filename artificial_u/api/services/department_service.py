@@ -83,7 +83,7 @@ class DepartmentApiService(
         self,
         page: int = 1,
         size: int = 10,
-        faculty: Optional[str] = None,
+        faculty_id: Optional[int] = None,
         name: Optional[str] = None,
     ) -> DepartmentsListResponse:
         """
@@ -92,19 +92,18 @@ class DepartmentApiService(
         Args:
             page: Page number (1-indexed)
             size: Items per page
-            faculty: Filter by faculty
+            faculty_id: Filter by faculty ID
             name: Filter by name (partial match)
 
         Returns:
             DepartmentsListResponse with paginated departments
         """
-        # Build filters dictionary
+        # Build filters dictionary (for in-memory filtering)
         filters = {}
-        if faculty:
-            filters["faculty"] = faculty
         if name:
             filters["name"] = name
 
+        # Pass faculty_id as kwarg to core service method
         return self._standard_list_operation(
             core_service_method="list_departments",
             response_class=DepartmentResponse,
@@ -112,6 +111,7 @@ class DepartmentApiService(
             page=page,
             size=size,
             filters=filters,
+            faculty_id=faculty_id,  # Pass as kwarg to core service
         )
 
     def get_department(self, department_id: int) -> Optional[DepartmentResponse]:
@@ -161,7 +161,7 @@ class DepartmentApiService(
             department = self.core_service.create_department(
                 name=department_data.name,
                 code=department_data.code,
-                faculty=department_data.faculty,
+                faculty_id=department_data.faculty_id,
                 description=department_data.description,
             )
 

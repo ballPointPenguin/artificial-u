@@ -12,6 +12,7 @@ from artificial_u.config import get_settings
 from artificial_u.models.converters import (
     course_model_to_dict,
     department_model_to_dict,
+    enrich_department_dict_with_faculty,
     extract_xml_content,
     parse_course_xml,
     professor_model_to_dict,
@@ -95,7 +96,12 @@ class CourseGeneratorService:
             prompt_args = {
                 # Convert models to dicts for XML generation within get_course_prompt
                 "department_data": (
-                    department_model_to_dict(department_model) if department_model else {}
+                    enrich_department_dict_with_faculty(
+                        department_model_to_dict(department_model),
+                        self.repository_factory,
+                    )
+                    if department_model
+                    else {}
                 ),
                 "professor_data": (
                     professor_model_to_dict(professor_model) if professor_model else {}

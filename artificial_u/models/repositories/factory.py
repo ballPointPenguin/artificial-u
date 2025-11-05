@@ -7,6 +7,7 @@ from typing import Dict, Optional, Type, TypeVar, cast
 from artificial_u.models.repositories.base import BaseRepository
 from artificial_u.models.repositories.course import CourseRepository
 from artificial_u.models.repositories.department import DepartmentRepository
+from artificial_u.models.repositories.faculty import FacultyRepository
 from artificial_u.models.repositories.job import JobRepository
 from artificial_u.models.repositories.lecture import LectureRepository
 from artificial_u.models.repositories.professor import ProfessorRepository
@@ -62,6 +63,11 @@ class RepositoryFactory:
     def department(self) -> DepartmentRepository:
         """Get the department repository."""
         return self.get_repository(DepartmentRepository)
+
+    @property
+    def faculty(self) -> FacultyRepository:
+        """Get the faculty repository."""
+        return self.get_repository(FacultyRepository)
 
     @property
     def lecture(self) -> LectureRepository:

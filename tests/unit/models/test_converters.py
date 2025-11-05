@@ -95,7 +95,7 @@ def test_department_model_to_dict():
         "id": 1,
         "name": "Computer Science",
         "code": "CS",
-        "faculty": "Science and Engineering",
+        "faculty_id": 1,
         "description": "Study of computation",
     }
     department = Department(**department_data)
@@ -103,12 +103,12 @@ def test_department_model_to_dict():
     expected = department.model_dump(exclude_none=True)
     assert result == expected
 
-    department_partial_data = {"id": 2, "name": "Physics", "code": "PHY", "faculty": None}
+    department_partial_data = {"id": 2, "name": "Physics", "code": "PHY", "faculty_id": None}
     department_partial = Department(**department_partial_data)
     result_partial = department_model_to_dict(department_partial)
     expected_partial = department_partial.model_dump(exclude_none=True)
     assert result_partial == expected_partial
-    assert "faculty" not in result_partial
+    assert "faculty_id" not in result_partial
 
 
 @pytest.mark.unit

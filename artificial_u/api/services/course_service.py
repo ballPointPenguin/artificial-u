@@ -446,12 +446,20 @@ class CourseApiService(BaseApiService[CoreCourse, CourseResponse, CoursesListRes
                     detail=f"Department for course {course_id} not found (data inconsistency?).",
                 )
 
+            # Load faculty if faculty_id is present
+            faculty_name = None
+            if department.faculty_id:
+                faculty = self.repository_factory.faculty.get(department.faculty_id)
+                if faculty:
+                    faculty_name = faculty.name
+
             # Convert DepartmentModel to DepartmentBrief API model
             return DepartmentBrief(
                 id=department.id,
                 name=department.name,
                 code=department.code,
-                faculty=department.faculty,
+                faculty_id=department.faculty_id,
+                faculty_name=faculty_name,
             )
         except CourseNotFoundError:
             raise HTTPException(

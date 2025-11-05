@@ -7,7 +7,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from artificial_u.models.core import Professor, Topic
+from artificial_u.models.core import Faculty, Professor, Topic
 from artificial_u.models.repositories import RepositoryFactory
 from artificial_u.services import CourseService, DepartmentService, ProfessorService, TopicService
 from artificial_u.utils import DatabaseError
@@ -97,20 +97,37 @@ def topic_service(repository_factory):
     )
 
 
+@pytest.fixture
+def sample_faculties(repository_factory):
+    """Create sample faculties for testing."""
+    faculties = {}
+    for name in ["Engineering", "Science", "Arts", "Business", "Testing"]:
+        faculty = Faculty(name=name, description=f"The {name} faculty.")
+        faculty = repository_factory.faculty.create(faculty)
+        faculties[name] = faculty.id
+    return faculties
+
+
 @pytest.mark.integration
 class TestTopicService:
     """Integration tests for TopicService."""
 
     @pytest.mark.asyncio
     async def test_create_and_get_topic(
-        self, topic_service, course_service, department_service, professor_service
+        self,
+        topic_service,
+        course_service,
+        department_service,
+        professor_service,
+        repository_factory,
+        sample_faculties,
     ):
         """Test creating and retrieving a topic."""
         # First create a department
         department = department_service.create_department(
             name="Computer Science",
             code="CS",
-            faculty="Engineering",
+            faculty_id=sample_faculties["Engineering"],
             description="Department of Computer Science and Engineering",
         )
 
@@ -165,14 +182,20 @@ class TestTopicService:
 
     @pytest.mark.asyncio
     async def test_create_topics_batch(
-        self, topic_service, course_service, department_service, professor_service
+        self,
+        topic_service,
+        course_service,
+        department_service,
+        professor_service,
+        repository_factory,
+        sample_faculties,
     ):
         """Test creating multiple topics in a batch."""
         # First create a department
         department = department_service.create_department(
             name="Computer Science",
             code="CS",
-            faculty="Engineering",
+            faculty_id=sample_faculties["Engineering"],
         )
 
         # Then create a professor
@@ -227,14 +250,20 @@ class TestTopicService:
 
     @pytest.mark.asyncio
     async def test_get_topic_by_course_week_order(
-        self, topic_service, course_service, department_service, professor_service
+        self,
+        topic_service,
+        course_service,
+        department_service,
+        professor_service,
+        repository_factory,
+        sample_faculties,
     ):
         """Test getting a topic by course ID, week, and order."""
         # First create a department
         department = department_service.create_department(
             name="Computer Science",
             code="CS",
-            faculty="Engineering",
+            faculty_id=sample_faculties["Engineering"],
         )
 
         # Then create a professor
@@ -279,14 +308,20 @@ class TestTopicService:
 
     @pytest.mark.asyncio
     async def test_list_topics_by_course(
-        self, topic_service, course_service, department_service, professor_service
+        self,
+        topic_service,
+        course_service,
+        department_service,
+        professor_service,
+        repository_factory,
+        sample_faculties,
     ):
         """Test listing all topics for a course."""
         # First create a department
         department = department_service.create_department(
             name="Computer Science",
             code="CS",
-            faculty="Engineering",
+            faculty_id=sample_faculties["Engineering"],
         )
 
         # Then create a professor
@@ -333,14 +368,20 @@ class TestTopicService:
 
     @pytest.mark.asyncio
     async def test_list_topics_by_course_week(
-        self, topic_service, course_service, department_service, professor_service
+        self,
+        topic_service,
+        course_service,
+        department_service,
+        professor_service,
+        repository_factory,
+        sample_faculties,
     ):
         """Test listing topics for a specific course and week."""
         # First create a department
         department = department_service.create_department(
             name="Computer Science",
             code="CS",
-            faculty="Engineering",
+            faculty_id=sample_faculties["Engineering"],
         )
 
         # Then create a professor
@@ -376,14 +417,20 @@ class TestTopicService:
 
     @pytest.mark.asyncio
     async def test_update_topic(
-        self, topic_service, course_service, department_service, professor_service
+        self,
+        topic_service,
+        course_service,
+        department_service,
+        professor_service,
+        repository_factory,
+        sample_faculties,
     ):
         """Test updating a topic."""
         # First create a department
         department = department_service.create_department(
             name="Computer Science",
             code="CS",
-            faculty="Engineering",
+            faculty_id=sample_faculties["Engineering"],
         )
 
         # Then create a professor
@@ -431,14 +478,20 @@ class TestTopicService:
 
     @pytest.mark.asyncio
     async def test_delete_topic(
-        self, topic_service, course_service, department_service, professor_service
+        self,
+        topic_service,
+        course_service,
+        department_service,
+        professor_service,
+        repository_factory,
+        sample_faculties,
     ):
         """Test deleting a topic."""
         # First create a department
         department = department_service.create_department(
             name="Computer Science",
             code="CS",
-            faculty="Engineering",
+            faculty_id=sample_faculties["Engineering"],
         )
 
         # Then create a professor
@@ -479,14 +532,20 @@ class TestTopicService:
 
     @pytest.mark.asyncio
     async def test_delete_topics_by_course(
-        self, topic_service, course_service, department_service, professor_service
+        self,
+        topic_service,
+        course_service,
+        department_service,
+        professor_service,
+        repository_factory,
+        sample_faculties,
     ):
         """Test deleting all topics for a course."""
         # First create a department
         department = department_service.create_department(
             name="Computer Science",
             code="CS",
-            faculty="Engineering",
+            faculty_id=sample_faculties["Engineering"],
         )
 
         # Then create a professor

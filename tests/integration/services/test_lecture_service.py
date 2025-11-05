@@ -7,7 +7,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from artificial_u.models.core import Professor
+from artificial_u.models.core import Faculty, Professor
 from artificial_u.models.repositories.factory import RepositoryFactory
 from artificial_u.services import (
     CourseService,
@@ -147,17 +147,36 @@ def lecture_service(repository_factory):
     )
 
 
+@pytest.fixture
+def sample_faculties(repository_factory):
+    """Create sample faculties for testing."""
+    from artificial_u.models.core import Faculty
+
+    faculties = {}
+    for name in ["Engineering", "Science", "Arts", "Business", "Testing"]:
+        faculty = Faculty(name=name, description=f"The {name} faculty.")
+        faculty = repository_factory.faculty.create(faculty)
+        faculties[name] = faculty.id
+    return faculties
+
+
 @pytest.mark.integration
 class TestLectureService:
     """Integration tests for LectureService."""
 
     async def _create_prerequisites(
-        self, department_service, professor_service, course_service, topic_service
+        self,
+        department_service,
+        professor_service,
+        course_service,
+        topic_service,
+        repository_factory,
+        sample_faculties,
     ):
         department = department_service.create_department(
             name="Test Department for Lectures",
             code="TDL",
-            faculty="Testing",
+            faculty_id=sample_faculties["Testing"],
         )
         professor = professor_service.create_professor(
             Professor(
@@ -185,11 +204,23 @@ class TestLectureService:
 
     @pytest.mark.asyncio
     async def test_create_and_get_lecture(
-        self, lecture_service, course_service, department_service, professor_service, topic_service
+        self,
+        lecture_service,
+        course_service,
+        department_service,
+        professor_service,
+        topic_service,
+        repository_factory,
+        sample_faculties,
     ):
         """Test creating and retrieving a lecture."""
         _, _, course, topic = await self._create_prerequisites(
-            department_service, professor_service, course_service, topic_service
+            department_service,
+            professor_service,
+            course_service,
+            topic_service,
+            repository_factory,
+            sample_faculties,
         )
 
         lecture_title = "Test Lecture Title"
@@ -223,11 +254,23 @@ class TestLectureService:
 
     @pytest.mark.asyncio
     async def test_list_lectures(
-        self, lecture_service, course_service, department_service, professor_service, topic_service
+        self,
+        lecture_service,
+        course_service,
+        department_service,
+        professor_service,
+        topic_service,
+        repository_factory,
+        sample_faculties,
     ):
         """Test listing lectures with various filters."""
         _, professor, course, topic1 = await self._create_prerequisites(
-            department_service, professor_service, course_service, topic_service
+            department_service,
+            professor_service,
+            course_service,
+            topic_service,
+            repository_factory,
+            sample_faculties,
         )
         topic2 = topic_service.create_topic(
             title="Test Topic 2", course_id=course.id, week=1, order=2
@@ -268,11 +311,23 @@ class TestLectureService:
 
     @pytest.mark.asyncio
     async def test_update_lecture(
-        self, lecture_service, course_service, department_service, professor_service, topic_service
+        self,
+        lecture_service,
+        course_service,
+        department_service,
+        professor_service,
+        topic_service,
+        repository_factory,
+        sample_faculties,
     ):
         """Test updating a lecture."""
         _, _, course, topic = await self._create_prerequisites(
-            department_service, professor_service, course_service, topic_service
+            department_service,
+            professor_service,
+            course_service,
+            topic_service,
+            repository_factory,
+            sample_faculties,
         )
 
         lecture = lecture_service.create_lecture(
@@ -317,11 +372,23 @@ class TestLectureService:
 
     @pytest.mark.asyncio
     async def test_delete_lecture(
-        self, lecture_service, course_service, department_service, professor_service, topic_service
+        self,
+        lecture_service,
+        course_service,
+        department_service,
+        professor_service,
+        topic_service,
+        repository_factory,
+        sample_faculties,
     ):
         """Test deleting a lecture."""
         _, _, course, topic = await self._create_prerequisites(
-            department_service, professor_service, course_service, topic_service
+            department_service,
+            professor_service,
+            course_service,
+            topic_service,
+            repository_factory,
+            sample_faculties,
         )
 
         lecture_to_delete = lecture_service.create_lecture(

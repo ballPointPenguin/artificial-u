@@ -7,7 +7,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from artificial_u.models.core import Professor
+from artificial_u.models.core import Faculty, Professor
 from artificial_u.models.repositories import RepositoryFactory
 from artificial_u.services import DepartmentService, ProfessorService
 from artificial_u.utils import ProfessorNotFoundError
@@ -100,6 +100,17 @@ def voice_service():
     return MagicMock()
 
 
+@pytest.fixture
+def sample_faculties(repository_factory):
+    """Create sample faculties for testing."""
+    faculties = {}
+    for name in ["Engineering", "Science", "Arts", "Business", "Testing"]:
+        faculty = Faculty(name=name, description=f"The {name} faculty.")
+        faculty = repository_factory.faculty.create(faculty)
+        faculties[name] = faculty.id
+    return faculties
+
+
 @pytest.mark.integration
 class TestProfessorService:
     """Integration tests for ProfessorService."""
@@ -163,19 +174,21 @@ class TestProfessorService:
         assert retrieved.name == "Dr. Jane A. Smith"
         assert retrieved.title == "Associate Professor"
 
-    def test_list_professors(self, professor_service, department_service):
+    def test_list_professors(
+        self, professor_service, department_service, repository_factory, sample_faculties
+    ):
         """Test listing professors with/without filters."""
         # First create departments for our professors
         dept1 = department_service.create_department(
             name="Computer Science",
             code="CS",
-            faculty="Engineering",
+            faculty_id=sample_faculties["Engineering"],
         )
 
         dept2 = department_service.create_department(
             name="Information Security",
             code="ISEC",
-            faculty="Engineering",
+            faculty_id=sample_faculties["Engineering"],
         )
 
         # Create professors with the real department IDs

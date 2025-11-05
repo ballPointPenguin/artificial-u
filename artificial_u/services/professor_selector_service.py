@@ -166,9 +166,13 @@ class ProfessorSelectorService:
         """
         try:
             # Generate selection prompt
+            from artificial_u.models.converters import enrich_department_dict_with_faculty
+
             prompt = get_professor_selection_prompt(
                 course_attributes=course_attributes,
-                department_data=department_model_to_dict(department),
+                department_data=enrich_department_dict_with_faculty(
+                    department_model_to_dict(department), self.repository_factory
+                ),
                 existing_professors=existing_professors,
             )
 

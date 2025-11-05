@@ -25,6 +25,41 @@ def department_model_to_dict(department: Optional[Department]) -> Dict[str, Any]
     return department.model_dump(exclude_none=True)
 
 
+def enrich_department_dict_with_faculty(
+    department_dict: Dict[str, Any], repository_factory
+) -> Dict[str, Any]:
+    """Enrich a department dictionary with faculty name if faculty_id is present.
+
+    Args:
+        department_dict: Department dictionary (may have faculty_id)
+        repository_factory: Repository factory to look up faculty
+
+    Returns:
+        Enriched dictionary with faculty_name added if faculty_id exists
+    """
+    if not department_dict:
+        return department_dict
+
+    # If faculty_name already exists, don't overwrite
+    if "faculty_name" in department_dict or "faculty" in department_dict:
+        return department_dict
+
+    # Load faculty name if faculty_id is present
+    faculty_id = department_dict.get("faculty_id")
+    if faculty_id:
+        try:
+            faculty = repository_factory.faculty.get(faculty_id)
+            if faculty:
+                department_dict["faculty_name"] = faculty.name
+                # Also add 'faculty' for backward compatibility with XML converters
+                department_dict["faculty"] = faculty.name
+        except Exception:
+            # If faculty lookup fails, just continue without faculty name
+            pass
+
+    return department_dict
+
+
 def course_model_to_dict(course: Optional[Course]) -> Dict[str, Any]:
     """Convert Course Pydantic model to dictionary."""
     if not course:
@@ -132,19 +167,30 @@ def professors_to_xml(professors: List[Dict[str, str]]) -> str:
 
 
 def department_to_xml(department_data: dict, missing_marker: str = "[GENERATE]") -> str:
-    """Format department data (dict) into XML for prompts."""
+    """Format department data (dict) into XML for prompts.
+
+    Supports both 'faculty' (string name) and 'faculty_name' fields.
+    If neither is present but 'faculty_id' exists, faculty will be marked as [GENERATE].
+    """
     if not department_data:
         # Consistent with format_department_xml in prompts/courses.py
         return "<department>[GENERATE]</department>"
     lines = ["<department>"]
     # Fields relevant for course generation prompt context
-    fields = ["name", "code", "faculty", "description"]
+    # Support both 'faculty' and 'faculty_name' for backward compatibility
+    faculty_value = department_data.get("faculty") or department_data.get("faculty_name")
+    fields = ["name", "code", "description"]
     for field in fields:
         value = department_data.get(field)
         if value:
             lines.append(f"  <{field}>{value}</{field}>")
         else:
             lines.append(f"  <{field}>{missing_marker}</{field}>")
+    # Handle faculty separately
+    if faculty_value:
+        lines.append(f"  <faculty>{faculty_value}</faculty>")
+    else:
+        lines.append(f"  <faculty>{missing_marker}</faculty>")
     lines.append("</department>")
     return "\n".join(lines)
 
@@ -154,7 +200,7 @@ def departments_to_xml(departments: List[Dict[str, str]]) -> str:
 
     Args:
         departments: List of department dictionaries containing 'id', 'name',
-                    'code', and 'faculty' keys.
+                    'code', and optionally 'faculty' or 'faculty_name' keys.
     """
     if not departments:
         return "<no_existing_departments />"
@@ -164,7 +210,9 @@ def departments_to_xml(departments: List[Dict[str, str]]) -> str:
         lines.append(f"    <id>{dept.get('id', '')}</id>")
         lines.append(f"    <name>{dept.get('name', '')}</name>")
         lines.append(f"    <code>{dept.get('code', '')}</code>")
-        lines.append(f"    <faculty>{dept.get('faculty', '')}</faculty>")
+        # Support both 'faculty' and 'faculty_name' for backward compatibility
+        faculty_value = dept.get("faculty") or dept.get("faculty_name") or ""
+        lines.append(f"    <faculty>{faculty_value}</faculty>")
         lines.append("  </department>")
     lines.append("</existing_departments>")
     return "\n".join(lines)
@@ -298,13 +346,19 @@ def partial_department_to_xml(
         str: XML representation of the department
     """
     lines = ["<department>"]
-    fields = ["name", "code", "faculty", "description"]
-    for field in fields:
+    # Handle name, code, description normally
+    for field in ["name", "code", "description"]:
         value = partial_attrs.get(field)
         if value is not None and value != generate_marker:
             lines.append(f"  <{field}>{str(value)}</{field}>")
         else:
             lines.append(f"  <{field}>{generate_marker}</{field}>")
+    # Handle faculty separately - support both 'faculty' and 'faculty_name'
+    faculty_value = partial_attrs.get("faculty") or partial_attrs.get("faculty_name")
+    if faculty_value is not None and faculty_value != generate_marker:
+        lines.append(f"  <faculty>{str(faculty_value)}</faculty>")
+    else:
+        lines.append(f"  <faculty>{generate_marker}</faculty>")
     lines.append("</department>")
     return "\n".join(lines)
 

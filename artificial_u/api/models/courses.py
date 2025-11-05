@@ -84,7 +84,8 @@ class DepartmentBrief(BaseModel):
     id: int = Field(..., description="Department ID")
     name: str = Field(..., description="Department name")
     code: str = Field(..., description="Department code")
-    faculty: str = Field(..., description="Faculty name")
+    faculty_id: Optional[int] = Field(None, description="Faculty ID")
+    faculty_name: Optional[str] = Field(None, description="Faculty name")
 
 
 # Course response model

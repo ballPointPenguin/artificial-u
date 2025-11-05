@@ -10,7 +10,10 @@ import logging
 from typing import Any, Dict
 
 from artificial_u.config import get_settings
-from artificial_u.models.converters import department_model_to_dict
+from artificial_u.models.converters import (
+    department_model_to_dict,
+    enrich_department_dict_with_faculty,
+)
 from artificial_u.models.repositories.factory import RepositoryFactory
 from artificial_u.prompts.selection import get_department_selection_prompt, parse_selection_decision
 from artificial_u.services.content_service import ContentService
@@ -65,7 +68,12 @@ class DepartmentSelectorService:
         try:
             # Get all existing departments
             existing_departments = self.repository_factory.department.list()
-            existing_departments_dicts = [department_model_to_dict(d) for d in existing_departments]
+            existing_departments_dicts = [
+                enrich_department_dict_with_faculty(
+                    department_model_to_dict(d), self.repository_factory
+                )
+                for d in existing_departments
+            ]
 
             # Use AI to decide SELECT or GENERATE
             decision = await self._make_selection_decision(
@@ -91,13 +99,35 @@ class DepartmentSelectorService:
                     freeform_prompt=freeform_prompt
                 )
 
+                # Handle faculty: look up by name or create if needed
+                faculty_id = None
+                if department_attrs.get("faculty"):
+                    faculty_name = department_attrs["faculty"]
+                    # Try to find existing faculty by name
+                    faculty = self.repository_factory.faculty.get_by_name(faculty_name)
+                    if faculty:
+                        faculty_id = faculty.id
+                    else:
+                        # Create new faculty if it doesn't exist
+                        from artificial_u.models.core import Faculty
+
+                        new_faculty = Faculty(
+                            name=faculty_name,
+                            description=f"The {faculty_name} faculty.",
+                        )
+                        created_faculty = self.repository_factory.faculty.create(new_faculty)
+                        faculty_id = created_faculty.id
+                        self.logger.info(
+                            f"Created new faculty '{faculty_name}' with ID: {faculty_id}"
+                        )
+
                 # Create the department using the core service
                 from artificial_u.models.core import Department
 
                 department = Department(
                     name=department_attrs["name"],
                     code=department_attrs["code"],
-                    faculty=department_attrs["faculty"],
+                    faculty_id=faculty_id,
                     description=department_attrs["description"],
                 )
 
