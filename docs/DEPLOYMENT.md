@@ -143,7 +143,11 @@ To enable the workflow to securely authenticate with your AWS account, you need 
 
     Replace `YOUR_AWS_ACCOUNT_ID`, `your-github-org`, and `your-repo-name`.
 
-3. **Create a GitHub Secret.** In your GitHub repository settings, go to `Secrets and variables` > `Actions` and create a new repository secret named `AWS_ROLE_ARN`. The value should be the ARN of the IAM role you just created.
+3. **Create GitHub Secrets.** In your GitHub repository settings, go to `Secrets and variables` > `Actions` and create the following repository secrets:
+   - `AWS_ROLE_ARN`: The ARN of the IAM role you just created
+   - `VITE_AUTH0_DOMAIN`: Your Auth0 domain (e.g., `your-domain.auth0.com`)
+   - `VITE_AUTH0_CLIENT_ID`: Your Auth0 application client ID
+   - `VITE_AUTH0_AUDIENCE`: Your Auth0 API audience/identifier
 
 Once these steps are complete, any push to `prod` will automatically trigger a deployment.
 
