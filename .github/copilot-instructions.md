@@ -9,6 +9,7 @@ ArtificialU is an AI-powered educational content platform that generates univers
 ### Technology Stack
 
 **Backend:**
+
 - Python 3.13+ with FastAPI
 - PostgreSQL with SQLAlchemy ORM
 - Hatch for environment management
@@ -18,6 +19,7 @@ ArtificialU is an AI-powered educational content platform that generates univers
 - Background jobs: Custom async worker with PostgreSQL-backed queue
 
 **Frontend:**
+
 - SolidJS with TypeScript
 - TailwindCSS v4
 - Auth0 for authentication
@@ -193,6 +195,7 @@ When adding new API endpoints:
 7. Write integration tests in `tests/integration/api/`
 
 **API Response Standards:**
+
 - Use proper HTTP status codes
 - Include pagination for list endpoints
 - Handle errors with standardized error responses
@@ -266,6 +269,7 @@ When adding frontend features:
 ## Environment Variables
 
 **Backend** (`.env` file):
+
 - `ANTHROPIC_API_KEY`: Anthropic Claude API key
 - `ELEVENLABS_API_KEY`: ElevenLabs TTS API key
 - `DATABASE_URL`: PostgreSQL connection string
@@ -273,6 +277,7 @@ When adding frontend features:
 - `MINIO_*` or `AWS_*`: Storage configuration
 
 **Frontend** (`.env.local` in `web/` directory):
+
 - Auth0 configuration
 - API URL configuration
 

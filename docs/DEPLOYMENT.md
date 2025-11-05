@@ -40,7 +40,7 @@ Before deploying, ensure you have the following installed and configured:
     npm install -g aws-cdk
     ```
 
-4. **Python 3.11+ and Hatch**: For managing the Python environment. [[memory:6174773]]
+4. **Python 3.13+ and Hatch**: For managing the Python environment. [[memory:6174773]]
 5. **Docker**: The CDK will use Docker to build the API container image locally before pushing it to ECR.
 
 ---

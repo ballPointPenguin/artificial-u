@@ -474,7 +474,3 @@ export interface JobResponse {
   run_after?: string
   message?: string
 }
-
-// Course export types
-export interface CourseExportResponse extends JobResponse {
-}
