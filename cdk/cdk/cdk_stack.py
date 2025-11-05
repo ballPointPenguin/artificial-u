@@ -304,7 +304,7 @@ class CdkStack(Stack):
             sources=[
                 s3_deployment.Source.asset(
                     "../web/dist",
-                    include=["index.html"],
+                    exclude=["assets", "assets/*", "favicon.svg"],
                 )
             ],
             destination_bucket=frontend_bucket,
