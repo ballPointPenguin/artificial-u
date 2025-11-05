@@ -290,7 +290,7 @@ class CdkStack(Stack):
                 )
             ],
             destination_bucket=frontend_bucket,
-            prune=True,
+            prune=False,  # Don't prune to avoid removing index.html
             distribution=distribution,
             distribution_paths=["/assets/*", "/favicon.svg"],
             cache_control=[
@@ -304,11 +304,11 @@ class CdkStack(Stack):
             sources=[
                 s3_deployment.Source.asset(
                     "../web/dist",
-                    exclude=["assets", "assets/*", "favicon.svg"],
+                    exclude=["assets/**", "favicon.svg"],
                 )
             ],
             destination_bucket=frontend_bucket,
-            prune=False,
+            prune=False,  # Don't prune to avoid removing assets
             distribution=distribution,
             distribution_paths=["/", "/index.html", "/*"],
             cache_control=[
