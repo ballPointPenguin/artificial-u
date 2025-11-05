@@ -308,7 +308,7 @@ class CdkStack(Stack):
                 )
             ],
             destination_bucket=frontend_bucket,
-            prune=False,
+            prune=False,  # Don't prune to avoid removing assets
             distribution=distribution,
             distribution_paths=["/", "/index.html", "/*"],
             cache_control=[
