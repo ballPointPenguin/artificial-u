@@ -28,6 +28,7 @@ def parse_args():
     parser = argparse.ArgumentParser(description="Initialize PostgreSQL database for ArtificialU")
     parser.add_argument("--db-url", help="PostgreSQL connection URL")
     parser.add_argument("--yes", "-y", action="store_true", help="Skip confirmation prompt")
+    parser.add_argument("--no-seed", action="store_true", help="Skip seeding default data")
     return parser.parse_args()
 
 
@@ -129,6 +130,18 @@ def main():
     # Run migrations
     if not run_alembic_migrations(db_url, logger):
         sys.exit(1)
+
+    # Optionally seed data
+    if not args.no_seed:
+        try:
+            from scripts.seed_data import seed_faculties
+
+            logger.info("Seeding default faculties")
+            seed_faculties(db_url=db_url)
+            logger.info("Seeding completed")
+        except Exception as e:
+            logger.error(f"Error during seeding: {e}")
+            sys.exit(1)
 
     logger.info("Database initialized successfully!")
 
