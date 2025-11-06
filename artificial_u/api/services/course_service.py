@@ -523,8 +523,10 @@ class CourseApiService(BaseApiService[CoreCourse, CourseResponse, CoursesListRes
             return CourseLecturesResponse(course_id=course_id, lectures=[], total=0)
         except DatabaseError as e:
             self._handle_database_error("get course lectures", e)
+            raise  # Unreachable, but makes control flow explicit
         except Exception as e:
             self._handle_general_error("get course lectures", e)
+            raise  # Unreachable, but makes control flow explicit
 
     async def generate_course(self, generation_data: CourseGenerate) -> GeneratedCourseData:
         """

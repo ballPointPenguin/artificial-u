@@ -95,31 +95,28 @@ class DepartmentSelectorService:
                 freeform_prompt = decision["reasoning"] or course_attributes["description"]
 
                 # Delegate to existing generator service
+                # Note: generate_department already handles faculty lookup and conversion
+                # It will raise ContentGenerationError if faculty is not found
                 department_attrs = await self.department_generator_service.generate_department(
                     freeform_prompt=freeform_prompt
                 )
 
-                # Handle faculty: look up by name or create if needed
-                faculty_id = None
-                if department_attrs.get("faculty"):
+                # Verify faculty_id is set (should be handled by generator service)
+                # If faculty name was provided but not found, generator service should have raised an error
+                faculty_id = department_attrs.get("faculty_id")
+                if department_attrs.get("faculty") and not faculty_id:
+                    # This should not happen if generator service is working correctly,
+                    # but provide a helpful error message just in case
                     faculty_name = department_attrs["faculty"]
-                    # Try to find existing faculty by name
-                    faculty = self.repository_factory.faculty.get_by_name(faculty_name)
-                    if faculty:
-                        faculty_id = faculty.id
-                    else:
-                        # Create new faculty if it doesn't exist
-                        from artificial_u.models.core import Faculty
-
-                        new_faculty = Faculty(
-                            name=faculty_name,
-                            description=f"The {faculty_name} faculty.",
-                        )
-                        created_faculty = self.repository_factory.faculty.create(new_faculty)
-                        faculty_id = created_faculty.id
-                        self.logger.info(
-                            f"Created new faculty '{faculty_name}' with ID: {faculty_id}"
-                        )
+                    existing_faculties = self.repository_factory.faculty.list()
+                    available_faculty_names = [f.name for f in existing_faculties]
+                    error_msg = (
+                        f"Faculty '{faculty_name}' not found in existing faculties. "
+                        f"Faculties must be selected from existing options only. "
+                        f"Available faculties: {', '.join(available_faculty_names)}"
+                    )
+                    self.logger.error(error_msg)
+                    raise ContentGenerationError(error_msg)
 
                 # Create the department using the core service
                 from artificial_u.models.core import Department

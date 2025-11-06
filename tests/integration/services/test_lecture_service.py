@@ -7,7 +7,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from artificial_u.models.core import Faculty, Professor
+from artificial_u.models.core import Professor
 from artificial_u.models.repositories.factory import RepositoryFactory
 from artificial_u.services import (
     CourseService,

@@ -32,15 +32,16 @@ Instructions:
 - Ensure that both <name> and <code> are unique compared to those listed under
   <existing_departments> (case-insensitive check).
 - <code> must be a short, memorable abbreviation (2-8 uppercase letters).
-- <faculty> should be selected from the <existing_faculties> list below.
+- <faculty> MUST be selected from the <existing_faculties> list below.
+  You CANNOT create new faculties - only select from the existing options.
   Choose the most appropriate faculty based on the department's focus.
   Use the exact faculty name as it appears in the list.
 - <description> should be clear, concise, and informative about the department's focus.
 
 After generating the profile, validate that <name> and <code> are unique,
-that <faculty> matches one from the existing faculties list,
+that <faculty> exactly matches one from the existing faculties list (case-sensitive),
 and that all output fields meet requirements. If validation fails, self-correct and
-regenerate the output.
+regenerate the output. Remember: you can only select from existing faculties, never create new ones.
 {{existing_departments_xml}}
 
 {{existing_faculties_xml}}

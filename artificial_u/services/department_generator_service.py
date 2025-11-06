@@ -6,7 +6,7 @@ separated from the core CRUD operations in DepartmentService.
 """
 
 import logging
-from typing import Dict, Optional
+from typing import Dict, List, Optional
 
 from artificial_u.config import get_settings
 from artificial_u.models.converters import (
@@ -113,7 +113,7 @@ class DepartmentGeneratorService:
 
     # --- Helper Methods for Generation --- #
 
-    def _prepare_existing_departments_data(self, partial_attributes: Dict) -> list[Dict]:
+    def _prepare_existing_departments_data(self, partial_attributes: Dict) -> List[Dict]:
         """Prepare existing departments data for prompt context.
 
         Fetches all departments, filters out the current one if editing,
@@ -146,7 +146,7 @@ class DepartmentGeneratorService:
 
         return existing_departments_dicts
 
-    def _prepare_existing_faculties_data(self) -> list[Dict]:
+    def _prepare_existing_faculties_data(self) -> List[Dict]:
         """Prepare existing faculties data for prompt context.
 
         Returns:
@@ -199,8 +199,8 @@ class DepartmentGeneratorService:
 
     async def _generate_and_parse_content(
         self,
-        existing_departments_dicts: list[Dict],
-        existing_faculties_dicts: list[Dict],
+        existing_departments_dicts: List[Dict],
+        existing_faculties_dicts: List[Dict],
         partial_attributes: Dict,
         freeform_prompt: Optional[str],
     ) -> Dict:
@@ -252,7 +252,7 @@ class DepartmentGeneratorService:
     def _convert_faculty_name_to_id(
         self,
         department_attrs: Dict,
-        existing_faculties_dicts: list[Dict],
+        existing_faculties_dicts: List[Dict],
         partial_attributes: Dict,
     ) -> None:
         """Convert faculty name to faculty_id in department attributes.
