@@ -94,7 +94,7 @@ const ProfessorsList: Component<{
                       {(imageUrl) => (
                         <img
                           src={imageUrl()}
-                          alt={`Image of ${professor.name}`}
+                          alt={professor.name}
                           class="w-12 h-12 object-cover rounded-sm border border-parchment-500/20 flex-shrink-0"
                         />
                       )}
@@ -189,8 +189,8 @@ const DepartmentDetail = () => {
       }
 
       await departmentService.deleteDepartment(id)
-      // Navigate back to departments list after deletion
-      navigate('/departments')
+      // Navigate back to academics list after deletion
+      navigate('/academics')
     } catch (error) {
       setError(error instanceof Error ? error.message : 'Failed to delete department')
       setIsDeleting(false)
@@ -203,8 +203,8 @@ const DepartmentDetail = () => {
     <div class="container mx-auto px-4 py-8">
       {/* Breadcrumb navigation - Use theme colors */}
       <div class="mb-6">
-        <A href="/departments" class="text-mystic-500 hover:text-mystic-300">
-          ← Back to Departments
+        <A href="/academics" class="text-mystic-500 hover:text-mystic-300">
+          ← Back to Academics
         </A>
       </div>
 

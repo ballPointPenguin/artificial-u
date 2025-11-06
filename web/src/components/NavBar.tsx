@@ -49,10 +49,10 @@ export function NavBar() {
               About
             </A>
             <A
-              href="/departments"
+              href="/academics"
               class="text-parchment-200 hover:text-parchment-100 tracking-wide font-serif uppercase text-shadow-golden text-sm"
             >
-              Departments
+              Academics
             </A>
             <A
               href="/professors"
@@ -157,11 +157,11 @@ export function NavBar() {
               About
             </A>
             <A
-              href="/departments"
+              href="/academics"
               class="block text-parchment-200 hover:text-parchment-100 py-2 tracking-wide font-serif uppercase text-sm"
               onClick={toggleMobileMenu}
             >
-              Departments
+              Academics
             </A>
             <A
               href="/professors"

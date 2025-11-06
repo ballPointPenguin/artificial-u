@@ -7,6 +7,7 @@ import Layout from './components/Layout'
 // Lazily load page components
 const Home = lazy(() => import('./pages/Home'))
 const About = lazy(() => import('./pages/About'))
+const Academics = lazy(() => import('./pages/Academics'))
 const Departments = lazy(() => import('./pages/Departments'))
 const DepartmentDetail = lazy(() => import('./pages/DepartmentDetail'))
 const Professors = lazy(() => import('./pages/Professors'))
@@ -27,6 +28,7 @@ const App: Component = () => {
     <Route path="/" component={Layout}>
       <Route path="/" component={Home} />
       <Route path="/about" component={About} />
+      <Route path="/academics" component={Academics} />
       <Route path="/stylebook" component={Stylebook} />
       <Route path="/login" component={Login} />
 
