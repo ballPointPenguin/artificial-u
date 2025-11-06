@@ -79,6 +79,27 @@ class DepartmentApiService(
             logger=self.logger,
         )
 
+    def _enrich_department_with_faculty(self, department: CoreDepartment) -> DepartmentResponse:
+        """
+        Enrich a department with faculty_name from faculty_id.
+
+        Args:
+            department: Core department model
+
+        Returns:
+            DepartmentResponse with faculty_name populated
+        """
+        faculty_name = None
+        if department.faculty_id:
+            faculty = self.repository_factory.faculty.get(department.faculty_id)
+            if faculty:
+                faculty_name = faculty.name
+
+        # Create response model with faculty_name
+        department_dict = department.model_dump()
+        department_dict["faculty_name"] = faculty_name
+        return DepartmentResponse.model_validate(department_dict)
+
     def get_departments(
         self,
         page: int = 1,
@@ -98,21 +119,38 @@ class DepartmentApiService(
         Returns:
             DepartmentsListResponse with paginated departments
         """
-        # Build filters dictionary (for in-memory filtering)
-        filters = {}
-        if name:
-            filters["name"] = name
+        try:
+            # Get all departments from core service
+            all_departments = self.core_service.list_departments(faculty_id=faculty_id)
 
-        # Pass faculty_id as kwarg to core service method
-        return self._standard_list_operation(
-            core_service_method="list_departments",
-            response_class=DepartmentResponse,
-            list_response_class=DepartmentsListResponse,
-            page=page,
-            size=size,
-            filters=filters,
-            faculty_id=faculty_id,  # Pass as kwarg to core service
-        )
+            # Apply name filter if provided
+            if name:
+                all_departments = [d for d in all_departments if name.lower() in d.name.lower()]
+
+            # Count total before pagination
+            total = len(all_departments)
+
+            # Apply pagination
+            start_idx = (page - 1) * size
+            end_idx = start_idx + size
+            paginated_departments = all_departments[start_idx:end_idx]
+
+            # Enrich departments with faculty_name
+            response_items = [
+                self._enrich_department_with_faculty(dept) for dept in paginated_departments
+            ]
+
+            # Create and return list response
+            pages = self._calculate_pages(total, size)
+            return DepartmentsListResponse(
+                items=response_items,
+                total=total,
+                page=page,
+                size=size,
+                pages=pages,
+            )
+        except Exception as e:
+            self._handle_general_error("list departments", e)
 
     def get_department(self, department_id: int) -> Optional[DepartmentResponse]:
         """
@@ -126,7 +164,9 @@ class DepartmentApiService(
         """
         try:
             department = self.core_service.get_department(department_id)
-            return DepartmentResponse.model_validate(department.model_dump())
+            if not department:
+                return None
+            return self._enrich_department_with_faculty(department)
         except Exception:
             return None
 
@@ -142,7 +182,9 @@ class DepartmentApiService(
         """
         try:
             department = self.core_service.get_department_by_code(code)
-            return DepartmentResponse.model_validate(department.model_dump())
+            if not department:
+                return None
+            return self._enrich_department_with_faculty(department)
         except Exception:
             return None
 
@@ -165,8 +207,8 @@ class DepartmentApiService(
                 description=department_data.description,
             )
 
-            # Convert to response model
-            return DepartmentResponse.model_validate(department.model_dump())
+            # Enrich with faculty_name
+            return self._enrich_department_with_faculty(department)
         except Exception as e:
             self._handle_general_error("create department", e)
 
@@ -189,7 +231,9 @@ class DepartmentApiService(
                 department_id=department_id,
                 update_data=department_data.model_dump(exclude_unset=True),
             )
-            return DepartmentResponse.model_validate(department.model_dump())
+            if not department:
+                return None
+            return self._enrich_department_with_faculty(department)
         except Exception:
             return None
 
@@ -332,6 +376,15 @@ class DepartmentApiService(
             # Convert the dictionary to the API response model
             # Add placeholder ID and validate
             generated_dict["id"] = -1  # Placeholder for validation
+
+            # Enrich with faculty_name if faculty_id is present
+            faculty_name = None
+            if generated_dict.get("faculty_id"):
+                faculty = self.repository_factory.faculty.get(generated_dict["faculty_id"])
+                if faculty:
+                    faculty_name = faculty.name
+            generated_dict["faculty_name"] = faculty_name
+
             response = DepartmentResponse.model_validate(generated_dict)
 
             self.logger.info(f"Successfully generated department data: {response.name}")

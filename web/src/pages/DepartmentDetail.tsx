@@ -160,16 +160,12 @@ const DepartmentDetail = () => {
         throw new Error('Invalid department ID')
       }
 
+      const facultyIdStr = formData.get('faculty_id') as string | null
       const updatedDepartmentData: DepartmentUpdate = {
         name: formData.get('name') as string,
         code: formData.get('code') as string,
-        faculty: formData.get('faculty') as string | null,
+        faculty_id: facultyIdStr ? Number.parseInt(facultyIdStr, 10) : null,
         description: formData.get('description') as string,
-      }
-
-      // Ensure faculty is null if it's an empty string and API expects null for updates
-      if (updatedDepartmentData.faculty === '') {
-        updatedDepartmentData.faculty = null
       }
 
       await departmentService.updateDepartment(id, updatedDepartmentData)
@@ -292,7 +288,7 @@ const DepartmentDetail = () => {
                       </div>
                       <div>
                         <h3 class="font-medium text-parchment-400">Faculty</h3>
-                        <p>{dept.faculty}</p>
+                        <p>{dept.faculty_name || 'N/A'}</p>
                       </div>
                     </div>
                   </div>

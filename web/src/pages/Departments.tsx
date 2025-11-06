@@ -48,15 +48,12 @@ const DepartmentsPage = () => {
     setFormError('')
 
     try {
+      const facultyIdStr = formData.get('faculty_id') as string | null
       const newDepartment: DepartmentCreate = {
         name: formData.get('name') as string,
         code: formData.get('code') as string,
-        faculty: formData.get('faculty') as string | null,
+        faculty_id: facultyIdStr ? Number.parseInt(facultyIdStr, 10) : null,
         description: formData.get('description') as string,
-      }
-
-      if (newDepartment.faculty === '') {
-        newDepartment.faculty = null
       }
 
       await departmentService.createDepartment(newDepartment)

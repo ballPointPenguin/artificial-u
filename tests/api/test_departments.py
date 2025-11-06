@@ -18,6 +18,12 @@ from artificial_u.api.models.departments import (
     ProfessorBrief,
 )
 
+# Mock faculty names for testing (simulating faculty lookup)
+MOCK_FACULTY_NAMES = {
+    1: "Test Faculty 1",
+    2: "Test Faculty 2",
+}
+
 # Use base data structures to define mock responses
 sample_departments_base = [
     DepartmentResponse(
@@ -25,6 +31,7 @@ sample_departments_base = [
         name=f"Test Department {i}",
         code=f"TD{i}",
         faculty_id=i % 2 + 1,
+        faculty_name=MOCK_FACULTY_NAMES.get(i % 2 + 1),
         description=f"Description for department {i}",
     )
     for i in range(1, 4)
@@ -90,14 +97,26 @@ def mock_api_service(monkeypatch):
     # CREATE Department
     def _mock_create_department(dept_data: DepartmentCreate):
         new_id = 4  # Simulate next ID
-        return DepartmentResponse(id=new_id, **dept_data.model_dump())
+        # Simulate faculty_name enrichment (as the real service would do)
+        faculty_name = (
+            MOCK_FACULTY_NAMES.get(dept_data.faculty_id) if dept_data.faculty_id else None
+        )
+        dept_dict = dept_data.model_dump()
+        dept_dict["faculty_name"] = faculty_name
+        return DepartmentResponse(id=new_id, **dept_dict)
 
     mock_service["create_department"].side_effect = _mock_create_department
 
     # UPDATE Department
     def _mock_update_department(dept_id: int, dept_data: DepartmentUpdate):
         if dept_id == 1:
-            return DepartmentResponse(id=dept_id, **dept_data.model_dump())
+            # Simulate faculty_name enrichment (as the real service would do)
+            faculty_name = (
+                MOCK_FACULTY_NAMES.get(dept_data.faculty_id) if dept_data.faculty_id else None
+            )
+            dept_dict = dept_data.model_dump()
+            dept_dict["faculty_name"] = faculty_name
+            return DepartmentResponse(id=dept_id, **dept_dict)
         return None  # Simulate not found
 
     mock_service["update_department"].side_effect = _mock_update_department
@@ -334,8 +353,12 @@ def test_create_department(client: TestClient, mock_api_service):
         "faculty_id": 1,
         "description": "A brand new department",
     }
-    # Mock configured to return ID 4
-    expected_response_data = {"id": 4, **new_department_data}
+    # Mock configured to return ID 4 with faculty_name enriched
+    expected_response_data = {
+        "id": 4,
+        **new_department_data,
+        "faculty_name": MOCK_FACULTY_NAMES.get(1),  # faculty_id 1 -> "Test Faculty 1"
+    }
 
     response = client.post("/api/v1/departments", json=new_department_data)
 
@@ -358,8 +381,12 @@ def test_update_department(client: TestClient, mock_api_service):
         "faculty_id": 2,
         "description": "An updated department description",
     }
-    # Mock configured to return updated data for ID 1
-    expected_response_data = {"id": 1, **update_data}
+    # Mock configured to return updated data for ID 1 with faculty_name enriched
+    expected_response_data = {
+        "id": 1,
+        **update_data,
+        "faculty_name": MOCK_FACULTY_NAMES.get(2),  # faculty_id 2 -> "Test Faculty 2"
+    }
 
     # Test with valid ID
     response = client.put("/api/v1/departments/1", json=update_data)

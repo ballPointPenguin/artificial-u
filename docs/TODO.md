@@ -38,6 +38,8 @@
 - [x] Jobs UI Page for Admin
 - [x] Display created_by and created_with attributions
 - [x] Privelges for admin scope
+- [x] Organize Depeartments under Faculties
+- [ ] Seed Data for Faculties and Departments
 - [ ] Browser Notifications for jobs
 - [ ] Include word-count in summary or somewhere
 - [ ] Action buttons on Topics List
@@ -68,7 +70,6 @@
 - [ ] Advanced ElevenLabs voice controls
 - [ ] Volume normalization
 - [ ] Web-based audio player with playlists
-- [ ] Organize Depeartments under Faculties
 - [ ] Lecture Configuration Options
 - [ ] Model Selection UI
 - [ ] Consider utilizing some Ollama models in production

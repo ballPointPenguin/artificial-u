@@ -1,13 +1,25 @@
-import { createEffect, createSignal, type JSX, Show } from 'solid-js'
+import { createEffect, createResource, createSignal, type JSX, Show } from 'solid-js'
 import { departmentService } from '../../api/services/department-service.js'
+import { facultyService } from '../../api/services/faculty-service.js'
 import type { Department, DepartmentGenerateRequest } from '../../api/types.js'
-import { Alert, Button, Form, FormActions, FormField, Input, MagicButton, Textarea } from '../ui'
+import {
+  Alert,
+  Button,
+  Form,
+  FormActions,
+  FormField,
+  Input,
+  MagicButton,
+  Select,
+  Textarea,
+} from '../ui'
+import type { SelectOption } from '../ui/Select'
 
 // Form data interface matching the API model
 interface DepartmentFormData {
   name: string
   code: string
-  faculty: string | null // Allow null to match API type, input will use ''
+  faculty_id: number | null // Faculty ID instead of string
   description: string | null // Changed from string to string | null
 }
 
@@ -26,17 +38,20 @@ const DepartmentForm = (props: DepartmentFormProps) => {
   const [formData, setFormData] = createSignal<DepartmentFormData>({
     name: '',
     code: '',
-    faculty: '', // Initialize with empty string for input compatibility
-    description: '', // Initialize with empty string for input compatibility
+    faculty_id: null,
+    description: '',
   })
+
+  // Load faculties for the dropdown
+  const [faculties] = createResource(() => facultyService.listFaculties())
 
   // Keep formData in sync with props.department (for edit mode)
   createEffect(() => {
     setFormData({
       name: props.department?.name || '',
       code: props.department?.code || '',
-      faculty: props.department?.faculty || '', // Default null to empty string for input
-      description: props.department?.description || '', // Default null to empty string for input
+      faculty_id: props.department?.faculty_id || null,
+      description: props.department?.description || '',
     })
   })
 
@@ -53,8 +68,8 @@ const DepartmentForm = (props: DepartmentFormProps) => {
       newErrors.code = 'Code must be between 2 and 10 characters'
     }
 
-    if (!currentData.faculty || currentData.faculty.trim() === '') {
-      newErrors.faculty = 'Faculty is required'
+    if (!currentData.faculty_id) {
+      newErrors.faculty_id = 'Faculty is required'
     }
 
     if (!currentData.description || currentData.description.trim() === '') {
@@ -66,22 +81,23 @@ const DepartmentForm = (props: DepartmentFormProps) => {
   }
 
   // Unified input handler using onChange from new components
-  const handleInputChange = (fieldName: keyof DepartmentFormData, value: string) => {
+  const handleInputChange = (fieldName: 'name' | 'code' | 'description', value: string) => {
     setFormData((prev) => ({ ...prev, [fieldName]: value }))
   }
 
   const handleSubmit: JSX.EventHandler<HTMLFormElement, SubmitEvent> = () => {
-    // event.preventDefault() // Form component handles this if onSubmit is provided
-    // const form = event.currentTarget // No longer need to get form element directly for FormData
-
     if (validateForm(formData())) {
       // Construct FormData object from the signal for submission
       const formSubmissionData = new FormData()
-      Object.entries(formData()).forEach(([key, value]) => {
-        if (value !== null) {
-          formSubmissionData.append(key, value as string)
-        }
-      })
+      const data = formData()
+      formSubmissionData.append('name', data.name)
+      formSubmissionData.append('code', data.code)
+      if (data.faculty_id !== null) {
+        formSubmissionData.append('faculty_id', String(data.faculty_id))
+      }
+      if (data.description !== null) {
+        formSubmissionData.append('description', data.description)
+      }
       props.onSubmit(formSubmissionData)
     }
   }
@@ -105,10 +121,8 @@ const DepartmentForm = (props: DepartmentFormProps) => {
         partial_attributes: {
           name: currentData.name,
           code: currentData.code,
-          // Ensure faculty and description are string or undefined for the API
-          faculty: currentData.faculty === '' ? undefined : currentData.faculty || undefined,
-          description:
-            currentData.description === '' ? undefined : currentData.description || undefined,
+          faculty_id: currentData.faculty_id || undefined,
+          description: currentData.description || undefined,
         },
         // Include department ID if editing an existing department
         ...(props.department?.id && { department_id: props.department.id }),
@@ -117,8 +131,8 @@ const DepartmentForm = (props: DepartmentFormProps) => {
       setFormData({
         name: generated.name,
         code: generated.code,
-        faculty: generated.faculty || '', // Ensure input gets a string
-        description: generated.description || '', // Ensure input gets a string
+        faculty_id: generated.faculty_id || null,
+        description: generated.description || '',
       })
     } catch (err: unknown) {
       let message = 'Failed to generate department'
@@ -140,11 +154,21 @@ const DepartmentForm = (props: DepartmentFormProps) => {
     setFormData({
       name: '',
       code: '',
-      faculty: '',
+      faculty_id: null,
       description: '',
     })
     setValidationErrors({})
     setGenerateError(null)
+  }
+
+  // Convert faculties to Select options
+  const facultyOptions = (): SelectOption[] => {
+    const facs = faculties()
+    if (!facs) return []
+    return facs.items.map((faculty) => ({
+      value: faculty.id,
+      label: faculty.name,
+    }))
   }
 
   const isDisabled = () => props.isSubmitting || isGenerating()
@@ -181,16 +205,23 @@ const DepartmentForm = (props: DepartmentFormProps) => {
         />
       </FormField>
 
-      <FormField label="Faculty" name="faculty" required error={validationErrors().faculty}>
-        <Input
-          name="faculty"
-          value={formData().faculty || ''}
-          onChange={(value) => {
-            handleInputChange('faculty', value)
-          }}
-          disabled={isDisabled()}
-          required
-        />
+      <FormField label="Faculty" name="faculty_id" required error={validationErrors().faculty_id}>
+        <Show
+          when={!faculties.loading}
+          fallback={<div class="text-parchment-300">Loading faculties...</div>}
+        >
+          <Select
+            name="faculty_id"
+            value={formData().faculty_id}
+            onChange={(value) => {
+              setFormData((prev) => ({ ...prev, faculty_id: (value as number) || null }))
+            }}
+            options={facultyOptions()}
+            placeholder="Select a faculty"
+            disabled={isDisabled()}
+            required
+          />
+        </Show>
       </FormField>
 
       <FormField

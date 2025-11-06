@@ -53,6 +53,9 @@ class DepartmentResponse(DepartmentBase):
     """Model for department responses."""
 
     id: Optional[int] = Field(None, description="Unique department identifier")
+    faculty_name: Optional[str] = Field(
+        None, description="Faculty name (populated from faculty_id)"
+    )
 
     class Config:
         from_attributes = True

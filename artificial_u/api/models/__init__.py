@@ -44,6 +44,12 @@ from artificial_u.api.models.errors import (
     ErrorResponse,
 )
 
+# Faculty model
+from artificial_u.api.models.faculties import (
+    FacultiesListResponse,
+    FacultyResponse,
+)
+
 # Lecture model
 from artificial_u.api.models.lectures import (
     Lecture,
@@ -117,6 +123,9 @@ __all__ = [
     "DepartmentCourseBrief",
     "DepartmentProfessorsResponse",
     "DepartmentCoursesResponse",
+    # Faculty model
+    "FacultyResponse",
+    "FacultiesListResponse",
     # Professor model
     "ProfessorBase",
     "ProfessorCreate",

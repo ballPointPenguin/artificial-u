@@ -42,7 +42,7 @@ const DepartmentInfo: Component<{
                 >
                   {department.name} ({department.code})
                 </A>
-                <p class="text-parchment-300 mt-1">Faculty: {department.faculty}</p>
+                <p class="text-parchment-300 mt-1">Faculty: {department.faculty_name || 'N/A'}</p>
               </div>
             )
           }}
