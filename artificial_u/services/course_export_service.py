@@ -366,11 +366,19 @@ class CourseExportService:
         if not department:
             return None
 
+        # Load faculty name if faculty_id is present
+        faculty_name = None
+        if department.faculty_id:
+            faculty = self.repository_factory.faculty.get(department.faculty_id)
+            if faculty:
+                faculty_name = faculty.name
+
         return {
             "id": department.id,
             "name": department.name,
             "code": department.code,
-            "faculty": department.faculty,
+            "faculty_id": department.faculty_id,
+            "faculty_name": faculty_name,
             "description": department.description,
             "created_at": department.created_at.isoformat() if department.created_at else None,
             "updated_at": department.updated_at.isoformat() if department.updated_at else None,

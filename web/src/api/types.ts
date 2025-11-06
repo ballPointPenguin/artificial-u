@@ -59,7 +59,8 @@ export interface Course {
     id: number
     name: string
     code: string
-    faculty: string
+    faculty_id: number | null
+    faculty_name: string | null
   } | null
 }
 
@@ -133,21 +134,22 @@ export interface Department {
   id: number
   name: string
   code: string
-  faculty: string | null
+  faculty_id: number | null
+  faculty_name: string | null
   description: string | null
 }
 
 export interface DepartmentCreate {
   name: string
   code: string
-  faculty?: string | null
+  faculty_id?: number | null
   description?: string | null
 }
 
 export interface DepartmentUpdate {
   name: string
   code: string
-  faculty?: string | null
+  faculty_id?: number | null
   description?: string | null
 }
 
@@ -200,7 +202,8 @@ export interface DepartmentBrief {
   id: number
   name: string
   code: string
-  faculty: string
+  faculty_id: number | null
+  faculty_name: string | null
 }
 
 // Lecture types
@@ -394,6 +397,18 @@ export interface TopicList {
 export interface TopicsGenerateRequest {
   course_id: number
   freeform_prompt?: string
+}
+
+// Faculty types
+export interface Faculty {
+  id: number
+  name: string
+  description: string | null
+}
+
+export interface FacultiesListResponse {
+  items: Faculty[]
+  total: number
 }
 
 // Voice types

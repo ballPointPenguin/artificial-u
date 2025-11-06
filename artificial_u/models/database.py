@@ -51,17 +51,30 @@ class CourseModel(Base):
     student = relationship("StudentModel", foreign_keys=[created_by])
 
 
+class FacultyModel(Base):
+    __tablename__ = "faculties"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    name = Column(String, nullable=False, unique=True)
+    description = Column(Text, nullable=True)
+    created_at = Column(DateTime, nullable=False, default=datetime.now)
+    updated_at = Column(DateTime, nullable=False, default=datetime.now)
+
+    departments = relationship("DepartmentModel", back_populates="faculty")
+
+
 class DepartmentModel(Base):
     __tablename__ = "departments"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     name = Column(String, nullable=False, unique=True)
     code = Column(String, nullable=False, unique=True)
-    faculty = Column(String, nullable=True)
+    faculty_id = Column(Integer, ForeignKey("faculties.id"), nullable=True)
     description = Column(Text, nullable=True)
     created_at = Column(DateTime, nullable=False, default=datetime.now)
     updated_at = Column(DateTime, nullable=False, default=datetime.now)
 
+    faculty = relationship("FacultyModel", back_populates="departments")
     professors = relationship("ProfessorModel", back_populates="department")
     courses = relationship("CourseModel", back_populates="department")
 

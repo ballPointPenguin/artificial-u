@@ -41,7 +41,7 @@ router = APIRouter(
 async def list_departments(
     page: int = Query(1, ge=1, description="Page number"),
     size: int = Query(10, ge=1, le=100, description="Items per page"),
-    faculty: Optional[str] = Query(None, description="Filter by faculty"),
+    faculty_id: Optional[int] = Query(None, description="Filter by faculty ID"),
     name: Optional[str] = Query(None, description="Filter by name (partial match)"),
     department_service: DepartmentApiService = Depends(get_department_api_service),
 ):
@@ -50,13 +50,13 @@ async def list_departments(
 
     - **page**: Page number (starting from 1)
     - **size**: Number of items per page (1-100)
-    - **faculty**: Filter by faculty name (exact match)
+    - **faculty_id**: Filter by faculty ID
     - **name**: Filter by department name (partial match)
     """
     return department_service.get_departments(
         page=page,
         size=size,
-        faculty=faculty,
+        faculty_id=faculty_id,
         name=name,
     )
 

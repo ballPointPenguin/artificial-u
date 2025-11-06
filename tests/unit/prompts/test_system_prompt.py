@@ -32,7 +32,7 @@ def test_system_prompt_lecture():
 def test_system_prompt_professor():
     """Test getting professor system prompt."""
     prompt = get_system_prompt("professor")
-    assert "faculty profiles" in prompt
+    assert "educator profiles" in prompt
     assert "XML format" in prompt
 
 

@@ -16,7 +16,7 @@ import type {
 interface ListDepartmentsParams {
   page: number
   size: number
-  faculty?: string
+  faculty_id?: number
   name?: string
 }
 
@@ -26,7 +26,7 @@ export const departmentService = {
       page: params.page.toString(),
       size: params.size.toString(),
     })
-    if (params.faculty) queryParams.set('faculty', params.faculty)
+    if (params.faculty_id) queryParams.set('faculty_id', params.faculty_id.toString())
     if (params.name) queryParams.set('name', params.name)
     return httpClient.get<DepartmentsListResponse>(
       `${ENDPOINTS.departments.list}?${queryParams.toString()}`

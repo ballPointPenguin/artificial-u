@@ -18,7 +18,7 @@ class DepartmentRepository(BaseRepository):
             db_department = DepartmentModel(
                 name=department.name,
                 code=department.code,
-                faculty=department.faculty,
+                faculty_id=department.faculty_id,
                 description=department.description,
             )
 
@@ -27,6 +27,8 @@ class DepartmentRepository(BaseRepository):
             session.refresh(db_department)
 
             department.id = db_department.id
+            department.created_at = db_department.created_at
+            department.updated_at = db_department.updated_at
             return department
 
     def get(self, department_id: int) -> Optional[Department]:
@@ -41,7 +43,7 @@ class DepartmentRepository(BaseRepository):
                 id=db_department.id,
                 name=db_department.name,
                 code=db_department.code,
-                faculty=db_department.faculty,
+                faculty_id=db_department.faculty_id,
                 description=db_department.description,
                 created_at=db_department.created_at,
                 updated_at=db_department.updated_at,
@@ -59,19 +61,19 @@ class DepartmentRepository(BaseRepository):
                 id=db_department.id,
                 name=db_department.name,
                 code=db_department.code,
-                faculty=db_department.faculty,
+                faculty_id=db_department.faculty_id,
                 description=db_department.description,
                 created_at=db_department.created_at,
                 updated_at=db_department.updated_at,
             )
 
-    def list(self, faculty: Optional[str] = None) -> List[Department]:
-        """List departments with optional faculty filter."""
+    def list(self, faculty_id: Optional[int] = None) -> List[Department]:
+        """List departments with optional faculty_id filter."""
         with self.get_session() as session:
             query = session.query(DepartmentModel)
 
-            if faculty:
-                query = query.filter_by(faculty=faculty)
+            if faculty_id:
+                query = query.filter_by(faculty_id=faculty_id)
 
             db_departments = query.all()
 
@@ -80,8 +82,10 @@ class DepartmentRepository(BaseRepository):
                     id=d.id,
                     name=d.name,
                     code=d.code,
-                    faculty=d.faculty,
+                    faculty_id=d.faculty_id,
                     description=d.description,
+                    created_at=d.created_at,
+                    updated_at=d.updated_at,
                 )
                 for d in db_departments
             ]
@@ -97,12 +101,13 @@ class DepartmentRepository(BaseRepository):
             # Update fields
             db_department.name = department.name
             db_department.code = department.code
-            db_department.faculty = department.faculty
+            db_department.faculty_id = department.faculty_id
             db_department.description = department.description
 
             session.commit()
             session.refresh(db_department)
 
+            department.updated_at = db_department.updated_at
             return department
 
     def delete(self, department_id: int) -> bool:

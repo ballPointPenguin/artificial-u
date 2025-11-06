@@ -24,6 +24,8 @@ def test_department_prompt_with_partial_attributes():
     assert "<faculty>" in prompt
     assert "<description>" in prompt
     assert "XML structure:" in prompt
+    # Should include existing_faculties section (even if empty)
+    assert "existing_faculties" in prompt
 
 
 @pytest.mark.unit
@@ -40,6 +42,8 @@ def test_department_prompt_with_freeform():
     assert "<faculty>" in prompt
     assert "<description>" in prompt
     assert "XML structure:" in prompt
+    # Should include existing_faculties section (even if empty)
+    assert "existing_faculties" in prompt
 
 
 @pytest.mark.unit
@@ -61,17 +65,24 @@ def test_department_prompt_with_existing():
     assert "MTH" in prompt
     assert "PHY" in prompt
     assert "<existing_departments>" in prompt
+    # Should include existing_faculties section (even if empty)
+    assert "existing_faculties" in prompt
 
 
 @pytest.mark.unit
 def test_department_prompt_with_all_options():
     """Test department prompt generation with all available options."""
     existing_departments = [{"name": "Physics", "code": "PHY"}]
-    partial_attrs = {"name": "Chemistry", "faculty": "Science and Technology"}
+    existing_faculties = [
+        {"id": 1, "name": "Science and Technology", "description": "Science faculty"},
+        {"id": 2, "name": "Arts and Humanities", "description": "Arts faculty"},
+    ]
+    partial_attrs = {"name": "Chemistry", "faculty_name": "Science and Technology"}
     freeform_text = "Focus on experimental chemistry research"
 
     prompt = get_department_prompt(
         existing_departments=existing_departments,
+        existing_faculties=existing_faculties,
         partial_attributes=partial_attrs,
         freeform_prompt=freeform_text,
     )
@@ -81,8 +92,10 @@ def test_department_prompt_with_all_options():
     assert "PHY" in prompt
     assert "Chemistry" in prompt
     assert "Science and Technology" in prompt
+    assert "Arts and Humanities" in prompt
     assert freeform_text in prompt
     assert "<existing_departments>" in prompt
+    assert "<existing_faculties>" in prompt
     assert "<department>" in prompt
 
 
@@ -98,3 +111,25 @@ def test_department_prompt_with_empty_inputs():
     assert "<code>" in prompt
     assert "<faculty>" in prompt
     assert "<description>" in prompt
+    # Should include existing_faculties section (even if empty)
+    assert "existing_faculties" in prompt
+
+
+@pytest.mark.unit
+def test_department_prompt_with_existing_faculties():
+    """Test department prompt generation with existing faculties."""
+    existing_faculties = [
+        {"id": 1, "name": "Science and Engineering", "description": "Science faculty"},
+        {"id": 2, "name": "Arts and Humanities", "description": "Arts faculty"},
+        {"id": 3, "name": "Business and Economics", "description": "Business faculty"},
+    ]
+
+    prompt = get_department_prompt(existing_faculties=existing_faculties)
+
+    # Check that existing faculties are included
+    assert "Science and Engineering" in prompt
+    assert "Arts and Humanities" in prompt
+    assert "Business and Economics" in prompt
+    assert "<existing_faculties>" in prompt
+    # Check that instructions mention faculty selection
+    assert "selected from" in prompt.lower() or "select" in prompt.lower()

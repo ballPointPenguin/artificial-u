@@ -14,6 +14,7 @@ from artificial_u.api.middlewares.logging_middleware import LoggingMiddleware
 from artificial_u.api.routers.auth import router as auth_router
 from artificial_u.api.routers.courses import router as courses_router
 from artificial_u.api.routers.departments import router as departments_router
+from artificial_u.api.routers.faculties import router as faculties_router
 from artificial_u.api.routers.health import router as health_router
 from artificial_u.api.routers.index import router as index_router
 from artificial_u.api.routers.jobs import router as jobs_router
@@ -110,6 +111,7 @@ def create_application() -> FastAPI:
     app.include_router(auth_router, prefix="/api/v1")
     app.include_router(courses_router, prefix="/api/v1")
     app.include_router(departments_router, prefix="/api/v1")
+    app.include_router(faculties_router, prefix="/api/v1")
     app.include_router(jobs_router, prefix="/api/v1")
     app.include_router(lectures_router, prefix="/api/v1")
     app.include_router(professors_router, prefix="/api/v1")

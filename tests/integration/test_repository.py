@@ -4,7 +4,7 @@ Integration tests for the database models and repository.
 
 import pytest
 
-from artificial_u.models.core import Course, Department, Lecture, Professor, Topic
+from artificial_u.models.core import Course, Department, Faculty, Lecture, Professor, Topic
 from artificial_u.models.repositories import RepositoryFactory
 
 
@@ -15,12 +15,22 @@ def repository(test_db_url):
 
 
 @pytest.fixture
-def sample_department():
+def sample_faculty(repository):
+    """Create a sample faculty for testing."""
+    faculty = Faculty(
+        name="Science and Engineering",
+        description="A test faculty for testing purposes",
+    )
+    return repository.faculty.create(faculty)
+
+
+@pytest.fixture
+def sample_department(sample_faculty):
     """Create a sample department for testing."""
     return Department(
         name="Test Department",
         code="TEST",
-        faculty="Science and Engineering",
+        faculty_id=sample_faculty.id,
         description="A test department for testing purposes",
     )
 

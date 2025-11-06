@@ -2,7 +2,11 @@
 
 from typing import Any, Dict, List, Optional
 
-from artificial_u.models.converters import departments_to_xml, partial_department_to_xml
+from artificial_u.models.converters import (
+    departments_to_xml,
+    faculties_to_xml,
+    partial_department_to_xml,
+)
 from artificial_u.prompts.base import PromptTemplate
 
 # XML structure for department profile
@@ -28,14 +32,19 @@ Instructions:
 - Ensure that both <name> and <code> are unique compared to those listed under
   <existing_departments> (case-insensitive check).
 - <code> must be a short, memorable abbreviation (2-8 uppercase letters).
-- <faculty> should be a broad academic division such as "Arts and Humanities,"
-  "Science and Technology," or similar.
+- <faculty> MUST be selected from the <existing_faculties> list below.
+  You CANNOT create new faculties - only select from the existing options.
+  Choose the most appropriate faculty based on the department's focus.
+  Use the exact faculty name as it appears in the list.
 - <description> should be clear, concise, and informative about the department's focus.
 
 After generating the profile, validate that <name> and <code> are unique,
+that <faculty> exactly matches one from the existing faculties list (case-sensitive),
 and that all output fields meet requirements. If validation fails, self-correct and
-regenerate the output.
+regenerate the output. Remember: you can only select from existing faculties, never create new ones.
 {{existing_departments_xml}}
+
+{{existing_faculties_xml}}
 
 Partial Department Details:
 {{partial_department_xml}}
@@ -49,6 +58,7 @@ Formatting and Output Requirements:
 """,
     required_vars=[
         "existing_departments_xml",
+        "existing_faculties_xml",
         "partial_department_xml",
     ],
 )
@@ -56,13 +66,15 @@ Formatting and Output Requirements:
 
 def get_department_prompt(
     existing_departments: Optional[List[str]] = None,
+    existing_faculties: Optional[List[Dict[str, Any]]] = None,
     partial_attributes: Optional[Dict[str, Any]] = None,
     freeform_prompt: Optional[str] = None,
 ) -> str:
     """Generate a department prompt using centralized converters.
 
     Args:
-        existing_departments: List of existing department names for context
+        existing_departments: List of existing department dicts for context
+        existing_faculties: List of existing faculty dicts for selection
         partial_attributes: Optional dictionary of known attributes to guide generation
         freeform_prompt: Optional freeform text for additional guidance
 
@@ -71,6 +83,7 @@ def get_department_prompt(
     """
     # Use converters to generate XML sections
     existing_departments_xml_str = departments_to_xml(existing_departments or [])
+    existing_faculties_xml_str = faculties_to_xml(existing_faculties or [])
     partial_department_xml_str = partial_department_to_xml(partial_attributes or {})
 
     # Format freeform prompt if provided
@@ -80,6 +93,7 @@ def get_department_prompt(
     try:
         return DEPARTMENT_PROMPT.format(
             existing_departments_xml=existing_departments_xml_str,
+            existing_faculties_xml=existing_faculties_xml_str,
             partial_department_xml=partial_department_xml_str,
             freeform_prompt_text=prompt_text,
         )

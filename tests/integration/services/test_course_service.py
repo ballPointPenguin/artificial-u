@@ -7,7 +7,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from artificial_u.models.core import Professor
+from artificial_u.models.core import Faculty, Professor
 from artificial_u.models.repositories.factory import RepositoryFactory
 from artificial_u.services import CourseService, DepartmentService, ProfessorService
 from artificial_u.utils.exceptions import CourseNotFoundError
@@ -132,20 +132,36 @@ def course_service(
     )
 
 
+@pytest.fixture
+def sample_faculties(repository_factory):
+    """Create sample faculties for testing."""
+    faculties = {}
+    for name in ["Engineering", "Science", "Arts", "Business", "Test"]:
+        faculty = Faculty(name=name, description=f"The {name} faculty.")
+        faculty = repository_factory.faculty.create(faculty)
+        faculties[name] = faculty.id
+    return faculties
+
+
 @pytest.mark.integration
 class TestCourseService:
     """Integration tests for CourseService."""
 
     @pytest.mark.asyncio
     async def test_create_and_get_course(
-        self, course_service, department_service, professor_service
+        self,
+        course_service,
+        department_service,
+        professor_service,
+        repository_factory,
+        sample_faculties,
     ):
         """Test creating and retrieving a course."""
         # First create a department
         department = department_service.create_department(
             name="Computer Science",
             code="CS",
-            faculty="Engineering",
+            faculty_id=sample_faculties["Engineering"],
             description="Department of Computer Science and Engineering",
         )
 
@@ -189,13 +205,20 @@ class TestCourseService:
         assert retrieved.code == "CS101"
 
     @pytest.mark.asyncio
-    async def test_get_course_by_code(self, course_service, department_service, professor_service):
+    async def test_get_course_by_code(
+        self,
+        course_service,
+        department_service,
+        professor_service,
+        repository_factory,
+        sample_faculties,
+    ):
         """Test retrieving a course by its code."""
         # First create a department
         department = department_service.create_department(
             name="Physics",
             code="PHYS",
-            faculty="Science",
+            faculty_id=sample_faculties["Science"],
         )
 
         # Then create a professor
@@ -227,13 +250,20 @@ class TestCourseService:
         assert retrieved.code == course_code
 
     @pytest.mark.asyncio
-    async def test_update_course(self, course_service, department_service, professor_service):
+    async def test_update_course(
+        self,
+        course_service,
+        department_service,
+        professor_service,
+        repository_factory,
+        sample_faculties,
+    ):
         """Test updating a course."""
         # First create a department
         department = department_service.create_department(
             name="Mathematics",
             code="MATH",
-            faculty="Science",
+            faculty_id=sample_faculties["Science"],
         )
 
         # Then create a professor
@@ -285,19 +315,26 @@ class TestCourseService:
         assert retrieved.credits == 5
 
     @pytest.mark.asyncio
-    async def test_list_courses(self, course_service, department_service, professor_service):
+    async def test_list_courses(
+        self,
+        course_service,
+        department_service,
+        professor_service,
+        repository_factory,
+        sample_faculties,
+    ):
         """Test listing courses with/without department filter."""
         # Create departments
         cs_dept = department_service.create_department(
             name="Computer Science",
             code="CS",
-            faculty="Engineering",
+            faculty_id=sample_faculties["Engineering"],
         )
 
         math_dept = department_service.create_department(
             name="Mathematics",
             code="MATH",
-            faculty="Science",
+            faculty_id=sample_faculties["Science"],
         )
 
         # Create professors
@@ -367,13 +404,20 @@ class TestCourseService:
             course_service.get_course(999999)
 
     @pytest.mark.asyncio
-    async def test_delete_course(self, course_service, department_service, professor_service):
+    async def test_delete_course(
+        self,
+        course_service,
+        department_service,
+        professor_service,
+        repository_factory,
+        sample_faculties,
+    ):
         """Test deleting a course."""
         # First create a department
         department = department_service.create_department(
             name="Temporary Department",
             code="TEMP",
-            faculty="Test",
+            faculty_id=sample_faculties["Test"],
         )
 
         # Then create a professor

@@ -47,7 +47,7 @@ class DepartmentService:
         self,
         name: str,
         code: str,
-        faculty: str,
+        faculty_id: Optional[int] = None,
         description: Optional[str] = None,
     ) -> Department:
         """
@@ -56,7 +56,7 @@ class DepartmentService:
         Args:
             name: Department name
             code: Department code (e.g., "CS" for Computer Science)
-            faculty: Faculty the department belongs to
+            faculty_id: ID of the faculty the department belongs to
             description: Optional department description
 
         Returns:
@@ -71,8 +71,8 @@ class DepartmentService:
         department = Department(
             name=name,
             code=code,
-            faculty=faculty,
-            description=description or f"The {name} department in the {faculty} faculty.",
+            faculty_id=faculty_id,
+            description=description or f"The {name} department.",
         )
 
         # Save to database
@@ -125,12 +125,12 @@ class DepartmentService:
             raise DepartmentNotFoundError(error_msg)
         return department
 
-    def list_departments(self, faculty: Optional[str] = None) -> List[Department]:
+    def list_departments(self, faculty_id: Optional[int] = None) -> List[Department]:
         """
-        List all departments with optional faculty filter.
+        List all departments with optional faculty_id filter.
 
         Args:
-            faculty: Optional faculty to filter by
+            faculty_id: Optional faculty ID to filter by
 
         Returns:
             List[Department]: List of departments
@@ -139,7 +139,7 @@ class DepartmentService:
             DatabaseError: If there's an error retrieving from the database
         """
         try:
-            departments = self.repository_factory.department.list(faculty)
+            departments = self.repository_factory.department.list(faculty_id)
             self.logger.debug(f"Found {len(departments)} departments")
             return departments
         except Exception as e:

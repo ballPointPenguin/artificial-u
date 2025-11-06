@@ -94,7 +94,7 @@ const ProfessorsList: Component<{
                       {(imageUrl) => (
                         <img
                           src={imageUrl()}
-                          alt={`Image of ${professor.name}`}
+                          alt={professor.name}
                           class="w-12 h-12 object-cover rounded-sm border border-parchment-500/20 flex-shrink-0"
                         />
                       )}
@@ -160,16 +160,12 @@ const DepartmentDetail = () => {
         throw new Error('Invalid department ID')
       }
 
+      const facultyIdStr = formData.get('faculty_id') as string | null
       const updatedDepartmentData: DepartmentUpdate = {
         name: formData.get('name') as string,
         code: formData.get('code') as string,
-        faculty: formData.get('faculty') as string | null,
+        faculty_id: facultyIdStr ? Number.parseInt(facultyIdStr, 10) : null,
         description: formData.get('description') as string,
-      }
-
-      // Ensure faculty is null if it's an empty string and API expects null for updates
-      if (updatedDepartmentData.faculty === '') {
-        updatedDepartmentData.faculty = null
       }
 
       await departmentService.updateDepartment(id, updatedDepartmentData)
@@ -193,8 +189,8 @@ const DepartmentDetail = () => {
       }
 
       await departmentService.deleteDepartment(id)
-      // Navigate back to departments list after deletion
-      navigate('/departments')
+      // Navigate back to academics list after deletion
+      navigate('/academics')
     } catch (error) {
       setError(error instanceof Error ? error.message : 'Failed to delete department')
       setIsDeleting(false)
@@ -207,8 +203,8 @@ const DepartmentDetail = () => {
     <div class="container mx-auto px-4 py-8">
       {/* Breadcrumb navigation - Use theme colors */}
       <div class="mb-6">
-        <A href="/departments" class="text-mystic-500 hover:text-mystic-300">
-          ← Back to Departments
+        <A href="/academics" class="text-mystic-500 hover:text-mystic-300">
+          ← Back to Academics
         </A>
       </div>
 
@@ -292,7 +288,7 @@ const DepartmentDetail = () => {
                       </div>
                       <div>
                         <h3 class="font-medium text-parchment-400">Faculty</h3>
-                        <p>{dept.faculty}</p>
+                        <p>{dept.faculty_name || 'N/A'}</p>
                       </div>
                     </div>
                   </div>

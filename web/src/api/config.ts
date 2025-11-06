@@ -61,6 +61,9 @@ export const ENDPOINTS = {
     professors: (id: number) => `/v1/departments/${String(id)}/professors`,
     courses: (id: number) => `/v1/departments/${String(id)}/courses`,
   },
+  faculties: {
+    list: '/v1/faculties',
+  },
   courses: {
     list: '/v1/courses',
     detail: (id: number) => `/v1/courses/${String(id)}`,

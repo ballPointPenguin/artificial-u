@@ -13,7 +13,9 @@ class DepartmentBase(BaseModel):
 
     name: str = Field(..., description="Department name")
     code: str = Field(..., description="Department code (e.g., CS, MATH)")
-    faculty: Optional[str] = Field(None, description="Faculty or school this department belongs to")
+    faculty_id: Optional[int] = Field(
+        None, description="ID of the faculty this department belongs to"
+    )
     description: Optional[str] = Field(None, description="Department description and overview")
 
 
@@ -51,6 +53,9 @@ class DepartmentResponse(DepartmentBase):
     """Model for department responses."""
 
     id: Optional[int] = Field(None, description="Unique department identifier")
+    faculty_name: Optional[str] = Field(
+        None, description="Faculty name (populated from faculty_id)"
+    )
 
     class Config:
         from_attributes = True

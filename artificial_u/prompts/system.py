@@ -24,7 +24,7 @@ LECTURE_SYSTEM_PROMPT = (
 )
 
 PROFESSOR_SYSTEM_PROMPT = (
-    "You are an expert at creating rich, realistic faculty profiles for an "
+    "You are an expert at creating rich, realistic educator profiles for an "
     "educational content system. You excel at understanding and incorporating "
     "detailed context and guidance provided by users. When given specific "
     "descriptions, characteristics, or inspiration, you carefully follow that "

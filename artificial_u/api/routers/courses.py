@@ -274,7 +274,7 @@ async def get_course_department(
     "/{course_id}/lectures",
     response_model=CourseLecturesResponse,
     summary="Get course lectures",
-    description="Get lectures for a specific course.",
+    description="Get lecture briefs for a specific course (excluding content field for performance).",
     responses={
         404: {"description": "Course not found"},
         500: {"description": "Internal server error"},
@@ -282,14 +282,17 @@ async def get_course_department(
 )
 async def get_course_lectures(
     course_id: int = Path(..., description="The ID of the course"),
+    limit: int = Query(100, ge=1, le=1000, description="Maximum number of lectures to return"),
     course_service: CourseApiService = Depends(get_course_api_service),
 ):
     """
-    Get lectures for a specific course.
+    Get lecture briefs for a specific course.
+    Returns only id, course_id, topic_id, title, and summary fields,
+    excluding the large 'content' field for better performance.
     """
     # Service handles lookup and raises HTTPException on errors (if implemented)
     # We also need to handle the case where the service might just return None
-    response_data = course_service.get_course_lectures(course_id)
+    response_data = course_service.get_course_lectures(course_id, limit=limit)
     if response_data is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

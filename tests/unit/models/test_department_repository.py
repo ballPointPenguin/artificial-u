@@ -27,8 +27,10 @@ class TestDepartmentRepository:
         mock_dept.id = 1
         mock_dept.name = "Computer Science"
         mock_dept.code = "CS"
-        mock_dept.faculty = "Engineering"
+        mock_dept.faculty_id = 1
         mock_dept.description = "Study of computers"
+        mock_dept.created_at = None
+        mock_dept.updated_at = None
         return mock_dept
 
     def test_create(self, department_repository, mock_session):
@@ -44,7 +46,7 @@ class TestDepartmentRepository:
         dept = Department(
             name="Computer Science",
             code="CS",
-            faculty="Engineering",
+            faculty_id=1,
             description="Study of computers",
         )
 
@@ -58,7 +60,7 @@ class TestDepartmentRepository:
         assert result.id == 1
         assert result.name == "Computer Science"
         assert result.code == "CS"
-        assert result.faculty == "Engineering"
+        assert result.faculty_id == 1
         assert result.description == "Study of computers"
 
     def test_get(self, department_repository, mock_session, mock_dept_model):
@@ -76,7 +78,7 @@ class TestDepartmentRepository:
         assert result.id == 1
         assert result.name == "Computer Science"
         assert result.code == "CS"
-        assert result.faculty == "Engineering"
+        assert result.faculty_id == 1
         assert result.description == "Study of computers"
 
     def test_get_not_found(self, department_repository, mock_session):
@@ -114,15 +116,19 @@ class TestDepartmentRepository:
         mock_dept1.id = 1
         mock_dept1.name = "Computer Science"
         mock_dept1.code = "CS"
-        mock_dept1.faculty = "Engineering"
+        mock_dept1.faculty_id = 1
         mock_dept1.description = "Study of computers"
+        mock_dept1.created_at = None
+        mock_dept1.updated_at = None
 
         mock_dept2 = MagicMock(spec=DepartmentModel)
         mock_dept2.id = 2
         mock_dept2.name = "Mathematics"
         mock_dept2.code = "MATH"
-        mock_dept2.faculty = "Science"
+        mock_dept2.faculty_id = 2
         mock_dept2.description = "Study of numbers"
+        mock_dept2.created_at = None
+        mock_dept2.updated_at = None
 
         query_mock = mock_session.query.return_value
         query_mock.all.return_value = [mock_dept1, mock_dept2]
@@ -139,27 +145,29 @@ class TestDepartmentRepository:
         assert result[1].name == "Mathematics"
 
     def test_list_with_faculty_filter(self, department_repository, mock_session):
-        """Test listing departments with faculty filter."""
+        """Test listing departments with faculty_id filter."""
         # Configure mock behavior
         mock_dept = MagicMock(spec=DepartmentModel)
         mock_dept.id = 1
         mock_dept.name = "Computer Science"
         mock_dept.code = "CS"
-        mock_dept.faculty = "Engineering"
+        mock_dept.faculty_id = 1
         mock_dept.description = "Study of computers"
+        mock_dept.created_at = None
+        mock_dept.updated_at = None
 
         query_mock = mock_session.query.return_value
         query_mock.filter_by.return_value.all.return_value = [mock_dept]
 
         # Exercise
-        result = department_repository.list(faculty="Engineering")
+        result = department_repository.list(faculty_id=1)
 
         # Verify
         mock_session.query.assert_called_once_with(DepartmentModel)
-        query_mock.filter_by.assert_called_once_with(faculty="Engineering")
+        query_mock.filter_by.assert_called_once_with(faculty_id=1)
         assert len(result) == 1
         assert result[0].id == 1
-        assert result[0].faculty == "Engineering"
+        assert result[0].faculty_id == 1
 
     def test_update(self, department_repository, mock_session, mock_dept_model):
         """Test updating a department."""
@@ -172,7 +180,7 @@ class TestDepartmentRepository:
             id=1,
             name="Updated Computer Science",
             code="CS-NEW",
-            faculty="Updated Engineering",
+            faculty_id=2,
             description="Updated description",
         )
 
@@ -187,14 +195,14 @@ class TestDepartmentRepository:
         # Check that the model was updated with new values
         assert mock_dept_model.name == "Updated Computer Science"
         assert mock_dept_model.code == "CS-NEW"
-        assert mock_dept_model.faculty == "Updated Engineering"
+        assert mock_dept_model.faculty_id == 2
         assert mock_dept_model.description == "Updated description"
 
         # Check that the returned department has the updated values
         assert result.id == 1
         assert result.name == "Updated Computer Science"
         assert result.code == "CS-NEW"
-        assert result.faculty == "Updated Engineering"
+        assert result.faculty_id == 2
         assert result.description == "Updated description"
 
     def test_update_not_found(self, department_repository, mock_session):
@@ -208,7 +216,7 @@ class TestDepartmentRepository:
             id=999,
             name="Updated Computer Science",
             code="CS-NEW",
-            faculty="Updated Engineering",
+            faculty_id=2,
             description="Updated description",
         )
 

@@ -267,6 +267,13 @@ class CourseService:
                 if course.created_by:
                     student = self.repository_factory.student.get(course.created_by)
 
+                # Load faculty name if faculty_id is present
+                faculty_name = None
+                if department and department.faculty_id:
+                    faculty = self.repository_factory.faculty.get(department.faculty_id)
+                    if faculty:
+                        faculty_name = faculty.name
+
                 result.append(
                     {
                         # Convert models to dicts for consistent output
@@ -277,7 +284,8 @@ class CourseService:
                                 "id": department.id,
                                 "name": department.name,
                                 "code": department.code,
-                                "faculty": department.faculty,
+                                "faculty_id": department.faculty_id,
+                                "faculty_name": faculty_name,
                             }
                             if department
                             else None

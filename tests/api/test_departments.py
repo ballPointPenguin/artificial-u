@@ -18,13 +18,20 @@ from artificial_u.api.models.departments import (
     ProfessorBrief,
 )
 
+# Mock faculty names for testing (simulating faculty lookup)
+MOCK_FACULTY_NAMES = {
+    1: "Test Faculty 1",
+    2: "Test Faculty 2",
+}
+
 # Use base data structures to define mock responses
 sample_departments_base = [
     DepartmentResponse(
         id=i,
         name=f"Test Department {i}",
         code=f"TD{i}",
-        faculty=f"Test Faculty {i % 2 + 1}",
+        faculty_id=i % 2 + 1,
+        faculty_name=MOCK_FACULTY_NAMES.get(i % 2 + 1),
         description=f"Description for department {i}",
     )
     for i in range(1, 4)
@@ -90,14 +97,26 @@ def mock_api_service(monkeypatch):
     # CREATE Department
     def _mock_create_department(dept_data: DepartmentCreate):
         new_id = 4  # Simulate next ID
-        return DepartmentResponse(id=new_id, **dept_data.model_dump())
+        # Simulate faculty_name enrichment (as the real service would do)
+        faculty_name = (
+            MOCK_FACULTY_NAMES.get(dept_data.faculty_id) if dept_data.faculty_id else None
+        )
+        dept_dict = dept_data.model_dump()
+        dept_dict["faculty_name"] = faculty_name
+        return DepartmentResponse(id=new_id, **dept_dict)
 
     mock_service["create_department"].side_effect = _mock_create_department
 
     # UPDATE Department
     def _mock_update_department(dept_id: int, dept_data: DepartmentUpdate):
         if dept_id == 1:
-            return DepartmentResponse(id=dept_id, **dept_data.model_dump())
+            # Simulate faculty_name enrichment (as the real service would do)
+            faculty_name = (
+                MOCK_FACULTY_NAMES.get(dept_data.faculty_id) if dept_data.faculty_id else None
+            )
+            dept_dict = dept_data.model_dump()
+            dept_dict["faculty_name"] = faculty_name
+            return DepartmentResponse(id=dept_id, **dept_dict)
         return None  # Simulate not found
 
     mock_service["update_department"].side_effect = _mock_update_department
@@ -224,31 +243,31 @@ def test_list_departments(client: TestClient, mock_api_service):  # Use mock_api
 
     # Assert that the mocked service method was called correctly
     mock_api_service["get_departments"].assert_called_once_with(
-        page=1, size=10, faculty=None, name=None  # Default parameters
+        page=1, size=10, faculty_id=None, name=None  # Default parameters
     )
 
 
 @pytest.mark.unit
 def test_filter_departments_by_faculty(client: TestClient, mock_api_service):
-    """Test filtering departments by faculty (relies on mocked service)."""
+    """Test filtering departments by faculty_id (relies on mocked service)."""
     # Configure mock specifically for this faculty filter test case if needed
-    faculty_filter = "Test Faculty 1"
-    expected_items = [d for d in sample_departments_base if d.faculty == faculty_filter]
+    faculty_id_filter = 1
+    expected_items = [d for d in sample_departments_base if d.faculty_id == faculty_id_filter]
     mock_api_service["get_departments"].return_value = DepartmentsListResponse(
         items=expected_items, total=len(expected_items), page=1, size=10, pages=1
     )
 
-    response = client.get(f"/api/v1/departments?faculty={faculty_filter}")
+    response = client.get(f"/api/v1/departments?faculty_id={faculty_id_filter}")
     assert response.status_code == 200
     data = response.json()
 
     assert len(data["items"]) == len(expected_items)
     assert data["total"] == len(expected_items)
     for item in data["items"]:
-        assert item["faculty"] == faculty_filter
+        assert item["faculty_id"] == faculty_id_filter
 
     mock_api_service["get_departments"].assert_called_once_with(
-        page=1, size=10, faculty=faculty_filter, name=None
+        page=1, size=10, faculty_id=faculty_id_filter, name=None
     )
 
 
@@ -271,7 +290,7 @@ def test_filter_departments_by_name(client: TestClient, mock_api_service):
     assert name_filter in data["items"][0]["name"]
 
     mock_api_service["get_departments"].assert_called_once_with(
-        page=1, size=10, faculty=None, name=name_filter
+        page=1, size=10, faculty_id=None, name=name_filter
     )
 
 
@@ -331,11 +350,15 @@ def test_create_department(client: TestClient, mock_api_service):
     new_department_data = {
         "name": "New Department",
         "code": "ND1",
-        "faculty": "New Faculty",
+        "faculty_id": 1,
         "description": "A brand new department",
     }
-    # Mock configured to return ID 4
-    expected_response_data = {"id": 4, **new_department_data}
+    # Mock configured to return ID 4 with faculty_name enriched
+    expected_response_data = {
+        "id": 4,
+        **new_department_data,
+        "faculty_name": MOCK_FACULTY_NAMES.get(1),  # faculty_id 1 -> "Test Faculty 1"
+    }
 
     response = client.post("/api/v1/departments", json=new_department_data)
 
@@ -355,11 +378,15 @@ def test_update_department(client: TestClient, mock_api_service):
     update_data = {
         "name": "Updated Department",
         "code": "UD1",
-        "faculty": "Updated Faculty",
+        "faculty_id": 2,
         "description": "An updated department description",
     }
-    # Mock configured to return updated data for ID 1
-    expected_response_data = {"id": 1, **update_data}
+    # Mock configured to return updated data for ID 1 with faculty_name enriched
+    expected_response_data = {
+        "id": 1,
+        **update_data,
+        "faculty_name": MOCK_FACULTY_NAMES.get(2),  # faculty_id 2 -> "Test Faculty 2"
+    }
 
     # Test with valid ID
     response = client.put("/api/v1/departments/1", json=update_data)
