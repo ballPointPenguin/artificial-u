@@ -22,7 +22,7 @@ def escape_xml(text: str) -> str:
         Text with XML special characters escaped
     """
     if not text:
-        return text
+        return ""
     # Use html.escape which handles &, <, >, ", and '
     return html.escape(str(text), quote=True)
 
