@@ -20,7 +20,6 @@ from artificial_u.api.models.courses import (
 )
 from artificial_u.api.services.base_service import BaseApiService
 from artificial_u.models.core import Course as CoreCourse
-from artificial_u.models.database import LectureModel
 
 # Import RepositoryFactory directly instead of legacy Repository wrapper
 from artificial_u.models.repositories import RepositoryFactory
@@ -471,27 +470,38 @@ class CourseApiService(BaseApiService[CoreCourse, CourseResponse, CoursesListRes
         except Exception as e:
             self._handle_general_error("get course department", e)
 
-    def get_course_lectures(self, course_id: int) -> CourseLecturesResponse:
+    def get_course_lectures(self, course_id: int, limit: int = 100) -> CourseLecturesResponse:
         """
-        Get lectures for a course using the repository factory.
+        Get lecture briefs for a course using the repository factory.
+        Only fetches id, course_id, topic_id, title, and summary fields,
+        excluding the large 'content' field for better performance.
+
+        Args:
+            course_id: The ID of the course
+            limit: Maximum number of lectures to return (default: 100)
+
+        Returns:
+            CourseLecturesResponse: Response containing lecture briefs
         """
         try:
             # First check if course exists using the core service
             self.core_service.get_course(course_id)
 
-            # Get lectures for the course using the repository factory
-            lectures: List[LectureModel] = self.repository_factory.lecture.list(course_id=course_id)
+            # Get lecture briefs (excluding content field) using the repository factory
+            lecture_brief_dicts = self.repository_factory.lecture.list_briefs(
+                course_id=course_id, limit=limit
+            )
 
-            # Convert LectureModel instances to LectureBrief API models
+            # Convert dictionaries to LectureBrief API models
             lecture_briefs = [
                 LectureBrief(
-                    id=lecture.id,
-                    course_id=lecture.course_id,
-                    topic_id=lecture.topic_id,
-                    title=lecture.title,
-                    summary=lecture.summary,
+                    id=lecture_dict["id"],
+                    course_id=lecture_dict["course_id"],
+                    topic_id=lecture_dict["topic_id"],
+                    title=lecture_dict["title"],
+                    summary=lecture_dict["summary"],
                 )
-                for lecture in lectures
+                for lecture_dict in lecture_brief_dicts
             ]
 
             return CourseLecturesResponse(

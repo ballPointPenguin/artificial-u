@@ -2,11 +2,30 @@
 Functions for converting between database models, dictionaries, and XML formats.
 """
 
+import html
 import re
 import xml.etree.ElementTree as ET
 from typing import Any, Dict, List, Optional
 
 from artificial_u.models.core import Course, Department, Lecture, Professor, Topic
+
+# --- Helper Functions --- #
+
+
+def escape_xml(text: str) -> str:
+    """Escape special XML characters in text.
+
+    Args:
+        text: Text that may contain XML special characters
+
+    Returns:
+        Text with XML special characters escaped
+    """
+    if not text:
+        return text
+    # Use html.escape which handles &, <, >, ", and '
+    return html.escape(str(text), quote=True)
+
 
 # --- Model to Dict Converters --- #
 
@@ -113,7 +132,7 @@ def professor_to_xml(professor_data: dict, missing_marker: str = "[GENERATE]") -
     for field in fields:
         value = professor_data.get(field)
         if value:
-            lines.append(f"  <{field}>{value}</{field}>")
+            lines.append(f"  <{field}>{escape_xml(str(value))}</{field}>")
         else:
             lines.append(f"  <{field}>{missing_marker}</{field}>")
     lines.append("</professor>")
@@ -142,7 +161,7 @@ def partial_professor_to_xml(
     for field in fields:
         value = partial_attrs.get(field)
         if value is not None:
-            lines.append(f"  <{field}>{str(value)}</{field}>")
+            lines.append(f"  <{field}>{escape_xml(str(value))}</{field}>")
         else:
             lines.append(f"  <{field}>{missing_marker}</{field}>")
     lines.append("</professor>")
@@ -157,12 +176,38 @@ def professors_to_xml(professors: List[Dict[str, str]]) -> str:
     lines = ["<existing_professors>"]
     for prof in professors:
         lines.append(
-            f"  <professor><id>{prof.get('id', '')}</id>"
-            f"<name>{prof.get('name', '')}</name>"
-            f"<title>{prof.get('title', '')}</title>"
-            f"<specialization>{prof.get('specialization', '')}</specialization></professor>"
+            f"  <professor><id>{escape_xml(str(prof.get('id', '')))}</id>"
+            f"<name>{escape_xml(prof.get('name', ''))}</name>"
+            f"<title>{escape_xml(prof.get('title', ''))}</title>"
+            f"<specialization>{escape_xml(prof.get('specialization', ''))}</specialization></professor>"
         )
     lines.append("</existing_professors>")
+    return "\n".join(lines)
+
+
+def faculties_to_xml(faculties: List[Dict[str, Any]]) -> str:
+    """Format a list of faculty dictionaries as XML for prompt context.
+
+    Args:
+        faculties: List of faculty dictionaries containing 'id' and 'name' keys,
+                  and optionally 'description'.
+
+    Returns:
+        XML string representation of faculties for LLM prompts
+    """
+    if not faculties:
+        return "<no_existing_faculties />"
+    lines = ["<existing_faculties>"]
+    for faculty in faculties:
+        lines.append("  <faculty>")
+        lines.append(f"    <id>{escape_xml(str(faculty.get('id', '')))}</id>")
+        lines.append(f"    <name>{escape_xml(faculty.get('name', ''))}</name>")
+        if faculty.get("description"):
+            lines.append(
+                f"    <description>{escape_xml(faculty.get('description', ''))}</description>"
+            )
+        lines.append("  </faculty>")
+    lines.append("</existing_faculties>")
     return "\n".join(lines)
 
 
@@ -183,12 +228,12 @@ def department_to_xml(department_data: dict, missing_marker: str = "[GENERATE]")
     for field in fields:
         value = department_data.get(field)
         if value:
-            lines.append(f"  <{field}>{value}</{field}>")
+            lines.append(f"  <{field}>{escape_xml(value)}</{field}>")
         else:
             lines.append(f"  <{field}>{missing_marker}</{field}>")
     # Handle faculty separately
     if faculty_value:
-        lines.append(f"  <faculty>{faculty_value}</faculty>")
+        lines.append(f"  <faculty>{escape_xml(faculty_value)}</faculty>")
     else:
         lines.append(f"  <faculty>{missing_marker}</faculty>")
     lines.append("</department>")
@@ -207,12 +252,12 @@ def departments_to_xml(departments: List[Dict[str, str]]) -> str:
     lines = ["<existing_departments>"]
     for dept in departments:
         lines.append("  <department>")
-        lines.append(f"    <id>{dept.get('id', '')}</id>")
-        lines.append(f"    <name>{dept.get('name', '')}</name>")
-        lines.append(f"    <code>{dept.get('code', '')}</code>")
+        lines.append(f"    <id>{escape_xml(str(dept.get('id', '')))}</id>")
+        lines.append(f"    <name>{escape_xml(dept.get('name', ''))}</name>")
+        lines.append(f"    <code>{escape_xml(dept.get('code', ''))}</code>")
         # Support both 'faculty' and 'faculty_name' for backward compatibility
         faculty_value = dept.get("faculty") or dept.get("faculty_name") or ""
-        lines.append(f"    <faculty>{faculty_value}</faculty>")
+        lines.append(f"    <faculty>{escape_xml(faculty_value)}</faculty>")
         lines.append("  </department>")
     lines.append("</existing_departments>")
     return "\n".join(lines)
@@ -235,7 +280,7 @@ def partial_course_to_xml(
     for field in fields:
         value = partial_attrs.get(field)
         if value is not None and value != generate_marker:
-            lines.append(f"  <{field}>{str(value)}</{field}>")
+            lines.append(f"  <{field}>{escape_xml(str(value))}</{field}>")
         else:
             lines.append(f"  <{field}>{generate_marker}</{field}>")
 
@@ -251,8 +296,8 @@ def courses_to_xml(courses: List[Dict[str, Any]]) -> str:
     lines = ["<existing_courses>"]
     for course in courses:
         lines.append("  <course>")
-        lines.append(f"    <code>{course.get('code', '')}</code>")
-        lines.append(f"    <title>{course.get('title', '')}</title>")
+        lines.append(f"    <code>{escape_xml(course.get('code', ''))}</code>")
+        lines.append(f"    <title>{escape_xml(course.get('title', ''))}</title>")
         lines.append("  </course>")
     lines.append("</existing_courses>")
     return "\n".join(lines)
@@ -350,13 +395,13 @@ def partial_department_to_xml(
     for field in ["name", "code", "description"]:
         value = partial_attrs.get(field)
         if value is not None and value != generate_marker:
-            lines.append(f"  <{field}>{str(value)}</{field}>")
+            lines.append(f"  <{field}>{escape_xml(str(value))}</{field}>")
         else:
             lines.append(f"  <{field}>{generate_marker}</{field}>")
     # Handle faculty separately - support both 'faculty' and 'faculty_name'
     faculty_value = partial_attrs.get("faculty") or partial_attrs.get("faculty_name")
     if faculty_value is not None and faculty_value != generate_marker:
-        lines.append(f"  <faculty>{str(faculty_value)}</faculty>")
+        lines.append(f"  <faculty>{escape_xml(str(faculty_value))}</faculty>")
     else:
         lines.append(f"  <faculty>{generate_marker}</faculty>")
     lines.append("</department>")

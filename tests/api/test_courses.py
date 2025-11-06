@@ -152,7 +152,7 @@ def mock_api_service(monkeypatch):
     mock_service["get_course_department"].side_effect = _mock_get_course_department
 
     # GET Course Lectures
-    def _mock_get_course_lectures(course_id: int):
+    def _mock_get_course_lectures(course_id: int, limit: int = 100):
         if course_id == 1:
             return CourseLecturesResponse(
                 course_id=1,
@@ -489,14 +489,14 @@ def test_get_course_lectures(client: TestClient, mock_api_service):
     assert len(data["lectures"]) == len(sample_lectures_brief_base)
     assert data["total"] == len(sample_lectures_brief_base)
     assert data["lectures"][0]["title"] == sample_lectures_brief_base[0].title
-    mock_api_service["get_course_lectures"].assert_called_once_with(1)
+    mock_api_service["get_course_lectures"].assert_called_once_with(1, limit=100)
 
     # Test invalid course ID
     mock_api_service["get_course_lectures"].reset_mock()
     mock_api_service["get_course_lectures"].return_value = None
     response = client.get("/api/v1/courses/999/lectures")
     assert response.status_code == 404
-    mock_api_service["get_course_lectures"].assert_called_once_with(999)
+    mock_api_service["get_course_lectures"].assert_called_once_with(999, limit=100)
 
 
 @pytest.mark.unit

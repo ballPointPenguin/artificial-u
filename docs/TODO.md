@@ -39,7 +39,14 @@
 - [x] Display created_by and created_with attributions
 - [x] Privelges for admin scope
 - [x] Organize Depeartments under Faculties
-- [ ] Seed Data for Faculties and Departments
+- [x] Seed Data for Faculties and Departments
+- [x] Incorporate Faculty information into Generation Prompts
+- [ ] Easy Course Generation UI (single prompt field, no form)
+- [ ] Protect the "Delete" actions -- restrict to admin or owner of the record
+- [ ] Encourage more foreign and older professors
+- [ ] Discourage > 2 lectures per week
+- [ ] Dev: Troubleshoot the "too many connections" errors
+- [ ] Enable Private content (paid students only?)
 - [ ] Browser Notifications for jobs
 - [ ] Include word-count in summary or somewhere
 - [ ] Action buttons on Topics List

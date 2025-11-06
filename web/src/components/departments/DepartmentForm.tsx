@@ -119,9 +119,9 @@ const DepartmentForm = (props: DepartmentFormProps) => {
     try {
       const payload: DepartmentGenerateRequest = {
         partial_attributes: {
-          name: currentData.name,
-          code: currentData.code,
-          faculty_id: currentData.faculty_id || undefined,
+          name: currentData.name || undefined,
+          code: currentData.code || undefined,
+          faculty_id: currentData.faculty_id ?? undefined,
           description: currentData.description || undefined,
         },
         // Include department ID if editing an existing department

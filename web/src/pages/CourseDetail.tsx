@@ -3,6 +3,7 @@ import { type Component, createResource, createSignal, For, Show } from 'solid-j
 import { courseService } from '../api/services/course-service.js'
 import { topicService } from '../api/services/topic-service.js'
 import type {
+  CourseLecturesResponse,
   CourseUpdate,
   DepartmentBrief,
   LectureBrief,
@@ -93,7 +94,7 @@ const ProfessorInfo: Component<{
 // Topics List Component
 const TopicsList: Component<{
   topicsData: () => TopicList | undefined
-  lecturesData: () => { lectures: LectureBrief[] } | undefined
+  lecturesData: () => CourseLecturesResponse | undefined
   courseId: number
   loading: boolean
 }> = (props) => {
@@ -118,7 +119,7 @@ const TopicsList: Component<{
           const topics = (props.topicsData() as TopicList).items
           const lecturesData =
             typeof props.lecturesData === 'function' ? props.lecturesData() : undefined
-          const lectures = lecturesData?.lectures || []
+          const lectures: LectureBrief[] = lecturesData?.lectures || []
 
           // Sort topics by week, then by order within each week
           const sortedTopics = topics.sort((a, b) => {

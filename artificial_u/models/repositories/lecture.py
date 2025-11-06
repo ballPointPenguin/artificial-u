@@ -2,7 +2,7 @@
 Lecture repository for database operations.
 """
 
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 from sqlalchemy import func, or_
 from sqlalchemy.orm import joinedload
@@ -400,6 +400,70 @@ class LectureRepository(BaseRepository):
                 )
 
             return results
+
+    def list_briefs(
+        self,
+        course_id: Optional[int] = None,
+        limit: Optional[int] = None,
+    ) -> List[Dict[str, Any]]:
+        """
+        List lecture briefs (id, course_id, topic_id, title, summary only) for a course,
+        returning only the latest revision for each topic.
+        This method excludes the large 'content' field for better performance.
+
+        Args:
+            course_id: Filter by course ID (required)
+            limit: Maximum number of lectures to return (optional)
+
+        Returns:
+            List[Dict]: List of lecture brief dictionaries with keys: id, course_id, topic_id, title, summary
+        """
+        with self.get_session() as session:
+            # Subquery to get the latest revision for each topic
+            latest_revisions = (
+                session.query(
+                    LectureModel.topic_id, func.max(LectureModel.revision).label("max_revision")
+                )
+                .group_by(LectureModel.topic_id)
+                .subquery()
+            )
+
+            # Query to get only the fields needed for LectureBrief
+            query = session.query(
+                LectureModel.id,
+                LectureModel.course_id,
+                LectureModel.topic_id,
+                LectureModel.title,
+                LectureModel.summary,
+            ).join(
+                latest_revisions,
+                (LectureModel.topic_id == latest_revisions.c.topic_id)
+                & (LectureModel.revision == latest_revisions.c.max_revision),
+            )
+
+            # Apply course_id filter (required)
+            if course_id is not None:
+                query = query.filter(LectureModel.course_id == course_id)
+
+            # Order by id for consistent results (must be before limit/offset)
+            query = query.order_by(LectureModel.id)
+
+            # Apply limit if provided
+            if limit is not None:
+                query = query.limit(limit)
+
+            # Execute query and convert to list of dicts
+            results = query.all()
+            return [
+                {
+                    "id": row.id,
+                    "course_id": row.course_id,
+                    "topic_id": row.topic_id,
+                    "title": row.title,
+                    "summary": row.summary,
+                }
+                for row in results
+            ]
 
     def update(self, lecture: Lecture) -> Lecture:
         """
