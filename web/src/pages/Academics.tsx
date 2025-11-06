@@ -122,6 +122,16 @@ const AcademicsPage = () => {
               </div>
             </div>
 
+            {/* See all departments link */}
+            <div class="mb-8 text-center">
+              <A
+                href="/departments"
+                class="text-parchment-200 hover:text-parchment-100 text-lg tracking-wide transition-colors duration-300 underline underline-offset-4"
+              >
+                see all departments
+              </A>
+            </div>
+
             {/* Selected faculty description */}
             <Show when={selectedFaculty()}>
               {(faculty) => (
