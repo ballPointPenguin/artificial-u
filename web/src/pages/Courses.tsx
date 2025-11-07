@@ -318,6 +318,9 @@ const Courses: Component = () => {
                     Creator
                   </th>
                   <SortableHeader field="updated_at" label="Last Update" />
+                  <th class="py-3 px-4 align-middle text-left font-display text-parchment-200">
+                    Audio Files
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -344,6 +347,9 @@ const Courses: Component = () => {
                       </td>
                       <td class="py-3 px-4 align-middle text-parchment-100">
                         {formatDate(course.updated_at)}
+                      </td>
+                      <td class="py-3 px-4 align-middle text-parchment-100">
+                        {course.lectures_with_audio_count ?? 0} / {course.topics_count ?? 0}
                       </td>
                     </tr>
                   )}

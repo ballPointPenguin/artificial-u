@@ -133,6 +133,11 @@ class CourseResponse(CourseBase):
     department: Optional[DepartmentBrief] = Field(
         None, description="Department offering the course"
     )
+    # Audio/Topic Counts
+    lectures_with_audio_count: Optional[int] = Field(
+        0, description="Number of lectures with audio files"
+    )
+    topics_count: Optional[int] = Field(0, description="Total number of topics in the course")
 
     class Config:
         from_attributes = True

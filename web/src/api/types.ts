@@ -42,6 +42,8 @@ export interface Course {
   created_with?: string | null
   created_at?: string | null
   updated_at?: string | null
+  lectures_with_audio_count?: number
+  topics_count?: number
   student?: {
     id: number
     name: string

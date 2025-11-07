@@ -256,18 +256,18 @@ class CourseService:
             courses = self.repository_factory.course.list(department_id=department_id)
             result = []
             for course in courses:
-                # Fetch professor using the repository directly
-                professor = self.repository_factory.professor.get(course.professor_id)
+                professor = None
+                if course.professor_id:
+                    professor = self.repository_factory.professor.get(course.professor_id)
 
-                # Fetch department using the repository directly
-                department = self.repository_factory.department.get(course.department_id)
+                department = None
+                if course.department_id:
+                    department = self.repository_factory.department.get(course.department_id)
 
-                # Fetch student information if created_by is present
                 student = None
                 if course.created_by:
                     student = self.repository_factory.student.get(course.created_by)
 
-                # Load faculty name if faculty_id is present
                 faculty_name = None
                 if department and department.faculty_id:
                     faculty = self.repository_factory.faculty.get(department.faculty_id)
@@ -276,9 +276,8 @@ class CourseService:
 
                 result.append(
                     {
-                        # Convert models to dicts for consistent output
                         "course": course_model_to_dict(course),
-                        "professor": professor_model_to_dict(professor),
+                        "professor": professor_model_to_dict(professor) if professor else None,
                         "department": (
                             {
                                 "id": department.id,

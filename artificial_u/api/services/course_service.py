@@ -17,9 +17,13 @@ from artificial_u.api.models.courses import (
     GeneratedCourseData,
     LectureBrief,
     ProfessorBrief,
+    StudentBrief,
 )
 from artificial_u.api.services.base_service import BaseApiService
 from artificial_u.models.core import Course as CoreCourse
+from artificial_u.models.core import Department as CoreDepartment
+from artificial_u.models.core import Professor as CoreProfessor
+from artificial_u.models.core import Student as CoreStudent
 
 # Import RepositoryFactory directly instead of legacy Repository wrapper
 from artificial_u.models.repositories import RepositoryFactory
@@ -86,6 +90,54 @@ class CourseApiService(BaseApiService[CoreCourse, CourseResponse, CoursesListRes
         )
         # Keep reference to core professor service if needed for direct lookups
         self.professor_service = professor_service
+
+    # ------------------------------------------------------------------
+    # Internal helpers
+    # ------------------------------------------------------------------
+
+    def _build_professor_brief(
+        self, professor: Optional[CoreProfessor]
+    ) -> Optional[ProfessorBrief]:
+        """Convert core professor model to API brief."""
+        if not professor:
+            return None
+        professor_data = professor.model_dump()
+        return ProfessorBrief.model_validate(professor_data)
+
+    def _build_department_brief(
+        self, department: Optional[CoreDepartment]
+    ) -> Optional[DepartmentBrief]:
+        """Convert core department model to API brief with faculty name."""
+        if not department:
+            return None
+        faculty_name: Optional[str] = None
+        if department.faculty_id:
+            faculty = self.repository_factory.faculty.get(department.faculty_id)
+            if faculty:
+                faculty_name = faculty.name
+        department_data = department.model_dump()
+        department_data["faculty_name"] = faculty_name
+        return DepartmentBrief.model_validate(department_data)
+
+    def _build_student_brief(self, student: Optional[CoreStudent]) -> Optional[StudentBrief]:
+        """Convert core student model to API brief."""
+        if not student:
+            return None
+        student_data = student.model_dump()
+        return StudentBrief.model_validate(student_data)
+
+    def _build_course_response(self, course: CoreCourse) -> CourseResponse:
+        """Construct a CourseResponse from a core course model."""
+        professor_brief = self._build_professor_brief(course.professor)
+        department_brief = self._build_department_brief(course.department)
+        student_brief = self._build_student_brief(course.student)
+
+        course_data = course.model_dump()
+        course_data["professor"] = professor_brief.model_dump() if professor_brief else None
+        course_data["department"] = department_brief.model_dump() if department_brief else None
+        course_data["student"] = student_brief.model_dump() if student_brief else None
+
+        return CourseResponse.model_validate(course_data)
 
     def _filter_courses(
         self,
@@ -182,32 +234,27 @@ class CourseApiService(BaseApiService[CoreCourse, CourseResponse, CoursesListRes
     ) -> CoursesListResponse:
         """
         Get a paginated list of courses with optional filtering and sorting.
-        Filters by department in the core service, others applied here.
+        This now bypasses the core_service and uses the repository directly for performance.
         """
         try:
-            # Get courses from core service (only filters by department_id)
-            # Core service returns List[Dict[str, Any]] with 'course' and 'professor' keys
-            core_courses_list = self.core_service.list_courses(department_id=department_id)
-
-            # Apply additional filters
-            filtered_courses = self._filter_courses(
-                core_courses_list, professor_id, level, title, created_by
+            # Use the powerful repository method to get courses and total count
+            courses, total = self.repository_factory.course.list_and_count(
+                page=page,
+                size=size,
+                sort_by=sort_by,
+                order=order,
+                department_id=department_id,
+                professor_id=professor_id,
+                level=level,
+                title=title,
+                created_by=created_by,
             )
 
-            # Apply sorting
-            sorted_courses = self._sort_courses(filtered_courses, sort_by, order)
-
-            # Count total after filtering
-            total = len(sorted_courses)
-
-            # Apply pagination
-            paginated_items = self._paginate_items(sorted_courses, page, size)
-
-            # Convert to response models
-            course_responses = self._convert_to_course_responses(paginated_items)
+            # Convert to response models (this part is now more complex)
+            response_items = [self._build_course_response(course) for course in courses]
 
             return self._create_list_response(
-                course_responses, total, page, size, CoursesListResponse
+                response_items, total, page, size, CoursesListResponse
             )
         except DatabaseError as e:
             self._handle_database_error("get courses", e)
@@ -220,7 +267,7 @@ class CourseApiService(BaseApiService[CoreCourse, CourseResponse, CoursesListRes
         """
         try:
             course_model = self.core_service.get_course(course_id)
-            return CourseResponse.model_validate(course_model)  # Core returns CourseModel
+            return self._build_course_response(course_model)
         except CourseNotFoundError:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -237,7 +284,7 @@ class CourseApiService(BaseApiService[CoreCourse, CourseResponse, CoursesListRes
         """
         try:
             course_model = self.core_service.get_course_by_code(code)
-            return CourseResponse.model_validate(course_model)  # Core returns CourseModel
+            return self._build_course_response(course_model)
         except CourseNotFoundError:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -291,7 +338,7 @@ class CourseApiService(BaseApiService[CoreCourse, CourseResponse, CoursesListRes
                 # Don't fail the course creation if topic generation enqueue fails
 
             # Convert the returned CourseModel to the API response model
-            return CourseResponse.model_validate(created_course_model)
+            return self._build_course_response(created_course_model)
         except ProfessorNotFoundError as e:
             self.logger.warning(f"Professor not found during course creation: {e}")
             raise HTTPException(
@@ -328,7 +375,7 @@ class CourseApiService(BaseApiService[CoreCourse, CourseResponse, CoursesListRes
             updated_course_model = self.core_service.update_course(course_id, update_data)
 
             # Convert the returned CourseModel to the API response model
-            return CourseResponse.model_validate(updated_course_model)
+            return self._build_course_response(updated_course_model)
         except CourseNotFoundError:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -384,14 +431,14 @@ class CourseApiService(BaseApiService[CoreCourse, CourseResponse, CoursesListRes
         """
         try:
             # Get the course using the core service
-            course = self.core_service.get_course(course_id)
+            course_model = self.core_service.get_course(course_id)
 
             # Get the professor using the repository factory directly
-            professor = self.repository_factory.professor.get(course.professor_id)
+            professor = self.repository_factory.professor.get(course_model.professor_id)
             if not professor:
                 # This case implies data inconsistency if course exists but professor doesn't
                 self.logger.error(
-                    f"Professor {course.professor_id} linked to course {course_id} not found."
+                    f"Professor {course_model.professor_id} linked to course {course_id} not found."
                 )
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,
@@ -424,9 +471,9 @@ class CourseApiService(BaseApiService[CoreCourse, CourseResponse, CoursesListRes
         """
         try:
             # Get the course using the core service
-            course = self.core_service.get_course(course_id)
+            course_model = self.core_service.get_course(course_id)
 
-            if not course.department_id:
+            if not course_model.department_id:
                 self.logger.warning(f"Course {course_id} has no associated department ID.")
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,
@@ -434,11 +481,11 @@ class CourseApiService(BaseApiService[CoreCourse, CourseResponse, CoursesListRes
                 )
 
             # Get the department using the repository factory directly
-            department = self.repository_factory.department.get(course.department_id)
+            department = self.repository_factory.department.get(course_model.department_id)
             if not department:
                 # This case implies data inconsistency
                 self.logger.error(
-                    f"Department {course.department_id} linked to course {course_id} not found."
+                    f"Department {course_model.department_id} linked to course {course_id} not found."
                 )
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,

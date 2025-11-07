@@ -158,7 +158,7 @@ class Professor(BaseModel):
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
     # Related objects
-    student: Optional[Dict[str, Any]] = None
+    student: Optional["Student"] = None
 
 
 class Course(BaseModel):
@@ -198,7 +198,12 @@ class Course(BaseModel):
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
     # Related objects
-    student: Optional[Dict[str, Any]] = None
+    professor: Optional["Professor"] = None
+    department: Optional["Department"] = None
+    student: Optional["Student"] = None
+    # Audio/Topic Counts
+    lectures_with_audio_count: Optional[int] = 0
+    topics_count: Optional[int] = 0
 
 
 class Topic(BaseModel):
