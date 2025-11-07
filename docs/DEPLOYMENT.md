@@ -148,6 +148,7 @@ To enable the workflow to securely authenticate with your AWS account, you need 
    - `VITE_AUTH0_DOMAIN`: Your Auth0 domain (e.g., `your-domain.auth0.com`)
    - `VITE_AUTH0_CLIENT_ID`: Your Auth0 application client ID
    - `VITE_AUTH0_AUDIENCE`: Your Auth0 API audience/identifier
+   - `VITE_PLAUSIBLE_DOMAIN`: Your public domain, to enable Plausible Analytics tracking
 
 Once these steps are complete, any push to `prod` will automatically trigger a deployment.
 

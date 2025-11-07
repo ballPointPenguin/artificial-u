@@ -73,6 +73,7 @@ services:
         VITE_AUTH0_AUDIENCE: ${VITE_AUTH0_AUDIENCE}
         VITE_AUTH0_CLIENT_ID: ${VITE_AUTH0_CLIENT_ID}
         VITE_AUTH0_DOMAIN: ${VITE_AUTH0_DOMAIN}
+        VITE_PLAUSIBLE_DOMAIN: ${VITE_PLAUSIBLE_DOMAIN}
     container_name: artificial_u_web
     depends_on:
       api:

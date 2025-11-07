@@ -5,7 +5,7 @@ import solid from 'vite-plugin-solid'
 export default defineConfig({
   plugins: [solid(), tailwindcss()],
   server: {
-    allowedHosts: ['aliencyborg.share.zrok.io', 'localhost'],
+    allowedHosts: ['aliencyborg.share.zrok.io', 'localhost', 'artificial-u.com'],
     proxy: {
       '/api': {
         target: 'http://localhost:8000',
