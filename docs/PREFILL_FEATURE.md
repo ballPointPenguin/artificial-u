@@ -78,9 +78,8 @@ prefill = "1. "
 ### Backend Compatibility
 
 - **Anthropic (Claude)**: ✅ Full support
-- **OpenAI (GPT)**: ❌ Not supported (warning logged, prefill ignored)
-- **Gemini**: ❌ Not supported (warning logged, prefill ignored)
-- **Ollama**: ❌ Not supported (warning logged, prefill ignored)
+- **OpenAI (GPT)**: ✅ Full support
+- **Gemini**: ✅ Full support
 
 ### Best Practices
 

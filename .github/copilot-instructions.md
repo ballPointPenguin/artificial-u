@@ -13,8 +13,8 @@ ArtificialU is an AI-powered educational content platform that generates univers
 - Python 3.13+ with FastAPI
 - PostgreSQL with SQLAlchemy ORM
 - Hatch for environment management
-- AI: Anthropic Claude, Google Gemini, OpenAI, Ollama (local)
-- TTS: ElevenLabs, Azure Cognitive Services Speech
+- AI: Anthropic Claude, Google Gemini, OpenAI
+- TTS: ElevenLabs
 - Storage: MinIO (dev) / S3 (prod)
 - Background jobs: Custom async worker with PostgreSQL-backed queue
 
@@ -130,7 +130,7 @@ pnpm test:coverage    # Coverage report
 ### Docker & Services
 
 ```bash
-docker compose up -d     # Start postgres, ollama, minio
+docker compose up -d     # Start postgres, minio
 docker compose down      # Stop services
 docker compose logs -f   # View logs
 
@@ -298,7 +298,7 @@ When adding frontend features:
 - `.flake8`: Flake8 linting rules
 - `.pre-commit-config.yaml`: Pre-commit hooks
 - `alembic.ini`: Database migration configuration
-- `docker-compose.yml`: Local service orchestration (postgres, ollama, minio)
+- `docker-compose.yml`: Local service orchestration (postgres, minio)
 - `web/package.json`: Frontend dependencies and scripts
 - `web/biome.json`: BiomeJS formatter/linter config
 - `web/tsconfig.json`: TypeScript configuration

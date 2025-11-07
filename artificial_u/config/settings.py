@@ -20,7 +20,6 @@ from artificial_u.config.defaults import (
     DEFAULT_CONTENT_LOGS_PATH,
     DEFAULT_DB_URL,
     DEFAULT_LOG_LEVEL,
-    DEFAULT_OLLAMA_MODEL,
     DEFAULT_STORAGE_ACCESS_KEY,
     DEFAULT_STORAGE_AUDIO_BUCKET,
     DEFAULT_STORAGE_ENDPOINT_URL,
@@ -77,8 +76,6 @@ class Settings(BaseSettings):
     ELEVENLABS_API_KEY: Optional[str] = None
     GOOGLE_API_KEY: Optional[str] = None
     OPENAI_API_KEY: Optional[str] = None
-    SPEECH_KEY: Optional[str] = None
-    SPEECH_REGION: Optional[str] = None
 
     # Auth0 (API resource protection)
     AUTH0_DOMAIN: Optional[str] = None
@@ -103,9 +100,6 @@ class Settings(BaseSettings):
     # Content generation settings
     content_backend: str = DEFAULT_CONTENT_BACKEND
     content_model: Optional[str] = None
-
-    # Integration service endpoints
-    OLLAMA_HOST: str = "http://localhost:11434"
 
     # Course generation model
     COURSE_GENERATION_MODEL: str = "gpt-5-nano"
@@ -182,8 +176,14 @@ class Settings(BaseSettings):
         """Set default model based on backend if not provided"""
         if v is None:
             backend = info.data.get("content_backend")
-            if backend == "ollama":
-                return DEFAULT_OLLAMA_MODEL
+            if backend == "openai":
+                return "gpt-5-nano"
+            elif backend == "gemini":
+                return "gemini-2.5-flash"
+            elif backend == "anthropic":
+                return "claude-sonnet-4-5-20250929"
+            else:
+                return "gpt-5-nano"
         return v
 
     @model_validator(mode="after")
@@ -233,8 +233,6 @@ class Settings(BaseSettings):
             "elevenlabs_api_key": self.ELEVENLABS_API_KEY,
             "google_api_key": self.GOOGLE_API_KEY,
             "openai_api_key": self.OPENAI_API_KEY,
-            "speech_key": self.SPEECH_KEY,
-            "speech_region": self.SPEECH_REGION,
             "storage_type": self.STORAGE_TYPE,
             "storage_endpoint_url": self.STORAGE_ENDPOINT_URL,
             "storage_public_url": self.STORAGE_PUBLIC_URL,

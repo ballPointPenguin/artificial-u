@@ -41,10 +41,11 @@
 - [x] Organize Depeartments under Faculties
 - [x] Seed Data for Faculties and Departments
 - [x] Incorporate Faculty information into Generation Prompts
+- [x] Discourage > 2 lectures per week
+- [x] Sort and filter departments
 - [ ] Easy Course Generation UI (single prompt field, no form)
 - [ ] Protect the "Delete" actions -- restrict to admin or owner of the record
 - [ ] Encourage more foreign and older professors
-- [ ] Discourage > 2 lectures per week
 - [ ] Dev: Troubleshoot the "too many connections" errors
 - [ ] Enable Private content (paid students only?)
 - [ ] Browser Notifications for jobs
@@ -52,7 +53,6 @@
 - [ ] Action buttons on Topics List
 - [ ] Indicate # of generated lectures for a topic
 - [ ] Sort and filter professors
-- [ ] Sort and filter departments
 - [ ] Generated image model attribution
 - [ ] Better handling of job lifecycles with uvicore reboots
 - [ ] Improve mobile view
@@ -79,7 +79,7 @@
 - [ ] Web-based audio player with playlists
 - [ ] Lecture Configuration Options
 - [ ] Model Selection UI
-- [ ] Consider utilizing some Ollama models in production
+- [ ] Consider utilizing some Open models in production
 - [ ] Student Profile to show history of generations/expenses
 - [ ] Admin UI of student accounts and activity
 - [ ] Admin ability to grant coins to students

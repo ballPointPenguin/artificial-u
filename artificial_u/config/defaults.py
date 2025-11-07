@@ -7,7 +7,6 @@ DEFAULT_DB_URL = "postgresql://postgres:postgres@localhost:5432/artificial_u_dev
 
 # Content generation defaults
 DEFAULT_CONTENT_BACKEND = "anthropic"
-DEFAULT_OLLAMA_MODEL = "qwen3:0.6b"
 DEFAULT_CONTENT_LOGS_PATH = "content_logs"
 
 # Storage defaults (MinIO/S3)

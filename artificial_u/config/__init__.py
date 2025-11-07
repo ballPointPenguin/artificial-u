@@ -9,7 +9,6 @@ from artificial_u.config.defaults import (
     DEFAULT_DB_URL,
     DEFAULT_LECTURE_WORD_COUNT,
     DEFAULT_LOG_LEVEL,
-    DEFAULT_OLLAMA_MODEL,
     DEFAULT_STORAGE_ACCESS_KEY,
     DEFAULT_STORAGE_AUDIO_BUCKET,
     DEFAULT_STORAGE_ENDPOINT_URL,
@@ -51,7 +50,6 @@ __all__ = [
     "DEFAULT_STORAGE_EXPORTS_BUCKET",
     # Content generation defaults
     "DEFAULT_CONTENT_BACKEND",
-    "DEFAULT_OLLAMA_MODEL",
     # Course and lecture defaults
     "DEFAULT_LECTURE_WORD_COUNT",
     # System defaults

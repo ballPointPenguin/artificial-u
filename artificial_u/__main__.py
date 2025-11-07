@@ -31,10 +31,6 @@ def check_api_keys():
         optional_missing.append("GOOGLE_API_KEY")
     if not os.environ.get("OPENAI_API_KEY"):
         optional_missing.append("OPENAI_API_KEY")
-    if not os.environ.get("SPEECH_KEY"):
-        optional_missing.append("SPEECH_KEY")
-    if not os.environ.get("SPEECH_REGION"):
-        optional_missing.append("SPEECH_REGION")
 
     return missing_vars, optional_missing
 
