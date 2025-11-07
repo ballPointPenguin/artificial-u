@@ -134,10 +134,20 @@ def main():
     # Optionally seed data
     if not args.no_seed:
         try:
-            from scripts.seed_data import seed_faculties
+            # Import seed_faculties directly to avoid module path issues in deployment
+            import importlib.util
+
+            # Get the directory of this script
+            script_dir = os.path.dirname(os.path.abspath(__file__))
+            seed_data_path = os.path.join(script_dir, "seed_data.py")
+
+            # Load the module
+            spec = importlib.util.spec_from_file_location("seed_data", seed_data_path)
+            seed_data_module = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(seed_data_module)
 
             logger.info("Seeding default faculties")
-            seed_faculties(db_url=db_url)
+            seed_data_module.seed_faculties(db_url=db_url)
             logger.info("Seeding completed")
         except Exception as e:
             logger.error(f"Error during seeding: {e}")
