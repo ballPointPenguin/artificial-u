@@ -8,6 +8,10 @@ import logging
 import os
 import subprocess
 import sys
+from pathlib import Path
+
+# Add project root to path to allow imports of artificial_u modules
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import sqlalchemy
 from dotenv import load_dotenv
@@ -28,7 +32,6 @@ def parse_args():
     parser = argparse.ArgumentParser(description="Initialize PostgreSQL database for ArtificialU")
     parser.add_argument("--db-url", help="PostgreSQL connection URL")
     parser.add_argument("--yes", "-y", action="store_true", help="Skip confirmation prompt")
-    parser.add_argument("--no-seed", action="store_true", help="Skip seeding default data")
     return parser.parse_args()
 
 
@@ -131,29 +134,8 @@ def main():
     if not run_alembic_migrations(db_url, logger):
         sys.exit(1)
 
-    # Optionally seed data
-    if not args.no_seed:
-        try:
-            # Import seed_faculties directly to avoid module path issues in deployment
-            import importlib.util
-
-            # Get the directory of this script
-            script_dir = os.path.dirname(os.path.abspath(__file__))
-            seed_data_path = os.path.join(script_dir, "seed_data.py")
-
-            # Load the module
-            spec = importlib.util.spec_from_file_location("seed_data", seed_data_path)
-            seed_data_module = importlib.util.module_from_spec(spec)
-            spec.loader.exec_module(seed_data_module)
-
-            logger.info("Seeding default faculties")
-            seed_data_module.seed_faculties(db_url=db_url)
-            logger.info("Seeding completed")
-        except Exception as e:
-            logger.error(f"Error during seeding: {e}")
-            sys.exit(1)
-
     logger.info("Database initialized successfully!")
+    logger.info("Note: Run 'python scripts/seed_data.py' separately to seed default faculties")
 
 
 if __name__ == "__main__":
