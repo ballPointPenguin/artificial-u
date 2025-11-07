@@ -10,9 +10,10 @@ import logging
 from typing import Optional
 
 from fastapi import Depends
+from fastapi.security import HTTPAuthorizationCredentials
 
 from artificial_u.api.config import get_settings
-from artificial_u.api.security.auth0 import require_auth
+from artificial_u.api.security.auth0 import auth_scheme, require_auth
 from artificial_u.api.services import (
     CourseApiService,
     DepartmentApiService,
@@ -52,6 +53,7 @@ def get_repository_factory() -> RepositoryFactory:
 
 def ensure_student(
     payload: dict = Depends(require_auth),
+    credentials: HTTPAuthorizationCredentials = Depends(auth_scheme),
     repository_factory: RepositoryFactory = Depends(get_repository_factory),
 ) -> Student:
     """
@@ -59,16 +61,54 @@ def ensure_student(
 
     Uses the JWT `sub` claim as `auth0_sub`. Falls back to `name` or `nickname` or `email`
     claims to seed the initial name. Email is captured if present.
+
+    If the access token doesn't contain user profile information, fetches it from
+    Auth0's /userinfo endpoint.
     """
-    sub = payload.get("sub")
-    email = payload.get("email")
+    import logging
+
+    from artificial_u.api.security.auth0 import get_user_info
+
+    logger = logging.getLogger(__name__)
+
+    # Debug: log the entire payload structure
+    logger.info(f"JWT Payload keys: {list(payload.keys())}")
+    logger.info(f"JWT Payload: {payload}")
+
+    # Check if we have user profile info in the token
+    # If not, fetch it from Auth0's /userinfo endpoint
+    user_info = payload
+    if not payload.get("email") and not payload.get("name"):
+        logger.info("Access token missing user profile claims, fetching from /userinfo endpoint")
+        try:
+            access_token = credentials.credentials
+            user_info = get_user_info(access_token)
+            logger.info(f"Fetched user info: {user_info}")
+            # Merge user info with payload (payload takes precedence for auth claims)
+            user_info = {**user_info, **payload}
+        except Exception as e:
+            logger.warning(f"Failed to fetch user info from Auth0: {e}")
+            # Continue with just the payload
+            user_info = payload
+
+    sub = user_info.get("sub")
+    email = user_info.get("email")
+
+    logger.info(f"Extracted - sub: {sub}, email: {email}")
+    logger.info(f"name: {user_info.get('name')}, nickname: {user_info.get('nickname')}")
+    logger.info(
+        f"given_name: {user_info.get('given_name')}, family_name: {user_info.get('family_name')}"
+    )
+
     # Prefer name->nickname->email->sub for initial display name
     display_name = (
-        payload.get("name")
-        or payload.get("nickname")
+        user_info.get("name")
+        or user_info.get("nickname")
         or (email if isinstance(email, str) else None)
         or (sub if isinstance(sub, str) else "User")
     )
+
+    logger.info(f"Final display_name: {display_name}")
 
     if not isinstance(sub, str):
         # Should not happen if token is valid, but guard anyway

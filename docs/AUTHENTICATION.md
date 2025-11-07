@@ -303,6 +303,48 @@ Wrap protected pages/routes with `RequireAuth`.
 - [x] Verify: login flow, token in requests, API validation, scope enforcement
 - [ ] Tests: unit test JWT dependency with a mocked token; smoke test a protected endpoint, fix api tests
 
+## User Profile Claims in Access Tokens
+
+By default, Auth0 access tokens contain only authorization information (`sub`, `scope`, `aud`, `iss`) but **not** user profile information like `email`, `name`, `given_name`, `family_name`, etc.
+
+Our backend automatically handles this by:
+
+1. First checking if the access token contains user profile claims
+2. If not, fetching user profile from Auth0's `/userinfo` endpoint
+3. Merging the profile data with the JWT payload
+
+This means your access tokens will work whether or not they contain user profile claims.
+
+### Option: Add User Profile to Access Token (Recommended for Performance)
+
+To avoid the extra API call to `/userinfo` on every request, you can configure Auth0 to include user profile claims in the access token:
+
+1. Go to Auth0 Dashboard → **Actions** → **Flows** → **Login**
+2. Click **+** to create a custom action (or edit existing)
+3. Name it "Add User Profile to Access Token"
+4. Add this code:
+
+```javascript
+exports.onExecutePostLogin = async (event, api) => {
+  // Add user profile info to the access token
+  if (event.authorization) {
+    api.accessToken.setCustomClaim('email', event.user.email);
+    api.accessToken.setCustomClaim('name', event.user.name);
+    api.accessToken.setCustomClaim('nickname', event.user.nickname);
+    api.accessToken.setCustomClaim('given_name', event.user.given_name);
+    api.accessToken.setCustomClaim('family_name', event.user.family_name);
+    api.accessToken.setCustomClaim('picture', event.user.picture);
+    api.accessToken.setCustomClaim('email_verified', event.user.email_verified);
+  }
+};
+```
+
+5. **Deploy** the action
+6. **Drag** it into your Login flow
+7. **Apply** the changes
+
+After this, new tokens will contain user profile information and the `/userinfo` call will be skipped.
+
 ## Alternatives (later, if needed)
 
 - **BFF/Session**: Instead of SPA bearer tokens, run a backend-for-frontend that manages a server session and sets `HttpOnly` cookies. More setup, fewer token exposures in the browser.

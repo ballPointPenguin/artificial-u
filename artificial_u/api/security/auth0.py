@@ -20,6 +20,28 @@ def get_jwks() -> Dict[str, Any]:
         return client.get(jwks_url).json()
 
 
+def get_user_info(access_token: str) -> Dict[str, Any]:
+    """
+    Fetch user profile information from Auth0's /userinfo endpoint.
+
+    This is needed because the access token may not contain user profile claims
+    unless explicitly configured in Auth0 Actions.
+
+    Args:
+        access_token: The OAuth2 access token
+
+    Returns:
+        Dict containing user profile information (sub, email, name, etc.)
+    """
+    settings = get_settings()
+    userinfo_url = f"https://{settings.AUTH0_DOMAIN}/userinfo"
+
+    with httpx.Client(timeout=5.0) as client:
+        response = client.get(userinfo_url, headers={"Authorization": f"Bearer {access_token}"})
+        response.raise_for_status()
+        return response.json()
+
+
 def _get_signing_key(kid: str) -> Optional[Dict[str, Any]]:
     keys: List[Dict[str, Any]] = get_jwks().get("keys", [])
     for key in keys:
