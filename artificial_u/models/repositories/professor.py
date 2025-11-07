@@ -242,3 +242,45 @@ class ProfessorRepository(BaseRepository):
                 )
                 for p in db_professors
             ]
+
+    def list_by_faculty(self, faculty_id: int) -> List[Professor]:
+        """List all professors in departments belonging to a specific faculty."""
+        from artificial_u.models.database import DepartmentModel
+
+        with self.get_session() as session:
+            # Join professors with departments and filter by faculty_id
+            db_professors = (
+                session.query(ProfessorModel)
+                .join(DepartmentModel, ProfessorModel.department_id == DepartmentModel.id)
+                .filter(DepartmentModel.faculty_id == faculty_id)
+                .distinct()
+                .all()
+            )
+
+            return [
+                Professor(
+                    **{
+                        # Required fields
+                        "id": p.id,
+                        "name": p.name or "",
+                        # Optional fields with defaults
+                        "title": getattr(p, "title", None),
+                        "accent": getattr(p, "accent", None),
+                        "age": getattr(p, "age", None),
+                        "background": getattr(p, "background", None),
+                        "description": getattr(p, "description", None),
+                        "gender": getattr(p, "gender", None),
+                        "personality": getattr(p, "personality", None),
+                        "specialization": getattr(p, "specialization", None),
+                        "teaching_style": getattr(p, "teaching_style", None),
+                        "image_url": getattr(p, "image_url", None),
+                        "department_id": getattr(p, "department_id", None),
+                        "voice_id": getattr(p, "voice_id", None),
+                        "created_by": getattr(p, "created_by", None),
+                        "created_with": getattr(p, "created_with", None),
+                        "created_at": getattr(p, "created_at", None),
+                        "updated_at": getattr(p, "updated_at", None),
+                    }
+                )
+                for p in db_professors
+            ]

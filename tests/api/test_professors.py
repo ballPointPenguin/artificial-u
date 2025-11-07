@@ -200,7 +200,7 @@ def test_list_professors(client: TestClient, mock_api_service):
     assert data["items"][0]["name"] == sample_professors_base[0].name
 
     mock_api_service["get_professors"].assert_called_once_with(
-        page=1, size=10, department_id=None, name=None, specialization=None
+        page=1, size=10, department_id=None, faculty_id=None, name=None, specialization=None
     )
 
 
@@ -219,7 +219,27 @@ def test_list_professors_with_filters(client: TestClient, mock_api_service):
     assert data["total"] == len(filtered_professors)
 
     mock_api_service["get_professors"].assert_called_once_with(
-        page=1, size=10, department_id=1, name="Test", specialization=None
+        page=1, size=10, department_id=1, faculty_id=None, name="Test", specialization=None
+    )
+
+
+@pytest.mark.unit
+def test_list_professors_with_faculty_filter(client: TestClient, mock_api_service):
+    """Test listing professors filtered by faculty_id."""
+    # Mock professors from faculty 4 (departments 2 and 8)
+    faculty_4_professors = [p for p in sample_professors_base if p.department_id in [2]]
+    mock_api_service["get_professors"].return_value = ProfessorsListResponse(
+        items=faculty_4_professors, total=len(faculty_4_professors), page=1, size=10, pages=1
+    )
+
+    response = client.get("/api/v1/professors?faculty_id=4")
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data["items"]) == len(faculty_4_professors)
+    assert data["total"] == len(faculty_4_professors)
+
+    mock_api_service["get_professors"].assert_called_once_with(
+        page=1, size=10, department_id=None, faculty_id=4, name=None, specialization=None
     )
 
 

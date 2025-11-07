@@ -43,6 +43,9 @@
 - [x] Incorporate Faculty information into Generation Prompts
 - [x] Discourage > 2 lectures per week
 - [x] Sort and filter departments
+- [x] Admin ability to grant coins to students
+- [x] Monitoring and analytics
+- [ ] Sort and filter professors
 - [ ] Easy Course Generation UI (single prompt field, no form)
 - [ ] Protect the "Delete" actions -- restrict to admin or owner of the record
 - [ ] Encourage more foreign and older professors
@@ -52,7 +55,6 @@
 - [ ] Include word-count in summary or somewhere
 - [ ] Action buttons on Topics List
 - [ ] Indicate # of generated lectures for a topic
-- [ ] Sort and filter professors
 - [ ] Generated image model attribution
 - [ ] Better handling of job lifecycles with uvicore reboots
 - [ ] Improve mobile view
@@ -67,7 +69,6 @@
 - [ ] User Interests
 - [ ] Rating & Feedback system
 - [ ] Coins/Tuition in UI
-- [ ] Monitoring and analytics
 - [ ] Enable structured imports of syllabi
 - [ ] Enable import of courses with assets and related data
 - [ ] Content checking for user input (toxicity, stupidity, typos)
@@ -82,7 +83,6 @@
 - [ ] Consider utilizing some Open models in production
 - [ ] Student Profile to show history of generations/expenses
 - [ ] Admin UI of student accounts and activity
-- [ ] Admin ability to grant coins to students
 - [ ] Apply for a grant - feature for students to receive coins
 - [ ] Enable multi-department courses
 - [ ] Enable multi-department professors

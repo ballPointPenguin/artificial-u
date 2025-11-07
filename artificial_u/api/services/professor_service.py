@@ -92,6 +92,7 @@ class ProfessorApiService(BaseApiService[CoreProfessor, ProfessorResponse, Profe
         page: int = 1,
         size: int = 10,
         department_id: Optional[int] = None,
+        faculty_id: Optional[int] = None,
         name: Optional[str] = None,
         specialization: Optional[str] = None,
     ) -> ProfessorsListResponse:
@@ -102,6 +103,7 @@ class ProfessorApiService(BaseApiService[CoreProfessor, ProfessorResponse, Profe
             page: Page number (1-indexed)
             size: Items per page
             department_id: Filter by department ID
+            faculty_id: Filter by faculty ID (through department relationship)
             name: Filter by name (partial match)
             specialization: Filter by specialization (partial match)
 
@@ -110,6 +112,8 @@ class ProfessorApiService(BaseApiService[CoreProfessor, ProfessorResponse, Profe
         """
         # Build filters dictionary
         filters = {}
+        if faculty_id is not None:
+            filters["faculty_id"] = faculty_id
         if department_id is not None:
             filters["department_id"] = department_id
         if name:
@@ -117,14 +121,42 @@ class ProfessorApiService(BaseApiService[CoreProfessor, ProfessorResponse, Profe
         if specialization:
             filters["specialization"] = specialization
 
-        return self._standard_list_operation(
-            core_service_method="list_professors",
-            response_class=ProfessorResponse,
-            list_response_class=ProfessorsListResponse,
-            page=page,
-            size=size,
-            filters=filters,
-        )
+        # Call core service directly with filters
+        # (not using _standard_list_operation because it doesn't forward filters properly)
+        try:
+            # Call core service directly with filters
+            all_professors = self.core_service.list_professors(
+                filters=filters,
+                page=page,
+                size=size,
+            )
+
+            # Convert to response models
+            response_items = [
+                ProfessorResponse.model_validate(p.model_dump()) for p in all_professors
+            ]
+
+            # Get total count (core service already handled pagination)
+            # So we need to get the full count
+            all_professors_unpaginated = self.core_service.list_professors(
+                filters=filters,
+                page=None,
+                size=None,
+            )
+            total = len(all_professors_unpaginated)
+
+            # Calculate pages
+            pages = self._calculate_pages(total, size)
+
+            return ProfessorsListResponse(
+                items=response_items,
+                total=total,
+                page=page,
+                size=size,
+                pages=pages,
+            )
+        except Exception as e:
+            self._handle_general_error("get professors", e)
 
     def get_professor(self, professor_id: int) -> Optional[ProfessorResponse]:
         """

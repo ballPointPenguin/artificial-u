@@ -1,17 +1,60 @@
 import { createResource, createSignal, For, Show } from 'solid-js'
+import { departmentService } from '../api/services/department-service.js'
+import { facultyService } from '../api/services/faculty-service.js'
 import { professorService } from '../api/services/professor-service.js'
 import type { Professor } from '../api/types.js'
 import { RequireRole } from '../auth/RequireRole'
 import ProfessorForm, { type ProfessorFormData } from '../components/professors/ProfessorForm.js'
 import ProfessorListItem from '../components/professors/ProfessorListItem.js'
-import { Button, Input } from '../components/ui'
+import { Button, Input, Select, type SelectOption } from '../components/ui'
 
 export default function ProfessorsPage() {
   const [searchQuery, setSearchQuery] = createSignal('')
+  const [selectedFacultyId, setSelectedFacultyId] = createSignal<number | null>(null)
+  const [selectedDepartmentId, setSelectedDepartmentId] = createSignal<number | null>(null)
   const [page, setPage] = createSignal(1)
   const [showCreateForm, setShowCreateForm] = createSignal(false)
   const [submitting, setSubmitting] = createSignal(false)
   const [formError, setFormError] = createSignal('')
+
+  // Fetch all faculties
+  const [faculties] = createResource(() => facultyService.listFaculties())
+
+  // Fetch departments, filtered by selected faculty if one is selected
+  const [departments] = createResource(
+    () => ({
+      page: 1,
+      size: 100, // Get all departments for dropdown
+      faculty_id: selectedFacultyId() || undefined,
+    }),
+    departmentService.listDepartments
+  )
+
+  // Create faculty options for the dropdown
+  const facultyOptions = (): SelectOption[] => {
+    const facs = faculties()
+    if (!facs) return []
+    return [
+      { value: 'all', label: 'All Faculties' },
+      ...facs.items.map((faculty) => ({
+        value: faculty.id,
+        label: faculty.name,
+      })),
+    ]
+  }
+
+  // Create department options for the dropdown, filtered by selected faculty
+  const departmentOptions = (): SelectOption[] => {
+    const depts = departments()
+    if (!depts) return []
+    return [
+      { value: 'all', label: 'All Departments' },
+      ...depts.items.map((department) => ({
+        value: department.id,
+        label: department.name,
+      })),
+    ]
+  }
 
   // Fetch professors with search and pagination
   const [professorsResource, { refetch }] = createResource(
@@ -19,13 +62,38 @@ export default function ProfessorsPage() {
       page: page(),
       size: 20,
       name: searchQuery() || undefined,
+      facultyId: selectedFacultyId() || undefined,
+      departmentId: selectedDepartmentId() || undefined,
     }),
     professorService.listProfessors
   )
 
   const handleSearch = (e: Event) => {
     e.preventDefault()
+    setPage(1) // Reset to first page when searching
     void refetch()
+  }
+
+  const handleFacultyChange = (value: SelectOption['value'] | null) => {
+    if (value === 'all' || value === null) {
+      setSelectedFacultyId(null)
+    } else {
+      setSelectedFacultyId(value as number)
+    }
+    // Reset department selection when faculty changes
+    setSelectedDepartmentId(null)
+    setPage(1) // Reset to first page when filter changes
+    // Resource will automatically refetch when selectedFacultyId or page changes
+  }
+
+  const handleDepartmentChange = (value: SelectOption['value'] | null) => {
+    if (value === 'all' || value === null) {
+      setSelectedDepartmentId(null)
+    } else {
+      setSelectedDepartmentId(value as number)
+    }
+    setPage(1) // Reset to first page when filter changes
+    // Resource will automatically refetch when selectedDepartmentId or page changes
   }
 
   const handleSubmitCreate = async (formData: ProfessorFormData) => {
@@ -76,7 +144,8 @@ export default function ProfessorsPage() {
         </RequireRole>
       </Show>
 
-      <form onSubmit={handleSearch} class="mb-8">
+      <form onSubmit={handleSearch} class="mb-8 space-y-2">
+        {/* Search input and button row - always together */}
         <div class="flex gap-2">
           <Input
             name="searchProfessors"
@@ -86,9 +155,46 @@ export default function ProfessorsPage() {
             placeholder="Search professors..."
             inputClass="flex-1"
           />
-          <Button type="submit" variant="secondary">
+          <Button type="submit" variant="secondary" class="shrink-0">
             Search
           </Button>
+        </div>
+        {/* Faculty and Department dropdowns - on their own line */}
+        <div class="flex flex-col sm:flex-row gap-2">
+          <Show
+            when={!faculties.loading && faculties()?.items}
+            fallback={
+              <div class="w-full sm:w-auto sm:min-w-64 px-4 py-2 border rounded-lg bg-arcanum-800 border-parchment-700/30 text-parchment-300 flex items-center">
+                Loading faculties...
+              </div>
+            }
+          >
+            <Select
+              name="faculty"
+              options={facultyOptions()}
+              value={selectedFacultyId() ?? 'all'}
+              onChange={handleFacultyChange}
+              placeholder="All Faculties"
+              class="w-full sm:w-auto sm:min-w-64 sm:max-w-md"
+            />
+          </Show>
+          <Show
+            when={!departments.loading && departments()?.items}
+            fallback={
+              <div class="w-full sm:w-auto sm:min-w-64 px-4 py-2 border rounded-lg bg-arcanum-800 border-parchment-700/30 text-parchment-300 flex items-center">
+                Loading departments...
+              </div>
+            }
+          >
+            <Select
+              name="department"
+              options={departmentOptions()}
+              value={selectedDepartmentId() ?? 'all'}
+              onChange={handleDepartmentChange}
+              placeholder="All Departments"
+              class="w-full sm:w-auto sm:min-w-64 sm:max-w-md"
+            />
+          </Show>
         </div>
       </form>
 

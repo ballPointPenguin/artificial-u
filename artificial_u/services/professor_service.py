@@ -205,7 +205,7 @@ class ProfessorService:
         List professors with optional filtering and pagination.
 
         Args:
-            filters: Dictionary of filter criteria (department_id, name, specialization)
+            filters: Dictionary of filter criteria (department_id, name, specialization, faculty_id)
             page: Page number (starting from 1)
             size: Number of items per page
 
@@ -221,8 +221,19 @@ class ProfessorService:
 
         # Apply filters if provided
         if filters:
-            # Assuming filters keys match Professor attribute names
-            # Example: filtering by department_id
+            # Filter by faculty_id first (requires database join, so use repository method)
+            faculty_id = filters.get("faculty_id")
+            if faculty_id is not None:
+                try:
+                    professors = self.repository_factory.professor.list_by_faculty(faculty_id)
+                except Exception as e:
+                    self.logger.error(
+                        f"Failed to filter professors by faculty_id {faculty_id}: {e}",
+                        exc_info=True,
+                    )
+                    raise DatabaseError(f"Failed to filter professors by faculty: {e}") from e
+
+            # Filter by department_id
             dept_id = filters.get("department_id")
             if dept_id is not None:
                 professors = [p for p in professors if p.department_id == dept_id]
@@ -234,7 +245,9 @@ class ProfessorService:
             spec_filter = filters.get("specialization")
             if spec_filter:
                 professors = [
-                    p for p in professors if spec_filter.lower() in p.specialization.lower()
+                    p
+                    for p in professors
+                    if p.specialization and spec_filter.lower() in p.specialization.lower()
                 ]
             # Add more filters as needed
 

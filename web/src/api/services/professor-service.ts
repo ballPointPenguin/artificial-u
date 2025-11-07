@@ -17,6 +17,7 @@ interface ListProfessorsParams {
   page: number
   size: number
   departmentId?: number
+  facultyId?: number
   name?: string
   specialization?: string
 }
@@ -27,6 +28,7 @@ export const professorService = {
       page: params.page.toString(),
       size: params.size.toString(),
     })
+    if (params.facultyId) queryParams.set('faculty_id', params.facultyId.toString())
     if (params.departmentId) queryParams.set('department_id', params.departmentId.toString())
     if (params.name) queryParams.set('name', params.name)
     if (params.specialization) queryParams.set('specialization', params.specialization)
