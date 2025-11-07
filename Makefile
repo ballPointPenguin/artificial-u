@@ -125,7 +125,7 @@ db-rebuild-dev: ## Rebuild development database
 
 # Docker Services
 .PHONY: services-up
-services-up: ## Start Docker services (postgres, ollama, minio)
+services-up: ## Start Docker services (postgres, minio)
 	@echo "$(GREEN)Starting Docker services...$(NC)"
 	@docker compose up -d
 

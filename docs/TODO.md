@@ -79,7 +79,7 @@
 - [ ] Web-based audio player with playlists
 - [ ] Lecture Configuration Options
 - [ ] Model Selection UI
-- [ ] Consider utilizing some Ollama models in production
+- [ ] Consider utilizing some Open models in production
 - [ ] Student Profile to show history of generations/expenses
 - [ ] Admin UI of student accounts and activity
 - [ ] Admin ability to grant coins to students

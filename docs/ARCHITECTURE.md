@@ -38,7 +38,6 @@ ArtificialU is an AI-powered educational content platform that generates univers
   - Anthropic Claude API (primary)
   - Google Gemini API
   - OpenAI GPT API
-  - Ollama (local models)
 - **Text-to-Speech**:
   - ElevenLabs API (primary)
 - **Image Generation**: Integration-ready (professor portraits)
@@ -49,7 +48,6 @@ ArtificialU is an AI-powered educational content platform that generates univers
 - **Container Orchestration**: Docker Compose
 - **Development Database**: PostgreSQL in Docker
 - **Object Storage**: MinIO in Docker
-- **Local LLM**: Ollama in Docker (optional)
 - **CI/CD**: GitHub Actions (planned)
 - **Deployment**: Ansible playbooks (planned)
 

@@ -16,22 +16,6 @@ services:
       timeout: 5s
       retries: 5
 
-  ollama:
-    image: ollama/ollama:latest
-    container_name: artificial_u_ollama
-    ports:
-      - "11434:11434"
-    volumes:
-      - ollama_data:/root/.ollama
-      - ./ollama-entrypoint.sh:/ollama-entrypoint.sh
-    environment:
-      - OLLAMA_NUM_THREADS=4
-      - OLLAMA_NUM_GPU=2
-      - OLLAMA_MODEL_PATH=/root/.ollama/models
-    mem_limit: "8g"
-    cpus: 4.0
-    entrypoint: ["/ollama-entrypoint.sh"]
-
   minio:
     image: minio/minio:latest
     container_name: artificial_u_minio
@@ -62,5 +46,4 @@ services:
 
 volumes:
   postgres_data:
-  ollama_data:
   minio_data:

@@ -54,7 +54,7 @@ class UniversitySystem:
             google_api_key: API key for Google
             openai_api_key: API key for OpenAI
             db_url: PostgreSQL database URL
-            content_backend: Backend to use for content generation ('anthropic' or 'ollama')
+            content_backend: Backend to use for content generation ('anthropic', 'openai', 'gemini')
             content_model: Model to use with the chosen backend
             log_level: Logging level
             storage_type: Storage type ('minio' or 's3')

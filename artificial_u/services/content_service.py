@@ -7,10 +7,9 @@ from typing import Optional
 import anthropic
 import openai
 from google.api_core import exceptions as google_exceptions
-from ollama import ResponseError
 
 from artificial_u.config import get_settings
-from artificial_u.integrations import anthropic_client, gemini_client, ollama_client, openai_client
+from artificial_u.integrations import anthropic_client, gemini_client, openai_client
 from artificial_u.utils.exceptions import ContentGenerationError
 
 # TODO: Make these configurable
@@ -62,7 +61,7 @@ class ContentService:
             )
             raise ValueError(f"Model '{model}' is for image generation.")
         else:
-            return "ollama"  # Default assumption, adjust as needed
+            return "openai"  # Default assumption, adjust as needed
 
     def _categorize_error(self, error: Exception, backend: str) -> str:
         """
@@ -77,8 +76,6 @@ class ContentService:
             return self._categorize_openai_error(error)
         elif backend == "gemini":
             return self._categorize_gemini_error(error)
-        elif backend == "ollama":
-            return self._categorize_ollama_error(error)
 
         # Default to transient for unknown errors (optimistic retrying)
         return "transient"
@@ -146,19 +143,6 @@ class ContentService:
 
         return "transient"
 
-    def _categorize_ollama_error(self, error: Exception) -> str:
-        """Categorize Ollama-specific errors."""
-        if isinstance(error, ResponseError):
-            error_str = str(error)
-            if "timeout" in error_str.lower():
-                return "transient"
-            elif "rate limit" in error_str.lower():
-                return "rate_limited"
-            elif "connection" in error_str.lower():
-                return "transient"
-
-        return "transient"
-
     async def generate_text(
         self,
         prompt: str,
@@ -207,7 +191,6 @@ class ContentService:
             "anthropic": self._generate_anthropic,
             "openai": self._generate_openai,
             "gemini": self._generate_gemini,
-            "ollama": self._generate_ollama,
         }
 
         # Get the appropriate generation method
@@ -504,44 +487,6 @@ class ContentService:
             max_tokens=max_tokens,
             response=response_text,
             backend="gemini",
-        )
-
-        return response_text
-
-    async def _generate_ollama(
-        self, prompt, model, system_prompt, temperature, max_tokens, prefill, **kwargs
-    ):
-        self.logger.info(f"Generating text with Ollama model: {model}")
-        if prefill:
-            self.logger.warning("Prefill parameter provided but not supported for Ollama models")
-        try:
-            messages = []
-            if system_prompt:
-                messages.append({"role": "system", "content": system_prompt})
-            messages.append({"role": "user", "content": prompt})
-            response = await ollama_client.chat(
-                model=model,
-                messages=messages,
-                options={
-                    "temperature": temperature if temperature is not None else DEFAULT_TEMPERATURE,
-                    "num_predict": max_tokens if max_tokens is not None else DEFAULT_MAX_TOKENS,
-                },
-            )
-            response_text = response.get("message", {}).get("content", "")
-        except (ResponseError, Exception) as e:
-            # Let the retry logic handle this
-            raise e
-
-        self.logger.info(f"Received response from Ollama: {response_text[:500]}")
-
-        await self._log_content(
-            model=model,
-            prompt=prompt,
-            system_prompt=system_prompt,
-            temperature=temperature,
-            max_tokens=max_tokens,
-            response=response_text,
-            backend="ollama",
         )
 
         return response_text

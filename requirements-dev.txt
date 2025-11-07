@@ -99,7 +99,6 @@ httpx==0.28.1
     #   artificial_u (pyproject.toml)
     #   elevenlabs
     #   google-genai
-    #   ollama
     #   openai
 identify==2.6.15
     # via pre-commit
@@ -138,8 +137,6 @@ mypy-extensions==1.1.0
     #   mypy
 nodeenv==1.9.1
     # via pre-commit
-ollama==0.6.0
-    # via artificial_u (pyproject.toml)
 openai==2.7.1
     # via artificial_u (pyproject.toml)
 packaging==25.0
@@ -191,7 +188,6 @@ pydantic==2.12.4
     #   elevenlabs
     #   fastapi
     #   google-genai
-    #   ollama
     #   openai
     #   pydantic-settings
 pydantic-core==2.41.5

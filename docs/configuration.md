@@ -51,14 +51,11 @@ ENV_FILE=.env.staging python app.py
 ArtificialU supports multiple backends for content generation:
 
 ```python
-# Backend: 'anthropic' or 'ollama'
+# Backend: 'anthropic' or 'openai' or 'gemini'
 content_backend=anthropic
 
 # Model to use with the chosen backend
 content_model=claude-3-7-sonnet-latest
-
-# If using Ollama, specify the host URL
-OLLAMA_HOST=http://localhost:11434
 ```
 
 ## Storage Configuration

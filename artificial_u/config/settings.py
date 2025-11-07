@@ -20,7 +20,6 @@ from artificial_u.config.defaults import (
     DEFAULT_CONTENT_LOGS_PATH,
     DEFAULT_DB_URL,
     DEFAULT_LOG_LEVEL,
-    DEFAULT_OLLAMA_MODEL,
     DEFAULT_STORAGE_ACCESS_KEY,
     DEFAULT_STORAGE_AUDIO_BUCKET,
     DEFAULT_STORAGE_ENDPOINT_URL,
@@ -102,9 +101,6 @@ class Settings(BaseSettings):
     content_backend: str = DEFAULT_CONTENT_BACKEND
     content_model: Optional[str] = None
 
-    # Integration service endpoints
-    OLLAMA_HOST: str = "http://localhost:11434"
-
     # Course generation model
     COURSE_GENERATION_MODEL: str = "gpt-5-nano"
     # Department generation model
@@ -180,8 +176,14 @@ class Settings(BaseSettings):
         """Set default model based on backend if not provided"""
         if v is None:
             backend = info.data.get("content_backend")
-            if backend == "ollama":
-                return DEFAULT_OLLAMA_MODEL
+            if backend == "openai":
+                return "gpt-5-nano"
+            elif backend == "gemini":
+                return "gemini-2.5-flash"
+            elif backend == "anthropic":
+                return "claude-sonnet-4-5-20250929"
+            else:
+                return "gpt-5-nano"
         return v
 
     @model_validator(mode="after")
