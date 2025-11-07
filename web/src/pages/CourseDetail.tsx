@@ -218,12 +218,12 @@ const CourseDetail: Component = () => {
     setIsSubmitting(true)
     setError('')
 
-    // Prepare payload for CourseUpdate, converting nulls to undefined
+    // Prepare payload for CourseUpdate, converting nulls to undefined for optional fields
     const updatePayload: CourseUpdate = {
       code: formData.code,
       title: formData.title,
       department_id: formData.department_id ?? undefined,
-      level: formData.level,
+      level: formData.level ?? undefined,
       credits: formData.credits ?? undefined,
       professor_id: formData.professor_id ?? undefined,
       description: formData.description,

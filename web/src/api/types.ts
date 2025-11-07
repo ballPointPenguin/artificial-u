@@ -78,10 +78,10 @@ export interface ProfessorBrief {
 export interface CourseCreate {
   code: string
   title: string
-  department_id: number
-  level: string
+  department_id?: number | null
+  level?: string | null
   credits?: number
-  professor_id: number
+  professor_id?: number | null
   description: string
   lectures_per_week?: number
   total_weeks?: number
@@ -91,10 +91,10 @@ export interface CourseCreate {
 export interface CourseUpdate {
   code?: string
   title?: string
-  department_id?: number
-  level?: string
+  department_id?: number | null
+  level?: string | null
   credits?: number
-  professor_id?: number
+  professor_id?: number | null
   description?: string
   lectures_per_week?: number
   total_weeks?: number

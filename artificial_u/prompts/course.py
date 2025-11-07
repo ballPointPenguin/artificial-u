@@ -16,7 +16,7 @@ COURSE_XML_STRUCTURE = """<course>
   <code>[Course code]</code>
   <title>[Course title]</title>
   <description>[Course description]</description>
-  <level>[Course level]</level>
+  <level>[Course level: "Undergraduate" or "Graduate"]</level>
   <credits>[Course credits]</credits>
   <lectures_per_week>[Course lectures per week]</lectures_per_week>
   <total_weeks>[Course total weeks]</total_weeks>
@@ -54,6 +54,14 @@ or generated ones if marked as [GENERATE].
 
 XML Structure:
 {COURSE_XML_STRUCTURE}
+
+Guidelines:
+- For level: Choose either "Undergraduate" or "Graduate" based on the course complexity and target audience
+- For lectures_per_week:
+  - 1-2 lectures per week is appropriate for most courses
+  - 3 lectures per week for advanced, in-depth coverage
+  - Select 1, 2, or 3 lectures per week (not more)
+  - Consider the course level, subject matter complexity, and total_weeks when deciding
 
 Existing courses (for context and to avoid repetition):
 {{existing_courses_xml}}

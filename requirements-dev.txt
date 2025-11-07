@@ -28,9 +28,9 @@ azure-core==1.36.0
     # via azure-cognitiveservices-speech
 black==25.9.0
     # via artificial_u (pyproject.toml)
-boto3==1.40.66
+boto3==1.40.68
     # via artificial_u (pyproject.toml)
-botocore==1.40.66
+botocore==1.40.68
     # via
     #   boto3
     #   s3transfer
@@ -69,7 +69,7 @@ docstring-parser==0.17.0
     # via anthropic
 ecdsa==0.19.1
     # via python-jose
-elevenlabs==2.21.0
+elevenlabs==2.22.0
     # via artificial_u (pyproject.toml)
 fastapi==0.121.0
     # via artificial_u (pyproject.toml)
@@ -79,13 +79,13 @@ flake8==7.3.0
     # via artificial_u (pyproject.toml)
 google-api-core==2.28.1
     # via artificial_u (pyproject.toml)
-google-auth==2.42.1
+google-auth==2.43.0
     # via
     #   google-api-core
     #   google-genai
-google-genai==1.48.0
+google-genai==1.49.0
     # via artificial_u (pyproject.toml)
-googleapis-common-protos==1.71.0
+googleapis-common-protos==1.72.0
     # via google-api-core
 gunicorn==23.0.0
     # via artificial_u (pyproject.toml)
@@ -240,7 +240,7 @@ python-jose[cryptography]==3.5.0
     # via artificial_u (pyproject.toml)
 python-multipart==0.0.20
     # via artificial_u (pyproject.toml)
-pytokens==0.2.0
+pytokens==0.3.0
     # via black
 pyyaml==6.0.3
     # via
