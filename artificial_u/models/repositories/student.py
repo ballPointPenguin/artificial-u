@@ -2,7 +2,7 @@
 Student repository for database operations.
 """
 
-from typing import Dict, Optional
+from typing import Dict, List, Optional
 
 from artificial_u.models.core import Student
 from artificial_u.models.database import StudentModel
@@ -76,6 +76,29 @@ class StudentRepository(BaseRepository):
         if existing:
             return existing
         return self.create(name=default_name, email=email, auth0_sub=auth0_sub)
+
+    def list_all(self) -> List[Student]:
+        """
+        List all students.
+
+        Returns:
+            List[Student]: List of all students
+        """
+        with self.get_session() as session:
+            db_students = session.query(StudentModel).all()
+
+            return [
+                Student(
+                    id=db_student.id,
+                    name=db_student.name,
+                    email=db_student.email,
+                    auth0_sub=db_student.auth0_sub,
+                    role=db_student.role,
+                    coins=db_student.coins,
+                    is_active=db_student.is_active,
+                )
+                for db_student in db_students
+            ]
 
     def update(self, student: Student) -> Student:
         """

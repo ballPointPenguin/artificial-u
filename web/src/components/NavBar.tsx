@@ -81,6 +81,12 @@ export function NavBar() {
               >
                 Jobs
               </A>
+              <A
+                href="/admin"
+                class="text-parchment-200 hover:text-parchment-100 tracking-wide font-serif uppercase text-shadow-golden text-sm"
+              >
+                Admin
+              </A>
             </Show>
             <Show when={!auth.isAuthenticated()}>
               <A
@@ -193,6 +199,13 @@ export function NavBar() {
                 onClick={toggleMobileMenu}
               >
                 Jobs
+              </A>
+              <A
+                href="/admin"
+                class="block text-parchment-200 hover:text-parchment-100 py-2 tracking-wide font-serif uppercase text-sm"
+                onClick={toggleMobileMenu}
+              >
+                Admin
               </A>
             </Show>
             <Show when={!auth.isAuthenticated()}>

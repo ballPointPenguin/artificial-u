@@ -76,7 +76,10 @@ from artificial_u.api.models.professors import (
 
 # Student model
 from artificial_u.api.models.students import (
+    StudentCoinsAdd,
     StudentResponse,
+    StudentRoleUpdate,
+    StudentsListResponse,
     StudentUpdate,
 )
 
@@ -159,6 +162,9 @@ __all__ = [
     # Student model
     "StudentResponse",
     "StudentUpdate",
+    "StudentsListResponse",
+    "StudentRoleUpdate",
+    "StudentCoinsAdd",
     # Error codes
     "ErrorDetail",
     "ErrorResponse",

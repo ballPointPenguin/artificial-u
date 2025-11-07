@@ -2,7 +2,7 @@
 Student API models for request and response validation.
 """
 
-from typing import Optional
+from typing import List, Optional
 
 from pydantic import BaseModel, Field
 
@@ -27,3 +27,25 @@ class StudentUpdate(BaseModel):
 
     name: Optional[str] = Field(None, description="Updated student name")
     email: Optional[str] = Field(None, description="Updated email address")
+
+
+class StudentsListResponse(BaseModel):
+    """Paginated list of students."""
+
+    items: List[StudentResponse] = Field(..., description="List of students")
+    total: int = Field(..., description="Total number of matching students")
+    page: int = Field(..., description="Current page number")
+    size: int = Field(..., description="Number of items per page")
+    pages: int = Field(..., description="Total number of pages")
+
+
+class StudentRoleUpdate(BaseModel):
+    """Model for updating a student's role."""
+
+    role: str = Field(..., description="New role (viewer, creator, admin)")
+
+
+class StudentCoinsAdd(BaseModel):
+    """Model for adding coins to a student's account."""
+
+    amount: int = Field(..., gt=0, description="Number of coins to add (must be positive)")

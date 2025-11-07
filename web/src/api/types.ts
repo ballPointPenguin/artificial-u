@@ -478,6 +478,14 @@ export interface StudentUpdate {
   email?: string
 }
 
+export interface StudentRoleUpdate {
+  role: 'viewer' | 'creator' | 'admin'
+}
+
+export interface StudentCoinsAdd {
+  amount: number
+}
+
 // Job types
 export interface JobResponse {
   id: number
