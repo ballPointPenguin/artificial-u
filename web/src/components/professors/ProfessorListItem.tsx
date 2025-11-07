@@ -8,31 +8,32 @@ interface ProfessorListItemProps {
 
 export default function ProfessorListItem(props: ProfessorListItemProps) {
   return (
-    // Ensure ID is converted to string for the URL
     <A
       href={`/professors/${String(props.professor.id)}`}
-      class="block arcane-card hover:shadow-glow p-4"
+      class="arcane-card group flex h-full flex-col p-4 transition-all duration-300 hover:border-primary/30 hover:shadow-glow"
     >
-      <div class="flex items-start gap-4">
+      <div class="flex flex-col items-center text-center">
         <Show when={props.professor.image_url}>
           {(imageUrl) => (
-            <img
-              src={imageUrl()}
-              alt={`Image of ${props.professor.name}`}
-              class="w-20 h-20 object-cover rounded-md border border-parchment-500/20"
-            />
+            <div class="flex-shrink-0">
+              <img
+                src={imageUrl()}
+                alt={props.professor.name}
+                class="mb-4 h-32 w-32 rounded-full border-2 border-parchment-500/10 object-cover shadow-lg transition-all duration-300 group-hover:border-primary/40 group-hover:shadow-golden-glow"
+              />
+            </div>
           )}
         </Show>
         <div class="flex-1">
-          <h3 class="text-xl font-display text-parchment-100 mb-1 text-shadow-golden">
+          <h3 class="mb-1 font-display text-2xl text-parchment-100 text-shadow-golden transition-colors duration-300 group-hover:text-golden-300">
             {props.professor.name}
           </h3>
-          <p class="text-sm text-parchment-300">
-            Title: <span class="text-mystic-300">{props.professor.title}</span>
+          <p class="font-serif text-base italic text-mystic-300/80 transition-colors duration-300 group-hover:text-mystic-300">
+            {props.professor.title}
           </p>
-          <p class="text-sm text-parchment-300">
-            Specialization: <span class="text-mystic-300">{props.professor.specialization}</span>
-          </p>
+          <div class="mt-3 border-t border-parchment-500/10 pt-3">
+            <p class="text-sm text-mystic-300/90 line-clamp-3">{props.professor.specialization}</p>
+          </div>
         </div>
       </div>
     </A>
