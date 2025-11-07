@@ -17,6 +17,14 @@ else
   echo "[entrypoint] WARNING: DATABASE_URL is not set; skipping DB initialization"
 fi
 
+# Seed foundational data (faculties, etc.)
+if [ -n "$DATABASE_URL" ]; then
+  echo "[entrypoint] Seeding database with foundational data..."
+  python scripts/seed_data.py || echo "[entrypoint] Data seeding failed; continuing"
+else
+  echo "[entrypoint] DATABASE_URL not set; skipping data seeding"
+fi
+
 # Optionally initialize voices if ElevenLabs is configured
 if [ -n "$ELEVENLABS_API_KEY" ]; then
   echo "[entrypoint] ELEVENLABS_API_KEY detected; initializing voices (this may take a while)"
