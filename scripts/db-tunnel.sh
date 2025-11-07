@@ -55,13 +55,13 @@ fi
 # Get stack resources
 echo -e "${YELLOW}🔍 Looking up CloudFormation stack resources...${NC}"
 
-BASTION_ID=$(aws cloudformation describe-stack-resources \
+BASTION_ID=$(aws cloudformation describe-stacks \
   --stack-name "$STACK_NAME" \
   --region "$REGION" \
-  --query "StackResources[?LogicalResourceId=='Bastion'].PhysicalResourceId" \
+  --query "Stacks[0].Outputs[?OutputKey=='BastionInstanceId'].OutputValue" \
   --output text 2>/dev/null)
 
-RDS_ENDPOINT=$(aws cloudformation describe-stack-outputs \
+RDS_ENDPOINT=$(aws cloudformation describe-stacks \
   --stack-name "$STACK_NAME" \
   --region "$REGION" \
   --query "Stacks[0].Outputs[?OutputKey=='DatabaseEndpoint'].OutputValue" \
@@ -135,6 +135,6 @@ echo ""
 aws ssm start-session \
   --target "$BASTION_ID" \
   --region "$REGION" \
-  --document-name AWS-StartPortForwardingSession \
-  --parameters "localPortNumber=$LOCAL_PORT,remotePortNumber=$REMOTE_PORT,remoteHost=$RDS_ENDPOINT"
+  --document-name AWS-StartPortForwardingSessionToRemoteHost \
+  --parameters "{\"portNumber\":[\"$REMOTE_PORT\"],\"localPortNumber\":[\"$LOCAL_PORT\"],\"host\":[\"$RDS_ENDPOINT\"]}"
 
