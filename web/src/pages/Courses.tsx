@@ -99,6 +99,15 @@ const Courses: Component = () => {
       })
   )
 
+  const sortFieldOptions: SelectOption[] = [
+    { value: 'updated_at', label: 'Last Update' },
+    { value: 'created_at', label: 'Created' },
+    { value: 'code', label: 'Code' },
+    { value: 'title', label: 'Title' },
+    { value: 'level', label: 'Level' },
+    { value: 'credits', label: 'Credits' },
+  ]
+
   // Handle sorting - if clicking same column, toggle order; otherwise set new column with desc
   const handleSort = (field: SortField) => {
     if (sortBy() === field) {
@@ -110,6 +119,18 @@ const Courses: Component = () => {
       setOrder('desc')
     }
     // Reset to first page when sorting changes
+    setPage(1)
+  }
+
+  const handleMobileSortFieldChange = (value: SelectOption['value'] | null) => {
+    if (value) {
+      setSortBy(value as SortField)
+      setPage(1)
+    }
+  }
+
+  const toggleSortOrder = () => {
+    setOrder(order() === 'asc' ? 'desc' : 'asc')
     setPage(1)
   }
 
@@ -230,9 +251,9 @@ const Courses: Component = () => {
   }
 
   return (
-    <div class="container mx-auto p-6">
-      <div class="flex justify-between items-center mb-6">
-        <h1 class="text-3xl font-display text-parchment-100 mb-6">Academic Courses</h1>
+    <div class="container mx-auto px-4 py-6 sm:px-6">
+      <div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <h1 class="text-3xl font-display text-parchment-100">Academic Courses</h1>
         <RequireRole minRole="creator">
           <Button variant="primary" onClick={() => setShowCreateForm(true)}>
             Add Course
@@ -259,8 +280,8 @@ const Courses: Component = () => {
         fallback={<div class="text-parchment-200 font-serif p-4">Loading courses...</div>}
       >
         {/* Filter section */}
-        <div class="mb-6 flex items-center gap-4">
-          <div class="w-64">
+        <div class="mb-6 flex flex-col gap-4 lg:flex-row lg:items-center">
+          <div class="w-full max-w-xs sm:max-w-sm lg:w-64">
             <Select
               name="department-filter"
               label="Filter by Department"
@@ -271,38 +292,59 @@ const Courses: Component = () => {
               disabled={departmentsData.loading}
             />
           </div>
-          <Show when={departmentFilter() !== null}>
-            <button
-              type="button"
-              onClick={() => {
-                handleDepartmentFilterChange(0)
-              }}
-              class="text-sm text-parchment-300 hover:text-mystic-300 transition-colors"
-            >
-              Clear filter
-            </button>
-          </Show>
-          <Show when={auth.isAuthenticated()}>
-            <label class="flex items-center gap-2 cursor-pointer text-parchment-200 hover:text-parchment-100 transition-colors">
-              <input
-                type="checkbox"
-                checked={myCoursesOnly()}
-                onChange={(e) => {
-                  setMyCoursesOnly(e.currentTarget.checked)
-                  setPage(1) // Reset to first page when filter changes
+          <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
+            <Show when={departmentFilter() !== null}>
+              <button
+                type="button"
+                onClick={() => {
+                  handleDepartmentFilterChange(0)
                 }}
-                class="w-4 h-4 rounded border-parchment-600 bg-arcanum-900 text-mystic-500 focus:ring-mystic-500 focus:ring-offset-arcanum-900"
-              />
-              <span class="font-serif text-sm">My Courses</span>
-            </label>
-          </Show>
+                class="self-start text-sm text-parchment-300 transition-colors hover:text-mystic-300"
+              >
+                Clear filter
+              </button>
+            </Show>
+            <Show when={auth.isAuthenticated()}>
+              <label class="flex items-center gap-2 cursor-pointer text-parchment-200 transition-colors hover:text-parchment-100">
+                <input
+                  type="checkbox"
+                  checked={myCoursesOnly()}
+                  onChange={(e) => {
+                    setMyCoursesOnly(e.currentTarget.checked)
+                    setPage(1) // Reset to first page when filter changes
+                  }}
+                  class="h-4 w-4 rounded border-parchment-600 bg-arcanum-900 text-mystic-500 focus:ring-mystic-500 focus:ring-offset-arcanum-900"
+                />
+                <span class="font-serif text-sm">My Courses</span>
+              </label>
+            </Show>
+          </div>
+          <div class="flex flex-col gap-3 sm:hidden">
+            <Select
+              name="sort-field"
+              label="Sort field"
+              value={sortBy()}
+              onChange={handleMobileSortFieldChange}
+              options={sortFieldOptions}
+              placeholder="Sort by"
+            />
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={toggleSortOrder}
+              class="self-start"
+            >
+              Order: {order() === 'asc' ? 'Ascending' : 'Descending'}
+            </Button>
+          </div>
         </div>
 
         <Show
           when={hasCourses()}
           fallback={<div class="arcane-card p-6 text-center">No courses found.</div>}
         >
-          <div class="arcane-card mb-6">
+          <div class="arcane-card mb-6 hidden lg:block">
             <table class="min-w-full">
               <thead>
                 <tr class="border-b border-parchment-800/30">
@@ -358,13 +400,77 @@ const Courses: Component = () => {
             </table>
           </div>
 
+          <div class="mb-6 space-y-4 lg:hidden">
+            <For each={coursesData()?.items}>
+              {(course: Course) => (
+                <div class="arcane-card p-4">
+                  <div class="flex flex-col gap-4">
+                    <div class="flex items-start justify-between gap-4">
+                      <div class="flex-1">
+                        <p class="text-xs font-serif uppercase tracking-wide text-parchment-400">
+                          {course.code}
+                        </p>
+                        <A
+                          href={`/courses/${String(course.id)}`}
+                          class="mt-1 block text-lg font-display text-parchment-100 leading-tight hover:text-mystic-300 transition-colors"
+                        >
+                          {course.title}
+                        </A>
+                      </div>
+                      <div class="text-xs font-serif text-parchment-400 text-right">
+                        <span class="block uppercase tracking-wide">Updated</span>
+                        <span class="text-parchment-200">{formatDate(course.updated_at)}</span>
+                      </div>
+                    </div>
+                    <div class="grid gap-3 text-sm font-serif text-parchment-200">
+                      <div>
+                        <span class="block text-xs uppercase tracking-wide text-parchment-500">
+                          Teacher
+                        </span>
+                        <span class="text-parchment-100">{getProfessorName(course)}</span>
+                      </div>
+                      <div>
+                        <span class="block text-xs uppercase tracking-wide text-parchment-500">
+                          Department
+                        </span>
+                        <span class="text-parchment-100">{getDepartmentName(course)}</span>
+                      </div>
+                      <div>
+                        <span class="block text-xs uppercase tracking-wide text-parchment-500">
+                          Creator
+                        </span>
+                        <span class="text-parchment-100">{getStudentName(course)}</span>
+                      </div>
+                      <div class="flex items-center justify-between text-parchment-100">
+                        <span class="text-xs uppercase tracking-wide text-parchment-500">
+                          Audio Coverage
+                        </span>
+                        <span>
+                          {course.lectures_with_audio_count ?? 0} / {course.topics_count ?? 0}
+                        </span>
+                      </div>
+                    </div>
+                    <div class="flex justify-end">
+                      <A
+                        href={`/courses/${String(course.id)}`}
+                        class="text-sm font-serif text-mystic-300 hover:text-mystic-200 transition-colors"
+                      >
+                        View course →
+                      </A>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </For>
+          </div>
+
           {/* Pagination controls */}
           <Show when={getPages() > 1}>
-            <div class="flex justify-between items-center mt-6">
+            <div class="mt-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div class="font-serif text-parchment-300">
                 Page {page()} of {getPages()}
               </div>
-              <div class="flex space-x-3">
+              <div class="flex gap-3 sm:justify-end">
                 <Button variant="outline" onClick={handlePrevPage} disabled={page() <= 1}>
                   Previous
                 </Button>
