@@ -182,8 +182,8 @@ class CdkStack(Stack):
             self,
             "ApiService",
             cluster=cluster,
-            cpu=256,
-            memory_limit_mib=512,
+            cpu=1024,
+            memory_limit_mib=2048,
             desired_count=1,
             task_image_options={
                 "image": ecs.ContainerImage.from_docker_image_asset(api_image),
