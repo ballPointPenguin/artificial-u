@@ -44,10 +44,21 @@ class CdkStack(Stack):
         # 1. Create the VPC for our infrastructure
         vpc = ec2.Vpc(self, "Vpc", max_azs=2)
 
+        # 1b. Create a Bastion host for secure RDS access via Systems Manager Session Manager
+        bastion = ec2.BastionHostLinux(
+            self,
+            "Bastion",
+            vpc=vpc,
+            instance_type=ec2.InstanceType.of(ec2.InstanceClass.T4G, ec2.InstanceSize.MICRO),
+            machine_image=ec2.AmazonLinuxImage(
+                generation=ec2.AmazonLinuxGeneration.AMAZON_LINUX_2023
+            ),
+        )
+
         # 2. Create the ECS Cluster to host our services
         cluster = ecs.Cluster(self, "Cluster", vpc=vpc)
 
-        # 3. Create the Aurora Serverless v2 PostgreSQL Database
+        # 3. Create the RDS PostgreSQL Database
         db_cluster = rds.DatabaseInstance(
             self,
             "Database",
@@ -57,8 +68,8 @@ class CdkStack(Stack):
             instance_type=ec2.InstanceType.of(
                 ec2.InstanceClass.BURSTABLE4_GRAVITON, ec2.InstanceSize.SMALL
             ),
-            # This is critical for test environments to allow deletion
-            removal_policy=RemovalPolicy.DESTROY,
+            # Create final backup before deletion
+            removal_policy=RemovalPolicy.SNAPSHOT,
             # Required for this instance class
             allocated_storage=20,
         )
@@ -67,26 +78,26 @@ class CdkStack(Stack):
         audio_bucket = s3.Bucket(
             self,
             "AudioBucket",
-            removal_policy=RemovalPolicy.DESTROY,
-            auto_delete_objects=True,
+            removal_policy=RemovalPolicy.RETAIN,
+            auto_delete_objects=False,
         )
         lectures_bucket = s3.Bucket(
             self,
             "LecturesBucket",
-            removal_policy=RemovalPolicy.DESTROY,
-            auto_delete_objects=True,
+            removal_policy=RemovalPolicy.RETAIN,
+            auto_delete_objects=False,
         )
         images_bucket = s3.Bucket(
             self,
             "ImagesBucket",
-            removal_policy=RemovalPolicy.DESTROY,
-            auto_delete_objects=True,
+            removal_policy=RemovalPolicy.RETAIN,
+            auto_delete_objects=False,
         )
         exports_bucket = s3.Bucket(
             self,
             "ExportsBucket",
-            removal_policy=RemovalPolicy.DESTROY,
-            auto_delete_objects=True,
+            removal_policy=RemovalPolicy.RETAIN,
+            auto_delete_objects=False,
         )
 
         # 5. Define the Docker image from the local Dockerfile for the API
@@ -102,32 +113,32 @@ class CdkStack(Stack):
         app_secrets = {
             "ANTHROPIC_API_KEY": ecs.Secret.from_ssm_parameter(
                 ssm.StringParameter.from_string_parameter_name(
-                    self, "AnthropicApiKey", "/artificial-u/test/ANTHROPIC_API_KEY"
+                    self, "AnthropicApiKey", "/artificial-u/prod/ANTHROPIC_API_KEY"
                 )
             ),
             "ELEVENLABS_API_KEY": ecs.Secret.from_ssm_parameter(
                 ssm.StringParameter.from_string_parameter_name(
-                    self, "ElevenLabsApiKey", "/artificial-u/test/ELEVENLABS_API_KEY"
+                    self, "ElevenLabsApiKey", "/artificial-u/prod/ELEVENLABS_API_KEY"
                 )
             ),
             "GOOGLE_API_KEY": ecs.Secret.from_ssm_parameter(
                 ssm.StringParameter.from_string_parameter_name(
-                    self, "GoogleApiKey", "/artificial-u/test/GOOGLE_API_KEY"
+                    self, "GoogleApiKey", "/artificial-u/prod/GOOGLE_API_KEY"
                 )
             ),
             "OPENAI_API_KEY": ecs.Secret.from_ssm_parameter(
                 ssm.StringParameter.from_string_parameter_name(
-                    self, "OpenAiApiKey", "/artificial-u/test/OPENAI_API_KEY"
+                    self, "OpenAiApiKey", "/artificial-u/prod/OPENAI_API_KEY"
                 )
             ),
             "AUTH0_DOMAIN": ecs.Secret.from_ssm_parameter(
                 ssm.StringParameter.from_string_parameter_name(
-                    self, "Auth0Domain", "/artificial-u/test/AUTH0_DOMAIN"
+                    self, "Auth0Domain", "/artificial-u/prod/AUTH0_DOMAIN"
                 )
             ),
             "AUTH0_AUDIENCE": ecs.Secret.from_ssm_parameter(
                 ssm.StringParameter.from_string_parameter_name(
-                    self, "Auth0Audience", "/artificial-u/test/AUTH0_AUDIENCE"
+                    self, "Auth0Audience", "/artificial-u/prod/AUTH0_AUDIENCE"
                 )
             ),
             # Pass DB connection details as individual secrets
@@ -195,6 +206,8 @@ class CdkStack(Stack):
         )
 
         # 8. Grant permissions
+        # - Allow the bastion host to connect to the database
+        db_cluster.connections.allow_default_port_from(bastion, "Bastion to RDS")
         # - Allow the service to connect to the database
         db_cluster.connections.allow_default_port_from(
             fargate_service.service, "API to DB connection"
@@ -223,8 +236,8 @@ class CdkStack(Stack):
             "FrontendBucket",
             # The bucket is private. CloudFront will access it via Origin Access Identity.
             block_public_access=s3.BlockPublicAccess.BLOCK_ALL,
-            removal_policy=RemovalPolicy.DESTROY,
-            auto_delete_objects=True,
+            removal_policy=RemovalPolicy.RETAIN,
+            auto_delete_objects=False,
         )
 
         # 10. (removed) Origin Access Identity is now created automatically by S3BucketOrigin
@@ -334,4 +347,21 @@ class CdkStack(Stack):
             "NameServers",
             value=cdk.Fn.join(",", hosted_zone.hosted_zone_name_servers),
             description="Name servers for the hosted zone. Update these at your domain registrar (Hover).",
+        )
+
+        # 15. Output the bastion instance ID for database access
+        cdk.CfnOutput(
+            self,
+            "BastionInstanceId",
+            value=bastion.instance_id,
+            description=(
+                "Bastion host instance ID for secure RDS access via Session Manager. "
+                "Use ./scripts/db-tunnel.sh to connect."
+            ),
+        )
+        cdk.CfnOutput(
+            self,
+            "DatabaseEndpoint",
+            value=db_cluster.db_instance_endpoint_address,
+            description="RDS database endpoint (used by db-tunnel.sh).",
         )

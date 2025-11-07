@@ -53,6 +53,59 @@ jobs:
         run: |
           npm install -g aws-cdk@2
 
+      - name: Check CloudFormation Stack Status
+        run: |
+          STACK_NAME="CdkStack"
+          REGION="us-east-1"
+
+          # Check if stack exists
+          STACK_STATUS=$(aws cloudformation describe-stacks \
+            --stack-name "$STACK_NAME" \
+            --region "$REGION" \
+            --query 'Stacks[0].StackStatus' \
+            --output text 2>/dev/null || echo "STACK_DOES_NOT_EXIST")
+
+          echo "Stack Status: $STACK_STATUS"
+
+          # List of states that prevent deployment
+          BLOCKED_STATES=(
+            "UPDATE_ROLLBACK_FAILED"
+            "DELETE_IN_PROGRESS"
+            "DELETE_FAILED"
+            "CREATE_IN_PROGRESS"
+            "UPDATE_IN_PROGRESS"
+            "DELETE_COMPLETE"
+          )
+
+          for state in "${BLOCKED_STATES[@]}"; do
+            if [ "$STACK_STATUS" == "$state" ]; then
+              echo "❌ Stack is in $STACK_STATUS state and cannot be updated"
+              echo "Please manually intervene in the AWS Console to resolve this issue:"
+              echo "  1. Navigate to CloudFormation > Stacks > CdkStack"
+              echo "  2. Check the Events tab for error details"
+              if [ "$STACK_STATUS" == "UPDATE_ROLLBACK_FAILED" ]; then
+                echo "  3. Use 'Continue Update Rollback' or 'Delete Stack' from the Stack Actions menu"
+                echo "  4. After resolution, retry the deployment"
+              fi
+              exit 1
+            fi
+          done
+
+          # Warn if stack is in a transitional state (shouldn't happen if check above passed)
+          TRANSITIONAL_STATES=(
+            "UPDATE_ROLLBACK_COMPLETE_CLEANUP_IN_PROGRESS"
+            "CREATE_COMPLETE_CLEANUP_IN_PROGRESS"
+          )
+
+          for state in "${TRANSITIONAL_STATES[@]}"; do
+            if [ "$STACK_STATUS" == "$state" ]; then
+              echo "⚠️  Stack is in $STACK_STATUS state. Waiting a moment before proceeding..."
+              sleep 10
+            fi
+          done
+
+          echo "✅ Stack is in a deployable state"
+
       - name: Deploy with AWS CDK
         run: |
           cd cdk

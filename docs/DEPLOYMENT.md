@@ -90,17 +90,17 @@ The CDK stack expects several secrets to be present in AWS SSM Parameter Store f
 
 Create the following SSM Parameters of type `String`:
 
-- `/artificial-u/test/ANTHROPIC_API_KEY`
-- `/artificial-u/test/ELEVENLABS_API_KEY`
-- `/artificial-u/test/GOOGLE_API_KEY`
-- `/artificial-u/test/OPENAI_API_KEY`
-- `/artificial-u/test/AUTH0_DOMAIN`
-- `/artificial-u/test/AUTH0_AUDIENCE`
+- `/artificial-u/prod/ANTHROPIC_API_KEY`
+- `/artificial-u/prod/ELEVENLABS_API_KEY`
+- `/artificial-u/prod/GOOGLE_API_KEY`
+- `/artificial-u/prod/OPENAI_API_KEY`
+- `/artificial-u/prod/AUTH0_DOMAIN`
+- `/artificial-u/prod/AUTH0_AUDIENCE`
 
 You can create them using the AWS Management Console or the AWS CLI:
 
 ```bash
-aws ssm put-parameter --name "/artificial-u/test/OPENAI_API_KEY" --value "your-api-key" --type "String"
+aws ssm put-parameter --name "/artificial-u/prod/OPENAI_API_KEY" --value "your-api-key" --type "String"
 ```
 
 After setting the secrets, you may need to restart the ECS service for the new values to be injected into the running containers. You can do this from the ECS console by updating the service and forcing a new deployment.
