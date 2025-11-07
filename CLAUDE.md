@@ -9,7 +9,7 @@ ArtificialU is an AI-powered educational content platform that generates univers
 - **Backend**: Python 3.13+ with FastAPI, PostgreSQL, SQLAlchemy
 - **Frontend**: SolidJS with TypeScript, TailwindCSS v4, Auth0
 - **AI Integration**: Anthropic Claude, Google Gemini, OpenAI, Ollama (local)
-- **TTS Services**: ElevenLabs, Azure Cognitive Services Speech
+- **TTS Services**: ElevenLabs
 - **Storage**: MinIO (dev) / S3 (prod)
 - **Job Processing**: Custom async worker with PostgreSQL-backed queue
 

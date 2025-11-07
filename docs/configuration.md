@@ -194,8 +194,6 @@ TESTING=true
 | `ELEVENLABS_API_KEY` | API key for ElevenLabs | None | No |
 | `GOOGLE_API_KEY` | API key for Google | None | No |
 | `OPENAI_API_KEY` | API key for OpenAI | None | No |
-| `SPEECH_KEY` | API key for Azure Speech | None | No |
-| `SPEECH_REGION` | Azure Speech region | None | No |
 | `CONTENT_LOGS_PATH` | Path for content generation logs | `content_logs` | No |
 | `LOG_LEVEL` | Logging level | `INFO` | No |
 | `content_backend` | Backend for content generation | `anthropic` | No |

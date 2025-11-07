@@ -22,10 +22,6 @@ anyio==4.11.0
     #   openai
     #   starlette
     #   watchfiles
-azure-cognitiveservices-speech==1.46.0
-    # via artificial_u (pyproject.toml)
-azure-core==1.36.0
-    # via azure-cognitiveservices-speech
 black==25.9.0
     # via artificial_u (pyproject.toml)
 boto3==1.40.68
@@ -248,7 +244,6 @@ pyyaml==6.0.3
     #   uvicorn
 requests==2.32.5
     # via
-    #   azure-core
     #   elevenlabs
     #   google-api-core
     #   google-genai
@@ -283,7 +278,6 @@ typing-extensions==4.15.0
     # via
     #   alembic
     #   anthropic
-    #   azure-core
     #   elevenlabs
     #   fastapi
     #   google-genai

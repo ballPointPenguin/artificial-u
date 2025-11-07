@@ -14,7 +14,7 @@ ArtificialU is an AI-powered educational content platform that generates univers
 - PostgreSQL with SQLAlchemy ORM
 - Hatch for environment management
 - AI: Anthropic Claude, Google Gemini, OpenAI, Ollama (local)
-- TTS: ElevenLabs, Azure Cognitive Services Speech
+- TTS: ElevenLabs
 - Storage: MinIO (dev) / S3 (prod)
 - Background jobs: Custom async worker with PostgreSQL-backed queue
 

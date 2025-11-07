@@ -41,7 +41,6 @@ ArtificialU is an AI-powered educational content platform that generates univers
   - Ollama (local models)
 - **Text-to-Speech**:
   - ElevenLabs API (primary)
-  - Azure Cognitive Services Speech
 - **Image Generation**: Integration-ready (professor portraits)
 - **Storage**: MinIO (development) / AWS S3 (production)
 
