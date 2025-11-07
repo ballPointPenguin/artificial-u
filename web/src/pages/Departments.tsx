@@ -1,10 +1,11 @@
 import { A } from '@solidjs/router'
 import { createResource, createSignal, For, Show } from 'solid-js'
 import { departmentService } from '../api/services/department-service.js'
+import { facultyService } from '../api/services/faculty-service.js'
 import type { Department, DepartmentCreate } from '../api/types.js'
 import { RequireRole } from '../auth/RequireRole'
 import DepartmentForm from '../components/departments/DepartmentForm.js'
-import { Button, Input } from '../components/ui'
+import { Button, Input, Select, type SelectOption } from '../components/ui'
 
 const DepartmentCard = (props: { department: Department }) => {
   return (
@@ -24,23 +25,52 @@ const DepartmentCard = (props: { department: Department }) => {
 
 const DepartmentsPage = () => {
   const [searchQuery, setSearchQuery] = createSignal('')
+  const [selectedFacultyId, setSelectedFacultyId] = createSignal<number | null>(null)
   const [page, setPage] = createSignal(1)
   const [showCreateForm, setShowCreateForm] = createSignal(false)
   const [submitting, setSubmitting] = createSignal(false)
   const [formError, setFormError] = createSignal('')
 
-  const [departments, { refetch }] = createResource(
-    () => ({
+  // Fetch all faculties
+  const [faculties] = createResource(() => facultyService.listFaculties())
+
+  // Create faculty options for the dropdown
+  const facultyOptions = (): SelectOption[] => {
+    const facs = faculties()
+    if (!facs) return []
+    return [
+      { value: 'all', label: 'All Faculties' },
+      ...facs.items.map((faculty) => ({
+        value: faculty.id,
+        label: faculty.name,
+      })),
+    ]
+  }
+
+  const [departments, { refetch }] = createResource(() => {
+    const facultyId = selectedFacultyId()
+    return {
       page: page(),
       size: 20,
       name: searchQuery() || undefined,
-    }),
-    departmentService.listDepartments
-  )
+      faculty_id: facultyId || undefined,
+    }
+  }, departmentService.listDepartments)
 
   const handleSearch = (e: Event) => {
     e.preventDefault()
+    setPage(1) // Reset to first page when searching
     void refetch()
+  }
+
+  const handleFacultyChange = (value: SelectOption['value'] | null) => {
+    if (value === 'all' || value === null) {
+      setSelectedFacultyId(null)
+    } else {
+      setSelectedFacultyId(value as number)
+    }
+    setPage(1) // Reset to first page when filter changes
+    // Resource will automatically refetch when selectedFacultyId or page changes
   }
 
   const handleSubmitCreate = async (formData: FormData) => {
@@ -68,10 +98,14 @@ const DepartmentsPage = () => {
 
   return (
     <div class="container mx-auto px-4 py-8">
-      <div class="flex justify-between items-center mb-6">
+      <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
         <h1 class="text-3xl font-bold text-parchment-100">Departments</h1>
         <RequireRole minRole="creator">
-          <Button variant="primary" onClick={() => setShowCreateForm(true)}>
+          <Button
+            variant="primary"
+            onClick={() => setShowCreateForm(true)}
+            class="w-full sm:w-auto"
+          >
             Add Department
           </Button>
         </RequireRole>
@@ -91,7 +125,8 @@ const DepartmentsPage = () => {
         </RequireRole>
       </Show>
 
-      <form onSubmit={handleSearch} class="mb-8">
+      <form onSubmit={handleSearch} class="mb-8 space-y-2">
+        {/* Search input and button row - always together */}
         <div class="flex gap-2">
           <Input
             name="search"
@@ -101,10 +136,28 @@ const DepartmentsPage = () => {
             placeholder="Search departments..."
             class="flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-mystic-500 bg-arcanum-800 border-parchment-700/30 text-parchment-100 placeholder:text-parchment-500"
           />
-          <Button type="submit" variant="secondary">
+          <Button type="submit" variant="secondary" class="shrink-0">
             Search
           </Button>
         </div>
+        {/* Faculty dropdown - on its own line with responsive width */}
+        <Show
+          when={!faculties.loading && faculties()?.items}
+          fallback={
+            <div class="w-full sm:w-auto sm:min-w-64 px-4 py-2 border rounded-lg bg-arcanum-800 border-parchment-700/30 text-parchment-300 flex items-center">
+              Loading faculties...
+            </div>
+          }
+        >
+          <Select
+            name="faculty"
+            options={facultyOptions()}
+            value={selectedFacultyId() ?? 'all'}
+            onChange={handleFacultyChange}
+            placeholder="All Faculties"
+            class="w-full sm:w-auto sm:min-w-64 sm:max-w-md"
+          />
+        </Show>
       </form>
 
       {/* Loading and error states */}
@@ -121,7 +174,7 @@ const DepartmentsPage = () => {
           }
         >
           <Show
-            when={departments()?.items && departments()!.items.length > 0}
+            when={departments()?.items && (departments()?.items.length ?? 0) > 0}
             fallback={<div class="text-center py-8">No departments found</div>}
           >
             {/* Departments grid */}

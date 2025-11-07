@@ -127,6 +127,9 @@ class DepartmentApiService(
             if name:
                 all_departments = [d for d in all_departments if name.lower() in d.name.lower()]
 
+            # Sort departments alphabetically by name (case-insensitive)
+            all_departments.sort(key=lambda d: d.name.lower())
+
             # Count total before pagination
             total = len(all_departments)
 

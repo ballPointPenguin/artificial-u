@@ -18,13 +18,28 @@ class CourseBase(BaseModel):
         None, description="ID of the department offering the course (optional for smart selection)"
     )
     level: str = Field(..., description="Course level (e.g., Undergraduate, Graduate)")
-    credits: int = Field(default=3, ge=0, description="Number of credit hours")
+    credits: int = Field(
+        default=3,
+        ge=1,
+        le=100,
+        description="Number of credit hours (1-100)",
+    )
     professor_id: Optional[int] = Field(
         None, description="ID of the professor teaching the course (optional for smart selection)"
     )
     description: str = Field(..., description="Course description and overview")
-    lectures_per_week: int = Field(default=14, description="Number of lectures per week")
-    total_weeks: int = Field(default=1, description="Total number of weeks in the course")
+    lectures_per_week: int = Field(
+        default=1,
+        ge=1,
+        le=5,
+        description="Number of lectures per week (1-5)",
+    )
+    total_weeks: int = Field(
+        default=12,
+        ge=1,
+        le=50,
+        description="Total number of weeks in the course (1-50)",
+    )
     topics: Optional[List[Dict[str, Any]]] = Field(None, description="List of course topics")
     # Attribution (not required for create)
     created_by: Optional[int] = Field(None, description="Student ID who created the course")
@@ -49,11 +64,26 @@ class CourseUpdate(BaseModel):
     title: Optional[str] = Field(None, description="Updated course title")
     department_id: Optional[int] = Field(None, description="Updated department ID")
     level: Optional[str] = Field(None, description="Updated course level")
-    credits: Optional[int] = Field(default=None, ge=0, description="Updated number of credits")
+    credits: Optional[int] = Field(
+        None,
+        ge=1,
+        le=100,
+        description="Updated number of credits (1-100)",
+    )
     professor_id: Optional[int] = Field(None, description="Updated professor ID")
     description: Optional[str] = Field(None, description="Updated course description")
-    lectures_per_week: Optional[int] = Field(None, description="Updated lectures per week")
-    total_weeks: Optional[int] = Field(None, description="Updated total weeks")
+    lectures_per_week: Optional[int] = Field(
+        None,
+        ge=1,
+        le=5,
+        description="Updated lectures per week (1-5)",
+    )
+    total_weeks: Optional[int] = Field(
+        None,
+        ge=1,
+        le=50,
+        description="Updated total weeks (1-50)",
+    )
 
 
 # Student brief info model for course responses
@@ -167,11 +197,26 @@ class GeneratedCourseData(BaseModel):
     title: Optional[str] = Field(None, description="Generated course title")
     department_id: Optional[int] = Field(None, description="Generated department ID")
     level: Optional[str] = Field(None, description="Generated course level")
-    credits: Optional[int] = Field(default=None, ge=0, description="Generated number of credits")
+    credits: Optional[int] = Field(
+        None,
+        ge=1,
+        le=100,
+        description="Generated number of credits (1-100)",
+    )
     professor_id: Optional[int] = Field(None, description="Generated professor ID")
     description: Optional[str] = Field(None, description="Generated course description")
-    lectures_per_week: Optional[int] = Field(None, description="Generated lectures per week")
-    total_weeks: Optional[int] = Field(None, description="Generated total weeks")
+    lectures_per_week: Optional[int] = Field(
+        None,
+        ge=1,
+        le=5,
+        description="Generated lectures per week (1-5)",
+    )
+    total_weeks: Optional[int] = Field(
+        None,
+        ge=1,
+        le=50,
+        description="Generated total weeks (1-50)",
+    )
     topics: Optional[List[Dict[str, Any]]] = Field(None, description="Generated course topics")
     created_with: Optional[str] = Field(None, description="Name of LLM used for generation")
 

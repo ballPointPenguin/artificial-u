@@ -20,11 +20,7 @@ const DepartmentCard = (props: { department: Department }) => {
   )
 }
 
-const FacultyCard = (props: {
-  faculty: Faculty
-  isSelected: boolean
-  onClick: () => void
-}) => {
+const FacultyCard = (props: { faculty: Faculty; isSelected: boolean; onClick: () => void }) => {
   return (
     <button
       type="button"
@@ -34,9 +30,10 @@ const FacultyCard = (props: {
       class={`
         arcane-card p-6 text-center transition-all duration-300 cursor-pointer
         min-w-[280px] max-w-xs
-        ${props.isSelected
-          ? 'border-primary border-2 shadow-arcane bg-surface/80'
-          : 'border-border/30 hover:shadow-arcane hover:border-primary/50'
+        ${
+          props.isSelected
+            ? 'border-primary border-2 shadow-arcane bg-surface/80'
+            : 'border-border/30 hover:shadow-arcane hover:border-primary/50'
         }
       `}
     >
@@ -122,19 +119,25 @@ const AcademicsPage = () => {
               </div>
             </div>
 
+            {/* See all departments link */}
+            <div class="mb-8 text-center">
+              <A
+                href="/departments"
+                class="text-parchment-200 hover:text-parchment-100 text-lg tracking-wide transition-colors duration-300 underline underline-offset-4"
+              >
+                see all departments
+              </A>
+            </div>
+
             {/* Selected faculty description */}
             <Show when={selectedFaculty()}>
               {(faculty) => (
                 <div class="mb-8">
                   <div class="arcane-card p-6">
-                    <h2 class="text-2xl font-semibold mb-4 text-parchment-100">
-                      {faculty().name}
-                    </h2>
+                    <h2 class="text-2xl font-semibold mb-4 text-parchment-100">{faculty().name}</h2>
                     <Show
                       when={faculty().description}
-                      fallback={
-                        <p class="text-parchment-300 italic">No description available.</p>
-                      }
+                      fallback={<p class="text-parchment-300 italic">No description available.</p>}
                     >
                       <p class="text-parchment-200 whitespace-pre-line text-lg">
                         {faculty().description}
@@ -158,7 +161,8 @@ const AcademicsPage = () => {
                   when={!departments.error}
                   fallback={
                     <div class="text-red-500">
-                      Error loading departments: {(departments.error as Error).message || 'Unknown error'}
+                      Error loading departments:{' '}
+                      {(departments.error as Error).message || 'Unknown error'}
                     </div>
                   }
                 >
@@ -188,4 +192,3 @@ const AcademicsPage = () => {
 }
 
 export default AcademicsPage
-

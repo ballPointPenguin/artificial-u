@@ -32,7 +32,7 @@ const CourseForm: Component<CourseFormProps> = (props) => {
     code: '',
     title: '',
     department_id: null,
-    level: '',
+    level: null,
     credits: null,
     professor_id: null,
     description: '',
@@ -80,14 +80,29 @@ const CourseForm: Component<CourseFormProps> = (props) => {
     }
   })
 
+  // Sentinel value for null option (IDs are positive integers, so -1 is safe)
+  const NULL_OPTION_VALUE = -1
+
+  // Level options for the dropdown
+  const levelOptions: SelectOption[] = [
+    { value: NULL_OPTION_VALUE, label: '-- Select Level (Optional) --' },
+    { value: 'Undergraduate', label: 'Undergraduate' },
+    { value: 'Graduate', label: 'Graduate' },
+  ]
+
   // Fetch departments for Select
   const [departmentsResource] = createResource(async () => {
     try {
       const response = await departmentService.listDepartments({ page: 1, size: 100 })
-      return response.items.map((dept: Department) => ({
+      const departmentOptions = response.items.map((dept: Department) => ({
         value: dept.id,
         label: `${dept.name} (${dept.code})`,
       })) as SelectOption[]
+      // Add null option at the beginning to allow unselection
+      return [
+        { value: NULL_OPTION_VALUE, label: '-- Select Department (Optional) --' },
+        ...departmentOptions,
+      ] as SelectOption[]
     } catch {
       // Don't access reactive props inside async functions
       // Let the component handle the error state through resource.error
@@ -105,10 +120,15 @@ const CourseForm: Component<CourseFormProps> = (props) => {
           size: 100,
           ...(departmentId ? { departmentId } : {}),
         })
-        return response.items.map((prof: Professor) => ({
+        const professorOptions = response.items.map((prof: Professor) => ({
           value: prof.id,
           label: prof.name || 'Unnamed Professor',
         })) as SelectOption[]
+        // Add null option at the beginning to allow unselection
+        return [
+          { value: NULL_OPTION_VALUE, label: '-- Select Professor (Optional) --' },
+          ...professorOptions,
+        ] as SelectOption[]
       } catch {
         // Don't access reactive props inside async functions
         // Let the component handle the error state through resource.error
@@ -138,17 +158,21 @@ const CourseForm: Component<CourseFormProps> = (props) => {
     const errors: Record<string, string> = {}
     if (!data.code.trim()) errors.code = 'Course code is required.'
     if (!data.title.trim()) errors.title = 'Course title is required.'
-    // department_id and professor_id are now optional - no validation needed
-    if (!data.level.trim()) errors.level = 'Course level is required.'
-    if (data.credits === null || data.credits <= 0)
-      errors.credits = 'Credits must be a positive number.'
+    // department_id, professor_id, and level are now optional - no validation needed
+    if (data.credits === null || data.credits < 1 || data.credits > 100) {
+      errors.credits = 'Credits must be between 1 and 100.'
+    }
     if (!data.description.trim()) errors.description = 'Description is required.'
     // Optional fields like lectures_per_week, total_weeks can be validated if they have specific rules when provided
-    if (data.lectures_per_week !== null && Number(data.lectures_per_week) <= 0) {
-      errors.lectures_per_week = 'Lectures per week must be a positive number if specified.'
+    if (data.lectures_per_week !== null) {
+      if (Number(data.lectures_per_week) < 1 || Number(data.lectures_per_week) > 5) {
+        errors.lectures_per_week = 'Lectures per week must be between 1 and 5 if specified.'
+      }
     }
-    if (data.total_weeks !== null && Number(data.total_weeks) <= 0) {
-      errors.total_weeks = 'Total weeks must be a positive number if specified.'
+    if (data.total_weeks !== null) {
+      if (Number(data.total_weeks) < 1 || Number(data.total_weeks) > 50) {
+        errors.total_weeks = 'Total weeks must be between 1 and 50 if specified.'
+      }
     }
 
     setValidationErrors(errors)
@@ -212,7 +236,7 @@ const CourseForm: Component<CourseFormProps> = (props) => {
       code: '',
       title: '',
       department_id: null,
-      level: '',
+      level: null,
       credits: null,
       professor_id: null,
       description: '',
@@ -252,13 +276,23 @@ const CourseForm: Component<CourseFormProps> = (props) => {
             required
           />
         </FormField>
-        <FormField label="Department" name="department_id" error={validationErrors().department_id}>
+        <FormField
+          label="Department"
+          name="department_id"
+          error={validationErrors().department_id}
+          helperText={
+            formData().department_id === null ? 'AI will determine a department' : undefined
+          }
+        >
           <Select
             name="department_id"
             options={departmentsResource() || []}
-            value={formData().department_id}
+            value={formData().department_id === null ? NULL_OPTION_VALUE : formData().department_id}
             onChange={(v) => {
-              handleInputChange('department_id', v === '' ? null : Number(v))
+              // Convert sentinel value to null, otherwise use the selected value
+              const departmentId =
+                v === NULL_OPTION_VALUE || v === null || v === '' ? null : Number(v)
+              handleInputChange('department_id', departmentId)
               // Clear professor selection when department changes to avoid mismatch
               setFormData((prev) => ({ ...prev, professor_id: null }))
             }}
@@ -266,34 +300,59 @@ const CourseForm: Component<CourseFormProps> = (props) => {
             disabled={departmentsResource.loading || isDisabled()}
           />
         </FormField>
-        <FormField label="Professor" name="professor_id" error={validationErrors().professor_id}>
+        <FormField
+          label="Professor"
+          name="professor_id"
+          error={validationErrors().professor_id}
+          helperText={
+            formData().professor_id === null ? 'AI will determine a professor' : undefined
+          }
+        >
           <Select
             name="professor_id"
             options={professorsResource() || []}
-            value={formData().professor_id}
+            value={formData().professor_id === null ? NULL_OPTION_VALUE : formData().professor_id}
             onChange={(v) => {
-              handleInputChange('professor_id', v === '' ? null : Number(v))
+              // Convert sentinel value to null, otherwise use the selected value
+              const professorId =
+                v === NULL_OPTION_VALUE || v === null || v === '' ? null : Number(v)
+              handleInputChange('professor_id', professorId)
             }}
             placeholder="-- Select Professor (Optional) --"
             disabled={professorsResource.loading || isDisabled()}
           />
         </FormField>
-        <FormField label="Course Level" name="level" required error={validationErrors().level}>
-          <Input
+        <FormField
+          label="Course Level"
+          name="level"
+          error={validationErrors().level}
+          helperText={!formData().level ? 'AI will determine the level' : undefined}
+        >
+          <Select
             name="level"
-            value={formData().level}
+            options={levelOptions}
+            value={formData().level || NULL_OPTION_VALUE}
             onChange={(v) => {
-              handleInputChange('level', v)
+              // Convert sentinel value to null, otherwise use the selected string value
+              const level = v === NULL_OPTION_VALUE ? null : String(v)
+              handleInputChange('level', level)
             }}
-            placeholder="e.g., Undergraduate 101, Graduate 505"
+            placeholder="-- Select Level (Optional) --"
             disabled={isDisabled()}
-            required
           />
         </FormField>
-        <FormField label="Credits" name="credits" required error={validationErrors().credits}>
+        <FormField
+          label="Credits"
+          name="credits"
+          required
+          error={validationErrors().credits}
+          helperText="Number of credit hours (1-100)"
+        >
           <Input
             name="credits"
             type="number"
+            min={1}
+            max={100}
             value={formData().credits ?? ''}
             onChange={(v) => {
               handleInputChange('credits', v === '' ? null : Number(v))
@@ -306,10 +365,13 @@ const CourseForm: Component<CourseFormProps> = (props) => {
           label="Lectures per Week (Optional)"
           name="lectures_per_week"
           error={validationErrors().lectures_per_week}
+          helperText="Number of lectures per week (1-5)"
         >
           <Input
             name="lectures_per_week"
             type="number"
+            min={1}
+            max={5}
             value={formData().lectures_per_week ?? ''}
             onChange={(v) => {
               handleInputChange('lectures_per_week', v === '' ? null : Number(v))
@@ -321,10 +383,13 @@ const CourseForm: Component<CourseFormProps> = (props) => {
           label="Total Weeks (Optional)"
           name="total_weeks"
           error={validationErrors().total_weeks}
+          helperText="Total number of weeks (1-50)"
         >
           <Input
             name="total_weeks"
             type="number"
+            min={1}
+            max={50}
             value={formData().total_weeks ?? ''}
             onChange={(v) => {
               handleInputChange('total_weeks', v === '' ? null : Number(v))
