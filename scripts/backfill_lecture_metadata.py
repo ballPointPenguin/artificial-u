@@ -12,7 +12,6 @@ from pathlib import Path
 from typing import Dict, Iterable, List, Optional
 
 from sqlalchemy import func, or_
-from sqlalchemy.orm import Session
 
 # Ensure project root is on the Python path when executing as a script
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -217,7 +216,7 @@ async def backfill_summaries(
                 "Database error while updating summary for lecture %s: %s", lecture_id, exc
             )
             stats["failed"] += 1
-        except Exception as exc:  # noqa: BLE001
+        except Exception:  # noqa: BLE001
             logger.exception(
                 "Unexpected error during summary generation for lecture %s", lecture_id
             )

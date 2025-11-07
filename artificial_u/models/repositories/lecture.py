@@ -451,6 +451,8 @@ class LectureRepository(BaseRepository):
                 LectureModel.topic_id,
                 LectureModel.title,
                 LectureModel.summary,
+                LectureModel.audio_url,
+                LectureModel.transcript_url,
             ).join(
                 latest_revisions,
                 (LectureModel.topic_id == latest_revisions.c.topic_id)
@@ -477,6 +479,8 @@ class LectureRepository(BaseRepository):
                     "topic_id": row.topic_id,
                     "title": row.title,
                     "summary": row.summary,
+                    "audio_url": row.audio_url,
+                    "transcript_url": row.transcript_url,
                 }
                 for row in results
             ]

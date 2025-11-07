@@ -1,4 +1,5 @@
 import { A, useNavigate, useParams } from '@solidjs/router'
+import { FileText, Headphones } from 'lucide-solid'
 import { type Component, createResource, createSignal, For, Show } from 'solid-js'
 import { courseService } from '../api/services/course-service.js'
 import { topicService } from '../api/services/topic-service.js'
@@ -140,26 +141,58 @@ const TopicsList: Component<{
                 {(topic) => {
                   const lecture = findLectureForTopic(topic.id)
                   return (
-                    <A
-                      href={`/courses/${String(props.courseId)}/topics/${String(topic.id)}`}
-                      class="block"
-                    >
-                      <li class="arcane-card p-4 hover:bg-parchment-800/20 transition-colors duration-200 cursor-pointer">
-                        <div class="flex items-center justify-between">
-                          <div class="flex-1">
-                            <p class="text-parchment-300 text-sm mt-1">
-                              Week {topic.week}
-                              <Show when={topic.order > 1}> • Topic {topic.order}</Show>
-                            </p>
-                            <p class="text-parchment-100 font-serif">{topic.title}</p>
-                            <Show when={lecture}>
-                              <p class="text-parchment-400 text-sm mt-2">Lecture</p>
-                              <p class="text-parchment-400 text-sm mt-1">{lecture?.title}</p>
+                    <li class="arcane-card p-4 hover:bg-parchment-800/20 transition-colors duration-200">
+                      <div class="flex items-start justify-between gap-4">
+                        <A
+                          href={`/courses/${String(props.courseId)}/topics/${String(topic.id)}`}
+                          class="flex-1 block"
+                        >
+                          <p class="text-parchment-300 text-sm mt-1">
+                            Week {topic.week}
+                            <Show when={topic.order > 1}> • Topic {topic.order}</Show>
+                          </p>
+                          <p class="text-parchment-100 font-serif">{topic.title}</p>
+                          <Show when={lecture}>
+                            <p class="text-parchment-400 text-sm mt-2">Lecture</p>
+                            <p class="text-parchment-400 text-sm mt-1">{lecture?.title}</p>
+                          </Show>
+                        </A>
+                        <Show when={lecture && (lecture.audio_url || lecture.transcript_url)}>
+                          <div class="flex items-center gap-2 shrink-0">
+                            <Show when={lecture?.audio_url}>
+                              <a
+                                href={lecture?.audio_url ?? undefined}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                class="inline-flex h-9 w-9 items-center justify-center rounded-full border border-parchment-800/40 text-mystic-300 hover:text-mystic-200 hover:border-mystic-400 hover:bg-mystic-500/10 transition-colors"
+                                aria-label="Open lecture audio"
+                                title="Open lecture audio"
+                                onClick={(event) => {
+                                  event.stopPropagation()
+                                }}
+                              >
+                                <Headphones class="h-4 w-4" />
+                              </a>
+                            </Show>
+                            <Show when={lecture?.transcript_url}>
+                              <a
+                                href={lecture?.transcript_url ?? undefined}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                class="inline-flex h-9 w-9 items-center justify-center rounded-full border border-parchment-800/40 text-mystic-300 hover:text-mystic-200 hover:border-mystic-400 hover:bg-mystic-500/10 transition-colors"
+                                aria-label="Open lecture transcript"
+                                title="Open lecture transcript"
+                                onClick={(event) => {
+                                  event.stopPropagation()
+                                }}
+                              >
+                                <FileText class="h-4 w-4" />
+                              </a>
                             </Show>
                           </div>
-                        </div>
-                      </li>
-                    </A>
+                        </Show>
+                      </div>
+                    </li>
                   )
                 }}
               </For>

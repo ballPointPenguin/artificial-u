@@ -520,8 +520,8 @@ class CourseApiService(BaseApiService[CoreCourse, CourseResponse, CoursesListRes
     def get_course_lectures(self, course_id: int, limit: int = 100) -> CourseLecturesResponse:
         """
         Get lecture briefs for a course using the repository factory.
-        Only fetches id, course_id, topic_id, title, and summary fields,
-        excluding the large 'content' field for better performance.
+        Fetches lightweight lecture metadata (excluding full content) including
+        audio and transcript URLs when available.
 
         Args:
             course_id: The ID of the course
@@ -547,6 +547,8 @@ class CourseApiService(BaseApiService[CoreCourse, CourseResponse, CoursesListRes
                     topic_id=lecture_dict["topic_id"],
                     title=lecture_dict["title"],
                     summary=lecture_dict["summary"],
+                    audio_url=lecture_dict.get("audio_url"),
+                    transcript_url=lecture_dict.get("transcript_url"),
                 )
                 for lecture_dict in lecture_brief_dicts
             ]
