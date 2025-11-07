@@ -15,6 +15,14 @@ from artificial_u.models.repositories.base import BaseRepository
 class LectureRepository(BaseRepository):
     """Repository for Lecture operations."""
 
+    @staticmethod
+    def _calculate_word_count(content: Optional[str]) -> Optional[int]:
+        if content is None:
+            return None
+
+        words = [word for word in content.strip().split() if word]
+        return len(words)
+
     def create(self, lecture: Lecture) -> Lecture:
         """Create a new lecture."""
         with self.get_session() as session:
@@ -27,6 +35,8 @@ class LectureRepository(BaseRepository):
                 )
                 lecture.revision = (max_revision or 0) + 1
 
+            word_count = self._calculate_word_count(lecture.content)
+
             db_lecture = LectureModel(
                 revision=lecture.revision,
                 content=lecture.content,
@@ -36,6 +46,7 @@ class LectureRepository(BaseRepository):
                 transcript_url=lecture.transcript_url,
                 course_id=lecture.course_id,
                 topic_id=lecture.topic_id,
+                word_count=word_count,
                 created_by=lecture.created_by,
                 created_with=lecture.created_with,
             )
@@ -45,6 +56,7 @@ class LectureRepository(BaseRepository):
             session.refresh(db_lecture)
 
             lecture.id = db_lecture.id
+            lecture.word_count = word_count
             return lecture
 
     def get(self, lecture_id: int) -> Optional[Lecture]:
@@ -86,6 +98,7 @@ class LectureRepository(BaseRepository):
                 transcript_url=db_lecture.transcript_url,
                 course_id=db_lecture.course_id,
                 topic_id=db_lecture.topic_id,
+                word_count=db_lecture.word_count,
                 created_by=db_lecture.created_by,
                 created_with=db_lecture.created_with,
                 created_at=db_lecture.created_at,
@@ -172,6 +185,7 @@ class LectureRepository(BaseRepository):
                         transcript_url=lecture.transcript_url,
                         course_id=lecture.course_id,
                         topic_id=lecture.topic_id,
+                        word_count=lecture.word_count,
                         created_by=lecture.created_by,
                         created_with=lecture.created_with,
                         created_at=lecture.created_at,
@@ -234,6 +248,7 @@ class LectureRepository(BaseRepository):
                     transcript_url=db_lecture.transcript_url,
                     course_id=db_lecture.course_id,
                     topic_id=db_lecture.topic_id,
+                    word_count=db_lecture.word_count,
                     created_by=db_lecture.created_by,
                     created_with=db_lecture.created_with,
                     created_at=db_lecture.created_at,
@@ -391,6 +406,7 @@ class LectureRepository(BaseRepository):
                         transcript_url=lecture.transcript_url,
                         course_id=lecture.course_id,
                         topic_id=lecture.topic_id,
+                        word_count=lecture.word_count,
                         created_by=lecture.created_by,
                         created_with=lecture.created_with,
                         created_at=lecture.created_at,
@@ -489,12 +505,14 @@ class LectureRepository(BaseRepository):
             db_lecture.transcript_url = lecture.transcript_url
             db_lecture.course_id = lecture.course_id
             db_lecture.topic_id = lecture.topic_id
+            db_lecture.word_count = self._calculate_word_count(lecture.content)
             db_lecture.created_by = lecture.created_by
             db_lecture.created_with = lecture.created_with
 
             session.add(db_lecture)
             session.commit()
 
+            lecture.word_count = db_lecture.word_count
             return lecture
 
     def update_fields(self, lecture_id: int, update_data: Dict[str, any]) -> Lecture:
@@ -535,6 +553,9 @@ class LectureRepository(BaseRepository):
                 if key in allowed_fields:
                     setattr(db_lecture, key, value)
 
+            if "content" in update_data:
+                db_lecture.word_count = self._calculate_word_count(db_lecture.content)
+
             session.add(db_lecture)
             session.commit()
             session.refresh(db_lecture)
@@ -549,6 +570,7 @@ class LectureRepository(BaseRepository):
                 transcript_url=db_lecture.transcript_url,
                 course_id=db_lecture.course_id,
                 topic_id=db_lecture.topic_id,
+                word_count=db_lecture.word_count,
                 created_by=db_lecture.created_by,
                 created_with=db_lecture.created_with,
                 created_at=db_lecture.created_at,

@@ -219,6 +219,7 @@ export interface Lecture {
   summary: string | null
   audio_url: string | null
   transcript_url: string | null
+  word_count: number | null
   created_by?: number | null
   created_with?: string | null
   created_at?: string | null
@@ -239,6 +240,7 @@ export interface LectureCreate {
   audio_url?: string | null
   transcript_url?: string | null
   revision?: number | null
+  word_count?: number | null
 }
 
 export interface LectureUpdate {
@@ -250,6 +252,7 @@ export interface LectureUpdate {
   audio_url?: string | null
   transcript_url?: string | null
   revision?: number | null
+  word_count?: number | null
 }
 
 export interface LectureList {

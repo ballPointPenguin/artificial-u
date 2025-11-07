@@ -276,6 +276,7 @@ class Lecture(BaseModel):
     transcript_url: Optional[str] = None
     course_id: int
     topic_id: int
+    word_count: Optional[int] = None
     # Attribution
     created_by: Optional[int] = None
     created_with: Optional[str] = None
