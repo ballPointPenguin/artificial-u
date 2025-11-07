@@ -51,7 +51,8 @@ class CdkStack(Stack):
             vpc=vpc,
             instance_type=ec2.InstanceType.of(ec2.InstanceClass.T4G, ec2.InstanceSize.MICRO),
             machine_image=ec2.AmazonLinuxImage(
-                generation=ec2.AmazonLinuxGeneration.AMAZON_LINUX_2023
+                generation=ec2.AmazonLinuxGeneration.AMAZON_LINUX_2023,
+                cpu_type=ec2.AmazonLinuxCpuType.ARM_64,
             ),
         )
 
