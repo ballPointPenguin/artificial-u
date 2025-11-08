@@ -64,18 +64,23 @@ ArtificialU provides a unified storage interface for both local development (Min
 
 ### MinIO Configuration (Development)
 
-```python
-STORAGE_TYPE = "minio"
-STORAGE_ENDPOINT_URL = "http://localhost:9000"
-STORAGE_PUBLIC_URL = "http://localhost:9000"
-STORAGE_ACCESS_KEY = "minioadmin"
-STORAGE_SECRET_KEY = "minioadmin"
-STORAGE_REGION = "us-east-1"
-STORAGE_AUDIO_BUCKET = "artificial-u-audio"
-STORAGE_LECTURES_BUCKET = "artificial-u-lectures"
-STORAGE_IMAGES_BUCKET = "artificial-u-images"
-STORAGE_EXPORTS_BUCKET = "artificial-u-exports"
+For local development with MinIO, you **must** set the following environment variables in your `.env` file:
+
+```bash
+STORAGE_TYPE=minio
+STORAGE_ENDPOINT_URL=http://localhost:9000
+STORAGE_PUBLIC_URL=http://localhost:9000
+STORAGE_ACCESS_KEY=minioadmin
+STORAGE_SECRET_KEY=minioadmin
+STORAGE_REGION=us-east-1
+STORAGE_AUDIO_BUCKET=artificial-u-audio
+STORAGE_LECTURES_BUCKET=artificial-u-lectures
+STORAGE_IMAGES_BUCKET=artificial-u-images
+STORAGE_EXPORTS_BUCKET=artificial-u-exports
+STORAGE_CONTENT_LOGS_BUCKET=artificial-u-content-logs
 ```
+
+**Important:** The `STORAGE_ACCESS_KEY` and `STORAGE_SECRET_KEY` have no default values and must be explicitly set for MinIO to work.
 
 ### AWS S3 Configuration (Production)
 
