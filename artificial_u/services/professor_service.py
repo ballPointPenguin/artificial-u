@@ -12,10 +12,7 @@ from artificial_u.config import get_settings
 from artificial_u.models.core import Course, Professor
 from artificial_u.models.repositories.factory import RepositoryFactory
 from artificial_u.services.voice_service import VoiceService
-from artificial_u.utils import (
-    DatabaseError,
-    ProfessorNotFoundError,
-)
+from artificial_u.utils import DatabaseError, DependencyError, ProfessorNotFoundError
 
 
 class ProfessorService:
@@ -318,8 +315,8 @@ class ProfessorService:
 
         Raises:
             ProfessorNotFoundError: If the professor doesn't exist.
+            DependencyError: If the professor has related entities.
             DatabaseError: If deletion fails in the database.
-            # Consider adding DependencyError check here if needed
         """
         self.logger.info(f"Attempting to delete professor {professor_id}")
         # Existence check happens within repository.delete in this refactor
@@ -331,6 +328,12 @@ class ProfessorService:
             else:
                 # This case implies the professor wasn't found by the repo method
                 raise ProfessorNotFoundError(f"Delete failed: Professor {professor_id} not found.")
+        except DependencyError as e:
+            error_msg = (
+                f"Delete failed due to dependency constraint for professor {professor_id}: {str(e)}"
+            )
+            self.logger.warning(error_msg)
+            raise
         except ProfessorNotFoundError:  # Re-raise specific error
             self.logger.warning(f"Delete failed: Professor {professor_id} not found.")
             raise

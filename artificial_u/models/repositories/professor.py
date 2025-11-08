@@ -7,8 +7,9 @@ from typing import List, Optional
 from sqlalchemy.orm import joinedload
 
 from artificial_u.models.core import Professor
-from artificial_u.models.database import ProfessorModel
+from artificial_u.models.database import CourseModel, ProfessorModel
 from artificial_u.models.repositories.base import BaseRepository
+from artificial_u.utils import DependencyError
 
 
 class ProfessorRepository(BaseRepository):
@@ -203,6 +204,17 @@ class ProfessorRepository(BaseRepository):
 
             if not db_professor:
                 return False
+
+            has_courses = (
+                session.query(CourseModel.id)
+                .filter(CourseModel.professor_id == professor_id)
+                .limit(1)
+                .first()
+            )
+            if has_courses:
+                raise DependencyError(
+                    f"Cannot delete professor {professor_id}: associated courses exist."
+                )
 
             session.delete(db_professor)
             session.commit()
