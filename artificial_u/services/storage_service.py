@@ -38,11 +38,13 @@ class StorageService:
         self.lectures_bucket = self.settings.STORAGE_LECTURES_BUCKET
         self.images_bucket = self.settings.STORAGE_IMAGES_BUCKET
         self.exports_bucket = self.settings.STORAGE_EXPORTS_BUCKET
+        self.content_logs_bucket = self.settings.STORAGE_CONTENT_LOGS_BUCKET
 
         self.logger.info(
             f"StorageService initialized with buckets: "
             f"audio={self.audio_bucket}, lectures={self.lectures_bucket}, "
-            f"images={self.images_bucket}, exports={self.exports_bucket}"
+            f"images={self.images_bucket}, exports={self.exports_bucket}, "
+            f"content_logs={self.content_logs_bucket}"
         )
 
     def _get_s3_client(self):
@@ -187,6 +189,24 @@ class StorageService:
         """
         return await self.upload_file(
             file_data, self.exports_bucket, object_name, content_type=content_type
+        )
+
+    async def upload_content_log(
+        self, file_data: bytes, object_name: str, content_type: str = "application/json"
+    ) -> Tuple[bool, Optional[str]]:
+        """
+        Upload content log file data to storage.
+
+        Args:
+            file_data: Binary file data
+            object_name: Object key/name
+            content_type: Content type of the log file
+
+        Returns:
+            Tuple of (success, url)
+        """
+        return await self.upload_file(
+            file_data, self.content_logs_bucket, object_name, content_type=content_type
         )
 
     def get_file_url(self, bucket: str, object_name: str) -> str:

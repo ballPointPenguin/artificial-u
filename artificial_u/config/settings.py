@@ -9,7 +9,6 @@ import os
 import sys
 from enum import Enum
 from functools import lru_cache
-from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from pydantic import Field, field_validator, model_validator
@@ -22,6 +21,7 @@ from artificial_u.config.defaults import (
     DEFAULT_LOG_LEVEL,
     DEFAULT_STORAGE_ACCESS_KEY,
     DEFAULT_STORAGE_AUDIO_BUCKET,
+    DEFAULT_STORAGE_CONTENT_LOGS_BUCKET,
     DEFAULT_STORAGE_ENDPOINT_URL,
     DEFAULT_STORAGE_EXPORTS_BUCKET,
     DEFAULT_STORAGE_IMAGES_BUCKET,
@@ -96,6 +96,7 @@ class Settings(BaseSettings):
     STORAGE_LECTURES_BUCKET: str = DEFAULT_STORAGE_LECTURES_BUCKET
     STORAGE_IMAGES_BUCKET: str = DEFAULT_STORAGE_IMAGES_BUCKET
     STORAGE_EXPORTS_BUCKET: str = DEFAULT_STORAGE_EXPORTS_BUCKET
+    STORAGE_CONTENT_LOGS_BUCKET: str = DEFAULT_STORAGE_CONTENT_LOGS_BUCKET
 
     # Content generation settings
     content_backend: str = DEFAULT_CONTENT_BACKEND
@@ -210,7 +211,8 @@ class Settings(BaseSettings):
 
     def create_directories(self) -> None:
         """Create necessary temporary directories for the application"""
-        Path(self.CONTENT_LOGS_PATH).mkdir(parents=True, exist_ok=True)
+        # Note: Content logs are now stored in S3/MinIO buckets, not local files
+        pass
 
     def setup_logging(self) -> logging.Logger:
         """Set up logging based on configuration"""
@@ -241,6 +243,7 @@ class Settings(BaseSettings):
             "storage_lectures_bucket": self.STORAGE_LECTURES_BUCKET,
             "storage_images_bucket": self.STORAGE_IMAGES_BUCKET,
             "storage_exports_bucket": self.STORAGE_EXPORTS_BUCKET,
+            "storage_content_logs_bucket": self.STORAGE_CONTENT_LOGS_BUCKET,
             "coin_cost_course_generation": self.COIN_COST_COURSE_GENERATION,
             "coin_cost_lecture_generation": self.COIN_COST_LECTURE_GENERATION,
             "coin_cost_lecture_audio": self.COIN_COST_LECTURE_AUDIO,
@@ -259,7 +262,6 @@ class Settings(BaseSettings):
         logger.info(f"Content backend: {self.content_backend}")
         if self.content_model:
             logger.info(f"Content model: {self.content_model}")
-        logger.info(f"Content logs path: {self.CONTENT_LOGS_PATH}")
         logger.info(f"Storage type: {self.STORAGE_TYPE}")
         if self.STORAGE_TYPE == "minio":
             logger.info(f"MinIO endpoint: {self.STORAGE_ENDPOINT_URL}")

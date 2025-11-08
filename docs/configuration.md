@@ -103,6 +103,28 @@ STORAGE_SECRET_KEY = "your-aws-secret-key"  # Optional, uses IAM role if not pro
 
 **Note:** The CDK stack automatically configures the bucket names and IAM permissions. When deploying via CDK, you only need to ensure `STORAGE_TYPE="s3"` is set, and the bucket names will be injected from the stack outputs.
 
+### Content Logs
+
+ArtificialU automatically logs all LLM generation requests and responses for debugging and analysis purposes. These logs are stored as JSON files in a dedicated bucket:
+
+**Development (MinIO):**
+
+```python
+STORAGE_CONTENT_LOGS_BUCKET = "artificial-u-content-logs"
+```
+
+**Production (S3):**
+The CDK stack automatically creates and configures the content logs bucket with the appropriate IAM permissions.
+
+Each log file contains:
+
+- **Metadata**: timestamp, backend, model, temperature, max_tokens
+- **Content**: system_prompt, prompt, prefill (if applicable), response
+
+Log files are named with the format: `{timestamp}_{backend}_{model}.json`
+
+This allows you to browse and download logs from your MinIO console (dev) or S3 console (prod) for inspection, analysis, or debugging of generation issues.
+
 ## Model Selection
 
 ArtificialU allows configuration of different AI models for various services:
@@ -204,7 +226,7 @@ TESTING=true
 | `ELEVENLABS_API_KEY` | API key for ElevenLabs | None | No |
 | `GOOGLE_API_KEY` | API key for Google | None | No |
 | `OPENAI_API_KEY` | API key for OpenAI | None | No |
-| `CONTENT_LOGS_PATH` | Path for content generation logs | `content_logs` | No |
+| `CONTENT_LOGS_PATH` | (Deprecated) Path for content generation logs | `content_logs` | No |
 | `LOG_LEVEL` | Logging level | `INFO` | No |
 | `content_backend` | Backend for content generation | `anthropic` | No |
 | `content_model` | Model for chosen backend | Depends on backend | No |

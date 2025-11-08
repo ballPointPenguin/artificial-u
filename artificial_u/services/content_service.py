@@ -1,6 +1,5 @@
 import json
 import logging
-import os
 from datetime import datetime
 from typing import Optional
 
@@ -10,6 +9,7 @@ from google.api_core import exceptions as google_exceptions
 
 from artificial_u.config import get_settings
 from artificial_u.integrations import anthropic_client, gemini_client, openai_client
+from artificial_u.services.storage_service import StorageService
 from artificial_u.utils.exceptions import ContentGenerationError
 
 # TODO: Make these configurable
@@ -23,13 +23,15 @@ class ContentService:
     Provides a model-agnostic interface.
     """
 
-    def __init__(self, logger=None):
+    def __init__(self, logger=None, storage_service: Optional[StorageService] = None):
         self.logger = logger or logging.getLogger(__name__)
         # Get settings instance
         settings = get_settings()
         self.default_backend = settings.content_backend
         self.default_model = settings.content_model
-        self.content_logs_path = settings.CONTENT_LOGS_PATH
+
+        # Initialize storage service for content logs
+        self.storage_service = storage_service or StorageService(logger=self.logger)
 
         self.logger.info(
             f"ContentService initialized with default backend: {self.default_backend}, "
@@ -230,7 +232,7 @@ class ContentService:
         backend: str,
         prefill: str | None = None,
     ) -> None:
-        """Log the content generation details to a file.
+        """Log the content generation details to storage.
 
         Args:
             model: The model used for generation
@@ -265,14 +267,24 @@ class ContentService:
 
         # Create a unique filename for this generation
         filename = f"{timestamp}_{backend}_{model.replace('/', '_')}.json"
-        filepath = os.path.join(self.content_logs_path, filename)
 
         try:
-            with open(filepath, "w", encoding="utf-8") as f:
-                json.dump(log_data, f, indent=2, ensure_ascii=False)
-            self.logger.debug(f"Content log saved to {filepath}")
+            # Convert log data to JSON bytes
+            log_json = json.dumps(log_data, indent=2, ensure_ascii=False)
+            log_bytes = log_json.encode("utf-8")
+
+            # Upload to storage bucket
+            success, url = await self.storage_service.upload_content_log(
+                file_data=log_bytes,
+                object_name=filename,
+            )
+
+            if success:
+                self.logger.debug(f"Content log uploaded to storage: {filename}")
+            else:
+                self.logger.error(f"Failed to upload content log: {filename}")
         except Exception as e:
-            self.logger.error(f"Failed to save content log to {filepath}: {str(e)}")
+            self.logger.error(f"Failed to save content log {filename}: {str(e)}")
 
     async def _generate_anthropic(
         self, prompt, model, system_prompt, temperature, max_tokens, prefill, **kwargs

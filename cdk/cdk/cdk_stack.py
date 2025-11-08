@@ -100,6 +100,12 @@ class CdkStack(Stack):
             removal_policy=RemovalPolicy.RETAIN,
             auto_delete_objects=False,
         )
+        content_logs_bucket = s3.Bucket(
+            self,
+            "ContentLogsBucket",
+            removal_policy=RemovalPolicy.RETAIN,
+            auto_delete_objects=False,
+        )
 
         # 5. Define the Docker image from the local Dockerfile for the API
         api_image = ecr_assets.DockerImageAsset(
@@ -171,6 +177,7 @@ class CdkStack(Stack):
             "STORAGE_IMAGES_BUCKET": images_bucket.bucket_name,
             "STORAGE_LECTURES_BUCKET": lectures_bucket.bucket_name,
             "STORAGE_EXPORTS_BUCKET": exports_bucket.bucket_name,
+            "STORAGE_CONTENT_LOGS_BUCKET": content_logs_bucket.bucket_name,
             "STORAGE_REGION": self.region,
             "CORS_ORIGINS": f"https://{domain_name},https://{site_domain}",
         }
@@ -225,6 +232,8 @@ class CdkStack(Stack):
                 f"{images_bucket.bucket_arn}/*",
                 exports_bucket.bucket_arn,
                 f"{exports_bucket.bucket_arn}/*",
+                content_logs_bucket.bucket_arn,
+                f"{content_logs_bucket.bucket_arn}/*",
             ],
         )
         fargate_service.task_definition.add_to_task_role_policy(s3_policy)
