@@ -295,7 +295,7 @@ class VoiceMapper:
         # If professor has an age attribute, use it
         if hasattr(professor, "age") and professor.age:
             if isinstance(professor.age, int):
-                if professor.age < 45:
+                if professor.age < 40:
                     return "young"
                 elif professor.age > 75:
                     return "old"
