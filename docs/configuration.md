@@ -79,16 +79,29 @@ STORAGE_EXPORTS_BUCKET = "artificial-u-exports"
 
 ### AWS S3 Configuration (Production)
 
+For production deployments on ECS/Fargate, the application uses IAM role-based authentication instead of explicit credentials. The IAM role is automatically attached to the ECS task by the CDK stack.
+
+**Required Environment Variables:**
+
 ```python
 STORAGE_TYPE = "s3"
-STORAGE_ACCESS_KEY = "your-aws-access-key"
-STORAGE_SECRET_KEY = "your-aws-secret-key"
-STORAGE_REGION = "your-aws-region"
+STORAGE_REGION = "us-east-1"  # or your AWS region
 STORAGE_AUDIO_BUCKET = "your-audio-bucket"
 STORAGE_LECTURES_BUCKET = "your-lectures-bucket"
 STORAGE_IMAGES_BUCKET = "your-images-bucket"
 STORAGE_EXPORTS_BUCKET = "your-exports-bucket"
 ```
+
+**Optional (for non-ECS deployments):**
+
+If you're running outside of ECS and don't have IAM role access, you can provide explicit credentials:
+
+```python
+STORAGE_ACCESS_KEY = "your-aws-access-key"  # Optional, uses IAM role if not provided
+STORAGE_SECRET_KEY = "your-aws-secret-key"  # Optional, uses IAM role if not provided
+```
+
+**Note:** The CDK stack automatically configures the bucket names and IAM permissions. When deploying via CDK, you only need to ensure `STORAGE_TYPE="s3"` is set, and the bucket names will be injected from the stack outputs.
 
 ## Model Selection
 

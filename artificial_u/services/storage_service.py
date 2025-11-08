@@ -39,6 +39,12 @@ class StorageService:
         self.images_bucket = self.settings.STORAGE_IMAGES_BUCKET
         self.exports_bucket = self.settings.STORAGE_EXPORTS_BUCKET
 
+        self.logger.info(
+            f"StorageService initialized with buckets: "
+            f"audio={self.audio_bucket}, lectures={self.lectures_bucket}, "
+            f"images={self.images_bucket}, exports={self.exports_bucket}"
+        )
+
     def _get_s3_client(self):
         """
         Get appropriate S3 client based on environment.
@@ -63,12 +69,22 @@ class StorageService:
         # Use real AWS S3 in production
         else:
             self.logger.info(f"Using AWS S3 in region {self.settings.STORAGE_REGION}")
-            return boto3.client(
-                "s3",
-                aws_access_key_id=self.settings.STORAGE_ACCESS_KEY,
-                aws_secret_access_key=self.settings.STORAGE_SECRET_KEY,
-                region_name=self.settings.STORAGE_REGION,
-            )
+            # Check if explicit credentials are provided
+            if self.settings.STORAGE_ACCESS_KEY and self.settings.STORAGE_SECRET_KEY:
+                self.logger.info("Using explicit AWS credentials from environment")
+                return boto3.client(
+                    "s3",
+                    aws_access_key_id=self.settings.STORAGE_ACCESS_KEY,
+                    aws_secret_access_key=self.settings.STORAGE_SECRET_KEY,
+                    region_name=self.settings.STORAGE_REGION,
+                )
+            else:
+                # Use IAM role credentials (for ECS tasks in production)
+                self.logger.info("Using IAM role credentials for S3 access")
+                return boto3.client(
+                    "s3",
+                    region_name=self.settings.STORAGE_REGION,
+                )
 
     async def upload_file(
         self, file_data: bytes, bucket: str, object_name: str, content_type: str = None
@@ -86,6 +102,7 @@ class StorageService:
             Tuple of (success, url)
         """
         try:
+            self.logger.info(f"Attempting to upload to bucket '{bucket}' with key '{object_name}'")
             file_obj = io.BytesIO(file_data)
 
             # Set extra arguments like content type if provided
@@ -100,10 +117,22 @@ class StorageService:
 
             # Generate URL
             url = self.get_file_url(bucket, object_name)
-            self.logger.info(f"Uploaded file to {bucket}/{object_name}")
+            self.logger.info(f"Successfully uploaded file to {bucket}/{object_name}, URL: {url}")
             return True, url
+        except ClientError as e:
+            error_code = e.response.get("Error", {}).get("Code", "Unknown")
+            error_msg = e.response.get("Error", {}).get("Message", str(e))
+            self.logger.error(
+                f"AWS ClientError uploading to {bucket}/{object_name}: "
+                f"Code={error_code}, Message={error_msg}",
+                exc_info=True,
+            )
+            return False, None
         except Exception as e:
-            self.logger.error(f"Error uploading file: {str(e)}")
+            self.logger.error(
+                f"Unexpected error uploading to {bucket}/{object_name}: {str(e)}",
+                exc_info=True,
+            )
             return False, None
 
     async def upload_audio_file(
