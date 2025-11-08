@@ -71,6 +71,9 @@ Instructions:
 9. Ensure that the text is suitable for a text-to-speech engine:
    - Avoid superfluous punctuation such as asterisks or dashes.
    - Everything in the response text will be literally read aloud.
+   - Spell out any year numbers and centuries in words (e.g., "the twentieth century,"
+     "Nineteen sixty-nine", "the twenties") rather than numeric forms
+     like "20th century", "1969", or "the 20s".
 
 Before writing the final lecture, outline the structure and main points of your lecture
 inside <lecture_outline></lecture_outline> tags. This will help ensure a well-organized
