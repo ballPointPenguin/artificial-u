@@ -76,23 +76,45 @@ class CdkStack(Stack):
         )
 
         # 4. Create S3 Buckets for application storage (replacing MinIO)
+        # Audio, lectures, and images buckets are publicly readable for web interface
         audio_bucket = s3.Bucket(
             self,
             "AudioBucket",
             removal_policy=RemovalPolicy.RETAIN,
             auto_delete_objects=False,
+            public_read_access=True,
+            block_public_access=s3.BlockPublicAccess(
+                block_public_acls=False,
+                block_public_policy=False,
+                ignore_public_acls=False,
+                restrict_public_buckets=False,
+            ),
         )
         lectures_bucket = s3.Bucket(
             self,
             "LecturesBucket",
             removal_policy=RemovalPolicy.RETAIN,
             auto_delete_objects=False,
+            public_read_access=True,
+            block_public_access=s3.BlockPublicAccess(
+                block_public_acls=False,
+                block_public_policy=False,
+                ignore_public_acls=False,
+                restrict_public_buckets=False,
+            ),
         )
         images_bucket = s3.Bucket(
             self,
             "ImagesBucket",
             removal_policy=RemovalPolicy.RETAIN,
             auto_delete_objects=False,
+            public_read_access=True,
+            block_public_access=s3.BlockPublicAccess(
+                block_public_acls=False,
+                block_public_policy=False,
+                ignore_public_acls=False,
+                restrict_public_buckets=False,
+            ),
         )
         exports_bucket = s3.Bucket(
             self,
