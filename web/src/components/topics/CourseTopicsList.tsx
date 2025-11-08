@@ -165,9 +165,9 @@ export function CourseTopicsList(props: CourseTopicsListProps) {
 
   return (
     <div class="space-y-6">
-      <div class="flex justify-between items-center">
+      <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <h2 class="text-2xl font-display text-parchment-100">Course Topics</h2>
-        <div class="flex space-x-2">
+        <div class="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:justify-end">
           <RequireRole minRole="creator">
             <MagicButton
               type="button"
@@ -178,10 +178,16 @@ export function CourseTopicsList(props: CourseTopicsListProps) {
               disabled={jobTracker.hasActiveJobs() || isLoading()}
               isLoading={jobTracker.hasActiveJobs()}
               loadingText="Generating..."
+              class="w-full sm:w-auto"
             >
               Generate Topics
             </MagicButton>
-            <Button onClick={handleAddTopic} variant="primary" disabled={isLoading()}>
+            <Button
+              onClick={handleAddTopic}
+              variant="primary"
+              disabled={isLoading()}
+              class="w-full sm:w-auto"
+            >
               Add New Topic
             </Button>
           </RequireRole>

@@ -315,23 +315,12 @@ export default function ProfessorDetail() {
             }
           >
             <div>
-              <div class="flex justify-between items-center mb-6">
+              <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between mb-6">
                 <h1 class="text-3xl font-display text-parchment-100 text-shadow-golden">
                   {professorResource()?.name}
                 </h1>
-                <div class="flex space-x-2 items-center">
+                <div class="flex flex-wrap gap-2 items-center sm:justify-end">
                   <RequireRole minRole="creator">
-                    <Show when={!isGeneratingImage()}>
-                      <MagicButton
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => void handleGenerateImage()}
-                        isLoading={isGeneratingImage()}
-                        loadingText="Generating..."
-                      >
-                        Generate Image
-                      </MagicButton>
-                    </Show>
                     <Button variant="secondary" size="sm" onClick={() => setIsEditing(true)}>
                       Edit
                     </Button>
@@ -353,8 +342,8 @@ export default function ProfessorDetail() {
                 </Alert>
               </Show>
 
-              {/* Start of two-column layout for md screens and up */}
-              <div class="md:flex md:gap-8 mb-6">
+              {/* Start of responsive layout with image prioritized on mobile */}
+              <div class="flex flex-col-reverse gap-8 md:flex-row md:gap-8 mb-6">
                 {/* Left Column: All Attributes */}
                 <div class="md:w-1/2 space-y-3 text-muted">
                   <p>
@@ -461,9 +450,9 @@ export default function ProfessorDetail() {
                   </Show>
                 </div>
 
-                {/* Right Column: Image */}
-                <div class="md:w-1/2 mt-6 md:mt-0">
-                  <div class="relative flex items-center justify-center min-h-[200px] bg-surface rounded-lg">
+                {/* Image Column */}
+                <div class="md:w-1/2 flex flex-col items-center gap-4">
+                  <div class="relative flex items-center justify-center w-full min-h-[200px] bg-surface rounded-lg p-4">
                     <Show
                       when={isGeneratingImage() || isImageLoading()}
                       fallback={
@@ -493,9 +482,21 @@ export default function ProfessorDetail() {
                       </div>
                     </Show>
                   </div>
+                  <RequireRole minRole="creator">
+                    <MagicButton
+                      variant="ghost"
+                      size="sm"
+                      class="w-full sm:w-auto"
+                      onClick={() => void handleGenerateImage()}
+                      isLoading={isGeneratingImage()}
+                      loadingText="Generating..."
+                    >
+                      Generate Image
+                    </MagicButton>
+                  </RequireRole>
 
                   {/* Voice Information Section */}
-                  <div class="mt-6">
+                  <div class="w-full mt-6">
                     <h3 class="text-lg font-display text-parchment-100 mb-3 text-shadow-golden">
                       Voice Profile
                     </h3>

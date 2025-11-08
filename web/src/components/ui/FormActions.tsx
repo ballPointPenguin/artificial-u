@@ -12,7 +12,7 @@ const FormActions: Component<FormActionsProps> = (props) => {
 
   // Default classes from ProfessorForm example: flex justify-end space-x-3
   // We can make this configurable if needed via props later.
-  const baseClasses = 'flex justify-end space-x-3 mt-6' // Added mt-6 for some top margin
+  const baseClasses = 'flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:justify-end mt-6' // Added mt-6 for top margin
 
   return (
     <div

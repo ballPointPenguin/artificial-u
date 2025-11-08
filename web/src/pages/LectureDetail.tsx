@@ -1,4 +1,5 @@
 import { A, useNavigate, useParams } from '@solidjs/router'
+import { FileText, Headphones } from 'lucide-solid'
 import {
   type Component,
   createMemo,
@@ -29,12 +30,12 @@ const LectureDetailView: Component<{
 }> = (props) => {
   return (
     <div class="arcane-card">
-      <div class="flex justify-between items-start mb-6">
-        <div>
-          <h1 class="text-3xl font-display text-parchment-100 mb-2">{props.lecture.title}</h1>
+      <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between mb-6">
+        <div class="space-y-1">
+          <h1 class="text-3xl font-display text-parchment-100">{props.lecture.title}</h1>
           <p class="text-parchment-300">Revision {props.lecture.revision}</p>
         </div>
-        <div class="flex space-x-2">
+        <div class="flex flex-wrap items-center gap-2 md:justify-end">
           {/* Transcript button at top */}
           <Show when={props.lecture.transcript_url}>
             <a
@@ -43,8 +44,10 @@ const LectureDetailView: Component<{
               rel="noopener noreferrer"
               class="inline-block"
             >
-              <Button variant="secondary" size="sm">
-                View Transcript
+              <Button variant="secondary" size="sm" class="inline-flex items-center gap-2">
+                <FileText class="h-4 w-4" />
+                <span class="hidden sm:inline">View Transcript</span>
+                <span class="sm:hidden">Transcript</span>
               </Button>
             </a>
           </Show>
@@ -57,8 +60,9 @@ const LectureDetailView: Component<{
               rel="noopener noreferrer"
               class="inline-block"
             >
-              <Button variant="outline" size="sm">
-                Listen
+              <Button variant="outline" size="sm" class="inline-flex items-center gap-2">
+                <Headphones class="h-4 w-4" />
+                <span>Listen</span>
               </Button>
             </a>
           </Show>
@@ -66,6 +70,7 @@ const LectureDetailView: Component<{
             <MagicButton
               variant="primary"
               size="sm"
+              class="whitespace-nowrap"
               onClick={() => {
                 void props.onGenerateAudio()
               }}
@@ -77,10 +82,16 @@ const LectureDetailView: Component<{
                   ? 'Regenerate Audio'
                   : 'Generate Audio'}
             </MagicButton>
-            <Button variant="outline" onClick={props.onEdit}>
+            <Button variant="outline" size="sm" class="whitespace-nowrap" onClick={props.onEdit}>
               Edit
             </Button>
-            <Button variant="danger" onClick={props.onDelete} disabled={props.isDeleting}>
+            <Button
+              variant="danger"
+              size="sm"
+              class="whitespace-nowrap"
+              onClick={props.onDelete}
+              disabled={props.isDeleting}
+            >
               {props.isDeleting ? 'Deleting...' : 'Delete'}
             </Button>
           </RequireRole>
