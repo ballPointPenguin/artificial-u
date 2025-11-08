@@ -117,7 +117,7 @@ class Settings(BaseSettings):
     # Topics generation model
     TOPICS_GENERATION_MODEL: str = "gemini-2.5-flash"
     # Image generation model
-    IMAGE_GENERATION_MODEL: str = "imagen-4.0-generate-preview-06-06"
+    IMAGE_GENERATION_MODEL: str = "imagen-4.0-generate-001"
 
     # Text-to-speech voice model (ElevenLabs)
     # Example values: "eleven_flash_v2_5", "eleven_multilingual_v2"

@@ -187,7 +187,7 @@ class CdkStack(Stack):
             "GUNICORN_THREADS": "8",
             "GUNICORN_TIMEOUT": "120",
             "GUNICORN_WORKERS": "2",
-            "IMAGE_GENERATION_MODEL": "imagen-4.0-generate-preview-06-06",
+            "IMAGE_GENERATION_MODEL": "imagen-4.0-generate-001",
             "LECTURE_GENERATION_MODEL": "claude-sonnet-4-5-20250929",
             "LECTURE_SUMMARY_MODEL": "gpt-5-nano",
             "LOG_LEVEL": "INFO",
