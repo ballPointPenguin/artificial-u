@@ -131,7 +131,7 @@ export const LectureSection: Component<LectureSectionProps> = (props) => {
                 </a>
                 <a
                   href={lectureData().audio_url || undefined}
-                  download
+                  download=""
                   class="inline-block"
                 >
                   <Button variant="outline" size="sm" class="h-8 w-9 p-0" aria-label="Download lecture audio">
