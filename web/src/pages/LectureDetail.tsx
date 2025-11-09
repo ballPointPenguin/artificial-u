@@ -1,5 +1,5 @@
 import { A, useNavigate, useParams } from '@solidjs/router'
-import { FileText, Headphones } from 'lucide-solid'
+import { Download, FileText, Headphones } from 'lucide-solid'
 import {
   type Component,
   createMemo,
@@ -52,7 +52,7 @@ const LectureDetailView: Component<{
             </a>
           </Show>
 
-          {/* Audio actions: listen if available, plus generate/regenerate */}
+          {/* Audio actions: listen and download if available, plus generate/regenerate */}
           <Show when={props.lecture.audio_url}>
             <a
               href={props.lecture.audio_url || undefined}
@@ -63,6 +63,21 @@ const LectureDetailView: Component<{
               <Button variant="outline" size="sm" class="inline-flex items-center gap-2">
                 <Headphones class="h-4 w-4" />
                 <span>Listen</span>
+              </Button>
+            </a>
+            <a
+              href={props.lecture.audio_url || undefined}
+              download
+              class="inline-block"
+            >
+              <Button
+                variant="outline"
+                size="sm"
+                class="inline-flex items-center gap-2"
+                aria-label="Download lecture audio"
+              >
+                <Download class="h-4 w-4" />
+                <span class="hidden sm:inline">Download</span>
               </Button>
             </a>
           </Show>

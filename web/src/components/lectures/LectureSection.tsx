@@ -1,4 +1,5 @@
 import { A } from '@solidjs/router'
+import { Download } from 'lucide-solid'
 import { type Component, createSignal, Show } from 'solid-js'
 import { lectureService } from '../../api/services/lecture-service.js'
 import type { Lecture } from '../../api/types.js'
@@ -111,12 +112,12 @@ export const LectureSection: Component<LectureSectionProps> = (props) => {
 
   return (
     <div class="arcane-card">
-      <div class="flex justify-between items-center mb-4">
+      <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between mb-4">
         <h3 class="text-xl font-display text-parchment-100 pr-4">Lecture</h3>
         <Show when={props.lecture()}>
           {(lectureData) => (
-            <div class="flex flex-wrap gap-2 items-center">
-              {/* Audio actions: listen if available */}
+            <div class="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:justify-end sm:items-center">
+              {/* Audio actions: listen and download if available */}
               <Show when={lectureData().audio_url}>
                 <a
                   href={lectureData().audio_url || undefined}
@@ -124,8 +125,17 @@ export const LectureSection: Component<LectureSectionProps> = (props) => {
                   rel="noopener noreferrer"
                   class="inline-block"
                 >
-                  <Button variant="outline" size="sm" class="h-8">
+                  <Button variant="outline" size="sm" class="h-8 w-full sm:w-auto">
                     Listen
+                  </Button>
+                </a>
+                <a
+                  href={lectureData().audio_url || undefined}
+                  download
+                  class="inline-block"
+                >
+                  <Button variant="outline" size="sm" class="h-8 w-9 p-0" aria-label="Download lecture audio">
+                    <Download class="h-4 w-4" />
                   </Button>
                 </a>
               </Show>
@@ -133,7 +143,7 @@ export const LectureSection: Component<LectureSectionProps> = (props) => {
                 <MagicButton
                   variant="primary"
                   size="sm"
-                  class="h-8"
+                  class="h-8 w-full sm:w-auto"
                   onClick={() => void handleGenerateAudio()}
                   disabled={isGeneratingAudio() || anyJobActive()}
                 >
@@ -148,7 +158,7 @@ export const LectureSection: Component<LectureSectionProps> = (props) => {
                 href={`/courses/${String(props.courseId)}/lectures/${String(lectureData().id)}`}
                 class="inline-block"
               >
-                <Button variant="primary" size="sm" class="h-8">
+                <Button variant="primary" size="sm" class="h-8 w-full sm:w-auto">
                   View
                 </Button>
               </A>
@@ -156,7 +166,7 @@ export const LectureSection: Component<LectureSectionProps> = (props) => {
                 <Button
                   variant="danger"
                   size="sm"
-                  class="h-8"
+                  class="h-8 w-full sm:w-auto"
                   onClick={() => setShowDeleteModal(true)}
                   disabled={isDeleting()}
                 >
