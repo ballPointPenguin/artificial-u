@@ -1,4 +1,5 @@
 import { A } from '@solidjs/router'
+import { Download } from 'lucide-solid'
 import { type Component, createSignal, Show } from 'solid-js'
 import { lectureService } from '../../api/services/lecture-service.js'
 import type { Lecture } from '../../api/types.js'
@@ -116,7 +117,7 @@ export const LectureSection: Component<LectureSectionProps> = (props) => {
         <Show when={props.lecture()}>
           {(lectureData) => (
             <div class="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:justify-end sm:items-center">
-              {/* Audio actions: listen if available */}
+              {/* Audio actions: listen and download if available */}
               <Show when={lectureData().audio_url}>
                 <a
                   href={lectureData().audio_url || undefined}
@@ -126,6 +127,15 @@ export const LectureSection: Component<LectureSectionProps> = (props) => {
                 >
                   <Button variant="outline" size="sm" class="h-8 w-full sm:w-auto">
                     Listen
+                  </Button>
+                </a>
+                <a
+                  href={lectureData().audio_url || undefined}
+                  download
+                  class="inline-block"
+                >
+                  <Button variant="outline" size="sm" class="h-8 w-9 p-0">
+                    <Download class="h-4 w-4" />
                   </Button>
                 </a>
               </Show>

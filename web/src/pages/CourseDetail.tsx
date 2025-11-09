@@ -1,5 +1,5 @@
 import { A, useNavigate, useParams } from '@solidjs/router'
-import { FileText, Headphones } from 'lucide-solid'
+import { Download, FileText, Headphones } from 'lucide-solid'
 import { type Component, createResource, createSignal, For, Show } from 'solid-js'
 import { courseService } from '../api/services/course-service.js'
 import { topicService } from '../api/services/topic-service.js'
@@ -172,6 +172,18 @@ const TopicsList: Component<{
                                 }}
                               >
                                 <Headphones class="h-4 w-4" />
+                              </a>
+                              <a
+                                href={lecture?.audio_url ?? undefined}
+                                download
+                                class="inline-flex h-9 w-9 items-center justify-center rounded-full border border-parchment-800/40 text-mystic-300 hover:text-mystic-200 hover:border-mystic-400 hover:bg-mystic-500/10 transition-colors"
+                                aria-label="Download lecture audio"
+                                title="Download lecture audio"
+                                onClick={(event) => {
+                                  event.stopPropagation()
+                                }}
+                              >
+                                <Download class="h-4 w-4" />
                               </a>
                             </Show>
                             <Show when={lecture?.transcript_url}>
