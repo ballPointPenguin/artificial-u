@@ -9,6 +9,7 @@ import asyncio
 import io
 import logging
 from typing import Any, Dict, List, Optional, Tuple
+from urllib.parse import urlencode
 
 import boto3
 from botocore.client import Config
@@ -260,6 +261,23 @@ class StorageService:
         Returns:
             Presigned URL with download headers
         """
+        storage_type = self.settings.STORAGE_TYPE
+
+        # Use public URL with response headers for MinIO to avoid AWS credential lookups
+        if storage_type == "minio":
+            base_url = self.get_file_url(bucket, object_name, download=False)
+            if not filename:
+                filename = object_name.split("/")[-1]
+
+            query_params = urlencode(
+                {
+                    "response-content-disposition": f'attachment; filename="{filename}"',
+                }
+            )
+
+            separator = "&" if "?" in base_url else "?"
+            return f"{base_url}{separator}{query_params}"
+
         try:
             # Use the object name as filename if not provided
             if not filename:
