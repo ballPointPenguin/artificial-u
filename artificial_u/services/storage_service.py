@@ -277,9 +277,7 @@ class StorageService:
             )
             return url
         except Exception as e:
-            self.logger.error(
-                f"Error generating download URL for {bucket}/{object_name}: {str(e)}"
-            )
+            self.logger.error(f"Error generating download URL for {bucket}/{object_name}: {str(e)}")
             # Fall back to regular URL if presigned URL generation fails
             return self.get_file_url(bucket, object_name)
 
