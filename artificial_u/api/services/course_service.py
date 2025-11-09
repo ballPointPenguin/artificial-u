@@ -31,6 +31,7 @@ from artificial_u.services import (
     ContentService,
     CourseService,
     ProfessorService,
+    StorageService,
 )
 from artificial_u.utils import (
     ContentGenerationError,
@@ -50,6 +51,7 @@ class CourseApiService(BaseApiService[CoreCourse, CourseResponse, CoursesListRes
         professor_service: ProfessorService,
         repository_factory: RepositoryFactory,
         course_service: CourseService,
+        storage_service: "StorageService",
         logger=None,
     ):
         """
@@ -60,10 +62,12 @@ class CourseApiService(BaseApiService[CoreCourse, CourseResponse, CoursesListRes
             content_service: Content generation service instance.
             professor_service: Core ProfessorService instance.
             course_service: Core CourseService instance with smart selection.
+            storage_service: Storage service for file operations.
             logger: Optional logger instance.
         """
         super().__init__(logger)
         self.repository_factory = repository_factory
+        self.storage_service = storage_service
 
         # Use the provided core service (already configured with smart selection)
         self.core_service = course_service
@@ -539,19 +543,32 @@ class CourseApiService(BaseApiService[CoreCourse, CourseResponse, CoursesListRes
                 course_id=course_id, limit=limit
             )
 
-            # Convert dictionaries to LectureBrief API models
-            lecture_briefs = [
-                LectureBrief(
-                    id=lecture_dict["id"],
-                    course_id=lecture_dict["course_id"],
-                    topic_id=lecture_dict["topic_id"],
-                    title=lecture_dict["title"],
-                    summary=lecture_dict["summary"],
-                    audio_url=lecture_dict.get("audio_url"),
-                    transcript_url=lecture_dict.get("transcript_url"),
+            # Convert dictionaries to LectureBrief API models and add download URLs
+            lecture_briefs = []
+            for lecture_dict in lecture_brief_dicts:
+                audio_url = lecture_dict.get("audio_url")
+                audio_download_url = None
+
+                # Generate download URL if audio_url exists
+                if audio_url:
+                    bucket, object_key = self.storage_service.parse_storage_url(audio_url)
+                    if bucket and object_key:
+                        audio_download_url = self.storage_service.get_download_url(
+                            bucket, object_key
+                        )
+
+                lecture_briefs.append(
+                    LectureBrief(
+                        id=lecture_dict["id"],
+                        course_id=lecture_dict["course_id"],
+                        topic_id=lecture_dict["topic_id"],
+                        title=lecture_dict["title"],
+                        summary=lecture_dict["summary"],
+                        audio_url=audio_url,
+                        audio_download_url=audio_download_url,
+                        transcript_url=lecture_dict.get("transcript_url"),
+                    )
                 )
-                for lecture_dict in lecture_brief_dicts
-            ]
 
             return CourseLecturesResponse(
                 course_id=course_id,

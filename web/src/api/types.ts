@@ -118,6 +118,7 @@ export interface LectureBrief {
   title: string
   summary: string | null
   audio_url?: string | null
+  audio_download_url?: string | null
   transcript_url?: string | null
 }
 
@@ -219,6 +220,7 @@ export interface Lecture {
   content: string
   summary: string | null
   audio_url: string | null
+  audio_download_url?: string | null
   transcript_url: string | null
   word_count: number | null
   created_by?: number | null
