@@ -67,7 +67,7 @@ const LectureDetailView: Component<{
             </a>
             <a
               href={props.lecture.audio_url || undefined}
-              download
+              download=""
               class="inline-block"
             >
               <Button

@@ -175,7 +175,7 @@ const TopicsList: Component<{
                               </a>
                               <a
                                 href={lecture?.audio_url ?? undefined}
-                                download
+                                download=""
                                 class="inline-flex h-9 w-9 items-center justify-center rounded-full border border-parchment-800/40 text-mystic-300 hover:text-mystic-200 hover:border-mystic-400 hover:bg-mystic-500/10 transition-colors"
                                 aria-label="Download lecture audio"
                                 title="Download lecture audio"
