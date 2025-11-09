@@ -523,6 +523,7 @@ def get_course_api_service(
     content_service: ContentService = Depends(get_content_service),
     professor_service: ProfessorService = Depends(get_professor_service),
     course_service: CourseService = Depends(get_course_service),
+    storage_service: StorageService = Depends(get_storage_service),
 ) -> CourseApiService:
     """
     Get a course API service instance.
@@ -532,6 +533,7 @@ def get_course_api_service(
         content_service: Content service
         professor_service: Professor service
         course_service: Core course service with smart selection
+        storage_service: Storage service
 
     Returns:
         CourseApiService instance
@@ -541,6 +543,7 @@ def get_course_api_service(
         content_service=content_service,
         professor_service=professor_service,
         course_service=course_service,
+        storage_service=storage_service,
         logger=logging.getLogger("artificial_u.api.services.course_service"),
     )
 

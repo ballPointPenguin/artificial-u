@@ -94,6 +94,26 @@ class LectureApiService(BaseApiService[CoreLecture, Lecture, LectureListResponse
         self.storage_service = storage_service
         self.topic_service = topic_service
 
+    def _enrich_lecture_with_download_url(self, lecture: Lecture) -> Lecture:
+        """
+        Enrich lecture with download URL for audio file.
+
+        Args:
+            lecture: Lecture API model
+
+        Returns:
+            Lecture: Enriched lecture with audio_download_url set
+        """
+        if lecture.audio_url:
+            # Parse the audio URL to get bucket and object key
+            bucket, object_key = self.storage_service.parse_storage_url(lecture.audio_url)
+            if bucket and object_key:
+                # Generate download URL with proper Content-Disposition header
+                lecture.audio_download_url = self.storage_service.get_download_url(
+                    bucket, object_key
+                )
+        return lecture
+
     def list_lectures(
         self,
         page: int = 1,
@@ -131,9 +151,11 @@ class LectureApiService(BaseApiService[CoreLecture, Lecture, LectureListResponse
                 search_query=search,
             )
 
-            # Convert core models to API models
+            # Convert core models to API models and enrich with download URLs
             lecture_items = [
-                Lecture.model_validate(lecture)  # Use model_validate for core->API conversion
+                self._enrich_lecture_with_download_url(
+                    Lecture.model_validate(lecture)  # Use model_validate for core->API conversion
+                )
                 for lecture in core_lectures
             ]
 
@@ -175,7 +197,8 @@ class LectureApiService(BaseApiService[CoreLecture, Lecture, LectureListResponse
         """
         try:
             core_lecture = self.core_service.get_lecture(lecture_id)
-            return Lecture.model_validate(core_lecture)
+            lecture = Lecture.model_validate(core_lecture)
+            return self._enrich_lecture_with_download_url(lecture)
         except LectureNotFoundError:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -219,7 +242,8 @@ class LectureApiService(BaseApiService[CoreLecture, Lecture, LectureListResponse
                 created_by=created_by or lecture_data.created_by,
                 created_with=lecture_data.created_with,
             )
-            return Lecture.model_validate(core_lecture)
+            lecture = Lecture.model_validate(core_lecture)
+            return self._enrich_lecture_with_download_url(lecture)
         except DatabaseError as e:
             self._handle_database_error("create lecture", e)
         except Exception as e:
@@ -247,7 +271,8 @@ class LectureApiService(BaseApiService[CoreLecture, Lecture, LectureListResponse
                 lecture_id=lecture_id,
                 update_data=update_dict,
             )
-            return Lecture.model_validate(core_lecture)
+            lecture = Lecture.model_validate(core_lecture)
+            return self._enrich_lecture_with_download_url(lecture)
         except LectureNotFoundError:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,

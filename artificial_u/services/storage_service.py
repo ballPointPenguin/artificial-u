@@ -209,17 +209,22 @@ class StorageService:
             file_data, self.content_logs_bucket, object_name, content_type=content_type
         )
 
-    def get_file_url(self, bucket: str, object_name: str) -> str:
+    def get_file_url(self, bucket: str, object_name: str, download: bool = False) -> str:
         """
         Generate URL for a stored file.
 
         Args:
             bucket: Bucket name
             object_name: Object key/name
+            download: If True, generate URL with Content-Disposition header for downloads
 
         Returns:
-            Public URL for the file
+            Public URL for the file (presigned if download=True)
         """
+        if download:
+            # Generate presigned URL with download headers
+            return self.get_download_url(bucket, object_name)
+
         storage_type = self.settings.STORAGE_TYPE
 
         if storage_type == "minio":
@@ -236,6 +241,47 @@ class StorageService:
         else:
             # AWS S3 URL
             return f"https://{bucket}.s3.{self.settings.STORAGE_REGION}.amazonaws.com/{object_name}"
+
+    def get_download_url(
+        self, bucket: str, object_name: str, expires_in: int = 3600, filename: str = None
+    ) -> str:
+        """
+        Generate a presigned URL for downloading a file with Content-Disposition header.
+
+        This ensures the browser prompts for download instead of opening the file,
+        which is especially important for mobile browsers.
+
+        Args:
+            bucket: Bucket name
+            object_name: Object key/name
+            expires_in: URL expiration time in seconds (default: 1 hour)
+            filename: Optional custom filename for download (defaults to object_name)
+
+        Returns:
+            Presigned URL with download headers
+        """
+        try:
+            # Use the object name as filename if not provided
+            if not filename:
+                filename = object_name.split("/")[-1]  # Get last part of path
+
+            # Generate presigned URL with Content-Disposition header
+            url = self.client.generate_presigned_url(
+                "get_object",
+                Params={
+                    "Bucket": bucket,
+                    "Key": object_name,
+                    "ResponseContentDisposition": f'attachment; filename="{filename}"',
+                },
+                ExpiresIn=expires_in,
+            )
+            return url
+        except Exception as e:
+            self.logger.error(
+                f"Error generating download URL for {bucket}/{object_name}: {str(e)}"
+            )
+            # Fall back to regular URL if presigned URL generation fails
+            return self.get_file_url(bucket, object_name)
 
     async def download_file(
         self, bucket: str, object_name: str

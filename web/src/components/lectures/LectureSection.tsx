@@ -130,7 +130,7 @@ export const LectureSection: Component<LectureSectionProps> = (props) => {
                   </Button>
                 </a>
                 <a
-                  href={lectureData().audio_url || undefined}
+                  href={lectureData().audio_download_url || lectureData().audio_url || undefined}
                   download=""
                   class="inline-block"
                 >

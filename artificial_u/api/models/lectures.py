@@ -18,6 +18,9 @@ class LectureBase(BaseModel):
     summary: Optional[str] = Field(None, description="Brief summary of the lecture content")
     title: str = Field(..., description="Title of the lecture")
     audio_url: Optional[str] = Field(None, description="URL to audio file if available")
+    audio_download_url: Optional[str] = Field(
+        None, description="Presigned URL for downloading audio file (mobile-friendly)"
+    )
     transcript_url: Optional[str] = Field(None, description="URL to transcript file if available")
     word_count: Optional[int] = Field(
         None, description="Approximate number of words in the lecture content"

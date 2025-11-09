@@ -164,6 +164,9 @@ class LectureBrief(BaseModel):
     title: str = Field(..., description="Lecture title")
     summary: Optional[str] = Field(None, description="Lecture summary")
     audio_url: Optional[str] = Field(None, description="Lecture audio URL if available")
+    audio_download_url: Optional[str] = Field(
+        None, description="Presigned URL for downloading audio file (mobile-friendly)"
+    )
     transcript_url: Optional[str] = Field(None, description="Lecture transcript URL if available")
 
 
