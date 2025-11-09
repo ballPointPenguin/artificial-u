@@ -134,7 +134,7 @@ export const LectureSection: Component<LectureSectionProps> = (props) => {
                   download
                   class="inline-block"
                 >
-                  <Button variant="outline" size="sm" class="h-8 w-9 p-0">
+                  <Button variant="outline" size="sm" class="h-8 w-9 p-0" aria-label="Download lecture audio">
                     <Download class="h-4 w-4" />
                   </Button>
                 </a>
