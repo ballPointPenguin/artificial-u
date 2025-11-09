@@ -70,7 +70,12 @@ const LectureDetailView: Component<{
               download
               class="inline-block"
             >
-              <Button variant="outline" size="sm" class="inline-flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                class="inline-flex items-center gap-2"
+                aria-label="Download lecture audio"
+              >
                 <Download class="h-4 w-4" />
                 <span class="hidden sm:inline">Download</span>
               </Button>
