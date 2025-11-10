@@ -2,13 +2,15 @@
 set -e
 
 MC_ALIAS=myminio
-MC_HOST=http://minio:9000
+
+MC_PORT="${1:-${MINIO_PORT:-9000}}"
+MC_HOST="http://minio:${MC_PORT}"
 MC_USER=minioadmin
 MC_PASS=minioadmin
 
 # Wait for MinIO server to be available
-echo "Waiting for MinIO..."
-until /usr/bin/mc alias set ${MC_ALIAS} ${MC_HOST} ${MC_USER} ${MC_PASS} > /dev/null 2>&1; do
+echo "Waiting for MinIO on ${MC_HOST}..."
+until /usr/bin/mc alias set "${MC_ALIAS}" "${MC_HOST}" "${MC_USER}" "${MC_PASS}" > /dev/null 2>&1; do
     sleep 1
 done
 echo "MinIO is ready."

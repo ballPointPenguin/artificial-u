@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import os
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import asynccontextmanager
 
@@ -129,10 +130,19 @@ app = create_application()
 if __name__ == "__main__":
     import uvicorn
 
+    port_env = os.environ.get("FASTAPI_PORT", "8000")
+    try:
+        port = int(port_env)
+    except ValueError:
+        logging.getLogger(__name__).warning(
+            "Invalid FASTAPI_PORT '%s'; falling back to 8000", port_env
+        )
+        port = 8000
+
     uvicorn.run(
         "artificial_u.api.app:app",
         host="0.0.0.0",
-        port=8000,
+        port=port,
         reload=True,
         # Add timeout options for better shutdown behavior during development
         access_log=False,  # Disable access log during development to reduce noise

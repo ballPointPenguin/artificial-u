@@ -20,8 +20,8 @@ services:
     image: minio/minio:latest
     container_name: artificial_u_minio
     ports:
-      - "9000:9000" # API port
-      - "9001:9001" # Console port
+      - "${MINIO_PORT:-9000}:9000" # API port
+      - "${MINIO_CONSOLE_PORT:-9001}:9001" # Console port
     environment:
       MINIO_ROOT_USER: minioadmin
       MINIO_ROOT_PASSWORD: minioadmin
@@ -42,7 +42,12 @@ services:
       - minio
     volumes:
       - ./scripts/mc_setup.sh:/usr/bin/mc_setup.sh
-    entrypoint: ["sh", "/usr/bin/mc_setup.sh"]
+    environment:
+      MINIO_PORT: ${MINIO_PORT:-9000}
+    entrypoint:
+      - sh
+      - -c
+      - '/usr/bin/mc_setup.sh "${MINIO_PORT}"'
 
 volumes:
   postgres_data:

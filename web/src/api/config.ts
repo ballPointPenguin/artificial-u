@@ -3,7 +3,7 @@
  */
 
 // Environment-specific base URLs
-const API_BASE_URLS = {
+const DEFAULT_API_BASE_URLS = {
   development: 'http://localhost:8000/api',
   test: 'http://localhost:8000/api',
   production: '/api', // Relative path for same-domain production deployment
@@ -16,9 +16,17 @@ const getEnvironment = (): 'development' | 'test' | 'production' => {
   return 'development'
 }
 
+const resolveBaseUrl = () => {
+  const environment = getEnvironment()
+
+  if (environment === 'production') return DEFAULT_API_BASE_URLS.production
+
+  return import.meta.env.VITE_API_BASE_URL ?? DEFAULT_API_BASE_URLS[environment]
+}
+
 // Config for the current environment
 export const API_CONFIG = {
-  baseUrl: API_BASE_URLS[getEnvironment()],
+  baseUrl: resolveBaseUrl(),
   timeout: 30000, // 30 seconds
   withCredentials: false,
 }

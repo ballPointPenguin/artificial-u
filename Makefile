@@ -5,6 +5,7 @@
 PYTHON := python3
 HATCH := hatch
 PROJECT_NAME := artificial_u
+FASTAPI_PORT ?= 8000
 SRC_DIR := artificial_u
 TEST_DIR := tests
 
@@ -148,7 +149,7 @@ services-restart: ## Restart Docker services
 .PHONY: run-api
 run-api: ## Run the FastAPI application
 	@echo "$(GREEN)Starting FastAPI application...$(NC)"
-	@$(HATCH) run uvicorn $(PROJECT_NAME).api.app:app --reload --host 0.0.0.0 --port 8000
+	@$(HATCH) run uvicorn $(PROJECT_NAME).api.app:app --reload --host 0.0.0.0 --port $(FASTAPI_PORT)
 
 .PHONY: run-worker
 run-worker: ## Run the background worker
