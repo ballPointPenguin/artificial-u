@@ -12,7 +12,7 @@ import type { SelectOption } from '../components/ui/Select.jsx'
 import Select from '../components/ui/Select.jsx'
 import { getJobEventHub } from '../utils/job-events-hub.js'
 
-type SortField = 'code' | 'title' | 'level' | 'credits' | 'updated_at' | 'created_at'
+type SortField = 'code' | 'title' | 'level' | 'updated_at' | 'created_at'
 type SortOrder = 'asc' | 'desc'
 
 const Courses: Component = () => {
@@ -105,7 +105,6 @@ const Courses: Component = () => {
     { value: 'code', label: 'Code' },
     { value: 'title', label: 'Title' },
     { value: 'level', label: 'Level' },
-    { value: 'credits', label: 'Credits' },
   ]
 
   // Handle sorting - if clicking same column, toggle order; otherwise set new column with desc
@@ -216,7 +215,6 @@ const Courses: Component = () => {
       title: formData.title,
       department_id: formData.department_id ?? undefined,
       level: formData.level ?? undefined,
-      credits: formData.credits ?? undefined,
       professor_id: formData.professor_id ?? undefined,
       description: formData.description,
       lectures_per_week: formData.lectures_per_week ?? undefined,

@@ -271,7 +271,6 @@ const CourseDetail: Component = () => {
       title: formData.title,
       department_id: formData.department_id ?? undefined,
       level: formData.level ?? undefined,
-      credits: formData.credits ?? undefined,
       professor_id: formData.professor_id ?? undefined,
       description: formData.description,
       lectures_per_week: formData.lectures_per_week ?? undefined,
@@ -480,10 +479,6 @@ const CourseDetail: Component = () => {
                         <p>
                           <span class="text-parchment-300">Level:</span>{' '}
                           <span class="text-parchment-100">{course().level}</span>
-                        </p>
-                        <p>
-                          <span class="text-parchment-300">Credits:</span>{' '}
-                          <span class="text-parchment-100">{course().credits}</span>
                         </p>
                         <p>
                           <span class="text-parchment-300">Lectures per week:</span>{' '}

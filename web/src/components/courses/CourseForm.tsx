@@ -33,7 +33,6 @@ const CourseForm: Component<CourseFormProps> = (props) => {
     title: '',
     department_id: null,
     level: null,
-    credits: null,
     professor_id: null,
     description: '',
     lectures_per_week: null,
@@ -55,7 +54,6 @@ const CourseForm: Component<CourseFormProps> = (props) => {
         title: c.title || '',
         department_id: c.department_id,
         level: c.level || '',
-        credits: c.credits,
         professor_id: c.professor_id,
         description: c.description || '',
         lectures_per_week: c.lectures_per_week,
@@ -159,9 +157,6 @@ const CourseForm: Component<CourseFormProps> = (props) => {
     if (!data.code.trim()) errors.code = 'Course code is required.'
     if (!data.title.trim()) errors.title = 'Course title is required.'
     // department_id, professor_id, and level are now optional - no validation needed
-    if (data.credits === null || data.credits < 1 || data.credits > 100) {
-      errors.credits = 'Credits must be between 1 and 100.'
-    }
     if (!data.description.trim()) errors.description = 'Description is required.'
     // Optional fields like lectures_per_week, total_weeks can be validated if they have specific rules when provided
     if (data.lectures_per_week !== null) {
@@ -217,7 +212,6 @@ const CourseForm: Component<CourseFormProps> = (props) => {
         title: generated.title || prev.title,
         department_id: generated.department_id,
         level: generated.level || prev.level,
-        credits: generated.credits,
         professor_id: generated.professor_id,
         description: generated.description || prev.description,
         lectures_per_week: generated.lectures_per_week,
@@ -237,7 +231,6 @@ const CourseForm: Component<CourseFormProps> = (props) => {
       title: '',
       department_id: null,
       level: null,
-      credits: null,
       professor_id: null,
       description: '',
       lectures_per_week: null,
@@ -339,26 +332,6 @@ const CourseForm: Component<CourseFormProps> = (props) => {
             }}
             placeholder="-- Select Level (Optional) --"
             disabled={isDisabled()}
-          />
-        </FormField>
-        <FormField
-          label="Credits"
-          name="credits"
-          required
-          error={validationErrors().credits}
-          helperText="Number of credit hours (1-100)"
-        >
-          <Input
-            name="credits"
-            type="number"
-            min={1}
-            max={100}
-            value={formData().credits ?? ''}
-            onChange={(v) => {
-              handleInputChange('credits', v === '' ? null : Number(v))
-            }}
-            disabled={isDisabled()}
-            required
           />
         </FormField>
         <FormField
