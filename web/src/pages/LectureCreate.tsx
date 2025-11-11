@@ -15,8 +15,8 @@ const LectureCreatePage = () => {
   const [error, setError] = createSignal('')
 
   // Parse IDs from URL params
-  const courseId = Number.parseInt(params.courseId, 10)
-  const topicId = Number.parseInt(params.topicId, 10)
+  const courseId = Number.parseInt(params.courseId ?? '', 10)
+  const topicId = Number.parseInt(params.topicId ?? '', 10)
 
   const isValidIds = !Number.isNaN(courseId) && !Number.isNaN(topicId)
 

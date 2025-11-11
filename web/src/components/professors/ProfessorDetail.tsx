@@ -81,7 +81,7 @@ export default function ProfessorDetail() {
 
   const [professorResource, { refetch: refetchProfessor }] = createResource(
     () => {
-      const id = Number.parseInt(params.id, 10)
+      const id = Number.parseInt(params.id ?? '', 10)
       if (Number.isNaN(id)) {
         throw new Error('Professor ID is missing or invalid')
       }
@@ -147,7 +147,7 @@ export default function ProfessorDetail() {
     setError('')
 
     try {
-      const id = Number.parseInt(params.id, 10)
+      const id = Number.parseInt(params.id ?? '', 10)
       if (Number.isNaN(id)) {
         throw new Error('Invalid professor ID')
       }
@@ -174,7 +174,7 @@ export default function ProfessorDetail() {
     setError('')
 
     try {
-      const id = Number.parseInt(params.id, 10)
+      const id = Number.parseInt(params.id ?? '', 10)
       if (Number.isNaN(id)) {
         throw new Error('Invalid professor ID')
       }
@@ -196,7 +196,7 @@ export default function ProfessorDetail() {
     setIsImageLoading(false) // Clear any existing image loading state
 
     try {
-      const id = Number.parseInt(params.id, 10)
+      const id = Number.parseInt(params.id ?? '', 10)
       if (Number.isNaN(id)) {
         throw new Error('Invalid professor ID')
       }
@@ -216,7 +216,7 @@ export default function ProfessorDetail() {
     setError('')
 
     try {
-      const id = Number.parseInt(params.id, 10)
+      const id = Number.parseInt(params.id ?? '', 10)
       if (Number.isNaN(id)) {
         throw new Error('Invalid professor ID')
       }
@@ -248,7 +248,7 @@ export default function ProfessorDetail() {
     setIsAssigningManual(true)
     setVoiceAssignError('')
     try {
-      const professorId = Number.parseInt(params.id, 10)
+      const professorId = Number.parseInt(params.id ?? '', 10)
       if (Number.isNaN(professorId)) throw new Error('Invalid professor ID')
 
       // Warn if reassigning and there is audio

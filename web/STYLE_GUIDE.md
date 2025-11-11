@@ -64,6 +64,7 @@ A consistent set of semantic color names are used throughout the application, de
   - `accent`: For highlighting, links, or specific callouts.
   - `background`: The main page background color.
   - `foreground`: The primary text color.
+  - `on-primary`: Text color chosen for high contrast on top of primary surfaces.
   - `muted`: For less emphasized text or UI elements.
   - `border`: Default border color.
   - `surface`: Background color for cards, modals, or distinct UI surfaces.
@@ -119,7 +120,7 @@ These semantic colors are then available as Tailwind utility classes (e.g., `bg-
 
 ## Key Files for Reference
 
-- `src/index.css`: Master CSS file defining themes, custom properties, global styles, and custom utilities.
+- `src/index.css`: Master CSS file defining themes, custom properties, global styles, and custom utilities. Mystic accents in the default Dark Academia theme were recently brightened again to improve contrast; keep palette adjustments coordinated with the matching entries in `src/utils/theme.ts`.
 - `src/utils/theme.ts`: JavaScript logic for managing and applying themes.
 - `tailwind.config.js`: Tailwind CSS configuration, including mappings for semantic colors and fonts.
 - `postcss.config.mjs`: PostCSS plugin configuration.

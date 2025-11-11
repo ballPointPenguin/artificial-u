@@ -5,6 +5,7 @@
 
 import { createEffect, createSignal, on, onCleanup } from 'solid-js'
 import { type JobEvent, type JobRow, listJobs } from '../api/services/jobs-service.js'
+import { useAuth } from '../auth/AuthProvider.js'
 import { jobDebug } from './job-debug.js'
 import { getJobEventHub } from './job-events-hub.js'
 
@@ -23,6 +24,8 @@ export interface JobTrackerOptions {
  * and provides consolidated state management.
  */
 export function createJobTracker(options: JobTrackerOptions) {
+  const auth = useAuth()
+
   const [activeJobIds, setActiveJobIds] = createSignal<Set<number>>(new Set())
   const [isInitializing, setIsInitializing] = createSignal(true)
   const [lastError, setLastError] = createSignal<string | null>(null)
@@ -49,8 +52,14 @@ export function createJobTracker(options: JobTrackerOptions) {
   createEffect(
     on(
       // Track these reactive values
-      () => [options.topicId?.(), options.lectureId?.(), options.courseId?.()],
-      async ([topicId, lectureId, courseId]) => {
+      () =>
+        [
+          auth.isAuthenticated(),
+          options.topicId?.(),
+          options.lectureId?.(),
+          options.courseId?.(),
+        ] as const,
+      async ([isAuthed, topicId, lectureId, courseId]) => {
         // Clean up previous subscription
         if (unsubscribe) {
           jobDebug.log('subscription', 'Dependencies changed, unsubscribing previous SSE', {
@@ -62,6 +71,18 @@ export function createJobTracker(options: JobTrackerOptions) {
           })
           unsubscribe()
           unsubscribe = null
+        }
+
+        if (!isAuthed) {
+          jobDebug.log(
+            'subscription',
+            'Skipping job subscription because user is not authenticated',
+            null
+          )
+          setIsInitializing(false)
+          setActiveJobIds(new Set<number>())
+          setLastError(null)
+          return
         }
 
         // Update initial values for the new effect run

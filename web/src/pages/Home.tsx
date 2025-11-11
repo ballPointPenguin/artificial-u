@@ -7,12 +7,12 @@ const Home = () => {
       <Hero
         title="Artificial University"
         subtitle="Explore knowledge crafted by AI, shaped by your curiosity"
-        buttonText="Browse Courses"
-        buttonLink="/courses"
+        buttonText="Learn More"
+        buttonLink="#home-content"
       />
 
       {/* Disclaimer Notice */}
-      <section class="py-8 bg-arcanum-900">
+      <section id="home-content" class="py-8 bg-arcanum-900">
         <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div class="border-2 border-red-500 bg-red-900/20 rounded-lg p-6">
             <div class="flex items-start gap-4">
@@ -55,12 +55,12 @@ const Home = () => {
         <div class="relative z-10 max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
           <div class="prose prose-lg prose-invert mx-auto font-serif text-parchment-300">
             <p class="text-lg md:text-xl leading-relaxed">
-              Welcome to the Artificial University. Here you'll find a growing collection of courses
-              generated through a collaboration between artificial intelligence and human expertise.
-              Each course is designed to make complex subjects accessible and engaging.
+              Welcome to the Artificial University. Discover AI-generated audio courses that make
+              complex subjects easy to absorb.
             </p>
             <p class="text-lg md:text-xl leading-relaxed">
-              Explore our curriculum, learn from our faculty, and discover new fields of study.
+              Explore the curriculum, listen to dynamic lectures, and uncover new fields of study.
+              Log in to create your own courses.
             </p>
           </div>
 

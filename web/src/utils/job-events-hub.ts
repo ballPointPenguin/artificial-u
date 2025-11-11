@@ -72,6 +72,16 @@ class JobEventHub {
       jobDebug.log('error', 'Failed to get auth token for SSE', error)
     }
 
+    if (!token) {
+      this.isConnecting = false
+      jobDebug.log(
+        'subscription',
+        'JobEventHub skipping connection because no auth token is available',
+        null
+      )
+      return
+    }
+
     // Create EventSource with authorization header
     // Note: EventSource doesn't natively support custom headers in all browsers
     // We'll use a workaround by creating a custom request
@@ -205,8 +215,9 @@ class JobEventHub {
         totalListeners: this.listeners.size,
       })
 
-      // Keep connection open even with no listeners to avoid reconnection overhead
-      // The connection will send heartbeats but otherwise consume minimal resources
+      if (this.listeners.size === 0) {
+        this.disconnect()
+      }
     }
   }
 

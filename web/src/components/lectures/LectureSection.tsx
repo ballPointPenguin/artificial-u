@@ -1,5 +1,5 @@
 import { A } from '@solidjs/router'
-import { Download } from 'lucide-solid'
+import { Download, FileText, Headphones } from 'lucide-solid'
 import { type Component, createSignal, Show } from 'solid-js'
 import { lectureService } from '../../api/services/lecture-service.js'
 import type { Lecture } from '../../api/types.js'
@@ -125,7 +125,12 @@ export const LectureSection: Component<LectureSectionProps> = (props) => {
                   rel="noopener noreferrer"
                   class="inline-block"
                 >
-                  <Button variant="outline" size="sm" class="h-8 w-full sm:w-auto">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    class="h-8 w-full sm:w-auto flex items-center justify-center gap-2"
+                  >
+                    <Headphones class="h-4 w-4" aria-hidden="true" />
                     Listen
                   </Button>
                 </a>
@@ -137,10 +142,10 @@ export const LectureSection: Component<LectureSectionProps> = (props) => {
                   <Button
                     variant="outline"
                     size="sm"
-                    class="h-8 w-9 p-0"
-                    aria-label="Download lecture audio"
+                    class="h-8 w-full sm:w-auto flex items-center justify-center gap-2"
                   >
-                    <Download class="h-4 w-4" />
+                    <Download class="h-4 w-4" aria-hidden="true" />
+                    Download
                   </Button>
                 </a>
               </Show>
@@ -163,7 +168,12 @@ export const LectureSection: Component<LectureSectionProps> = (props) => {
                 href={`/courses/${String(props.courseId)}/lectures/${String(lectureData().id)}`}
                 class="inline-block"
               >
-                <Button variant="primary" size="sm" class="h-8 w-full sm:w-auto">
+                <Button
+                  variant="primary"
+                  size="sm"
+                  class="h-8 w-full sm:w-auto flex items-center justify-center gap-2"
+                >
+                  <FileText class="h-4 w-4" aria-hidden="true" />
                   View
                 </Button>
               </A>

@@ -23,8 +23,7 @@ export function Button(props: ButtonProps) {
 
   const variantClasses = {
     primary:
-      // Using text-foreground for better contrast on vibrant primary backgrounds across themes.
-      'bg-primary text-foreground border border-accent/70 shadow-arcane enabled:hover:shadow-glow',
+      'bg-primary text-on-primary border border-accent/70 shadow-arcane enabled:hover:shadow-glow',
     secondary: 'bg-surface enabled:hover:bg-surface/80 text-foreground border border-border',
     outline: 'bg-transparent text-primary border border-primary enabled:hover:bg-primary/10',
     ghost: 'bg-transparent text-muted enabled:hover:text-primary enabled:hover:bg-primary/10',

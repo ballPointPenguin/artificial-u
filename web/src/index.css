@@ -42,6 +42,7 @@
   --color-surface: hsl(var(--theme-bg-h) var(--theme-bg-s) calc(var(--theme-bg-l) + 10%));
   --color-border: hsl(var(--theme-bg-h) var(--theme-bg-s) calc(var(--theme-bg-l) + 15%));
   --color-muted: hsl(var(--theme-fg-h) var(--theme-fg-s) calc(var(--theme-fg-l) - 35%));
+  --color-on-primary: var(--color-foreground);
   --color-info: hsl(var(--theme-info-h) var(--theme-info-s) var(--theme-info-l));
   --color-info-bg: hsl(var(--theme-info-h) var(--theme-info-s) calc(var(--theme-info-l) - 45%));
   --color-info-border: hsl(var(--theme-info-h) var(--theme-info-s) calc(var(--theme-info-l) - 25%));
@@ -66,6 +67,19 @@
   --color-danger-border: hsl(
     var(--theme-danger-h) var(--theme-danger-s) calc(var(--theme-danger-l) - 10%)
   );
+
+  /* Mystic accent palette */
+  --color-mystic-50: hsl(var(--theme-mystic-50));
+  --color-mystic-100: hsl(var(--theme-mystic-100));
+  --color-mystic-200: hsl(var(--theme-mystic-200));
+  --color-mystic-300: hsl(var(--theme-mystic-300));
+  --color-mystic-400: hsl(var(--theme-mystic-400));
+  --color-mystic-500: hsl(var(--theme-mystic-500));
+  --color-mystic-600: hsl(var(--theme-mystic-600));
+  --color-mystic-700: hsl(var(--theme-mystic-700));
+  --color-mystic-800: hsl(var(--theme-mystic-800));
+  --color-mystic-900: hsl(var(--theme-mystic-900));
+  --color-mystic: var(--color-mystic-500);
 
   /* Sparkle Colors for Magic Button Shimmer */
   --sparkle-color-1: hsl(var(--theme-accent-h) var(--theme-accent-s) var(--theme-accent-l) / 0.8);
@@ -128,6 +142,19 @@
   --theme-danger-h: 0;
   --theme-danger-s: 45%;
   --theme-danger-l: 55%;
+  --color-on-primary: hsl(var(--theme-bg-h) var(--theme-bg-s) calc(var(--theme-bg-l) + 5%));
+
+  /* Mystic palette (dark academia default) */
+  --theme-mystic-50: 210deg 45% 92%;
+  --theme-mystic-100: 210deg 43% 88%;
+  --theme-mystic-200: 210deg 41% 82%;
+  --theme-mystic-300: 210deg 41% 74%;
+  --theme-mystic-400: 210deg 48% 66%;
+  --theme-mystic-500: 210deg 54% 60%;
+  --theme-mystic-600: 210deg 56% 52%;
+  --theme-mystic-700: 210deg 52% 44%;
+  --theme-mystic-800: 210deg 48% 36%;
+  --theme-mystic-900: 210deg 46% 28%;
 }
 
 /* Theme Classes */
@@ -169,6 +196,19 @@
   --theme-danger-h: 300;
   --theme-danger-s: 100%;
   --theme-danger-l: 60%;
+  --color-on-primary: hsl(var(--theme-bg-h) var(--theme-bg-s) calc(var(--theme-bg-l) + 10%));
+
+  /* Mystic palette for Vaporwave */
+  --theme-mystic-50: 195deg 100% 88%;
+  --theme-mystic-100: 195deg 95% 82%;
+  --theme-mystic-200: 195deg 90% 74%;
+  --theme-mystic-300: 195deg 85% 66%;
+  --theme-mystic-400: 195deg 90% 58%;
+  --theme-mystic-500: 195deg 95% 50%;
+  --theme-mystic-600: 195deg 90% 44%;
+  --theme-mystic-700: 195deg 85% 36%;
+  --theme-mystic-800: 195deg 80% 28%;
+  --theme-mystic-900: 195deg 75% 20%;
 }
 
 .theme-wabi-sabi {
@@ -211,6 +251,19 @@
   --color-danger: hsl(15deg, 40%, 45%);
   --color-danger-bg: hsl(15deg, 35%, 92%);
   --color-danger-border: hsl(15deg, 35%, 70%);
+  --color-on-primary: hsl(var(--theme-fg-h) var(--theme-fg-s) var(--theme-fg-l));
+
+  /* Mystic palette for Wabi Sabi */
+  --theme-mystic-50: 210deg 40% 92%;
+  --theme-mystic-100: 210deg 35% 86%;
+  --theme-mystic-200: 210deg 30% 78%;
+  --theme-mystic-300: 210deg 25% 70%;
+  --theme-mystic-400: 210deg 25% 62%;
+  --theme-mystic-500: 210deg 26% 54%;
+  --theme-mystic-600: 210deg 26% 46%;
+  --theme-mystic-700: 210deg 26% 38%;
+  --theme-mystic-800: 210deg 24% 30%;
+  --theme-mystic-900: 210deg 22% 22%;
 }
 
 .theme-biophilia {
@@ -267,6 +320,7 @@
   --color-danger: hsl(var(--theme-danger-h), var(--theme-danger-s), var(--theme-danger-l));
   --color-danger-bg: hsl(var(--theme-danger-h), 60%, 94%);
   --color-danger-border: hsl(var(--theme-danger-h), var(--theme-danger-s), 75%);
+  --color-on-primary: hsl(var(--theme-fg-h) var(--theme-fg-s) var(--theme-fg-l));
 }
 
 /* Custom Utilities - Tailwind v4 style with @utility directives - These are fine */
@@ -276,6 +330,10 @@
 
 @utility text-shadow-golden {
   text-shadow: var(--text-shadow-golden);
+}
+
+@utility text-on-primary {
+  color: var(--color-on-primary);
 }
 
 /* Base Styles - Mostly fine, body bg uses new system */

@@ -31,23 +31,23 @@ interface ThemeProperties {
 export const themeProperties: Record<ThemeMode, ThemeProperties> = {
   'dark-academia': {
     primaryColor: '35deg 65% 55%', // Richer, slightly more saturated old gold/bronze
-    secondaryColor: '210deg 30% 60%', // Muted steel blue (was purple)
+    secondaryColor: '210deg 43% 58%', // Brighter steel blue for better contrast
     accentColor: '10deg 40% 45%', // Deep terracotta/dark orange
     backgroundColor: '30deg 15% 12%', // Very dark, slightly warm brown
     textColor: '35deg 25% 88%', // Aged paper / parchment
     borderColor: '30deg 15% 25%', // Darker brown border
     surfaceColor: '30deg 15% 18%', // Slightly lighter dark brown for surfaces
     // Status Colors for Dark Academia
-    infoColor: '190deg 35% 65%', // Desaturated teal
+    infoColor: '190deg 40% 68%', // Slightly brighter teal
     infoBgColor: '190deg 30% 20%', // Dark teal background
     infoBorderColor: '190deg 30% 35%', // Muted teal border
-    successColor: '90deg 30% 60%', // Muted olive green
+    successColor: '90deg 35% 62%', // Slightly brighter olive
     successBgColor: '90deg 25% 18%', // Dark olive background
     successBorderColor: '90deg 25% 30%', // Muted olive border
-    warningColor: '30deg 60% 65%', // Burnt orange / amber
+    warningColor: '30deg 65% 67%', // Brighter amber
     warningBgColor: '30deg 50% 20%', // Dark amber background
     warningBorderColor: '30deg 50% 35%', // Muted amber border
-    dangerColor: '0deg 45% 55%', // Dark crimson / deep red
+    dangerColor: '0deg 50% 57%', // Brighter crimson
     dangerBgColor: '0deg 45% 20%', // Dark crimson background
     dangerBorderColor: '0deg 40% 30%', // Muted crimson border
   },

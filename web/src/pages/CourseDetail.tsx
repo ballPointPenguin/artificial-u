@@ -188,20 +188,20 @@ const TopicsList: Component<{
                                 <Download class="h-4 w-4" />
                               </a>
                             </Show>
-                            <Show when={lecture?.transcript_url}>
-                              <a
-                                href={lecture?.transcript_url ?? undefined}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                class="inline-flex h-9 w-9 items-center justify-center rounded-full border border-parchment-800/40 text-mystic-300 hover:text-mystic-200 hover:border-mystic-400 hover:bg-mystic-500/10 transition-colors"
-                                aria-label="Open lecture transcript"
-                                title="Open lecture transcript"
-                                onClick={(event) => {
-                                  event.stopPropagation()
-                                }}
-                              >
-                                <FileText class="h-4 w-4" />
-                              </a>
+                            <Show when={lecture}>
+                              {(lectureData) => (
+                                <A
+                                  href={`/courses/${String(props.courseId)}/lectures/${String(lectureData().id)}`}
+                                  class="inline-flex h-9 w-9 items-center justify-center rounded-full border border-parchment-800/40 text-mystic-300 hover:text-mystic-200 hover:border-mystic-400 hover:bg-mystic-500/10 transition-colors"
+                                  aria-label="Open lecture detail"
+                                  title="Open lecture detail"
+                                  onClick={(event) => {
+                                    event.stopPropagation()
+                                  }}
+                                >
+                                  <FileText class="h-4 w-4" />
+                                </A>
+                              )}
                             </Show>
                           </div>
                         </Show>

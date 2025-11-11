@@ -128,7 +128,7 @@ const DepartmentDetail = () => {
 
   // Create a resource to fetch the department data
   const [department, { refetch }] = createResource(() => {
-    const id = Number.parseInt(params.id, 10)
+    const id = Number.parseInt(params.id ?? '', 10)
     if (Number.isNaN(id)) {
       throw new Error('Invalid department ID')
     }
@@ -155,7 +155,7 @@ const DepartmentDetail = () => {
     setError('')
 
     try {
-      const id = Number.parseInt(params.id, 10)
+      const id = Number.parseInt(params.id ?? '', 10)
       if (Number.isNaN(id)) {
         throw new Error('Invalid department ID')
       }
@@ -183,7 +183,7 @@ const DepartmentDetail = () => {
     setError('')
 
     try {
-      const id = Number.parseInt(params.id, 10)
+      const id = Number.parseInt(params.id ?? '', 10)
       if (Number.isNaN(id)) {
         throw new Error('Invalid department ID')
       }

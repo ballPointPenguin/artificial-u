@@ -70,14 +70,9 @@ const LectureDetailView: Component<{
               download=""
               class="inline-block"
             >
-              <Button
-                variant="outline"
-                size="sm"
-                class="inline-flex items-center gap-2"
-                aria-label="Download lecture audio"
-              >
+              <Button variant="outline" size="sm" class="inline-flex items-center gap-2">
                 <Download class="h-4 w-4" />
-                <span class="hidden sm:inline">Download</span>
+                <span>Download</span>
               </Button>
             </a>
           </Show>
@@ -159,8 +154,8 @@ const LectureDetail = () => {
   const [anyJobActive, setAnyJobActive] = createSignal(false)
 
   // Parse IDs from URL params
-  const courseId = createMemo(() => Number.parseInt(params.courseId, 10))
-  const lectureId = createMemo(() => Number.parseInt(params.lectureId, 10))
+  const courseId = createMemo(() => Number.parseInt(params.courseId ?? '', 10))
+  const lectureId = createMemo(() => Number.parseInt(params.lectureId ?? '', 10))
 
   const isValidIds = createMemo(() => !Number.isNaN(courseId()) && !Number.isNaN(lectureId()))
 

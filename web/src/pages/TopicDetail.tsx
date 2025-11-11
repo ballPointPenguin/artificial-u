@@ -22,8 +22,8 @@ const TopicDetail = () => {
   const [generationTimeout, setGenerationTimeout] = createSignal(false)
 
   // Parse IDs from URL params
-  const courseId = createMemo(() => Number.parseInt(params.courseId, 10))
-  const topicId = createMemo(() => Number.parseInt(params.topicId, 10))
+  const courseId = createMemo(() => Number.parseInt(params.courseId ?? '', 10))
+  const topicId = createMemo(() => Number.parseInt(params.topicId ?? '', 10))
 
   const isValidIds = createMemo(() => !Number.isNaN(courseId()) && !Number.isNaN(topicId()))
 
