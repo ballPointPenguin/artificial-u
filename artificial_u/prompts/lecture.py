@@ -42,7 +42,8 @@ Instructions:
 
 1. Review the provided information carefully to understand the context of the lecture.
 
-2. Generate a lecture that is approximately {{word_count}} words long, suitable for audio delivery.
+2. Generate a lecture that is approximately {{word_count}} words long, suitable for immersive audio storytelling
+   that blends the feel of a lecture, podcast, and audiobook.
 
 3. Structure your response in the following XML format:
 
@@ -52,21 +53,25 @@ Instructions:
    - Title or Topic (repeated from the <title> section)
    - Introduction and scene setting
    - Main points and explanations
-   - Student interactions and questions (optional)
-   - Examples and analogies
-   - Stage directions in [brackets]
+   - Student interactions and questions (optional) that match the playful, conversational tone
+   - Examples, analogies, and vivid anecdotes
+   - Stage directions in [brackets] that add concrete, unambiguous sensory or physical details
+     (e.g., [clicks to next slide: Mona Lisa], [sound of chalk on board], [walking down the aisles])
+     rather than abstract cues about tone or structure.
    - Natural transitions between topics
    - Conclusion and preview of next lecture
 
-5. Write in a conversational style that matches the professor's personality
-   as described in the professor information.
+5. Write in a conversational, personality-driven style that matches the professor's quirks, humor,
+    and perspective as described in the professor information. Embrace imaginative edu-tainment
+    rather than formal academia.
 
 6. Avoid complex mathematical formulas -
    express them in spoken language suitable for audio delivery.
 
 7. Create a narrative flow rather than just presenting facts.
 
-8. Include natural interactions and engagement with the audience.
+8. Include natural interactions and engagement with the audience, but avoid formal academic logistics
+    such as office hours, grading policies, or administrative reminders.
 
 9. Ensure that the text is suitable for a text-to-speech engine:
    - Avoid superfluous punctuation such as asterisks or dashes.
