@@ -57,6 +57,7 @@ class Settings(BaseSettings):
     cors_origins: List[str] = Field(
         default=[
             "http://localhost:5173",
+            "http://localhost:5174",
             "https://artificial-u.com",
             "https://*.artificial-u.com",
             "https://aliencyborg.share.zrok.io",
