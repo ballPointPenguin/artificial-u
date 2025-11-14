@@ -117,10 +117,10 @@ jobs:
           STORAGE_CONTENT_LOGS_BUCKET=artificial-u-content-logs
 
           # Mock API keys (for tests that don't make real API calls)
-          ANTHROPIC_API_KEY=test-key-mock
-          ELEVENLABS_API_KEY=test-key-mock
-          GOOGLE_API_KEY=test-key-mock
-          OPENAI_API_KEY=test-key-mock
+          ANTHROPIC_API_KEY=test_anthropic_key
+          ELEVENLABS_API_KEY=test_elevenlabs_key
+          GOOGLE_API_KEY=test_google_key
+          OPENAI_API_KEY=test_openai_key
 
           # Auth0 configuration (mock values for testing)
           AUTH0_DOMAIN=test.auth0.com

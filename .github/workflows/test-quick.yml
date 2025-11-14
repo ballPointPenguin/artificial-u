@@ -36,10 +36,10 @@ jobs:
           DATABASE_URL=postgresql://postgres:postgres@localhost:5432/artificial_u_test
 
           # Mock API keys
-          ANTHROPIC_API_KEY=test-key-mock
-          ELEVENLABS_API_KEY=test-key-mock
-          GOOGLE_API_KEY=test-key-mock
-          OPENAI_API_KEY=test-key-mock
+          ANTHROPIC_API_KEY=test_anthropic_key
+          ELEVENLABS_API_KEY=test_elevenlabs_key
+          GOOGLE_API_KEY=test_google_key
+          OPENAI_API_KEY=test_openai_key
 
           # Storage (not used in unit tests)
           STORAGE_TYPE=minio
