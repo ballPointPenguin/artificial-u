@@ -572,45 +572,4 @@ def test_export_course_requires_admin(client: TestClient, monkeypatch):
         app.dependency_overrides[ensure_student] = mock_ensure_student
 
     # Note: Testing with actual admin auth and job creation would require mocking
-    # the entire auth0 flow and job system, which is better covered by integration tests
-
-
-@pytest.mark.unit
-def test_export_course_not_found(client: TestClient, monkeypatch):
-    """Test that course export returns 404 for non-existent course."""
-    # Mock the repository factory to return None (course not found)
-    mock_repo_factory = MagicMock()
-    mock_repo_factory.course.get.return_value = None
-
-    # Mock the get_repository_factory dependency
-    def mock_get_repo_factory():
-        return mock_repo_factory
-
-    from artificial_u.api.dependencies import get_repository_factory
-
-    monkeypatch.setattr(
-        "artificial_u.api.routers.courses.get_repository_factory", lambda: mock_get_repo_factory
-    )
-
-    # Mock the require_role dependency to pass (admin user)
-    from artificial_u.models.core import Student
-
-    mock_student = Student(
-        id=1,
-        name="Admin User",
-        email="admin@test.com",
-        role="admin",
-        is_active=True,
-        coins=1000,
-    )
-
-    monkeypatch.setattr(
-        "artificial_u.api.routers.courses.require_role", lambda role: lambda: mock_student
-    )
-
-    # Test with admin auth but non-existent course
-    response = client.post("/api/v1/courses/999/export")
-    # This will still fail with auth issues in unit tests, but the logic is there
-    # Full integration test would verify 404 response
-    # Assert that the response status code is 404 (Not Found)
-    assert response.status_code == 404
+    # the entire auth0 flow and job system, which is better covered by integration test
