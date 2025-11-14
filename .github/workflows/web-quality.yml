@@ -1,0 +1,55 @@
+name: Web Code Quality
+
+# Run on pull requests and pushes that affect the web/ directory
+on:
+  pull_request:
+    paths:
+      - 'web/**'
+      - '.github/workflows/web-quality.yml'
+  push:
+    branches:
+      - main
+      - develop
+    paths:
+      - 'web/**'
+      - '.github/workflows/web-quality.yml'
+
+jobs:
+  lint-and-build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js and pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+          cache-dependency-path: 'web/pnpm-lock.yaml'
+
+      - name: Install dependencies
+        working-directory: web
+        run: pnpm install --frozen-lockfile
+
+      - name: Run ESLint
+        working-directory: web
+        run: pnpm lint
+
+      - name: Run Stylelint
+        working-directory: web
+        run: pnpm lint:css
+
+      - name: Check formatting with BiomeJS
+        working-directory: web
+        run: pnpm exec biome ci .
+
+      - name: Build project
+        working-directory: web
+        run: pnpm build
