@@ -482,7 +482,7 @@ export default function ProfessorDetail() {
                       </div>
                     </Show>
                   </div>
-                  <RequireRole minRole="creator">
+                  <Show when={auth.canModify(professorResource()?.created_by)}>
                     <MagicButton
                       variant="ghost"
                       size="sm"
@@ -493,7 +493,7 @@ export default function ProfessorDetail() {
                     >
                       Generate Image
                     </MagicButton>
-                  </RequireRole>
+                  </Show>
 
                   {/* Voice Information Section */}
                   <div class="w-full mt-6">

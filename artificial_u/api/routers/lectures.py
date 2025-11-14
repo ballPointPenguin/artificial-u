@@ -288,10 +288,12 @@ async def download_lecture_content(
     status_code=status.HTTP_200_OK,
     summary="Generate lecture audio",
     description=(
-        "Triggers generation of audio for the specified lecture and returns the updated lecture."
+        "Triggers generation of audio for the specified lecture and returns the updated lecture. "
+        "Only the creator or an admin can modify a lecture."
     ),
     responses={
         404: {"description": "Lecture not found"},
+        403: {"description": "Forbidden - user doesn't own this lecture"},
         500: {"description": "Audio generation failed"},
     },
     dependencies=[require_coins(cost=get_settings().COIN_COST_LECTURE_AUDIO)],
@@ -299,14 +301,16 @@ async def download_lecture_content(
 async def generate_lecture_audio(
     lecture_id: int = Path(..., description="The ID of the lecture to generate audio for"),
     lecture_service: LectureApiService = Depends(get_lecture_api_service),
+    student: Student = Depends(ensure_student),
 ):
     """
     Generate audio for a specific lecture.
 
     - **lecture_id**: The unique identifier of the lecture
     - Triggers an audio generation process and returns the updated lecture
+    - Requires ownership verification - only the lecture creator or admin can generate audio
     """
-    return await lecture_service.generate_lecture_audio(lecture_id)
+    return await lecture_service.generate_lecture_audio(lecture_id, student.id, student.role)
 
 
 @router.post(
@@ -315,20 +319,30 @@ async def generate_lecture_audio(
     summary="Enqueue lecture audio generation job",
     description=(
         "Enqueue an async job to generate audio for a lecture. Returns a job id to poll via "
-        "GET /api/v1/jobs/{id}."
+        "GET /api/v1/jobs/{id}. Only the creator or an admin can modify a lecture."
     ),
+    responses={
+        404: {"description": "Lecture not found"},
+        403: {"description": "Forbidden - user doesn't own this lecture"},
+    },
     dependencies=[require_coins(cost=get_settings().COIN_COST_LECTURE_AUDIO)],
 )
 async def enqueue_generate_lecture_audio(
     lecture_id: int = Path(..., description="The ID of the lecture to generate audio for"),
     repository_factory: RepositoryFactory = Depends(get_repository_factory),
+    student: Student = Depends(ensure_student),
 ):
-    # Look up the topic_id from the lecture so SSE events can be properly filtered
+    # Look up the lecture and verify ownership
     lecture = repository_factory.lecture.get(lecture_id)
     if not lecture:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail=f"Lecture {lecture_id} not found"
         )
+
+    # Verify ownership
+    from artificial_u.api.security.auth0 import verify_asset_ownership
+
+    verify_asset_ownership(student.id, lecture.created_by, student.role, "lecture")
 
     payload = {"lecture_id": lecture_id}
     if lecture.topic_id:

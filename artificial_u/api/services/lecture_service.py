@@ -378,19 +378,31 @@ class LectureApiService(BaseApiService[CoreLecture, Lecture, LectureListResponse
         except Exception as e:
             self._handle_general_error("get lecture audio URL", e)
 
-    async def generate_lecture_audio(self, lecture_id: int) -> Lecture:
+    async def generate_lecture_audio(
+        self, lecture_id: int, student_id: int, role: str
+    ) -> Lecture:
         """
         Trigger audio generation for a lecture, then return the updated lecture.
 
         Args:
             lecture_id: The unique identifier of the lecture
+            student_id: ID of the requesting student
+            role: Role of the requesting student
 
         Returns:
             Lecture: Updated lecture with audio_url populated if successful
+
+        Raises:
+            HTTPException: 403 if user doesn't own the lecture (unless admin)
         """
         try:
-            # Ensure the lecture exists first
-            self.core_service.get_lecture(lecture_id)
+            # Ensure the lecture exists and check ownership
+            lecture_model = self.core_service.get_lecture(lecture_id)
+
+            # Verify ownership (admins can modify any lecture, creators only their own)
+            from artificial_u.api.security.auth0 import verify_asset_ownership
+
+            verify_asset_ownership(student_id, lecture_model.created_by, role, "lecture")
 
             # Delegate to generator service for audio generation
             await self.generator_service.generate_lecture_audio(lecture_id)

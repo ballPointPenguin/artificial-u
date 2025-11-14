@@ -177,9 +177,10 @@ async def update_professor(
     response_model=ProfessorResponse,
     status_code=status.HTTP_200_OK,
     summary="Assign voice to professor",
-    description="Assigns a voice to an existing professor based on their profile attributes.",
+    description="Assigns a voice to an existing professor based on their profile attributes. Only the creator or an admin can modify a professor.",
     responses={
         404: {"description": "Professor not found"},
+        403: {"description": "Forbidden - user doesn't own this professor"},
         500: {"description": "Voice assignment failed"},
     },
     dependencies=[require_role("creator")],
@@ -187,6 +188,7 @@ async def update_professor(
 async def assign_voice_to_professor(
     professor_id: int = Path(..., description="The ID of the professor to assign a voice to"),
     service: ProfessorApiService = Depends(get_professor_api_service),
+    student: Student = Depends(ensure_student),
 ):
     """
     Assign a voice to an existing professor.
@@ -195,8 +197,11 @@ async def assign_voice_to_professor(
     - Automatically selects an appropriate voice based on the professor's profile
     - Skips assignment if the professor already has a voice
     - Returns the updated professor data with the assigned voice information
+    - Requires ownership verification - only the professor creator or admin can assign voice
     """
-    updated_professor = service.assign_voice_to_professor(professor_id)
+    updated_professor = service.assign_voice_to_professor(
+        professor_id, student.id, student.role
+    )
     if not updated_professor:
         # Check if professor exists first to return 404 vs 500
         existing_professor = service.get_professor(professor_id)
@@ -306,9 +311,10 @@ async def get_professor_lectures(
     response_model=ProfessorResponse,
     status_code=status.HTTP_200_OK,
     summary="Generate professor image",
-    description="Triggers the generation of a profile image for the specified professor.",
+    description="Triggers the generation of a profile image for the specified professor. Only the creator or an admin can modify a professor.",
     responses={
         404: {"description": "Professor not found"},
+        403: {"description": "Forbidden - user doesn't own this professor"},
         500: {"description": "Image generation failed"},
     },
     dependencies=[require_coins(cost=get_settings().COIN_COST_PROFESSOR_IMAGE)],
@@ -316,6 +322,7 @@ async def get_professor_lectures(
 async def generate_professor_image(
     professor_id: int = Path(..., description="The ID of the professor to generate an image for"),
     service: ProfessorApiService = Depends(get_professor_api_service),
+    student: Student = Depends(ensure_student),
 ):
     """
     Generate a profile image for a specific professor.
@@ -323,8 +330,11 @@ async def generate_professor_image(
     - **professor_id**: The unique identifier of the professor
     - Triggers an asynchronous image generation process.
     - Returns the updated professor data with the new image URL if successful.
+    - Requires ownership verification - only the professor creator or admin can generate image
     """
-    updated_professor = await service.generate_professor_image(professor_id)
+    updated_professor = await service.generate_professor_image(
+        professor_id, student.id, student.role
+    )
     if not updated_professor:
         # Distinguish between professor not found and generation failure if possible
         # For now, treating failure generally as internal error
@@ -418,14 +428,31 @@ async def enqueue_generate_professor(
     summary="Enqueue professor image generation job",
     description=(
         "Enqueue an async job to generate a professor image. Returns a job id to poll via "
-        "GET /api/v1/jobs/{id}."
+        "GET /api/v1/jobs/{id}. Only the creator or an admin can modify a professor."
     ),
+    responses={
+        404: {"description": "Professor not found"},
+        403: {"description": "Forbidden - user doesn't own this professor"},
+    },
     dependencies=[require_coins(cost=get_settings().COIN_COST_PROFESSOR_IMAGE)],
 )
 async def enqueue_generate_professor_image(
     professor_id: int = Path(..., description="The ID of the professor to generate an image for"),
     repository_factory: RepositoryFactory = Depends(get_repository_factory),
+    student: Student = Depends(ensure_student),
 ):
+    # First, verify ownership
+    professor = repository_factory.professor.get(professor_id)
+    if not professor:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Professor with ID {professor_id} not found",
+        )
+
+    from artificial_u.api.security.auth0 import verify_asset_ownership
+
+    verify_asset_ownership(student.id, professor.created_by, student.role, "professor")
+
     payload = {"professor_id": professor_id}
     row = repository_factory.job.create(kind="generate_professor_image", payload=payload)
     return {
