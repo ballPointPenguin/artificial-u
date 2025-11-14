@@ -22,6 +22,7 @@ from artificial_u.api.models import (
 from artificial_u.api.security.auth0 import require_coins, require_role
 from artificial_u.api.services import LectureApiService
 from artificial_u.config.settings import get_settings
+from artificial_u.models.core import Student
 from artificial_u.models.repositories.factory import RepositoryFactory
 
 # Create the router with dependencies that will be applied to all routes
@@ -184,14 +185,18 @@ async def create_lecture(
     "/{lecture_id}",
     response_model=Lecture,
     summary="Update lecture",
-    description="Update an existing lecture.",
-    responses={404: {"description": "Lecture not found"}},
+    description="Update an existing lecture. Only the creator or an admin can modify a lecture.",
+    responses={
+        404: {"description": "Lecture not found"},
+        403: {"description": "Forbidden - user doesn't own this lecture"},
+    },
     dependencies=[require_role("creator")],
 )
 async def update_lecture(
     lecture_data: LectureUpdate,
     lecture_id: int = Path(..., description="The ID of the lecture to update"),
     lecture_service: LectureApiService = Depends(get_lecture_api_service),
+    student: Student = Depends(ensure_student),
 ):
     """
     Update an existing lecture.
@@ -199,8 +204,11 @@ async def update_lecture(
     - **lecture_id**: The unique identifier of the lecture to update
     - Request body contains the updated lecture information (all fields optional)
     - Returns the updated lecture
+    - Requires ownership verification - only the lecture creator or admin can update
     """
-    updated_lecture = lecture_service.update_lecture(lecture_id, lecture_data)
+    updated_lecture = lecture_service.update_lecture(
+        lecture_id, lecture_data, student.id, student.role
+    )
     if not updated_lecture:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -213,9 +221,10 @@ async def update_lecture(
     "/{lecture_id}",
     status_code=status.HTTP_204_NO_CONTENT,
     summary="Delete lecture",
-    description="Delete a lecture.",
+    description="Delete a lecture. Only the creator or an admin can delete a lecture.",
     responses={
         404: {"description": "Lecture not found"},
+        403: {"description": "Forbidden - user doesn't own this lecture"},
         400: {"description": "Failed due to database issue (e.g., constraints)"},
     },
     dependencies=[require_role("creator")],
@@ -223,14 +232,16 @@ async def update_lecture(
 async def delete_lecture(
     lecture_id: int = Path(..., description="The ID of the lecture to delete"),
     lecture_service: LectureApiService = Depends(get_lecture_api_service),
+    student: Student = Depends(ensure_student),
 ):
     """
     Delete a lecture.
 
     - **lecture_id**: The unique identifier of the lecture to delete
     - Returns no content on successful deletion
+    - Requires ownership verification - only the lecture creator or admin can delete
     """
-    success = lecture_service.delete_lecture(lecture_id)
+    success = lecture_service.delete_lecture(lecture_id, student.id, student.role)
     if not success:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

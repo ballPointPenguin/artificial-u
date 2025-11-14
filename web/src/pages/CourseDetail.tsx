@@ -362,25 +362,25 @@ const CourseDetail: Component = () => {
                     ← Back to Courses
                   </A>
                   <Show when={!isEditing()}>
-                    <RequireRole minRole="creator">
-                      <div class="flex gap-2">
+                    <div class="flex gap-2">
+                      <Show when={auth.canModify(course()?.created_by)}>
                         <Button variant="primary" onClick={() => setIsEditing(true)}>
                           Edit Course
                         </Button>
                         <Button variant="secondary" onClick={() => setShowDeleteConfirm(true)}>
                           Delete
                         </Button>
-                        <RequireRole minRole="admin">
-                          <Button
-                            variant="outline"
-                            onClick={handleExportCourse}
-                            disabled={isExporting()}
-                          >
-                            {isExporting() ? 'Exporting...' : 'Export'}
-                          </Button>
-                        </RequireRole>
-                      </div>
-                    </RequireRole>
+                      </Show>
+                      <RequireRole minRole="admin">
+                        <Button
+                          variant="outline"
+                          onClick={handleExportCourse}
+                          disabled={isExporting()}
+                        >
+                          {isExporting() ? 'Exporting...' : 'Export'}
+                        </Button>
+                      </RequireRole>
+                    </div>
                   </Show>
                 </div>
 

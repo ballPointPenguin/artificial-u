@@ -127,13 +127,31 @@ class TopicApiService(BaseApiService[CoreTopic, Topic, TopicListResponse]):
         except Exception as e:
             self._handle_general_error("create topic", e)
 
-    def update_topic(self, topic_id: int, topic_data: TopicUpdate) -> Topic:
-        """Update an existing topic."""
+    def update_topic(
+        self, topic_id: int, topic_data: TopicUpdate, student_id: int, role: str
+    ) -> Topic:
+        """
+        Update an existing topic.
+
+        Args:
+            topic_id: ID of the topic to update
+            topic_data: Update data
+            student_id: ID of the requesting student
+            role: Role of the requesting student
+
+        Raises:
+            HTTPException: 403 if user doesn't own the topic (unless admin)
+        """
         try:
             # Get existing core topic to update
             core_topic_to_update = self.core_service.get_topic(topic_id)
             if not core_topic_to_update:
                 raise TopicNotFoundError(f"Topic with ID {topic_id} not found for update.")
+
+            # Verify ownership (admins can modify any topic, creators only their own)
+            from artificial_u.api.security.auth0 import verify_asset_ownership
+
+            verify_asset_ownership(student_id, core_topic_to_update.created_by, role, "topic")
 
             # Create a new CoreTopic instance with updated fields
             update_payload = topic_data.model_dump(exclude_unset=True)
@@ -158,9 +176,29 @@ class TopicApiService(BaseApiService[CoreTopic, Topic, TopicListResponse]):
         except Exception as e:
             self._handle_general_error("update topic", e)
 
-    def delete_topic(self, topic_id: int) -> bool:
-        """Delete a topic."""
+    def delete_topic(self, topic_id: int, student_id: int, role: str) -> bool:
+        """
+        Delete a topic.
+
+        Args:
+            topic_id: ID of the topic to delete
+            student_id: ID of the requesting student
+            role: Role of the requesting student
+
+        Raises:
+            HTTPException: 403 if user doesn't own the topic (unless admin)
+        """
         try:
+            # First, get the topic to check ownership
+            topic_model = self.core_service.get_topic(topic_id)
+            if not topic_model:
+                raise TopicNotFoundError(f"Topic with ID {topic_id} not found for deletion.")
+
+            # Verify ownership (admins can delete any topic, creators only their own)
+            from artificial_u.api.security.auth0 import verify_asset_ownership
+
+            verify_asset_ownership(student_id, topic_model.created_by, role, "topic")
+
             deleted = self.core_service.delete_topic(topic_id)
             if not deleted:
                 # Core service delete_topic returns False if not found,

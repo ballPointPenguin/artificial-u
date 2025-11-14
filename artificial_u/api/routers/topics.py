@@ -21,6 +21,7 @@ from artificial_u.api.models.topics import (
 from artificial_u.api.security.auth0 import require_coins, require_role
 from artificial_u.api.services.topic_service import TopicApiService
 from artificial_u.config.settings import get_settings
+from artificial_u.models.core import Student
 from artificial_u.models.repositories.factory import RepositoryFactory
 
 router = APIRouter(
@@ -81,31 +82,47 @@ def list_topics_by_course(
     "/{topic_id}",
     response_model=Topic,
     summary="Update topic",
-    description="Update an existing topic.",
+    description="Update an existing topic. Only the creator or an admin can modify a topic.",
+    responses={
+        404: {"description": "Topic not found"},
+        403: {"description": "Forbidden - user doesn't own this topic"},
+    },
     dependencies=[require_role("creator")],
 )
 def update_topic(
     topic_data: TopicUpdate,
     topic_id: int = Path(..., description="The ID of the topic to update"),
     topic_service: TopicApiService = Depends(get_topic_api_service),
+    student: Student = Depends(ensure_student),
 ):
-    """Update an existing topic's information."""
-    return topic_service.update_topic(topic_id, topic_data)
+    """
+    Update an existing topic's information.
+    Requires ownership verification - only the topic creator or admin can update.
+    """
+    return topic_service.update_topic(topic_id, topic_data, student.id, student.role)
 
 
 @router.delete(
     "/{topic_id}",
     status_code=status.HTTP_204_NO_CONTENT,
     summary="Delete topic",
-    description="Delete a topic by its ID.",
+    description="Delete a topic by its ID. Only the creator or an admin can delete a topic.",
+    responses={
+        404: {"description": "Topic not found"},
+        403: {"description": "Forbidden - user doesn't own this topic"},
+    },
     dependencies=[require_role("creator")],
 )
 def delete_topic(
     topic_id: int = Path(..., description="The ID of the topic to delete"),
     topic_service: TopicApiService = Depends(get_topic_api_service),
+    student: Student = Depends(ensure_student),
 ):
-    """Delete a specific topic."""
-    topic_service.delete_topic(topic_id)
+    """
+    Delete a specific topic.
+    Requires ownership verification - only the topic creator or admin can delete.
+    """
+    topic_service.delete_topic(topic_id, student.id, student.role)
     # For 204 No Content, we should not return any response body
     # FastAPI will handle the 204 status code automatically based on the decorator
 

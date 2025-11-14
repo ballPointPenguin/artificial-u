@@ -23,6 +23,7 @@ from artificial_u.api.models import (
 from artificial_u.api.security.auth0 import require_coins, require_role
 from artificial_u.api.services import ProfessorApiService
 from artificial_u.config.settings import get_settings
+from artificial_u.models.core import Student
 from artificial_u.models.repositories.factory import RepositoryFactory
 
 # Create the router with dependencies that will be applied to all routes
@@ -139,14 +140,18 @@ async def create_professor(
     "/{professor_id}",
     response_model=ProfessorResponse,
     summary="Update professor",
-    description="Update an existing professor.",
-    responses={404: {"description": "Professor not found"}},
+    description="Update an existing professor. Only the creator or an admin can modify a professor.",
+    responses={
+        404: {"description": "Professor not found"},
+        403: {"description": "Forbidden - user doesn't own this professor"},
+    },
     dependencies=[require_role("creator")],
 )
 async def update_professor(
     professor_data: ProfessorUpdate,
     professor_id: int = Path(..., description="The ID of the professor to update"),
     service: ProfessorApiService = Depends(get_professor_api_service),
+    student: Student = Depends(ensure_student),
 ):
     """
     Update an existing professor.
@@ -154,8 +159,11 @@ async def update_professor(
     - **professor_id**: The unique identifier of the professor to update
     - Request body contains the updated professor information
     - Returns the updated professor
+    - Requires ownership verification - only the professor creator or admin can update
     """
-    updated_professor = service.update_professor(professor_id, professor_data)
+    updated_professor = service.update_professor(
+        professor_id, professor_data, student.id, student.role
+    )
     if not updated_professor:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -211,9 +219,10 @@ async def assign_voice_to_professor(
     "/{professor_id}",
     status_code=status.HTTP_204_NO_CONTENT,
     summary="Delete professor",
-    description="Delete a professor.",
+    description="Delete a professor. Only the creator or an admin can delete a professor.",
     responses={
         404: {"description": "Professor not found"},
+        403: {"description": "Forbidden - user doesn't own this professor"},
         409: {"description": "Cannot delete professor with associated courses"},
     },
     dependencies=[require_role("creator")],
@@ -221,14 +230,16 @@ async def assign_voice_to_professor(
 async def delete_professor(
     professor_id: int = Path(..., description="The ID of the professor to delete"),
     service: ProfessorApiService = Depends(get_professor_api_service),
+    student: Student = Depends(ensure_student),
 ):
     """
     Delete a professor.
 
     - **professor_id**: The unique identifier of the professor to delete
     - Returns no content on successful deletion
+    - Requires ownership verification - only the professor creator or admin can delete
     """
-    success = service.delete_professor(professor_id)
+    success = service.delete_professor(professor_id, student.id, student.role)
     if not success:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

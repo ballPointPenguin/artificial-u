@@ -320,7 +320,7 @@ export default function ProfessorDetail() {
                   {professorResource()?.name}
                 </h1>
                 <div class="flex flex-wrap gap-2 items-center sm:justify-end">
-                  <RequireRole minRole="creator">
+                  <Show when={auth.canModify(professorResource()?.created_by)}>
                     <Button variant="secondary" size="sm" onClick={() => setIsEditing(true)}>
                       Edit
                     </Button>
@@ -332,7 +332,7 @@ export default function ProfessorDetail() {
                     >
                       Delete
                     </Button>
-                  </RequireRole>
+                  </Show>
                 </div>
               </div>
 
