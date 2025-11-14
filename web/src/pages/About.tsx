@@ -112,6 +112,26 @@ const About: Component = () => {
                 </a>
               </div>
             </div>
+
+            <div>
+              <h2 class="text-2xl font-display text-parchment-100 mb-4">About the Creator</h2>
+              <p class="leading-relaxed">
+                Artificial-U is created and maintained by me, Bennie Rosas. I write music and
+                software in Minneapolis. I graduated from The Evergreen State College. My pronouns
+                are they/he. Contact me at{' '}
+                <a
+                  href="mailto:ben@aliencyb.org"
+                  class="text-parchment-200 hover:text-parchment-100 underline decoration-parchment-400 hover:decoration-parchment-200 transition-colors duration-200"
+                >
+                  ben@aliencyb.org
+                </a>
+                .
+              </p>
+              <p class="leading-relaxed mt-4">
+                I built this as a fun experiment, designed to spark joy and curiosity. I hope you
+                enjoy it too. Reach out to share your thoughts.
+              </p>
+            </div>
           </div>
 
           <div class="mt-12 text-center">
