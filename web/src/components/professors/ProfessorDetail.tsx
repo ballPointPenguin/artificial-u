@@ -9,6 +9,7 @@ import type {
   ProfessorCourseBrief,
   ProfessorCoursesResponse,
 } from '../../api/types.js'
+import { useAuth } from '../../auth/AuthProvider'
 import { RequireRole } from '../../auth/RequireRole'
 import { Alert, Button, ConfirmationModal, LoadingSpinner, MagicButton, MetadataInfo } from '../ui'
 import ProfessorForm, { type ProfessorFormData } from './ProfessorForm.js'
@@ -66,6 +67,7 @@ const ProfessorCourses: Component<{
 export default function ProfessorDetail() {
   const params = useParams()
   const navigate = useNavigate()
+  const auth = useAuth()
   const [isEditing, setIsEditing] = createSignal(false)
   const [isDeleting, setIsDeleting] = createSignal(false)
   const [isSubmitting, setIsSubmitting] = createSignal(false)

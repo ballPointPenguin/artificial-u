@@ -11,6 +11,7 @@ import type {
   ProfessorBrief,
   TopicList,
 } from '../api/types.js'
+import { useAuth } from '../auth/AuthProvider'
 import { RequireRole } from '../auth/RequireRole'
 import CourseForm from '../components/courses/CourseForm.jsx'
 import type { CourseFormData } from '../components/courses/types.jsx'
@@ -221,6 +222,7 @@ const TopicsList: Component<{
 const CourseDetail: Component = () => {
   const params = useParams()
   const navigate = useNavigate()
+  const auth = useAuth()
   // Ensure params.id exists and is a valid number string before parsing
   const courseId = params.id ? Number.parseInt(params.id, 10) : Number.NaN
 
@@ -363,7 +365,7 @@ const CourseDetail: Component = () => {
                   </A>
                   <Show when={!isEditing()}>
                     <div class="flex gap-2">
-                      <Show when={auth.canModify(course()?.created_by)}>
+                      <Show when={auth.canModify(course().created_by)}>
                         <Button variant="primary" onClick={() => setIsEditing(true)}>
                           Edit Course
                         </Button>

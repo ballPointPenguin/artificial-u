@@ -107,7 +107,7 @@ def mock_api_service(monkeypatch):
     mock_service["create_course"].side_effect = _mock_create_course
 
     # UPDATE Course
-    def _mock_update_course(course_id: int, course_data: CourseUpdate):
+    def _mock_update_course(course_id: int, course_data: CourseUpdate, student_id: int, role: str):
         if course_id in [c.id for c in sample_courses_base]:
             # Simulate successful update, return updated data
             # Fetch original to merge update
@@ -122,7 +122,7 @@ def mock_api_service(monkeypatch):
     # DELETE Course
     # Service returns bool (True if deleted, False if not found/error occurred before delete)
     # Router translates False to 404. Service raises HTTPException for 409/500.
-    def _mock_delete_course(course_id: int):
+    def _mock_delete_course(course_id: int, student_id: int, role: str):
         if course_id in [c.id for c in sample_courses_base]:  # Simulate finding it
             # Assume deletion is successful if found for this mock
             # To test 409, the service mock would need to raise HTTPException
@@ -411,6 +411,8 @@ def test_update_course(client: TestClient, mock_api_service):
     assert call_args[0] == course_id_to_update
     assert isinstance(call_args[1], CourseUpdate)
     assert call_args[1].model_dump(exclude_unset=True) == update_data
+    assert call_args[2] == 1  # student_id from mock_ensure_student
+    assert call_args[3] == "admin"  # role from mock_ensure_student
 
     # Test invalid ID
     mock_api_service["update_course"].reset_mock()
@@ -428,7 +430,9 @@ def test_delete_course(client: TestClient, mock_api_service):
     # Test successful deletion
     response = client.delete(f"/api/v1/courses/{course_id_to_delete}")
     assert response.status_code == 204
-    mock_api_service["delete_course"].assert_called_once_with(course_id_to_delete)
+    mock_api_service["delete_course"].assert_called_once_with(
+        course_id_to_delete, 1, "admin"
+    )  # student_id and role from mock_ensure_student
 
     # Test deleting non-existent course
     mock_api_service["delete_course"].reset_mock()
@@ -437,7 +441,7 @@ def test_delete_course(client: TestClient, mock_api_service):
     )
     response = client.delete("/api/v1/courses/999")
     assert response.status_code == 404  # Router converts False to 404
-    mock_api_service["delete_course"].assert_called_once_with(999)
+    mock_api_service["delete_course"].assert_called_once_with(999, 1, "admin")
 
 
 @pytest.mark.unit

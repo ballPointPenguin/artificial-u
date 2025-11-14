@@ -91,7 +91,9 @@ def mock_api_service(monkeypatch):
     mock_service["create_lecture"].side_effect = _mock_create_lecture
 
     # UPDATE Lecture
-    def _mock_update_lecture(lecture_id: int, lecture_data: LectureUpdate):
+    def _mock_update_lecture(
+        lecture_id: int, lecture_data: LectureUpdate, student_id: int, role: str
+    ):
         if lecture_id in [lecture.id for lecture in sample_lectures_base]:
             original_lecture = next(
                 lecture for lecture in sample_lectures_base if lecture.id == lecture_id
@@ -105,7 +107,7 @@ def mock_api_service(monkeypatch):
     mock_service["update_lecture"].side_effect = _mock_update_lecture
 
     # DELETE Lecture
-    def _mock_delete_lecture(lecture_id: int):
+    def _mock_delete_lecture(lecture_id: int, student_id: int, role: str):
         return lecture_id in [lecture.id for lecture in sample_lectures_base]
 
     mock_service["delete_lecture"].side_effect = _mock_delete_lecture
@@ -338,6 +340,8 @@ def test_update_lecture(client: TestClient, mock_api_service):
     assert call_args[0] == lecture_id_to_update
     assert isinstance(call_args[1], LectureUpdate)
     assert call_args[1].model_dump(exclude_unset=True) == update_data
+    assert call_args[2] == 1  # student_id from mock_ensure_student
+    assert call_args[3] == "admin"  # role from mock_ensure_student
 
     # Test invalid ID
     mock_api_service["update_lecture"].reset_mock()
@@ -353,14 +357,14 @@ def test_delete_lecture(client: TestClient, mock_api_service):
     # Test successful deletion
     response = client.delete("/api/v1/lectures/3")
     assert response.status_code == 204
-    mock_api_service["delete_lecture"].assert_called_once_with(3)
+    mock_api_service["delete_lecture"].assert_called_once_with(3, 1, "admin")
 
     # Test deleting non-existent lecture
     mock_api_service["delete_lecture"].reset_mock()
     mock_api_service["delete_lecture"].return_value = False
     response = client.delete("/api/v1/lectures/999")
     assert response.status_code == 404
-    mock_api_service["delete_lecture"].assert_called_once_with(999)
+    mock_api_service["delete_lecture"].assert_called_once_with(999, 1, "admin")
 
 
 @pytest.mark.unit
