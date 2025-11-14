@@ -378,9 +378,7 @@ class LectureApiService(BaseApiService[CoreLecture, Lecture, LectureListResponse
         except Exception as e:
             self._handle_general_error("get lecture audio URL", e)
 
-    async def generate_lecture_audio(
-        self, lecture_id: int, student_id: int, role: str
-    ) -> Lecture:
+    async def generate_lecture_audio(self, lecture_id: int, student_id: int, role: str) -> Lecture:
         """
         Trigger audio generation for a lecture, then return the updated lecture.
 

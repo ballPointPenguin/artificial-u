@@ -268,7 +268,9 @@ def require_asset_ownership(asset_name: str = "asset"):
     return _checker
 
 
-def verify_asset_ownership(student_id: int, created_by: Optional[int], role: str, asset_name: str = "asset") -> None:
+def verify_asset_ownership(
+    student_id: int, created_by: Optional[int], role: str, asset_name: str = "asset"
+) -> None:
     """
     Verify that a student can modify an asset, raising an exception if not.
 

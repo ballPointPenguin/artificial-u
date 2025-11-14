@@ -177,7 +177,10 @@ async def update_professor(
     response_model=ProfessorResponse,
     status_code=status.HTTP_200_OK,
     summary="Assign voice to professor",
-    description="Assigns a voice to an existing professor based on their profile attributes. Only the creator or an admin can modify a professor.",
+    description=(
+        "Assigns a voice to an existing professor based on their profile attributes. "
+        "Only the creator or an admin can modify a professor."
+    ),
     responses={
         404: {"description": "Professor not found"},
         403: {"description": "Forbidden - user doesn't own this professor"},
@@ -199,9 +202,7 @@ async def assign_voice_to_professor(
     - Returns the updated professor data with the assigned voice information
     - Requires ownership verification - only the professor creator or admin can assign voice
     """
-    updated_professor = service.assign_voice_to_professor(
-        professor_id, student.id, student.role
-    )
+    updated_professor = service.assign_voice_to_professor(professor_id, student.id, student.role)
     if not updated_professor:
         # Check if professor exists first to return 404 vs 500
         existing_professor = service.get_professor(professor_id)
@@ -311,7 +312,10 @@ async def get_professor_lectures(
     response_model=ProfessorResponse,
     status_code=status.HTTP_200_OK,
     summary="Generate professor image",
-    description="Triggers the generation of a profile image for the specified professor. Only the creator or an admin can modify a professor.",
+    description=(
+        "Triggers the generation of a profile image for the specified professor. "
+        "Only the creator or an admin can modify a professor."
+    ),
     responses={
         404: {"description": "Professor not found"},
         403: {"description": "Forbidden - user doesn't own this professor"},
