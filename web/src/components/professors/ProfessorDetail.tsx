@@ -692,9 +692,7 @@ export default function ProfessorDetail() {
 
                             <Show when={voice().description}>
                               <p class="text-sm text-muted">
-                                <strong class="font-semibold text-foreground">
-                                  Description:
-                                </strong>
+                                <strong class="font-semibold text-foreground">Description:</strong>
                                 <span class="block mt-1 whitespace-pre-wrap">
                                   {voice().description}
                                 </span>
@@ -703,11 +701,7 @@ export default function ProfessorDetail() {
 
                             <Show when={voice().preview_url}>
                               <div class="mt-3">
-                                <audio
-                                  controls
-                                  class="w-full max-w-sm"
-                                  aria-label="Voice preview"
-                                >
+                                <audio controls class="w-full max-w-sm" aria-label="Voice preview">
                                   <source src={voice().preview_url ?? ''} type="audio/mpeg" />
                                   <track
                                     kind="captions"
