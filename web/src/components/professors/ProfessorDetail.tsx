@@ -345,9 +345,9 @@ export default function ProfessorDetail() {
               </Show>
 
               {/* Start of responsive layout with image prioritized on mobile */}
-              <div class="flex flex-col-reverse gap-8 md:flex-row md:gap-8 mb-6">
+              <div class="flex flex-col gap-8 md:flex-row md:gap-8 mb-6">
                 {/* Left Column: All Attributes */}
-                <div class="md:w-1/2 space-y-3 text-muted">
+                <div class="order-2 md:order-1 md:w-1/2 space-y-3 text-muted">
                   <p>
                     <strong class="font-semibold text-foreground">Title:</strong>{' '}
                     <span class="text-muted">{professorResource()?.title}</span>
@@ -453,7 +453,7 @@ export default function ProfessorDetail() {
                 </div>
 
                 {/* Image Column */}
-                <div class="md:w-1/2 flex flex-col items-center gap-4">
+                <div class="order-1 md:order-2 md:w-1/2 flex flex-col items-center gap-4">
                   <div class="relative flex items-center justify-center w-full min-h-[200px] bg-surface rounded-lg p-4">
                     <Show
                       when={isGeneratingImage() || isImageLoading()}
@@ -497,8 +497,8 @@ export default function ProfessorDetail() {
                     </MagicButton>
                   </Show>
 
-                  {/* Voice Information Section */}
-                  <div class="w-full mt-6">
+                  {/* Voice Information Section - Hidden on mobile, shown on desktop */}
+                  <div class="hidden md:block w-full mt-6">
                     <h3 class="text-lg font-display text-parchment-100 mb-3 text-shadow-golden">
                       Voice Profile
                     </h3>
@@ -636,6 +636,142 @@ export default function ProfessorDetail() {
                           </div>
                         </RequireRole>
                       </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Voice Information Section - Shown on mobile only, appears after details */}
+                <div class="order-3 md:hidden w-full">
+                  <h3 class="text-lg font-display text-parchment-100 mb-3 text-shadow-golden">
+                    Voice Profile
+                  </h3>
+                  <div class="bg-surface rounded-lg p-4 space-y-2">
+                    <Show when={professorResource()?.voice_id}>
+                      <p class="text-sm text-muted">
+                        <strong class="font-semibold text-foreground">Voice ID:</strong>{' '}
+                        {professorResource()?.voice_id}
+                      </p>
+
+                      <Show when={!voiceResource.loading && voiceResource()}>
+                        {(voice) => (
+                          <>
+                            <Show when={voice().name}>
+                              <p class="text-sm text-muted">
+                                <strong class="font-semibold text-foreground">Name:</strong>{' '}
+                                {voice().name}
+                              </p>
+                            </Show>
+
+                            <Show when={voice().accent}>
+                              <p class="text-sm text-muted">
+                                <strong class="font-semibold text-foreground">Accent:</strong>{' '}
+                                {voice().accent}
+                              </p>
+                            </Show>
+
+                            <Show when={voice().gender}>
+                              <p class="text-sm text-muted">
+                                <strong class="font-semibold text-foreground">Gender:</strong>{' '}
+                                {voice().gender}
+                              </p>
+                            </Show>
+
+                            <Show when={voice().age}>
+                              <p class="text-sm text-muted">
+                                <strong class="font-semibold text-foreground">Age:</strong>{' '}
+                                {voice().age}
+                              </p>
+                            </Show>
+
+                            <Show when={voice().language}>
+                              <p class="text-sm text-muted">
+                                <strong class="font-semibold text-foreground">Language:</strong>{' '}
+                                {voice().language}
+                              </p>
+                            </Show>
+
+                            <Show when={voice().description}>
+                              <p class="text-sm text-muted">
+                                <strong class="font-semibold text-foreground">Description:</strong>
+                                <span class="block mt-1 whitespace-pre-wrap">
+                                  {voice().description}
+                                </span>
+                              </p>
+                            </Show>
+
+                            <Show when={voice().preview_url}>
+                              <div class="mt-3">
+                                <audio controls class="w-full max-w-sm" aria-label="Voice preview">
+                                  <source src={voice().preview_url ?? ''} type="audio/mpeg" />
+                                  <track
+                                    kind="captions"
+                                    src="data:text/vtt;charset=utf-8,WEBVTT%0A%0A"
+                                    srclang="en"
+                                    label="English captions"
+                                    default
+                                  />
+                                  Your browser does not support the audio element.
+                                </audio>
+                              </div>
+                            </Show>
+                          </>
+                        )}
+                      </Show>
+
+                      <Show when={voiceResource.loading}>
+                        <p class="text-sm text-muted italic">Loading voice details...</p>
+                      </Show>
+
+                      <Show when={voiceResource.error as unknown}>
+                        <p class="text-sm text-danger">
+                          Error loading voice details: {getErrorMessage(voiceResource.error)}
+                        </p>
+                      </Show>
+                    </Show>
+
+                    {/* Assign/reassign & Voice ID Override inline controls */}
+                    <div class="mt-3">
+                      <Show when={voiceAssignError()}>
+                        <Alert variant="danger" class="text-sm mb-2">
+                          {voiceAssignError()}
+                        </Alert>
+                      </Show>
+                      <RequireRole minRole="creator">
+                        <div class="flex flex-col sm:flex-row sm:items-center sm:space-x-3 space-y-2 sm:space-y-0">
+                          <MagicButton
+                            variant="secondary"
+                            size="sm"
+                            onClick={() => void handleAssignVoice()}
+                            disabled={isAssigningVoice()}
+                            isLoading={isAssigningVoice()}
+                            loadingText="Assigning..."
+                          >
+                            {professorResource()?.voice_id ? 'Reassign Voice' : 'Assign Voice'}
+                          </MagicButton>
+                          <div class="flex items-center space-x-2">
+                            <input
+                              type="text"
+                              class="input input-bordered w-full sm:w-64"
+                              placeholder="Voice ID Override"
+                              value={manualElVoiceId()}
+                              onInput={(e) =>
+                                setManualElVoiceId((e.target as HTMLInputElement).value)
+                              }
+                              aria-label="Voice ID Override"
+                            />
+                            <MagicButton
+                              size="sm"
+                              variant="primary"
+                              onClick={() => void handleManualAssign()}
+                              disabled={!manualElVoiceId().trim() || isAssigningManual()}
+                              isLoading={isAssigningManual()}
+                              loadingText="Overriding..."
+                            >
+                              Override
+                            </MagicButton>
+                          </div>
+                        </div>
+                      </RequireRole>
                     </div>
                   </div>
                 </div>
