@@ -4,15 +4,14 @@ name: Web Code Quality
 on:
   pull_request:
     paths:
-      - 'web/**'
-      - '.github/workflows/web-quality.yml'
+      - "web/**"
+      - ".github/workflows/web-quality.yml"
   push:
     branches:
-      - main
-      - develop
+      - "**"
     paths:
-      - 'web/**'
-      - '.github/workflows/web-quality.yml'
+      - "web/**"
+      - ".github/workflows/web-quality.yml"
 
 jobs:
   lint-and-build:
@@ -30,9 +29,9 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
-          cache: 'pnpm'
-          cache-dependency-path: 'web/pnpm-lock.yaml'
+          node-version: "20"
+          cache: "pnpm"
+          cache-dependency-path: "web/pnpm-lock.yaml"
 
       - name: Install dependencies
         working-directory: web

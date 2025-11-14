@@ -4,10 +4,16 @@ name: Quick Tests (Unit Only)
 on:
   push:
     branches:
-      - "**"
+      - main
+    paths:
+      - "artificial_u/**"
+      - ".github/workflows/test-quick.yml"
   pull_request:
     branches:
       - "**"
+    paths:
+      - "artificial_u/**"
+      - ".github/workflows/test-quick.yml"
 
 jobs:
   unit-tests:

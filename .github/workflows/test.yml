@@ -5,11 +5,15 @@ on:
   push:
     branches:
       - main
-      - develop
+    paths:
+      - "artificial_u/**"
+      - ".github/workflows/test.yml"
   pull_request:
     branches:
       - main
-      - develop
+    paths:
+      - "artificial_u/**"
+      - ".github/workflows/test.yml"
 
 jobs:
   test:
