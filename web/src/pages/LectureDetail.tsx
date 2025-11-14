@@ -14,6 +14,7 @@ import { type JobRow, listJobs } from '../api/services/jobs-service.js'
 import { lectureService } from '../api/services/lecture-service.js'
 import { topicService } from '../api/services/topic-service.js'
 import type { Lecture, LectureUpdate } from '../api/types.js'
+import { useAuth } from '../auth/AuthProvider'
 import { RequireRole } from '../auth/RequireRole'
 import { LectureForm } from '../components/lectures/LectureForm.jsx'
 import { Alert, Button, ConfirmationModal, MagicButton, MetadataInfo } from '../components/ui'
@@ -28,6 +29,8 @@ const LectureDetailView: Component<{
   onGenerateAudio: () => Promise<void>
   isGeneratingAudio: boolean
 }> = (props) => {
+  const auth = useAuth()
+
   return (
     <div class="arcane-card">
       <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between mb-6">
@@ -92,6 +95,8 @@ const LectureDetailView: Component<{
                   ? 'Regenerate Audio'
                   : 'Generate Audio'}
             </MagicButton>
+          </RequireRole>
+          <Show when={auth.canModify(props.lecture.created_by)}>
             <Button variant="outline" size="sm" class="whitespace-nowrap" onClick={props.onEdit}>
               Edit
             </Button>
@@ -104,7 +109,7 @@ const LectureDetailView: Component<{
             >
               {props.isDeleting ? 'Deleting...' : 'Delete'}
             </Button>
-          </RequireRole>
+          </Show>
         </div>
       </div>
 

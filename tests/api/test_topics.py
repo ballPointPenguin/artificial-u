@@ -182,7 +182,9 @@ def test_update_topic_success(client: TestClient, mock_api_service: MagicMock):
 
     assert response.status_code == status.HTTP_200_OK
     assert response.json() == expected_topic.model_dump()
-    mock_api_service.update_topic.assert_called_once_with(SAMPLE_TOPIC_ID, topic_update_data)
+    mock_api_service.update_topic.assert_called_once_with(
+        SAMPLE_TOPIC_ID, topic_update_data, 1, "admin"
+    )  # student_id and role from mock_ensure_student
 
 
 @pytest.mark.unit
@@ -216,7 +218,9 @@ def test_delete_topic_success(client: TestClient, mock_api_service: MagicMock):
     response = client.delete(f"{BASE_TOPIC_URL}/{SAMPLE_TOPIC_ID}")
 
     assert response.status_code == status.HTTP_204_NO_CONTENT
-    mock_api_service.delete_topic.assert_called_once_with(SAMPLE_TOPIC_ID)
+    mock_api_service.delete_topic.assert_called_once_with(
+        SAMPLE_TOPIC_ID, 1, "admin"
+    )  # student_id and role from mock_ensure_student
 
 
 @pytest.mark.unit

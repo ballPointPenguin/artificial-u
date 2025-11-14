@@ -108,7 +108,9 @@ def mock_api_service(monkeypatch):
     mock_service["create_professor"].side_effect = _mock_create_professor
 
     # UPDATE Professor
-    def _mock_update_professor(professor_id: int, professor_data: ProfessorUpdate):
+    def _mock_update_professor(
+        professor_id: int, professor_data: ProfessorUpdate, student_id: int, role: str
+    ):
         if professor_id in [p.id for p in sample_professors_base]:
             original_professor = next(p for p in sample_professors_base if p.id == professor_id)
             updated_data = original_professor.model_dump()
@@ -119,7 +121,7 @@ def mock_api_service(monkeypatch):
     mock_service["update_professor"].side_effect = _mock_update_professor
 
     # DELETE Professor
-    def _mock_delete_professor(professor_id: int):
+    def _mock_delete_professor(professor_id: int, student_id: int, role: str):
         return professor_id in [p.id for p in sample_professors_base]
 
     mock_service["delete_professor"].side_effect = _mock_delete_professor
@@ -149,7 +151,7 @@ def mock_api_service(monkeypatch):
     mock_service["get_professor_lectures"].side_effect = _mock_get_professor_lectures
 
     # GENERATE Professor Image
-    def _mock_generate_professor_image(professor_id: int):
+    def _mock_generate_professor_image(professor_id: int, student_id: int, role: str):
         if professor_id in [p.id for p in sample_professors_base]:
             professor = next(p for p in sample_professors_base if p.id == professor_id)
             updated_data = professor.model_dump()
@@ -324,6 +326,8 @@ def test_update_professor(client: TestClient, mock_api_service):
     assert call_args[0] == professor_id_to_update
     assert isinstance(call_args[1], ProfessorUpdate)
     assert call_args[1].model_dump(exclude_unset=True) == update_data
+    assert call_args[2] == 1  # student_id from mock_ensure_student
+    assert call_args[3] == "admin"  # role from mock_ensure_student
 
     # Test invalid ID
     mock_api_service["update_professor"].reset_mock()
@@ -339,14 +343,14 @@ def test_delete_professor(client: TestClient, mock_api_service):
     # Test successful deletion
     response = client.delete("/api/v1/professors/3")
     assert response.status_code == 204
-    mock_api_service["delete_professor"].assert_called_once_with(3)
+    mock_api_service["delete_professor"].assert_called_once_with(3, 1, "admin")
 
     # Test deleting non-existent professor
     mock_api_service["delete_professor"].reset_mock()
     mock_api_service["delete_professor"].return_value = False
     response = client.delete("/api/v1/professors/999")
     assert response.status_code == 404
-    mock_api_service["delete_professor"].assert_called_once_with(999)
+    mock_api_service["delete_professor"].assert_called_once_with(999, 1, "admin")
 
 
 @pytest.mark.unit
@@ -399,7 +403,7 @@ def test_generate_professor_image(client: TestClient, mock_api_service):
     assert response.status_code == 200
     assert "image_url" in response.json()
     assert response.json()["image_url"].endswith("_new.jpg")
-    mock_api_service["generate_professor_image"].assert_called_once_with(2)
+    mock_api_service["generate_professor_image"].assert_called_once_with(2, 1, "admin")
 
     # Test generation for non-existent professor
     mock_api_service["generate_professor_image"].reset_mock()
@@ -407,7 +411,7 @@ def test_generate_professor_image(client: TestClient, mock_api_service):
     mock_api_service["get_professor"].return_value = None  # For 404 check
     response = client.post("/api/v1/professors/999/generate-image")
     assert response.status_code == 404
-    mock_api_service["generate_professor_image"].assert_called_once_with(999)
+    mock_api_service["generate_professor_image"].assert_called_once_with(999, 1, "admin")
 
 
 @pytest.mark.unit

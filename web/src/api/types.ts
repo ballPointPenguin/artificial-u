@@ -377,6 +377,9 @@ export interface Topic {
   week: number
   order: number
   content: TopicContent
+  created_by?: number | null
+  created_with?: string | null
+  created_at?: string | null
 }
 
 export interface TopicCreate {

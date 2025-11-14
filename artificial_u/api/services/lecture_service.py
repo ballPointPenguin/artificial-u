@@ -249,22 +249,35 @@ class LectureApiService(BaseApiService[CoreLecture, Lecture, LectureListResponse
         except Exception as e:
             self._handle_general_error("create lecture", e)
 
-    def update_lecture(self, lecture_id: int, lecture_data: LectureUpdate) -> Lecture:
+    def update_lecture(
+        self, lecture_id: int, lecture_data: LectureUpdate, student_id: int, role: str
+    ) -> Lecture:
         """
         Update an existing lecture using the core service.
 
         Args:
             lecture_id: The unique identifier of the lecture to update
             lecture_data: An instance of LectureUpdate containing fields to update
+            student_id: ID of the requesting student
+            role: Role of the requesting student
 
         Returns:
             Lecture: The updated lecture information (API model)
 
         Raises:
+            HTTPException: 403 if user doesn't own the lecture (unless admin)
             HTTPException: 404 if not found, 400 for database errors during update,
                            500 for unexpected errors.
         """
         try:
+            # First, get the lecture to check ownership
+            lecture_model = self.core_service.get_lecture(lecture_id)
+
+            # Verify ownership (admins can modify any lecture, creators only their own)
+            from artificial_u.api.security.auth0 import verify_asset_ownership
+
+            verify_asset_ownership(student_id, lecture_model.created_by, role, "lecture")
+
             # Update lecture using core service
             update_dict = lecture_data.model_dump(exclude_unset=True)
             core_lecture = self.core_service.update_lecture(
@@ -283,21 +296,32 @@ class LectureApiService(BaseApiService[CoreLecture, Lecture, LectureListResponse
         except Exception as e:
             self._handle_general_error("update lecture", e)
 
-    def delete_lecture(self, lecture_id: int) -> bool:
+    def delete_lecture(self, lecture_id: int, student_id: int, role: str) -> bool:
         """
         Delete a lecture using the core service.
 
         Args:
             lecture_id: The unique identifier of the lecture to delete
+            student_id: ID of the requesting student
+            role: Role of the requesting student
 
         Returns:
             bool: True if lecture was deleted.
 
         Raises:
+            HTTPException: 403 if user doesn't own the lecture (unless admin)
             HTTPException: 404 if not found, 400 for database errors during delete,
                            500 for unexpected errors.
         """
         try:
+            # First, get the lecture to check ownership
+            lecture_model = self.core_service.get_lecture(lecture_id)
+
+            # Verify ownership (admins can delete any lecture, creators only their own)
+            from artificial_u.api.security.auth0 import verify_asset_ownership
+
+            verify_asset_ownership(student_id, lecture_model.created_by, role, "lecture")
+
             deleted = self.core_service.delete_lecture(lecture_id)
             return deleted  # Core service raises LectureNotFound if it doesn't exist initially
         except LectureNotFoundError:
@@ -354,19 +378,29 @@ class LectureApiService(BaseApiService[CoreLecture, Lecture, LectureListResponse
         except Exception as e:
             self._handle_general_error("get lecture audio URL", e)
 
-    async def generate_lecture_audio(self, lecture_id: int) -> Lecture:
+    async def generate_lecture_audio(self, lecture_id: int, student_id: int, role: str) -> Lecture:
         """
         Trigger audio generation for a lecture, then return the updated lecture.
 
         Args:
             lecture_id: The unique identifier of the lecture
+            student_id: ID of the requesting student
+            role: Role of the requesting student
 
         Returns:
             Lecture: Updated lecture with audio_url populated if successful
+
+        Raises:
+            HTTPException: 403 if user doesn't own the lecture (unless admin)
         """
         try:
-            # Ensure the lecture exists first
-            self.core_service.get_lecture(lecture_id)
+            # Ensure the lecture exists and check ownership
+            lecture_model = self.core_service.get_lecture(lecture_id)
+
+            # Verify ownership (admins can modify any lecture, creators only their own)
+            from artificial_u.api.security.auth0 import verify_asset_ownership
+
+            verify_asset_ownership(student_id, lecture_model.created_by, role, "lecture")
 
             # Delegate to generator service for audio generation
             await self.generator_service.generate_lecture_audio(lecture_id)

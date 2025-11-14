@@ -22,6 +22,7 @@ from artificial_u.api.models import (
 from artificial_u.api.security.auth0 import require_coins, require_role
 from artificial_u.api.services import LectureApiService
 from artificial_u.config.settings import get_settings
+from artificial_u.models.core import Student
 from artificial_u.models.repositories.factory import RepositoryFactory
 
 # Create the router with dependencies that will be applied to all routes
@@ -184,14 +185,18 @@ async def create_lecture(
     "/{lecture_id}",
     response_model=Lecture,
     summary="Update lecture",
-    description="Update an existing lecture.",
-    responses={404: {"description": "Lecture not found"}},
+    description="Update an existing lecture. Only the creator or an admin can modify a lecture.",
+    responses={
+        404: {"description": "Lecture not found"},
+        403: {"description": "Forbidden - user doesn't own this lecture"},
+    },
     dependencies=[require_role("creator")],
 )
 async def update_lecture(
     lecture_data: LectureUpdate,
     lecture_id: int = Path(..., description="The ID of the lecture to update"),
     lecture_service: LectureApiService = Depends(get_lecture_api_service),
+    student: Student = Depends(ensure_student),
 ):
     """
     Update an existing lecture.
@@ -199,8 +204,11 @@ async def update_lecture(
     - **lecture_id**: The unique identifier of the lecture to update
     - Request body contains the updated lecture information (all fields optional)
     - Returns the updated lecture
+    - Requires ownership verification - only the lecture creator or admin can update
     """
-    updated_lecture = lecture_service.update_lecture(lecture_id, lecture_data)
+    updated_lecture = lecture_service.update_lecture(
+        lecture_id, lecture_data, student.id, student.role
+    )
     if not updated_lecture:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -213,9 +221,10 @@ async def update_lecture(
     "/{lecture_id}",
     status_code=status.HTTP_204_NO_CONTENT,
     summary="Delete lecture",
-    description="Delete a lecture.",
+    description="Delete a lecture. Only the creator or an admin can delete a lecture.",
     responses={
         404: {"description": "Lecture not found"},
+        403: {"description": "Forbidden - user doesn't own this lecture"},
         400: {"description": "Failed due to database issue (e.g., constraints)"},
     },
     dependencies=[require_role("creator")],
@@ -223,14 +232,16 @@ async def update_lecture(
 async def delete_lecture(
     lecture_id: int = Path(..., description="The ID of the lecture to delete"),
     lecture_service: LectureApiService = Depends(get_lecture_api_service),
+    student: Student = Depends(ensure_student),
 ):
     """
     Delete a lecture.
 
     - **lecture_id**: The unique identifier of the lecture to delete
     - Returns no content on successful deletion
+    - Requires ownership verification - only the lecture creator or admin can delete
     """
-    success = lecture_service.delete_lecture(lecture_id)
+    success = lecture_service.delete_lecture(lecture_id, student.id, student.role)
     if not success:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -277,10 +288,12 @@ async def download_lecture_content(
     status_code=status.HTTP_200_OK,
     summary="Generate lecture audio",
     description=(
-        "Triggers generation of audio for the specified lecture and returns the updated lecture."
+        "Triggers generation of audio for the specified lecture and returns the updated lecture. "
+        "Only the creator or an admin can modify a lecture."
     ),
     responses={
         404: {"description": "Lecture not found"},
+        403: {"description": "Forbidden - user doesn't own this lecture"},
         500: {"description": "Audio generation failed"},
     },
     dependencies=[require_coins(cost=get_settings().COIN_COST_LECTURE_AUDIO)],
@@ -288,14 +301,16 @@ async def download_lecture_content(
 async def generate_lecture_audio(
     lecture_id: int = Path(..., description="The ID of the lecture to generate audio for"),
     lecture_service: LectureApiService = Depends(get_lecture_api_service),
+    student: Student = Depends(ensure_student),
 ):
     """
     Generate audio for a specific lecture.
 
     - **lecture_id**: The unique identifier of the lecture
     - Triggers an audio generation process and returns the updated lecture
+    - Requires ownership verification - only the lecture creator or admin can generate audio
     """
-    return await lecture_service.generate_lecture_audio(lecture_id)
+    return await lecture_service.generate_lecture_audio(lecture_id, student.id, student.role)
 
 
 @router.post(
@@ -304,20 +319,30 @@ async def generate_lecture_audio(
     summary="Enqueue lecture audio generation job",
     description=(
         "Enqueue an async job to generate audio for a lecture. Returns a job id to poll via "
-        "GET /api/v1/jobs/{id}."
+        "GET /api/v1/jobs/{id}. Only the creator or an admin can modify a lecture."
     ),
+    responses={
+        404: {"description": "Lecture not found"},
+        403: {"description": "Forbidden - user doesn't own this lecture"},
+    },
     dependencies=[require_coins(cost=get_settings().COIN_COST_LECTURE_AUDIO)],
 )
 async def enqueue_generate_lecture_audio(
     lecture_id: int = Path(..., description="The ID of the lecture to generate audio for"),
     repository_factory: RepositoryFactory = Depends(get_repository_factory),
+    student: Student = Depends(ensure_student),
 ):
-    # Look up the topic_id from the lecture so SSE events can be properly filtered
+    # Look up the lecture and verify ownership
     lecture = repository_factory.lecture.get(lecture_id)
     if not lecture:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail=f"Lecture {lecture_id} not found"
         )
+
+    # Verify ownership
+    from artificial_u.api.security.auth0 import verify_asset_ownership
+
+    verify_asset_ownership(student.id, lecture.created_by, student.role, "lecture")
 
     payload = {"lecture_id": lecture_id}
     if lecture.topic_id:

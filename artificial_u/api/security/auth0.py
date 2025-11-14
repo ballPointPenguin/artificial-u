@@ -197,3 +197,97 @@ def require_coins(cost: int):
     return Depends(
         lambda s=Depends(ensure_student), rf=Depends(get_repository_factory): _checker(s, rf)
     )
+
+
+def can_modify_asset(student_id: int, created_by: Optional[int], role: str) -> bool:
+    """
+    Check if a student can modify (edit/delete) an asset.
+
+    Rules:
+    - Admins can modify any asset
+    - Creators can only modify assets they created (created_by == student.id)
+    - Viewers cannot modify assets
+
+    Args:
+        student_id: ID of the current student
+        created_by: ID of the student who created the asset (None for system-created)
+        role: Role of the current student
+
+    Returns:
+        True if student can modify the asset
+    """
+    # Admins can modify anything
+    if role == "admin":
+        return True
+
+    # System-created assets (created_by is None) can only be modified by admins
+    if created_by is None:
+        return False
+
+    # Non-admins can only modify their own assets
+    return student_id == created_by
+
+
+def require_asset_ownership(asset_name: str = "asset"):
+    """
+    Dependency factory that validates asset ownership before modification.
+
+    Use this in edit/delete endpoints to ensure users can only modify
+    assets they own (unless they're admins).
+
+    Usage:
+        @router.delete("/{course_id}")
+        async def delete_course(
+            course_id: int,
+            student: Student = Depends(ensure_student),
+            course: Course = Depends(get_course),  # Custom dependency that fetches course
+            _: None = Depends(require_asset_ownership("course"))
+        ):
+            # course is already verified to be owned by student (or student is admin)
+            ...
+
+    Args:
+        asset_name: Name of the asset type for error messages
+
+    Returns:
+        Dependency function that validates ownership
+
+    Raises:
+        HTTPException: 403 if user cannot modify the asset
+    """
+    from artificial_u.models.core import Student
+
+    def _checker(student: Student, asset_created_by: Optional[int]) -> None:
+        if not can_modify_asset(student.id, asset_created_by, student.role):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"You do not have permission to modify this {asset_name}. "
+                f"Only the creator or an admin can modify it.",
+            )
+
+    return _checker
+
+
+def verify_asset_ownership(
+    student_id: int, created_by: Optional[int], role: str, asset_name: str = "asset"
+) -> None:
+    """
+    Verify that a student can modify an asset, raising an exception if not.
+
+    This is a simpler version for use in service methods rather than as a dependency.
+
+    Args:
+        student_id: ID of the current student
+        created_by: ID of the student who created the asset
+        role: Role of the current student
+        asset_name: Name of the asset type for error messages
+
+    Raises:
+        HTTPException: 403 if user cannot modify the asset
+    """
+    if not can_modify_asset(student_id, created_by, role):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"You do not have permission to modify this {asset_name}. "
+            f"Only the creator or an admin can modify it.",
+        )

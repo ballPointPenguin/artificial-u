@@ -367,11 +367,31 @@ class CourseApiService(BaseApiService[CoreCourse, CourseResponse, CoursesListRes
         except Exception as e:
             self._handle_general_error("create course", e)
 
-    def update_course(self, course_id: int, course_data: CourseUpdate) -> CourseResponse:
+    def update_course(
+        self, course_id: int, course_data: CourseUpdate, student_id: int, role: str
+    ) -> CourseResponse:
         """
         Update an existing course using the core service.
+
+        Args:
+            course_id: ID of the course to update
+            course_data: Update data
+            student_id: ID of the requesting student
+            role: Role of the requesting student
+
+        Raises:
+            HTTPException: 403 if user doesn't own the course (unless admin)
+            HTTPException: 404 if course not found
         """
         try:
+            # First, get the course to check ownership
+            course_model = self.core_service.get_course(course_id)
+
+            # Verify ownership (admins can modify any course, creators only their own)
+            from artificial_u.api.security.auth0 import verify_asset_ownership
+
+            verify_asset_ownership(student_id, course_model.created_by, role, "course")
+
             # Core service expects a dictionary of fields to update
             update_data = course_data.model_dump(exclude_unset=True)
 
@@ -397,11 +417,27 @@ class CourseApiService(BaseApiService[CoreCourse, CourseResponse, CoursesListRes
         except Exception as e:
             self._handle_general_error("update course", e)
 
-    def delete_course(self, course_id: int) -> bool:
+    def delete_course(self, course_id: int, student_id: int, role: str) -> bool:
         """
         Delete a course using the core service.
+
+        Args:
+            course_id: ID of the course to delete
+            student_id: ID of the requesting student
+            role: Role of the requesting student
+
+        Raises:
+            HTTPException: 403 if user doesn't own the course (unless admin)
         """
         try:
+            # First, get the course to check ownership
+            course_model = self.core_service.get_course(course_id)
+
+            # Verify ownership (admins can delete any course, creators only their own)
+            from artificial_u.api.security.auth0 import verify_asset_ownership
+
+            verify_asset_ownership(student_id, course_model.created_by, role, "course")
+
             # Core service returns True on success
             deleted = self.core_service.delete_course(course_id)
             if not deleted:  # Should not happen if core raises CourseNotFound, but check anyway

@@ -2,6 +2,7 @@ import { A } from '@solidjs/router'
 import { createEffect, createSignal, For, on, Show } from 'solid-js'
 import { topicService } from '../../api/services/topic-service.js'
 import type { APIError, Topic, TopicCreate, TopicUpdate } from '../../api/types.js'
+import { useAuth } from '../../auth/AuthProvider.js'
 import { RequireRole } from '../../auth/RequireRole.js'
 import { createJobTracker } from '../../utils/job-management.js'
 import { Alert } from '../ui/Alert.jsx'
@@ -15,6 +16,7 @@ interface CourseTopicsListProps {
 }
 
 export function CourseTopicsList(props: CourseTopicsListProps) {
+  const auth = useAuth()
   const [topics, setTopics] = createSignal<Topic[]>([])
   const [isLoading, setIsLoading] = createSignal(false)
   const [error, setError] = createSignal<APIError | null>(null)
@@ -263,7 +265,7 @@ export function CourseTopicsList(props: CourseTopicsListProps) {
                   </div>
                 </div>
                 <div class="flex justify-end space-x-2 pt-3 border-t border-parchment-800/30">
-                  <RequireRole minRole="creator">
+                  <Show when={auth.canModify(topic.created_by)}>
                     <Button
                       variant="ghost"
                       size="sm"
@@ -283,7 +285,7 @@ export function CourseTopicsList(props: CourseTopicsListProps) {
                     >
                       Delete
                     </Button>
-                  </RequireRole>
+                  </Show>
                 </div>
               </div>
             )}

@@ -13,6 +13,7 @@ type AuthContextValue = {
   canGenerate: () => boolean
   isCreator: () => boolean
   isAdmin: () => boolean
+  canModify: (createdBy: number | null | undefined) => boolean
   getAccessToken: () => Promise<string | null>
   login: () => Promise<void>
   logout: () => Promise<void>
@@ -105,6 +106,19 @@ export function AuthProvider(props: { children: JSX.Element }) {
     canGenerate: () => ['creator', 'admin'].includes(student()?.role ?? 'viewer'),
     isCreator: () => student()?.role === 'creator',
     isAdmin: () => student()?.role === 'admin',
+    canModify: (createdBy: number | null | undefined) => {
+      const currentStudent = student()
+      const currentRole = currentStudent?.role ?? 'viewer'
+
+      // Admins can modify anything
+      if (currentRole === 'admin') return true
+
+      // System-created assets (created_by is null/undefined) can only be modified by admins
+      if (createdBy == null) return false
+
+      // Non-admins can only modify assets they created
+      return currentStudent?.id === createdBy
+    },
     getAccessToken: async () => {
       const c = client()
       if (!c) return null

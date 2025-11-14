@@ -9,6 +9,7 @@ import type {
   ProfessorCourseBrief,
   ProfessorCoursesResponse,
 } from '../../api/types.js'
+import { useAuth } from '../../auth/AuthProvider'
 import { RequireRole } from '../../auth/RequireRole'
 import { Alert, Button, ConfirmationModal, LoadingSpinner, MagicButton, MetadataInfo } from '../ui'
 import ProfessorForm, { type ProfessorFormData } from './ProfessorForm.js'
@@ -66,6 +67,7 @@ const ProfessorCourses: Component<{
 export default function ProfessorDetail() {
   const params = useParams()
   const navigate = useNavigate()
+  const auth = useAuth()
   const [isEditing, setIsEditing] = createSignal(false)
   const [isDeleting, setIsDeleting] = createSignal(false)
   const [isSubmitting, setIsSubmitting] = createSignal(false)
@@ -320,7 +322,7 @@ export default function ProfessorDetail() {
                   {professorResource()?.name}
                 </h1>
                 <div class="flex flex-wrap gap-2 items-center sm:justify-end">
-                  <RequireRole minRole="creator">
+                  <Show when={auth.canModify(professorResource()?.created_by)}>
                     <Button variant="secondary" size="sm" onClick={() => setIsEditing(true)}>
                       Edit
                     </Button>
@@ -332,7 +334,7 @@ export default function ProfessorDetail() {
                     >
                       Delete
                     </Button>
-                  </RequireRole>
+                  </Show>
                 </div>
               </div>
 
@@ -482,7 +484,7 @@ export default function ProfessorDetail() {
                       </div>
                     </Show>
                   </div>
-                  <RequireRole minRole="creator">
+                  <Show when={auth.canModify(professorResource()?.created_by)}>
                     <MagicButton
                       variant="ghost"
                       size="sm"
@@ -493,7 +495,7 @@ export default function ProfessorDetail() {
                     >
                       Generate Image
                     </MagicButton>
-                  </RequireRole>
+                  </Show>
 
                   {/* Voice Information Section */}
                   <div class="w-full mt-6">

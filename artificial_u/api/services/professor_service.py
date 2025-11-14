@@ -214,7 +214,11 @@ class ProfessorApiService(BaseApiService[CoreProfessor, ProfessorResponse, Profe
             self._handle_general_error("create professor", e)
 
     def update_professor(
-        self, professor_id: int, professor_data: ProfessorUpdate
+        self,
+        professor_id: int,
+        professor_data: ProfessorUpdate,
+        student_id: int,
+        role: str,
     ) -> Optional[ProfessorResponse]:
         """
         Update an existing professor.
@@ -222,11 +226,24 @@ class ProfessorApiService(BaseApiService[CoreProfessor, ProfessorResponse, Profe
         Args:
             professor_id: ID of the professor to update
             professor_data: New professor data
+            student_id: ID of the requesting student
+            role: Role of the requesting student
 
         Returns:
             Updated professor or None if not found
+
+        Raises:
+            HTTPException: 403 if user doesn't own the professor (unless admin)
         """
         try:
+            # First, get the professor to check ownership
+            professor_model = self.core_service.get_professor(professor_id)
+
+            # Verify ownership (admins can modify any professor, creators only their own)
+            from artificial_u.api.security.auth0 import verify_asset_ownership
+
+            verify_asset_ownership(student_id, professor_model.created_by, role, "professor")
+
             # Extract non-None values for update
             update_data = {k: v for k, v in professor_data.model_dump().items() if v is not None}
 
@@ -240,17 +257,30 @@ class ProfessorApiService(BaseApiService[CoreProfessor, ProfessorResponse, Profe
         except DatabaseError:
             return None
 
-    def delete_professor(self, professor_id: int) -> bool:
+    def delete_professor(self, professor_id: int, student_id: int, role: str) -> bool:
         """
         Delete a professor.
 
         Args:
             professor_id: ID of the professor to delete
+            student_id: ID of the requesting student
+            role: Role of the requesting student
 
         Returns:
             True if deleted successfully, False otherwise
+
+        Raises:
+            HTTPException: 403 if user doesn't own the professor (unless admin)
         """
         try:
+            # First, get the professor to check ownership
+            professor_model = self.core_service.get_professor(professor_id)
+
+            # Verify ownership (admins can delete any professor, creators only their own)
+            from artificial_u.api.security.auth0 import verify_asset_ownership
+
+            verify_asset_ownership(student_id, professor_model.created_by, role, "professor")
+
             return self.core_service.delete_professor(professor_id)
         except (ProfessorNotFoundError, DatabaseError):
             return False
@@ -328,17 +358,32 @@ class ProfessorApiService(BaseApiService[CoreProfessor, ProfessorResponse, Profe
         except ProfessorNotFoundError:
             return None
 
-    async def generate_professor_image(self, professor_id: int) -> Optional[ProfessorResponse]:
+    async def generate_professor_image(
+        self, professor_id: int, student_id: int, role: str
+    ) -> Optional[ProfessorResponse]:
         """
         Triggers image generation for a professor and returns the updated professor.
 
         Args:
             professor_id: The ID of the professor
+            student_id: ID of the requesting student
+            role: Role of the requesting student
 
         Returns:
             The updated ProfessorResponse if successful, None otherwise
+
+        Raises:
+            HTTPException: 403 if user doesn't own the professor (unless admin)
         """
         try:
+            # First, get the professor to check ownership
+            professor_model = self.core_service.get_professor(professor_id)
+
+            # Verify ownership (admins can modify any professor, creators only their own)
+            from artificial_u.api.security.auth0 import verify_asset_ownership
+
+            verify_asset_ownership(student_id, professor_model.created_by, role, "professor")
+
             # Call the generator service method
             updated_professor = await self.generator_service.generate_and_set_professor_image(
                 professor_id=professor_id
@@ -434,17 +479,32 @@ class ProfessorApiService(BaseApiService[CoreProfessor, ProfessorResponse, Profe
         except Exception as e:
             self._handle_general_error("get featured professors", e)
 
-    def assign_voice_to_professor(self, professor_id: int) -> Optional[ProfessorResponse]:
+    def assign_voice_to_professor(
+        self, professor_id: int, student_id: int, role: str
+    ) -> Optional[ProfessorResponse]:
         """
         Assign a voice to an existing professor.
 
         Args:
             professor_id: ID of the professor to assign voice to
+            student_id: ID of the requesting student
+            role: Role of the requesting student
 
         Returns:
             Updated professor with assigned voice, or None if professor not found
+
+        Raises:
+            HTTPException: 403 if user doesn't own the professor (unless admin)
         """
         try:
+            # First, get the professor to check ownership
+            professor_model = self.core_service.get_professor(professor_id)
+
+            # Verify ownership (admins can modify any professor, creators only their own)
+            from artificial_u.api.security.auth0 import verify_asset_ownership
+
+            verify_asset_ownership(student_id, professor_model.created_by, role, "professor")
+
             updated_professor = self.core_service.assign_voice_to_professor(professor_id)
             return ProfessorResponse.model_validate(updated_professor.model_dump())
         except ProfessorNotFoundError:

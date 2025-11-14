@@ -25,6 +25,7 @@ from artificial_u.api.models import (
 from artificial_u.api.security.auth0 import require_coins, require_role
 from artificial_u.api.services import CourseApiService
 from artificial_u.config.settings import get_settings
+from artificial_u.models.core import Student
 from artificial_u.models.repositories.factory import RepositoryFactory
 
 # Create the router
@@ -154,9 +155,10 @@ async def create_course(
     "/{course_id}",
     response_model=CourseResponse,
     summary="Update course",
-    description="Update an existing course.",
+    description="Update an existing course. Only the creator or an admin can modify a course.",
     responses={
         404: {"description": "Course or referenced Professor not found"},
+        403: {"description": "Forbidden - user doesn't own this course"},
         400: {"description": "Invalid update data (e.g., bad foreign key)"},
         500: {"description": "Internal server error during update"},
     },
@@ -166,13 +168,17 @@ async def update_course(
     course_data: CourseUpdate,
     course_id: int = Path(..., description="The ID of the course to update"),
     course_service: CourseApiService = Depends(get_course_api_service),
+    student: Student = Depends(ensure_student),
 ):
     """
     Update an existing course.
     The service handles the update logic and potential errors.
+    Requires ownership verification - only the course creator or admin can update.
     """
-    # Service handles update logic and raises HTTPException on errors
-    updated_course_data = course_service.update_course(course_id, course_data)
+    # Service handles update logic with ownership check
+    updated_course_data = course_service.update_course(
+        course_id, course_data, student.id, student.role
+    )
     # Add check for None response (course not found)
     if updated_course_data is None:
         raise HTTPException(
@@ -186,9 +192,10 @@ async def update_course(
     "/{course_id}",
     status_code=status.HTTP_204_NO_CONTENT,
     summary="Delete course",
-    description="Delete a course.",
+    description="Delete a course. Only the creator or an admin can delete a course.",
     responses={
         404: {"description": "Course not found"},
+        403: {"description": "Forbidden - user doesn't own this course"},
         409: {"description": "Cannot delete course with associated resources (e.g., lectures)"},
         500: {"description": "Internal server error during deletion"},
     },
@@ -197,12 +204,14 @@ async def update_course(
 async def delete_course(
     course_id: int = Path(..., description="The ID of the course to delete"),
     course_service: CourseApiService = Depends(get_course_api_service),
+    student: Student = Depends(ensure_student),
 ):
     """
     Delete a course.
     The service handles deletion and raises specific exceptions for 404/409/500.
+    Requires ownership verification - only the course creator or admin can delete.
     """
-    success = course_service.delete_course(course_id)
+    success = course_service.delete_course(course_id, student.id, student.role)
     # The service now returns False only if not found (after attempting delete)
     # It raises HTTPException for 409 or 500 errors.
     if not success:
