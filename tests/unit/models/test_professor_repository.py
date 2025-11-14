@@ -9,6 +9,7 @@ import pytest
 from artificial_u.models.core import Professor
 from artificial_u.models.database import ProfessorModel
 from artificial_u.models.repositories.professor import ProfessorRepository
+from artificial_u.utils.exceptions import DependencyError
 
 
 @pytest.mark.unit
@@ -341,18 +342,46 @@ class TestProfessorRepository:
         result = professor_repository.update_field(999, title="Full Professor")
         assert result is None
 
-    def test_delete(self, professor_repository, mock_session, mock_prof_model):
-        """Test deleting a professor."""
-        # Configure mock behavior
-        query_mock = mock_session.query.return_value
-        query_mock.filter_by.return_value.first.return_value = mock_prof_model
+    def test_delete_with_courses(self, professor_repository, mock_session, mock_prof_model):
+        """Test deleting a professor with associated courses raises DependencyError."""
+        # Configure mock behavior for two separate queries
+        # First query: finds the professor
+        professor_query_mock = MagicMock()
+        professor_query_mock.filter_by.return_value.first.return_value = mock_prof_model
+
+        # Second query: checks for courses (returns a course, indicating courses exist)
+        mock_course = MagicMock()
+        mock_course.id = 1
+        course_query_mock = MagicMock()
+        course_query_mock.filter.return_value.limit.return_value.first.return_value = mock_course
+
+        # Set up side_effect for two different query() calls
+        mock_session.query.side_effect = [professor_query_mock, course_query_mock]
+
+        # Exercise & Verify - should raise DependencyError
+        with pytest.raises(
+            DependencyError, match="Cannot delete professor 1: associated courses exist"
+        ):
+            professor_repository.delete(1)
+
+    def test_delete_success(self, professor_repository, mock_session, mock_prof_model):
+        """Test successfully deleting a professor with no associated courses."""
+        # Configure mock behavior for two separate queries
+        # First query: finds the professor
+        professor_query_mock = MagicMock()
+        professor_query_mock.filter_by.return_value.first.return_value = mock_prof_model
+
+        # Second query: checks for courses (returns None)
+        course_query_mock = MagicMock()
+        course_query_mock.filter.return_value.limit.return_value.first.return_value = None
+
+        # Set up side_effect for two different query() calls
+        mock_session.query.side_effect = [professor_query_mock, course_query_mock]
 
         # Exercise
         result = professor_repository.delete(1)
 
         # Verify
-        mock_session.query.assert_called_once_with(ProfessorModel)
-        query_mock.filter_by.assert_called_once_with(id=1)
         mock_session.delete.assert_called_once_with(mock_prof_model)
         mock_session.commit.assert_called_once()
         assert result is True
