@@ -96,6 +96,7 @@ export const PersistentAudioPlayer: Component = () => {
         if (import.meta.env.DEV) {
           console.error('Failed to play audio:', error)
         }
+        player.setIsPlaying(false)
       })
     } else {
       audioRef.pause()
