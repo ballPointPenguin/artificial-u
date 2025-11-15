@@ -1,8 +1,8 @@
 import type { RouteSectionProps } from '@solidjs/router'
 import type { Component } from 'solid-js'
+import { InstallPWAPrompt, PWAUpdatePrompt } from '../utils/pwa'
 import { NavBar } from './NavBar'
 import { ThemeSwitcher } from './ThemeSwitcher'
-import { PWAUpdatePrompt, InstallPWAPrompt } from '../utils/pwa'
 
 const Layout: Component<RouteSectionProps> = (props) => {
   return (

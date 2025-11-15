@@ -1,7 +1,7 @@
-import { createSignal, onMount, Show } from 'solid-js'
 import { useRegisterSW } from 'virtual:pwa-register/solid'
-import { Button } from '../components/ui/Button'
+import { createSignal, onMount, Show } from 'solid-js'
 import { Alert } from '../components/ui/Alert'
+import { Button } from '../components/ui/Button'
 
 // Type for the beforeinstallprompt event
 interface BeforeInstallPromptEvent extends Event {
@@ -57,8 +57,7 @@ export function PWAUpdatePrompt() {
 }
 
 export function InstallPWAPrompt() {
-  const [deferredPrompt, setDeferredPrompt] =
-    createSignal<BeforeInstallPromptEvent | null>(null)
+  const [deferredPrompt, setDeferredPrompt] = createSignal<BeforeInstallPromptEvent | null>(null)
   const [isVisible, setIsVisible] = createSignal(false)
 
   onMount(() => {
