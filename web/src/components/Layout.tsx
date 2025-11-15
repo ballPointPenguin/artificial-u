@@ -1,5 +1,6 @@
 import type { RouteSectionProps } from '@solidjs/router'
 import type { Component } from 'solid-js'
+import { InstallPWAPrompt, PWAUpdatePrompt } from '../utils/pwa'
 import { NavBar } from './NavBar'
 import { ThemeSwitcher } from './ThemeSwitcher'
 
@@ -12,6 +13,10 @@ const Layout: Component<RouteSectionProps> = (props) => {
 
       <main class="flex-grow">{props.children}</main>
       <ThemeSwitcher />
+
+      {/* PWA Components */}
+      <PWAUpdatePrompt />
+      <InstallPWAPrompt />
     </div>
   )
 }
