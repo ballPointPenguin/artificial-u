@@ -36,8 +36,11 @@ export const PersistentAudioPlayer: Component = () => {
   onMount(() => {
     if (!audioRef) return
 
+    // Capture ref in local variable to avoid closure issues
+    const audio = audioRef
+
     // Set initial volume
-    audioRef.volume = player.volume()
+    audio.volume = player.volume()
 
     // Listen to audio events and update context
     const handlePlay = () => {
@@ -45,35 +48,42 @@ export const PersistentAudioPlayer: Component = () => {
     }
     const handlePause = () => {
       player.setIsPlaying(false)
-      player.setCurrentTime(audioRef.currentTime || 0)
+      player.setCurrentTime(audio.currentTime || 0)
     }
     const handleTimeUpdate = () => {
-      player.setCurrentTime(audioRef.currentTime || 0)
+      player.setCurrentTime(audio.currentTime || 0)
     }
     const handleDurationChange = () => {
-      player.setDuration(audioRef.duration || 0)
+      player.setDuration(audio.duration || 0)
     }
     const handleVolumeChange = () => {
-      player.setVolume(audioRef.volume || 0.7)
+      player.setVolume(audio.volume || 0.7)
     }
     const handleLoadedMetadata = () => {
       restoreFromPending()
     }
+    const handleError = () => {
+      if (import.meta.env.DEV) {
+        console.error('Audio playback error')
+      }
+    }
 
-    audioRef.addEventListener('play', handlePlay)
-    audioRef.addEventListener('pause', handlePause)
-    audioRef.addEventListener('timeupdate', handleTimeUpdate)
-    audioRef.addEventListener('durationchange', handleDurationChange)
-    audioRef.addEventListener('volumechange', handleVolumeChange)
-    audioRef.addEventListener('loadedmetadata', handleLoadedMetadata)
+    audio.addEventListener('play', handlePlay)
+    audio.addEventListener('pause', handlePause)
+    audio.addEventListener('timeupdate', handleTimeUpdate)
+    audio.addEventListener('durationchange', handleDurationChange)
+    audio.addEventListener('volumechange', handleVolumeChange)
+    audio.addEventListener('loadedmetadata', handleLoadedMetadata)
+    audio.addEventListener('error', handleError)
 
     onCleanup(() => {
-      audioRef.removeEventListener('play', handlePlay)
-      audioRef.removeEventListener('pause', handlePause)
-      audioRef.removeEventListener('timeupdate', handleTimeUpdate)
-      audioRef.removeEventListener('durationchange', handleDurationChange)
-      audioRef.removeEventListener('volumechange', handleVolumeChange)
-      audioRef.removeEventListener('loadedmetadata', handleLoadedMetadata)
+      audio.removeEventListener('play', handlePlay)
+      audio.removeEventListener('pause', handlePause)
+      audio.removeEventListener('timeupdate', handleTimeUpdate)
+      audio.removeEventListener('durationchange', handleDurationChange)
+      audio.removeEventListener('volumechange', handleVolumeChange)
+      audio.removeEventListener('loadedmetadata', handleLoadedMetadata)
+      audio.removeEventListener('error', handleError)
     })
   })
 
@@ -81,7 +91,11 @@ export const PersistentAudioPlayer: Component = () => {
   createEffect(() => {
     if (!audioRef) return
     if (player.isPlaying()) {
-      void audioRef.play()
+      audioRef.play().catch((error: unknown) => {
+        if (import.meta.env.DEV) {
+          console.error('Failed to play audio:', error)
+        }
+      })
     } else {
       audioRef.pause()
     }
@@ -106,7 +120,11 @@ export const PersistentAudioPlayer: Component = () => {
     // If we're supposed to be playing, play
     const shouldAutoPlay = untrack(() => player.isPlaying())
     if (shouldAutoPlay) {
-      void audioRef.play()
+      audioRef.play().catch((error: unknown) => {
+        if (import.meta.env.DEV) {
+          console.error('Failed to play audio:', error)
+        }
+      })
     }
   })
 
