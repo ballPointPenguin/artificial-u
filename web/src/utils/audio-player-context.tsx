@@ -40,6 +40,7 @@ interface AudioPlayerContextValue {
   setCurrentTime: (time: number) => void
   setDuration: (duration: number) => void
   setIsPlaying: (playing: boolean) => void
+  saveCurrentTime: () => void
 }
 
 const AudioPlayerContext = createContext<AudioPlayerContextValue>()
@@ -79,8 +80,21 @@ export const AudioPlayerProvider: ParentComponent = (props) => {
   const [duration, setDuration] = createSignal(initialState.duration || 0)
   const [volume, setVolume] = createSignal(initialState.volume ?? 0.7)
 
-  // Persist state changes to localStorage
+  // Persist track, duration, and volume changes to localStorage (infrequent updates)
   createEffect(() => {
+    const state: Partial<AudioPlayerState> = {
+      currentTrack: currentTrack(),
+      duration: duration(),
+      volume: volume(),
+      // Don't save currentTime here - it updates too frequently during playback
+      currentTime: 0,
+    }
+    saveState(state)
+  })
+
+  // Save currentTime to localStorage only when pausing or stopping
+  // (not during playback to avoid excessive writes)
+  const saveCurrentTime = () => {
     const state: Partial<AudioPlayerState> = {
       currentTrack: currentTrack(),
       currentTime: currentTime(),
@@ -88,7 +102,7 @@ export const AudioPlayerProvider: ParentComponent = (props) => {
       volume: volume(),
     }
     saveState(state)
-  })
+  }
 
   const playTrack = (track: AudioTrack) => {
     setCurrentTrack(track)
@@ -105,6 +119,7 @@ export const AudioPlayerProvider: ParentComponent = (props) => {
 
   const pause = () => {
     setIsPlaying(false)
+    saveCurrentTime() // Save position when pausing
   }
 
   const resume = () => {
@@ -114,6 +129,7 @@ export const AudioPlayerProvider: ParentComponent = (props) => {
   const stop = () => {
     setIsPlaying(false)
     setCurrentTime(0)
+    saveCurrentTime() // Save position when stopping
   }
 
   const seek = (time: number) => {
@@ -136,6 +152,7 @@ export const AudioPlayerProvider: ParentComponent = (props) => {
     setCurrentTime,
     setDuration,
     setIsPlaying,
+    saveCurrentTime,
   }
 
   return <AudioPlayerContext.Provider value={value}>{props.children}</AudioPlayerContext.Provider>

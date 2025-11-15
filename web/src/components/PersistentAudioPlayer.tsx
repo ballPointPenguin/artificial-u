@@ -49,6 +49,7 @@ export const PersistentAudioPlayer: Component = () => {
     const handlePause = () => {
       player.setIsPlaying(false)
       player.setCurrentTime(audio.currentTime || 0)
+      player.saveCurrentTime() // Save position when user pauses via media controls
     }
     const handleTimeUpdate = () => {
       player.setCurrentTime(audio.currentTime || 0)
