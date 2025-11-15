@@ -351,7 +351,14 @@ class CdkStack(Stack):
             destination_bucket=frontend_bucket,
             prune=False,  # Don't prune to avoid removing assets
             distribution=distribution,
-            distribution_paths=["/", "/index.html"],
+            distribution_paths=[
+                "/",
+                "/index.html",
+                "/sw.js",  # Service worker must be invalidated for PWA updates
+                "/workbox-*.js",  # Workbox runtime files
+                "/manifest.json",  # PWA manifest
+                "/registerSW.js",  # SW registration script (if generated)
+            ],
             cache_control=[
                 s3_deployment.CacheControl.from_string("no-cache, no-store, must-revalidate"),
             ],
