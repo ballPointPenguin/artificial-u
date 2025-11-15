@@ -8,6 +8,16 @@ export const PersistentAudioPlayer: Component = () => {
   let audioRef: HTMLAudioElement | undefined
   let controllerRef: HTMLElement | undefined
 
+  // Generate short display name for track (e.g., "CAN350_1_2")
+  const getShortName = (track: ReturnType<typeof player.currentTrack>) => {
+    if (!track) return ''
+    const { courseCode, topicWeek, topicOrder } = track
+    if (courseCode && topicWeek != null && topicOrder != null) {
+      return `${courseCode}_${String(topicWeek)}_${String(topicOrder)}`
+    }
+    return track.title
+  }
+
   // Sync audio element with context state
   onMount(() => {
     if (!audioRef) return
@@ -88,23 +98,20 @@ export const PersistentAudioPlayer: Component = () => {
   })
 
   const handleClose = () => {
-    player.stop()
-    player.playTrack({
-      url: '',
-      title: '',
-    })
-    // This will cause currentTrack to be null, hiding the player
+    player.clearTrack()
   }
 
   return (
     <Show when={player.currentTrack()}>
       {(track) => (
         <div class="fixed bottom-0 left-0 right-0 z-50 border-t border-parchment-800/50 bg-parchment-950/95 backdrop-blur-sm shadow-2xl">
-          <div class="container mx-auto px-4 py-3">
+          <div class="container mx-auto px-4 py-4 pb-5">
             <div class="flex items-center gap-4">
               {/* Track Info */}
               <div class="flex-1 min-w-0">
-                <h4 class="text-sm font-medium text-parchment-100 truncate">{track().title}</h4>
+                <h4 class="text-sm font-medium text-parchment-100 truncate">
+                  {getShortName(track())}
+                </h4>
                 <Show when={track().subtitle}>
                   <p class="text-xs text-parchment-400 truncate">{track().subtitle}</p>
                 </Show>
@@ -115,7 +122,7 @@ export const PersistentAudioPlayer: Component = () => {
                 <media-controller
                   ref={controllerRef}
                   audio
-                  class="w-full"
+                  class="w-full overflow-visible"
                   style={{
                     '--media-control-height': '32px',
                     '--media-control-background': 'transparent',

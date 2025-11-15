@@ -349,6 +349,9 @@ const TopicDetail = () => {
                           onLectureDeleted={handleLectureDeleted}
                           onLectureUpdated={handleLectureUpdated}
                           externalJobActive={jobTracker.hasActiveJobs}
+                          courseCode={course()?.code}
+                          topicWeek={topic()?.week}
+                          topicOrder={topic()?.order}
                         />
                       </div>
                     </div>

@@ -8,6 +8,9 @@ export interface AudioTrack {
   courseId?: number
   lectureId?: number
   topicId?: number
+  courseCode?: string
+  topicWeek?: number
+  topicOrder?: number
 }
 
 interface AudioPlayerState {
@@ -28,6 +31,7 @@ interface AudioPlayerContextValue {
 
   // Actions
   playTrack: (track: AudioTrack) => void
+  clearTrack: () => void
   pause: () => void
   resume: () => void
   stop: () => void
@@ -92,6 +96,13 @@ export const AudioPlayerProvider: ParentComponent = (props) => {
     setCurrentTime(0)
   }
 
+  const clearTrack = () => {
+    setCurrentTrack(null)
+    setIsPlaying(false)
+    setCurrentTime(0)
+    setDuration(0)
+  }
+
   const pause = () => {
     setIsPlaying(false)
   }
@@ -116,6 +127,7 @@ export const AudioPlayerProvider: ParentComponent = (props) => {
     duration,
     volume,
     playTrack,
+    clearTrack,
     pause,
     resume,
     stop,

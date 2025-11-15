@@ -31,6 +31,9 @@ const LectureDetailView: Component<{
   isGeneratingAudio: boolean
   courseId: number
   topicTitle?: string
+  courseCode?: string
+  topicWeek?: number
+  topicOrder?: number
 }> = (props) => {
   const auth = useAuth()
   const audioPlayer = useAudioPlayer()
@@ -74,6 +77,9 @@ const LectureDetailView: Component<{
                     courseId: props.courseId,
                     lectureId: props.lecture.id,
                     topicId: props.lecture.topic_id,
+                    courseCode: props.courseCode,
+                    topicWeek: props.topicWeek,
+                    topicOrder: props.topicOrder,
                   })
                 }
               }}
@@ -466,6 +472,9 @@ const LectureDetail = () => {
                       isGeneratingAudio={isGeneratingAudio() || anyJobActive()}
                       courseId={courseId()}
                       topicTitle={topic()?.title}
+                      courseCode={course()?.code}
+                      topicWeek={topic()?.week}
+                      topicOrder={topic()?.order}
                     />
                   </Show>
 

@@ -19,6 +19,9 @@ interface LectureSectionProps {
   onLectureDeleted?: () => void
   onLectureUpdated?: () => void
   externalJobActive?: () => boolean
+  courseCode?: string
+  topicWeek?: number
+  topicOrder?: number
 }
 
 export const LectureSection: Component<LectureSectionProps> = (props) => {
@@ -135,6 +138,9 @@ export const LectureSection: Component<LectureSectionProps> = (props) => {
                         courseId: props.courseId,
                         lectureId: lecture.id,
                         topicId: props.topicId,
+                        courseCode: props.courseCode,
+                        topicWeek: props.topicWeek,
+                        topicOrder: props.topicOrder,
                       })
                     }
                   }}

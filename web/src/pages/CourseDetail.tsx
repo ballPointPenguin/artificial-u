@@ -99,6 +99,7 @@ const TopicsList: Component<{
   topicsData: () => TopicList | undefined
   lecturesData: () => CourseLecturesResponse | undefined
   courseId: number
+  courseCode?: string
   loading: boolean
 }> = (props) => {
   const audioPlayer = useAudioPlayer()
@@ -177,6 +178,9 @@ const TopicsList: Component<{
                                       courseId: props.courseId,
                                       lectureId: lecture.id,
                                       topicId: topic.id,
+                                      courseCode: props.courseCode,
+                                      topicWeek: topic.week,
+                                      topicOrder: topic.order,
                                     })
                                   }
                                 }}
@@ -527,6 +531,7 @@ const CourseDetail: Component = () => {
                       topicsData={topicsData}
                       lecturesData={lecturesData}
                       courseId={courseId}
+                      courseCode={course().code}
                       loading={topicsData.loading}
                     />
                   </div>
