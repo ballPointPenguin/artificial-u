@@ -19,6 +19,7 @@ The application is now configured as a Progressive Web App (PWA), which provides
 **File**: `web/public/manifest.json`
 
 Defines the app's metadata including:
+
 - App name and short name
 - Theme colors matching the dark academia theme (`#5d4037`)
 - Display mode (standalone for full-screen experience)
@@ -32,7 +33,7 @@ Defines the app's metadata including:
 
 Configured with `vite-plugin-pwa` using Workbox for:
 
-#### Caching Strategies:
+#### Caching Strategies
 
 - **CacheFirst** for static assets (fonts, images)
   - Google Fonts: Cached for 365 days
@@ -43,7 +44,8 @@ Configured with `vite-plugin-pwa` using Workbox for:
   - Falls back to cache if network fails
   - Cached for 5 minutes, up to 50 entries
 
-#### Service Worker Features:
+#### Service Worker Features
+
 - Automatic precaching of all JS, CSS, HTML, and image files
 - Runtime caching for external resources
 - Development mode enabled for testing
@@ -54,6 +56,7 @@ Configured with `vite-plugin-pwa` using Workbox for:
 **File**: `web/index.html`
 
 Added meta tags for:
+
 - Proper viewport settings with safe area support
 - Apple mobile web app capabilities
 - Theme colors for address bar theming
@@ -67,11 +70,13 @@ Added meta tags for:
 Two components for PWA management:
 
 #### PWAUpdatePrompt
+
 - Notifies users when a new version is available
 - Provides "Update Now" or "Later" options
 - Automatically reloads the app when updating
 
 #### InstallPWAPrompt
+
 - Displays installation prompt on supported browsers
 - Shows when the app meets PWA criteria
 - Can be dismissed for later
@@ -83,6 +88,7 @@ Two components for PWA management:
 **File**: `web/public/offline.html`
 
 A standalone offline page that:
+
 - Shows when users navigate to uncached pages while offline
 - Provides a branded experience matching the app theme
 - Auto-reloads when connectivity is restored
@@ -93,6 +99,7 @@ A standalone offline page that:
 **File**: `web/scripts/generate-icons.sh`
 
 Bash script to generate PWA icons from the source SVG:
+
 - Creates standard icons (72x72 to 512x512)
 - Generates maskable icons for Android
 - Uses ImageMagick or suggests online alternatives
@@ -102,6 +109,7 @@ Bash script to generate PWA icons from the source SVG:
 **File**: `web/src/index.css`
 
 Added animations for PWA prompts:
+
 - `slide-up`: Smooth entry animation for notifications
 - `pulse`: Attention-grabbing animation for status indicators
 
@@ -110,18 +118,22 @@ Added animations for PWA prompts:
 ### Installation Testing
 
 1. **Development Mode**:
+
    ```bash
    cd web
    pnpm dev
    ```
+
    The PWA will work in dev mode with the service worker enabled.
 
 2. **Production Build**:
+
    ```bash
    cd web
    pnpm build
    pnpm preview
    ```
+
    Test the full PWA experience with optimized assets.
 
 3. **Testing Installation**:
@@ -140,6 +152,7 @@ cd web
 ```
 
 This requires ImageMagick. If not available, use an online tool:
+
 - [PWA Builder Image Generator](https://www.pwabuilder.com/imageGenerator)
 - [Real Favicon Generator](https://realfavicongenerator.net/)
 
@@ -189,6 +202,7 @@ workbox: {
 ### Customizing the Manifest
 
 Edit `web/public/manifest.json` to change:
+
 - App name and description
 - Theme colors
 - Display mode
@@ -198,63 +212,76 @@ Edit `web/public/manifest.json` to change:
 ### Customizing Update Behavior
 
 In `web/vite.config.ts`, change `registerType`:
+
 - `'prompt'`: Ask user before updating (current)
 - `'autoUpdate'`: Update automatically without prompting
 - `'skip'`: Don't register the service worker automatically
 
 ## Browser Support
 
-### Full PWA Support:
+### Full PWA Support
+
 - Chrome/Edge 79+ (Android/Desktop)
 - Safari 16.4+ (iOS/macOS)
 - Firefox 108+ (Android/Desktop)
 - Samsung Internet 12+
 
-### Partial Support:
+### Partial Support
+
 - Safari iOS 11.3+ (Add to Home Screen, limited offline)
 - Safari macOS 11.3+ (Limited PWA features)
 
-### Not Supported:
+### Not Supported
+
 - Internet Explorer
 - Older mobile browsers
 
 ## Deployment Considerations
 
 ### HTTPS Required
+
 PWAs require HTTPS in production. Localhost works for development.
 
 ### Service Worker Scope
+
 The service worker controls all routes under its scope (root `/`).
 
 ### Cache Invalidation
+
 The service worker automatically updates when you deploy new code. Users get a prompt to reload.
 
 ### Asset Precaching
+
 All built assets are automatically precached. Be mindful of total cache size.
 
 ### API Caching
+
 API responses are cached for 5 minutes. Adjust in `vite.config.ts` if needed.
 
 ## Troubleshooting
 
 ### Service Worker Not Registering
+
 - Check browser console for errors
 - Ensure you're using HTTPS or localhost
 - Clear browser cache and try again
 - Check DevTools > Application > Service Workers
 
 ### Icons Not Showing
+
 - Verify icons exist in `web/public/icons/`
 - Check manifest.json icon paths
 - Clear cache and reinstall the app
 - Validate manifest in DevTools > Application > Manifest
 
 ### Update Prompt Not Appearing
+
 - Check that `registerType` is set to `'prompt'`
 - Verify the service worker detects changes
 - Check browser console for PWA update logs
 
 ### Offline Mode Not Working
+
 - Check DevTools > Application > Cache Storage
 - Verify assets are being cached
 - Check service worker status
@@ -301,7 +328,8 @@ Before deploying:
 
 ## Maintenance
 
-### Regular Tasks:
+### Regular Tasks
+
 1. Monitor service worker errors in production
 2. Review and optimize cache strategies
 3. Keep vite-plugin-pwa updated

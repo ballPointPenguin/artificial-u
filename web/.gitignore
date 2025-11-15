@@ -27,3 +27,8 @@ dist-ssr
 # env
 .env.local
 .env.production
+
+# PWA assets
+dist
+dist-ssr
+dev-dist

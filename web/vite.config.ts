@@ -9,7 +9,7 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       registerType: 'prompt',
-      includeAssets: ['favicon.svg', 'robots.txt', 'images/**/*'],
+      includeAssets: ['favicon.ico', 'robots.txt', 'images/**/*'],
       manifest: false, // Using public/manifest.json instead
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
