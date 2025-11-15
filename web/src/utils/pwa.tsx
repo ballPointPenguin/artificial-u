@@ -3,6 +3,12 @@ import { useRegisterSW } from 'virtual:pwa-register/solid'
 import { Button } from '../components/ui/Button'
 import { Alert } from '../components/ui/Alert'
 
+// Type for the beforeinstallprompt event
+interface BeforeInstallPromptEvent extends Event {
+  prompt: () => Promise<void>
+  userChoice: Promise<{ outcome: 'accepted' | 'dismissed'; platform: string }>
+}
+
 export function PWAUpdatePrompt() {
   const {
     needRefresh: [needRefresh, setNeedRefresh],
@@ -31,7 +37,9 @@ export function PWAUpdatePrompt() {
             </div>
             <div class="flex gap-2">
               <Button
-                onClick={() => updateServiceWorker(true)}
+                onClick={() => {
+                  void updateServiceWorker(true)
+                }}
                 size="sm"
                 variant="primary"
               >
@@ -49,13 +57,14 @@ export function PWAUpdatePrompt() {
 }
 
 export function InstallPWAPrompt() {
-  const [deferredPrompt, setDeferredPrompt] = createSignal<any>(null)
+  const [deferredPrompt, setDeferredPrompt] =
+    createSignal<BeforeInstallPromptEvent | null>(null)
   const [isVisible, setIsVisible] = createSignal(false)
 
   onMount(() => {
     window.addEventListener('beforeinstallprompt', (e) => {
       e.preventDefault()
-      setDeferredPrompt(e)
+      setDeferredPrompt(e as BeforeInstallPromptEvent)
       setIsVisible(true)
     })
 
@@ -66,16 +75,21 @@ export function InstallPWAPrompt() {
     })
   })
 
-  const handleInstall = async () => {
+  const handleInstall = () => {
     const prompt = deferredPrompt()
     if (!prompt) return
 
-    prompt.prompt()
-    const { outcome } = await prompt.userChoice
-    console.log(`User response to the install prompt: ${outcome}`)
-
-    setDeferredPrompt(null)
-    setIsVisible(false)
+    void prompt
+      .prompt()
+      .then(() => prompt.userChoice)
+      .then(({ outcome }) => {
+        console.log(`User response to the install prompt: ${outcome}`)
+        setDeferredPrompt(null)
+        setIsVisible(false)
+      })
+      .catch((error: unknown) => {
+        console.error('Install prompt error:', error)
+      })
   }
 
   const handleDismiss = () => {
