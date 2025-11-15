@@ -23,6 +23,7 @@
     "@plausible-analytics/tracker": "^0.4.4",
     "@solidjs/router": "^0.15.4",
     "lucide-solid": "^0.553.0",
+    "media-chrome": "^4.15.1",
     "solid-js": "^1.9.10"
   },
   "devDependencies": {

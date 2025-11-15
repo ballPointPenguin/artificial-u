@@ -3,7 +3,7 @@ import { defineConfig } from 'vite'
 import { VitePWA } from 'vite-plugin-pwa'
 import solid from 'vite-plugin-solid'
 
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
   plugins: [
     solid(),
     tailwindcss(),
@@ -12,7 +12,8 @@ export default defineConfig({
       includeAssets: ['favicon.ico', 'robots.txt', 'images/**/*'],
       manifest: false, // Using public/manifest.json instead
       workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+        // Disable precaching in dev mode since files are served from memory
+        globPatterns: mode === 'development' ? [] : ['**/*.{js,css,html,ico,png,svg,woff2}'],
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
@@ -88,4 +89,4 @@ export default defineConfig({
   build: {
     target: 'esnext',
   },
-})
+}))

@@ -16,6 +16,7 @@ import { RequireRole } from '../auth/RequireRole'
 import CourseForm from '../components/courses/CourseForm.jsx'
 import type { CourseFormData } from '../components/courses/types.jsx'
 import { Alert, Button, MetadataInfo } from '../components/ui'
+import { useAudioPlayer } from '../utils/audio-player-context.jsx'
 
 // Department Info Component
 const DepartmentInfo: Component<{
@@ -98,8 +99,10 @@ const TopicsList: Component<{
   topicsData: () => TopicList | undefined
   lecturesData: () => CourseLecturesResponse | undefined
   courseId: number
+  courseCode?: string
   loading: boolean
 }> = (props) => {
+  const audioPlayer = useAudioPlayer()
   return (
     <Show
       when={!props.loading}
@@ -161,19 +164,29 @@ const TopicsList: Component<{
                         <Show when={lecture && (lecture.audio_url || lecture.transcript_url)}>
                           <div class="flex items-center gap-2 shrink-0">
                             <Show when={lecture?.audio_url}>
-                              <a
-                                href={lecture?.audio_url ?? undefined}
-                                target="_blank"
-                                rel="noopener noreferrer"
+                              <button
                                 class="inline-flex h-9 w-9 items-center justify-center rounded-full border border-parchment-800/40 text-mystic-300 hover:text-mystic-200 hover:border-mystic-400 hover:bg-mystic-500/10 transition-colors"
-                                aria-label="Open lecture audio"
-                                title="Open lecture audio"
+                                aria-label="Play lecture audio"
+                                title="Play lecture audio"
                                 onClick={(event) => {
                                   event.stopPropagation()
+                                  if (lecture?.audio_url) {
+                                    audioPlayer.playTrack({
+                                      url: lecture.audio_url,
+                                      title: lecture.title,
+                                      subtitle: `Week ${String(topic.week)} - ${topic.title}`,
+                                      courseId: props.courseId,
+                                      lectureId: lecture.id,
+                                      topicId: topic.id,
+                                      courseCode: props.courseCode,
+                                      topicWeek: topic.week,
+                                      topicOrder: topic.order,
+                                    })
+                                  }
                                 }}
                               >
                                 <Headphones class="h-4 w-4" />
-                              </a>
+                              </button>
                               <a
                                 href={
                                   lecture?.audio_download_url ?? lecture?.audio_url ?? undefined
@@ -518,6 +531,7 @@ const CourseDetail: Component = () => {
                       topicsData={topicsData}
                       lecturesData={lecturesData}
                       courseId={courseId}
+                      courseCode={course().code}
                       loading={topicsData.loading}
                     />
                   </div>

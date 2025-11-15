@@ -5,6 +5,7 @@ import { Router } from '@solidjs/router'
 import { render } from 'solid-js/web'
 import App from './App.tsx'
 import { AuthProvider } from './auth/AuthProvider.tsx'
+import { AudioPlayerProvider } from './utils/audio-player-context.jsx'
 import './index.css'
 
 // Initialize Plausible Analytics
@@ -23,9 +24,11 @@ if (root) {
   render(
     () => (
       <AuthProvider>
-        <Router>
-          <App />
-        </Router>
+        <AudioPlayerProvider>
+          <Router>
+            <App />
+          </Router>
+        </AudioPlayerProvider>
       </AuthProvider>
     ),
     root
