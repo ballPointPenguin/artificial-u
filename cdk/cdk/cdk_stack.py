@@ -77,6 +77,7 @@ class CdkStack(Stack):
 
         # 4. Create S3 Buckets for application storage (replacing MinIO)
         # Audio, lectures, and images buckets are publicly readable for web interface
+        # CORS configuration is required for browser access to media files
         audio_bucket = s3.Bucket(
             self,
             "AudioBucket",
@@ -89,6 +90,15 @@ class CdkStack(Stack):
                 ignore_public_acls=False,
                 restrict_public_buckets=False,
             ),
+            cors=[
+                s3.CorsRule(
+                    allowed_origins=[f"https://{domain_name}", f"https://{site_domain}"],
+                    allowed_methods=[s3.HttpMethods.GET, s3.HttpMethods.HEAD],
+                    allowed_headers=["*"],
+                    exposed_headers=["Content-Length", "Content-Range", "Accept-Ranges"],
+                    max_age=3600,
+                )
+            ],
         )
         lectures_bucket = s3.Bucket(
             self,
@@ -102,6 +112,15 @@ class CdkStack(Stack):
                 ignore_public_acls=False,
                 restrict_public_buckets=False,
             ),
+            cors=[
+                s3.CorsRule(
+                    allowed_origins=[f"https://{domain_name}", f"https://{site_domain}"],
+                    allowed_methods=[s3.HttpMethods.GET, s3.HttpMethods.HEAD],
+                    allowed_headers=["*"],
+                    exposed_headers=["Content-Length", "Content-Range", "Accept-Ranges"],
+                    max_age=3600,
+                )
+            ],
         )
         images_bucket = s3.Bucket(
             self,
@@ -115,6 +134,15 @@ class CdkStack(Stack):
                 ignore_public_acls=False,
                 restrict_public_buckets=False,
             ),
+            cors=[
+                s3.CorsRule(
+                    allowed_origins=[f"https://{domain_name}", f"https://{site_domain}"],
+                    allowed_methods=[s3.HttpMethods.GET, s3.HttpMethods.HEAD],
+                    allowed_headers=["*"],
+                    exposed_headers=["Content-Length"],
+                    max_age=3600,
+                )
+            ],
         )
         exports_bucket = s3.Bucket(
             self,
