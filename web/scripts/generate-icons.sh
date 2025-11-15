@@ -45,6 +45,10 @@ if command -v magick &> /dev/null; then
             "$ICONS_DIR/icon-${size}x${size}-maskable.png"
     done
 
+    # Generate favicon.ico with multiple sizes embedded
+    echo "Generating favicon.ico..."
+    magick "$PNG_SOURCE" -define icon:auto-resize=16,32,48,64 "$PUBLIC_DIR/favicon.ico"
+
     echo "Icons generated successfully!"
 
 else
