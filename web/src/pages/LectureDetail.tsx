@@ -18,6 +18,7 @@ import { useAuth } from '../auth/AuthProvider'
 import { RequireRole } from '../auth/RequireRole'
 import { LectureForm } from '../components/lectures/LectureForm.jsx'
 import { Alert, Button, ConfirmationModal, MagicButton, MetadataInfo } from '../components/ui'
+import { useAudioPlayer } from '../utils/audio-player-context.jsx'
 import { getJobEventHub } from '../utils/job-events-hub.js'
 
 // Lecture Detail View Component
@@ -28,8 +29,11 @@ const LectureDetailView: Component<{
   isDeleting: boolean
   onGenerateAudio: () => Promise<void>
   isGeneratingAudio: boolean
+  courseId: number
+  topicTitle?: string
 }> = (props) => {
   const auth = useAuth()
+  const audioPlayer = useAudioPlayer()
 
   return (
     <div class="arcane-card">
@@ -57,17 +61,26 @@ const LectureDetailView: Component<{
 
           {/* Audio actions: listen and download if available, plus generate/regenerate */}
           <Show when={props.lecture.audio_url}>
-            <a
-              href={props.lecture.audio_url || undefined}
-              target="_blank"
-              rel="noopener noreferrer"
-              class="inline-block"
+            <Button
+              variant="outline"
+              size="sm"
+              class="inline-flex items-center gap-2"
+              onClick={() => {
+                if (props.lecture.audio_url) {
+                  audioPlayer.playTrack({
+                    url: props.lecture.audio_url,
+                    title: props.lecture.title,
+                    subtitle: props.topicTitle,
+                    courseId: props.courseId,
+                    lectureId: props.lecture.id,
+                    topicId: props.lecture.topic_id,
+                  })
+                }
+              }}
             >
-              <Button variant="outline" size="sm" class="inline-flex items-center gap-2">
-                <Headphones class="h-4 w-4" />
-                <span>Listen</span>
-              </Button>
-            </a>
+              <Headphones class="h-4 w-4" />
+              <span>Listen</span>
+            </Button>
             <a
               href={props.lecture.audio_download_url || props.lecture.audio_url || undefined}
               download=""
@@ -451,6 +464,8 @@ const LectureDetail = () => {
                       isDeleting={isDeleting()}
                       onGenerateAudio={handleGenerateAudio}
                       isGeneratingAudio={isGeneratingAudio() || anyJobActive()}
+                      courseId={courseId()}
+                      topicTitle={topic()?.title}
                     />
                   </Show>
 

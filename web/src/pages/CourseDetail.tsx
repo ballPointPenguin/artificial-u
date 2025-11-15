@@ -3,6 +3,7 @@ import { Download, FileText, Headphones } from 'lucide-solid'
 import { type Component, createResource, createSignal, For, Show } from 'solid-js'
 import { courseService } from '../api/services/course-service.js'
 import { topicService } from '../api/services/topic-service.js'
+import { useAudioPlayer } from '../utils/audio-player-context.jsx'
 import type {
   CourseLecturesResponse,
   CourseUpdate,
@@ -100,6 +101,7 @@ const TopicsList: Component<{
   courseId: number
   loading: boolean
 }> = (props) => {
+  const audioPlayer = useAudioPlayer()
   return (
     <Show
       when={!props.loading}
@@ -161,19 +163,26 @@ const TopicsList: Component<{
                         <Show when={lecture && (lecture.audio_url || lecture.transcript_url)}>
                           <div class="flex items-center gap-2 shrink-0">
                             <Show when={lecture?.audio_url}>
-                              <a
-                                href={lecture?.audio_url ?? undefined}
-                                target="_blank"
-                                rel="noopener noreferrer"
+                              <button
                                 class="inline-flex h-9 w-9 items-center justify-center rounded-full border border-parchment-800/40 text-mystic-300 hover:text-mystic-200 hover:border-mystic-400 hover:bg-mystic-500/10 transition-colors"
-                                aria-label="Open lecture audio"
-                                title="Open lecture audio"
+                                aria-label="Play lecture audio"
+                                title="Play lecture audio"
                                 onClick={(event) => {
                                   event.stopPropagation()
+                                  if (lecture?.audio_url) {
+                                    audioPlayer.playTrack({
+                                      url: lecture.audio_url,
+                                      title: lecture.title,
+                                      subtitle: `Week ${topic.week} - ${topic.title}`,
+                                      courseId: props.courseId,
+                                      lectureId: lecture.id,
+                                      topicId: topic.id,
+                                    })
+                                  }
                                 }}
                               >
                                 <Headphones class="h-4 w-4" />
-                              </a>
+                              </button>
                               <a
                                 href={
                                   lecture?.audio_download_url ?? lecture?.audio_url ?? undefined

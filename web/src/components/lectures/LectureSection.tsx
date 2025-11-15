@@ -4,6 +4,7 @@ import { type Component, createSignal, Show } from 'solid-js'
 import { lectureService } from '../../api/services/lecture-service.js'
 import type { Lecture } from '../../api/types.js'
 import { RequireRole } from '../../auth/RequireRole'
+import { useAudioPlayer } from '../../utils/audio-player-context.jsx'
 import { createJobTracker, getJobMessage } from '../../utils/job-management.js'
 import { Alert, Button, ConfirmationModal, MagicButton, MetadataInfo } from '../ui'
 
@@ -21,6 +22,7 @@ interface LectureSectionProps {
 }
 
 export const LectureSection: Component<LectureSectionProps> = (props) => {
+  const audioPlayer = useAudioPlayer()
   const [isDeleting, setIsDeleting] = createSignal(false)
   const [showDeleteModal, setShowDeleteModal] = createSignal(false)
   const [deleteError, setDeleteError] = createSignal('')
@@ -119,21 +121,27 @@ export const LectureSection: Component<LectureSectionProps> = (props) => {
             <div class="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:justify-end sm:items-center">
               {/* Audio actions: listen and download if available */}
               <Show when={lectureData().audio_url}>
-                <a
-                  href={lectureData().audio_url || undefined}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  class="inline-block"
+                <Button
+                  variant="outline"
+                  size="sm"
+                  class="h-8 w-full sm:w-auto flex items-center justify-center gap-2"
+                  onClick={() => {
+                    const lecture = lectureData()
+                    if (lecture.audio_url) {
+                      audioPlayer.playTrack({
+                        url: lecture.audio_url,
+                        title: lecture.title,
+                        subtitle: `Revision ${lecture.revision}`,
+                        courseId: props.courseId,
+                        lectureId: lecture.id,
+                        topicId: props.topicId,
+                      })
+                    }
+                  }}
                 >
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    class="h-8 w-full sm:w-auto flex items-center justify-center gap-2"
-                  >
-                    <Headphones class="h-4 w-4" aria-hidden="true" />
-                    Listen
-                  </Button>
-                </a>
+                  <Headphones class="h-4 w-4" aria-hidden="true" />
+                  Listen
+                </Button>
                 <a
                   href={lectureData().audio_download_url || lectureData().audio_url || undefined}
                   download=""

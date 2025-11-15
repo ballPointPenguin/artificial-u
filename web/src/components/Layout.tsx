@@ -2,6 +2,7 @@ import type { RouteSectionProps } from '@solidjs/router'
 import type { Component } from 'solid-js'
 import { InstallPWAPrompt, PWAUpdatePrompt } from '../utils/pwa'
 import { NavBar } from './NavBar'
+import { PersistentAudioPlayer } from './PersistentAudioPlayer.jsx'
 import { ThemeSwitcher } from './ThemeSwitcher'
 
 const Layout: Component<RouteSectionProps> = (props) => {
@@ -11,12 +12,15 @@ const Layout: Component<RouteSectionProps> = (props) => {
         <NavBar />
       </header>
 
-      <main class="flex-grow">{props.children}</main>
+      <main class="flex-grow pb-24">{props.children}</main>
       <ThemeSwitcher />
 
       {/* PWA Components */}
       <PWAUpdatePrompt />
       <InstallPWAPrompt />
+
+      {/* Persistent Audio Player */}
+      <PersistentAudioPlayer />
     </div>
   )
 }
