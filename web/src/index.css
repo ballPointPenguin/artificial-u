@@ -440,4 +440,20 @@
     background-position: 0 0, 15px 75px, 10px 35px;
     background-repeat: repeat;
   }
+
+  .persistent-audio-controller {
+    --media-control-height: 34px;
+    --media-range-track-height: 4px;
+    --media-range-thumb-height: 12px;
+    --media-range-thumb-width: 12px;
+  }
+
+  @media (width <= 640px) {
+    .persistent-audio-controller {
+      --media-control-height: 46px;
+      --media-range-track-height: 6px;
+      --media-range-thumb-height: 16px;
+      --media-range-thumb-width: 16px;
+    }
+  }
 }
