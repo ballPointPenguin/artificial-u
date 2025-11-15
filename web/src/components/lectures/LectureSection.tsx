@@ -131,7 +131,7 @@ export const LectureSection: Component<LectureSectionProps> = (props) => {
                       audioPlayer.playTrack({
                         url: lecture.audio_url,
                         title: lecture.title,
-                        subtitle: `Revision ${lecture.revision}`,
+                        subtitle: `Revision ${String(lecture.revision)}`,
                         courseId: props.courseId,
                         lectureId: lecture.id,
                         topicId: props.topicId,

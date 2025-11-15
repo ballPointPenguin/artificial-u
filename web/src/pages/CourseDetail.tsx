@@ -3,7 +3,6 @@ import { Download, FileText, Headphones } from 'lucide-solid'
 import { type Component, createResource, createSignal, For, Show } from 'solid-js'
 import { courseService } from '../api/services/course-service.js'
 import { topicService } from '../api/services/topic-service.js'
-import { useAudioPlayer } from '../utils/audio-player-context.jsx'
 import type {
   CourseLecturesResponse,
   CourseUpdate,
@@ -17,6 +16,7 @@ import { RequireRole } from '../auth/RequireRole'
 import CourseForm from '../components/courses/CourseForm.jsx'
 import type { CourseFormData } from '../components/courses/types.jsx'
 import { Alert, Button, MetadataInfo } from '../components/ui'
+import { useAudioPlayer } from '../utils/audio-player-context.jsx'
 
 // Department Info Component
 const DepartmentInfo: Component<{
@@ -173,7 +173,7 @@ const TopicsList: Component<{
                                     audioPlayer.playTrack({
                                       url: lecture.audio_url,
                                       title: lecture.title,
-                                      subtitle: `Week ${topic.week} - ${topic.title}`,
+                                      subtitle: `Week ${String(topic.week)} - ${topic.title}`,
                                       courseId: props.courseId,
                                       lectureId: lecture.id,
                                       topicId: topic.id,

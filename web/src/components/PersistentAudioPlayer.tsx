@@ -1,6 +1,6 @@
 import { X } from 'lucide-solid'
 import 'media-chrome'
-import { type Component, Show, createEffect, onCleanup, onMount } from 'solid-js'
+import { type Component, createEffect, onCleanup, onMount, Show } from 'solid-js'
 import { useAudioPlayer } from '../utils/audio-player-context.jsx'
 
 export const PersistentAudioPlayer: Component = () => {
@@ -16,11 +16,21 @@ export const PersistentAudioPlayer: Component = () => {
     audioRef.volume = player.volume()
 
     // Listen to audio events and update context
-    const handlePlay = () => player.setIsPlaying(true)
-    const handlePause = () => player.setIsPlaying(false)
-    const handleTimeUpdate = () => player.setCurrentTime(audioRef?.currentTime || 0)
-    const handleDurationChange = () => player.setDuration(audioRef?.duration || 0)
-    const handleVolumeChange = () => player.setVolume(audioRef?.volume || 0.7)
+    const handlePlay = () => {
+      player.setIsPlaying(true)
+    }
+    const handlePause = () => {
+      player.setIsPlaying(false)
+    }
+    const handleTimeUpdate = () => {
+      player.setCurrentTime(audioRef.currentTime || 0)
+    }
+    const handleDurationChange = () => {
+      player.setDuration(audioRef.duration || 0)
+    }
+    const handleVolumeChange = () => {
+      player.setVolume(audioRef.volume || 0.7)
+    }
 
     audioRef.addEventListener('play', handlePlay)
     audioRef.addEventListener('pause', handlePause)
@@ -29,11 +39,11 @@ export const PersistentAudioPlayer: Component = () => {
     audioRef.addEventListener('volumechange', handleVolumeChange)
 
     onCleanup(() => {
-      audioRef?.removeEventListener('play', handlePlay)
-      audioRef?.removeEventListener('pause', handlePause)
-      audioRef?.removeEventListener('timeupdate', handleTimeUpdate)
-      audioRef?.removeEventListener('durationchange', handleDurationChange)
-      audioRef?.removeEventListener('volumechange', handleVolumeChange)
+      audioRef.removeEventListener('play', handlePlay)
+      audioRef.removeEventListener('pause', handlePause)
+      audioRef.removeEventListener('timeupdate', handleTimeUpdate)
+      audioRef.removeEventListener('durationchange', handleDurationChange)
+      audioRef.removeEventListener('volumechange', handleVolumeChange)
     })
   })
 
@@ -127,8 +137,14 @@ export const PersistentAudioPlayer: Component = () => {
                   />
                   <media-control-bar class="flex items-center gap-2 w-full">
                     <media-play-button class="text-parchment-100 hover:text-mystic-300" />
-                    <media-seek-backward-button seekoffset="10" class="text-parchment-100 hover:text-mystic-300" />
-                    <media-seek-forward-button seekoffset="10" class="text-parchment-100 hover:text-mystic-300" />
+                    <media-seek-backward-button
+                      seekoffset="10"
+                      class="text-parchment-100 hover:text-mystic-300"
+                    />
+                    <media-seek-forward-button
+                      seekoffset="10"
+                      class="text-parchment-100 hover:text-mystic-300"
+                    />
                     <media-time-range class="flex-1 mx-2" />
                     <media-time-display
                       showduration

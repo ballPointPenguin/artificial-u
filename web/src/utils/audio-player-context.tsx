@@ -47,7 +47,7 @@ const loadState = (): Partial<AudioPlayerState> => {
   try {
     const stored = localStorage.getItem(STORAGE_KEY)
     if (stored) {
-      return JSON.parse(stored)
+      return JSON.parse(stored) as Partial<AudioPlayerState>
     }
   } catch (error) {
     console.error('Failed to load audio player state:', error)
