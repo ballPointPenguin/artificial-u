@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Offline - Artificial University</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu,
+          Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+        background: linear-gradient(135deg, #1a1311 0%, #2d1f1a 100%);
+        color: #d4c5a0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+        padding: 1rem;
+      }
+
+      .container {
+        text-align: center;
+        max-width: 500px;
+      }
+
+      .icon {
+        width: 120px;
+        height: 120px;
+        margin: 0 auto 2rem;
+        background: #5d4037;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 64px;
+        color: #d4c5a0;
+        border: 3px solid #d4c5a0;
+      }
+
+      h1 {
+        font-size: 2rem;
+        margin-bottom: 1rem;
+        color: #d4c5a0;
+      }
+
+      p {
+        font-size: 1.125rem;
+        line-height: 1.6;
+        opacity: 0.9;
+        margin-bottom: 2rem;
+      }
+
+      .button {
+        background: #5d4037;
+        color: #d4c5a0;
+        border: 2px solid #d4c5a0;
+        padding: 0.75rem 2rem;
+        font-size: 1rem;
+        border-radius: 0.5rem;
+        cursor: pointer;
+        text-decoration: none;
+        display: inline-block;
+        transition: all 0.3s ease;
+      }
+
+      .button:hover {
+        background: #6d4d42;
+        transform: translateY(-2px);
+      }
+
+      .offline-indicator {
+        display: inline-block;
+        width: 12px;
+        height: 12px;
+        background: #ef4444;
+        border-radius: 50%;
+        margin-right: 0.5rem;
+        animation: pulse 2s infinite;
+      }
+
+      @keyframes pulse {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.5;
+        }
+      }
+
+      .status {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 1rem;
+        font-size: 0.875rem;
+        opacity: 0.8;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="icon">
+        <span>A</span>
+      </div>
+
+      <div class="status">
+        <span class="offline-indicator"></span>
+        <span>You are currently offline</span>
+      </div>
+
+      <h1>No Internet Connection</h1>
+
+      <p>
+        You're currently offline and this page isn't available in your cache. Please check your
+        internet connection and try again.
+      </p>
+
+      <button class="button" onclick="window.location.reload()">Try Again</button>
+    </div>
+
+    <script>
+      // Reload the page when back online
+      window.addEventListener('online', () => {
+        window.location.reload()
+      })
+
+      // Check connection status periodically
+      setInterval(() => {
+        if (navigator.onLine) {
+          window.location.reload()
+        }
+      }, 5000)
+    </script>
+  </body>
+</html>

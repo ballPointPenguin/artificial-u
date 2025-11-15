@@ -1,0 +1,8 @@
+# https://www.robotstxt.org/robotstxt.html
+User-agent: *
+Disallow: /admin
+Disallow: /api/
+Allow: /
+
+# Sitemap
+Sitemap: https://artificial-u.com/sitemap.xml

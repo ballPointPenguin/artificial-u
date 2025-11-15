@@ -32,6 +32,8 @@
 
   /* Animation properties */
   --animation-shimmer: shimmer 4s linear infinite;
+  --animation-slide-up: slide-up 0.3s ease-out;
+  --animation-pulse: pulse 2s infinite;
 
   /* Derived Semantic Colors (for Tailwind & Components) */
   --color-background: hsl(var(--theme-bg-h) var(--theme-bg-s) var(--theme-bg-l));
@@ -95,6 +97,26 @@
 
   100% {
     background-position: 200% 0, 250% 50%, 300% 100%;
+  }
+}
+
+@keyframes slide-up {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
   }
 }
 
