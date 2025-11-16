@@ -1,5 +1,11 @@
 import { createResource, createSignal, For, onCleanup, Show } from 'solid-js'
-import { cancelJob, type JobEvent, type JobRow, type JobStatus, listJobs } from '../api/services/jobs-service'
+import {
+  cancelJob,
+  type JobEvent,
+  type JobRow,
+  type JobStatus,
+  listJobs,
+} from '../api/services/jobs-service'
 import { Button } from '../components/ui'
 import { formatDate } from '../utils/formatDate'
 import { getJobEventHub } from '../utils/job-events-hub'
@@ -44,7 +50,7 @@ export default function JobsPage() {
       const updatedJobs = [...jobs]
       updatedJobs[jobIndex] = {
         ...updatedJobs[jobIndex],
-        status: event.status as JobStatus,
+        status: event.status,
         last_error: event.last_error || updatedJobs[jobIndex].last_error,
       }
 
@@ -66,25 +72,38 @@ export default function JobsPage() {
 
     const params: string[] = []
 
-    if (payload.lecture_id) {
-      params.push(`lecture: ${payload.lecture_id}`)
+    const safeString = (value: unknown): string | null => {
+      if (value === null || value === undefined) return null
+      if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+        return String(value)
+      }
+      return null
     }
 
-    if (payload.topic_id) {
-      params.push(`topic: ${payload.topic_id}`)
+    const lectureId = safeString(payload.lecture_id)
+    if (lectureId) {
+      params.push(`lecture: ${lectureId}`)
+    }
+
+    const topicId = safeString(payload.topic_id)
+    if (topicId) {
+      params.push(`topic: ${topicId}`)
     } else if (payload.partial_attributes && typeof payload.partial_attributes === 'object') {
       const partialAttrs = payload.partial_attributes as Record<string, unknown>
-      if (partialAttrs.topic_id) {
-        params.push(`topic: ${partialAttrs.topic_id}`)
+      const partialTopicId = safeString(partialAttrs.topic_id)
+      if (partialTopicId) {
+        params.push(`topic: ${partialTopicId}`)
       }
     }
 
-    if (payload.course_id) {
-      params.push(`course: ${payload.course_id}`)
+    const courseId = safeString(payload.course_id)
+    if (courseId) {
+      params.push(`course: ${courseId}`)
     } else if (payload.partial_attributes && typeof payload.partial_attributes === 'object') {
       const partialAttrs = payload.partial_attributes as Record<string, unknown>
-      if (partialAttrs.course_id) {
-        params.push(`course: ${partialAttrs.course_id}`)
+      const partialCourseId = safeString(partialAttrs.course_id)
+      if (partialCourseId) {
+        params.push(`course: ${partialCourseId}`)
       }
     }
 
@@ -287,10 +306,7 @@ export default function JobsPage() {
                           {extractParams(job)}
                         </td>
                         <td class="px-6 py-4 text-sm text-muted">
-                          <Show
-                            when={job.last_error}
-                            fallback={<span class="text-muted">-</span>}
-                          >
+                          <Show when={job.last_error} fallback={<span class="text-muted">-</span>}>
                             <Button
                               variant="ghost"
                               size="sm"
@@ -334,7 +350,9 @@ export default function JobsPage() {
         >
           <div
             class="arcane-card max-w-3xl max-h-[80vh] w-full mx-4 overflow-hidden flex flex-col"
-            onClick={(e) => e.stopPropagation()}
+            onClick={(e) => {
+              e.stopPropagation()
+            }}
           >
             <div class="flex items-center justify-between p-6 border-b border-border">
               <h2 class="text-xl font-display">
