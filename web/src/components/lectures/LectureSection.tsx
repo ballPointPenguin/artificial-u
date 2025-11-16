@@ -34,6 +34,8 @@ export const LectureSection: Component<LectureSectionProps> = (props) => {
   const [audioTimeout, setAudioTimeout] = createSignal(false)
   const [isUploadingAudio, setIsUploadingAudio] = createSignal(false)
   const [uploadSuccess, setUploadSuccess] = createSignal(false)
+  const [isGeneratingSummary, setIsGeneratingSummary] = createSignal(false)
+  const [summaryError, setSummaryError] = createSignal('')
 
   // Track jobs for this topic AND lecture (lecture ID will be undefined initially,
   // then change when created)
@@ -64,6 +66,8 @@ export const LectureSection: Component<LectureSectionProps> = (props) => {
 
       if (event.kind === 'generate_lecture_audio') {
         setAudioError(getJobMessage(event.kind, 'failed'))
+      } else if (event.kind === 'generate_lecture_summary') {
+        setSummaryError(getJobMessage(event.kind, 'failed'))
       }
     },
     onJobStart: (event) => {
@@ -149,6 +153,24 @@ export const LectureSection: Component<LectureSectionProps> = (props) => {
       setAudioError(error instanceof Error ? error.message : 'Failed to upload audio')
     } finally {
       setIsUploadingAudio(false)
+    }
+  }
+
+  const handleGenerateSummary = async () => {
+    const lecture = props.lecture()
+    if (!lecture) return
+
+    setIsGeneratingSummary(true)
+    setSummaryError('')
+
+    try {
+      await lectureService.generateSummary(lecture.id)
+      // Refresh lecture data to show the new summary
+      props.onLectureUpdated?.()
+    } catch (error) {
+      setSummaryError(error instanceof Error ? error.message : 'Failed to generate summary')
+    } finally {
+      setIsGeneratingSummary(false)
     }
   }
 
@@ -301,6 +323,13 @@ export const LectureSection: Component<LectureSectionProps> = (props) => {
         </Alert>
       </Show>
 
+      {/* Summary generation error messages */}
+      <Show when={summaryError()}>
+        <Alert variant="danger" class="mb-4">
+          {summaryError()}
+        </Alert>
+      </Show>
+
       <Show when={props.lecture()}>
         {(lectureData) => (
           <div class="space-y-4">
@@ -316,6 +345,20 @@ export const LectureSection: Component<LectureSectionProps> = (props) => {
                 <p class="mt-3 text-parchment-200 font-serif whitespace-pre-wrap">
                   {lectureData().summary}
                 </p>
+              </Show>
+              <Show when={!lectureData().summary}>
+                <RequireRole minRole="creator">
+                  <div class="mt-3">
+                    <MagicButton
+                      variant="primary"
+                      size="sm"
+                      onClick={() => void handleGenerateSummary()}
+                      disabled={isGeneratingSummary() || anyJobActive()}
+                    >
+                      {isGeneratingSummary() ? 'Generating Summary...' : 'Generate Summary'}
+                    </MagicButton>
+                  </div>
+                </RequireRole>
               </Show>
             </div>
 
