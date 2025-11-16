@@ -519,6 +519,22 @@ export default function ProfessorDetail() {
                                 </p>
                               </Show>
 
+                              <Show when={voice().el_voice_id}>
+                                <p class="text-sm text-muted">
+                                  <strong class="font-semibold text-foreground">
+                                    ElevenLabs Voice ID:
+                                  </strong>{' '}
+                                  <a
+                                    href={`https://elevenlabs.io/app/voice-library?voiceId=${voice().el_voice_id ?? ''}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    class="text-accent hover:text-accent/80 underline"
+                                  >
+                                    {voice().el_voice_id}
+                                  </a>
+                                </p>
+                              </Show>
+
                               <Show when={voice().accent}>
                                 <p class="text-sm text-muted">
                                   <strong class="font-semibold text-foreground">Accent:</strong>{' '}
@@ -659,6 +675,22 @@ export default function ProfessorDetail() {
                               <p class="text-sm text-muted">
                                 <strong class="font-semibold text-foreground">Name:</strong>{' '}
                                 {voice().name}
+                              </p>
+                            </Show>
+
+                            <Show when={voice().el_voice_id}>
+                              <p class="text-sm text-muted">
+                                <strong class="font-semibold text-foreground">
+                                  ElevenLabs Voice ID:
+                                </strong>{' '}
+                                <a
+                                  href={`https://elevenlabs.io/app/voice-library?voiceId=${voice().el_voice_id ?? ''}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  class="text-accent hover:text-accent/80 underline"
+                                >
+                                  {voice().el_voice_id}
+                                </a>
                               </p>
                             </Show>
 
