@@ -83,6 +83,7 @@ class CdkStack(Stack):
             "AudioBucket",
             removal_policy=RemovalPolicy.RETAIN,
             auto_delete_objects=False,
+            versioned=True,  # Enable versioning to protect against accidental overwrites/deletions
             public_read_access=True,
             block_public_access=s3.BlockPublicAccess(
                 block_public_acls=False,
@@ -105,6 +106,7 @@ class CdkStack(Stack):
             "LecturesBucket",
             removal_policy=RemovalPolicy.RETAIN,
             auto_delete_objects=False,
+            versioned=True,  # Enable versioning to protect against accidental overwrites/deletions
             public_read_access=True,
             block_public_access=s3.BlockPublicAccess(
                 block_public_acls=False,
@@ -127,6 +129,7 @@ class CdkStack(Stack):
             "ImagesBucket",
             removal_policy=RemovalPolicy.RETAIN,
             auto_delete_objects=False,
+            versioned=True,  # Enable versioning to protect against accidental overwrites/deletions
             public_read_access=True,
             block_public_access=s3.BlockPublicAccess(
                 block_public_acls=False,
@@ -230,8 +233,6 @@ class CdkStack(Stack):
             "STORAGE_CONTENT_LOGS_BUCKET": content_logs_bucket.bucket_name,
             "STORAGE_REGION": self.region,
             "CORS_ORIGINS": f"https://{domain_name},https://{site_domain}",
-            # One-time use for running backfill
-            "RUN_BACKFILL_ID3": "1",
         }
 
         # 6. Create the Fargate Service with a public Load Balancer

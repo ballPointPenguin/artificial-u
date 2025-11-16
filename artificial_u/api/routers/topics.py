@@ -193,3 +193,246 @@ async def enqueue_generate_topics_for_course(
         "priority": row.priority,
         "run_after": row.run_after,
     }
+
+
+# Batch generation endpoints (admin-only)
+
+
+@router.post(
+    "/{topic_id}/generate-remaining-lectures",
+    status_code=status.HTTP_202_ACCEPTED,
+    summary="Generate remaining lectures starting from this topic",
+    description=(
+        "Generate lectures for this topic and all subsequent topics in the course. "
+        "Admin only. Jobs execute serially to maintain narrative continuity. "
+        "Returns the first job; subsequent jobs are automatically chained."
+    ),
+    dependencies=[require_role("admin")],
+)
+def generate_remaining_lectures(
+    topic_id: int = Path(..., description="The starting topic ID"),
+    repository_factory: RepositoryFactory = Depends(get_repository_factory),
+    student: Student = Depends(ensure_student),
+):
+    """
+    Generate lectures for this topic and all subsequent topics in the course.
+    Executes serially, one at a time, to maintain narrative continuity.
+    """
+    from fastapi import HTTPException
+
+    # 1. Get the topic and validate
+    topic = repository_factory.topic.get(topic_id)
+    if not topic:
+        raise HTTPException(status_code=404, detail="Topic not found")
+
+    # 2. Get all topics from this one forward (same week/order or later)
+    all_topics = repository_factory.topic.list_by_course(topic.course_id)
+    remaining = [
+        t.id
+        for t in sorted(all_topics, key=lambda t: (t.week, t.order))
+        if (t.week > topic.week) or (t.week == topic.week and t.order >= topic.order)
+    ]
+
+    if not remaining:
+        raise HTTPException(status_code=400, detail="No topics to generate lectures for")
+
+    # 3. Create first job with follow_up chain
+    first_topic_id = remaining[0]
+    follow_up_ids = remaining[1:]
+
+    payload: Dict[str, Any] = {
+        "partial_attributes": {"topic_id": first_topic_id, "course_id": topic.course_id},
+        "created_by": student.email,
+    }
+
+    if follow_up_ids:
+        payload["follow_up"] = {
+            "action": "generate_lecture",
+            "remaining_topic_ids": follow_up_ids,
+            "course_id": topic.course_id,
+            "created_by": student.email,
+            "partial_attributes": {"course_id": topic.course_id},
+        }
+
+    row = repository_factory.job.create(
+        kind="generate_lecture",
+        payload=payload,
+        priority=1,
+    )
+
+    return {
+        "id": row.id,
+        "kind": row.kind,
+        "status": row.status,
+        "attempts": row.attempts,
+        "max_attempts": row.max_attempts,
+        "priority": row.priority,
+        "run_after": row.run_after,
+        "total_topics": len(remaining),
+        "message": f"Queued batch generation for {len(remaining)} lectures",
+    }
+
+
+@router.post(
+    "/{topic_id}/regenerate-remaining-audio",
+    status_code=status.HTTP_202_ACCEPTED,
+    summary="Regenerate audio for remaining lectures starting from this topic",
+    description=(
+        "Regenerate audio files for existing lectures from this topic forward. "
+        "Admin only. Only processes topics that already have lectures. "
+        "Jobs execute serially to respect API rate limits."
+    ),
+    dependencies=[require_role("admin")],
+)
+def regenerate_remaining_audio(
+    topic_id: int = Path(..., description="The starting topic ID"),
+    repository_factory: RepositoryFactory = Depends(get_repository_factory),
+    student: Student = Depends(ensure_student),
+):
+    """
+    Regenerate audio files for existing lectures from this topic forward.
+    Skips topics that don't have lectures.
+    """
+    from fastapi import HTTPException
+
+    # 1. Get the topic and validate
+    topic = repository_factory.topic.get(topic_id)
+    if not topic:
+        raise HTTPException(status_code=404, detail="Topic not found")
+
+    # 2. Get all topics from this one forward
+    all_topics = repository_factory.topic.list_by_course(topic.course_id)
+    remaining_topics = [
+        t
+        for t in sorted(all_topics, key=lambda t: (t.week, t.order))
+        if (t.week > topic.week) or (t.week == topic.week and t.order >= topic.order)
+    ]
+
+    if not remaining_topics:
+        raise HTTPException(status_code=400, detail="No topics found")
+
+    # 3. Filter to only topics that have lectures
+    topic_ids_with_lectures = []
+    for t in remaining_topics:
+        lectures = repository_factory.lecture.list_by_topic(t.id)
+        if lectures and len(lectures) > 0:
+            topic_ids_with_lectures.append(t.id)
+
+    if not topic_ids_with_lectures:
+        raise HTTPException(status_code=400, detail="No lectures found for these topics")
+
+    # 4. Create first job with follow_up chain
+    first_topic_id = topic_ids_with_lectures[0]
+    follow_up_ids = topic_ids_with_lectures[1:]
+
+    # Get the lecture for the first topic
+    first_lectures = repository_factory.lecture.list_by_topic(first_topic_id)
+    if not first_lectures or len(first_lectures) == 0:
+        raise HTTPException(status_code=400, detail="No lecture found for first topic")
+
+    payload: Dict[str, Any] = {
+        "lecture_id": first_lectures[0].id,
+        "topic_id": first_topic_id,
+    }
+
+    if follow_up_ids:
+        payload["follow_up"] = {
+            "action": "generate_lecture_audio",
+            "remaining_topic_ids": follow_up_ids,
+            "course_id": topic.course_id,
+            "created_by": student.email,
+        }
+
+    row = repository_factory.job.create(
+        kind="generate_lecture_audio",
+        payload=payload,
+        priority=1,
+    )
+
+    return {
+        "id": row.id,
+        "kind": row.kind,
+        "status": row.status,
+        "attempts": row.attempts,
+        "max_attempts": row.max_attempts,
+        "priority": row.priority,
+        "run_after": row.run_after,
+        "total_lectures": len(topic_ids_with_lectures),
+        "message": f"Queued batch audio regeneration for {len(topic_ids_with_lectures)} lectures",
+    }
+
+
+@router.post(
+    "/{topic_id}/regenerate-remaining-lectures",
+    status_code=status.HTTP_202_ACCEPTED,
+    summary="Fully regenerate remaining lectures (content + audio) starting from this topic",
+    description=(
+        "Completely regenerate lectures (content, summary, and audio) from this topic forward. "
+        "Admin only. Overwrites existing lectures. "
+        "Jobs execute serially to maintain narrative continuity."
+    ),
+    dependencies=[require_role("admin")],
+)
+def regenerate_remaining_lectures(
+    topic_id: int = Path(..., description="The starting topic ID"),
+    repository_factory: RepositoryFactory = Depends(get_repository_factory),
+    student: Student = Depends(ensure_student),
+):
+    """
+    Fully regenerate all lectures from this topic forward.
+    This will overwrite existing lectures with new content, summaries, and audio.
+    """
+    from fastapi import HTTPException
+
+    # 1. Get the topic and validate
+    topic = repository_factory.topic.get(topic_id)
+    if not topic:
+        raise HTTPException(status_code=404, detail="Topic not found")
+
+    # 2. Get all topics from this one forward
+    all_topics = repository_factory.topic.list_by_course(topic.course_id)
+    remaining = [
+        t.id
+        for t in sorted(all_topics, key=lambda t: (t.week, t.order))
+        if (t.week > topic.week) or (t.week == topic.week and t.order >= topic.order)
+    ]
+
+    if not remaining:
+        raise HTTPException(status_code=400, detail="No topics to regenerate lectures for")
+
+    # 3. Create first job with follow_up chain
+    # Same as generate-remaining-lectures, but we're explicitly regenerating
+    first_topic_id = remaining[0]
+    follow_up_ids = remaining[1:]
+
+    payload: Dict[str, Any] = {
+        "partial_attributes": {"topic_id": first_topic_id, "course_id": topic.course_id},
+        "created_by": student.email,
+    }
+
+    if follow_up_ids:
+        payload["follow_up"] = {
+            "action": "generate_lecture",
+            "remaining_topic_ids": follow_up_ids,
+            "course_id": topic.course_id,
+            "created_by": student.email,
+            "partial_attributes": {"course_id": topic.course_id},
+        }
+
+    row = repository_factory.job.create(
+        kind="generate_lecture",
+        payload=payload,
+        priority=1,
+    )
+
+    return {
+        "id": row.id,
+        "kind": row.kind,
+        "status": row.status,
+        "attempts": row.attempts,
+        "max_attempts": row.max_attempts,
+        "priority": row.priority,
+        "run_after": row.run_after,
+        "total_topics": len(remaining),
+        "message": f"Queued batch regeneration for {len(remaining)} lectures",
+    }

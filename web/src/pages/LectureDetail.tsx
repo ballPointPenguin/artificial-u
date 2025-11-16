@@ -1,5 +1,5 @@
 import { A, useNavigate, useParams } from '@solidjs/router'
-import { Download, FileText, Headphones } from 'lucide-solid'
+import { Download, FileText, Headphones, Upload } from 'lucide-solid'
 import {
   type Component,
   createMemo,
@@ -29,6 +29,8 @@ const LectureDetailView: Component<{
   isDeleting: boolean
   onGenerateAudio: () => Promise<void>
   isGeneratingAudio: boolean
+  onUploadAudio: (file: File) => Promise<void>
+  isUploadingAudio: boolean
   courseId: number
   topicTitle?: string
   courseCode?: string
@@ -106,7 +108,7 @@ const LectureDetailView: Component<{
               onClick={() => {
                 void props.onGenerateAudio()
               }}
-              disabled={props.isGeneratingAudio}
+              disabled={props.isGeneratingAudio || props.isUploadingAudio}
             >
               {props.isGeneratingAudio
                 ? 'Generating Audio...'
@@ -114,6 +116,33 @@ const LectureDetailView: Component<{
                   ? 'Regenerate Audio'
                   : 'Generate Audio'}
             </MagicButton>
+          </RequireRole>
+          <RequireRole minRole="admin">
+            <label
+              for="audio-file-upload"
+              class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md border border-mystic-600 bg-mystic-900/20 text-mystic-300 hover:bg-mystic-900/40 hover:border-mystic-500 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              classList={{
+                'opacity-50 cursor-not-allowed': props.isUploadingAudio || props.isGeneratingAudio,
+              }}
+            >
+              <Upload class="h-4 w-4" />
+              <span>{props.isUploadingAudio ? 'Uploading...' : 'Upload Audio'}</span>
+            </label>
+            <input
+              id="audio-file-upload"
+              type="file"
+              accept="audio/mpeg,audio/mp3,.mp3"
+              class="hidden"
+              disabled={props.isUploadingAudio || props.isGeneratingAudio}
+              onChange={(e) => {
+                const file = e.target.files?.[0]
+                if (file) {
+                  void props.onUploadAudio(file)
+                  // Reset the input so the same file can be selected again if needed
+                  e.target.value = ''
+                }
+              }}
+            />
           </RequireRole>
           <Show when={auth.canModify(props.lecture.created_by)}>
             <Button variant="outline" size="sm" class="whitespace-nowrap" onClick={props.onEdit}>
@@ -175,6 +204,8 @@ const LectureDetail = () => {
   const [isGeneratingAudio, setIsGeneratingAudio] = createSignal(false)
   const [audioError, setAudioError] = createSignal('')
   const [audioTimeout, setAudioTimeout] = createSignal(false)
+  const [isUploadingAudio, setIsUploadingAudio] = createSignal(false)
+  const [uploadSuccess, setUploadSuccess] = createSignal(false)
   const [anyJobActive, setAnyJobActive] = createSignal(false)
 
   // Parse IDs from URL params
@@ -273,6 +304,39 @@ const LectureDetail = () => {
       setAudioError(error instanceof Error ? error.message : 'Failed to generate audio')
     } finally {
       setIsGeneratingAudio(false)
+    }
+  }
+
+  const handleUploadAudio = async (file: File) => {
+    if (!isValidIds()) return
+
+    // Validate file type
+    if (!file.type.startsWith('audio/')) {
+      setAudioError('Please select an audio file (MP3 recommended)')
+      return
+    }
+
+    // Validate file size (max 50MB)
+    const maxSize = 50 * 1024 * 1024 // 50MB
+    if (file.size > maxSize) {
+      setAudioError('File size must be less than 50MB')
+      return
+    }
+
+    setIsUploadingAudio(true)
+    setAudioError('')
+    setUploadSuccess(false)
+
+    try {
+      await lectureService.uploadAudio(lectureId(), file)
+      await refetchLecture()
+      setUploadSuccess(true)
+      // Clear success message after 3 seconds
+      setTimeout(() => setUploadSuccess(false), 3000)
+    } catch (error) {
+      setAudioError(error instanceof Error ? error.message : 'Failed to upload audio')
+    } finally {
+      setIsUploadingAudio(false)
     }
   }
 
@@ -442,6 +506,11 @@ const LectureDetail = () => {
                       background. Try refreshing in a bit.
                     </Alert>
                   </Show>
+                  <Show when={uploadSuccess()}>
+                    <Alert variant="success" class="mb-4">
+                      Audio file uploaded successfully!
+                    </Alert>
+                  </Show>
 
                   <Show
                     when={!isEditing()}
@@ -470,6 +539,8 @@ const LectureDetail = () => {
                       isDeleting={isDeleting()}
                       onGenerateAudio={handleGenerateAudio}
                       isGeneratingAudio={isGeneratingAudio() || anyJobActive()}
+                      onUploadAudio={handleUploadAudio}
+                      isUploadingAudio={isUploadingAudio()}
                       courseId={courseId()}
                       topicTitle={topic()?.title}
                       courseCode={course()?.code}

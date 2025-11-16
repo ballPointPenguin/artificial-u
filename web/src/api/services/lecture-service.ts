@@ -1,7 +1,7 @@
 /**
  * Lecture service
  */
-import { createUrl, httpClient } from '../client'
+import { createUrl, getAuthToken, httpClient } from '../client'
 import { ENDPOINTS, TIMEOUT_CONFIG } from '../config'
 import type {
   AudioRedirectResponse,
@@ -131,5 +131,47 @@ export const lectureService = {
     run_after?: string
   }> => {
     return httpClient.post(ENDPOINTS.lectures.enqueueGenerate, data)
+  },
+
+  /**
+   * Upload an audio file for a lecture (admin only).
+   * Uses FormData to send the file as multipart/form-data.
+   */
+  uploadAudio: async (lectureId: number, file: File): Promise<Lecture> => {
+    const formData = new FormData()
+    formData.append('file', file)
+
+    const url = createUrl(ENDPOINTS.lectures.uploadAudio(lectureId))
+    const tokenFn = getAuthToken
+    if (!tokenFn) {
+      throw new Error('Authentication token provider not configured')
+    }
+    const token = await tokenFn()
+    if (!token) {
+      throw new Error('Authentication token not available')
+    }
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        // Don't set Content-Type - browser will set it with boundary for multipart/form-data
+      },
+      body: formData,
+    })
+
+    if (!response.ok) {
+      const errorText = await response.text()
+      let errorDetail = `Upload failed: ${response.statusText}`
+      try {
+        const errorJson = JSON.parse(errorText) as { detail?: string }
+        errorDetail = errorJson.detail || errorDetail
+      } catch {
+        // Not JSON, use text as is
+      }
+      throw new Error(errorDetail)
+    }
+
+    return (await response.json()) as Lecture
   },
 }

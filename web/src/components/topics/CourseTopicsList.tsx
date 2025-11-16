@@ -165,6 +165,86 @@ export function CourseTopicsList(props: CourseTopicsListProps) {
     }
   }
 
+  // Batch generation handlers (admin only)
+  const [batchJobMessage, setBatchJobMessage] = createSignal<string | null>(null)
+
+  const handleGenerateRemainingLectures = async (topicId: number) => {
+    if (
+      !confirm('This will generate lectures for this topic and all subsequent topics. Continue?')
+    ) {
+      return
+    }
+
+    try {
+      const result = await topicService.generateRemainingLectures(topicId)
+      setBatchJobMessage(result.message || 'Batch generation started')
+      console.log('Started batch lecture generation:', result)
+      // Refresh the list to show job status
+      setTimeout(() => {
+        setListVersion((v) => v + 1)
+        setBatchJobMessage(null)
+      }, 3000)
+    } catch (err) {
+      console.error('Failed to start batch generation:', err)
+      setError(
+        err instanceof Error
+          ? { detail: err.message }
+          : { detail: 'Failed to start batch generation' }
+      )
+    }
+  }
+
+  const handleRegenerateRemainingAudio = async (topicId: number) => {
+    if (
+      !confirm('This will regenerate audio for all lectures from this topic forward. Continue?')
+    ) {
+      return
+    }
+
+    try {
+      const result = await topicService.regenerateRemainingAudio(topicId)
+      setBatchJobMessage(result.message || 'Batch audio regeneration started')
+      console.log('Started batch audio regeneration:', result)
+      setTimeout(() => {
+        setBatchJobMessage(null)
+      }, 3000)
+    } catch (err) {
+      console.error('Failed to start batch audio regeneration:', err)
+      setError(
+        err instanceof Error
+          ? { detail: err.message }
+          : { detail: 'Failed to start batch audio regeneration' }
+      )
+    }
+  }
+
+  const handleRegenerateRemainingLectures = async (topicId: number) => {
+    if (
+      !confirm(
+        'This will OVERWRITE all lectures (content + audio) from this topic forward. Continue?'
+      )
+    ) {
+      return
+    }
+
+    try {
+      const result = await topicService.regenerateRemainingLectures(topicId)
+      setBatchJobMessage(result.message || 'Batch lecture regeneration started')
+      console.log('Started batch lecture regeneration:', result)
+      setTimeout(() => {
+        setListVersion((v) => v + 1)
+        setBatchJobMessage(null)
+      }, 3000)
+    } catch (err) {
+      console.error('Failed to start batch lecture regeneration:', err)
+      setError(
+        err instanceof Error
+          ? { detail: err.message }
+          : { detail: 'Failed to start batch lecture regeneration' }
+      )
+    }
+  }
+
   return (
     <div class="space-y-6">
       <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
@@ -210,6 +290,11 @@ export function CourseTopicsList(props: CourseTopicsListProps) {
         <Alert variant="info" class="mb-4">
           Topic generation in progress for Job #{currentJob()?.id}. You can continue browsing; this
           will update when complete.
+        </Alert>
+      </Show>
+      <Show when={batchJobMessage()}>
+        <Alert variant="success" class="mb-4">
+          {batchJobMessage()}
         </Alert>
       </Show>
 
@@ -264,28 +349,68 @@ export function CourseTopicsList(props: CourseTopicsListProps) {
                     <TopicContentRenderer content={topic.content} class="mt-3" />
                   </div>
                 </div>
-                <div class="flex justify-end space-x-2 pt-3 border-t border-parchment-800/30">
-                  <Show when={auth.canModify(topic.created_by)}>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        handleEditTopic(topic)
-                      }}
-                    >
-                      Edit
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      class="text-danger-foreground border-danger-border hover:bg-danger-bg/20 hover:text-danger-foreground"
-                      onClick={() => {
-                        void handleDeleteTopic(topic.id)
-                      }}
-                    >
-                      Delete
-                    </Button>
-                  </Show>
+                <div class="flex flex-col gap-2 pt-3 border-t border-parchment-800/30">
+                  <div class="flex justify-end space-x-2">
+                    <Show when={auth.canModify(topic.created_by)}>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          handleEditTopic(topic)
+                        }}
+                      >
+                        Edit
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        class="text-danger-foreground border-danger-border hover:bg-danger-bg/20 hover:text-danger-foreground"
+                        onClick={() => {
+                          void handleDeleteTopic(topic.id)
+                        }}
+                      >
+                        Delete
+                      </Button>
+                    </Show>
+                  </div>
+                  <RequireRole minRole="admin">
+                    <div class="flex flex-wrap justify-end gap-2 pt-2 border-t border-mystic-800/20">
+                      <p class="w-full text-xs text-parchment-400 text-right mb-1">
+                        Admin: Batch Operations
+                      </p>
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => {
+                          void handleGenerateRemainingLectures(topic.id)
+                        }}
+                        title="Generate lectures for this topic and all subsequent topics"
+                      >
+                        Generate Remaining
+                      </Button>
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => {
+                          void handleRegenerateRemainingAudio(topic.id)
+                        }}
+                        title="Regenerate audio for existing lectures from this topic forward"
+                      >
+                        Regenerate Audio
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          void handleRegenerateRemainingLectures(topic.id)
+                        }}
+                        title="Fully regenerate all lectures (content + audio) from this topic forward"
+                        class="text-warning-foreground border-warning-border hover:bg-warning-bg/20"
+                      >
+                        Regenerate All
+                      </Button>
+                    </div>
+                  </RequireRole>
                 </div>
               </div>
             )}

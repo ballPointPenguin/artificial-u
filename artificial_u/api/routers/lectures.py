@@ -4,7 +4,7 @@ Lecture router for handling lecture-related API endpoints.
 
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
+from fastapi import APIRouter, Depends, File, HTTPException, Path, Query, UploadFile, status
 from fastapi.responses import JSONResponse, PlainTextResponse
 
 from artificial_u.api.dependencies import (
@@ -361,6 +361,155 @@ async def enqueue_generate_lecture_audio(
         "priority": row.priority,
         "run_after": row.run_after,
     }
+
+
+@router.post(
+    "/{lecture_id}/upload-audio",
+    response_model=Lecture,
+    status_code=status.HTTP_200_OK,
+    summary="Upload audio file for lecture",
+    description=(
+        "Upload an MP3 audio file for the specified lecture. The audio will be processed "
+        "with ID3 metadata tags and saved to storage. Admin only."
+    ),
+    responses={
+        404: {"description": "Lecture not found"},
+        400: {"description": "Invalid file or upload failed"},
+        403: {"description": "Admin access required"},
+    },
+    dependencies=[require_role("admin")],
+)
+async def upload_lecture_audio(
+    lecture_id: int = Path(..., description="The ID of the lecture to upload audio for"),
+    file: UploadFile = File(..., description="MP3 audio file to upload"),
+    repository_factory: RepositoryFactory = Depends(get_repository_factory),
+    student: Student = Depends(ensure_student),
+):
+    """
+    Upload an MP3 audio file for a specific lecture (admin only).
+
+    - **lecture_id**: The unique identifier of the lecture
+    - **file**: MP3 audio file to upload
+    - Processes the audio with ID3 metadata tags
+    - Uploads to S3 storage with proper naming
+    - Returns the updated lecture with audio_url
+    """
+    import logging
+
+    from artificial_u.audio import ID3Tagger
+    from artificial_u.services.storage_service import StorageService
+
+    logger = logging.getLogger(__name__)
+
+    # 1. Verify lecture exists and get related entities
+    lecture = repository_factory.lecture.get(lecture_id)
+    if not lecture:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"Lecture {lecture_id} not found"
+        )
+
+    # Validate file type
+    if not file.content_type or not file.content_type.startswith("audio/"):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="File must be an audio file (MP3 recommended)",
+        )
+
+    try:
+        # 2. Read the uploaded file
+        audio_bytes = await file.read()
+        logger.info(f"Received audio upload: {len(audio_bytes)} bytes for lecture {lecture_id}")
+
+        # 3. Get course and topic for metadata and naming
+        course = repository_factory.course.get(lecture.course_id)
+        topic = repository_factory.topic.get(lecture.topic_id) if lecture.topic_id else None
+
+        if not course:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Lecture must be associated with a valid course",
+            )
+
+        if not topic:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Lecture must be associated with a valid topic",
+            )
+
+        # 4. Add ID3 tags
+        tagger = ID3Tagger(logger=logger)
+
+        # Calculate track number based on topic position
+        track_number = tagger.calculate_track_number(
+            topic_week=topic.week,
+            topic_order=topic.order,
+            course_id=course.id,
+            repository_factory=repository_factory,
+        )
+
+        # Generate comment indicating uploaded file
+        comment = tagger.generate_comment(
+            model_name="Uploaded",
+            include_elevenlabs=False,
+        )
+
+        # Add tags to audio
+        tagged_audio = tagger.add_tags_to_audio(
+            audio_bytes=audio_bytes,
+            title=lecture.title or f"Lecture {topic.week}.{topic.order}",
+            album=course.title,
+            track_number=track_number,
+            year=lecture.created_at.year if hasattr(lecture, "created_at") else None,
+            comment=comment if comment else "Uploaded by admin",
+        )
+
+        logger.info(f"Added ID3 tags to uploaded audio: {len(tagged_audio)} bytes")
+
+        # 5. Upload to S3 with proper naming
+        storage_service = StorageService(logger=logger)
+        course_code = getattr(course, "code", str(course.id))
+        object_key = storage_service.generate_audio_key(
+            course_code=str(course_code),
+            week_number=int(topic.week),
+            lecture_order=int(topic.order),
+        )
+
+        success, audio_url = await storage_service.upload_audio_file(
+            file_data=tagged_audio,
+            object_name=object_key,
+            content_type="audio/mpeg",
+        )
+
+        if not success or not audio_url:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to upload audio to storage",
+            )
+
+        logger.info(f"Uploaded audio to {audio_url}")
+
+        # 6. Update lecture with audio_url
+        lecture.audio_url = audio_url
+        updated_lecture = repository_factory.lecture.update(lecture)
+
+        if not updated_lecture:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to update lecture with audio URL",
+            )
+
+        logger.info(f"Updated lecture {lecture_id} with audio URL")
+
+        return updated_lecture
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error uploading audio for lecture {lecture_id}: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to process audio upload: {str(e)}",
+        )
 
 
 @router.post(

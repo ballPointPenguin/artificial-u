@@ -193,6 +193,10 @@ class Worker:
             # Success path
             await asyncio.to_thread(repo.mark_done, job_id, result)
             self.logger.info(f"Job {job_id} marked as done")
+
+            # Check for follow-up action and enqueue next job if present
+            await self._handle_follow_up(payload, kind, result)
+
             await self._publish_event(job_id, kind, "done", payload, result=result)
 
     async def _execute_job(self, job_id: int, kind: str, payload: Dict[str, Any]) -> Dict[str, Any]:
@@ -304,3 +308,189 @@ class Worker:
         except Exception:  # noqa: BLE001
             # Never fail the worker due to SSE publish errors
             pass
+
+    async def _handle_follow_up(
+        self,
+        payload: Dict[str, Any],
+        completed_kind: str,
+        result: Dict[str, Any],
+    ) -> None:
+        """
+        Handle follow-up actions after job completion.
+
+        If payload contains a 'follow_up' field, this creates the next job in the series.
+        This enables serial batch processing without a full queue system.
+
+        Follow-up structure:
+        {
+            "action": "generate_lecture" | "generate_lecture_audio",
+            "remaining_topic_ids": [4, 5, 6, ...],
+            "course_id": 10,
+            "created_by": "user@example.com",
+            "partial_attributes": {...}  # optional, for lecture generation
+        }
+        """
+        follow_up = payload.get("follow_up")
+        if not follow_up:
+            return
+
+        remaining_topic_ids = follow_up.get("remaining_topic_ids", [])
+        if not remaining_topic_ids:
+            self.logger.info("Batch complete: no remaining topic IDs in follow_up")
+            return
+
+        # Pop the first topic ID for the next job
+        next_topic_id = remaining_topic_ids[0]
+        new_remaining = remaining_topic_ids[1:]
+
+        action = follow_up.get("action")
+        if not action:
+            self.logger.warning("Follow-up missing 'action' field, skipping")
+            return
+
+        self.logger.info(
+            f"Enqueueing follow-up job: action={action}, topic_id={next_topic_id}, "
+            f"remaining={len(new_remaining)}"
+        )
+
+        # Build the next job's payload based on action type
+        next_payload = await self._build_follow_up_payload(
+            action, next_topic_id, follow_up, new_remaining
+        )
+        if next_payload is None:
+            # If payload building failed (e.g., missing lecture), continue with remaining topics
+            if new_remaining:
+                await self._enqueue_next_in_chain(action, new_remaining, follow_up)
+            return
+
+        # Enqueue the next job
+        await self._enqueue_follow_up_job(
+            action, next_payload, next_topic_id, payload.get("priority", 0)
+        )
+
+    async def _build_follow_up_payload(
+        self,
+        action: str,
+        next_topic_id: int,
+        follow_up: Dict[str, Any],
+        new_remaining: list[int],
+    ) -> Dict[str, Any] | None:
+        """Build payload for the next job in the follow-up chain."""
+        if action == "generate_lecture":
+            return self._build_lecture_payload(next_topic_id, follow_up, new_remaining)
+        elif action == "generate_lecture_audio":
+            return await self._build_audio_payload(next_topic_id, follow_up, new_remaining)
+        else:
+            self.logger.warning(f"Unknown follow-up action: {action}")
+            return None
+
+    def _build_lecture_payload(
+        self,
+        next_topic_id: int,
+        follow_up: Dict[str, Any],
+        new_remaining: list[int],
+    ) -> Dict[str, Any]:
+        """Build payload for lecture generation follow-up job."""
+        partial_attrs = follow_up.get("partial_attributes", {})
+        partial_attrs["topic_id"] = next_topic_id
+
+        payload = {
+            "partial_attributes": partial_attrs,
+            "freeform_prompt": follow_up.get("freeform_prompt"),
+            "created_by": follow_up.get("created_by"),
+        }
+
+        if new_remaining:
+            payload["follow_up"] = {
+                **follow_up,
+                "remaining_topic_ids": new_remaining,
+            }
+
+        return payload
+
+    async def _build_audio_payload(
+        self,
+        next_topic_id: int,
+        follow_up: Dict[str, Any],
+        new_remaining: list[int],
+    ) -> Dict[str, Any] | None:
+        """Build payload for audio generation follow-up job."""
+        course_id = follow_up.get("course_id")
+        if not course_id:
+            self.logger.error("Follow-up audio generation missing course_id")
+            return None
+
+        # Query for the lecture with this topic_id
+        try:
+            lecture_repo = self.repository_factory.lecture
+            lectures = await asyncio.to_thread(lecture_repo.list_by_topic, next_topic_id)
+            if not lectures or len(lectures) == 0:
+                self.logger.warning(
+                    f"No lecture found for topic {next_topic_id}, skipping audio generation"
+                )
+                # Return None to let caller handle continuation with remaining topics
+                return None
+
+            payload = {
+                "lecture_id": lectures[0].id,
+                "topic_id": next_topic_id,
+            }
+
+            if new_remaining:
+                payload["follow_up"] = {
+                    **follow_up,
+                    "remaining_topic_ids": new_remaining,
+                }
+
+            return payload
+        except Exception as e:
+            self.logger.error(f"Error querying lecture for topic {next_topic_id}: {e}")
+            return None
+
+    async def _enqueue_follow_up_job(
+        self,
+        action: str,
+        next_payload: Dict[str, Any],
+        next_topic_id: int,
+        priority: int,
+    ) -> None:
+        """Enqueue the follow-up job."""
+        try:
+            repo = self.repository_factory.job
+            next_job = await asyncio.to_thread(
+                repo.create,
+                kind=action,
+                payload=next_payload,
+                priority=priority,
+            )
+            self.logger.info(
+                f"Enqueued follow-up job {next_job.id}: {action} for topic {next_topic_id}"
+            )
+        except Exception as e:
+            self.logger.error(f"Failed to enqueue follow-up job: {e}", exc_info=True)
+
+    async def _enqueue_next_in_chain(
+        self,
+        action: str,
+        remaining_topic_ids: list[int],
+        follow_up: Dict[str, Any],
+    ) -> None:
+        """Helper to enqueue next job when current one is skipped."""
+        if not remaining_topic_ids:
+            return
+
+        next_topic_id = remaining_topic_ids[0]
+        new_remaining = remaining_topic_ids[1:]
+
+        # Build payload using the shared helper
+        next_payload = await self._build_follow_up_payload(
+            action, next_topic_id, follow_up, new_remaining
+        )
+        if next_payload is None:
+            # If payload building failed (e.g., missing lecture), recursively try next in chain
+            if new_remaining:
+                await self._enqueue_next_in_chain(action, new_remaining, follow_up)
+            return
+
+        # Enqueue the job (using default priority of 0)
+        await self._enqueue_follow_up_job(action, next_payload, next_topic_id, 0)
