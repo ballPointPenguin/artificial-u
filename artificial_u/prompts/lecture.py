@@ -75,7 +75,12 @@ Instructions:
 
 9. Ensure that the text is suitable for a text-to-speech engine:
    - Avoid superfluous punctuation such as asterisks or dashes.
-   - Everything in the response text will be literally read aloud.
+   - Do NOT use markdown formatting. This means:
+     * No double asterisks (**text**) for bold
+     * No single asterisks (*text*) for emphasis
+     * No hash symbols (#, ##, ###) for headers
+     * No asterisk-based emphasis of any kind
+   - Everything in the response text will be literally read aloud, so asterisks will sound wrong.
    - Spell out any year numbers and centuries in words (e.g., "the twentieth century,"
      "Nineteen sixty-nine", "the twenties") rather than numeric forms
      like "20th century", "1969", or "the 20s".
