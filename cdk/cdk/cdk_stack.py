@@ -316,9 +316,7 @@ class CdkStack(Stack):
             default_ttl=cdk.Duration.seconds(0),
             min_ttl=cdk.Duration.seconds(0),
             max_ttl=cdk.Duration.seconds(0),
-            # Important: respect Cache-Control headers from origin
-            enable_accept_encoding_gzip=True,
-            enable_accept_encoding_brotli=True,
+            # Note: compression settings cannot be enabled when caching is disabled
         )
 
         # 12. Create a CloudFront distribution
