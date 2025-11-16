@@ -174,7 +174,9 @@ async def process_lecture_audio(
         )
 
         # Add ID3 tags
-        logger.debug(f"Adding ID3 tags: title='{lecture.title}', album='{course.title}', track={track_number}")
+        logger.debug(
+            f"Adding ID3 tags: title='{lecture.title}', album='{course.title}', track={track_number}"
+        )
         tagged_audio = tagger.add_tags_to_audio(
             audio_bytes=audio_bytes,
             title=lecture.title or f"Lecture {topic.week}.{topic.order}",
