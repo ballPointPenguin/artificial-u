@@ -22,6 +22,8 @@ anyio==4.11.0
     #   openai
     #   starlette
     #   watchfiles
+audioop-lts==0.2.2
+    # via artificial_u (pyproject.toml)
 black==25.11.0
     # via artificial_u (pyproject.toml)
 boto3==1.41.1
@@ -73,6 +75,8 @@ filelock==3.20.0
     # via virtualenv
 flake8==7.3.0
     # via artificial_u (pyproject.toml)
+future==1.0.0
+    # via pyloudnorm
 google-api-core==2.28.1
     # via artificial_u (pyproject.toml)
 google-auth==2.43.0
@@ -139,6 +143,11 @@ mypy-extensions==1.1.0
     #   mypy
 nodeenv==1.9.1
     # via pre-commit
+numpy==2.3.4
+    # via
+    #   artificial_u (pyproject.toml)
+    #   pyloudnorm
+    #   scipy
 openai==2.8.1
     # via artificial_u (pyproject.toml)
 packaging==25.0
@@ -198,12 +207,16 @@ pydantic-core==2.41.5
     #   pydantic
 pydantic-settings==2.12.0
     # via artificial_u (pyproject.toml)
+pydub==0.25.1
+    # via artificial_u (pyproject.toml)
 pyflakes==3.4.0
     # via flake8
 pygments==2.19.2
     # via
     #   pytest
     #   rich
+pyloudnorm==0.1.1
+    # via artificial_u (pyproject.toml)
 pyproject-hooks==1.2.0
     # via
     #   build
@@ -253,6 +266,8 @@ rsa==4.9.1
     #   python-jose
 s3transfer==0.15.0
     # via boto3
+scipy==1.16.3
+    # via pyloudnorm
 six==1.17.0
     # via
     #   ecdsa

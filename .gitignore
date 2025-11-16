@@ -62,3 +62,7 @@ backups/*
 
 # CDK
 cdk.out/
+
+# Audio
+audio/
+!audio/.gitkeep

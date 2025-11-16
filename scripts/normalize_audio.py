@@ -36,8 +36,15 @@ import numpy as np
 
 try:
     from pydub import AudioSegment
-except ImportError:
-    print("ERROR: pydub not installed. Run: pip install pydub")
+except Exception as e:
+    import traceback
+
+    print(f"ERROR: Failed to import pydub: {e}")
+    traceback.print_exc()
+    print(
+        "Hint: Ensure pydub is installed and compatible with your Python version,"
+        "and that no local files shadow the 'pydub' module."
+    )
     sys.exit(1)
 
 try:
@@ -96,13 +103,13 @@ def normalize_audio_segment(
         logger.info(f"    Current loudness: {current_loudness:.2f} LUFS")
     except Exception as e:
         logger.warning(f"    Could not measure loudness: {e}")
-        logger.warning(f"    Returning original audio unchanged")
+        logger.warning("    Returning original audio unchanged")
         return audio_segment
 
     # Check if audio is too quiet (likely silence or noise)
     if current_loudness < -70.0:
         logger.warning(f"    Audio is very quiet ({current_loudness:.2f} LUFS)")
-        logger.warning(f"    Skipping normalization to avoid boosting noise")
+        logger.warning("    Skipping normalization to avoid boosting noise")
         return audio_segment
 
     # Normalize to target loudness
@@ -125,12 +132,12 @@ def normalize_audio_segment(
             channels=audio_segment.channels,
         )
 
-        logger.info(f"    ✓ Normalized successfully")
+        logger.info("    ✓ Normalized successfully")
         return normalized_audio
 
     except Exception as e:
         logger.error(f"    Error during normalization: {e}")
-        logger.warning(f"    Returning original audio")
+        logger.warning("    Returning original audio")
         return audio_segment
 
 
@@ -234,7 +241,9 @@ def process_files(
         logger.info(f"✓ Success! Output: {final_output}")
 
     elif len(normalized_segments) == 1:
-        output_path = output_file or (input_files[0].parent / f"{input_files[0].stem}_normalized.mp3")
+        output_path = output_file or (
+            input_files[0].parent / f"{input_files[0].stem}_normalized.mp3"
+        )
         logger.info(f"✓ Success! Output: {output_path}")
 
     else:
@@ -316,7 +325,7 @@ Target loudness standards:
     try:
         # Try to load a silent audio segment to test if ffmpeg is available
         AudioSegment.silent(duration=1)
-    except Exception as e:
+    except Exception:
         logger.error("FFmpeg/libav not found. Please install:")
         logger.error("  macOS: brew install ffmpeg")
         logger.error("  Ubuntu/Debian: sudo apt-get install ffmpeg")
