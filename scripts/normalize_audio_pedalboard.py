@@ -49,7 +49,7 @@ except ImportError:
     sys.exit(1)
 
 try:
-    from pedalboard import Pedalboard, Compressor, Limiter, Gain
+    from pedalboard import Compressor, Gain, Limiter, Pedalboard
 except ImportError:
     print("ERROR: pedalboard not installed. Run: pip install pedalboard")
     sys.exit(1)
@@ -121,23 +121,25 @@ def process_audio(
         return audio
 
     # Create processing chain
-    board = Pedalboard([
-        # Step 1: Compression - Smooth out dynamics, reduce peak-to-RMS difference
-        Compressor(
-            threshold_db=threshold_db,
-            ratio=ratio,
-            attack_ms=attack_ms,
-            release_ms=release_ms,
-        ),
-        # Step 2: Limiter - Hard ceiling at -0.1 dB to prevent any clipping
-        Limiter(
-            threshold_db=-0.5,  # Slightly below 0 dB for safety
-            release_ms=50.0,
-        ),
-    ])
+    board = Pedalboard(
+        [
+            # Step 1: Compression - Smooth out dynamics, reduce peak-to-RMS difference
+            Compressor(
+                threshold_db=threshold_db,
+                ratio=ratio,
+                attack_ms=attack_ms,
+                release_ms=release_ms,
+            ),
+            # Step 2: Limiter - Hard ceiling at -0.1 dB to prevent any clipping
+            Limiter(
+                threshold_db=-0.5,  # Slightly below 0 dB for safety
+                release_ms=50.0,
+            ),
+        ]
+    )
 
     logger.info(f"    Compressor: threshold={threshold_db:.1f}dB, ratio={ratio:.1f}:1")
-    logger.info(f"    Limiter: threshold=-0.5dB (preventing clipping)")
+    logger.info("    Limiter: threshold=-0.5dB (preventing clipping)")
 
     # Apply compression and limiting
     processed = board(audio, sample_rate)
@@ -149,22 +151,41 @@ def process_audio(
     logger.info(f"    After compression RMS: {compressed_rms_db:.2f} dB")
     logger.info(f"    After compression peak: {compressed_peak_db:.2f} dB")
 
-    # Calculate gain needed to reach target
+    # Calculate gain needed to reach target RMS
     gain_needed_db = target_db - compressed_rms_db
 
-    # Apply gain to reach target level
-    if abs(gain_needed_db) > 0.5:  # Only apply if significant change needed
-        logger.info(f"    Applying gain: {gain_needed_db:+.2f} dB to reach target {target_db:.1f} dB")
+    # Calculate maximum safe gain based on available headroom
+    # Leave at least 2 dB of headroom to prevent limiter from engaging hard
+    # This avoids audible distortion and clipping artifacts
+    headroom_target_db = -2.0
+    max_safe_gain_db = headroom_target_db - compressed_peak_db
 
-        gain_board = Pedalboard([
-            Gain(gain_db=gain_needed_db),
-            # Safety limiter after gain
-            Limiter(threshold_db=-0.3, release_ms=10.0),
-        ])
+    # Use the smaller of the two: what we need vs what's safe
+    actual_gain_db = min(gain_needed_db, max_safe_gain_db)
+
+    # Apply gain to reach target level (or as close as safely possible)
+    if abs(actual_gain_db) > 0.5:  # Only apply if significant change needed
+        if actual_gain_db < gain_needed_db - 0.5:
+            logger.warning(
+                f"    Limited gain to {actual_gain_db:+.2f} dB (wanted {gain_needed_db:+.2f} dB) "
+                f"to maintain headroom"
+            )
+        else:
+            logger.info(
+                f"    Applying gain: {actual_gain_db:+.2f} dB to reach target {target_db:.1f} dB"
+            )
+
+        gain_board = Pedalboard(
+            [
+                Gain(gain_db=actual_gain_db),
+                # Safety limiter after gain (should barely engage now)
+                Limiter(threshold_db=-0.5, release_ms=10.0),
+            ]
+        )
 
         processed = gain_board(processed, sample_rate)
     else:
-        logger.info(f"    No gain adjustment needed (within 0.5 dB of target)")
+        logger.info("    No gain adjustment needed (within 0.5 dB of target)")
 
     # Calculate final levels
     final_rms_db = calculate_rms_db(processed)
@@ -175,9 +196,9 @@ def process_audio(
 
     # Verify no clipping
     if final_peak_db > -0.1:
-        logger.warning(f"    ⚠ Peak is close to 0 dB, may have slight clipping")
+        logger.warning("    ⚠ Peak is close to 0 dB, may have slight clipping")
     else:
-        logger.info(f"    ✓ No clipping detected")
+        logger.info("    ✓ No clipping detected")
 
     return processed
 
@@ -213,7 +234,7 @@ def save_audio(audio: np.ndarray, sample_rate: int, file_path: Path) -> None:
     # Clip to [-1, 1] range for safety
     audio = np.clip(audio, -1.0, 1.0)
 
-    sf.write(str(file_path), audio, sample_rate, subtype='PCM_16')
+    sf.write(str(file_path), audio, sample_rate, subtype="PCM_16")
 
 
 def process_files(
@@ -303,6 +324,7 @@ def process_files(
         except Exception as e:
             logger.error(f"Error processing {input_file.name}: {e}")
             import traceback
+
             traceback.print_exc()
             sys.exit(1)
 
@@ -336,7 +358,9 @@ def process_files(
         logger.info(f"✓ Success! Output: {final_output}")
 
     elif len(processed_audio) == 1:
-        output_path = output_file or (input_files[0].parent / f"{input_files[0].stem}_normalized.wav")
+        output_path = output_file or (
+            input_files[0].parent / f"{input_files[0].stem}_normalized.wav"
+        )
         logger.info(f"✓ Success! Output: {output_path}")
 
     else:
