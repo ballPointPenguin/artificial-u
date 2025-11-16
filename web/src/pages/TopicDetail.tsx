@@ -28,7 +28,10 @@ const TopicDetail = () => {
   const isValidIds = createMemo(() => !Number.isNaN(courseId()) && !Number.isNaN(topicId()))
 
   // Fetch topic and course data
-  const [topic] = createResource(() => (isValidIds() ? topicId() : null), topicService.getTopic)
+  const [topic, { refetch: refetchTopic }] = createResource(
+    () => (isValidIds() ? topicId() : null),
+    topicService.getTopic
+  )
 
   const [course] = createResource(() => (isValidIds() ? courseId() : null), courseService.getCourse)
 
@@ -127,6 +130,7 @@ const TopicDetail = () => {
     try {
       await topicService.updateTopic(topicId(), formData)
       setIsEditing(false)
+      void refetchTopic()
     } catch (error) {
       setError(error instanceof Error ? error.message : 'Failed to update topic')
     } finally {

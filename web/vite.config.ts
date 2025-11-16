@@ -45,17 +45,12 @@ export default defineConfig(({ mode }) => ({
           },
           {
             urlPattern: /\/api\/.*/i,
-            handler: 'NetworkFirst',
+            handler: 'NetworkOnly',
             options: {
               cacheName: 'api-cache',
-              expiration: {
-                maxEntries: 50,
-                maxAgeSeconds: 60 * 5, // 5 minutes
-              },
-              networkTimeoutSeconds: 10,
-              cacheableResponse: {
-                statuses: [0, 200],
-              },
+              // NetworkOnly strategy: always fetch from network, never use cache
+              // This ensures fresh data after mutations (create/update/delete)
+              // Trade-off: No offline support for API data, but ensures data consistency
             },
           },
           {

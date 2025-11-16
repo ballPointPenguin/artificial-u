@@ -255,6 +255,7 @@ const LectureDetail = () => {
     try {
       await lectureService.updateLecture(lectureId(), formData)
       setIsEditing(false)
+      void refetchLecture()
     } catch (error) {
       setError(error instanceof Error ? error.message : 'Failed to update lecture')
     } finally {
