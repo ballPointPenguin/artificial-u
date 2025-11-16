@@ -351,14 +351,24 @@ class CdkStack(Stack):
         )
 
         # 11 (cont.). Deploy the frontend assets and invalidate CloudFront
-        # Split deployment so that assets can be cached long-term while index.html stays non-cacheable
+        # Split deployment so that assets can be cached long-term while index.html and PWA files stay non-cacheable
         s3_deployment.BucketDeployment(
             self,
             "DeployWebAppAssets",
             sources=[
                 s3_deployment.Source.asset(
                     "../web/dist",
-                    exclude=["index.html"],
+                    # Only deploy versioned/static assets here so they can be cached aggressively.
+                    # Service worker + PWA shell files are deployed in a separate step with no-cache
+                    # headers to ensure updates work reliably in production.
+                    exclude=[
+                        "index.html",
+                        "sw.js",
+                        "workbox-*.js",
+                        "manifest.json",
+                        "registerSW.js",
+                        "offline.html",
+                    ],
                 )
             ],
             destination_bucket=frontend_bucket,
@@ -389,6 +399,7 @@ class CdkStack(Stack):
                 "/workbox-*.js",  # Workbox runtime files
                 "/manifest.json",  # PWA manifest
                 "/registerSW.js",  # SW registration script (if generated)
+                "/offline.html",  # Offline fallback page used by the PWA
             ],
             cache_control=[
                 s3_deployment.CacheControl.from_string("no-cache, no-store, must-revalidate"),

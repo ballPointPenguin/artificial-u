@@ -446,9 +446,10 @@ async def upload_lecture_audio(
         )
 
         # Generate comment indicating uploaded file
+        model_name = getattr(lecture, "created_with", None)
         comment = tagger.generate_comment(
-            model_name="Uploaded",
-            include_elevenlabs=False,
+            model_name=model_name,
+            include_elevenlabs=True,
         )
 
         # Add tags to audio
@@ -458,7 +459,7 @@ async def upload_lecture_audio(
             album=course.title,
             track_number=track_number,
             year=lecture.created_at.year if hasattr(lecture, "created_at") else None,
-            comment=comment if comment else "Uploaded by admin",
+            comment=comment if comment else None,
         )
 
         logger.info(f"Added ID3 tags to uploaded audio: {len(tagged_audio)} bytes")
