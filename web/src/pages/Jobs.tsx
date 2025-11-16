@@ -1,7 +1,8 @@
-import { createResource, createSignal, For, Show } from 'solid-js'
-import { cancelJob, type JobRow, type JobStatus, listJobs } from '../api/services/jobs-service'
+import { createResource, createSignal, For, onCleanup, Show } from 'solid-js'
+import { cancelJob, type JobEvent, type JobRow, type JobStatus, listJobs } from '../api/services/jobs-service'
 import { Button } from '../components/ui'
 import { formatDate } from '../utils/formatDate'
+import { getJobEventHub } from '../utils/job-events-hub'
 
 const STATUS_STYLES: Record<JobStatus, string> = {
   queued: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200',
@@ -14,8 +15,9 @@ const STATUS_STYLES: Record<JobStatus, string> = {
 export default function JobsPage() {
   const [statusFilter, setStatusFilter] = createSignal<JobStatus | undefined>(undefined)
   const [cancellingJobId, setCancellingJobId] = createSignal<number | null>(null)
+  const [errorModalJob, setErrorModalJob] = createSignal<JobRow | null>(null)
 
-  const [jobsResource, { refetch }] = createResource(
+  const [jobsResource, { refetch, mutate }] = createResource(
     () => ({
       status: statusFilter(),
       limit: 50,
@@ -23,8 +25,70 @@ export default function JobsPage() {
     listJobs
   )
 
+  // Subscribe to SSE updates for real-time job status
+  const hub = getJobEventHub()
+  const unsubscribe = hub.subscribe({}, (event: JobEvent) => {
+    // Update the job in the list when we receive an event
+    mutate((jobs) => {
+      if (!jobs) return jobs
+
+      const jobIndex = jobs.findIndex((j) => j.id === event.id)
+
+      if (jobIndex === -1) {
+        // New job - refetch to get it
+        void refetch()
+        return jobs
+      }
+
+      // Update existing job
+      const updatedJobs = [...jobs]
+      updatedJobs[jobIndex] = {
+        ...updatedJobs[jobIndex],
+        status: event.status as JobStatus,
+        last_error: event.last_error || updatedJobs[jobIndex].last_error,
+      }
+
+      return updatedJobs
+    })
+  })
+
+  onCleanup(() => {
+    unsubscribe()
+  })
+
   const handleStatusFilter = (status: JobStatus | undefined) => {
     setStatusFilter(status)
+  }
+
+  const extractParams = (job: JobRow): string => {
+    const payload = job.payload as Record<string, unknown> | undefined
+    if (!payload) return '-'
+
+    const params: string[] = []
+
+    if (payload.lecture_id) {
+      params.push(`lecture: ${payload.lecture_id}`)
+    }
+
+    if (payload.topic_id) {
+      params.push(`topic: ${payload.topic_id}`)
+    } else if (payload.partial_attributes && typeof payload.partial_attributes === 'object') {
+      const partialAttrs = payload.partial_attributes as Record<string, unknown>
+      if (partialAttrs.topic_id) {
+        params.push(`topic: ${partialAttrs.topic_id}`)
+      }
+    }
+
+    if (payload.course_id) {
+      params.push(`course: ${payload.course_id}`)
+    } else if (payload.partial_attributes && typeof payload.partial_attributes === 'object') {
+      const partialAttrs = payload.partial_attributes as Record<string, unknown>
+      if (partialAttrs.course_id) {
+        params.push(`course: ${partialAttrs.course_id}`)
+      }
+    }
+
+    return params.length > 0 ? params.join(', ') : '-'
   }
 
   const handleCancelJob = async (jobId: number) => {
@@ -180,6 +244,12 @@ export default function JobsPage() {
                       scope="col"
                       class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider"
                     >
+                      Params
+                    </th>
+                    <th
+                      scope="col"
+                      class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider"
+                    >
                       Error
                     </th>
                     <th
@@ -213,10 +283,23 @@ export default function JobsPage() {
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-muted">
                           {job.updated_at ? formatDate(new Date(job.updated_at)) : '-'}
                         </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-muted">
+                          {extractParams(job)}
+                        </td>
                         <td class="px-6 py-4 text-sm text-muted">
-                          <div class="max-w-xs overflow-x-auto whitespace-nowrap">
-                            {job.last_error || '-'}
-                          </div>
+                          <Show
+                            when={job.last_error}
+                            fallback={<span class="text-muted">-</span>}
+                          >
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setErrorModalJob(job)}
+                              class="text-red-600 hover:text-red-700"
+                            >
+                              View Error
+                            </Button>
+                          </Show>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm">
                           <Show when={job.status === 'queued' || job.status === 'running'}>
@@ -241,6 +324,38 @@ export default function JobsPage() {
             </div>
           </Show>
         </Show>
+      </Show>
+
+      {/* Error Modal */}
+      <Show when={errorModalJob()}>
+        <div
+          class="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+          onClick={() => setErrorModalJob(null)}
+        >
+          <div
+            class="arcane-card max-w-3xl max-h-[80vh] w-full mx-4 overflow-hidden flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div class="flex items-center justify-between p-6 border-b border-border">
+              <h2 class="text-xl font-display">
+                Job Error - {errorModalJob()?.kind} #{errorModalJob()?.id}
+              </h2>
+              <Button variant="ghost" size="sm" onClick={() => setErrorModalJob(null)}>
+                ✕
+              </Button>
+            </div>
+            <div class="p-6 overflow-auto">
+              <pre class="text-xs font-mono bg-muted/50 p-4 rounded overflow-x-auto whitespace-pre-wrap break-words">
+                {errorModalJob()?.last_error || 'No error message available'}
+              </pre>
+            </div>
+            <div class="flex justify-end gap-2 p-6 border-t border-border">
+              <Button variant="secondary" onClick={() => setErrorModalJob(null)}>
+                Close
+              </Button>
+            </div>
+          </div>
+        </div>
       </Show>
     </main>
   )

@@ -17,7 +17,7 @@ class EnqueueJob(BaseModel):
     kind: str
     payload: Dict[str, Any]
     priority: int = 0
-    max_attempts: int = 5
+    max_attempts: int = 2
 
 
 @router.post("", dependencies=[Depends(require_auth)])
@@ -97,6 +97,7 @@ def list_jobs(
             "created_at": r.created_at,
             "updated_at": r.updated_at,
             "last_error": r.last_error,
+            "payload": r.payload,
         }
         for r in rows
     ]

@@ -19,7 +19,7 @@ class JobRepository(BaseRepository):
         payload: Dict[str, Any],
         priority: int = 0,
         run_after: Optional[dt.datetime] = None,
-        max_attempts: int = 5,
+        max_attempts: int = 2,
     ) -> JobModel:
         run_after = run_after or dt.datetime.now()
         with self.get_session() as session:

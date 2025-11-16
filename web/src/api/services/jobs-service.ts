@@ -13,6 +13,7 @@ export interface JobRow {
   run_after?: string
   last_error?: string | null
   result?: unknown
+  payload?: unknown
   created_at?: string
   updated_at?: string
 }
