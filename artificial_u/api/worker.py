@@ -389,7 +389,8 @@ class Worker:
         new_remaining: list[int],
     ) -> Dict[str, Any]:
         """Build payload for lecture generation follow-up job."""
-        partial_attrs = follow_up.get("partial_attributes", {})
+        # Make a copy to avoid mutating the original follow_up dict
+        partial_attrs = follow_up.get("partial_attributes", {}).copy()
         partial_attrs["topic_id"] = next_topic_id
 
         payload = {
@@ -399,10 +400,17 @@ class Worker:
         }
 
         if new_remaining:
-            payload["follow_up"] = {
-                **follow_up,
+            # Create new follow_up with copied partial_attributes to avoid mutation
+            new_follow_up = {
+                "action": follow_up.get("action"),
+                "course_id": follow_up.get("course_id"),
+                "created_by": follow_up.get("created_by"),
+                "partial_attributes": follow_up.get("partial_attributes", {}).copy(),
                 "remaining_topic_ids": new_remaining,
             }
+            if "freeform_prompt" in follow_up:
+                new_follow_up["freeform_prompt"] = follow_up["freeform_prompt"]
+            payload["follow_up"] = new_follow_up
 
         return payload
 
