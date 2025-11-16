@@ -307,6 +307,20 @@ class CdkStack(Stack):
 
         # 11. (moved below) Deploy frontend assets after the CloudFront distribution is created
 
+        # Create custom cache policy for PWA files (never cache)
+        pwa_cache_policy = cloudfront.CachePolicy(
+            self,
+            "PWACachePolicy",
+            cache_policy_name=f"{self.stack_name}-PWA-No-Cache",
+            comment="Never cache PWA files (service worker, manifest, etc.)",
+            default_ttl=cdk.Duration.seconds(0),
+            min_ttl=cdk.Duration.seconds(0),
+            max_ttl=cdk.Duration.seconds(0),
+            # Important: respect Cache-Control headers from origin
+            enable_accept_encoding_gzip=True,
+            enable_accept_encoding_brotli=True,
+        )
+
         # 12. Create a CloudFront distribution
         distribution = cloudfront.Distribution(
             self,
@@ -316,9 +330,37 @@ class CdkStack(Stack):
             default_behavior=cloudfront.BehaviorOptions(
                 origin=origins.S3BucketOrigin.with_origin_access_identity(frontend_bucket),
                 viewer_protocol_policy=cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+                # Use CACHING_OPTIMIZED for general assets but respect origin cache headers
+                cache_policy=cloudfront.CachePolicy.CACHING_OPTIMIZED,
             ),
             # Route API calls to the internal ALB
             additional_behaviors={
+                # PWA files must NEVER be cached
+                "/sw.js": cloudfront.BehaviorOptions(
+                    origin=origins.S3BucketOrigin.with_origin_access_identity(frontend_bucket),
+                    viewer_protocol_policy=cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+                    cache_policy=pwa_cache_policy,
+                ),
+                "/workbox-*.js": cloudfront.BehaviorOptions(
+                    origin=origins.S3BucketOrigin.with_origin_access_identity(frontend_bucket),
+                    viewer_protocol_policy=cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+                    cache_policy=pwa_cache_policy,
+                ),
+                "/manifest.json": cloudfront.BehaviorOptions(
+                    origin=origins.S3BucketOrigin.with_origin_access_identity(frontend_bucket),
+                    viewer_protocol_policy=cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+                    cache_policy=pwa_cache_policy,
+                ),
+                "/registerSW.js": cloudfront.BehaviorOptions(
+                    origin=origins.S3BucketOrigin.with_origin_access_identity(frontend_bucket),
+                    viewer_protocol_policy=cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+                    cache_policy=pwa_cache_policy,
+                ),
+                "/index.html": cloudfront.BehaviorOptions(
+                    origin=origins.S3BucketOrigin.with_origin_access_identity(frontend_bucket),
+                    viewer_protocol_policy=cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+                    cache_policy=pwa_cache_policy,
+                ),
                 "/api/*": cloudfront.BehaviorOptions(
                     origin=origins.LoadBalancerV2Origin(
                         fargate_service.load_balancer,
@@ -329,7 +371,7 @@ class CdkStack(Stack):
                     # Forward headers, cookies, etc. needed by the API
                     cache_policy=cloudfront.CachePolicy.CACHING_DISABLED,
                     origin_request_policy=cloudfront.OriginRequestPolicy.ALL_VIEWER,
-                )
+                ),
             },
             default_root_object="index.html",
             # Custom error response for SPA routing
