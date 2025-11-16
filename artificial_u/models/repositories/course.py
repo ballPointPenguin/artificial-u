@@ -171,10 +171,11 @@ class CourseRepository(BaseRepository):
         """
         with self.get_session() as session:
             # Subquery for lectures with audio
+            # Count distinct topics (not total lectures) to handle multiple revisions
             lectures_audio_sq = (
                 session.query(
                     LectureModel.course_id,
-                    func.count(LectureModel.id).label("audio_count"),
+                    func.count(func.distinct(LectureModel.topic_id)).label("audio_count"),
                 )
                 .filter(LectureModel.audio_url.isnot(None))
                 .group_by(LectureModel.course_id)
