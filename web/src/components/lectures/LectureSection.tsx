@@ -1,5 +1,5 @@
 import { A } from '@solidjs/router'
-import { Download, FileText, Headphones, Upload } from 'lucide-solid'
+import { Download, FileText, Headphones, Pencil, Trash2, Upload } from 'lucide-solid'
 import { type Component, createSignal, Show } from 'solid-js'
 import { lectureService } from '../../api/services/lecture-service.js'
 import type { Lecture } from '../../api/types.js'
@@ -7,6 +7,7 @@ import { RequireRole } from '../../auth/RequireRole'
 import { useAudioPlayer } from '../../utils/audio-player-context.jsx'
 import { createJobTracker, getJobMessage } from '../../utils/job-management.js'
 import { Alert, Button, ConfirmationModal, MagicButton, MetadataInfo } from '../ui'
+import EditSummaryModal from './EditSummaryModal'
 
 interface LectureSectionProps {
   lecture: () => Lecture | null | undefined
@@ -36,6 +37,10 @@ export const LectureSection: Component<LectureSectionProps> = (props) => {
   const [uploadSuccess, setUploadSuccess] = createSignal(false)
   const [isGeneratingSummary, setIsGeneratingSummary] = createSignal(false)
   const [summaryError, setSummaryError] = createSignal('')
+  const [showEditSummaryModal, setShowEditSummaryModal] = createSignal(false)
+  const [isSavingSummary, setIsSavingSummary] = createSignal(false)
+  const [showClearSummaryModal, setShowClearSummaryModal] = createSignal(false)
+  const [isClearingSummary, setIsClearingSummary] = createSignal(false)
 
   // Track jobs for this topic AND lecture (lecture ID will be undefined initially,
   // then change when created)
@@ -171,6 +176,44 @@ export const LectureSection: Component<LectureSectionProps> = (props) => {
       setSummaryError(error instanceof Error ? error.message : 'Failed to generate summary')
     } finally {
       setIsGeneratingSummary(false)
+    }
+  }
+
+  const handleEditSummary = async (newSummary: string) => {
+    const lecture = props.lecture()
+    if (!lecture) return
+
+    setIsSavingSummary(true)
+    setSummaryError('')
+
+    try {
+      await lectureService.updateLecture(lecture.id, { summary: newSummary })
+      setShowEditSummaryModal(false)
+      // Refresh lecture data to show the updated summary
+      props.onLectureUpdated?.()
+    } catch (error) {
+      setSummaryError(error instanceof Error ? error.message : 'Failed to update summary')
+    } finally {
+      setIsSavingSummary(false)
+    }
+  }
+
+  const handleClearSummary = async () => {
+    const lecture = props.lecture()
+    if (!lecture) return
+
+    setIsClearingSummary(true)
+    setSummaryError('')
+
+    try {
+      await lectureService.clearSummary(lecture.id)
+      setShowClearSummaryModal(false)
+      // Refresh lecture data
+      props.onLectureUpdated?.()
+    } catch (error) {
+      setSummaryError(error instanceof Error ? error.message : 'Failed to clear summary')
+    } finally {
+      setIsClearingSummary(false)
     }
   }
 
@@ -342,9 +385,41 @@ export const LectureSection: Component<LectureSectionProps> = (props) => {
                 </p>
               </Show>
               <Show when={lectureData().summary}>
-                <p class="mt-3 text-parchment-200 font-serif whitespace-pre-wrap">
-                  {lectureData().summary}
-                </p>
+                <div class="mt-3">
+                  <p class="text-parchment-200 font-serif whitespace-pre-wrap">
+                    {lectureData().summary}
+                  </p>
+                  <RequireRole minRole="admin">
+                    <div class="mt-3 flex flex-wrap gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setShowEditSummaryModal(true)}
+                        disabled={anyJobActive()}
+                      >
+                        <Pencil size={14} class="mr-1" />
+                        Edit
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => void handleGenerateSummary()}
+                        disabled={isGeneratingSummary() || anyJobActive()}
+                      >
+                        {isGeneratingSummary() ? 'Regenerating...' : 'Regenerate'}
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setShowClearSummaryModal(true)}
+                        disabled={anyJobActive()}
+                      >
+                        <Trash2 size={14} class="mr-1" />
+                        Clear
+                      </Button>
+                    </div>
+                  </RequireRole>
+                </div>
               </Show>
               <Show when={!lectureData().summary}>
                 <RequireRole minRole="creator">
@@ -359,6 +434,11 @@ export const LectureSection: Component<LectureSectionProps> = (props) => {
                     </MagicButton>
                   </div>
                 </RequireRole>
+              </Show>
+              <Show when={summaryError()}>
+                <Alert variant="error" class="mt-2">
+                  {summaryError()}
+                </Alert>
               </Show>
             </div>
 
@@ -434,6 +514,41 @@ export const LectureSection: Component<LectureSectionProps> = (props) => {
             onConfirm={() => void handleDeleteLecture()}
             onCancel={() => setShowDeleteModal(false)}
             isConfirming={isDeleting()}
+          />
+        )}
+      </Show>
+
+      {/* Edit Summary Modal */}
+      <Show when={props.lecture()}>
+        {(lectureData) => (
+          <EditSummaryModal
+            isOpen={showEditSummaryModal()}
+            initialSummary={lectureData().summary || ''}
+            onSave={handleEditSummary}
+            onCancel={() => setShowEditSummaryModal(false)}
+            isSaving={isSavingSummary()}
+          />
+        )}
+      </Show>
+
+      {/* Clear Summary Confirmation Modal */}
+      <Show when={props.lecture()}>
+        {(lectureData) => (
+          <ConfirmationModal
+            isOpen={showClearSummaryModal()}
+            title="Clear Summary"
+            message={
+              <div>
+                <p>Are you sure you want to clear the summary for "{lectureData().title}"?</p>
+                <p class="mt-2 text-sm text-muted">
+                  The summary will be removed, but you can regenerate it later.
+                </p>
+              </div>
+            }
+            confirmText="Clear"
+            onConfirm={() => void handleClearSummary()}
+            onCancel={() => setShowClearSummaryModal(false)}
+            isConfirming={isClearingSummary()}
           />
         )}
       </Show>
