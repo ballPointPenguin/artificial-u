@@ -133,14 +133,12 @@ async def process_lecture_audio(
         topic = repository_factory.topic.get(lecture.topic_id)
 
         if not course or not topic:
-            logger.warning(
-                f"Lecture {lecture_id} missing course or topic metadata, skipping"
-            )
+            logger.warning(f"Lecture {lecture_id} missing course or topic metadata, skipping")
             return False
 
         logger.info(
             f"Processing lecture {lecture_id}: {lecture.title} "
-            f"(Course: {course.name}, Week: {topic.week}, Order: {topic.order})"
+            f"(Course: {course.title}, Week: {topic.week}, Order: {topic.order})"
         )
 
         # Parse audio URL to get bucket and object key
@@ -176,11 +174,11 @@ async def process_lecture_audio(
         )
 
         # Add ID3 tags
-        logger.debug(f"Adding ID3 tags: title='{lecture.title}', album='{course.name}', track={track_number}")
+        logger.debug(f"Adding ID3 tags: title='{lecture.title}', album='{course.title}', track={track_number}")
         tagged_audio = tagger.add_tags_to_audio(
             audio_bytes=audio_bytes,
             title=lecture.title or f"Lecture {topic.week}.{topic.order}",
-            album=course.name,
+            album=course.title,
             track_number=track_number,
             year=lecture.created_at.year if hasattr(lecture, "created_at") else None,
             comment=comment if comment else None,

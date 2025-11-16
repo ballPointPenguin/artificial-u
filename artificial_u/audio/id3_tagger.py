@@ -10,7 +10,7 @@ import logging
 from datetime import datetime
 from typing import Optional
 
-from mutagen.id3 import ID3, COMM, TALB, TCON, TDRC, TIT2, TPE1, TRCK
+from mutagen.id3 import COMM, TALB, TCON, TDRC, TIT2, TPE1, TRCK
 from mutagen.mp3 import MP3
 
 
@@ -92,9 +92,7 @@ class ID3Tagger:
 
             # Add comment if provided
             if comment:
-                audio.tags.add(
-                    COMM(encoding=3, lang="eng", desc="", text=comment)
-                )  # Comment
+                audio.tags.add(COMM(encoding=3, lang="eng", desc="", text=comment))  # Comment
 
             # Save tags to a new BytesIO object
             output = io.BytesIO()
