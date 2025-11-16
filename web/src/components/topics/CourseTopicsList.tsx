@@ -386,7 +386,7 @@ export function CourseTopicsList(props: CourseTopicsListProps) {
                         }}
                         title="Generate lectures for this topic and all subsequent topics"
                       >
-                        Generate Remaining
+                        Generate Remaining Lectures
                       </Button>
                       <Button
                         variant="secondary"
@@ -396,7 +396,7 @@ export function CourseTopicsList(props: CourseTopicsListProps) {
                         }}
                         title="Regenerate audio for existing lectures from this topic forward"
                       >
-                        Regenerate Audio
+                        Regenerate Remaining Audio
                       </Button>
                       <Button
                         variant="outline"
@@ -407,7 +407,7 @@ export function CourseTopicsList(props: CourseTopicsListProps) {
                         title="Fully regenerate all lectures (content + audio) from this topic forward"
                         class="text-warning-foreground border-warning-border hover:bg-warning-bg/20"
                       >
-                        Regenerate All
+                        Regenerate Remaining Lectures
                       </Button>
                     </div>
                   </RequireRole>

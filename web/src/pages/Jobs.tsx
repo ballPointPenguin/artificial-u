@@ -213,8 +213,10 @@ export default function JobsPage() {
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-muted">
                           {job.updated_at ? formatDate(new Date(job.updated_at)) : '-'}
                         </td>
-                        <td class="px-6 py-4 text-sm text-muted max-w-xs truncate">
-                          {job.last_error || '-'}
+                        <td class="px-6 py-4 text-sm text-muted">
+                          <div class="max-w-xs overflow-x-auto whitespace-nowrap">
+                            {job.last_error || '-'}
+                          </div>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm">
                           <Show when={job.status === 'queued' || job.status === 'running'}>
