@@ -148,4 +148,16 @@ export const lectureService = {
       TIMEOUT_CONFIG.upload
     )
   },
+
+  /**
+   * Trigger generation of lecture summary. No body required.
+   * Uses extended timeout similar to other generation actions.
+   */
+  generateSummary: (lectureId: number, onTimeout?: () => void): Promise<Lecture> => {
+    return httpClient.postWithExtendedTimeout<Lecture>(
+      ENDPOINTS.lectures.generateSummary(lectureId),
+      undefined,
+      { timeout: TIMEOUT_CONFIG.generation, onTimeout }
+    )
+  },
 }

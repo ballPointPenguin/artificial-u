@@ -99,6 +99,7 @@ export const ENDPOINTS = {
     audio: (id: number) => `/v1/lectures/${String(id)}/audio`,
     generateAudio: (id: number) => `/v1/lectures/${String(id)}/generate-audio`,
     enqueueGenerateAudio: (id: number) => `/v1/lectures/${String(id)}/generate-audio/enqueue`,
+    generateSummary: (id: number) => `/v1/lectures/${String(id)}/generate-summary`,
     uploadAudio: (id: number) => `/v1/lectures/${String(id)}/upload-audio`,
     download: (id: number) => `/v1/lectures/${String(id)}/content/download`,
   },
