@@ -132,4 +132,20 @@ export const lectureService = {
   }> => {
     return httpClient.post(ENDPOINTS.lectures.enqueueGenerate, data)
   },
+
+  /**
+   * Upload an audio file for a lecture (admin only).
+   * Uses FormData to send the file as multipart/form-data.
+   */
+  uploadAudio: async (lectureId: number, file: File): Promise<Lecture> => {
+    const formData = new FormData()
+    formData.append('file', file)
+
+    // httpClient.postFormData handles auth, error handling, and timeout
+    return httpClient.postFormData<Lecture>(
+      ENDPOINTS.lectures.uploadAudio(lectureId),
+      formData,
+      TIMEOUT_CONFIG.upload
+    )
+  },
 }

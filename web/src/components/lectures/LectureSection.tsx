@@ -1,5 +1,5 @@
 import { A } from '@solidjs/router'
-import { Download, FileText, Headphones } from 'lucide-solid'
+import { Download, FileText, Headphones, Upload } from 'lucide-solid'
 import { type Component, createSignal, Show } from 'solid-js'
 import { lectureService } from '../../api/services/lecture-service.js'
 import type { Lecture } from '../../api/types.js'
@@ -32,6 +32,8 @@ export const LectureSection: Component<LectureSectionProps> = (props) => {
   const [isGeneratingAudio, setIsGeneratingAudio] = createSignal(false)
   const [audioError, setAudioError] = createSignal('')
   const [audioTimeout, setAudioTimeout] = createSignal(false)
+  const [isUploadingAudio, setIsUploadingAudio] = createSignal(false)
+  const [uploadSuccess, setUploadSuccess] = createSignal(false)
 
   // Track jobs for this topic AND lecture (lecture ID will be undefined initially,
   // then change when created)
@@ -115,6 +117,41 @@ export const LectureSection: Component<LectureSectionProps> = (props) => {
     }
   }
 
+  const handleUploadAudio = async (file: File) => {
+    const lecture = props.lecture()
+    if (!lecture) return
+
+    // Validate file type
+    if (!file.type.startsWith('audio/')) {
+      setAudioError('Please select an audio file (MP3 recommended)')
+      return
+    }
+
+    // Validate file size (max 50MB)
+    const maxSize = 50 * 1024 * 1024 // 50MB
+    if (file.size > maxSize) {
+      setAudioError('File size must be less than 50MB')
+      return
+    }
+
+    setIsUploadingAudio(true)
+    setAudioError('')
+    setUploadSuccess(false)
+
+    try {
+      await lectureService.uploadAudio(lecture.id, file)
+      setUploadSuccess(true)
+      // Refresh lecture data
+      props.onLectureUpdated?.()
+      // Clear success message after 3 seconds
+      setTimeout(() => setUploadSuccess(false), 3000)
+    } catch (error) {
+      setAudioError(error instanceof Error ? error.message : 'Failed to upload audio')
+    } finally {
+      setIsUploadingAudio(false)
+    }
+  }
+
   return (
     <div class="arcane-card">
       <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between mb-4">
@@ -169,7 +206,7 @@ export const LectureSection: Component<LectureSectionProps> = (props) => {
                   size="sm"
                   class="h-8 w-full sm:w-auto"
                   onClick={() => void handleGenerateAudio()}
-                  disabled={isGeneratingAudio() || anyJobActive()}
+                  disabled={isGeneratingAudio() || anyJobActive() || isUploadingAudio()}
                 >
                   {isGeneratingAudio()
                     ? 'Generating Audio...'
@@ -177,6 +214,33 @@ export const LectureSection: Component<LectureSectionProps> = (props) => {
                       ? 'Regenerate Audio'
                       : 'Generate Audio'}
                 </MagicButton>
+              </RequireRole>
+              <RequireRole minRole="admin">
+                <label
+                  for={`audio-file-upload-${String(lectureData().id)}`}
+                  class="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md border border-mystic-600 bg-mystic-900/20 text-mystic-300 hover:bg-mystic-900/40 hover:border-mystic-500 transition-colors cursor-pointer h-8"
+                  classList={{
+                    'opacity-50 cursor-not-allowed': isUploadingAudio() || anyJobActive(),
+                  }}
+                >
+                  <Upload class="h-4 w-4" />
+                  <span>{isUploadingAudio() ? 'Uploading...' : 'Upload'}</span>
+                </label>
+                <input
+                  id={`audio-file-upload-${String(lectureData().id)}`}
+                  type="file"
+                  accept="audio/mpeg,audio/mp3,.mp3"
+                  class="hidden"
+                  disabled={isUploadingAudio() || anyJobActive()}
+                  onChange={(e) => {
+                    const file = e.target.files?.[0]
+                    if (file) {
+                      void handleUploadAudio(file)
+                      // Reset the input so the same file can be selected again if needed
+                      e.target.value = ''
+                    }
+                  }}
+                />
               </RequireRole>
               <A
                 href={`/courses/${String(props.courseId)}/lectures/${String(lectureData().id)}`}
@@ -229,6 +293,11 @@ export const LectureSection: Component<LectureSectionProps> = (props) => {
         <Alert variant="warning" class="mb-4">
           The audio generation request timed out. It may still complete in the background. Try
           refreshing in a bit.
+        </Alert>
+      </Show>
+      <Show when={uploadSuccess()}>
+        <Alert variant="success" class="mb-4">
+          Audio file uploaded successfully!
         </Alert>
       </Show>
 

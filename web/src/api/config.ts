@@ -98,6 +98,7 @@ export const ENDPOINTS = {
     audio: (id: number) => `/v1/lectures/${String(id)}/audio`,
     generateAudio: (id: number) => `/v1/lectures/${String(id)}/generate-audio`,
     enqueueGenerateAudio: (id: number) => `/v1/lectures/${String(id)}/generate-audio/enqueue`,
+    uploadAudio: (id: number) => `/v1/lectures/${String(id)}/upload-audio`,
     download: (id: number) => `/v1/lectures/${String(id)}/content/download`,
   },
   topics: {
@@ -106,6 +107,11 @@ export const ENDPOINTS = {
     generateForCourse: (courseId: number) => `/v1/courses/${String(courseId)}/topics/generate`,
     enqueueGenerateForCourse: (courseId: number) =>
       `/v1/courses/${String(courseId)}/topics/generate/enqueue`,
+    generateRemainingLectures: (id: number) =>
+      `/v1/topics/${String(id)}/generate-remaining-lectures`,
+    regenerateRemainingAudio: (id: number) => `/v1/topics/${String(id)}/regenerate-remaining-audio`,
+    regenerateRemainingLectures: (id: number) =>
+      `/v1/topics/${String(id)}/regenerate-remaining-lectures`,
   },
   voices: {
     manualAssignVoice: (professorId: string) => `/v1/voices/${professorId}/assign_voice`,

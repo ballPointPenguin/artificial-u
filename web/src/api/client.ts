@@ -386,4 +386,25 @@ export const httpClient = {
       ...fetchOptions,
     })
   },
+
+  /**
+   * Performs a POST request with FormData (for file uploads)
+   * Note: Content-Type header is NOT set - browser will set it automatically with boundary
+   */
+  postFormData: async <T>(endpoint: string, formData: FormData, timeoutMs?: number): Promise<T> => {
+    const url = createUrl(endpoint)
+    const headers = new Headers()
+
+    // Only set Accept header, not Content-Type (browser will set Content-Type with boundary)
+    headers.set('Accept', 'application/json')
+
+    await attachAuthHeader(headers)
+    return fetchWithTimeout<T>(url, {
+      method: 'POST',
+      headers,
+      credentials: API_CONFIG.withCredentials ? 'include' : 'same-origin',
+      body: formData,
+      timeout: timeoutMs,
+    })
+  },
 }

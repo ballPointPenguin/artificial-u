@@ -72,4 +72,53 @@ export const topicService = {
       requestBody
     )
   },
+
+  // Batch generation methods (admin only)
+  generateRemainingLectures: (
+    topicId: number
+  ): Promise<{
+    id: number
+    kind: string
+    status: string
+    attempts: number
+    max_attempts: number
+    priority?: number
+    run_after?: string
+    total_topics?: number
+    message?: string
+  }> => {
+    return httpClient.post(ENDPOINTS.topics.generateRemainingLectures(topicId), undefined)
+  },
+
+  regenerateRemainingAudio: (
+    topicId: number
+  ): Promise<{
+    id: number
+    kind: string
+    status: string
+    attempts: number
+    max_attempts: number
+    priority?: number
+    run_after?: string
+    total_lectures?: number
+    message?: string
+  }> => {
+    return httpClient.post(ENDPOINTS.topics.regenerateRemainingAudio(topicId), undefined)
+  },
+
+  regenerateRemainingLectures: (
+    topicId: number
+  ): Promise<{
+    id: number
+    kind: string
+    status: string
+    attempts: number
+    max_attempts: number
+    priority?: number
+    run_after?: string
+    total_topics?: number
+    message?: string
+  }> => {
+    return httpClient.post(ENDPOINTS.topics.regenerateRemainingLectures(topicId), undefined)
+  },
 }

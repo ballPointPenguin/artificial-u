@@ -69,6 +69,7 @@ class ID3Tagger:
 
         try:
             # Create a file-like object from bytes
+            # IMPORTANT: We must save back to the SAME BytesIO object for mutagen to work correctly
             audio_file = io.BytesIO(audio_bytes)
 
             # Load the MP3 file
@@ -94,13 +95,13 @@ class ID3Tagger:
             if comment:
                 audio.tags.add(COMM(encoding=3, lang="eng", desc="", text=comment))  # Comment
 
-            # Save tags to a new BytesIO object
-            output = io.BytesIO()
-            audio.save(output)
+            # Save tags back to the SAME BytesIO object
+            # Mutagen's save() modifies the file in-place, so we must use the same BytesIO
+            audio.save(audio_file)
 
             # Get the bytes with tags
-            output.seek(0)
-            tagged_bytes = output.read()
+            audio_file.seek(0)
+            tagged_bytes = audio_file.read()
 
             self.logger.info(
                 f"Successfully added ID3 tags to audio: title='{title}', "
