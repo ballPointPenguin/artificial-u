@@ -2,6 +2,7 @@
 Lecture router for handling lecture-related API endpoints.
 """
 
+import logging
 from typing import Optional
 
 from fastapi import APIRouter, Depends, File, HTTPException, Path, Query, UploadFile, status
@@ -21,9 +22,11 @@ from artificial_u.api.models import (
 )
 from artificial_u.api.security.auth0 import require_coins, require_role
 from artificial_u.api.services import LectureApiService
+from artificial_u.audio import ID3Tagger
 from artificial_u.config.settings import get_settings
 from artificial_u.models.core import Student
 from artificial_u.models.repositories.factory import RepositoryFactory
+from artificial_u.services.storage_service import StorageService
 
 # Create the router with dependencies that will be applied to all routes
 router = APIRouter(
@@ -394,11 +397,6 @@ async def upload_lecture_audio(
     - Uploads to S3 storage with proper naming
     - Returns the updated lecture with audio_url
     """
-    import logging
-
-    from artificial_u.audio import ID3Tagger
-    from artificial_u.services.storage_service import StorageService
-
     logger = logging.getLogger(__name__)
 
     # 1. Verify lecture exists and get related entities

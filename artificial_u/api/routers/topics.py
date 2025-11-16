@@ -4,7 +4,7 @@ Topic router for handling topic-related API endpoints.
 
 from typing import Any, Dict, List, Optional
 
-from fastapi import APIRouter, Depends, Path, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
 
 from artificial_u.api.dependencies import (  # Will be created later
     ensure_student,
@@ -198,6 +198,55 @@ async def enqueue_generate_topics_for_course(
 # Batch generation endpoints (admin-only)
 
 
+def get_remaining_topic_ids(repository_factory: RepositoryFactory, topic) -> List[int]:
+    """
+    Returns a list of topic IDs from this topic forward (sorted by week and order).
+
+    Args:
+        repository_factory: Repository factory for database access
+        topic: The starting topic object
+
+    Returns:
+        List of topic IDs for remaining topics (same week/order or later)
+    """
+    all_topics = repository_factory.topic.list_by_course(topic.course_id)
+    remaining = [
+        t.id
+        for t in sorted(all_topics, key=lambda t: (t.week, t.order))
+        if (t.week > topic.week) or (t.week == topic.week and t.order >= topic.order)
+    ]
+    return remaining
+
+
+def get_remaining_topic_ids_with_lectures(
+    repository_factory: RepositoryFactory, topic
+) -> List[int]:
+    """
+    Returns a list of topic IDs from this topic forward (sorted), only including topics that have lectures.
+
+    Args:
+        repository_factory: Repository factory for database access
+        topic: The starting topic object
+
+    Returns:
+        List of topic IDs for remaining topics that have lectures
+    """
+    all_topics = repository_factory.topic.list_by_course(topic.course_id)
+    remaining_topics = [
+        t
+        for t in sorted(all_topics, key=lambda t: (t.week, t.order))
+        if (t.week > topic.week) or (t.week == topic.week and t.order >= topic.order)
+    ]
+
+    topic_ids_with_lectures = []
+    for t in remaining_topics:
+        lectures = repository_factory.lecture.list_by_topic(t.id)
+        if lectures:
+            topic_ids_with_lectures.append(t.id)
+
+    return topic_ids_with_lectures
+
+
 @router.post(
     "/{topic_id}/generate-remaining-lectures",
     status_code=status.HTTP_202_ACCEPTED,
@@ -218,20 +267,13 @@ def generate_remaining_lectures(
     Generate lectures for this topic and all subsequent topics in the course.
     Executes serially, one at a time, to maintain narrative continuity.
     """
-    from fastapi import HTTPException
-
     # 1. Get the topic and validate
     topic = repository_factory.topic.get(topic_id)
     if not topic:
         raise HTTPException(status_code=404, detail="Topic not found")
 
     # 2. Get all topics from this one forward (same week/order or later)
-    all_topics = repository_factory.topic.list_by_course(topic.course_id)
-    remaining = [
-        t.id
-        for t in sorted(all_topics, key=lambda t: (t.week, t.order))
-        if (t.week > topic.week) or (t.week == topic.week and t.order >= topic.order)
-    ]
+    remaining = get_remaining_topic_ids(repository_factory, topic)
 
     if not remaining:
         raise HTTPException(status_code=400, detail="No topics to generate lectures for")
@@ -293,41 +335,24 @@ def regenerate_remaining_audio(
     Regenerate audio files for existing lectures from this topic forward.
     Skips topics that don't have lectures.
     """
-    from fastapi import HTTPException
-
     # 1. Get the topic and validate
     topic = repository_factory.topic.get(topic_id)
     if not topic:
         raise HTTPException(status_code=404, detail="Topic not found")
 
-    # 2. Get all topics from this one forward
-    all_topics = repository_factory.topic.list_by_course(topic.course_id)
-    remaining_topics = [
-        t
-        for t in sorted(all_topics, key=lambda t: (t.week, t.order))
-        if (t.week > topic.week) or (t.week == topic.week and t.order >= topic.order)
-    ]
-
-    if not remaining_topics:
-        raise HTTPException(status_code=400, detail="No topics found")
-
-    # 3. Filter to only topics that have lectures
-    topic_ids_with_lectures = []
-    for t in remaining_topics:
-        lectures = repository_factory.lecture.list_by_topic(t.id)
-        if lectures and len(lectures) > 0:
-            topic_ids_with_lectures.append(t.id)
+    # 2. Get all topics from this one forward and filter to only topics that have lectures
+    topic_ids_with_lectures = get_remaining_topic_ids_with_lectures(repository_factory, topic)
 
     if not topic_ids_with_lectures:
         raise HTTPException(status_code=400, detail="No lectures found for these topics")
 
-    # 4. Create first job with follow_up chain
+    # 3. Create first job with follow_up chain
     first_topic_id = topic_ids_with_lectures[0]
     follow_up_ids = topic_ids_with_lectures[1:]
 
     # Get the lecture for the first topic
     first_lectures = repository_factory.lecture.list_by_topic(first_topic_id)
-    if not first_lectures or len(first_lectures) == 0:
+    if not first_lectures:
         raise HTTPException(status_code=400, detail="No lecture found for first topic")
 
     payload: Dict[str, Any] = {
@@ -382,20 +407,13 @@ def regenerate_remaining_lectures(
     Fully regenerate all lectures from this topic forward.
     This will overwrite existing lectures with new content, summaries, and audio.
     """
-    from fastapi import HTTPException
-
     # 1. Get the topic and validate
     topic = repository_factory.topic.get(topic_id)
     if not topic:
         raise HTTPException(status_code=404, detail="Topic not found")
 
     # 2. Get all topics from this one forward
-    all_topics = repository_factory.topic.list_by_course(topic.course_id)
-    remaining = [
-        t.id
-        for t in sorted(all_topics, key=lambda t: (t.week, t.order))
-        if (t.week > topic.week) or (t.week == topic.week and t.order >= topic.order)
-    ]
+    remaining = get_remaining_topic_ids(repository_factory, topic)
 
     if not remaining:
         raise HTTPException(status_code=400, detail="No topics to regenerate lectures for")

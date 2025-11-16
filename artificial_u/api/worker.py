@@ -195,7 +195,7 @@ class Worker:
             self.logger.info(f"Job {job_id} marked as done")
 
             # Check for follow-up action and enqueue next job if present
-            await self._handle_follow_up(payload, kind, result)
+            await self._handle_follow_up(payload)
 
             await self._publish_event(job_id, kind, "done", payload, result=result)
 
@@ -312,8 +312,6 @@ class Worker:
     async def _handle_follow_up(
         self,
         payload: Dict[str, Any],
-        completed_kind: str,
-        result: Dict[str, Any],
     ) -> None:
         """
         Handle follow-up actions after job completion.

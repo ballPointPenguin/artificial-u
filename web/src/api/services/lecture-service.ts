@@ -1,7 +1,7 @@
 /**
  * Lecture service
  */
-import { createUrl, getAuthToken, httpClient } from '../client'
+import { createUrl, httpClient } from '../client'
 import { ENDPOINTS, TIMEOUT_CONFIG } from '../config'
 import type {
   AudioRedirectResponse,
@@ -141,37 +141,11 @@ export const lectureService = {
     const formData = new FormData()
     formData.append('file', file)
 
-    const url = createUrl(ENDPOINTS.lectures.uploadAudio(lectureId))
-    const tokenFn = getAuthToken
-    if (!tokenFn) {
-      throw new Error('Authentication token provider not configured')
-    }
-    const token = await tokenFn()
-    if (!token) {
-      throw new Error('Authentication token not available')
-    }
-
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        // Don't set Content-Type - browser will set it with boundary for multipart/form-data
-      },
-      body: formData,
-    })
-
-    if (!response.ok) {
-      const errorText = await response.text()
-      let errorDetail = `Upload failed: ${response.statusText}`
-      try {
-        const errorJson = JSON.parse(errorText) as { detail?: string }
-        errorDetail = errorJson.detail || errorDetail
-      } catch {
-        // Not JSON, use text as is
-      }
-      throw new Error(errorDetail)
-    }
-
-    return (await response.json()) as Lecture
+    // httpClient.postFormData handles auth, error handling, and timeout
+    return httpClient.postFormData<Lecture>(
+      ENDPOINTS.lectures.uploadAudio(lectureId),
+      formData,
+      TIMEOUT_CONFIG.upload
+    )
   },
 }
