@@ -382,10 +382,13 @@ class LectureGeneratorService:
             self._generate_audio_bytes, lecture, professor, el_voice_id
         )
 
-        # 4. Upload to storage and get public URL
+        # 4. Add ID3 metadata tags to audio
+        audio_bytes = self._add_id3_tags_to_audio(lecture, course, topic, audio_bytes)
+
+        # 5. Upload to storage and get public URL
         audio_url = await self._upload_audio_and_get_url(course, topic, audio_bytes)
 
-        # 5. Partial update lecture with audio URL (avoid clobbering summary)
+        # 6. Partial update lecture with audio URL (avoid clobbering summary)
         updated = self.repository_factory.lecture.update_fields(
             lecture_id=lecture_id,
             update_data={"audio_url": audio_url},
@@ -774,3 +777,47 @@ class LectureGeneratorService:
         if not success or not audio_url:
             raise DatabaseError("Failed to upload generated audio to storage")
         return audio_url
+
+    def _add_id3_tags_to_audio(self, lecture, course, topic, audio_bytes: bytes) -> bytes:
+        """Add ID3 metadata tags to audio bytes."""
+        from artificial_u.audio import ID3Tagger
+        from artificial_u.config import get_settings
+
+        try:
+            tagger = ID3Tagger(logger=self.logger)
+
+            # Calculate track number based on topic position
+            track_number = tagger.calculate_track_number(
+                topic_week=topic.week,
+                topic_order=topic.order,
+                course_id=course.id,
+                repository_factory=self.repository_factory,
+            )
+
+            # Generate comment with model and ElevenLabs info
+            settings = get_settings()
+            model_name = getattr(lecture, "created_with", None) or settings.TTS_VOICE_MODEL
+            comment = tagger.generate_comment(
+                model_name=model_name,
+                include_elevenlabs=True,
+            )
+
+            # Add tags to audio
+            tagged_audio = tagger.add_tags_to_audio(
+                audio_bytes=audio_bytes,
+                title=lecture.title or f"Lecture {topic.week}.{topic.order}",
+                album=course.name,
+                track_number=track_number,
+                year=lecture.created_at.year if hasattr(lecture, "created_at") else None,
+                comment=comment if comment else None,
+            )
+
+            return tagged_audio
+
+        except Exception as e:
+            self.logger.warning(
+                f"Failed to add ID3 tags to audio, using untagged version: {e}",
+                exc_info=True,
+            )
+            # If tagging fails, return original audio bytes
+            return audio_bytes

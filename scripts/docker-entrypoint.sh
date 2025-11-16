@@ -34,6 +34,16 @@ else
   echo "[entrypoint] ELEVENLABS_API_KEY not set; skipping voice initialization"
 fi
 
+# Optionally run ID3 backfill on existing audio (simple toggle)
+if [ "${RUN_BACKFILL_ID3}" = "1" ]; then
+  if [ -n "$DATABASE_URL" ]; then
+    echo "[entrypoint] RUN_BACKFILL_ID3=1 detected; running audio ID3 backfill..."
+    python scripts/backfill_audio_id3_tags.py || echo "[entrypoint] ID3 backfill failed; continuing"
+  else
+    echo "[entrypoint] DATABASE_URL not set; skipping ID3 backfill"
+  fi
+fi
+
 echo "[entrypoint] Starting Gunicorn..."
 exec gunicorn artificial_u.api.app:app \
   -k uvicorn.workers.UvicornWorker \
