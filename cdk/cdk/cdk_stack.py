@@ -230,6 +230,8 @@ class CdkStack(Stack):
             "STORAGE_CONTENT_LOGS_BUCKET": content_logs_bucket.bucket_name,
             "STORAGE_REGION": self.region,
             "CORS_ORIGINS": f"https://{domain_name},https://{site_domain}",
+            # One-time use for running backfill
+            "RUN_BACKFILL_ID3": "1",
         }
 
         # 6. Create the Fargate Service with a public Load Balancer
