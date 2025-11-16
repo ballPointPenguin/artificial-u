@@ -7,7 +7,7 @@ from artificial_u.models.converters import (
     partial_course_to_xml,
     professor_to_xml,
     topic_to_xml,
-    topics_to_xml,
+    topics_brief_to_xml,
 )
 from artificial_u.prompts.base import PromptTemplate
 
@@ -143,7 +143,7 @@ def get_lecture_prompt(
     professor_xml_str = professor_to_xml(professor_data)
     topic_xml_str = topic_to_xml(topic_data)
     existing_lectures_xml_str = lectures_to_xml(existing_lectures)
-    topics_xml_str = topics_to_xml(topics_data)
+    topics_xml_str = topics_brief_to_xml(topics_data)
 
     # Format freeform prompt if provided
     freeform_prompt_text = (

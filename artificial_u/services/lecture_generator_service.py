@@ -544,7 +544,14 @@ class LectureGeneratorService:
         course_dict = self._get_course_data_for_generation(course_id)
         professor_dict = self._get_professor_data_for_generation(course_dict.get("id"))
         current_topic_dict = self._get_current_topic_data_for_generation(topic_id, course_id)
-        existing_lectures_list_of_dicts = self._get_existing_lectures_data_for_generation(course_id)
+        # Exclude current and future topics from existing lectures context if we know week/order
+        current_week = current_topic_dict.get("week")
+        current_order = current_topic_dict.get("order")
+        existing_lectures_list_of_dicts = self._get_existing_lectures_data_for_generation(
+            course_id=course_id,
+            current_week=current_week,
+            current_order=current_order,
+        )
         all_course_topics_list_of_dicts = self._get_all_course_topics_data_for_generation(course_id)
 
         return (
@@ -594,8 +601,19 @@ class LectureGeneratorService:
             self.logger.error(f"Error fetching topic {topic_id}: {e}")
             raise DatabaseError(f"Error fetching topic {topic_id}: {e}")
 
-    def _get_existing_lectures_data_for_generation(self, course_id: int) -> List[Dict[str, Any]]:
-        """Fetches and prepares existing lectures data for context."""
+    def _get_existing_lectures_data_for_generation(
+        self,
+        course_id: int,
+        current_week: Optional[int] = None,
+        current_order: Optional[int] = None,
+    ) -> List[Dict[str, Any]]:
+        """Fetches and prepares existing lectures data for context.
+
+        If current_week and current_order are provided, filter OUT:
+          - any lecture with week > current_week
+          - any lecture with week == current_week and order >= current_order
+        This removes the current and any future topics from the context list.
+        """
         existing_lectures_list_of_dicts = []
         try:
             lectures_core_models = self.repository_factory.lecture.list_by_course(course_id)
@@ -603,6 +621,20 @@ class LectureGeneratorService:
                 try:
                     lec_topic = self.topic_service.get_topic(lec_model.topic_id)
                     if lec_topic:
+                        # Apply filtering if we know the current position
+                        if current_week is not None and current_order is not None:
+                            try:
+                                topic_week = int(getattr(lec_topic, "week", 0) or 0)
+                                topic_order = int(getattr(lec_topic, "order", 0) or 0)
+                                if (topic_week > int(current_week)) or (
+                                    topic_week == int(current_week)
+                                    and topic_order >= int(current_order)
+                                ):
+                                    # Skip current and future topics
+                                    continue
+                            except Exception:
+                                # If parsing fails, do not filter this item
+                                pass
                         existing_lectures_list_of_dicts.append(
                             {
                                 "title": lec_topic.title,

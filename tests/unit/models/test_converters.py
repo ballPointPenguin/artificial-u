@@ -652,11 +652,10 @@ def test_topics_to_xml():
     assert topic_elems[0].find("week").text == "1"
     assert topic_elems[0].find("order").text == "1"
 
-    # Test with max_topics limit
-    xml_str = topics_to_xml(topics, max_topics=1)
-    root = ET.fromstring(xml_str)
-    assert len(root.findall("topic")) == 1
-    assert root.find("additional_topics_count").text.strip() == "1"
+    # Ensure all topics are included with no truncation
+    assert topic_elems[1].find("title").text == "Control Flow"
+    assert topic_elems[1].find("week").text == "1"
+    assert topic_elems[1].find("order").text == "2"
 
 
 @pytest.mark.unit

@@ -328,13 +328,13 @@ def topic_to_xml(topic: Dict[str, Any]) -> str:
     return "\n".join(lines)
 
 
-def topics_to_xml(topics: List[Dict[str, Any]], max_topics: int = 5) -> str:
+def topics_to_xml(topics: List[Dict[str, Any]]) -> str:
     """Format a list of topics as XML for context."""
     if not topics:
         return "<no_existing_topics />"
 
     lines = ["<topics>"]
-    for topic in topics[:max_topics]:
+    for topic in topics:
         lines.append("  <topic>")
         lines.append(f"    <title>{topic.get('title', '')}</title>")
         if topic.get("week") is not None:
@@ -350,12 +350,27 @@ def topics_to_xml(topics: List[Dict[str, Any]], max_topics: int = 5) -> str:
 
         lines.append("  </topic>")
 
-    if len(topics) > max_topics:
-        lines.append(
-            f"  <additional_topics_count>"
-            f"    {len(topics) - max_topics}"
-            f"  </additional_topics_count>"
-        )
+    lines.append("</topics>")
+    return "\n".join(lines)
+
+
+def topics_brief_to_xml(topics: List[Dict[str, Any]]) -> str:
+    """Format a list of topics as XML including only title, week, and order.
+
+    This is a reduced form intended for prompts where content is unnecessary.
+    """
+    if not topics:
+        return "<no_existing_topics />"
+
+    lines = ["<topics>"]
+    for topic in topics:
+        lines.append("  <topic>")
+        lines.append(f"    <title>{topic.get('title', '')}</title>")
+        if topic.get("week") is not None:
+            lines.append(f"    <week>{topic.get('week')}</week>")
+        if topic.get("order") is not None:
+            lines.append(f"    <order>{topic.get('order')}</order>")
+        lines.append("  </topic>")
 
     lines.append("</topics>")
     return "\n".join(lines)
