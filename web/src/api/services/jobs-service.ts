@@ -34,6 +34,11 @@ export async function listJobs(params?: {
   return httpClient.get<JobRow[]>(endpoint)
 }
 
+export async function cancelJob(jobId: number): Promise<{ id: number; status: string }> {
+  const endpoint = ENDPOINTS.jobs.cancel(jobId)
+  return httpClient.post<{ id: number; status: string }>(endpoint, {})
+}
+
 // SSE subscription helper for job events
 export type JobEvent = {
   id: number

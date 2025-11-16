@@ -1,5 +1,5 @@
 import { createResource, createSignal, For, Show } from 'solid-js'
-import { type JobRow, type JobStatus, listJobs } from '../api/services/jobs-service'
+import { cancelJob, type JobRow, type JobStatus, listJobs } from '../api/services/jobs-service'
 import { Button } from '../components/ui'
 import { formatDate } from '../utils/formatDate'
 
@@ -13,6 +13,7 @@ const STATUS_STYLES: Record<JobStatus, string> = {
 
 export default function JobsPage() {
   const [statusFilter, setStatusFilter] = createSignal<JobStatus | undefined>(undefined)
+  const [cancellingJobId, setCancellingJobId] = createSignal<number | null>(null)
 
   const [jobsResource, { refetch }] = createResource(
     () => ({
@@ -24,6 +25,23 @@ export default function JobsPage() {
 
   const handleStatusFilter = (status: JobStatus | undefined) => {
     setStatusFilter(status)
+  }
+
+  const handleCancelJob = async (jobId: number) => {
+    if (!confirm('Are you sure you want to cancel this job?')) {
+      return
+    }
+
+    setCancellingJobId(jobId)
+    try {
+      await cancelJob(jobId)
+      void refetch() // Refresh the job list
+    } catch (error) {
+      console.error('Failed to cancel job:', error)
+      alert('Failed to cancel job. Please try again.')
+    } finally {
+      setCancellingJobId(null)
+    }
   }
 
   return (
@@ -164,6 +182,12 @@ export default function JobsPage() {
                     >
                       Error
                     </th>
+                    <th
+                      scope="col"
+                      class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider"
+                    >
+                      Actions
+                    </th>
                   </tr>
                 </thead>
                 <tbody class="bg-background divide-y divide-border">
@@ -191,6 +215,18 @@ export default function JobsPage() {
                         </td>
                         <td class="px-6 py-4 text-sm text-muted max-w-xs truncate">
                           {job.last_error || '-'}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm">
+                          <Show when={job.status === 'queued' || job.status === 'running'}>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => void handleCancelJob(job.id)}
+                              disabled={cancellingJobId() === job.id}
+                            >
+                              {cancellingJobId() === job.id ? 'Cancelling...' : 'Cancel'}
+                            </Button>
+                          </Show>
                         </td>
                       </tr>
                     )}
