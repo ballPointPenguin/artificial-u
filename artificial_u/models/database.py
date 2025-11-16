@@ -91,6 +91,7 @@ class LectureModel(Base):
     transcript_url = Column(String, nullable=True)
     course_id = Column(Integer, ForeignKey("courses.id"), nullable=False)
     topic_id = Column(Integer, ForeignKey("topics.id"), nullable=False)
+    voice_id = Column(Integer, ForeignKey("voices.id"), nullable=True)
     word_count = Column(Integer, nullable=True)
     # Attribution fields
     created_by = Column(Integer, ForeignKey("students.id"), nullable=True)
@@ -100,6 +101,7 @@ class LectureModel(Base):
 
     course = relationship("CourseModel", back_populates="lectures")
     topic = relationship("TopicModel", back_populates="lectures")
+    voice = relationship("VoiceModel")
     student = relationship("StudentModel", foreign_keys=[created_by])
 
 

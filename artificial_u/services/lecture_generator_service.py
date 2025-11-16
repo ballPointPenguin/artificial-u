@@ -370,12 +370,12 @@ class LectureGeneratorService:
         return {"lecture_id": updated.id, "topic_id": updated.topic_id, "summary": updated.summary}
 
     async def generate_lecture_audio(self, lecture_id: int) -> Dict[str, Any]:
-        """Generate and store audio for the given lecture, updating audio_url."""
+        """Generate and store audio for the given lecture, updating audio_url and voice_id."""
         # 1. Fetch required entities
         lecture, course, topic, professor = self._fetch_entities_for_audio(lecture_id)
 
-        # 2. Ensure we have an ElevenLabs voice id
-        el_voice_id = self._ensure_professor_el_voice_id(professor)
+        # 2. Ensure we have an ElevenLabs voice id and get the voice_id
+        el_voice_id, voice_id = self._ensure_professor_el_voice_id(professor)
 
         # 3. Generate audio bytes (blocking TTS executed in a thread)
         audio_bytes = await asyncio.to_thread(
@@ -388,14 +388,19 @@ class LectureGeneratorService:
         # 5. Upload to storage and get public URL
         audio_url = await self._upload_audio_and_get_url(course, topic, audio_bytes)
 
-        # 6. Partial update lecture with audio URL (avoid clobbering summary)
+        # 6. Partial update lecture with audio URL and voice_id (avoid clobbering summary)
+        update_data = {"audio_url": audio_url}
+        if voice_id:
+            update_data["voice_id"] = voice_id
+
         updated = self.repository_factory.lecture.update_fields(
             lecture_id=lecture_id,
-            update_data={"audio_url": audio_url},
+            update_data=update_data,
         )
         self.logger.info(
-            "Generated audio for lecture %s and uploaded to storage: %s",
+            "Generated audio for lecture %s using voice %s and uploaded to storage: %s",
             lecture_id,
+            voice_id,
             audio_url,
         )
 
@@ -403,6 +408,7 @@ class LectureGeneratorService:
             "lecture_id": updated.id,
             "topic_id": updated.topic_id,
             "audio_url": updated.audio_url,
+            "voice_id": updated.voice_id,
         }
 
     # --- Helper Methods for Generation --- #
@@ -699,13 +705,21 @@ class LectureGeneratorService:
 
         return lecture, course, topic, professor
 
-    def _ensure_professor_el_voice_id(self, professor) -> str:
-        """Resolve or auto-assign an ElevenLabs voice id for the professor."""
+    def _ensure_professor_el_voice_id(self, professor) -> tuple[str, Optional[int]]:
+        """Resolve or auto-assign an ElevenLabs voice id for the professor.
+
+        Returns:
+            A tuple of (el_voice_id, voice_id) where voice_id is the database ID
+        """
         el_voice_id: Optional[str] = None
+        voice_id: Optional[int] = None
+
         if professor.voice_id:
             voice_repo = self.repository_factory.voice
             voice = voice_repo.get(professor.voice_id)
-            el_voice_id = voice.el_voice_id if voice else None
+            if voice:
+                el_voice_id = voice.el_voice_id
+                voice_id = voice.id
 
         if not el_voice_id:
             from artificial_u.integrations import elevenlabs
@@ -729,10 +743,11 @@ class LectureGeneratorService:
             )
             selected = voice_service.select_voice_for_professor(professor)
             el_voice_id = selected.get("el_voice_id")
+            voice_id = selected.get("db_voice_id")
             if not el_voice_id:
                 raise DatabaseError("Failed to select or resolve an ElevenLabs voice ID")
 
-        return el_voice_id
+        return el_voice_id, voice_id
 
     def _generate_audio_bytes(self, lecture, professor, el_voice_id: str) -> bytes:
         """Use TTSService to generate audio bytes for a lecture."""

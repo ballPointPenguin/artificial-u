@@ -263,6 +263,7 @@ class Lecture(BaseModel):
                 "transcript_url": "https://example.com/transcript_files/CS4511/week1/lecture1.txt",
                 "course_id": 1,
                 "topic_id": 1,
+                "voice_id": 1,
             }
         }
     )
@@ -276,6 +277,7 @@ class Lecture(BaseModel):
     transcript_url: Optional[str] = None
     course_id: int
     topic_id: int
+    voice_id: Optional[int] = None
     word_count: Optional[int] = None
     # Attribution
     created_by: Optional[int] = None
