@@ -436,7 +436,7 @@ export const LectureSection: Component<LectureSectionProps> = (props) => {
                 </RequireRole>
               </Show>
               <Show when={summaryError()}>
-                <Alert variant="error" class="mt-2">
+                <Alert variant="danger" class="mt-2">
                   {summaryError()}
                 </Alert>
               </Show>

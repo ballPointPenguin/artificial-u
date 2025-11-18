@@ -1,5 +1,5 @@
 import * as Dialog from '@kobalte/core/dialog'
-import { createSignal } from 'solid-js'
+import { createEffect, createSignal } from 'solid-js'
 import { Button } from '../ui/Button'
 
 interface EditSummaryModalProps {
@@ -24,19 +24,18 @@ const EditSummaryModal = (props: EditSummaryModalProps) => {
   }
 
   // Reset the edited summary when the modal opens
-  const handleAfterOpen = () => {
-    setEditedSummary(props.initialSummary)
-  }
+  createEffect(() => {
+    if (props.isOpen) {
+      setEditedSummary(props.initialSummary)
+    }
+  })
 
   return (
     <Dialog.Root open={props.isOpen} onOpenChange={handleOpenChange}>
       <Dialog.Portal>
         <Dialog.Overlay class="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm" />
         <div class="fixed inset-0 z-50 flex items-center justify-center p-4" vaul-overlay="">
-          <Dialog.Content
-            class="arcane-card relative max-w-2xl w-full shadow-xl rounded-lg"
-            onMount={handleAfterOpen}
-          >
+          <Dialog.Content class="arcane-card relative max-w-2xl w-full shadow-xl rounded-lg">
             <div class="p-6">
               <Dialog.Title class="text-lg font-display font-semibold mb-3 text-primary">
                 Edit Lecture Summary
@@ -66,7 +65,11 @@ const EditSummaryModal = (props: EditSummaryModalProps) => {
                 >
                   Cancel
                 </Dialog.CloseButton>
-                <Button onClick={handleSave} disabled={props.isSaving} variant="primary">
+                <Button
+                  onClick={() => void handleSave()}
+                  disabled={props.isSaving}
+                  variant="primary"
+                >
                   {props.isSaving ? 'Saving...' : 'Save Changes'}
                 </Button>
               </div>
