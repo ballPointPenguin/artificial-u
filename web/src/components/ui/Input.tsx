@@ -25,7 +25,6 @@ const Input: Component<InputProps> = (props) => {
   const [local, others] = splitProps(props, [
     'name', // Already used by FormField, KTextField.Root will also need it.
     'value',
-    'onInput',
     'onChange', // Kobalte's controlled change
     'placeholder',
     'type',
@@ -43,24 +42,6 @@ const Input: Component<InputProps> = (props) => {
   const handleValueChange = (newValue: string) => {
     if (local.onChange) {
       local.onChange(newValue)
-    }
-    // If an onInput handler is also provided, we can call it.
-    // This requires careful handling if both are used.
-    // For now, prioritize local.onChange for Kobalte's controlled pattern.
-    // If onInput is critical, the parent might need to adapt or this component needs a more complex event synthesis.
-    if (local.onInput) {
-      // Create a synthetic event if onInput expects it
-      // This is a common pattern but can be tricky.
-      // For simplicity, if onInput is primary, direct usage of KTextField.Input's onInput might be better.
-      const syntheticEvent = {
-        currentTarget: { value: newValue, name: local.name },
-        target: { value: newValue, name: local.name },
-        bubbles: true,
-        cancelable: true,
-      } as unknown as InputEvent & { currentTarget: HTMLInputElement; target: HTMLInputElement }
-      // It's tricky to perfectly mimic native event objects.
-      // Consider if `onChange` prop is sufficient for most use cases with Kobalte.
-      local.onInput(syntheticEvent)
     }
   }
 
