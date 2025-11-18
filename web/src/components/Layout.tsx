@@ -15,7 +15,9 @@ const Layout: Component<RouteSectionProps> = (props) => {
         <NavBar />
       </header>
 
-      <main classList={{ 'flex-grow': true, 'pb-24': !!audioPlayer.currentTrack() }}>
+      <main
+        classList={{ 'flex-grow': true, 'pb-80 sm:pb-72 md:pb-64': !!audioPlayer.currentTrack() }}
+      >
         {props.children}
       </main>
       <ThemeSwitcher />
