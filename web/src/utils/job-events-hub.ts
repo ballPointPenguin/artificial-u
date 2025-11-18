@@ -157,41 +157,49 @@ class JobEventHub {
     const payload = event.payload as Record<string, unknown> | undefined
     if (!payload) return true // No payload to filter on
 
-    // Check topic_id filter
+    const eventTopicId =
+      (payload.topic_id as number | undefined) ||
+      ((payload.partial_attributes as Record<string, unknown> | undefined)?.topic_id as
+        | number
+        | undefined)
+    const eventLectureId = payload.lecture_id as number | undefined
+    const eventCourseId =
+      (payload.course_id as number | undefined) ||
+      ((payload.partial_attributes as Record<string, unknown> | undefined)?.course_id as
+        | number
+        | undefined)
+
+    const hasEntityFilter =
+      filter.topicId !== undefined ||
+      filter.lectureId !== undefined ||
+      filter.courseId !== undefined
+    let matched = !hasEntityFilter
+
     if (filter.topicId !== undefined) {
-      const eventTopicId =
-        (payload.topic_id as number | undefined) ||
-        ((payload.partial_attributes as Record<string, unknown> | undefined)?.topic_id as
-          | number
-          | undefined)
-
-      if (eventTopicId !== filter.topicId) {
+      if (eventTopicId === filter.topicId) {
+        matched = true
+      } else if (eventTopicId !== undefined) {
         return false
       }
     }
 
-    // Check lecture_id filter
     if (filter.lectureId !== undefined) {
-      const eventLectureId = payload.lecture_id as number | undefined
-      if (eventLectureId !== filter.lectureId) {
+      if (eventLectureId === filter.lectureId) {
+        matched = true
+      } else if (eventLectureId !== undefined) {
         return false
       }
     }
 
-    // Check course_id filter
     if (filter.courseId !== undefined) {
-      const eventCourseId =
-        (payload.course_id as number | undefined) ||
-        ((payload.partial_attributes as Record<string, unknown> | undefined)?.course_id as
-          | number
-          | undefined)
-
-      if (eventCourseId !== filter.courseId) {
+      if (eventCourseId === filter.courseId) {
+        matched = true
+      } else if (eventCourseId !== undefined) {
         return false
       }
     }
 
-    return true
+    return matched
   }
 
   subscribe(filter: JobEventFilter, callback: JobEventListener): () => void {
