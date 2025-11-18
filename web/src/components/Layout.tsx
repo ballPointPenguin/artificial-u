@@ -16,7 +16,7 @@ const Layout: Component<RouteSectionProps> = (props) => {
       </header>
 
       <main
-        classList={{ 'flex-grow': true, 'pb-36 sm:pb-28 md:pb-24': !!audioPlayer.currentTrack() }}
+        classList={{ 'flex-grow': true, 'pb-80 sm:pb-72 md:pb-64': !!audioPlayer.currentTrack() }}
       >
         {props.children}
       </main>

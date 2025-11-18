@@ -8,6 +8,7 @@ export const PersistentAudioPlayer: Component = () => {
   let audioRef: HTMLAudioElement | undefined
   let controllerRef: HTMLElement | undefined
   let pendingRestoreTime: number | null = null
+  let previousTrackUrl: string | null = null
 
   const restoreFromPending = () => {
     if (!audioRef) return
@@ -106,16 +107,41 @@ export const PersistentAudioPlayer: Component = () => {
   // Handle track changes
   createEffect(() => {
     const track = player.currentTrack()
-    if (!audioRef || !track) return
+    if (!audioRef || !track) {
+      previousTrackUrl = null
+      return
+    }
+
+    // Check if this is a different track than before
+    const isNewTrack = previousTrackUrl !== track.url
+    previousTrackUrl = track.url
 
     // Load new track
     audioRef.src = track.url
-    const savedTime = untrack(() => player.currentTime())
-    pendingRestoreTime = savedTime > 0.25 ? savedTime : null
+
+    // Only restore saved time if it's the same track (resuming), not a new track
+    // When playTrack is called, it sets currentTime to 0, so new tracks should start from 0
+    if (isNewTrack) {
+      // New track - always start from beginning
+      pendingRestoreTime = null
+      // Ensure context time is 0 for new tracks
+      player.setCurrentTime(0)
+      // Explicitly reset audio element to start
+      audioRef.currentTime = 0
+    } else {
+      // Same track - restore saved position if available
+      const savedTime = untrack(() => player.currentTime())
+      pendingRestoreTime = savedTime > 0.25 ? savedTime : null
+    }
+
     audioRef.load()
     if (audioRef.readyState >= 1) {
       queueMicrotask(() => {
         restoreFromPending()
+        // For new tracks, ensure we're at the start after load
+        if (isNewTrack) {
+          audioRef.currentTime = 0
+        }
       })
     }
 
