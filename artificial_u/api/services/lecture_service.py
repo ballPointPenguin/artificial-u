@@ -448,6 +448,40 @@ class LectureApiService(BaseApiService[CoreLecture, Lecture, LectureListResponse
         except Exception as e:
             self._handle_general_error("generate lecture summary", e)
 
+    async def clear_lecture_summary(self, lecture_id: int) -> Lecture:
+        """
+        Clear the summary for a lecture.
+
+        Args:
+            lecture_id: The unique identifier of the lecture
+
+        Returns:
+            Lecture: The updated lecture with summary cleared
+
+        Raises:
+            HTTPException: 404 if not found, 500 for other errors
+        """
+        try:
+            # Ensure the lecture exists first
+            self.core_service.get_lecture(lecture_id)
+
+            # Update lecture with null summary
+            core_lecture = self.core_service.update_lecture(
+                lecture_id=lecture_id,
+                update_data={"summary": None},
+            )
+
+            return Lecture.model_validate(core_lecture)
+        except LectureNotFoundError:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Lecture with ID {lecture_id} not found",
+            )
+        except DatabaseError as e:
+            self._handle_database_error("clear lecture summary", e)
+        except Exception as e:
+            self._handle_general_error("clear lecture summary", e)
+
     async def generate_lecture(self, generation_data: LectureGenerate) -> Lecture:
         """
         Generate lecture content using AI based on partial data and save to database.

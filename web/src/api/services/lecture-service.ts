@@ -160,4 +160,11 @@ export const lectureService = {
       { timeout: TIMEOUT_CONFIG.generation, onTimeout }
     )
   },
+
+  /**
+   * Clear the summary for a lecture (admin only).
+   */
+  clearSummary: (lectureId: number): Promise<Lecture> => {
+    return httpClient.delete<Lecture>(ENDPOINTS.lectures.clearSummary(lectureId))
+  },
 }

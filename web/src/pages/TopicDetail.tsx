@@ -73,9 +73,12 @@ const TopicDetail = () => {
     }
   )
 
+  const lectureId = createMemo(() => lecture()?.id)
+
   // Track jobs for this topic - pass reactive accessor
   const jobTracker = createJobTracker({
     topicId: () => (isValidIds() ? topicId() : undefined),
+    lectureId: () => lectureId(),
     kinds: ['generate_lecture', 'generate_lecture_audio', 'generate_lecture_summary'],
     onJobComplete: (event) => {
       if (import.meta.env.DEV) {

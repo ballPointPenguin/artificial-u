@@ -539,6 +539,32 @@ async def generate_lecture_summary(
     return await lecture_service.generate_lecture_summary(lecture_id)
 
 
+@router.delete(
+    "/{lecture_id}/summary",
+    response_model=Lecture,
+    status_code=status.HTTP_200_OK,
+    summary="Clear lecture summary",
+    description="Clears the summary for a lecture. Admin only.",
+    responses={
+        404: {"description": "Lecture not found"},
+        403: {"description": "Forbidden - admin access required"},
+    },
+    dependencies=[require_role("admin")],
+)
+async def clear_lecture_summary(
+    lecture_id: int = Path(..., description="The ID of the lecture to clear the summary for"),
+    lecture_service: LectureApiService = Depends(get_lecture_api_service),
+):
+    """
+    Clear the summary for a specific lecture.
+
+    - **lecture_id**: The unique identifier of the lecture
+    - Returns the updated lecture with summary cleared
+    - Admin only
+    """
+    return await lecture_service.clear_lecture_summary(lecture_id)
+
+
 @router.post(
     "/generate",
     response_model=Lecture,
