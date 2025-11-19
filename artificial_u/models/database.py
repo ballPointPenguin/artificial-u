@@ -36,6 +36,7 @@ class CourseModel(Base):
     lectures_per_week = Column(Integer, nullable=True, default=1)
     level = Column(String, nullable=True)
     total_weeks = Column(Integer, nullable=True, default=12)
+    language = Column(String, nullable=True)
     department_id = Column(Integer, ForeignKey("departments.id"), nullable=True)
     professor_id = Column(Integer, ForeignKey("professors.id"), nullable=True)
     # New attribution fields
@@ -57,6 +58,7 @@ class FacultyModel(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     name = Column(String, nullable=False, unique=True)
     description = Column(Text, nullable=True)
+    language = Column(String, nullable=True)
     created_at = Column(DateTime, nullable=False, default=datetime.now)
     updated_at = Column(DateTime, nullable=False, default=datetime.now)
 
@@ -71,6 +73,7 @@ class DepartmentModel(Base):
     code = Column(String, nullable=False, unique=True)
     faculty_id = Column(Integer, ForeignKey("faculties.id"), nullable=True)
     description = Column(Text, nullable=True)
+    language = Column(String, nullable=True)
     created_at = Column(DateTime, nullable=False, default=datetime.now)
     updated_at = Column(DateTime, nullable=False, default=datetime.now)
 
@@ -89,6 +92,7 @@ class LectureModel(Base):
     title = Column(String, nullable=False)
     audio_url = Column(String, nullable=True)
     transcript_url = Column(String, nullable=True)
+    language = Column(String, nullable=True)
     course_id = Column(Integer, ForeignKey("courses.id"), nullable=False)
     topic_id = Column(Integer, ForeignKey("topics.id"), nullable=False)
     voice_id = Column(Integer, ForeignKey("voices.id"), nullable=True)
@@ -142,6 +146,7 @@ class TopicModel(Base):
     order = Column(Integer, nullable=False, default=1)
     week = Column(Integer, nullable=False, index=True)
     content = Column(JSONB, nullable=True)
+    language = Column(String, nullable=True)
     course_id = Column(Integer, ForeignKey("courses.id"), nullable=False, index=True)
     # Attribution fields
     created_by = Column(Integer, ForeignKey("students.id"), nullable=True)

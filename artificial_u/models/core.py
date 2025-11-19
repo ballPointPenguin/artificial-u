@@ -18,6 +18,7 @@ class Faculty(BaseModel):
                 "name": "Science and Engineering",
                 "description": "The Faculty of Science and Engineering encompasses "
                 "departments focused on scientific and technological disciplines.",
+                "language": "en",
             }
         }
     )
@@ -25,6 +26,7 @@ class Faculty(BaseModel):
     id: Optional[int] = None
     name: str
     description: Optional[str] = None
+    language: Optional[str] = None
     # Timestamps
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
@@ -42,6 +44,7 @@ class Department(BaseModel):
                 "faculty_id": 1,
                 "description": "The Computer Science department focuses on the theory and "
                 "practice of computation.",
+                "language": "en",
             }
         }
     )
@@ -51,6 +54,7 @@ class Department(BaseModel):
     code: str
     faculty_id: Optional[int] = None
     description: Optional[str] = None
+    language: Optional[str] = None
     # Timestamps
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
@@ -175,6 +179,7 @@ class Course(BaseModel):
                 "lectures_per_week": 1,
                 "level": "Undergraduate",
                 "total_weeks": 12,
+                "language": "en",
                 "department_id": 1,
                 "professor_id": 1,
             }
@@ -189,6 +194,7 @@ class Course(BaseModel):
     lectures_per_week: int = 1
     level: Optional[str] = None
     total_weeks: int = 12
+    language: Optional[str] = None
     department_id: Optional[int] = None
     professor_id: Optional[int] = None
     # Attribution
@@ -217,6 +223,7 @@ class Topic(BaseModel):
                 "order": 1,
                 "week": 1,
                 "course_id": 1,
+                "language": "en",
                 "content": {
                     "lecture": "What is Artificial Intelligence?",
                     "readings": [
@@ -237,6 +244,7 @@ class Topic(BaseModel):
     order: int = Field(default=1, gt=0)
     week: int = Field(default=1, gt=0)
     course_id: int
+    language: Optional[str] = None
     content: Optional[Dict[str, Any]] = Field(
         default=None, description="Flexible JSONB content for the topic"
     )
@@ -261,6 +269,7 @@ class Lecture(BaseModel):
                 "title": "Introduction to AI",
                 "audio_url": "https://example.com/audio_files/CS4511/week1/lecture1.mp3",
                 "transcript_url": "https://example.com/transcript_files/CS4511/week1/lecture1.txt",
+                "language": "en",
                 "course_id": 1,
                 "topic_id": 1,
                 "voice_id": 1,
@@ -275,6 +284,7 @@ class Lecture(BaseModel):
     title: Optional[str] = None
     audio_url: Optional[str] = None
     transcript_url: Optional[str] = None
+    language: Optional[str] = None
     course_id: int
     topic_id: int
     voice_id: Optional[int] = None
