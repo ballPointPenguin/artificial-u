@@ -21,6 +21,7 @@
     "@auth0/auth0-spa-js": "^2.9.1",
     "@kobalte/core": "^0.13.11",
     "@plausible-analytics/tracker": "^0.4.4",
+    "@solid-primitives/i18n": "^2.2.1",
     "@solidjs/router": "^0.15.4",
     "lucide-solid": "^0.554.0",
     "media-chrome": "^4.16.0",

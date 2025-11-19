@@ -1,11 +1,13 @@
 import { A } from '@solidjs/router'
 import { createSignal, Show } from 'solid-js'
 import { useAuth } from '../auth/AuthProvider'
+import { useTranslations } from '../i18n'
 
 export function NavBar() {
   const [isScrolled, setIsScrolled] = createSignal(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = createSignal(false)
   const auth = useAuth()
+  const t = useTranslations()
 
   if (typeof window !== 'undefined') {
     window.addEventListener('scroll', () => {
@@ -26,7 +28,7 @@ export function NavBar() {
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between items-center py-4">
           {/* Logo and site name */}
-          <div>A|U</div>
+          <div>{t.site.shortName}</div>
           <div class="flex items-center">
             <A href="/" class="flex items-center">
               <div class="w-12 h-12 rounded-full border-2 border-parchment-300 overflow-hidden flex items-center justify-center bg-arcanum-900">
@@ -34,7 +36,7 @@ export function NavBar() {
               </div>
               <div class="ml-3">
                 <h1 class="text-parchment-200 font-display text-xl tracking-wider">
-                  ARTIFICIAL UNIVERSITY
+                  {t.site.name}
                 </h1>
               </div>
             </A>
@@ -46,32 +48,32 @@ export function NavBar() {
               href="/about"
               class="text-parchment-200 hover:text-parchment-100 tracking-wide font-serif uppercase text-shadow-golden text-sm"
             >
-              About
+              {t.nav.about}
             </A>
             <A
               href="/academics"
               class="text-parchment-200 hover:text-parchment-100 tracking-wide font-serif uppercase text-shadow-golden text-sm"
             >
-              Academics
+              {t.nav.academics}
             </A>
             <A
               href="/professors"
               class="text-parchment-200 hover:text-parchment-100 tracking-wide font-serif uppercase text-shadow-golden text-sm"
             >
-              Professors
+              {t.nav.professors}
             </A>
             <A
               href="/courses"
               class="text-parchment-200 hover:text-parchment-100 tracking-wide font-serif uppercase text-shadow-golden text-sm"
             >
-              Courses
+              {t.nav.courses}
             </A>
             <Show when={auth.isAuthenticated()}>
               <A
                 href="/profile"
                 class="text-parchment-200 hover:text-parchment-100 tracking-wide font-serif uppercase text-shadow-golden text-sm"
               >
-                Profile
+                {t.nav.profile}
               </A>
             </Show>
             <Show when={auth.isAdmin()}>
@@ -79,13 +81,13 @@ export function NavBar() {
                 href="/jobs"
                 class="text-parchment-200 hover:text-parchment-100 tracking-wide font-serif uppercase text-shadow-golden text-sm"
               >
-                Jobs
+                {t.nav.jobs}
               </A>
               <A
                 href="/admin"
                 class="text-parchment-200 hover:text-parchment-100 tracking-wide font-serif uppercase text-shadow-golden text-sm"
               >
-                Admin
+                {t.nav.admin}
               </A>
             </Show>
             <Show when={!auth.isAuthenticated()}>
@@ -93,7 +95,7 @@ export function NavBar() {
                 href="/login"
                 class="text-parchment-200 hover:text-parchment-100 tracking-wide font-serif uppercase text-shadow-golden text-sm"
               >
-                Login
+                {t.nav.login}
               </A>
             </Show>
             <Show when={auth.isAuthenticated()}>
@@ -102,7 +104,7 @@ export function NavBar() {
                 type="button"
                 onClick={() => void auth.logout()}
               >
-                Logout
+                {t.nav.logout}
               </button>
             </Show>
           </div>
@@ -114,7 +116,7 @@ export function NavBar() {
               onClick={toggleMobileMenu}
               class="text-parchment-200 hover:text-parchment-100"
             >
-              <span class="sr-only">Open main menu</span>
+              <span class="sr-only">{t.nav.openMenu}</span>
               {isMobileMenuOpen() ? (
                 <svg
                   class="h-6 w-6"
@@ -160,28 +162,28 @@ export function NavBar() {
               class="block text-parchment-200 hover:text-parchment-100 py-2 tracking-wide font-serif uppercase text-sm"
               onClick={toggleMobileMenu}
             >
-              About
+              {t.nav.about}
             </A>
             <A
               href="/academics"
               class="block text-parchment-200 hover:text-parchment-100 py-2 tracking-wide font-serif uppercase text-sm"
               onClick={toggleMobileMenu}
             >
-              Academics
+              {t.nav.academics}
             </A>
             <A
               href="/professors"
               class="block text-parchment-200 hover:text-parchment-100 py-2 tracking-wide font-serif uppercase text-sm"
               onClick={toggleMobileMenu}
             >
-              Professors
+              {t.nav.professors}
             </A>
             <A
               href="/courses"
               class="block text-parchment-200 hover:text-parchment-100 py-2 tracking-wide font-serif uppercase text-sm"
               onClick={toggleMobileMenu}
             >
-              Courses
+              {t.nav.courses}
             </A>
             <Show when={auth.isAuthenticated()}>
               <A
@@ -189,7 +191,7 @@ export function NavBar() {
                 class="block text-parchment-200 hover:text-parchment-100 py-2 tracking-wide font-serif uppercase text-sm"
                 onClick={toggleMobileMenu}
               >
-                Profile
+                {t.nav.profile}
               </A>
             </Show>
             <Show when={auth.isAdmin()}>
@@ -198,14 +200,14 @@ export function NavBar() {
                 class="block text-parchment-200 hover:text-parchment-100 py-2 tracking-wide font-serif uppercase text-sm"
                 onClick={toggleMobileMenu}
               >
-                Jobs
+                {t.nav.jobs}
               </A>
               <A
                 href="/admin"
                 class="block text-parchment-200 hover:text-parchment-100 py-2 tracking-wide font-serif uppercase text-sm"
                 onClick={toggleMobileMenu}
               >
-                Admin
+                {t.nav.admin}
               </A>
             </Show>
             <Show when={!auth.isAuthenticated()}>
@@ -214,7 +216,7 @@ export function NavBar() {
                 class="block text-parchment-200 hover:text-parchment-100 py-2 tracking-wide font-serif uppercase text-sm"
                 onClick={toggleMobileMenu}
               >
-                Login
+                {t.nav.login}
               </A>
             </Show>
             <Show when={auth.isAuthenticated()}>
@@ -226,7 +228,7 @@ export function NavBar() {
                   void auth.logout()
                 }}
               >
-                Logout
+                {t.nav.logout}
               </button>
             </Show>
           </div>

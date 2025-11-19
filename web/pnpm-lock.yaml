@@ -17,6 +17,9 @@ importers:
       '@plausible-analytics/tracker':
         specifier: ^0.4.4
         version: 0.4.4
+      '@solid-primitives/i18n':
+        specifier: ^2.2.1
+        version: 2.2.1(solid-js@1.9.10)
       '@solidjs/router':
         specifier: ^0.15.4
         version: 0.15.4(solid-js@1.9.10)
@@ -1508,6 +1511,11 @@ packages:
 
   '@solid-primitives/event-listener@2.4.0':
     resolution: {integrity: sha512-TSfR1PNTfojFEYGSxSMCnUhXsaYWBo4p+cm73QmWODa9YnaQAk6PB7VjzG2bOT2D817VlvuOqTj0Qdq+MZrdGg==}
+    peerDependencies:
+      solid-js: ^1.6.12
+
+  '@solid-primitives/i18n@2.2.1':
+    resolution: {integrity: sha512-TnTnE2Ku11MGYZ1JzhJ8pYscwg1fr9MteoYxPwsfxWfh9Jp5K7RRJncJn9BhOHvNLwROjqOHZ46PT7sPHqbcXw==}
     peerDependencies:
       solid-js: ^1.6.12
 
@@ -5562,6 +5570,10 @@ snapshots:
   '@solid-primitives/event-listener@2.4.0(solid-js@1.9.10)':
     dependencies:
       '@solid-primitives/utils': 6.3.0(solid-js@1.9.10)
+      solid-js: 1.9.10
+
+  '@solid-primitives/i18n@2.2.1(solid-js@1.9.10)':
+    dependencies:
       solid-js: 1.9.10
 
   '@solid-primitives/keyed@1.5.0(solid-js@1.9.10)':
