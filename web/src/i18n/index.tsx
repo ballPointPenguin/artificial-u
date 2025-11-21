@@ -1,4 +1,4 @@
-import { createContext, createMemo, createSignal, useContext, type ParentComponent } from 'solid-js'
+import { createContext, createMemo, createSignal, type ParentComponent, useContext } from 'solid-js'
 import { en, type Locale } from './locales/en'
 
 /**

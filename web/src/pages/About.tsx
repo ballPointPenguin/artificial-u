@@ -25,9 +25,7 @@ const About: Component = () => {
                 {t.about.importantNotice.title}
               </h2>
               <div class="space-y-3 text-parchment-200">
-                <p class="leading-relaxed font-semibold">
-                  {t.about.importantNotice.notAccredited}
-                </p>
+                <p class="leading-relaxed font-semibold">{t.about.importantNotice.notAccredited}</p>
                 <p class="leading-relaxed">{t.about.importantNotice.experimental}</p>
                 <p class="leading-relaxed">{t.about.importantNotice.alphaStage}</p>
               </div>
@@ -87,9 +85,7 @@ const About: Component = () => {
             </div>
 
             <div>
-              <h2 class="text-2xl font-display text-parchment-100 mb-4">
-                {t.about.creator.title}
-              </h2>
+              <h2 class="text-2xl font-display text-parchment-100 mb-4">{t.about.creator.title}</h2>
               <p class="leading-relaxed">
                 {t.about.creator.bio}{' '}
                 <a
