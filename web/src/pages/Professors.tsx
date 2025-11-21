@@ -7,8 +7,10 @@ import { RequireRole } from '../auth/RequireRole'
 import ProfessorForm, { type ProfessorFormData } from '../components/professors/ProfessorForm.js'
 import ProfessorListItem from '../components/professors/ProfessorListItem.js'
 import { Button, Input, Select, type SelectOption } from '../components/ui'
+import { useTranslations } from '../i18n'
 
 export default function ProfessorsPage() {
+  const t = useTranslations()
   const [searchQuery, setSearchQuery] = createSignal('')
   const [selectedFacultyId, setSelectedFacultyId] = createSignal<number | null>(null)
   const [selectedDepartmentId, setSelectedDepartmentId] = createSignal<number | null>(null)
@@ -35,7 +37,7 @@ export default function ProfessorsPage() {
     const facs = faculties()
     if (!facs) return []
     return [
-      { value: 'all', label: 'All Faculties' },
+      { value: 'all', label: t().professors.allFaculties },
       ...facs.items.map((faculty) => ({
         value: faculty.id,
         label: faculty.name,
@@ -48,7 +50,7 @@ export default function ProfessorsPage() {
     const depts = departments()
     if (!depts) return []
     return [
-      { value: 'all', label: 'All Departments' },
+      { value: 'all', label: t().professors.allDepartments },
       ...depts.items.map((department) => ({
         value: department.id,
         label: department.name,
@@ -113,7 +115,7 @@ export default function ProfessorsPage() {
       setShowCreateForm(false)
       void refetch()
     } catch (error) {
-      setFormError(error instanceof Error ? error.message : 'Failed to create professor')
+      setFormError(error instanceof Error ? error.message : t().professors.failedToCreate)
     } finally {
       setSubmitting(false)
     }
@@ -122,10 +124,12 @@ export default function ProfessorsPage() {
   return (
     <main class="container mx-auto p-4">
       <div class="flex justify-between items-center mb-6">
-        <h1 class="text-3xl font-display mb-6 text-parchment-100 text-shadow-golden">Professors</h1>
+        <h1 class="text-3xl font-display mb-6 text-parchment-100 text-shadow-golden">
+          {t().professors.title}
+        </h1>
         <RequireRole minRole="creator">
           <Button variant="primary" onClick={() => setShowCreateForm(true)}>
-            Add Professor
+            {t().professors.addProfessor}
           </Button>
         </RequireRole>
       </div>
@@ -133,7 +137,9 @@ export default function ProfessorsPage() {
       <Show when={showCreateForm()}>
         <RequireRole minRole="creator">
           <div class="arcane-card p-6 mb-8">
-            <h2 class="text-xl font-semibold mb-4 text-parchment-100">Create New Professor</h2>
+            <h2 class="text-xl font-semibold mb-4 text-parchment-100">
+              {t().professors.createNewProfessor}
+            </h2>
             <ProfessorForm
               onSubmit={handleSubmitCreate}
               onCancel={() => setShowCreateForm(false)}
@@ -152,11 +158,11 @@ export default function ProfessorsPage() {
             type="text"
             value={searchQuery()}
             onInput={(e) => setSearchQuery(e.currentTarget.value)}
-            placeholder="Search professors..."
+            placeholder={t().professors.searchPlaceholder}
             inputClass="flex-1"
           />
           <Button type="submit" variant="secondary" class="shrink-0">
-            Search
+            {t().common.search}
           </Button>
         </div>
         {/* Faculty and Department dropdowns - on their own line */}
@@ -165,7 +171,7 @@ export default function ProfessorsPage() {
             when={!faculties.loading && faculties()?.items}
             fallback={
               <div class="w-full sm:w-auto sm:min-w-64 px-4 py-2 border rounded-lg bg-arcanum-800 border-parchment-700/30 text-parchment-300 flex items-center">
-                Loading faculties...
+                {t().professors.loadingFaculties}
               </div>
             }
           >
@@ -174,7 +180,7 @@ export default function ProfessorsPage() {
               options={facultyOptions()}
               value={selectedFacultyId() ?? 'all'}
               onChange={handleFacultyChange}
-              placeholder="All Faculties"
+              placeholder={t().professors.allFaculties}
               class="w-full sm:w-auto sm:min-w-64 sm:max-w-md"
             />
           </Show>
@@ -182,7 +188,7 @@ export default function ProfessorsPage() {
             when={!departments.loading && departments()?.items}
             fallback={
               <div class="w-full sm:w-auto sm:min-w-64 px-4 py-2 border rounded-lg bg-arcanum-800 border-parchment-700/30 text-parchment-300 flex items-center">
-                Loading departments...
+                {t().professors.loadingDepartments}
               </div>
             }
           >
@@ -191,7 +197,7 @@ export default function ProfessorsPage() {
               options={departmentOptions()}
               value={selectedDepartmentId() ?? 'all'}
               onChange={handleDepartmentChange}
-              placeholder="All Departments"
+              placeholder={t().professors.allDepartments}
               class="w-full sm:w-auto sm:min-w-64 sm:max-w-md"
             />
           </Show>
@@ -201,27 +207,27 @@ export default function ProfessorsPage() {
       {/* Professors List */}
       <Show
         when={!professorsResource.loading}
-        fallback={<p class="text-muted text-center py-8">Loading professors...</p>}
+        fallback={<p class="text-muted text-center py-8">{t().professors.loading}</p>}
       >
         <Show
           when={!professorsResource.error}
           fallback={
             <div class="text-danger text-center py-8">
               <p>
-                Error loading professors:{' '}
+                {t().professors.errorLoading}:{' '}
                 {professorsResource.error instanceof Error
                   ? professorsResource.error.message
-                  : 'Unknown error'}
+                  : t().common.unknownError}
               </p>
               <Button variant="ghost" onClick={() => void refetch()} class="mt-4">
-                Retry
+                {t().common.retry}
               </Button>
             </div>
           }
         >
           <Show
             when={professorsResource()?.items.length}
-            fallback={<div class="text-center py-8">No professors found</div>}
+            fallback={<div class="text-center py-8">{t().professors.noProfessorsFound}</div>}
           >
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               <For each={professorsResource()?.items}>
@@ -236,17 +242,17 @@ export default function ProfessorsPage() {
                 onClick={() => setPage((p) => Math.max(p - 1, 1))}
                 disabled={page() <= 1}
               >
-                Previous
+                {t().common.previous}
               </Button>
               <span class="px-4 py-2 flex items-center text-muted">
-                Page {page()} of {professorsResource()?.pages || 1}
+                {t().common.page} {page()} {t().common.of} {professorsResource()?.pages || 1}
               </span>
               <Button
                 variant="outline"
                 onClick={() => setPage((p) => p + 1)}
                 disabled={page() >= (professorsResource()?.pages || 1)}
               >
-                Next
+                {t().common.next}
               </Button>
             </div>
           </Show>

@@ -3,6 +3,7 @@ import { createEffect, createResource, createSignal, For, Show } from 'solid-js'
 import { departmentService } from '../api/services/department-service.js'
 import { facultyService } from '../api/services/faculty-service.js'
 import type { Department, Faculty } from '../api/types.js'
+import { useTranslations } from '../i18n'
 
 const DepartmentCard = (props: { department: Department }) => {
   return (
@@ -45,6 +46,7 @@ const FacultyCard = (props: { faculty: Faculty; isSelected: boolean; onClick: ()
 }
 
 const AcademicsPage = () => {
+  const t = useTranslations()
   const [selectedFacultyId, setSelectedFacultyId] = createSignal<number | null>(null)
 
   // Fetch all faculties
@@ -84,28 +86,37 @@ const AcademicsPage = () => {
 
   return (
     <div class="container mx-auto px-4 py-8">
-      <h1 class="text-3xl font-bold text-parchment-100 mb-8">Academics</h1>
+      <h1 class="text-3xl font-bold text-parchment-100 mb-8">{t().academics.title}</h1>
 
       {/* Loading faculties */}
       <Show
         when={!faculties.loading}
-        fallback={<div class="text-center py-8 text-parchment-300">Loading faculties...</div>}
+        fallback={
+          <div class="text-center py-8 text-parchment-300">{t().academics.loadingFaculties}</div>
+        }
       >
         <Show
           when={!faculties.error}
           fallback={
             <div class="text-red-500 mb-8">
-              Error loading faculties: {(faculties.error as Error).message || 'Unknown error'}
+              {t().academics.errorLoadingFaculties}:{' '}
+              {(faculties.error as Error).message || t().common.unknownError}
             </div>
           }
         >
           <Show
             when={faculties()?.items && (faculties()?.items.length ?? 0) > 0}
-            fallback={<div class="text-center py-8 text-parchment-300">No faculties found</div>}
+            fallback={
+              <div class="text-center py-8 text-parchment-300">
+                {t().academics.noFacultiesFound}
+              </div>
+            }
           >
             {/* Faculty cards menu */}
             <div class="mb-8">
-              <h2 class="text-xl font-semibold mb-4 text-parchment-200">Faculties</h2>
+              <h2 class="text-xl font-semibold mb-4 text-parchment-200">
+                {t().academics.faculties}
+              </h2>
               <div class="flex flex-wrap justify-center gap-4">
                 <For each={faculties()?.items}>
                   {(faculty) => (
@@ -125,7 +136,7 @@ const AcademicsPage = () => {
                 href="/departments"
                 class="text-parchment-200 hover:text-parchment-100 text-lg tracking-wide transition-colors duration-300 underline underline-offset-4"
               >
-                see all departments
+                {t().academics.seeAllDepartments}
               </A>
             </div>
 
@@ -137,7 +148,7 @@ const AcademicsPage = () => {
                     <h2 class="text-2xl font-semibold mb-4 text-parchment-100">{faculty().name}</h2>
                     <Show
                       when={faculty().description}
-                      fallback={<p class="text-parchment-300 italic">No description available.</p>}
+                      fallback={<p class="text-parchment-300 italic">{t().common.noDescription}</p>}
                     >
                       <p class="text-parchment-200 whitespace-pre-line text-lg">
                         {faculty().description}
@@ -150,19 +161,23 @@ const AcademicsPage = () => {
 
             {/* Departments for selected faculty */}
             <div class="mb-6">
-              <h2 class="text-xl font-semibold mb-4 text-parchment-200">Departments</h2>
+              <h2 class="text-xl font-semibold mb-4 text-parchment-200">
+                {t().academics.departments}
+              </h2>
               <Show
                 when={!departments.loading}
                 fallback={
-                  <div class="text-center py-8 text-parchment-300">Loading departments...</div>
+                  <div class="text-center py-8 text-parchment-300">
+                    {t().academics.loadingDepartments}
+                  </div>
                 }
               >
                 <Show
                   when={!departments.error}
                   fallback={
                     <div class="text-red-500">
-                      Error loading departments:{' '}
-                      {(departments.error as Error).message || 'Unknown error'}
+                      {t().academics.errorLoadingDepartments}:{' '}
+                      {(departments.error as Error).message || t().common.unknownError}
                     </div>
                   }
                 >
@@ -170,7 +185,7 @@ const AcademicsPage = () => {
                     when={departments()?.items && (departments()?.items.length ?? 0) > 0}
                     fallback={
                       <div class="text-center py-8 text-parchment-300">
-                        No departments found for this faculty.
+                        {t().academics.noDepartmentsFound}
                       </div>
                     }
                   >

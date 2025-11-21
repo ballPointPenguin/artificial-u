@@ -2,8 +2,10 @@ import { createSignal, onMount, Show } from 'solid-js'
 import { studentService } from '../api/services'
 import type { Student, StudentUpdate } from '../api/types'
 import { Button, Card, FormField, Input } from '../components/ui'
+import { useTranslations } from '../i18n'
 
 const Profile = () => {
+  const t = useTranslations()
   const [student, setStudent] = createSignal<Student | null>(null)
   const [isLoading, setIsLoading] = createSignal(true)
   const [isEditing, setIsEditing] = createSignal(false)
@@ -15,11 +17,11 @@ const Profile = () => {
   const getEnrollmentStatus = (role: string): string => {
     switch (role) {
       case 'viewer':
-        return 'Audit Only'
+        return t().profile.roles.viewer
       case 'creator':
-        return 'Enrolled'
+        return t().profile.roles.creator
       case 'admin':
-        return 'Admin'
+        return t().profile.roles.admin
       default:
         return role
     }
@@ -44,7 +46,7 @@ const Profile = () => {
           email: data.email || '',
         })
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load profile')
+        setError(err instanceof Error ? err.message : t().profile.failedToLoad)
       } finally {
         setIsLoading(false)
       }
@@ -81,12 +83,12 @@ const Profile = () => {
       const updatedStudent = await studentService.updateCurrentStudent(updateData)
       setStudent(updatedStudent)
       setIsEditing(false)
-      setSuccessMessage('Profile updated successfully!')
+      setSuccessMessage(t().profile.profileUpdated)
 
       // Clear success message after 3 seconds
       setTimeout(() => setSuccessMessage(null), 3000)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update profile')
+      setError(err instanceof Error ? err.message : t().profile.failedToUpdate)
     } finally {
       setIsSaving(false)
     }
@@ -98,13 +100,13 @@ const Profile = () => {
 
   return (
     <div class="container mx-auto max-w-4xl px-4 py-8">
-      <h1 class="text-3xl font-display mb-8">My Profile</h1>
+      <h1 class="text-3xl font-display mb-8">{t().profile.title}</h1>
 
       <Show when={isLoading()}>
         <div class="flex items-center justify-center py-12">
           <div class="text-center">
             <div class="mb-4 inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-current border-r-transparent" />
-            <p>Loading profile...</p>
+            <p>{t().profile.loading}</p>
           </div>
         </div>
       </Show>
@@ -126,18 +128,18 @@ const Profile = () => {
           <Show when={!isEditing()}>
             <div class="space-y-6">
               <div>
-                <div class="mb-2 block text-sm font-medium opacity-70">Name</div>
+                <div class="mb-2 block text-sm font-medium opacity-70">{t().profile.name}</div>
                 <p class="text-lg">{student()?.name}</p>
               </div>
 
               <div>
-                <div class="mb-2 block text-sm font-medium opacity-70">Email</div>
-                <p class="text-lg">{student()?.email || 'Not provided'}</p>
+                <div class="mb-2 block text-sm font-medium opacity-70">{t().profile.email}</div>
+                <p class="text-lg">{student()?.email || t().common.notProvided}</p>
               </div>
 
               <div class="pt-4">
                 <Button onClick={handleEdit} variant="primary">
-                  Edit Profile
+                  {t().profile.editProfile}
                 </Button>
               </div>
             </div>
@@ -183,7 +185,7 @@ const Profile = () => {
 
               <div class="flex gap-4 pt-4">
                 <Button type="submit" variant="primary" disabled={isSaving()}>
-                  {isSaving() ? 'Saving...' : 'Save Changes'}
+                  {isSaving() ? t().common.saving : t().profile.saveChanges}
                 </Button>
                 <Button
                   type="button"
@@ -191,7 +193,7 @@ const Profile = () => {
                   onClick={handleCancel}
                   disabled={isSaving()}
                 >
-                  Cancel
+                  {t().common.cancel}
                 </Button>
               </div>
             </form>
@@ -200,34 +202,39 @@ const Profile = () => {
 
         <div class="grid gap-6 md:grid-cols-2">
           <Card class="bg-muted">
-            <h3 class="text-xl font-semibold mb-4">Enrollment Status</h3>
+            <h3 class="text-xl font-semibold mb-4">{t().profile.enrollmentStatus}</h3>
             <div class="space-y-4">
               <div>
-                <div class="mb-1 block text-sm font-medium opacity-70">Status</div>
+                <div class="mb-1 block text-sm font-medium opacity-70">{t().profile.status}</div>
                 <p class="text-2xl font-semibold">
                   {getEnrollmentStatus(student()?.role ?? 'viewer')}
                 </p>
               </div>
               <div>
-                <div class="mb-1 block text-sm font-medium opacity-70">Coin Balance</div>
-                <p class="text-2xl font-semibold">{student()?.coins ?? 0} coins</p>
+                <div class="mb-1 block text-sm font-medium opacity-70">
+                  {t().profile.coinBalance}
+                </div>
+                <p class="text-2xl font-semibold">
+                  {student()?.coins ?? 0} {t().profile.coins}
+                </p>
               </div>
             </div>
           </Card>
 
           <Card class="bg-muted">
-            <h3 class="text-xl font-semibold mb-4">Account Information</h3>
+            <h3 class="text-xl font-semibold mb-4">{t().profile.accountInformation}</h3>
             <div class="space-y-2 text-sm opacity-70">
               <p>
-                <strong>Account ID:</strong> {student()?.id}
+                <strong>{t().profile.accountId}:</strong> {student()?.id}
               </p>
               <Show when={student()?.auth0_sub}>
                 <p>
-                  <strong>Auth ID:</strong> {student()?.auth0_sub}
+                  <strong>{t().profile.authId}:</strong> {student()?.auth0_sub}
                 </p>
               </Show>
               <p>
-                <strong>Account Active:</strong> {student()?.is_active ? 'Yes' : 'No'}
+                <strong>{t().profile.accountActive}:</strong>{' '}
+                {student()?.is_active ? t().common.yes : t().common.no}
               </p>
             </div>
           </Card>

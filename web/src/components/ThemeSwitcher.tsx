@@ -1,5 +1,6 @@
 import * as Dialog from '@kobalte/core/dialog'
 import { createSignal, For } from 'solid-js'
+import { useTranslations } from '../i18n'
 import { hslStringToCss } from '../utils/colors'
 import { currentThemeProperties, setTheme, theme, themeProperties } from '../utils/theme'
 import { Button } from './ui'
@@ -16,47 +17,48 @@ interface ThemeOption {
 
 const themeOptionValues: ThemeValue[] = ['dark-academia', 'vaporwave', 'wabi-sabi', 'biophilia']
 
-const themeOptions: ThemeOption[] = themeOptionValues.map((mode) => {
-  const properties = themeProperties[mode]
-  let description = ''
-  let label = ''
-
-  // Descriptions can be centralized or managed elsewhere if they grow complex
-  switch (mode) {
-    case 'dark-academia':
-      label = 'Dark Academia'
-      description = 'Classical elegance with a scholarly aesthetic'
-      break
-    case 'vaporwave':
-      label = 'Vaporwave'
-      description = 'Retro-futuristic digital aesthetics'
-      break
-    case 'wabi-sabi':
-      label = 'Wabi Sabi'
-      description = 'Embracing imperfection and natural simplicity'
-      break
-    case 'biophilia':
-      label = 'Biophilia'
-      description = 'Lush greens, floral pops, and natural textures'
-      break
-    default:
-      // Optional: handle any unexpected mode
-      label = 'Unknown Theme'
-      description = 'No description available.'
-      break
-  }
-
-  return {
-    value: mode,
-    label,
-    description,
-    previewSurfaceColor: properties.surfaceColor,
-    previewPrimaryColor: properties.primaryColor,
-  }
-})
-
 export function ThemeSwitcher() {
+  const t = useTranslations()
   const [isOpen, setIsOpen] = createSignal(false)
+
+  const themeOptions: ThemeOption[] = themeOptionValues.map((mode) => {
+    const properties = themeProperties[mode]
+    let description = ''
+    let label = ''
+
+    // Descriptions from i18n
+    switch (mode) {
+      case 'dark-academia':
+        label = t().theme.darkAcademia
+        description = t().theme.darkAcademiaDesc
+        break
+      case 'vaporwave':
+        label = t().theme.vaporwave
+        description = t().theme.vaporwaveDesc
+        break
+      case 'wabi-sabi':
+        label = t().theme.wabiSabi
+        description = t().theme.wabiSabiDesc
+        break
+      case 'biophilia':
+        label = t().theme.biophilia
+        description = t().theme.biophiliaDesc
+        break
+      default:
+        // Optional: handle any unexpected mode
+        label = 'Unknown Theme'
+        description = t().common.noDescription
+        break
+    }
+
+    return {
+      value: mode,
+      label,
+      description,
+      previewSurfaceColor: properties.surfaceColor,
+      previewPrimaryColor: properties.primaryColor,
+    }
+  })
 
   return (
     <div class="fixed bottom-4 right-4 z-50">
@@ -65,8 +67,8 @@ export function ThemeSwitcher() {
         size="sm"
         onClick={() => setIsOpen(true)}
         class="rounded-full w-10 h-10 p-0 flex items-center justify-center shadow-lg hover:ring-2 hover:ring-primary/50 transition-all duration-300"
-        aria-label="Change theme"
-        title={`Current theme: ${themeOptions.find((opt) => opt.value === theme())?.label || 'Unknown'}`}
+        aria-label={t().theme.changeTheme}
+        title={`${t().theme.currentTheme}: ${themeOptions.find((opt) => opt.value === theme())?.label || 'Unknown'}`}
       >
         <div
           class="w-6 h-6 rounded-full border-2 transition-colors duration-300"
@@ -85,10 +87,10 @@ export function ThemeSwitcher() {
             aria-labelledby="theme-dialog-title"
           >
             <Dialog.Title id="theme-dialog-title" class="text-xl font-display text-foreground mb-1">
-              Select Theme
+              {t().theme.selectTheme}
             </Dialog.Title>
             <Dialog.Description class="text-sm font-serif text-muted mb-5">
-              Choose an aesthetic that matches your scholarly pursuits.
+              {t().theme.description}
             </Dialog.Description>
 
             <div role="radiogroup" class="space-y-3">

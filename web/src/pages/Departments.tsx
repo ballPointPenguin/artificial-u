@@ -6,6 +6,7 @@ import type { Department, DepartmentCreate } from '../api/types.js'
 import { RequireRole } from '../auth/RequireRole'
 import DepartmentForm from '../components/departments/DepartmentForm.js'
 import { Button, Input, Select, type SelectOption } from '../components/ui'
+import { useTranslations } from '../i18n'
 
 const DepartmentCard = (props: { department: Department }) => {
   return (
@@ -24,6 +25,7 @@ const DepartmentCard = (props: { department: Department }) => {
 }
 
 const DepartmentsPage = () => {
+  const t = useTranslations()
   const [searchQuery, setSearchQuery] = createSignal('')
   const [selectedFacultyId, setSelectedFacultyId] = createSignal<number | null>(null)
   const [page, setPage] = createSignal(1)
@@ -39,7 +41,7 @@ const DepartmentsPage = () => {
     const facs = faculties()
     if (!facs) return []
     return [
-      { value: 'all', label: 'All Faculties' },
+      { value: 'all', label: t().departments.allFaculties },
       ...facs.items.map((faculty) => ({
         value: faculty.id,
         label: faculty.name,
@@ -90,7 +92,7 @@ const DepartmentsPage = () => {
       setShowCreateForm(false)
       void refetch()
     } catch (error) {
-      setFormError(error instanceof Error ? error.message : 'Failed to create department')
+      setFormError(error instanceof Error ? error.message : t().departments.failedToCreate)
     } finally {
       setSubmitting(false)
     }
@@ -99,14 +101,14 @@ const DepartmentsPage = () => {
   return (
     <div class="container mx-auto px-4 py-8">
       <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
-        <h1 class="text-3xl font-bold text-parchment-100">Departments</h1>
+        <h1 class="text-3xl font-bold text-parchment-100">{t().departments.title}</h1>
         <RequireRole minRole="creator">
           <Button
             variant="primary"
             onClick={() => setShowCreateForm(true)}
             class="w-full sm:w-auto"
           >
-            Add Department
+            {t().departments.addDepartment}
           </Button>
         </RequireRole>
       </div>
@@ -114,7 +116,9 @@ const DepartmentsPage = () => {
       <Show when={showCreateForm()}>
         <RequireRole minRole="creator">
           <div class="arcane-card p-6 mb-8">
-            <h2 class="text-xl font-semibold mb-4 text-parchment-100">Create New Department</h2>
+            <h2 class="text-xl font-semibold mb-4 text-parchment-100">
+              {t().departments.createNewDepartment}
+            </h2>
             <DepartmentForm
               onSubmit={(formData) => void handleSubmitCreate(formData)}
               onCancel={() => setShowCreateForm(false)}
@@ -133,11 +137,11 @@ const DepartmentsPage = () => {
             type="text"
             value={searchQuery()}
             onInput={(e) => setSearchQuery(e.currentTarget.value)}
-            placeholder="Search departments..."
+            placeholder={t().departments.searchPlaceholder}
             class="flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-mystic-500 bg-arcanum-800 border-parchment-700/30 text-parchment-100 placeholder:text-parchment-500"
           />
           <Button type="submit" variant="secondary" class="shrink-0">
-            Search
+            {t().common.search}
           </Button>
         </div>
         {/* Faculty dropdown - on its own line with responsive width */}
@@ -145,7 +149,7 @@ const DepartmentsPage = () => {
           when={!faculties.loading && faculties()?.items}
           fallback={
             <div class="w-full sm:w-auto sm:min-w-64 px-4 py-2 border rounded-lg bg-arcanum-800 border-parchment-700/30 text-parchment-300 flex items-center">
-              Loading faculties...
+              {t().departments.loadingFaculties}
             </div>
           }
         >
@@ -154,7 +158,7 @@ const DepartmentsPage = () => {
             options={facultyOptions()}
             value={selectedFacultyId() ?? 'all'}
             onChange={handleFacultyChange}
-            placeholder="All Faculties"
+            placeholder={t().departments.allFaculties}
             class="w-full sm:w-auto sm:min-w-64 sm:max-w-md"
           />
         </Show>
@@ -163,19 +167,20 @@ const DepartmentsPage = () => {
       {/* Loading and error states */}
       <Show
         when={!departments.loading}
-        fallback={<div class="text-center py-8">Loading departments...</div>}
+        fallback={<div class="text-center py-8">{t().departments.loading}</div>}
       >
         <Show
           when={!departments.error}
           fallback={
             <div class="text-red-500">
-              Error loading departments: {(departments.error as Error).message || 'Unknown error'}
+              {t().departments.errorLoading}:{' '}
+              {(departments.error as Error).message || t().common.unknownError}
             </div>
           }
         >
           <Show
             when={departments()?.items && (departments()?.items.length ?? 0) > 0}
-            fallback={<div class="text-center py-8">No departments found</div>}
+            fallback={<div class="text-center py-8">{t().departments.noDepartmentsFound}</div>}
           >
             {/* Departments grid */}
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -191,17 +196,17 @@ const DepartmentsPage = () => {
                 onClick={() => setPage((p) => Math.max(p - 1, 1))}
                 disabled={page() <= 1}
               >
-                Previous
+                {t().common.previous}
               </Button>
               <span class="px-4 py-2 flex items-center text-parchment-300">
-                Page {page()} of {departments()?.pages || 1}
+                {t().common.page} {page()} {t().common.of} {departments()?.pages || 1}
               </span>
               <Button
                 variant="outline"
                 onClick={() => setPage((p) => p + 1)}
                 disabled={page() >= (departments()?.pages || 1)}
               >
-                Next
+                {t().common.next}
               </Button>
             </div>
           </Show>

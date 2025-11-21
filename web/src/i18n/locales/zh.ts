@@ -1,23 +1,28 @@
-import { Locale } from './en'
-
 /**
- * Chinese translations
+ * Chinese (Simplified) translations
+ * Created with Google Gemini 3 Pro (thinking mode)
  */
-export const zh: Locale = {
+export const zh = {
+  /**
+   * Note from Gemini:
+   * A literal translation of "Artificial" (人工) in front of "University" sounds like "Manual Labor University"
+   * in Chinese. Using "AI University" captures the grandeur and the meaning accurately.
+   */
+
   // Site branding
   site: {
-    name: '人工智能大学',
-    shortName: 'U|A',
+    name: '人工智能大学', // Literally: Artificial Intelligence University
+    shortName: 'A|U',
   },
 
   // Navigation
   nav: {
-    about: '关于',
+    about: '关于我们',
     academics: '学术',
     professors: '教授',
     courses: '课程',
     profile: '个人资料',
-    jobs: '招聘',
+    jobs: '任务', // Refers to "Tasks" (computing jobs)
     admin: '管理',
     login: '登录',
     logout: '登出',
@@ -28,21 +33,21 @@ export const zh: Locale = {
   home: {
     hero: {
       title: '人工智能大学',
-      subtitle: '探索由AI精心打造，因你的好奇心而形成的知识',
+      subtitle: '探索由AI精心打造的知识，由你的好奇心塑造',
       buttonText: '了解更多',
     },
     disclaimer: {
       title: '实验性内容 — 非真实大学',
       alphaNotice: '这是一个处于Alpha阶段的实验性项目。所有内容均由AI生成，仅供娱乐。',
       notAccredited:
-        '人工智能大学不是一所经认可的机构。我们不提供真实的课程、学位或学分。所有的教授、院系和讲座都是虚构的，并由人工智能生成。',
-      noFormalEducation: '内容可能包含错误，不应用于正规教育。查看我们的',
+        '人工智能大学不是认可的教育机构。我们不提供真实的课程、学位或学分。所有教授、院系和讲座均为虚构，由人工智能生成。',
+      noFormalEducation: '内容可能包含错误，不应用于正规教育。详情请参阅我们的',
       aboutLink: '关于页面',
-      forFullDetails: '了解详细信息。',
+      forFullDetails: '以获取完整信息。',
     },
     welcome: {
-      intro: '欢迎来到人工智能大学。发现由AI生成的音频课程，让复杂的学科变得易于吸收。',
-      explore: '探索课程大纲，收听动态讲座，并发掘新的研究领域。登录以创建你自己的课程。',
+      intro: '欢迎来到人工智能大学。发现由AI生成的音频课程，轻松吸收复杂主题。',
+      explore: '探索课程大纲，聆听充满活力的讲座，并发掘新的研究领域。登录以创建你自己的课程。',
       viewAllCourses: '查看所有课程',
     },
   },
@@ -53,44 +58,44 @@ export const zh: Locale = {
     subtitle: '一个实验性的AI内容平台',
     importantNotice: {
       title: '重要通知',
-      notAccredited: '人工智能大学不是一所经认可的教育机构。',
+      notAccredited: '人工智能大学并非经认证的教育机构。',
       experimental:
-        '该平台是一个利用人工智能生成教育内容的实验性项目。本网站上的所有课程、教授、院系和讲座均由AI生成，仅用于娱乐和实验目的。',
+        '本平台是一个利用人工智能生成教育内容的实验性项目。本网站上的所有课程、教授、院系和讲座均由AI生成，仅用于实验和娱乐目的。',
       alphaStage:
-        '这是一个正在积极开发中的Alpha阶段项目。内容可能不准确、不完整或随时更改，恕不另行通知。请勿依赖此内容进行正规教育、专业认证或任何官方学术目的。',
+        '这是一个正在积极开发中的Alpha阶段项目。内容可能不准确、不完整或随时更改，恕不另行通知。请勿依赖此内容进行正规教育、专业认证或任何官方学术用途。',
     },
     whatThisIs: {
-      title: '这是一个什么项目',
+      title: '这是什么',
       content:
-        '人工智能大学是一个实验性平台，旨在探索当我们使用大型语言模型（LLM）生成完整的教育内容时会发生什么。整个课程体系——从院系结构到课程大纲、教授个性以及讲座内容——均由AI系统创建。',
+        '人工智能大学是一个实验性平台，旨在探索当我们使用大型语言模型生成完整的教育内容时会发生什么。从院系结构到课程大纲、教授性格以及讲座内容，整个课程体系均由AI系统创建。',
     },
     howItWorks: {
-      title: '工作原理',
+      title: '运作方式',
       intro:
-        '利用各种AI模型（包括Claude、GPT等），该平台生成：不同学术领域的课程、具有独特教学风格和个性的虚构教授档案、按主题和周次组织的结构化讲座内容，以及使用语音合成技术的讲座音频版本。',
+        '利用各种AI模型（包括Claude、GPT等），该平台生成：跨越不同学术领域的课程、具有独特教学风格和个性的虚构教授档案、按主题和周次组织的结构化讲座内容，以及使用语音合成技术的讲座音频版本。',
       outro:
         '用户可以创建新课程，自定义参数，并探索AI生成的学术内容。这主要是一个关于自动化内容生成的创意和技术实验。',
     },
     whatThisIsNot: {
       title: '这不是什么',
       content:
-        '该平台不提供真实的课程、经认可的项目、学分、学位或证书，也不提供由人类专家进行的合格指导或经过验证的教育内容。与本项目相关的任何人均不是您的老师、导师或学术顾问。',
+        '本平台不提供真实课程、认证项目、学分、学位或证书，也不提供人类专家的合格指导或经过验证的教育内容。与本项目相关的任何人都不是您的老师、导师或学术顾问。',
     },
     alphaStatus: {
       title: 'Alpha 状态',
       content:
-        '该项目处于Alpha早期开发阶段。可能会有漏洞、功能不完整和重大变更。AI生成的内容未经准确性审查，可能包含错误、偏见或过时信息。使用本平台请自行承担风险，并仅用于娱乐目的。',
+        '本项目处于Alpha开发早期。可能会出现漏洞、功能不完整和重大变更。AI生成的内容未经准确性审查，可能包含错误、偏见或过时信息。使用本平台请自行承担风险，仅供娱乐。',
     },
     openSource: {
       title: '开源',
-      content: '人工智能大学是一个开源项目。您可以在GitHub上查看源代码、报告问题或为开发做出贡献。',
+      content: '人工智能大学是一个开源项目。您可以在GitHub上查看源代码、报告问题或参与开发。',
       viewOnGitHub: '在GitHub上查看',
     },
     creator: {
       title: '关于创作者',
-      bio: 'Artificial-U 由我，Bennie Rosas，创建和维护。我在明尼阿波利斯编写音乐和软件。我毕业于长青州立学院。联系我：',
+      bio: 'Artificial-U 由我，Bennie Rosas 创建和维护。我在明尼阿波利斯编写音乐和软件。我毕业于常青州立学院 (The Evergreen State College)。联系方式：',
       outro:
-        '我构建这个项目作为一个有趣的实验，旨在激发快乐和好奇心。希望你也喜欢它。欢迎分享你的想法。',
+        '我建立这个项目是为了进行有趣的实验，旨在激发快乐和好奇心。希望你也喜欢它。欢迎联系我分享你的想法。',
     },
     exploreCourses: '探索课程',
   },
@@ -113,5 +118,260 @@ export const zh: Locale = {
     filter: '筛选',
     sort: '排序',
     viewAll: '查看全部',
+    previous: '上一页',
+    retry: '重试',
+    refresh: '刷新',
+    saving: '保存中...',
+    deleting: '删除中...',
+    generating: '生成中...',
+    uploading: '上传中...',
+    exporting: '导出中...',
+    cancelling: '取消中...',
+    adding: '添加中...',
+    unknownError: '未知错误',
+    notProvided: '未提供',
+    noDescription: '暂无描述。',
+    nA: '不适用',
+    yes: '是',
+    no: '否',
+    all: '全部',
+    page: '页',
+    of: '/', // Common notation for "Page 1 of 10" -> "1 / 10" or "共 10 页"
+    ascending: '升序',
+    descending: '降序',
+  },
+
+  // Academics page
+  academics: {
+    title: '学术',
+    faculties: '学院', // "Faculty" as in division (e.g. Faculty of Science)
+    departments: '系', // "Department" (e.g. Department of Physics)
+    seeAllDepartments: '查看所有系',
+    loadingFaculties: '正在加载学院...',
+    loadingDepartments: '正在加载系...',
+    errorLoadingFaculties: '加载学院时出错',
+    errorLoadingDepartments: '加载系时出错',
+    noFacultiesFound: '未找到学院',
+    noDepartmentsFound: '该学院下未找到系。',
+  },
+
+  // Courses page
+  courses: {
+    title: '学术课程',
+    addCourse: '添加课程',
+    createNewCourse: '创建新课程',
+    filterByDepartment: '按系筛选',
+    allDepartments: '所有系',
+    clearFilter: '清除筛选',
+    myCourses: '我的课程',
+    myCoursesOnly: '仅看我的课程',
+    sortField: '排序字段',
+    sortBy: '排序方式',
+    order: '顺序',
+    code: '代码',
+    courseTitle: '标题',
+    level: '级别',
+    lastUpdate: '最后更新',
+    created: '创建时间',
+    teacher: '教师',
+    department: '系',
+    creator: '创建者',
+    audioFiles: '音频文件',
+    audioCoverage: '音频覆盖率',
+    updated: '已更新',
+    viewCourse: '查看课程 →',
+    loading: '正在加载课程...',
+    errorLoading: '加载课程时出错',
+    noCoursesFound: '未找到课程',
+    courseCreationFailed: '课程创建失败',
+    failedToEnqueue: '课程创建任务入队失败',
+  },
+
+  // Professors page
+  professors: {
+    title: '教授',
+    addProfessor: '添加教授',
+    createNewProfessor: '创建新教授',
+    searchPlaceholder: '搜索教授...',
+    allFaculties: '所有学院',
+    allDepartments: '所有系',
+    loadingFaculties: '正在加载学院...',
+    loadingDepartments: '正在加载系...',
+    loading: '正在加载教授...',
+    errorLoading: '加载教授时出错',
+    noProfessorsFound: '未找到教授',
+    failedToCreate: '教授创建失败',
+  },
+
+  // Departments page
+  departments: {
+    title: '系', // Can also be 院系 (Departments/Faculties collectively)
+    addDepartment: '添加系',
+    createNewDepartment: '创建新系',
+    searchPlaceholder: '搜索系...',
+    allFaculties: '所有学院',
+    loadingFaculties: '正在加载学院...',
+    loading: '正在加载系...',
+    errorLoading: '加载系时出错',
+    noDepartmentsFound: '未找到系',
+    failedToCreate: '系创建失败',
+  },
+
+  // Profile page
+  profile: {
+    title: '我的资料',
+    loading: '正在加载资料...',
+    name: '姓名',
+    email: '电子邮件',
+    enterName: '输入您的姓名',
+    enterEmail: '输入您的电子邮件',
+    editProfile: '编辑资料',
+    saveChanges: '保存更改',
+    profileUpdated: '资料更新成功！',
+    failedToLoad: '无法加载资料',
+    failedToUpdate: '无法更新资料',
+    enrollmentStatus: '学籍状态',
+    status: '状态',
+    coinBalance: '代币余额',
+    coins: '代币',
+    accountInformation: '账户信息',
+    accountId: '账户 ID',
+    authId: '认证 ID',
+    accountActive: '账户激活',
+    roles: {
+      viewer: '旁听生', // "Auditor" - specific academic term for listening without credit
+      creator: '在校生', // "Enrolled Student"
+      admin: '管理员',
+    },
+  },
+
+  // Admin Dashboard
+  admin: {
+    title: '管理仪表板',
+    filterByRole: '按角色筛选',
+    allRoles: '所有角色',
+    role: '角色',
+    viewer: '旁听生',
+    creator: '创作者',
+    admin: '管理员',
+    active: '活跃',
+    inactive: '非活跃',
+    amount: '数量',
+    addCoins: '添加代币',
+    roleUpdated: '学生角色更新成功',
+    failedToUpdateRole: '无法更新角色',
+    pleaseEnterValidCoins: '请输入有效的正数代币',
+    addedCoins: '已添加',
+    coinsToStudent: '代币给学生',
+    failedToAddCoins: '添加代币失败',
+    errorLoading: '加载学生时出错',
+    unknownError: '未知错误',
+  },
+
+  // Jobs page
+  jobs: {
+    title: '后台任务', // "Background Tasks"
+    all: '全部',
+    queued: '排队中',
+    running: '运行中',
+    done: '已完成',
+    failed: '失败',
+    cancelled: '已取消',
+    cancel: '取消',
+    cancelJob: '取消任务',
+    confirmCancel: '您确定要取消此任务吗？',
+    failedToCancel: '取消任务失败，请重试。',
+    noErrorAvailable: '无可用错误信息',
+    errorLoading: '加载任务时出错',
+  },
+
+  // Course Detail page
+  courseDetail: {
+    department: '系',
+    professor: '教授',
+    loadingDepartment: '正在加载系...',
+    loadingProfessor: '正在加载教授...',
+    departmentNotAvailable: '系信息不可用。',
+    professorNotAvailable: '教授信息不可用。',
+    faculty: '学院',
+    topics: '主题',
+    lectures: '讲座', // "Lectures" or "Talks"
+    noTopicsFound: '本课程未找到主题。',
+    noLecturesFound: '本主题下未找到讲座。',
+    loadingTopics: '正在加载主题...',
+    loadingLectures: '正在加载讲座...',
+    errorLoadingTopics: '加载主题时出错',
+    errorLoadingLectures: '加载讲座时出错',
+    playAudio: '播放讲座音频',
+    downloadAudio: '下载讲座音频',
+    openDetail: '打开讲座详情',
+    editCourse: '编辑课程',
+    deleteCourse: '删除课程',
+    export: '导出',
+    exporting: '导出中...',
+    deleting: '删除中...',
+    failedToUpdate: '课程更新失败',
+    failedToDelete: '课程删除失败',
+    failedToExport: '课程导出失败',
+    level: '级别',
+    credits: '学分',
+  },
+
+  // Department Detail page
+  departmentDetail: {
+    courses: '课程',
+    professors: '教授',
+    loadingCourses: '正在加载课程...',
+    loadingProfessors: '正在加载教授...',
+    errorLoadingCourses: '加载课程时出错',
+    errorLoadingProfessors: '加载教授时出错',
+    noCoursesFound: '该系未找到课程。',
+    noProfessorsFound: '该系未找到教授。',
+    editDepartment: '编辑系',
+    deleteDepartment: '删除系',
+    failedToLoad: '加载系失败',
+    failedToUpdate: '更新系失败',
+    failedToDelete: '删除系失败',
+    invalidDepartmentId: '无效的系 ID',
+    level: '级别',
+    credits: '学分',
+  },
+
+  // Lecture Detail page
+  lectureDetail: {
+    generatingAudio: '正在生成音频...',
+    regenerateAudio: '重新生成音频',
+    generateAudio: '生成音频',
+    uploadAudio: '上传音频',
+    uploading: '上传中...',
+    delete: '删除',
+    deleting: '删除中...',
+    deleteLecture: '删除讲座',
+    confirmDelete: '删除',
+    failedToUpdate: '更新讲座失败',
+    failedToDelete: '删除讲座失败',
+    failedToGenerateAudio: '生成音频失败',
+    pleaseSelectAudioFile: '请选择音频文件（推荐 MP3）',
+    fileSizeLimit: '文件大小必须小于 50MB',
+    failedToUploadAudio: '上传音频失败',
+    errorLoading: '加载讲座失败',
+  },
+
+  // Theme Switcher
+  theme: {
+    selectTheme: '选择主题',
+    description: '选择符合您学术追求的美学风格。',
+    darkAcademia: '暗黑学院风', // "Dark Academia" style
+    darkAcademiaDesc: '古典优雅与学术美学的结合',
+    vaporwave: '蒸汽波', // "Vaporwave"
+    vaporwaveDesc: '复古未来主义的数字美学',
+    wabiSabi: '侘寂', // "Wabi Sabi"
+    wabiSabiDesc: '拥抱不完美与自然简约',
+    biophilia: '亲生物设计', // "Biophilia"
+    biophiliaDesc: '郁郁葱葱的绿色、花卉点缀和自然纹理',
+    changeTheme: '更改主题',
+    currentTheme: '当前主题',
   },
 }
+
+export type Locale = typeof zh

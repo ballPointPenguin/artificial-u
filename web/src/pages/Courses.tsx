@@ -10,12 +10,14 @@ import type { CourseFormData } from '../components/courses/types.jsx'
 import { Button } from '../components/ui'
 import type { SelectOption } from '../components/ui/Select.jsx'
 import Select from '../components/ui/Select.jsx'
+import { useTranslations } from '../i18n'
 import { getJobEventHub } from '../utils/job-events-hub.js'
 
 type SortField = 'code' | 'title' | 'level' | 'updated_at' | 'created_at'
 type SortOrder = 'asc' | 'desc'
 
 const Courses: Component = () => {
+  const t = useTranslations()
   const auth = useAuth()
   const [page, setPage] = createSignal(1)
   const [size] = createSignal(10)
@@ -71,7 +73,7 @@ const Courses: Component = () => {
     // Sort departments alphabetically by name
     const sortedDepts = [...depts].sort((a, b) => a.name.localeCompare(b.name))
     return [
-      { value: 0, label: 'All Departments' },
+      { value: 0, label: t().courses.allDepartments },
       ...sortedDepts.map((dept) => ({
         value: dept.id,
         label: dept.name,
@@ -100,11 +102,11 @@ const Courses: Component = () => {
   )
 
   const sortFieldOptions: SelectOption[] = [
-    { value: 'updated_at', label: 'Last Update' },
-    { value: 'created_at', label: 'Created' },
-    { value: 'code', label: 'Code' },
-    { value: 'title', label: 'Title' },
-    { value: 'level', label: 'Level' },
+    { value: 'updated_at', label: t().courses.lastUpdate },
+    { value: 'created_at', label: t().courses.created },
+    { value: 'code', label: t().courses.code },
+    { value: 'title', label: t().courses.courseTitle },
+    { value: 'level', label: t().courses.level },
   ]
 
   // Handle sorting - if clicking same column, toggle order; otherwise set new column with desc
@@ -237,13 +239,13 @@ const Courses: Component = () => {
           unsubscribe()
           setSubmitting(false)
         } else if (ev.status === 'failed' || ev.status === 'cancelled') {
-          setFormError(ev.last_error || 'Course creation failed')
+          setFormError(ev.last_error || t().courses.courseCreationFailed)
           unsubscribe()
           setSubmitting(false)
         }
       })
     } catch (error) {
-      setFormError(error instanceof Error ? error.message : 'Failed to enqueue course creation')
+      setFormError(error instanceof Error ? error.message : t().courses.failedToEnqueue)
       setSubmitting(false)
     }
   }
@@ -251,10 +253,10 @@ const Courses: Component = () => {
   return (
     <div class="container mx-auto px-4 py-6 sm:px-6">
       <div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <h1 class="text-3xl font-display text-parchment-100">Academic Courses</h1>
+        <h1 class="text-3xl font-display text-parchment-100">{t().courses.title}</h1>
         <RequireRole minRole="creator">
           <Button variant="primary" onClick={() => setShowCreateForm(true)}>
-            Add Course
+            {t().courses.addCourse}
           </Button>
         </RequireRole>
       </div>
@@ -262,7 +264,9 @@ const Courses: Component = () => {
       <Show when={showCreateForm()}>
         <RequireRole minRole="creator">
           <div class="arcane-card p-6 mb-8">
-            <h2 class="text-xl font-semibold mb-4 text-parchment-100">Create New Course</h2>
+            <h2 class="text-xl font-semibold mb-4 text-parchment-100">
+              {t().courses.createNewCourse}
+            </h2>
             <CourseForm
               onSubmit={handleSubmitCreate}
               onCancel={() => setShowCreateForm(false)}
@@ -275,18 +279,18 @@ const Courses: Component = () => {
 
       <Show
         when={!coursesData.loading}
-        fallback={<div class="text-parchment-200 font-serif p-4">Loading courses...</div>}
+        fallback={<div class="text-parchment-200 font-serif p-4">{t().courses.loading}</div>}
       >
         {/* Filter section */}
         <div class="mb-6 flex flex-col gap-4 lg:flex-row lg:items-center">
           <div class="w-full max-w-xs sm:max-w-sm lg:w-64">
             <Select
               name="department-filter"
-              label="Filter by Department"
+              label={t().courses.filterByDepartment}
               value={departmentFilter() || 0}
               onChange={handleDepartmentFilterChange}
               options={departmentOptions()}
-              placeholder="All Departments"
+              placeholder={t().courses.allDepartments}
               disabled={departmentsData.loading}
             />
           </div>
@@ -299,7 +303,7 @@ const Courses: Component = () => {
                 }}
                 class="self-start text-sm text-parchment-300 transition-colors hover:text-mystic-300"
               >
-                Clear filter
+                {t().courses.clearFilter}
               </button>
             </Show>
             <Show when={auth.isAuthenticated()}>
@@ -313,18 +317,18 @@ const Courses: Component = () => {
                   }}
                   class="h-4 w-4 rounded border-parchment-600 bg-arcanum-900 text-mystic-500 focus:ring-mystic-500 focus:ring-offset-arcanum-900"
                 />
-                <span class="font-serif text-sm">My Courses</span>
+                <span class="font-serif text-sm">{t().courses.myCourses}</span>
               </label>
             </Show>
           </div>
           <div class="flex flex-col gap-3 sm:hidden">
             <Select
               name="sort-field"
-              label="Sort field"
+              label={t().courses.sortField}
               value={sortBy()}
               onChange={handleMobileSortFieldChange}
               options={sortFieldOptions}
-              placeholder="Sort by"
+              placeholder={t().courses.sortBy}
             />
             <Button
               type="button"
@@ -333,33 +337,34 @@ const Courses: Component = () => {
               onClick={toggleSortOrder}
               class="self-start"
             >
-              Order: {order() === 'asc' ? 'Ascending' : 'Descending'}
+              {t().courses.order}:{' '}
+              {order() === 'asc' ? t().common.ascending : t().common.descending}
             </Button>
           </div>
         </div>
 
         <Show
           when={hasCourses()}
-          fallback={<div class="arcane-card p-6 text-center">No courses found.</div>}
+          fallback={<div class="arcane-card p-6 text-center">{t().courses.noCoursesFound}</div>}
         >
           <div class="arcane-card mb-6 hidden lg:block">
             <table class="min-w-full">
               <thead>
                 <tr class="border-b border-parchment-800/30">
-                  <SortableHeader field="code" label="Code" />
-                  <SortableHeader field="title" label="Title" />
+                  <SortableHeader field="code" label={t().courses.code} />
+                  <SortableHeader field="title" label={t().courses.courseTitle} />
                   <th class="py-3 px-4 align-middle text-left font-display text-parchment-200">
-                    Teacher
+                    {t().courses.teacher}
                   </th>
                   <th class="py-3 px-4 align-middle text-left font-display text-parchment-200">
-                    Department
+                    {t().courses.department}
                   </th>
                   <th class="py-3 px-4 align-middle text-left font-display text-parchment-200">
-                    Creator
+                    {t().courses.creator}
                   </th>
-                  <SortableHeader field="updated_at" label="Last Update" />
+                  <SortableHeader field="updated_at" label={t().courses.lastUpdate} />
                   <th class="py-3 px-4 align-middle text-left font-display text-parchment-200">
-                    Audio Files
+                    {t().courses.audioFiles}
                   </th>
                 </tr>
               </thead>
@@ -416,32 +421,32 @@ const Courses: Component = () => {
                         </A>
                       </div>
                       <div class="text-xs font-serif text-parchment-400 text-right">
-                        <span class="block uppercase tracking-wide">Updated</span>
+                        <span class="block uppercase tracking-wide">{t().courses.updated}</span>
                         <span class="text-parchment-200">{formatDate(course.updated_at)}</span>
                       </div>
                     </div>
                     <div class="grid gap-3 text-sm font-serif text-parchment-200">
                       <div>
                         <span class="block text-xs uppercase tracking-wide text-parchment-500">
-                          Teacher
+                          {t().courses.teacher}
                         </span>
                         <span class="text-parchment-100">{getProfessorName(course)}</span>
                       </div>
                       <div>
                         <span class="block text-xs uppercase tracking-wide text-parchment-500">
-                          Department
+                          {t().courses.department}
                         </span>
                         <span class="text-parchment-100">{getDepartmentName(course)}</span>
                       </div>
                       <div>
                         <span class="block text-xs uppercase tracking-wide text-parchment-500">
-                          Creator
+                          {t().courses.creator}
                         </span>
                         <span class="text-parchment-100">{getStudentName(course)}</span>
                       </div>
                       <div class="flex items-center justify-between text-parchment-100">
                         <span class="text-xs uppercase tracking-wide text-parchment-500">
-                          Audio Coverage
+                          {t().courses.audioCoverage}
                         </span>
                         <span>
                           {course.lectures_with_audio_count ?? 0} / {course.topics_count ?? 0}
@@ -453,7 +458,7 @@ const Courses: Component = () => {
                         href={`/courses/${String(course.id)}`}
                         class="text-sm font-serif text-mystic-300 hover:text-mystic-200 transition-colors"
                       >
-                        View course →
+                        {t().courses.viewCourse}
                       </A>
                     </div>
                   </div>
@@ -466,14 +471,14 @@ const Courses: Component = () => {
           <Show when={getPages() > 1}>
             <div class="mt-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div class="font-serif text-parchment-300">
-                Page {page()} of {getPages()}
+                {t().common.page} {page()} {t().common.of} {getPages()}
               </div>
               <div class="flex gap-3 sm:justify-end">
                 <Button variant="outline" onClick={handlePrevPage} disabled={page() <= 1}>
-                  Previous
+                  {t().common.previous}
                 </Button>
                 <Button variant="outline" onClick={handleNextPage} disabled={page() >= getPages()}>
-                  Next
+                  {t().common.next}
                 </Button>
               </div>
             </div>
