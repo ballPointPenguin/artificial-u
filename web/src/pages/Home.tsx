@@ -7,9 +7,9 @@ const Home = () => {
     <div>
       {/* Hero Section */}
       <Hero
-        title={t.home.hero.title}
-        subtitle={t.home.hero.subtitle}
-        buttonText={t.home.hero.buttonText}
+        title={t().home.hero.title}
+        subtitle={t().home.hero.subtitle}
+        buttonText={t().home.hero.buttonText}
         buttonLink="#home-content"
       />
 
@@ -21,17 +21,17 @@ const Home = () => {
               <div class="flex-shrink-0 text-red-400 text-2xl font-bold">⚠</div>
               <div class="flex-1">
                 <h2 class="text-xl font-display text-red-300 mb-3 font-bold">
-                  {t.home.disclaimer.title}
+                  {t().home.disclaimer.title}
                 </h2>
                 <div class="space-y-2 font-serif text-parchment-200">
-                  <p class="font-semibold">{t.home.disclaimer.alphaNotice}</p>
-                  <p>{t.home.disclaimer.notAccredited}</p>
+                  <p class="font-semibold">{t().home.disclaimer.alphaNotice}</p>
+                  <p>{t().home.disclaimer.notAccredited}</p>
                   <p>
-                    {t.home.disclaimer.noFormalEducation}{' '}
+                    {t().home.disclaimer.noFormalEducation}{' '}
                     <a href="/about" class="text-red-300 hover:text-red-200 underline">
-                      {t.home.disclaimer.aboutLink}
+                      {t().home.disclaimer.aboutLink}
                     </a>{' '}
-                    {t.home.disclaimer.forFullDetails}
+                    {t().home.disclaimer.forFullDetails}
                   </p>
                 </div>
               </div>
@@ -49,8 +49,8 @@ const Home = () => {
 
         <div class="relative z-10 max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
           <div class="prose prose-lg prose-invert mx-auto font-serif text-parchment-300">
-            <p class="text-lg md:text-xl leading-relaxed">{t.home.welcome.intro}</p>
-            <p class="text-lg md:text-xl leading-relaxed">{t.home.welcome.explore}</p>
+            <p class="text-lg md:text-xl leading-relaxed">{t().home.welcome.intro}</p>
+            <p class="text-lg md:text-xl leading-relaxed">{t().home.welcome.explore}</p>
           </div>
 
           <div class="mt-12 text-center">
@@ -58,7 +58,7 @@ const Home = () => {
               href="/courses"
               class="inline-block px-6 py-3 border border-parchment-400 text-parchment-200 bg-arcanum-800/50 hover:bg-arcanum-700/50 transition-colors duration-300 rounded font-serif tracking-wider"
             >
-              {t.home.welcome.viewAllCourses}
+              {t().home.welcome.viewAllCourses}
             </a>
           </div>
         </div>

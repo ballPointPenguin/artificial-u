@@ -45,26 +45,27 @@
 - [x] Sort and filter departments
 - [x] Admin ability to grant coins to students
 - [x] Monitoring and analytics
+- [x] Protect the "Delete" actions -- restrict to admin or owner of the record
+- [x] Include word-count in summary or somewhere
+- [x] Record voice (and settings?) id for lecture audio generation
+- [x] Improve mobile view
+- [x] Re-Write Home and About pages
+- [x] General UI Cleanup
+- [x] Web-based audio player
 - [ ] Sort and filter professors
 - [ ] Easy Course Generation UI (single prompt field, no form)
-- [ ] Protect the "Delete" actions -- restrict to admin or owner of the record
 - [ ] Encourage more foreign and older professors
 - [ ] Dev: Troubleshoot the "too many connections" errors
 - [ ] Enable Private content (paid students only?)
 - [ ] Browser Notifications for jobs
-- [ ] Include word-count in summary or somewhere
 - [ ] Action buttons on Topics List
 - [ ] Indicate # of generated lectures for a topic
 - [ ] Generated image model attribution
-- [ ] Better handling of job lifecycles with uvicore reboots
-- [ ] Improve mobile view
+- [ ] Dev: Better handling of job lifecycles with uvicore reboots
 - [ ] Global UI indication of jobs running
-- [ ] Re-Write Home and About pages
-- [ ] General UI Cleanup
 - [ ] FAQ on About page
 - [ ] Invite codes / Promo codes -> Coins
 - [ ] Enable purchases and subscriptions for coins
-- [ ] Record voice (and settings?) id for lecture audio generation
 - [ ] Consider storing full-text of prompts used per record.
 - [ ] User Interests
 - [ ] Rating & Feedback system
@@ -77,7 +78,8 @@
 - [ ] Wabi-Sabi theme to be more wabi-sabi-esque
 - [ ] Advanced ElevenLabs voice controls
 - [ ] Volume normalization
-- [ ] Web-based audio player with playlists
+- [ ] Playlists support
+- [ ] Bookmarking courses
 - [ ] Lecture Configuration Options
 - [ ] Model Selection UI
 - [ ] Consider utilizing some Open models in production

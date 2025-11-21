@@ -91,7 +91,7 @@ export const en = {
     },
     creator: {
       title: 'About the Creator',
-      bio: 'Artificial-U is created and maintained by me, Bennie Rosas. I write music and software in Minneapolis. I graduated from The Evergreen State College. My pronouns are they/he. Contact me at',
+      bio: 'Artificial-U is created and maintained by me, Bennie Rosas. I write music and software in Minneapolis. I graduated from The Evergreen State College. Contact me at',
       outro:
         'I built this as a fun experiment, designed to spark joy and curiosity. I hope you enjoy it too. Reach out to share your thoughts.',
     },

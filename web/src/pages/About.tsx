@@ -9,9 +9,9 @@ const About: Component = () => {
       <section class="py-16 bg-gradient-to-b from-arcanum-800 to-arcanum-900 border-b border-parchment-800/30">
         <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
           <h1 class="text-4xl md:text-5xl font-display text-parchment-100 mb-4 text-shadow-golden">
-            {t.about.title}
+            {t().about.title}
           </h1>
-          <p class="text-xl font-serif text-parchment-300">{t.about.subtitle}</p>
+          <p class="text-xl font-serif text-parchment-300">{t().about.subtitle}</p>
         </div>
       </section>
 
@@ -22,49 +22,51 @@ const About: Component = () => {
             {/* Important Notice */}
             <div class="bg-red-900/20 border-2 border-red-500/50 rounded-lg p-6 mb-8">
               <h2 class="text-2xl font-display text-red-300 mb-4">
-                {t.about.importantNotice.title}
+                {t().about.importantNotice.title}
               </h2>
               <div class="space-y-3 text-parchment-200">
-                <p class="leading-relaxed font-semibold">{t.about.importantNotice.notAccredited}</p>
-                <p class="leading-relaxed">{t.about.importantNotice.experimental}</p>
-                <p class="leading-relaxed">{t.about.importantNotice.alphaStage}</p>
+                <p class="leading-relaxed font-semibold">
+                  {t().about.importantNotice.notAccredited}
+                </p>
+                <p class="leading-relaxed">{t().about.importantNotice.experimental}</p>
+                <p class="leading-relaxed">{t().about.importantNotice.alphaStage}</p>
               </div>
             </div>
 
             <div>
               <h2 class="text-2xl font-display text-parchment-100 mb-4">
-                {t.about.whatThisIs.title}
+                {t().about.whatThisIs.title}
               </h2>
-              <p class="leading-relaxed">{t.about.whatThisIs.content}</p>
+              <p class="leading-relaxed">{t().about.whatThisIs.content}</p>
             </div>
 
             <div>
               <h2 class="text-2xl font-display text-parchment-100 mb-4">
-                {t.about.howItWorks.title}
+                {t().about.howItWorks.title}
               </h2>
-              <p class="leading-relaxed">{t.about.howItWorks.intro}</p>
-              <p class="leading-relaxed mt-4">{t.about.howItWorks.outro}</p>
+              <p class="leading-relaxed">{t().about.howItWorks.intro}</p>
+              <p class="leading-relaxed mt-4">{t().about.howItWorks.outro}</p>
             </div>
 
             <div>
               <h2 class="text-2xl font-display text-parchment-100 mb-4">
-                {t.about.whatThisIsNot.title}
+                {t().about.whatThisIsNot.title}
               </h2>
-              <p class="leading-relaxed">{t.about.whatThisIsNot.content}</p>
+              <p class="leading-relaxed">{t().about.whatThisIsNot.content}</p>
             </div>
 
             <div>
               <h2 class="text-2xl font-display text-parchment-100 mb-4">
-                {t.about.alphaStatus.title}
+                {t().about.alphaStatus.title}
               </h2>
-              <p class="leading-relaxed">{t.about.alphaStatus.content}</p>
+              <p class="leading-relaxed">{t().about.alphaStatus.content}</p>
             </div>
 
             <div>
               <h2 class="text-2xl font-display text-parchment-100 mb-4">
-                {t.about.openSource.title}
+                {t().about.openSource.title}
               </h2>
-              <p class="leading-relaxed">{t.about.openSource.content}</p>
+              <p class="leading-relaxed">{t().about.openSource.content}</p>
               <div class="mt-4">
                 <a
                   href="https://github.com/ballPointPenguin/artificial-u"
@@ -79,15 +81,17 @@ const About: Component = () => {
                       clip-rule="evenodd"
                     />
                   </svg>
-                  {t.about.openSource.viewOnGitHub}
+                  {t().about.openSource.viewOnGitHub}
                 </a>
               </div>
             </div>
 
             <div>
-              <h2 class="text-2xl font-display text-parchment-100 mb-4">{t.about.creator.title}</h2>
+              <h2 class="text-2xl font-display text-parchment-100 mb-4">
+                {t().about.creator.title}
+              </h2>
               <p class="leading-relaxed">
-                {t.about.creator.bio}{' '}
+                {t().about.creator.bio}{' '}
                 <a
                   href="mailto:ben@aliencyb.org"
                   class="text-parchment-200 hover:text-parchment-100 underline decoration-parchment-400 hover:decoration-parchment-200 transition-colors duration-200"
@@ -96,7 +100,7 @@ const About: Component = () => {
                 </a>
                 .
               </p>
-              <p class="leading-relaxed mt-4">{t.about.creator.outro}</p>
+              <p class="leading-relaxed mt-4">{t().about.creator.outro}</p>
             </div>
           </div>
 
@@ -105,7 +109,7 @@ const About: Component = () => {
               href="/courses"
               class="inline-block px-6 py-3 border border-parchment-400 text-parchment-200 bg-arcanum-800/50 hover:bg-arcanum-700/50 transition-colors duration-300 rounded font-serif tracking-wider"
             >
-              {t.about.exploreCourses}
+              {t().about.exploreCourses}
             </a>
           </div>
         </div>

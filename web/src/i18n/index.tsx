@@ -1,49 +1,75 @@
 import { createContext, createMemo, createSignal, type ParentComponent, useContext } from 'solid-js'
 import { en, type Locale } from './locales/en'
+import { es } from './locales/es'
+import { fr } from './locales/fr'
+import { zh } from './locales/zh'
 
 /**
  * Available locale codes
  */
-export type LocaleCode = 'en' // | 'es' | 'zh' - add more as needed
+export type LocaleCode = 'en' | 'es' | 'fr' | 'zh'
 
 /**
  * Dictionary of all available locales
  */
 const locales: Record<LocaleCode, Locale> = {
   en,
-  // es: () => import('./locales/es').then(m => m.es),  // Lazy load in future
-  // zh: () => import('./locales/zh').then(m => m.zh),
+  es,
+  fr,
+  zh,
 }
 
 /**
  * Context for i18n
  */
 const I18nContext = createContext<{
-  t: Locale
+  t: () => Locale
   currentLocale: () => LocaleCode
   setLocale: (locale: LocaleCode) => void
 }>()
+
+const LOCALE_STORAGE_KEY = 'au-locale'
+
+/**
+ * Get the initial locale from localStorage or browser/default
+ */
+function getInitialLocale(): LocaleCode {
+  // Try localStorage first
+  if (typeof window !== 'undefined') {
+    const stored = localStorage.getItem(LOCALE_STORAGE_KEY)
+    if (stored && (stored === 'en' || stored === 'es' || stored === 'fr' || stored === 'zh')) {
+      return stored as LocaleCode
+    }
+
+    // Try browser language
+    const browserLang = navigator.language.toLowerCase()
+    if (browserLang.startsWith('es')) return 'es'
+    if (browserLang.startsWith('fr')) return 'fr'
+    if (browserLang.startsWith('zh')) return 'zh'
+  }
+
+  // Default to English
+  return 'en'
+}
 
 /**
  * I18n Provider component that wraps the app
  */
 export const I18nProvider: ParentComponent = (props) => {
-  // TODO: Load from localStorage or user preferences
-  const defaultLocale: LocaleCode = 'en'
-
-  const [currentLocale, setCurrentLocale] = createSignal<LocaleCode>(defaultLocale)
+  const [currentLocale, setCurrentLocale] = createSignal<LocaleCode>(getInitialLocale())
 
   // Create reactive dictionary based on current locale
   const t = createMemo(() => locales[currentLocale()])
 
   const contextValue = {
-    get t() {
-      return t()
-    },
+    t, // Return the memo directly for reactivity
     currentLocale,
     setLocale: (locale: LocaleCode) => {
       setCurrentLocale(locale)
-      // TODO: Persist to localStorage
+      // Persist to localStorage
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(LOCALE_STORAGE_KEY, locale)
+      }
     },
   }
 
@@ -55,7 +81,7 @@ export const I18nProvider: ParentComponent = (props) => {
  *
  * @example
  * const t = useTranslations()
- * return <h1>{t.home.hero.title}</h1>
+ * return <h1>{t().home.hero.title}</h1>
  */
 export function useTranslations() {
   const context = useContext(I18nContext)

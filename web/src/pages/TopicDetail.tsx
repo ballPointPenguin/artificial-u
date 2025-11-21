@@ -235,7 +235,7 @@ const TopicDetail = () => {
                       const curTopic = topic()
                       const items = list ? list.items.slice().sort(compareTopics) : []
                       const currentIndex = curTopic
-                        ? items.findIndex((t) => t.id === curTopic.id)
+                        ? items.findIndex((topicItem) => topicItem.id === curTopic.id)
                         : -1
                       const prev = currentIndex > 0 ? items[currentIndex - 1] : null
                       const next =
