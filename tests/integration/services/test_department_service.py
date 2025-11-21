@@ -58,7 +58,7 @@ def sample_faculties(repository_factory):
     """Create sample faculties for testing."""
     faculties = {}
     for name in ["Engineering", "Science", "Arts", "Business", "Test"]:
-        faculty = Faculty(name=name, description=f"The {name} faculty.")
+        faculty = Faculty(name=name, description=f"The {name} faculty.", language="en")
         faculty = repository_factory.faculty.create(faculty)
         faculties[name] = faculty.id
     return faculties
@@ -191,6 +191,7 @@ class TestDepartmentService:
             description="Basic biology concepts",
             lectures_per_week=2,
             total_weeks=14,
+            language="en",
             topics=[{"name": "Cell Biology"}, {"name": "Genetics"}],
         )
         course = repository_factory.course.create(course)

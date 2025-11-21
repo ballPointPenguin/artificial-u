@@ -20,6 +20,7 @@ def sample_faculty(repository):
     faculty = Faculty(
         name="Science and Engineering",
         description="A test faculty for testing purposes",
+        language="en",
     )
     return repository.faculty.create(faculty)
 
@@ -32,6 +33,7 @@ def sample_department(sample_faculty):
         code="TEST",
         faculty_id=sample_faculty.id,
         description="A test department for testing purposes",
+        language="en",
     )
 
 
@@ -78,6 +80,7 @@ def sample_course(db_professor, db_department):
         total_weeks=14,
         department_id=db_department.id,
         professor_id=db_professor.id,
+        language="en",
     )
 
 
@@ -95,6 +98,7 @@ def sample_topic(db_course):
         order=1,
         week=1,
         course_id=db_course.id,
+        language="en",
     )
 
 
@@ -116,6 +120,7 @@ def sample_lecture(db_course, db_topic):
         audio_url="storage://test_audio.mp3",
         transcript_url="storage://test_transcript.txt",
         topic_id=db_topic.id,
+        language="en",
     )
 
 
@@ -312,6 +317,7 @@ def test_topic_create_batch(repository, sample_topic):
         order=2,  # Different order
         week=1,
         course_id=sample_topic.course_id,
+        language="en",
     )
 
     # Create batch

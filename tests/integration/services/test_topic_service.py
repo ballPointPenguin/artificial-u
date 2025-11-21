@@ -102,7 +102,7 @@ def sample_faculties(repository_factory):
     """Create sample faculties for testing."""
     faculties = {}
     for name in ["Engineering", "Science", "Arts", "Business", "Testing"]:
-        faculty = Faculty(name=name, description=f"The {name} faculty.")
+        faculty = Faculty(name=name, description=f"The {name} faculty.", language="en")
         faculty = repository_factory.faculty.create(faculty)
         faculties[name] = faculty.id
     return faculties
@@ -226,12 +226,14 @@ class TestTopicService:
                 course_id=course.id,
                 week=1,
                 order=1,
+                language="en",
             ),
             Topic(
                 title="Topic 2",
                 course_id=course.id,
                 week=1,
                 order=2,
+                language="en",
             ),
         ]
 
@@ -609,6 +611,7 @@ class TestTopicService:
             course_id=1,
             week=1,
             order=1,
+            language="en",
         )
         with pytest.raises(DatabaseError):
             topic_service.update_topic(non_existent_topic)

@@ -137,7 +137,7 @@ def sample_faculties(repository_factory):
     """Create sample faculties for testing."""
     faculties = {}
     for name in ["Engineering", "Science", "Arts", "Business", "Test"]:
-        faculty = Faculty(name=name, description=f"The {name} faculty.")
+        faculty = Faculty(name=name, description=f"The {name} faculty.", language="en")
         faculty = repository_factory.faculty.create(faculty)
         faculties[name] = faculty.id
     return faculties
