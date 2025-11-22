@@ -46,6 +46,10 @@ class StudentRoleUpdate(BaseModel):
 
 
 class StudentCoinsAdd(BaseModel):
-    """Model for adding coins to a student's account."""
+    """Model for adjusting coins on a student's account."""
 
-    amount: int = Field(..., gt=0, description="Number of coins to add (must be positive)")
+    amount: int = Field(
+        ...,
+        ne=0,
+        description="Coin adjustment amount. Use positive values to add coins and negative values to remove coins.",
+    )

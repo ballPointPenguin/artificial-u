@@ -25,6 +25,7 @@ const Input: Component<InputProps> = (props) => {
   const [local, others] = splitProps(props, [
     'name', // Already used by FormField, KTextField.Root will also need it.
     'value',
+    'onInput', // Native input event
     'onChange', // Kobalte's controlled change
     'placeholder',
     'type',
@@ -42,6 +43,13 @@ const Input: Component<InputProps> = (props) => {
   const handleValueChange = (newValue: string) => {
     if (local.onChange) {
       local.onChange(newValue)
+    }
+  }
+
+  const handleInput: JSX.EventHandler<HTMLInputElement, InputEvent> = (event) => {
+    local.onInput?.(event)
+    if (local.onChange) {
+      local.onChange(event.currentTarget.value)
     }
   }
 
@@ -71,6 +79,7 @@ const Input: Component<InputProps> = (props) => {
         class={`arcane-input ${local.inputClass || ''}`} // Apply arcane-input and any custom inputClass
         aria-invalid={hasError()}
         aria-describedby={hasError() ? `${fieldId()}-error` : undefined}
+        onInput={handleInput}
       />
       {/* Kobalte also has KTextField.ErrorMessage and KTextField.Description
           but FormField is handling this for now. If Input can be standalone, we might add them here. */}

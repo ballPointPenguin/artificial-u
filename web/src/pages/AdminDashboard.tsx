@@ -1,7 +1,7 @@
-import { createResource, createSignal, For, Show } from 'solid-js'
+import { createMemo, createResource, createSignal, For, Show } from 'solid-js'
 import { studentService } from '../api/services/student-service'
 import type { Student } from '../api/types'
-import { Button, Card, FormField, Input, Select, type SelectOption } from '../components/ui'
+import { Button, Card, FormField, NumberInput, Select, type SelectOption } from '../components/ui'
 
 const ROLE_OPTIONS: SelectOption[] = [
   { value: 'viewer', label: 'Viewer' },
@@ -58,8 +58,8 @@ export default function AdminDashboard() {
 
   const handleAddCoins = async (studentId: number) => {
     const amount = coinAmounts()[studentId]
-    if (!amount || amount <= 0) {
-      setErrorMessage('Please enter a valid positive number of coins')
+    if (amount === undefined || amount === 0) {
+      setErrorMessage('Enter a non-zero coin adjustment')
       setTimeout(() => setErrorMessage(null), 3000)
       return
     }
@@ -74,7 +74,7 @@ export default function AdminDashboard() {
 
     try {
       await studentService.addStudentCoins(studentId, amount)
-      setSuccessMessage(`Added ${String(amount)} coins to student ${String(studentId)}`)
+      setSuccessMessage(`Adjusted student ${String(studentId)} by ${String(amount)} coins`)
       setTimeout(() => setSuccessMessage(null), 3000)
       setCoinAmounts((prev) => {
         const { [studentId]: removedValue, ...rest } = prev
@@ -98,11 +98,12 @@ export default function AdminDashboard() {
     const numValue = Number.parseInt(value, 10)
     setCoinAmounts((prev) => ({
       ...prev,
-      [studentId]: Number.isNaN(numValue) ? 0 : numValue,
+      [studentId]: Number.isNaN(numValue) || value === '' ? undefined : numValue,
     }))
   }
 
   const students = () => studentsResource()?.items ?? []
+  const sortedStudents = createMemo(() => [...students()].sort((a, b) => b.id - a.id))
   const total = () => studentsResource()?.total ?? 0
   const pages = () => studentsResource()?.pages ?? 1
   const currentPageNum = () => studentsResource()?.page ?? 1
@@ -182,7 +183,7 @@ export default function AdminDashboard() {
           }
         >
           <Show
-            when={students().length > 0}
+            when={sortedStudents().length > 0}
             fallback={<div class="text-center py-8">No students found</div>}
           >
             <div class="arcane-card overflow-x-auto">
@@ -234,10 +235,13 @@ export default function AdminDashboard() {
                   </tr>
                 </thead>
                 <tbody class="bg-background divide-y divide-border">
-                  <For each={students()}>
+                  <For each={sortedStudents()}>
                     {(student: Student) => {
-                      const currentAmount = coinAmounts()[student.id]
-                      const hasValidAmount = typeof currentAmount === 'number' && currentAmount > 0
+                      const currentAmount = () => coinAmounts()[student.id]
+                      const hasValidAmount = () => {
+                        const value = currentAmount()
+                        return typeof value === 'number' && value !== 0
+                      }
 
                       return (
                         <tr class="hover:bg-muted/30 transition-colors">
@@ -281,16 +285,16 @@ export default function AdminDashboard() {
                           </td>
                           <td class="px-6 py-4 whitespace-nowrap">
                             <div class="flex items-center gap-2">
-                              <Input
-                                type="number"
+                              <NumberInput
                                 name={`coins-${String(student.id)}`}
-                                value={currentAmount !== undefined ? String(currentAmount) : ''}
-                                onInput={(e) => {
-                                  updateCoinAmount(student.id, e.currentTarget.value)
+                                value={currentAmount() !== undefined ? String(currentAmount()) : ''}
+                                onInput={(
+                                  event: InputEvent & { currentTarget: HTMLInputElement }
+                                ) => {
+                                  updateCoinAmount(student.id, event.currentTarget.value)
                                 }}
-                                placeholder="Amount"
+                                placeholder="Amount (+/-)"
                                 class="w-24"
-                                min="1"
                                 disabled={addingCoins().has(student.id)}
                               />
                               <Button
@@ -298,7 +302,7 @@ export default function AdminDashboard() {
                                 onClick={() => {
                                   void handleAddCoins(student.id)
                                 }}
-                                disabled={addingCoins().has(student.id) || !hasValidAmount}
+                                disabled={addingCoins().has(student.id) || !hasValidAmount()}
                               >
                                 {addingCoins().has(student.id) ? 'Adding...' : 'Add Coins'}
                               </Button>
@@ -315,7 +319,7 @@ export default function AdminDashboard() {
             {/* Pagination */}
             <div class="mt-6 flex items-center justify-between">
               <div class="text-sm text-muted">
-                Showing {students().length} of {total()} students (Page {currentPageNum()} of{' '}
+                Showing {sortedStudents().length} of {total()} students (Page {currentPageNum()} of{' '}
                 {pages()})
               </div>
               <div class="flex gap-2">

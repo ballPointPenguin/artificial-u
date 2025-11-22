@@ -229,8 +229,11 @@ def update_student_role(
 @router.post(
     "/{student_id}/coins",
     response_model=StudentResponse,
-    summary="Add coins to student (Admin only)",
-    description="Add coins to a student's account. Requires admin role.",
+    summary="Adjust coins for student (Admin only)",
+    description=(
+        "Adjust a student's coin balance. Positive values add coins and negative values remove coins. "
+        "Requires admin role."
+    ),
     dependencies=[require_role("admin")],
 )
 def add_student_coins(
@@ -239,10 +242,10 @@ def add_student_coins(
     repository_factory: RepositoryFactory = Depends(get_repository_factory),
 ):
     """
-    Add coins to a student's account.
+    Adjust a student's coin balance (positive to add, negative to remove).
 
     - **student_id**: The ID of the student
-    - **amount**: Number of coins to add (must be positive)
+    - **amount**: Coin adjustment amount (positive to add, negative to remove)
     """
     student_repo = repository_factory.student
 
