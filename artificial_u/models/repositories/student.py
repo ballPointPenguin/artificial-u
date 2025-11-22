@@ -4,6 +4,8 @@ Student repository for database operations.
 
 from typing import Dict, List, Optional
 
+from sqlalchemy import func
+
 from artificial_u.models.core import Student
 from artificial_u.models.database import StudentModel
 from artificial_u.models.repositories.base import BaseRepository
@@ -11,6 +13,20 @@ from artificial_u.models.repositories.base import BaseRepository
 
 class StudentRepository(BaseRepository):
     """Repository for Student operations."""
+
+    def _ensure_unique_email(
+        self, session, email: Optional[str], exclude_student_id: Optional[int] = None
+    ) -> None:
+        if not email:
+            return
+
+        email_lower = email.lower()
+        query = session.query(StudentModel).filter(func.lower(StudentModel.email) == email_lower)
+        if exclude_student_id is not None:
+            query = query.filter(StudentModel.id != exclude_student_id)
+
+        if session.query(query.exists()).scalar():
+            raise ValueError(f"Email '{email}' is already in use")
 
     def get(self, student_id: int) -> Optional[Student]:
         """
@@ -55,6 +71,7 @@ class StudentRepository(BaseRepository):
 
     def create(self, *, name: str, email: Optional[str], auth0_sub: Optional[str]) -> Student:
         with self.get_session() as session:
+            self._ensure_unique_email(session, email)
             db_student = StudentModel(name=name, email=email, auth0_sub=auth0_sub)
             session.add(db_student)
             session.commit()
@@ -118,6 +135,8 @@ class StudentRepository(BaseRepository):
             if not db_student:
                 raise ValueError(f"Student with ID {student.id} not found")
 
+            self._ensure_unique_email(session, student.email, exclude_student_id=student.id)
+
             # Update fields
             db_student.name = student.name
             db_student.email = student.email
@@ -161,6 +180,14 @@ class StudentRepository(BaseRepository):
 
             # Apply only provided fields (whitelist approach)
             allowed_fields = {"name", "email"}
+            # Check email uniqueness before applying
+            if "email" in update_data and update_data["email"] != db_student.email:
+                self._ensure_unique_email(
+                    session,
+                    update_data["email"],
+                    exclude_student_id=student_id,
+                )
+
             for key, value in update_data.items():
                 if key in allowed_fields:
                     setattr(db_student, key, value)
