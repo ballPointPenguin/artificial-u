@@ -125,6 +125,7 @@ export const ENDPOINTS = {
   students: {
     me: '/v1/students/me',
     list: '/v1/students',
+    detail: (id: number) => `/v1/students/${String(id)}`,
     updateRole: (id: number) => `/v1/students/${String(id)}/role`,
     addCoins: (id: number) => `/v1/students/${String(id)}/coins`,
   },

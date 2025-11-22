@@ -66,4 +66,11 @@ export const studentService = {
   addStudentCoins: (id: number, amount: number): Promise<Student> => {
     return httpClient.post<Student>(ENDPOINTS.students.addCoins(id), { amount } as StudentCoinsAdd)
   },
+
+  /**
+   * Delete a student (Admin only)
+   */
+  deleteStudent: async (id: number): Promise<void> => {
+    await httpClient.delete(ENDPOINTS.students.detail(id))
+  },
 }

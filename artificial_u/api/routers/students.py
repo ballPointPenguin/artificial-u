@@ -5,7 +5,7 @@ Student router for handling student profile operations.
 from math import ceil
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Path, Query, Response, status
 
 from artificial_u.api.dependencies import ensure_student, get_repository_factory
 from artificial_u.api.models import (
@@ -270,4 +270,38 @@ def add_student_coins(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to add coins: {str(e)}",
+        )
+
+
+@router.delete(
+    "/{student_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Delete student (Admin only)",
+    description=(
+        "Delete a student's account without touching any content they previously created. "
+        "Requires admin role."
+    ),
+    dependencies=[require_role("admin")],
+)
+def delete_student(
+    student_id: int = Path(..., description="ID of the student to delete"),
+    repository_factory: RepositoryFactory = Depends(get_repository_factory),
+):
+    """
+    Permanently remove a student's account while leaving their authored resources intact.
+    """
+    student_repo = repository_factory.student
+
+    try:
+        student_repo.delete(student_id)
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(e),
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to delete student: {str(e)}",
         )

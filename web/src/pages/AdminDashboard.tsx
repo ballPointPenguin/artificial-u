@@ -20,6 +20,7 @@ export default function AdminDashboard() {
   const [addingCoins, setAddingCoins] = createSignal<Set<number>>(new Set())
   const [successMessage, setSuccessMessage] = createSignal<string | null>(null)
   const [errorMessage, setErrorMessage] = createSignal<string | null>(null)
+  const [deletingStudents, setDeletingStudents] = createSignal<Set<number>>(new Set())
 
   const [studentsResource, { refetch }] = createResource(
     () => ({
@@ -89,6 +90,44 @@ export default function AdminDashboard() {
       setAddingCoins((prev) => {
         const next = new Set(prev)
         next.delete(studentId)
+        return next
+      })
+    }
+  }
+
+  const handleDeleteStudent = async (student: Student) => {
+    const confirmed = window.confirm(
+      `Delete ${student.name || `student ${String(student.id)}`}? This only removes their account and keeps any created resources.`
+    )
+    if (!confirmed) {
+      return
+    }
+
+    setDeletingStudents((prev) => {
+      const next = new Set(prev)
+      next.add(student.id)
+      return next
+    })
+    setErrorMessage(null)
+    setSuccessMessage(null)
+
+    try {
+      await studentService.deleteStudent(student.id)
+      setSuccessMessage(`Deleted student ${student.name || String(student.id)}`)
+      setTimeout(() => setSuccessMessage(null), 3000)
+      setCoinAmounts((prev) => {
+        const { [student.id]: removedValue, ...rest } = prev
+        void removedValue
+        return rest
+      })
+      void refetch()
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : 'Failed to delete student')
+      setTimeout(() => setErrorMessage(null), 5000)
+    } finally {
+      setDeletingStudents((prev) => {
+        const next = new Set(prev)
+        next.delete(student.id)
         return next
       })
     }
@@ -284,27 +323,41 @@ export default function AdminDashboard() {
                             </span>
                           </td>
                           <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="flex items-center gap-2">
-                              <NumberInput
-                                name={`coins-${String(student.id)}`}
-                                value={currentAmount() !== undefined ? String(currentAmount()) : ''}
-                                onInput={(
-                                  event: InputEvent & { currentTarget: HTMLInputElement }
-                                ) => {
-                                  updateCoinAmount(student.id, event.currentTarget.value)
-                                }}
-                                placeholder="Amount (+/-)"
-                                class="w-24"
-                                disabled={addingCoins().has(student.id)}
-                              />
+                            <div class="flex flex-col gap-2">
+                              <div class="flex items-center gap-2">
+                                <NumberInput
+                                  name={`coins-${String(student.id)}`}
+                                  value={
+                                    currentAmount() !== undefined ? String(currentAmount()) : ''
+                                  }
+                                  onInput={(
+                                    event: InputEvent & { currentTarget: HTMLInputElement }
+                                  ) => {
+                                    updateCoinAmount(student.id, event.currentTarget.value)
+                                  }}
+                                  placeholder="Amount (+/-)"
+                                  class="w-24"
+                                  disabled={addingCoins().has(student.id)}
+                                />
+                                <Button
+                                  variant="primary"
+                                  onClick={() => {
+                                    void handleAddCoins(student.id)
+                                  }}
+                                  disabled={addingCoins().has(student.id) || !hasValidAmount()}
+                                >
+                                  {addingCoins().has(student.id) ? 'Adding...' : 'Add Coins'}
+                                </Button>
+                              </div>
                               <Button
-                                variant="primary"
+                                variant="danger"
+                                size="sm"
                                 onClick={() => {
-                                  void handleAddCoins(student.id)
+                                  void handleDeleteStudent(student)
                                 }}
-                                disabled={addingCoins().has(student.id) || !hasValidAmount()}
+                                disabled={deletingStudents().has(student.id)}
                               >
-                                {addingCoins().has(student.id) ? 'Adding...' : 'Add Coins'}
+                                {deletingStudents().has(student.id) ? 'Deleting...' : 'Delete'}
                               </Button>
                             </div>
                           </td>

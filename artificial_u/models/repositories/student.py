@@ -249,6 +249,29 @@ class StudentRepository(BaseRepository):
                 is_active=db_student.is_active,
             )
 
+    def delete(self, student_id: int) -> bool:
+        """
+        Permanently delete a student.
+
+        Args:
+            student_id: ID of the student to delete
+
+        Returns:
+            bool: True if deleted successfully
+
+        Raises:
+            ValueError: If the student does not exist
+        """
+        with self.get_session() as session:
+            db_student = session.get(StudentModel, student_id)
+            if not db_student:
+                raise ValueError(f"Student with ID {student_id} not found")
+
+            session.delete(db_student)
+            session.commit()
+
+            return True
+
     def update_role(self, student_id: int, role: str) -> Student:
         """
         Update a student's role.
