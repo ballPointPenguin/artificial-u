@@ -153,6 +153,7 @@ class Professor(BaseModel):
     specialization: Optional[str] = None
     teaching_style: Optional[str] = None
     image_url: Optional[str] = None
+    image_created_with: Optional[str] = None
     department_id: Optional[int] = None
     voice_id: Optional[int] = None
     # Attribution

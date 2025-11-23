@@ -164,13 +164,20 @@ class ProfessorGeneratorService:
         # Get the full URL for the image
         image_url = self._get_image_url_from_key(image_key, professor_id)
 
-        # Update the professor record with the new image URL
+        # Update the professor record with the new image URL and model used
         try:
+            settings = get_settings()
             updated_professor = self.professor_service.update_professor(
                 professor_id=professor_id,
-                attributes={"image_url": image_url},
+                attributes={
+                    "image_url": image_url,
+                    "image_created_with": settings.IMAGE_GENERATION_MODEL,
+                },
             )
-            self.logger.info(f"Professor {professor_id} updated with new image URL.")
+            self.logger.info(
+                f"Professor {professor_id} updated with new image URL "
+                f"(model: {settings.IMAGE_GENERATION_MODEL})."
+            )
             return updated_professor
         except Exception as e:
             # Re-raise errors from the update step

@@ -124,6 +124,7 @@ class ProfessorModel(Base):
     specialization = Column(String, nullable=True)
     teaching_style = Column(Text, nullable=True)
     image_url = Column(String, nullable=True)
+    image_created_with = Column(String, nullable=True)
     department_id = Column(Integer, ForeignKey("departments.id"), nullable=True)
     voice_id = Column(Integer, ForeignKey("voices.id"), nullable=True)
     # Attribution fields
