@@ -237,8 +237,12 @@ TESTING=true
 | `content_model` | Model for chosen backend | Depends on backend | No |
 | `COURSE_GENERATION_MODEL` | Model for course generation | `claude-sonnet-4-5-20250929` | No |
 | `DEPARTMENT_GENERATION_MODEL` | Model for department generation | `gpt-5-nano` | No |
+| `LECTURE_GENERATION_MODEL` | Model for lecture generation | `claude-sonnet-4-5-20250929` | No |
+| `LECTURE_SUMMARY_MODEL` | Model for lecture summary generation | `gpt-5-nano` | No |
+| `TOPICS_GENERATION_MODEL` | Model for topics generation | `gemini-3-pro-preview` | No |
 | `PROFESSOR_GENERATION_MODEL` | Model for professor generation | `gpt-5-nano` | No |
-| `IMAGE_GENERATION_MODEL` | Model for image generation | `imagen-4.0-generate-001` | No |
+| `IMAGE_GENERATION_MODEL` | Model for image generation | `gemini-3-pro-image-preview` | No |
+| `TTS_VOICE_MODEL` | Model for text-to-speech voice | `eleven_flash_v2_5` | No |
 | `STORAGE_TYPE` | Storage type ("minio" or "s3") | `minio` | No |
 | `STORAGE_ENDPOINT_URL` | MinIO endpoint URL | `http://localhost:9000` | No |
 | `STORAGE_PUBLIC_URL` | Public URL for MinIO | `http://localhost:9000` | No |

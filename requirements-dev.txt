@@ -12,7 +12,7 @@ annotated-doc==0.0.4
     # via fastapi
 annotated-types==0.7.0
     # via pydantic
-anthropic==0.74.1
+anthropic==0.75.0
     # via artificial_u (pyproject.toml)
 anyio==4.11.0
     # via
@@ -24,9 +24,9 @@ anyio==4.11.0
     #   watchfiles
 black==25.11.0
     # via artificial_u (pyproject.toml)
-boto3==1.41.1
+boto3==1.41.3
     # via artificial_u (pyproject.toml)
-botocore==1.41.1
+botocore==1.41.3
     # via
     #   boto3
     #   s3transfer
@@ -67,7 +67,7 @@ ecdsa==0.19.1
     # via python-jose
 elevenlabs==2.24.0
     # via artificial_u (pyproject.toml)
-fastapi==0.121.3
+fastapi==0.122.0
     # via artificial_u (pyproject.toml)
 filelock==3.20.0
     # via virtualenv
@@ -161,7 +161,7 @@ pluggy==1.6.0
     # via
     #   pytest
     #   pytest-cov
-pre-commit==4.4.0
+pre-commit==4.5.0
     # via artificial_u (pyproject.toml)
 proto-plus==1.26.1
     # via google-api-core
