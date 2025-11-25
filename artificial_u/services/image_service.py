@@ -1,5 +1,7 @@
+import json
 import logging
 import uuid
+from datetime import datetime
 from enum import Enum
 from typing import List, Optional
 
@@ -217,9 +219,7 @@ class ImageService:
             return image_bytes_list
 
         except Exception as e:
-            logger.error(
-                f"Error calling Gemini generate_content image API: {e}", exc_info=True
-            )
+            logger.error(f"Error calling Gemini generate_content image API: {e}", exc_info=True)
             raise  # Re-raise to allow retry logic to handle it
 
     async def _generate_gemini_image_via_images(
@@ -427,8 +427,12 @@ class ImageService:
                 uploaded_keys = await self._upload_images(image_bytes_list)
                 if uploaded_keys:
                     logger.info(f"Successfully generated {len(uploaded_keys)} image(s)")
+                    # Log the prompt after successful generation
+                    await self._log_image_prompt(prompt, aspect_ratio, image_keys=uploaded_keys)
                     return ImageGenerationResult(success=True, image_keys=uploaded_keys)
                 else:
+                    # Log the prompt even if upload failed (generation succeeded)
+                    await self._log_image_prompt(prompt, aspect_ratio)
                     error = ImageGenerationError(
                         "Image generation succeeded but upload failed",
                         ImageGenerationErrorType.TRANSIENT,
@@ -436,6 +440,8 @@ class ImageService:
                     )
                     return ImageGenerationResult(success=False, error=error)
             else:
+                # Log the prompt even if no image data was returned
+                await self._log_image_prompt(prompt, aspect_ratio)
                 error = ImageGenerationError(
                     f"Backend {self.backend} returned no image data",
                     ImageGenerationErrorType.BACKEND_UNAVAILABLE,
@@ -444,6 +450,8 @@ class ImageService:
                 return ImageGenerationResult(success=False, error=error)
 
         except Exception as e:
+            # Log the prompt even on failure
+            await self._log_image_prompt(prompt, aspect_ratio)
             error = ImageGenerationError(
                 f"Image generation failed: {str(e)}",
                 self._categorize_error(e, self.backend),
@@ -484,6 +492,61 @@ class ImageService:
                 logger.error(f"Error uploading image {file_name}: {e}")
 
         return uploaded_keys
+
+    async def _log_image_prompt(
+        self,
+        prompt: str,
+        aspect_ratio: str,
+        image_keys: Optional[List[str]] = None,
+    ) -> None:
+        """Log the image generation prompt to storage.
+
+        Args:
+            prompt: The image generation prompt
+            aspect_ratio: The aspect ratio used for generation
+            image_keys: Optional list of generated image keys (for reference only)
+        """
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
+
+        # Structure the log data hierarchically (similar to content logs but without response)
+        log_data = {
+            "metadata": {
+                "timestamp": timestamp,
+                "backend": self.backend,
+                "model": self.model_name,
+                "settings": {
+                    "aspect_ratio": aspect_ratio,
+                },
+            },
+            "content": {
+                "prompt": prompt,
+            },
+        }
+
+        # Include image keys if generation was successful (for reference)
+        if image_keys:
+            log_data["metadata"]["image_keys"] = image_keys
+
+        # Create a unique filename for this generation
+        filename = f"image_{timestamp}_{self.backend}_{self.model_name.replace('/', '_')}.json"
+
+        try:
+            # Convert log data to JSON bytes
+            log_json = json.dumps(log_data, indent=2, ensure_ascii=False)
+            log_bytes = log_json.encode("utf-8")
+
+            # Upload to storage bucket
+            success, url = await self.storage_service.upload_content_log(
+                file_data=log_bytes,
+                object_name=filename,
+            )
+
+            if success:
+                logger.debug(f"Image prompt log uploaded to storage: {filename}")
+            else:
+                logger.error(f"Failed to upload image prompt log: {filename}")
+        except Exception as e:
+            logger.error(f"Failed to save image prompt log {filename}: {str(e)}")
 
     async def generate_professor_image(
         self, professor: Professor, aspect_ratio: str = "1:1"
