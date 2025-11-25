@@ -64,6 +64,10 @@ export const courseService = {
     return httpClient.delete(ENDPOINTS.courses.detail(courseId))
   },
 
+  publishCourse: (courseId: number): Promise<Course> => {
+    return httpClient.post<Course>(`${ENDPOINTS.courses.detail(courseId)}/publish`, {})
+  },
+
   getCourseProfessor: (courseId: number): Promise<ProfessorBrief> => {
     return httpClient.get<ProfessorBrief>(ENDPOINTS.courses.professor(courseId))
   },

@@ -3,7 +3,7 @@ Core data models for the ArtificialU system.
 """
 
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Literal, Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -196,6 +196,7 @@ class Course(BaseModel):
     level: Optional[str] = None
     total_weeks: int = 12
     language: Optional[str] = None
+    status: Literal["hidden", "published"] = "hidden"
     department_id: Optional[int] = None
     professor_id: Optional[int] = None
     # Attribution

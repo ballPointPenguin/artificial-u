@@ -27,6 +27,8 @@ export interface HealthCheckResponse {
 }
 
 // Course types
+export type CourseStatus = 'hidden' | 'published'
+
 export interface Course {
   id: number
   code: string
@@ -38,6 +40,7 @@ export interface Course {
   description: string
   lectures_per_week: number
   total_weeks: number
+  status: CourseStatus
   created_by?: number | null
   created_with?: string | null
   created_at?: string | null
@@ -100,6 +103,7 @@ export interface CourseUpdate {
   description?: string
   lectures_per_week?: number
   total_weeks?: number
+  status?: CourseStatus
 }
 
 export interface CoursesListResponse {

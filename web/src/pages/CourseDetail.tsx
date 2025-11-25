@@ -15,7 +15,7 @@ import { useAuth } from '../auth/AuthProvider'
 import { RequireRole } from '../auth/RequireRole'
 import CourseForm from '../components/courses/CourseForm.jsx'
 import type { CourseFormData } from '../components/courses/types.jsx'
-import { Alert, Button, MetadataInfo } from '../components/ui'
+import { Alert, Button, MagicButton, MetadataInfo } from '../components/ui'
 import { useAudioPlayer } from '../utils/audio-player-context.jsx'
 
 // Department Info Component
@@ -248,6 +248,7 @@ const CourseDetail: Component = () => {
   const [isExporting, setIsExporting] = createSignal(false)
   const [exportJobId, setExportJobId] = createSignal<number | null>(null)
   const [exportMessage, setExportMessage] = createSignal('')
+  const [isPublishing, setIsPublishing] = createSignal(false)
 
   // Check if courseId is a valid number before creating resources
   const isValidId = !Number.isNaN(courseId)
@@ -356,6 +357,26 @@ const CourseDetail: Component = () => {
       })
   }
 
+  // Handler for publishing a course
+  const handlePublishCourse = () => {
+    if (!isValidId) return
+
+    setIsPublishing(true)
+    setError('')
+
+    void courseService
+      .publishCourse(courseId)
+      .then(() => {
+        void refetch()
+      })
+      .catch((err: unknown) => {
+        setError(err instanceof Error ? err.message : 'Failed to publish course')
+      })
+      .finally(() => {
+        setIsPublishing(false)
+      })
+  }
+
   return (
     <div class="container mx-auto p-6">
       <Show when={isValidId} fallback={<div class="text-parchment-100">Invalid Course ID.</div>}>
@@ -378,6 +399,17 @@ const CourseDetail: Component = () => {
                   </A>
                   <Show when={!isEditing()}>
                     <div class="flex gap-2">
+                      <Show when={auth.canModify(course().created_by) && course().status === 'hidden'}>
+                        <MagicButton
+                          variant="secondary"
+                          onClick={handlePublishCourse}
+                          disabled={isPublishing()}
+                          isLoading={isPublishing()}
+                          loadingText="Publishing..."
+                        >
+                          Publish Course
+                        </MagicButton>
+                      </Show>
                       <Show when={auth.canModify(course().created_by)}>
                         <Button variant="primary" onClick={() => setIsEditing(true)}>
                           Edit Course
@@ -469,9 +501,20 @@ const CourseDetail: Component = () => {
                     </RequireRole>
                   }
                 >
-                  <h1 class="text-3xl font-display text-parchment-100 mb-3">
-                    {course().code}: {course().title}
-                  </h1>
+                  <div class="flex items-center gap-4 mb-3">
+                    <h1 class="text-3xl font-display text-parchment-100">
+                      {course().code}: {course().title}
+                    </h1>
+                    <span
+                      class={`px-3 py-1 text-sm font-medium rounded-full ${
+                        course().status === 'published'
+                          ? 'bg-green-500/20 text-green-300 border border-green-400/30'
+                          : 'bg-amber-500/20 text-amber-300 border border-amber-400/30'
+                      }`}
+                    >
+                      {course().status === 'published' ? '✓ Published' : '● Hidden'}
+                    </span>
+                  </div>
                   <p class="text-base italic text-parchment-200 mb-6 font-serif">
                     {course().description}
                   </p>

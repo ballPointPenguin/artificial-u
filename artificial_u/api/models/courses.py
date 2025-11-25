@@ -3,7 +3,7 @@ API models for Course resources.
 """
 
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Literal, Optional
 
 from pydantic import BaseModel, Field
 
@@ -41,6 +41,9 @@ class CourseBase(BaseModel):
         description="Total number of weeks in the course (1-50)",
     )
     topics: Optional[List[Dict[str, Any]]] = Field(None, description="List of course topics")
+    status: Literal["hidden", "published"] = Field(
+        default="hidden", description="Course visibility status"
+    )
     # Attribution (not required for create)
     created_by: Optional[int] = Field(None, description="Student ID who created the course")
     created_with: Optional[str] = Field(None, description="Name of LLM used, if any")
@@ -83,6 +86,9 @@ class CourseUpdate(BaseModel):
         ge=1,
         le=50,
         description="Updated total weeks (1-50)",
+    )
+    status: Optional[Literal["hidden", "published"]] = Field(
+        None, description="Updated course visibility status"
     )
 
 

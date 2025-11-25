@@ -223,6 +223,32 @@ async def delete_course(
     # FastAPI will handle the 204 status code automatically based on the decorator
 
 
+@router.post(
+    "/{course_id}/publish",
+    response_model=CourseResponse,
+    summary="Publish course",
+    description="Publish a course, making it visible to the public. This is a one-way action.",
+    responses={
+        404: {"description": "Course not found"},
+        403: {"description": "Forbidden - user doesn't own this course"},
+        400: {"description": "Course is already published"},
+        500: {"description": "Internal server error during publishing"},
+    },
+    dependencies=[require_role("creator")],
+)
+async def publish_course(
+    course_id: int = Path(..., description="The ID of the course to publish"),
+    course_service: CourseApiService = Depends(get_course_api_service),
+    student: Student = Depends(ensure_student),
+):
+    """
+    Publish a course by changing its status from 'hidden' to 'published'.
+    This is a one-way action - courses cannot be unpublished.
+    Only the course creator or an admin can publish a course.
+    """
+    return course_service.publish_course(course_id, student.id, student.role)
+
+
 @router.get(
     "/{course_id}/professor",
     response_model=CourseProfessorBrief,

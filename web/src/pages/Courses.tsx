@@ -354,6 +354,9 @@ const Courses: Component = () => {
                   <SortableHeader field="code" label={t().courses.code} />
                   <SortableHeader field="title" label={t().courses.courseTitle} />
                   <th class="py-3 px-4 align-middle text-left font-display text-parchment-200">
+                    Status
+                  </th>
+                  <th class="py-3 px-4 align-middle text-left font-display text-parchment-200">
                     {t().courses.teacher}
                   </th>
                   <th class="py-3 px-4 align-middle text-left font-display text-parchment-200">
@@ -380,6 +383,17 @@ const Courses: Component = () => {
                         >
                           {course.title}
                         </A>
+                      </td>
+                      <td class="py-3 px-4 align-middle">
+                        <span
+                          class={`px-2 py-1 text-xs font-medium rounded-full ${
+                            course.status === 'published'
+                              ? 'bg-green-500/20 text-green-300 border border-green-400/30'
+                              : 'bg-amber-500/20 text-amber-300 border border-amber-400/30'
+                          }`}
+                        >
+                          {course.status === 'published' ? '✓ Published' : '● Hidden'}
+                        </span>
                       </td>
                       <td class="py-3 px-4 align-middle text-parchment-100">
                         {getProfessorName(course)}
@@ -410,12 +424,23 @@ const Courses: Component = () => {
                   <div class="flex flex-col gap-4">
                     <div class="flex items-start justify-between gap-4">
                       <div class="flex-1">
-                        <p class="text-xs font-serif uppercase tracking-wide text-parchment-400">
-                          {course.code}
-                        </p>
+                        <div class="flex items-center gap-2 mb-1">
+                          <p class="text-xs font-serif uppercase tracking-wide text-parchment-400">
+                            {course.code}
+                          </p>
+                          <span
+                            class={`px-2 py-0.5 text-xs font-medium rounded-full ${
+                              course.status === 'published'
+                                ? 'bg-green-500/20 text-green-300 border border-green-400/30'
+                                : 'bg-amber-500/20 text-amber-300 border border-amber-400/30'
+                            }`}
+                          >
+                            {course.status === 'published' ? '✓' : '●'}
+                          </span>
+                        </div>
                         <A
                           href={`/courses/${String(course.id)}`}
-                          class="mt-1 block text-lg font-display text-parchment-100 leading-tight hover:text-mystic-300 transition-colors"
+                          class="block text-lg font-display text-parchment-100 leading-tight hover:text-mystic-300 transition-colors"
                         >
                           {course.title}
                         </A>

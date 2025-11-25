@@ -464,6 +464,54 @@ class CourseApiService(BaseApiService[CoreCourse, CourseResponse, CoursesListRes
         except Exception as e:
             self._handle_general_error("delete course", e)
 
+    def publish_course(self, course_id: int, student_id: int, role: str) -> CourseResponse:
+        """
+        Publish a course by changing its status from 'hidden' to 'published'.
+        This is a one-way action - courses cannot be unpublished.
+
+        Args:
+            course_id: ID of the course to publish
+            student_id: ID of the requesting student
+            role: Role of the requesting student
+
+        Raises:
+            HTTPException: 403 if user doesn't own the course (unless admin)
+            HTTPException: 404 if course not found
+            HTTPException: 400 if course is already published
+        """
+        try:
+            # First, get the course to check ownership and current status
+            course_model = self.core_service.get_course(course_id)
+
+            # Verify ownership (admins can publish any course, creators only their own)
+            from artificial_u.api.security.auth0 import verify_asset_ownership
+
+            verify_asset_ownership(student_id, course_model.created_by, role, "course")
+
+            # Check if already published
+            if course_model.status == "published":
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Course {course_id} is already published.",
+                )
+
+            # Update the course status to published
+            updated_course_model = self.core_service.update_course(
+                course_id, {"status": "published"}
+            )
+
+            # Convert the returned CourseModel to the API response model
+            return self._build_course_response(updated_course_model)
+        except CourseNotFoundError:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Course with ID {course_id} not found.",
+            )
+        except DatabaseError as e:
+            self._handle_database_error("publish course", e)
+        except Exception as e:
+            self._handle_general_error("publish course", e)
+
     def get_course_professor(self, course_id: int) -> ProfessorBrief:
         """
         Get the professor who teaches a course.
