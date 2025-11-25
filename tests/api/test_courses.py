@@ -377,13 +377,14 @@ def test_create_course(client: TestClient, mock_api_service):
     mock_api_service["create_course"].assert_called_once()
     call_args = mock_api_service["create_course"].call_args[0]
     assert isinstance(call_args[0], CourseCreate)
-    # CourseCreate includes created_by, created_with, created_at, updated_at fields by default
+    # CourseCreate includes created_by, created_with, created_at, updated_at, status fields by default
     expected_course_data = {
         **new_course_data,
         "created_by": None,
         "created_with": None,
         "created_at": None,
         "updated_at": None,
+        "status": "hidden",
     }
     assert call_args[0].model_dump() == expected_course_data
 
