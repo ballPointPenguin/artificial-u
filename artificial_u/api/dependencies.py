@@ -93,8 +93,9 @@ def ensure_student(
 
     sub = user_info.get("sub")
     email = user_info.get("email")
+    email_verified = user_info.get("email_verified", False)
 
-    logger.info(f"Extracted - sub: {sub}, email: {email}")
+    logger.info(f"Extracted - sub: {sub}, email: {email}, email_verified: {email_verified}")
     logger.info(f"name: {user_info.get('name')}, nickname: {user_info.get('nickname')}")
     logger.info(
         f"given_name: {user_info.get('given_name')}, family_name: {user_info.get('family_name')}"
@@ -115,7 +116,10 @@ def ensure_student(
         sub = "unknown"
 
     student = repository_factory.student.get_or_create_by_auth0(
-        auth0_sub=sub, default_name=display_name, email=email if isinstance(email, str) else None
+        auth0_sub=sub,
+        default_name=display_name,
+        email=email if isinstance(email, str) else None,
+        email_verified=bool(email_verified),
     )
     return student
 
@@ -381,7 +385,9 @@ def get_department_generator_service(
     Returns:
         DepartmentGeneratorService instance
     """
-    from artificial_u.services.department_generator_service import DepartmentGeneratorService
+    from artificial_u.services.department_generator_service import (
+        DepartmentGeneratorService,
+    )
     from artificial_u.services.department_service import DepartmentService
 
     department_service = DepartmentService(
@@ -418,7 +424,9 @@ def get_professor_generator_service(
     Returns:
         ProfessorGeneratorService instance
     """
-    from artificial_u.services.professor_generator_service import ProfessorGeneratorService
+    from artificial_u.services.professor_generator_service import (
+        ProfessorGeneratorService,
+    )
 
     # We need the core professor service for generation, but it depends on voice_service
     # We'll get it via dependency injection

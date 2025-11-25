@@ -190,12 +190,13 @@ class ImageService:
         """
         try:
             # Use generate_content API with image modality
+            # Note: aspect_ratio is also included in prompt text as a fallback
             response = await gemini_client.aio.models.generate_content(
                 model=self.model_name,
                 contents=prompt,
                 config=types.GenerateContentConfig(
                     response_modalities=[Modality.IMAGE],
-                    # Note: aspect_ratio handling may differ - check API docs
+                    image_config=types.ImageConfig(aspect_ratio=aspect_ratio),
                 ),
             )
 

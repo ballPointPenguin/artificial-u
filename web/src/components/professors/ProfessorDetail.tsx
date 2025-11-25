@@ -454,7 +454,7 @@ export default function ProfessorDetail() {
 
                 {/* Image Column */}
                 <div class="order-1 md:order-2 md:w-1/2 flex flex-col items-center gap-4">
-                  <div class="relative flex items-center justify-center w-full min-h-[200px] bg-surface rounded-lg p-4">
+                  <div class="relative flex flex-col items-center justify-center w-full min-h-[200px] bg-surface rounded-lg p-4">
                     <Show
                       when={isGeneratingImage() || isImageLoading()}
                       fallback={
@@ -482,6 +482,11 @@ export default function ProfessorDetail() {
                           {isGeneratingImage() ? 'Generating image...' : 'Loading image...'}
                         </p>
                       </div>
+                    </Show>
+                    <Show when={professorResource()?.image_url && professorResource()?.image_created_with}>
+                      <p class="text-xs text-muted italic mt-2 text-center">
+                        Image generated with {professorResource()?.image_created_with}
+                      </p>
                     </Show>
                   </div>
                   <Show when={auth.canModify(professorResource()?.created_by)}>

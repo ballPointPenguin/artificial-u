@@ -30,6 +30,7 @@ class ProfessorRepository(BaseRepository):
                 specialization=professor.specialization,
                 teaching_style=professor.teaching_style,
                 image_url=professor.image_url,
+                image_created_with=professor.image_created_with,
                 department_id=professor.department_id,
                 voice_id=professor.voice_id,
                 created_by=professor.created_by,
@@ -78,6 +79,7 @@ class ProfessorRepository(BaseRepository):
                 specialization=db_professor.specialization,
                 teaching_style=db_professor.teaching_style,
                 image_url=db_professor.image_url,
+                image_created_with=db_professor.image_created_with,
                 department_id=db_professor.department_id,
                 voice_id=db_professor.voice_id,
                 created_by=db_professor.created_by,
@@ -106,6 +108,7 @@ class ProfessorRepository(BaseRepository):
                     specialization=p.specialization,
                     teaching_style=p.teaching_style,
                     image_url=p.image_url,
+                    image_created_with=p.image_created_with,
                     department_id=p.department_id,
                     voice_id=p.voice_id,
                     created_by=p.created_by,
@@ -134,6 +137,7 @@ class ProfessorRepository(BaseRepository):
             db_professor.specialization = professor.specialization
             db_professor.teaching_style = professor.teaching_style
             db_professor.image_url = professor.image_url
+            db_professor.image_created_with = professor.image_created_with
             db_professor.department_id = professor.department_id
             db_professor.voice_id = professor.voice_id
 

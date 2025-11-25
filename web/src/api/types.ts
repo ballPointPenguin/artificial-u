@@ -289,6 +289,7 @@ export interface Professor {
   description: string | null
   age: number | null
   image_url: string | null
+  image_created_with?: string | null
   voice_id?: number | null
   created_by?: number | null
   created_with?: string | null
