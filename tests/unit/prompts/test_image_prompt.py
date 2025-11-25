@@ -33,8 +33,10 @@ def test_professor_image_prompt_full():
     assert "Tall with short dark hair" in prompt
     assert "professional attire" in prompt
     assert "Quantum Computing" in prompt
-    assert "high-resolution" in prompt
-    assert "photorealistic" in prompt
+    assert "High resolution" in prompt
+    assert "digital art" in prompt
+    assert "semi-realistic" in prompt
+    assert "Do not make this photorealistic" in prompt
 
 
 @pytest.mark.unit
@@ -48,8 +50,9 @@ def test_professor_image_prompt_minimal():
 
     # Check that the prompt contains basic elements
     assert "Dr. Sarah Chen" in prompt
-    assert "high-resolution" in prompt
-    assert "photorealistic" in prompt
+    assert "High resolution" in prompt
+    assert "digital art" in prompt
+    assert "semi-realistic" in prompt
 
 
 @pytest.mark.unit
