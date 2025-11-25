@@ -386,13 +386,16 @@ const Courses: Component = () => {
                       </td>
                       <td class="py-3 px-4 align-middle">
                         <span
-                          class={`px-2 py-1 text-xs font-medium rounded-full ${
+                          class={`inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-full whitespace-nowrap ${
                             course.status === 'published'
                               ? 'bg-green-500/20 text-green-300 border border-green-400/30'
                               : 'bg-amber-500/20 text-amber-300 border border-amber-400/30'
                           }`}
                         >
-                          {course.status === 'published' ? '✓ Published' : '● Hidden'}
+                          <span class="text-[10px]">
+                            {course.status === 'published' ? '✓' : '●'}
+                          </span>
+                          <span>{course.status === 'published' ? 'Published' : 'Hidden'}</span>
                         </span>
                       </td>
                       <td class="py-3 px-4 align-middle text-parchment-100">
@@ -429,13 +432,18 @@ const Courses: Component = () => {
                             {course.code}
                           </p>
                           <span
-                            class={`px-2 py-0.5 text-xs font-medium rounded-full ${
+                            class={`inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[9px] font-medium rounded-full whitespace-nowrap ${
                               course.status === 'published'
                                 ? 'bg-green-500/20 text-green-300 border border-green-400/30'
                                 : 'bg-amber-500/20 text-amber-300 border border-amber-400/30'
                             }`}
                           >
-                            {course.status === 'published' ? '✓' : '●'}
+                            <span class="text-[8px]">
+                              {course.status === 'published' ? '✓' : '●'}
+                            </span>
+                            <span class="uppercase tracking-tight">
+                              {course.status === 'published' ? 'Published' : 'Hidden'}
+                            </span>
                           </span>
                         </div>
                         <A

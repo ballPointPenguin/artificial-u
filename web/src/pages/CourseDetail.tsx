@@ -399,7 +399,9 @@ const CourseDetail: Component = () => {
                   </A>
                   <Show when={!isEditing()}>
                     <div class="flex gap-2">
-                      <Show when={auth.canModify(course().created_by) && course().status === 'hidden'}>
+                      <Show
+                        when={auth.canModify(course().created_by) && course().status === 'hidden'}
+                      >
                         <MagicButton
                           variant="secondary"
                           onClick={handlePublishCourse}
@@ -501,18 +503,19 @@ const CourseDetail: Component = () => {
                     </RequireRole>
                   }
                 >
-                  <div class="flex items-center gap-4 mb-3">
+                  <div class="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 mb-3">
                     <h1 class="text-3xl font-display text-parchment-100">
                       {course().code}: {course().title}
                     </h1>
                     <span
-                      class={`px-3 py-1 text-sm font-medium rounded-full ${
+                      class={`inline-flex items-center gap-1.5 px-3 py-1 text-sm font-medium rounded-full whitespace-nowrap self-start ${
                         course().status === 'published'
                           ? 'bg-green-500/20 text-green-300 border border-green-400/30'
                           : 'bg-amber-500/20 text-amber-300 border border-amber-400/30'
                       }`}
                     >
-                      {course().status === 'published' ? '✓ Published' : '● Hidden'}
+                      <span class="text-xs">{course().status === 'published' ? '✓' : '●'}</span>
+                      <span>{course().status === 'published' ? 'Published' : 'Hidden'}</span>
                     </span>
                   </div>
                   <p class="text-base italic text-parchment-200 mb-6 font-serif">

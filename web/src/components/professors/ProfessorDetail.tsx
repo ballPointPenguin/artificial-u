@@ -483,7 +483,11 @@ export default function ProfessorDetail() {
                         </p>
                       </div>
                     </Show>
-                    <Show when={professorResource()?.image_url && professorResource()?.image_created_with}>
+                    <Show
+                      when={
+                        professorResource()?.image_url && professorResource()?.image_created_with
+                      }
+                    >
                       <p class="text-xs text-muted italic mt-2 text-center">
                         Image generated with {professorResource()?.image_created_with}
                       </p>
