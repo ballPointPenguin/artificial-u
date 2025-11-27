@@ -1,12 +1,21 @@
 import type { Auth0Client, User } from '@auth0/auth0-spa-js'
-import { createContext, createSignal, type JSX, onCleanup, onMount, useContext } from 'solid-js'
+import {
+  createContext,
+  createSignal,
+  type JSX,
+  onCleanup,
+  onMount,
+  untrack,
+  useContext,
+} from 'solid-js'
 import { setAuthErrorHandler, setTokenProvider } from '../api/client'
 import { studentService } from '../api/services'
 import type { Student } from '../api/types'
-import { createClient } from './auth0'
+import { createClient, isAuthRequiredError } from './auth0'
 
 type AuthContextValue = {
   isAuthenticated: () => boolean
+  isLoading: () => boolean
   user: () => User | null
   student: () => Student | null
   role: () => string
@@ -17,89 +26,196 @@ type AuthContextValue = {
   getAccessToken: () => Promise<string | null>
   login: () => Promise<void>
   logout: () => Promise<void>
+  /** Force a re-check of auth state (useful after errors) */
+  checkAuth: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextValue>()
 
+// How often to check if tokens are still valid when user is active (in ms)
+const TOKEN_CHECK_INTERVAL = 5 * 60 * 1000 // 5 minutes
+
 export function AuthProvider(props: { children: JSX.Element }) {
   const [client, setClient] = createSignal<Auth0Client | null>(null)
   const [isAuthenticated, setIsAuthenticated] = createSignal(false)
+  const [isLoading, setIsLoading] = createSignal(true)
   const [user, setUser] = createSignal<User | null>(null)
   const [student, setStudent] = createSignal<Student | null>(null)
 
-  // Store the storage listener function in a ref so we can remove it in cleanup
+  // Store listener functions for cleanup
   let storageListener: ((e: StorageEvent) => void) | null = null
+  let visibilityListener: (() => void) | null = null
+  let tokenCheckInterval: ReturnType<typeof setInterval> | null = null
 
   onMount(() => {
     void (async () => {
       const c = await createClient()
       setClient(c)
 
+      /**
+       * Refresh the authentication state by checking with Auth0.
+       * This will also attempt to silently refresh tokens if needed.
+       */
       const refreshState = async () => {
-        const authedNow = await c.isAuthenticated()
-        setIsAuthenticated(authedNow)
-        setUser(authedNow ? ((await c.getUser()) ?? null) : null)
+        try {
+          // First check basic auth state
+          const authedNow = await c.isAuthenticated()
 
-        // Fetch student profile if authenticated
-        if (authedNow) {
-          try {
-            const studentData = await studentService.getCurrentStudent()
-            setStudent(studentData)
-          } catch (error) {
-            console.error('Failed to fetch student profile:', error)
+          if (authedNow) {
+            // Try to get a fresh token - this will trigger refresh if needed
+            try {
+              await c.getTokenSilently()
+              setIsAuthenticated(true)
+              setUser((await c.getUser()) ?? null)
+
+              // Fetch student profile
+              try {
+                const studentData = await studentService.getCurrentStudent()
+                setStudent(studentData)
+              } catch (error) {
+                console.error('Failed to fetch student profile:', error)
+                setStudent(null)
+              }
+            } catch (tokenError) {
+              // Token refresh failed - check if it's a "needs login" error
+              if (isAuthRequiredError(tokenError)) {
+                console.warn('Token refresh failed, clearing auth state:', tokenError)
+                setIsAuthenticated(false)
+                setUser(null)
+                setStudent(null)
+              } else {
+                // Some other error (network, etc.) - keep current state but log it
+                console.error('Token refresh error:', tokenError)
+              }
+            }
+          } else {
+            setIsAuthenticated(false)
+            setUser(null)
             setStudent(null)
           }
-        } else {
+        } catch (error) {
+          console.error('Error checking auth state:', error)
+          setIsAuthenticated(false)
+          setUser(null)
           setStudent(null)
+        } finally {
+          setIsLoading(false)
         }
       }
 
-      // Register token provider once the client is available
+      // Register token provider with proper error handling
       setTokenProvider(async () => {
         try {
-          return await c.getTokenSilently()
-        } catch {
+          const token = await c.getTokenSilently()
+          return token
+        } catch (error) {
+          if (isAuthRequiredError(error)) {
+            // Token is truly expired/invalid - update UI state
+            console.warn('Token expired, clearing auth state')
+            setIsAuthenticated(false)
+            setUser(null)
+            setStudent(null)
+          }
           return null
         }
       })
 
-      // Register auth error handler to handle expired/invalid tokens
-      setAuthErrorHandler(() => {
-        // Clear authentication state when receiving 403
-        setIsAuthenticated(false)
-        setUser(null)
-        // Optionally redirect to login page
-        // Uncomment the next line to auto-redirect on auth errors
-        // void c.loginWithRedirect()
+      // Register auth error handler for API errors (401/403)
+      setAuthErrorHandler(async () => {
+        console.warn('API auth error received, rechecking auth state')
+        // Don't immediately clear state - try to refresh first
+        await refreshState()
       })
 
+      // Handle OAuth redirect callback
       if (location.search.includes('code=') && location.search.includes('state=')) {
-        await c.handleRedirectCallback()
-        history.replaceState({}, document.title, location.pathname)
+        try {
+          await c.handleRedirectCallback()
+          history.replaceState({}, document.title, location.pathname)
+        } catch (error) {
+          console.error('Error handling redirect callback:', error)
+        }
       }
+
+      // Initial state check
       await refreshState()
 
       // Cross-tab sync: listen for Auth0 localStorage updates
       storageListener = (e: StorageEvent) => {
-        // Auth0 SDK keys usually contain "auth0." or start with "@@auth0"
         if (!e.key) return
         if (e.key.includes('auth0')) {
           void refreshState()
         }
       }
       window.addEventListener('storage', storageListener)
+
+      // Visibility change: recheck auth when user returns to tab
+      visibilityListener = () => {
+        // Use untrack() since we're in an event handler, not a reactive context
+        if (document.visibilityState === 'visible' && untrack(isAuthenticated)) {
+          // User came back to the tab and was authenticated - verify token is still valid
+          void refreshState()
+        }
+      }
+      document.addEventListener('visibilitychange', visibilityListener)
+
+      // Periodic token check while user is active
+      tokenCheckInterval = setInterval(() => {
+        // Use untrack() since we're in a timer callback, not a reactive context
+        if (untrack(isAuthenticated) && document.visibilityState === 'visible') {
+          void refreshState()
+        }
+      }, TOKEN_CHECK_INTERVAL)
     })()
   })
 
-  // Register cleanup at the component level
+  // Cleanup all listeners
   onCleanup(() => {
     if (storageListener) {
       window.removeEventListener('storage', storageListener)
     }
+    if (visibilityListener) {
+      document.removeEventListener('visibilitychange', visibilityListener)
+    }
+    if (tokenCheckInterval) {
+      clearInterval(tokenCheckInterval)
+    }
   })
+
+  // Expose checkAuth for manual refresh
+  const checkAuth = async () => {
+    const c = client()
+    if (!c) return
+    setIsLoading(true)
+    try {
+      const authedNow = await c.isAuthenticated()
+      if (authedNow) {
+        try {
+          await c.getTokenSilently()
+          setIsAuthenticated(true)
+          setUser((await c.getUser()) ?? null)
+          const studentData = await studentService.getCurrentStudent()
+          setStudent(studentData)
+        } catch (tokenError) {
+          if (isAuthRequiredError(tokenError)) {
+            setIsAuthenticated(false)
+            setUser(null)
+            setStudent(null)
+          }
+        }
+      } else {
+        setIsAuthenticated(false)
+        setUser(null)
+        setStudent(null)
+      }
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   const value: AuthContextValue = {
     isAuthenticated,
+    isLoading,
     user,
     student,
     role: () => student()?.role ?? 'viewer',
@@ -124,7 +240,12 @@ export function AuthProvider(props: { children: JSX.Element }) {
       if (!c) return null
       try {
         return await c.getTokenSilently()
-      } catch {
+      } catch (error) {
+        if (isAuthRequiredError(error)) {
+          setIsAuthenticated(false)
+          setUser(null)
+          setStudent(null)
+        }
         return null
       }
     },
@@ -138,6 +259,7 @@ export function AuthProvider(props: { children: JSX.Element }) {
       if (!c) return
       await c.logout({ logoutParams: { returnTo: window.location.origin } })
     },
+    checkAuth,
   }
 
   return <AuthContext.Provider value={value}>{props.children}</AuthContext.Provider>
