@@ -32,6 +32,7 @@ class TestCourseRepository:
         mock_course.lectures_per_week = 2
         mock_course.level = "Undergraduate"
         mock_course.total_weeks = 14
+        mock_course.status = "hidden"
         mock_course.department_id = 1
         mock_course.professor_id = 1
         mock_course.created_by = 1
@@ -153,10 +154,14 @@ class TestCourseRepository:
         mock_course1.lectures_per_week = 2
         mock_course1.level = "Undergraduate"
         mock_course1.total_weeks = 14
+        mock_course1.status = "hidden"
         mock_course1.department_id = 1
         mock_course1.professor_id = 1
         mock_course1.created_by = 1
         mock_course1.created_with = "test-llm"
+        mock_course1.created_at = None
+        mock_course1.updated_at = None
+        mock_course1.student = None
 
         mock_course2 = MagicMock(spec=CourseModel)
         mock_course2.id = 2
@@ -167,10 +172,14 @@ class TestCourseRepository:
         mock_course2.lectures_per_week = 3
         mock_course2.level = "Graduate"
         mock_course2.total_weeks = 14
+        mock_course2.status = "published"
         mock_course2.department_id = 1
         mock_course2.professor_id = 2
         mock_course2.created_by = 2
         mock_course2.created_with = "test-llm-2"
+        mock_course2.created_at = None
+        mock_course2.updated_at = None
+        mock_course2.student = None
 
         query_mock = mock_session.query.return_value
         query_mock.all.return_value = [mock_course1, mock_course2]
@@ -202,10 +211,14 @@ class TestCourseRepository:
         mock_course.lectures_per_week = 2
         mock_course.level = "Undergraduate"
         mock_course.total_weeks = 14
+        mock_course.status = "hidden"
         mock_course.department_id = 1
         mock_course.professor_id = 1
         mock_course.created_by = 1
         mock_course.created_with = "test-llm"
+        mock_course.created_at = None
+        mock_course.updated_at = None
+        mock_course.student = None
 
         query_mock = mock_session.query.return_value
         query_mock.filter_by.return_value.all.return_value = [mock_course]

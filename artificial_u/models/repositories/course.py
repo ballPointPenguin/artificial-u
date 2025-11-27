@@ -51,6 +51,7 @@ class CourseRepository(BaseRepository):
             lectures_per_week=db_course.lectures_per_week,
             level=db_course.level,
             total_weeks=db_course.total_weeks,
+            status=db_course.status,
             department_id=db_course.department_id,
             professor_id=db_course.professor_id,
             created_by=db_course.created_by,
@@ -76,6 +77,7 @@ class CourseRepository(BaseRepository):
                 lectures_per_week=course.lectures_per_week,
                 level=course.level,
                 total_weeks=course.total_weeks,
+                status=course.status,
                 department_id=course.department_id,
                 professor_id=course.professor_id,
                 created_by=course.created_by,
@@ -132,6 +134,7 @@ class CourseRepository(BaseRepository):
             db_course.lectures_per_week = course.lectures_per_week
             db_course.level = course.level
             db_course.total_weeks = course.total_weeks
+            db_course.status = course.status
             db_course.department_id = course.department_id
             db_course.professor_id = course.professor_id
             db_course.created_by = course.created_by
