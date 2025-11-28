@@ -74,6 +74,25 @@ from artificial_u.api.models.professors import (
     ProfessorUpdate,
 )
 
+# Quickstart model
+from artificial_u.api.models.quickstart import CourseBrief as QuickstartCourseBrief
+from artificial_u.api.models.quickstart import (
+    IntroAudioRequest,
+    IntroAudioResponse,
+)
+from artificial_u.api.models.quickstart import ProfessorDetail as QuickstartProfessorDetail
+from artificial_u.api.models.quickstart import (
+    QuickstartFinalizeRequest,
+    QuickstartFinalizeResponse,
+    QuickstartMatchRequest,
+    QuickstartMatchResponse,
+    QuickstartProfessorActionRequest,
+    QuickstartProfessorResponse,
+    QuickstartRegenerateProfessorRequest,
+    QuickstartStartRequest,
+    QuickstartStartResponse,
+)
+
 # Student model
 from artificial_u.api.models.students import (
     StudentCoinsAdd,
@@ -170,4 +189,18 @@ __all__ = [
     "ErrorResponse",
     "ErrorCode",
     "get_error_description",
+    # Quickstart model
+    "QuickstartCourseBrief",
+    "QuickstartProfessorDetail",
+    "QuickstartMatchRequest",
+    "QuickstartMatchResponse",
+    "QuickstartStartRequest",
+    "QuickstartStartResponse",
+    "QuickstartProfessorResponse",
+    "QuickstartProfessorActionRequest",
+    "QuickstartRegenerateProfessorRequest",
+    "QuickstartFinalizeRequest",
+    "QuickstartFinalizeResponse",
+    "IntroAudioRequest",
+    "IntroAudioResponse",
 ]

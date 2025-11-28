@@ -9,8 +9,8 @@ const Home = () => {
       <Hero
         title={t().home.hero.title}
         subtitle={t().home.hero.subtitle}
-        buttonText={t().home.hero.buttonText}
-        buttonLink="#home-content"
+        buttonText="Start Learning"
+        buttonLink="/quickstart"
       />
 
       {/* Disclaimer Notice */}

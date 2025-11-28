@@ -75,6 +75,7 @@ def list_jobs(
     kind: Optional[str] = None,
     lecture_id: Optional[int] = None,
     topic_id: Optional[int] = None,
+    course_id: Optional[int] = None,
     repository_factory: RepositoryFactory = Depends(get_repository_factory),
 ):
     repo = repository_factory.job
@@ -84,6 +85,7 @@ def list_jobs(
         kind=kind,
         lecture_id=lecture_id,
         topic_id=topic_id,
+        course_id=course_id,
     )
     return [
         {

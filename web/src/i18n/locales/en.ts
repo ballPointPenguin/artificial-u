@@ -313,6 +313,32 @@ export const en = {
     failedToExport: 'Failed to export course',
     level: 'Level',
     credits: 'Credits',
+    noTopicsDefined: 'No topics defined for this course.',
+    generatingTopics: 'Generating course topics...',
+    week: 'Week',
+    topic: 'Topic',
+    lecture: 'Lecture',
+    invalidCourseId: 'Invalid Course ID.',
+    loadingCourse: 'Loading course details...',
+    courseNotFound: 'Course not found.',
+    backToCourses: 'Back to Courses',
+    publishing: 'Publishing...',
+    publishCourse: 'Publish Course',
+    failedToPublish: 'Failed to publish course',
+    exportJobEnqueued: 'Export job enqueued. Check the Jobs page for status.',
+    viewJobStatus: 'View job status',
+    confirmDeletion: 'Confirm Deletion',
+    confirmDeleteMessage:
+      'Are you sure you want to delete this course? This action cannot be undone.',
+    published: 'Published',
+    hidden: 'Hidden',
+    courseDetails: 'Course Details',
+    courseTopics: 'Course Topics',
+    lecturesPerWeek: 'Lectures per week',
+    totalWeeks: 'Total weeks',
+    editTopics: 'Edit Topics',
+    topicGenerationInProgress:
+      'Topic generation in progress. The page will update automatically when complete.',
   },
 
   // Department Detail page
@@ -369,6 +395,89 @@ export const en = {
     biophiliaDesc: 'Lush greens, floral pops, and natural textures',
     changeTheme: 'Change theme',
     currentTheme: 'Current theme',
+  },
+
+  // Quickstart Wizard
+  quickstart: {
+    // Access control
+    creatorAccessRequired: 'Creator Access Required',
+    creatorPrivilegesNeeded: 'The Quickstart feature requires creator privileges.',
+
+    // Step labels
+    steps: {
+      intent: 'Intent',
+      professor: 'Professor',
+      complete: 'Complete',
+    },
+
+    // Error messages
+    errors: {
+      failedToCreateCourse: 'Failed to create course. Please try again.',
+      failedToFinalize: 'Failed to finalize course. Please try again.',
+      failedToSearch: 'Failed to search for courses. Please try again.',
+      failedToGenerateVoice: 'Failed to generate voice preview',
+      failedToRegenerateImage: 'Failed to regenerate image',
+      failedToReassignVoice: 'Failed to reassign voice',
+      failedToRegenerateProfessor: 'Failed to regenerate professor',
+    },
+
+    // Common actions
+    startOver: 'Start Over',
+
+    // Complete step
+    courseCreated: 'Course Created!',
+    courseBeingPrepared: "Your course is being prepared. You'll be redirected shortly...",
+
+    // Intent step
+    intent: {
+      title: 'What would you like to learn?',
+      subtitle: "Describe your learning goal and we'll create a personalized course for you.",
+      placeholder:
+        'e.g., I want to understand machine learning fundamentals, including supervised and unsupervised learning algorithms...',
+      hint: 'Be as specific as you like - the more detail, the better we can tailor your course.',
+      searching: 'Searching...',
+      creatingCourse: 'Creating Course...',
+      startLearning: 'Start Learning',
+      coursesFound: 'We found some courses for you!',
+      listenNow: 'Listen Now',
+      wantSomethingDifferent: 'Want something different?',
+      buildSomethingNew: 'Build Something New',
+      creating: 'Creating...',
+    },
+
+    // Professor step
+    professor: {
+      title: 'Meet Your Instructor',
+      guideThroughCourse: 'This professor will guide you through',
+      teachingStyle: 'Teaching style:',
+      hearTheirVoice: 'Hear Their Voice',
+      generating: 'Generating...',
+      or: 'or',
+      sampleVoice: 'Sample Voice',
+      useThisTeacher: 'Use This Teacher',
+      creatingCourse: 'Creating Course...',
+      regenerate: 'Regenerate',
+      changeSomething: 'Change Something',
+      image: 'Image',
+      voice: 'Voice',
+      details: 'Details',
+
+      // Image regeneration
+      generateNewPortrait: 'Generate a new portrait for',
+      regenerateImage: 'Regenerate Image',
+      regenerating: 'Regenerating...',
+
+      // Voice reassignment
+      assignDifferentVoice: 'Assign a different voice to',
+      reassignVoice: 'Reassign Voice',
+      assigning: 'Assigning...',
+
+      // Professor regeneration
+      describeProfessorPreference: "Describe what kind of professor you'd prefer:",
+      professorPromptPlaceholder:
+        'e.g., A professor with industry experience, more focus on practical applications, younger and more energetic...',
+      generateNewProfessor: 'Generate New Professor',
+    },
   },
 }
 

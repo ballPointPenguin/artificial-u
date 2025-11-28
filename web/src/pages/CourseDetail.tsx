@@ -1,5 +1,5 @@
 import { A, useNavigate, useParams } from '@solidjs/router'
-import { Download, FileText, Headphones } from 'lucide-solid'
+import { Download, FileText, Headphones, LoaderCircle } from 'lucide-solid'
 import { type Component, createResource, createSignal, For, Show } from 'solid-js'
 import { courseService } from '../api/services/course-service.js'
 import { topicService } from '../api/services/topic-service.js'
@@ -16,25 +16,34 @@ import { RequireRole } from '../auth/RequireRole'
 import CourseForm from '../components/courses/CourseForm.jsx'
 import type { CourseFormData } from '../components/courses/types.jsx'
 import { Alert, Button, MagicButton, MetadataInfo } from '../components/ui'
+import { useTranslations } from '../i18n'
 import { useAudioPlayer } from '../utils/audio-player-context.jsx'
+import { createJobTracker, getJobMessage } from '../utils/job-management.js'
 
 // Department Info Component
 const DepartmentInfo: Component<{
   departmentData: () => DepartmentBrief | undefined
   loading: boolean
 }> = (props) => {
+  const t = useTranslations()
   return (
     <div class="arcane-card">
       <h2 class="text-xl font-display text-parchment-100 mb-4 border-b border-parchment-800/30 pb-2">
-        Department
+        {t().courseDetail.department}
       </h2>
       <Show
         when={!props.loading}
-        fallback={<div class="text-parchment-400 font-serif">Loading department...</div>}
+        fallback={
+          <div class="text-parchment-400 font-serif">{t().courseDetail.loadingDepartment}</div>
+        }
       >
         <Show
           when={props.departmentData()}
-          fallback={<div class="text-parchment-400 font-serif">Department info not available.</div>}
+          fallback={
+            <div class="text-parchment-400 font-serif">
+              {t().courseDetail.departmentNotAvailable}
+            </div>
+          }
         >
           {(dept) => {
             const department = dept()
@@ -46,7 +55,9 @@ const DepartmentInfo: Component<{
                 >
                   {department.name} ({department.code})
                 </A>
-                <p class="text-parchment-300 mt-1">Faculty: {department.faculty_name || 'N/A'}</p>
+                <p class="text-parchment-300 mt-1">
+                  {t().courseDetail.faculty}: {department.faculty_name || t().common.nA}
+                </p>
               </div>
             )
           }}
@@ -61,18 +72,25 @@ const ProfessorInfo: Component<{
   professorData: () => ProfessorBrief | undefined
   loading: boolean
 }> = (props) => {
+  const t = useTranslations()
   return (
     <div class="arcane-card">
       <h2 class="text-xl font-display text-parchment-100 mb-4 border-b border-parchment-800/30 pb-2">
-        Professor
+        {t().courseDetail.professor}
       </h2>
       <Show
         when={!props.loading}
-        fallback={<div class="text-parchment-400 font-serif">Loading professor...</div>}
+        fallback={
+          <div class="text-parchment-400 font-serif">{t().courseDetail.loadingProfessor}</div>
+        }
       >
         <Show
           when={props.professorData()}
-          fallback={<div class="text-parchment-400 font-serif">Professor info not available.</div>}
+          fallback={
+            <div class="text-parchment-400 font-serif">
+              {t().courseDetail.professorNotAvailable}
+            </div>
+          }
         >
           {(prof) => {
             const professor = prof()
@@ -101,14 +119,16 @@ const TopicsList: Component<{
   courseId: number
   courseCode?: string
   loading: boolean
+  isGenerating?: boolean
 }> = (props) => {
+  const t = useTranslations()
   const audioPlayer = useAudioPlayer()
   return (
     <Show
       when={!props.loading}
       fallback={
         <div class="arcane-card p-6 text-center text-parchment-400 font-serif">
-          Loading topics...
+          {t().courseDetail.loadingTopics}
         </div>
       }
     >
@@ -116,7 +136,12 @@ const TopicsList: Component<{
         when={props.topicsData() && (props.topicsData() as TopicList).items.length > 0}
         fallback={
           <div class="arcane-card p-6 text-center text-parchment-400 font-serif">
-            No topics defined for this course.
+            <Show when={props.isGenerating} fallback={t().courseDetail.noTopicsDefined}>
+              <div class="flex items-center justify-center gap-3">
+                <LoaderCircle class="h-5 w-5 animate-spin text-mystic-400" />
+                <span>{t().courseDetail.generatingTopics}</span>
+              </div>
+            </Show>
           </div>
         }
       >
@@ -152,12 +177,17 @@ const TopicsList: Component<{
                           class="flex-1 block"
                         >
                           <p class="text-parchment-300 text-sm mt-1">
-                            Week {topic.week}
-                            <Show when={topic.order > 1}> • Topic {topic.order}</Show>
+                            {t().courseDetail.week} {topic.week}
+                            <Show when={topic.order > 1}>
+                              {' '}
+                              • {t().courseDetail.topic} {topic.order}
+                            </Show>
                           </p>
                           <p class="text-parchment-100 font-serif">{topic.title}</p>
                           <Show when={lecture}>
-                            <p class="text-parchment-400 text-sm mt-2">Lecture</p>
+                            <p class="text-parchment-400 text-sm mt-2">
+                              {t().courseDetail.lecture}
+                            </p>
                             <p class="text-parchment-400 text-sm mt-1">{lecture?.title}</p>
                           </Show>
                         </A>
@@ -166,15 +196,15 @@ const TopicsList: Component<{
                             <Show when={lecture?.audio_url}>
                               <button
                                 class="inline-flex h-9 w-9 items-center justify-center rounded-full border border-parchment-800/40 text-mystic-300 hover:text-mystic-200 hover:border-mystic-400 hover:bg-mystic-500/10 transition-colors"
-                                aria-label="Play lecture audio"
-                                title="Play lecture audio"
+                                aria-label={t().courseDetail.playAudio}
+                                title={t().courseDetail.playAudio}
                                 onClick={(event) => {
                                   event.stopPropagation()
                                   if (lecture?.audio_url) {
                                     audioPlayer.playTrack({
                                       url: lecture.audio_url,
                                       title: lecture.title,
-                                      subtitle: `Week ${String(topic.week)} - ${topic.title}`,
+                                      subtitle: `${t().courseDetail.week} ${String(topic.week)} - ${topic.title}`,
                                       courseId: props.courseId,
                                       lectureId: lecture.id,
                                       topicId: topic.id,
@@ -193,8 +223,8 @@ const TopicsList: Component<{
                                 }
                                 download=""
                                 class="inline-flex h-9 w-9 items-center justify-center rounded-full border border-parchment-800/40 text-mystic-300 hover:text-mystic-200 hover:border-mystic-400 hover:bg-mystic-500/10 transition-colors"
-                                aria-label="Download lecture audio"
-                                title="Download lecture audio"
+                                aria-label={t().courseDetail.downloadAudio}
+                                title={t().courseDetail.downloadAudio}
                                 onClick={(event) => {
                                   event.stopPropagation()
                                 }}
@@ -207,8 +237,8 @@ const TopicsList: Component<{
                                 <A
                                   href={`/courses/${String(props.courseId)}/lectures/${String(lectureData().id)}`}
                                   class="inline-flex h-9 w-9 items-center justify-center rounded-full border border-parchment-800/40 text-mystic-300 hover:text-mystic-200 hover:border-mystic-400 hover:bg-mystic-500/10 transition-colors"
-                                  aria-label="Open lecture detail"
-                                  title="Open lecture detail"
+                                  aria-label={t().courseDetail.openDetail}
+                                  title={t().courseDetail.openDetail}
                                   onClick={(event) => {
                                     event.stopPropagation()
                                   }}
@@ -236,6 +266,7 @@ const CourseDetail: Component = () => {
   const params = useParams()
   const navigate = useNavigate()
   const auth = useAuth()
+  const t = useTranslations()
   // Ensure params.id exists and is a valid number string before parsing
   const courseId = params.id ? Number.parseInt(params.id, 10) : Number.NaN
 
@@ -249,6 +280,7 @@ const CourseDetail: Component = () => {
   const [exportJobId, setExportJobId] = createSignal<number | null>(null)
   const [exportMessage, setExportMessage] = createSignal('')
   const [isPublishing, setIsPublishing] = createSignal(false)
+  const [topicGenMessage, setTopicGenMessage] = createSignal('')
 
   // Check if courseId is a valid number before creating resources
   const isValidId = !Number.isNaN(courseId)
@@ -269,10 +301,40 @@ const CourseDetail: Component = () => {
     () => (isValidId ? courseId : null),
     courseService.getCourseLectures
   )
-  const [topicsData] = createResource(
+  const [topicsData, { refetch: refetchTopics }] = createResource(
     () => (isValidId ? courseId : null),
     (id) => topicService.listTopicsByCourse(id, 1, 100)
   )
+
+  // Track topic generation jobs via SSE
+  const topicJobTracker = createJobTracker({
+    courseId: () => (isValidId ? courseId : undefined),
+    kinds: ['generate_topics_for_course'],
+    onJobStart: (event) => {
+      if (import.meta.env.DEV) {
+        console.log('[CourseDetail] Topic generation started:', event.id)
+      }
+      setTopicGenMessage(getJobMessage(event.kind, 'running'))
+    },
+    onJobComplete: (event) => {
+      if (import.meta.env.DEV) {
+        console.log('[CourseDetail] Topic generation completed:', event.id)
+      }
+      setTopicGenMessage(getJobMessage(event.kind, 'done'))
+      // Auto-refresh topics when job completes
+      setTimeout(() => {
+        void refetchTopics()
+        // Clear success message after a delay
+        setTimeout(() => setTopicGenMessage(''), 3000)
+      }, 100)
+    },
+    onJobFail: (event) => {
+      if (import.meta.env.DEV) {
+        console.log('[CourseDetail] Topic generation failed:', event.id, event.last_error)
+      }
+      setError(event.last_error || getJobMessage(event.kind, 'failed'))
+    },
+  })
 
   // Handler for course update form submission
   const handleUpdateCourse = async (formData: CourseFormData) => {
@@ -299,7 +361,7 @@ const CourseDetail: Component = () => {
       setIsEditing(false)
       void refetch()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update course')
+      setError(err instanceof Error ? err.message : t().courseDetail.failedToUpdate)
     } finally {
       setIsSubmitting(false)
     }
@@ -324,7 +386,7 @@ const CourseDetail: Component = () => {
         navigate('/courses')
       })
       .catch((err: unknown) => {
-        setError(err instanceof Error ? err.message : 'Failed to delete course')
+        setError(err instanceof Error ? err.message : t().courseDetail.failedToDelete)
         setShowDeleteConfirm(false)
       })
       .finally(() => {
@@ -344,13 +406,10 @@ const CourseDetail: Component = () => {
       .exportCourse(courseId)
       .then((response) => {
         setExportJobId(response.id)
-        setExportMessage(
-          response.message ||
-            `Export job ${String(response.id)} enqueued. Check the Jobs page for status.`
-        )
+        setExportMessage(response.message || t().courseDetail.exportJobEnqueued)
       })
       .catch((err: unknown) => {
-        setError(err instanceof Error ? err.message : 'Failed to export course')
+        setError(err instanceof Error ? err.message : t().courseDetail.failedToExport)
       })
       .finally(() => {
         setIsExporting(false)
@@ -370,7 +429,7 @@ const CourseDetail: Component = () => {
         void refetch()
       })
       .catch((err: unknown) => {
-        setError(err instanceof Error ? err.message : 'Failed to publish course')
+        setError(err instanceof Error ? err.message : t().courseDetail.failedToPublish)
       })
       .finally(() => {
         setIsPublishing(false)
@@ -379,14 +438,21 @@ const CourseDetail: Component = () => {
 
   return (
     <div class="container mx-auto p-6">
-      <Show when={isValidId} fallback={<div class="text-parchment-100">Invalid Course ID.</div>}>
+      <Show
+        when={isValidId}
+        fallback={<div class="text-parchment-100">{t().courseDetail.invalidCourseId}</div>}
+      >
         <Show
           when={!courseData.loading}
-          fallback={<div class="text-parchment-200 font-serif p-4">Loading course details...</div>}
+          fallback={
+            <div class="text-parchment-200 font-serif p-4">{t().courseDetail.loadingCourse}</div>
+          }
         >
           <Show
             when={courseData()}
-            fallback={<div class="arcane-card p-6 text-center">Course not found.</div>}
+            fallback={
+              <div class="arcane-card p-6 text-center">{t().courseDetail.courseNotFound}</div>
+            }
           >
             {(course) => (
               <div>
@@ -395,7 +461,7 @@ const CourseDetail: Component = () => {
                     href="/courses"
                     class="text-mystic-400 hover:text-mystic-300 transition-colors"
                   >
-                    ← Back to Courses
+                    ← {t().courseDetail.backToCourses}
                   </A>
                   <Show when={!isEditing()}>
                     <div class="flex gap-2">
@@ -407,17 +473,17 @@ const CourseDetail: Component = () => {
                           onClick={handlePublishCourse}
                           disabled={isPublishing()}
                           isLoading={isPublishing()}
-                          loadingText="Publishing..."
+                          loadingText={t().courseDetail.publishing}
                         >
-                          Publish Course
+                          {t().courseDetail.publishCourse}
                         </MagicButton>
                       </Show>
                       <Show when={auth.canModify(course().created_by)}>
                         <Button variant="primary" onClick={() => setIsEditing(true)}>
-                          Edit Course
+                          {t().courseDetail.editCourse}
                         </Button>
                         <Button variant="secondary" onClick={() => setShowDeleteConfirm(true)}>
-                          Delete
+                          {t().common.delete}
                         </Button>
                       </Show>
                       <RequireRole minRole="admin">
@@ -426,7 +492,7 @@ const CourseDetail: Component = () => {
                           onClick={handleExportCourse}
                           disabled={isExporting()}
                         >
-                          {isExporting() ? 'Exporting...' : 'Export'}
+                          {isExporting() ? t().courseDetail.exporting : t().courseDetail.export}
                         </Button>
                       </RequireRole>
                     </div>
@@ -447,7 +513,7 @@ const CourseDetail: Component = () => {
                       <p>{exportMessage()}</p>
                       <Show when={exportJobId()}>
                         <A href={`/jobs`} class="text-mystic-400 hover:text-mystic-300 underline">
-                          View job status →
+                          {t().courseDetail.viewJobStatus} →
                         </A>
                       </Show>
                     </div>
@@ -460,10 +526,10 @@ const CourseDetail: Component = () => {
                     <div class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
                       <div class="arcane-card p-6 max-w-md w-full">
                         <h2 class="text-xl font-semibold mb-4 text-parchment-100">
-                          Confirm Deletion
+                          {t().courseDetail.confirmDeletion}
                         </h2>
                         <p class="text-parchment-200 mb-6">
-                          Are you sure you want to delete this course? This action cannot be undone.
+                          {t().courseDetail.confirmDeleteMessage}
                         </p>
                         <div class="flex justify-end gap-3">
                           <Button
@@ -471,14 +537,14 @@ const CourseDetail: Component = () => {
                             onClick={() => setShowDeleteConfirm(false)}
                             disabled={isDeleting()}
                           >
-                            Cancel
+                            {t().common.cancel}
                           </Button>
                           <Button
                             variant="secondary"
                             onClick={handleDeleteCourse}
                             disabled={isDeleting()}
                           >
-                            {isDeleting() ? 'Deleting...' : 'Delete Course'}
+                            {isDeleting() ? t().common.deleting : t().courseDetail.deleteCourse}
                           </Button>
                         </div>
                       </div>
@@ -491,7 +557,9 @@ const CourseDetail: Component = () => {
                   fallback={
                     <RequireRole minRole="creator">
                       <div class="arcane-card p-6 mb-8">
-                        <h2 class="text-xl font-semibold mb-4 text-parchment-100">Edit Course</h2>
+                        <h2 class="text-xl font-semibold mb-4 text-parchment-100">
+                          {t().courseDetail.editCourse}
+                        </h2>
                         <CourseForm
                           course={course()}
                           onSubmit={handleUpdateCourse}
@@ -515,7 +583,11 @@ const CourseDetail: Component = () => {
                       }`}
                     >
                       <span class="text-xs">{course().status === 'published' ? '✓' : '●'}</span>
-                      <span>{course().status === 'published' ? 'Published' : 'Hidden'}</span>
+                      <span>
+                        {course().status === 'published'
+                          ? t().courseDetail.published
+                          : t().courseDetail.hidden}
+                      </span>
                     </span>
                   </div>
                   <p class="text-base italic text-parchment-200 mb-6 font-serif">
@@ -534,19 +606,21 @@ const CourseDetail: Component = () => {
                     {/* Course Details Section */}
                     <div class="arcane-card">
                       <h2 class="text-xl font-display text-parchment-100 mb-4 border-b border-parchment-800/30 pb-2">
-                        Course Details
+                        {t().courseDetail.courseDetails}
                       </h2>
                       <div class="space-y-3 font-serif">
                         <p>
-                          <span class="text-parchment-300">Level:</span>{' '}
+                          <span class="text-parchment-300">{t().courseDetail.level}:</span>{' '}
                           <span class="text-parchment-100">{course().level}</span>
                         </p>
                         <p>
-                          <span class="text-parchment-300">Lectures per week:</span>{' '}
+                          <span class="text-parchment-300">
+                            {t().courseDetail.lecturesPerWeek}:
+                          </span>{' '}
                           <span class="text-parchment-100">{course().lectures_per_week}</span>
                         </p>
                         <p>
-                          <span class="text-parchment-300">Total weeks:</span>{' '}
+                          <span class="text-parchment-300">{t().courseDetail.totalWeeks}:</span>{' '}
                           <span class="text-parchment-100">{course().total_weeks}</span>
                         </p>
                       </div>
@@ -568,17 +642,55 @@ const CourseDetail: Component = () => {
                   {/* Topics Section */}
                   <div class="mt-8">
                     <div class="flex items-center justify-between mb-5">
-                      <h2 class="text-2xl font-display text-parchment-100">Course Topics</h2>
-                      <Button variant="primary">
-                        <A href={`/courses/${String(courseId)}/topics`}>Edit Topics</A>
+                      <div class="flex items-center gap-3">
+                        <h2 class="text-2xl font-display text-parchment-100">
+                          {t().courseDetail.courseTopics}
+                        </h2>
+                        <Show when={topicJobTracker.hasActiveJobs()}>
+                          <div class="flex items-center gap-2 text-mystic-400">
+                            <LoaderCircle class="h-4 w-4 animate-spin" />
+                            <span class="text-sm font-serif">{t().common.generating}</span>
+                          </div>
+                        </Show>
+                      </div>
+                      <Button
+                        variant="primary"
+                        disabled={topicJobTracker.hasActiveJobs()}
+                        class={
+                          topicJobTracker.hasActiveJobs() ? 'opacity-50 cursor-not-allowed' : ''
+                        }
+                      >
+                        <A
+                          href={`/courses/${String(courseId)}/topics`}
+                          class={topicJobTracker.hasActiveJobs() ? 'pointer-events-none' : ''}
+                        >
+                          {t().courseDetail.editTopics}
+                        </A>
                       </Button>
                     </div>
+
+                    {/* Topic Generation Status Messages */}
+                    <Show when={topicGenMessage() && !topicJobTracker.hasActiveJobs()}>
+                      <Alert variant="success" class="mb-4">
+                        {topicGenMessage()}
+                      </Alert>
+                    </Show>
+                    <Show when={topicJobTracker.hasActiveJobs()}>
+                      <Alert variant="info" class="mb-4">
+                        <div class="flex items-center gap-2">
+                          <LoaderCircle class="h-4 w-4 animate-spin" />
+                          <span>{t().courseDetail.topicGenerationInProgress}</span>
+                        </div>
+                      </Alert>
+                    </Show>
+
                     <TopicsList
                       topicsData={topicsData}
                       lecturesData={lecturesData}
                       courseId={courseId}
                       courseCode={course().code}
                       loading={topicsData.loading}
+                      isGenerating={topicJobTracker.hasActiveJobs()}
                     />
                   </div>
                 </Show>

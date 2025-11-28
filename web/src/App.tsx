@@ -3,6 +3,18 @@ import { type Component, lazy } from 'solid-js'
 import { LoginPrompt, RequireAuth } from './auth/RequireAuth'
 import { RequireRole } from './auth/RequireRole'
 import Layout from './components/Layout'
+import { useI18n } from './i18n/index.js'
+
+// Fallback component for quickstart access denied
+const QuickstartAccessDenied: Component = () => {
+  const { t } = useI18n()
+  return (
+    <div class="container mx-auto p-4 text-center">
+      <h2 class="text-2xl font-display mb-4">{t().quickstart.creatorAccessRequired}</h2>
+      <p class="text-muted">{t().quickstart.creatorPrivilegesNeeded}</p>
+    </div>
+  )
+}
 
 // Lazily load page components
 const Home = lazy(() => import('./pages/Home'))
@@ -23,6 +35,7 @@ const Jobs = lazy(() => import('./pages/Jobs'))
 const AdminDashboard = lazy(() => import('./pages/AdminDashboard'))
 const Stylebook = lazy(() => import('./pages/Stylebook'))
 const Login = lazy(() => import('./pages/Login'))
+const Quickstart = lazy(() => import('./pages/Quickstart'))
 
 const App: Component = () => {
   return (
@@ -32,6 +45,18 @@ const App: Component = () => {
       <Route path="/academics" component={Academics} />
       <Route path="/stylebook" component={Stylebook} />
       <Route path="/login" component={Login} />
+
+      {/* Quickstart route - requires creator role */}
+      <Route
+        path="/quickstart"
+        component={() => (
+          <RequireAuth fallback={<LoginPrompt />}>
+            <RequireRole minRole="creator" fallback={<QuickstartAccessDenied />}>
+              <Quickstart />
+            </RequireRole>
+          </RequireAuth>
+        )}
+      />
 
       {/* Profile route - requires authentication */}
       <Route

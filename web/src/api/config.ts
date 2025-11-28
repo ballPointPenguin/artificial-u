@@ -129,4 +129,15 @@ export const ENDPOINTS = {
     updateRole: (id: number) => `/v1/students/${String(id)}/role`,
     addCoins: (id: number) => `/v1/students/${String(id)}/coins`,
   },
+  quickstart: {
+    matchCourses: '/v1/quickstart/match-courses',
+    start: '/v1/quickstart/start',
+    professor: (id: number, courseId: number) =>
+      `/v1/quickstart/professor/${String(id)}?course_id=${String(courseId)}`,
+    generateIntroAudio: '/v1/quickstart/generate-intro-audio',
+    regenerateProfessorImage: '/v1/quickstart/regenerate-professor-image',
+    reassignProfessorVoice: '/v1/quickstart/reassign-professor-voice',
+    regenerateProfessor: '/v1/quickstart/regenerate-professor',
+    finalize: '/v1/quickstart/finalize',
+  },
 }
