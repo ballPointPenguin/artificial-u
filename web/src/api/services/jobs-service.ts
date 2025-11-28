@@ -24,6 +24,7 @@ export async function listJobs(params?: {
   kind?: string
   lecture_id?: number
   topic_id?: number
+  course_id?: number
 }): Promise<JobRow[]> {
   const qs = new URLSearchParams()
   if (params?.status) qs.set('status', params.status)
@@ -31,6 +32,7 @@ export async function listJobs(params?: {
   if (params?.kind) qs.set('kind', params.kind)
   if (params?.lecture_id != null) qs.set('lecture_id', String(params.lecture_id))
   if (params?.topic_id != null) qs.set('topic_id', String(params.topic_id))
+  if (params?.course_id != null) qs.set('course_id', String(params.course_id))
   const endpoint = `${ENDPOINTS.jobs.list}${qs.toString() ? `?${qs.toString()}` : ''}`
   return httpClient.get<JobRow[]>(endpoint)
 }

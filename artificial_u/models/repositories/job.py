@@ -48,6 +48,7 @@ class JobRepository(BaseRepository):
         kind: Optional[str] = None,
         lecture_id: Optional[int] = None,
         topic_id: Optional[int] = None,
+        course_id: Optional[int] = None,
     ) -> List[JobModel]:
         with self.get_session() as session:
             stmt = select(JobModel)
@@ -72,6 +73,17 @@ class JobRepository(BaseRepository):
                         cast(JobModel.payload["topic_id"].astext, Integer) == int(topic_id),
                         cast(JobModel.payload["partial_attributes"]["topic_id"].astext, Integer)
                         == int(topic_id),
+                    )
+                )
+
+            if course_id is not None:
+                from sqlalchemy import Integer, cast, or_
+
+                stmt = stmt.where(
+                    or_(
+                        cast(JobModel.payload["course_id"].astext, Integer) == int(course_id),
+                        cast(JobModel.payload["partial_attributes"]["course_id"].astext, Integer)
+                        == int(course_id),
                     )
                 )
 

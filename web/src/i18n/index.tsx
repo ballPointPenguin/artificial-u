@@ -105,3 +105,18 @@ export function useLocale() {
   }
   return { currentLocale: context.currentLocale, setLocale: context.setLocale }
 }
+
+/**
+ * Combined hook for translations and locale management
+ *
+ * @example
+ * const { t, currentLocale, setLocale } = useI18n()
+ * return <h1>{t().home.hero.title}</h1>
+ */
+export function useI18n() {
+  const context = useContext(I18nContext)
+  if (!context) {
+    throw new Error('useI18n must be used within I18nProvider')
+  }
+  return context
+}

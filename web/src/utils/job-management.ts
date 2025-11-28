@@ -109,11 +109,13 @@ export function createJobTracker(options: JobTrackerOptions) {
               status: 'running',
               topic_id: topicId,
               lecture_id: lectureId,
+              course_id: courseId,
             }),
             listJobs({
               status: 'queued',
               topic_id: topicId,
               lecture_id: lectureId,
+              course_id: courseId,
             }),
           ])
 

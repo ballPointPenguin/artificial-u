@@ -513,3 +513,90 @@ export interface JobResponse {
   run_after?: string
   message?: string
 }
+
+// Quickstart types
+export interface QuickstartCourseBrief {
+  id: number
+  code: string
+  title: string
+  description: string
+  professor_name: string | null
+  professor_image_url: string | null
+}
+
+export interface QuickstartMatchRequest {
+  query: string
+}
+
+export interface QuickstartMatchResponse {
+  action: 'SELECT' | 'GENERATE'
+  matched_courses: QuickstartCourseBrief[]
+  reasoning: string
+}
+
+export interface QuickstartStartRequest {
+  query: string
+}
+
+export interface QuickstartStartResponse {
+  course_id: number
+  professor_id: number
+  department_id: number
+  course_title: string
+  course_code: string
+  course_description: string
+}
+
+export interface QuickstartProfessorDetail {
+  id: number
+  name: string
+  title: string
+  specialization: string
+  description: string | null
+  personality: string | null
+  teaching_style: string | null
+  background: string | null
+  gender: string | null
+  age: number | null
+  accent: string | null
+  image_url: string | null
+  voice_preview_url: string | null
+  voice_id: number | null
+}
+
+export interface QuickstartProfessorResponse {
+  professor: QuickstartProfessorDetail
+  course_id: number
+  course_title: string
+}
+
+export interface IntroAudioRequest {
+  professor_id: number
+  course_title: string
+}
+
+export interface IntroAudioResponse {
+  audio_data_uri: string
+  text: string
+}
+
+export interface QuickstartProfessorActionRequest {
+  professor_id: number
+  course_id: number
+}
+
+export interface QuickstartRegenerateProfessorRequest {
+  course_id: number
+  department_id: number
+  freeform_prompt?: string
+}
+
+export interface QuickstartFinalizeRequest {
+  course_id: number
+}
+
+export interface QuickstartFinalizeResponse {
+  course_id: number
+  topics_job_id: number
+  message: string
+}
