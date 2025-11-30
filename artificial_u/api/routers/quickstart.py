@@ -164,13 +164,14 @@ async def start_quickstart(
 
         # Create course using smart selection (handles department and professor)
         # The create_course method handles smart selection when department_id/professor_id are None
+        # Quickstart courses always use 1 lecture per week and 12 weeks for consistency
         created_course, professor = await course_service.create_course(
             title=generated_data.title or "Quickstart Course",
             code=generated_data.code or "QS001",
             level=generated_data.level or "Undergraduate",
             credits=generated_data.credits or 3,
-            weeks=generated_data.total_weeks or 12,
-            lectures_per_week=generated_data.lectures_per_week or 1,
+            weeks=12,
+            lectures_per_week=1,
             department_id=None,  # Smart selection will handle this
             professor_id=None,  # Smart selection will handle this
             description=generated_data.description or request.query,
