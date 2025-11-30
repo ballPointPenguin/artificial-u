@@ -9,7 +9,7 @@ interface LectureFormProps {
   courseId: number
   topicId?: number
   existingLecture?: Lecture | null
-  onSubmit: (data: LectureCreate | LectureUpdate) => Promise<void>
+  onSubmit: (data: LectureUpdate) => Promise<void>
   onCancel: () => void
   isLoading?: boolean
   error?: APIError | null

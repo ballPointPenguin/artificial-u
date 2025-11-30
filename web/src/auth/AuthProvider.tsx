@@ -1,4 +1,5 @@
 import type { Auth0Client, User } from '@auth0/auth0-spa-js'
+import { useNavigate } from '@solidjs/router'
 import {
   createContext,
   createSignal,
@@ -46,6 +47,8 @@ export function AuthProvider(props: { children: JSX.Element }) {
   let storageListener: ((e: StorageEvent) => void) | null = null
   let visibilityListener: (() => void) | null = null
   let tokenCheckInterval: ReturnType<typeof setInterval> | null = null
+
+  const navigate = useNavigate()
 
   onMount(() => {
     void (async () => {
@@ -130,8 +133,10 @@ export function AuthProvider(props: { children: JSX.Element }) {
       // Handle OAuth redirect callback
       if (location.search.includes('code=') && location.search.includes('state=')) {
         try {
-          await c.handleRedirectCallback()
-          history.replaceState({}, document.title, location.pathname)
+          const result = await c.handleRedirectCallback()
+          const targetUrl =
+            (result.appState as { targetUrl?: string } | undefined)?.targetUrl ?? location.pathname
+          navigate(targetUrl, { replace: true })
         } catch (error) {
           console.error('Error handling redirect callback:', error)
         }
@@ -252,7 +257,9 @@ export function AuthProvider(props: { children: JSX.Element }) {
     login: async () => {
       const c = client()
       if (!c) return
-      await c.loginWithRedirect()
+      await c.loginWithRedirect({
+        appState: { targetUrl: window.location.pathname + window.location.search },
+      })
     },
     logout: async () => {
       const c = client()

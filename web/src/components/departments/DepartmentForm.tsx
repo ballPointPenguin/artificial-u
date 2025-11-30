@@ -24,7 +24,7 @@ interface DepartmentFormData {
 }
 
 interface DepartmentFormProps {
-  department?: Department & Partial<DepartmentFormData>
+  department?: Department
   onSubmit: (data: FormData) => void
   onCancel: () => void
   isSubmitting: boolean

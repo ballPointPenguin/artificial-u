@@ -24,7 +24,7 @@ const LectureCreatePage = () => {
   const [course] = createResource(() => (isValidIds ? courseId : null), courseService.getCourse)
   const [topic] = createResource(() => (isValidIds ? topicId : null), topicService.getTopic)
 
-  const handleSubmitCreate = async (formData: LectureCreate | LectureUpdate) => {
+  const handleSubmitCreate = async (formData: LectureUpdate) => {
     if (!isValidIds) return
 
     setIsSubmitting(true)

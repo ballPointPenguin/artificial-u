@@ -46,7 +46,7 @@ export async function cancelJob(jobId: number): Promise<{ id: number; status: st
 export type JobEvent = {
   id: number
   kind: string
-  status: JobStatus | 'cancelled'
+  status: JobStatus
   payload?: unknown
   result?: unknown
   last_error?: string
