@@ -82,7 +82,7 @@ def add_error_handlers(app: FastAPI) -> None:
     async def handle_http_exception(request: Request, exc: HTTPException) -> JSONResponse:
         """Handler for HTTP exceptions"""
         logger.error(
-            f"HTTP Exception: {exc.detail} - Status: {exc.status_code}",
+            f"HTTP Exception: {exc.detail} - Status: {exc.status_code} - Path: {request.method} {request.url.path}",
             extra={
                 "status_code": exc.status_code,
                 "path": request.url.path,
