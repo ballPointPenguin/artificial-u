@@ -2,7 +2,7 @@
  * Professor service
  */
 import { httpClient } from '../client.js'
-import { ENDPOINTS } from '../config.js'
+import { ENDPOINTS, TIMEOUT_CONFIG } from '../config.js'
 import type {
   Professor,
   ProfessorCoursesResponse,
@@ -61,11 +61,19 @@ export const professorService = {
   },
 
   generateProfessorImage: (professorId: number): Promise<Professor> => {
-    return httpClient.post<Professor>(ENDPOINTS.professors.generateImage(professorId), {})
+    return httpClient.post<Professor>(
+      ENDPOINTS.professors.generateImage(professorId),
+      {},
+      {
+        timeout: TIMEOUT_CONFIG.generation,
+      }
+    )
   },
 
   generateProfessor: (data: ProfessorGenerateRequest): Promise<Professor> => {
-    return httpClient.post<Professor>(ENDPOINTS.professors.generate, data)
+    return httpClient.post<Professor>(ENDPOINTS.professors.generate, data, {
+      timeout: TIMEOUT_CONFIG.generation,
+    })
   },
 
   enqueueGenerateProfessor: (
