@@ -54,22 +54,22 @@ psql -h localhost -U postgres -d artificial_u
 Or connect with BeeKeeper Studio:
 
 - **Host**: `localhost`
-- **Port**: `5432`
+- **Port**: `5434`
 - **Database**: `artificial_u`
 - **Username**: Check AWS Secrets Manager
 - **Password**: Check AWS Secrets Manager
 
 ## How It Works
 
-```
+```text
 Your Laptop          Bastion Host (EC2)       VPC              RDS Database
 ┌─────────────┐      ┌──────────────────┐    ┌────────────────┐
 │ psql        │ --→  │ AWS Systems Mgr  │ →  │ Private VPC    │
 │ (localhost) │      │ (SSH tunneling)  │    │ Security Group │
 └─────────────┘      └──────────────────┘    └────────────────┘
-   :5432                  Session Mgr               :5432
+   :5434                  Session Mgr               :5432
      ↓                      Plugin                    ↓
-  Port 5432              Port Forwarding          RDS Instance
+  Port 5434              Port Forwarding          RDS Instance
    Local                  Encrypted Tunnel          Private
 ```
 
@@ -161,14 +161,14 @@ This usually means the database credentials are wrong:
 Try troubleshooting:
 
 ```bash
-# Check if port 5432 is listening locally
-lsof -i :5432
+# Check if port 5434 is listening locally
+lsof -i :5434
 
 # Try connecting with verbose output
 psql -h localhost -U postgres -d artificial_u -v on_error_stop=on
 
 # Or test the connection directly
-nc -zv localhost 5432
+nc -zv localhost 5434
 ```
 
 ## Advanced: Manual Tunnel with AWS CLI
@@ -193,7 +193,7 @@ aws ssm start-session \
   --target "$BASTION_ID" \
   --region us-east-1 \
   --document-name AWS-StartPortForwardingSession \
-  --parameters "localPortNumber=5432,remotePortNumber=5432,remoteHost=$RDS_ENDPOINT"
+  --parameters "localPortNumber=5434,remotePortNumber=5432,remoteHost=$RDS_ENDPOINT"
 ```
 
 ## Cost Considerations

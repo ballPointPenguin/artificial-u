@@ -85,12 +85,12 @@ psql -h localhost -U postgres -d artificial_u
 
 ## Architecture
 
-```
+```text
 ┌─────────────────┐
 │  Your Laptop    │
 │                 │
 │  psql/BeeKeeper │◄─┐
-│ (localhost:5432)│  │
+│ (localhost:5434)│  │
 └────────┬────────┘  │ Tunnel
          │           │ (Session Manager)
          └───────────►─┐
@@ -134,7 +134,7 @@ psql -h localhost -U postgres -d artificial_u
 
 ## File Changes Summary
 
-```
+```text
 Modified:
   cdk/cdk/cdk_stack.py
     - Added bastion host (15 lines)
@@ -161,7 +161,7 @@ psql -h localhost -U postgres -d artificial_u
 
 1. Launch BeeKeeper Studio
 2. Create new connection
-3. Host: `localhost`, Port: `5432`
+3. Host: `localhost`, Port: `5434`
 4. Username: `postgres` (or check Secrets Manager)
 5. Database: `artificial_u`
 
@@ -169,7 +169,7 @@ psql -h localhost -U postgres -d artificial_u
 
 1. New Database Connection
 2. Select PostgreSQL
-3. Host: `localhost`, Port: `5432`
+3. Host: `localhost`, Port: `5434`
 4. Database: `artificial_u`
 5. Fill in credentials from Secrets Manager
 

@@ -30,40 +30,40 @@ psql -h localhost -U postgres -d artificial_u
 
 Output should show:
 
-```
+```text
 ✅ Found resources:
    Bastion Instance: i-0123456789abcdef
    RDS Endpoint:     cdkstack-database-xxxxx.us-east-1.rds.amazonaws.com
 
 🚀 Creating tunnel...
    Tunnel Details:
-      Local:  localhost:5432
+      Local:  localhost:5434
       Remote: cdkstack-database-xxxxx:5432
 ```
 
 ### Step 2: Connect (Terminal 2)
 
-**Option A: psql**
+#### Option A: psql
 
 ```bash
 psql -h localhost -U postgres -d artificial_u
 # Enter password when prompted
 ```
 
-**Option B: BeeKeeper Studio**
+#### Option B: BeeKeeper Studio
 
 1. New Connection
 2. Select PostgreSQL
 3. Fill in:
    - Host: `localhost`
-   - Port: `5432`
+   - Port: `5434`
    - Database: `artificial_u`
    - Username: `postgres`
    - Password: (from AWS Secrets Manager)
 4. Click Test
 5. Click Save
 
-**Option C: DBeaver**
+#### Option C: DBeaver
 
 1. Database → New Database Connection
 2. Select PostgreSQL, Click Next
@@ -97,7 +97,7 @@ aws secretsmanager list-secrets --region us-east-1 | grep -i rds
 ### "psql: could not translate host name"
 
 - Make sure tunnel is still running in Terminal 1
-- Try: `nc -zv localhost 5432`
+- Try: `nc -zv localhost 5434`
 
 ## Cleanup
 
