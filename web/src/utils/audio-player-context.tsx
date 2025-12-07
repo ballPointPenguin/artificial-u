@@ -1,5 +1,5 @@
 import type { Accessor, ParentComponent } from 'solid-js'
-import { createContext, createEffect, createSignal, useContext } from 'solid-js'
+import { createContext, createEffect, createSignal, onCleanup, useContext } from 'solid-js'
 
 export interface AudioTrack {
   url: string
@@ -86,14 +86,13 @@ export const AudioPlayerProvider: ParentComponent = (props) => {
       currentTrack: currentTrack(),
       duration: duration(),
       volume: volume(),
-      // Don't save currentTime here - it updates too frequently during playback
+      // Don't save currentTime here - it's saved periodically during playback
       currentTime: 0,
     }
     saveState(state)
   })
 
-  // Save currentTime to localStorage only when pausing or stopping
-  // (not during playback to avoid excessive writes)
+  // Save currentTime to localStorage (called on pause/stop and periodically during playback)
   const saveCurrentTime = () => {
     const state: Partial<AudioPlayerState> = {
       currentTrack: currentTrack(),
@@ -103,6 +102,19 @@ export const AudioPlayerProvider: ParentComponent = (props) => {
     }
     saveState(state)
   }
+
+  // Periodically save progress during playback (every 3 seconds)
+  createEffect(() => {
+    if (isPlaying()) {
+      const intervalId = setInterval(() => {
+        saveCurrentTime()
+      }, 3000) // Save every 3 seconds
+
+      onCleanup(() => {
+        clearInterval(intervalId)
+      })
+    }
+  })
 
   const playTrack = (track: AudioTrack) => {
     setCurrentTrack(track)
