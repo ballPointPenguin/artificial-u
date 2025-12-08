@@ -35,7 +35,9 @@ async def manual_assign_voice(
     try:
         voice_service.manual_voice_assignment(professor_id, assignment_request.el_voice_id)
     except ValueError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        # Use 400 instead of 404 to avoid CloudFront's error response
+        # converting it to index.html (CloudFront converts 404/403 to 200+index.html for SPA)
+        raise HTTPException(status_code=400, detail=str(e))
     return
 
 
