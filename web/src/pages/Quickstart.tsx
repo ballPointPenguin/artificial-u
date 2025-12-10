@@ -7,6 +7,7 @@ import { IntentStep } from '../components/quickstart/IntentStep.jsx'
 import { ProfessorStep } from '../components/quickstart/ProfessorStep.jsx'
 import { StepIndicator } from '../components/quickstart/StepIndicator.jsx'
 import { useI18n } from '../i18n/index.js'
+import { waitForJobResult } from '../utils/job-management.js'
 
 type WizardStep = 'intent' | 'professor' | 'complete'
 
@@ -90,8 +91,16 @@ const Quickstart: Component = () => {
     setError('')
 
     try {
-      // Start the quickstart flow - creates course with smart selection
-      const result: QuickstartStartResponse = await quickstartService.start({ query })
+      // Enqueue the quickstart job (avoids CloudFront timeout)
+      const job = await quickstartService.enqueueStart({ query })
+
+      // Poll for job completion
+      const completedJob = await waitForJobResult(job.id)
+      const result = completedJob.result as QuickstartStartResponse | undefined
+
+      if (!result || !result.course_id) {
+        throw new Error('Job completed without returning course data')
+      }
 
       // Fetch professor details
       const professorResponse = await quickstartService.getProfessor(

@@ -45,7 +45,12 @@ from artificial_u.config.settings import get_settings
 from artificial_u.integrations.elevenlabs import ElevenLabsClient
 from artificial_u.models.core import Student
 from artificial_u.models.repositories.factory import RepositoryFactory
-from artificial_u.services import ContentService, CourseService, ProfessorService, VoiceService
+from artificial_u.services import (
+    ContentService,
+    CourseService,
+    ProfessorService,
+    VoiceService,
+)
 from artificial_u.services.course_selector_service import CourseSelectorService
 
 logger = logging.getLogger(__name__)
@@ -198,6 +203,51 @@ async def start_quickstart(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to start quickstart: {str(e)}",
         )
+
+
+@router.post(
+    "/start/enqueue",
+    status_code=status.HTTP_202_ACCEPTED,
+    summary="Enqueue quickstart course creation job",
+    description=(
+        "Enqueues an async job to create a course based on the user's learning goal. "
+        "Returns a job id to poll via GET /api/v1/jobs/{id}. Use this instead of /start "
+        "for production to avoid CloudFront/ALB timeouts on long-running AI operations."
+    ),
+    dependencies=[require_role("creator")],
+)
+async def enqueue_start_quickstart(
+    request: QuickstartStartRequest,
+    repository_factory: RepositoryFactory = Depends(get_repository_factory),
+    student: Student = Depends(ensure_student),
+):
+    """
+    Enqueue the quickstart course creation as a background job.
+
+    This is the recommended approach for production deployments where CloudFront
+    enforces a 30-second timeout. The job will:
+    1. Generate course data from the user's query using AI
+    2. Create the course with smart department/professor selection
+    3. Return course details in the job result
+
+    Poll GET /api/v1/jobs/{id} to check status. When status is 'done', the result
+    will contain: course_id, professor_id, department_id, course_title, course_code,
+    course_description.
+    """
+    payload = {
+        "query": request.query,
+        "created_by": student.id,
+    }
+    row = repository_factory.job.create(kind="quickstart_start", payload=payload)
+    return {
+        "id": row.id,
+        "kind": row.kind,
+        "status": row.status,
+        "attempts": row.attempts,
+        "max_attempts": row.max_attempts,
+        "priority": row.priority,
+        "run_after": row.run_after,
+    }
 
 
 @router.get(
@@ -519,7 +569,9 @@ async def regenerate_professor(
     """
     from artificial_u.api.security.auth0 import verify_asset_ownership
     from artificial_u.models.core import Professor
-    from artificial_u.services.professor_generator_service import ProfessorGeneratorService
+    from artificial_u.services.professor_generator_service import (
+        ProfessorGeneratorService,
+    )
 
     course = repository_factory.course.get(request.course_id)
     if not course:

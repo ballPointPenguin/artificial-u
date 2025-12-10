@@ -86,6 +86,8 @@ class JobService:
             "generate_professor_image": self._handle_generate_professor_image,
             # Export tasks
             "export_course": self._handle_export_course,
+            # Quickstart tasks
+            "quickstart_start": self._handle_quickstart_start,
         }.get(kind)
 
     async def _handle_generate_course(self, payload: Dict[str, Any]) -> Dict[str, Any]:
@@ -242,6 +244,67 @@ class JobService:
             raise ValueError("course_id is required")
         result = await service.export_course(course_id)
         return result
+
+    async def _handle_quickstart_start(self, payload: Dict[str, Any]) -> Dict[str, Any]:
+        """Start the quickstart course creation flow.
+
+        Generates course data from user query and creates the course with smart
+        department/professor selection. This combines the AI generation step and
+        course creation into a single job to avoid multiple long-running operations.
+
+        Expects payload:
+            query: str - The user's learning goal/description
+            created_by: int - Student ID who initiated the request
+
+        Returns dict with:
+            course_id, professor_id, department_id, course_title, course_code, course_description
+        """
+        query = payload.get("query")
+        created_by = payload.get("created_by")
+
+        if not query:
+            raise ValueError("query is required for quickstart_start")
+
+        self.logger.info(f"Starting quickstart course creation for query: {query[:100]}...")
+
+        # Step 1: Generate course data from the user's query
+        generator_service = self._course_generator_service_instance()
+        generated_data = await generator_service.generate_course(
+            partial_attributes={"freeform_prompt": query}
+        )
+
+        self.logger.info(f"Generated course data: {generated_data.get('title')}")
+
+        # Step 2: Create the course with smart department/professor selection
+        course_service = self._course_service_instance()
+        course, professor = await course_service.create_course(
+            title=generated_data.get("title") or "Quickstart Course",
+            code=generated_data.get("code") or "QS001",
+            level=generated_data.get("level") or "Undergraduate",
+            credits=generated_data.get("credits") or 3,
+            weeks=12,  # Quickstart courses use consistent 12 weeks
+            lectures_per_week=1,
+            department_id=None,  # Smart selection will handle this
+            professor_id=None,  # Smart selection will handle this
+            description=generated_data.get("description") or query,
+            created_by=created_by,
+            created_with=generated_data.get("created_with"),
+        )
+
+        # Step 3: Set course to hidden status (will be published after user approval)
+        course.status = "hidden"
+        self.repository_factory.course.update(course)
+
+        self.logger.info(f"Created quickstart course {course.id} with professor {professor.id}")
+
+        return {
+            "course_id": course.id,
+            "professor_id": professor.id,
+            "department_id": course.department_id,
+            "course_title": course.title,
+            "course_code": course.code,
+            "course_description": course.description or "",
+        }
 
     # ---- Service builders (lazy) ----
 

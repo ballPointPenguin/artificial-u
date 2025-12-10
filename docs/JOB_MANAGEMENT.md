@@ -117,6 +117,7 @@ Each of these should be enqueued via `POST /api/v1/jobs` (or specific “enqueue
 * generate lecture → kind: `generate_lecture`, payload: `{ "partial_attributes": { "course_id": number, "topic_id": number, ... }, "freeform_prompt"?: string }`
 * generate lecture summary → kind: `generate_lecture_summary`, payload: `{ "lecture_id": number }`
 * generate lecture audio → kind: `generate_lecture_audio`, payload: `{ "lecture_id": number }`
+* quickstart start → kind: `quickstart_start`, payload: `{ "query": string, "created_by": number }` — generates course from user query with smart department/professor selection; returns course_id, professor_id, department_id, etc.
 
 Results can be stored in `jobs.result` (e.g., summary text, created entity IDs/URLs), and/or persisted by the handler as appropriate.
 

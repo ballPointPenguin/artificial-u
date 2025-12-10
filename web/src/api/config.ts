@@ -132,6 +132,7 @@ export const ENDPOINTS = {
   quickstart: {
     matchCourses: '/v1/quickstart/match-courses',
     start: '/v1/quickstart/start',
+    enqueueStart: '/v1/quickstart/start/enqueue',
     professor: (id: number, courseId: number) =>
       `/v1/quickstart/professor/${String(id)}?course_id=${String(courseId)}`,
     generateIntroAudio: '/v1/quickstart/generate-intro-audio',

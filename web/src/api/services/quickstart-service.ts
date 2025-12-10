@@ -2,7 +2,7 @@
  * Quickstart service for the wizard-based course creation flow
  */
 import { httpClient } from '../client.js'
-import { ENDPOINTS, TIMEOUT_CONFIG } from '../config.js'
+import { ENDPOINTS } from '../config.js'
 import type {
   IntroAudioRequest,
   IntroAudioResponse,
@@ -23,19 +23,35 @@ export const quickstartService = {
    * Returns matching courses or signals that a new course should be generated.
    */
   matchCourses: (data: QuickstartMatchRequest): Promise<QuickstartMatchResponse> => {
-    return httpClient.post<QuickstartMatchResponse>(ENDPOINTS.quickstart.matchCourses, data, {
-      timeout: TIMEOUT_CONFIG.generation,
-    })
+    return httpClient.post<QuickstartMatchResponse>(ENDPOINTS.quickstart.matchCourses, data)
   },
 
   /**
-   * Start the quickstart course creation flow.
+   * Start the quickstart course creation flow (synchronous).
    * Creates a new course with smart department/professor selection.
+   * WARNING: This can timeout behind CloudFront. Use enqueueStart for production.
    */
   start: (data: QuickstartStartRequest): Promise<QuickstartStartResponse> => {
-    return httpClient.post<QuickstartStartResponse>(ENDPOINTS.quickstart.start, data, {
-      timeout: TIMEOUT_CONFIG.generation,
-    })
+    return httpClient.post<QuickstartStartResponse>(ENDPOINTS.quickstart.start, data)
+  },
+
+  /**
+   * Enqueue quickstart course creation as a background job.
+   * This is the recommended approach for production to avoid CloudFront timeouts.
+   * Poll the returned job ID via jobs service to get the result.
+   */
+  enqueueStart: (
+    data: QuickstartStartRequest
+  ): Promise<{
+    id: number
+    kind: string
+    status: string
+    attempts: number
+    max_attempts: number
+    priority?: number
+    run_after?: string
+  }> => {
+    return httpClient.post(ENDPOINTS.quickstart.enqueueStart, data)
   },
 
   /**
@@ -52,9 +68,7 @@ export const quickstartService = {
    * Returns a base64 data URI that can be played directly.
    */
   generateIntroAudio: (data: IntroAudioRequest): Promise<IntroAudioResponse> => {
-    return httpClient.post<IntroAudioResponse>(ENDPOINTS.quickstart.generateIntroAudio, data, {
-      timeout: TIMEOUT_CONFIG.generation,
-    })
+    return httpClient.post<IntroAudioResponse>(ENDPOINTS.quickstart.generateIntroAudio, data)
   },
 
   /**
@@ -84,14 +98,15 @@ export const quickstartService = {
 
   /**
    * Regenerate the professor entirely with optional freeform guidance.
+   * Note: This can timeout behind CloudFront for complex generations.
+   * Consider implementing an enqueue pattern if timeouts occur frequently.
    */
   regenerateProfessor: (
     data: QuickstartRegenerateProfessorRequest
   ): Promise<QuickstartProfessorResponse> => {
     return httpClient.post<QuickstartProfessorResponse>(
       ENDPOINTS.quickstart.regenerateProfessor,
-      data,
-      { timeout: TIMEOUT_CONFIG.generation }
+      data
     )
   },
 

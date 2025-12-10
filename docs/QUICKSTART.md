@@ -72,13 +72,18 @@ When the user accepts the professor:
 | Endpoint | Method | Description |
 |----------|--------|-------------|
 | `/quickstart/match-courses` | POST | Match user query to existing courses using LLM |
-| `/quickstart/start` | POST | Create course with smart selection |
+| `/quickstart/start` | POST | Create course with smart selection (sync, may timeout) |
+| `/quickstart/start/enqueue` | POST | Enqueue course creation job (async, recommended) |
 | `/quickstart/professor/{id}` | GET | Get professor details for review |
 | `/quickstart/generate-intro-audio` | POST | Generate ephemeral voice preview |
 | `/quickstart/regenerate-professor-image` | POST | Regenerate professor image |
 | `/quickstart/reassign-professor-voice` | POST | Assign new voice to professor |
 | `/quickstart/regenerate-professor` | POST | Generate new professor entirely |
 | `/quickstart/finalize` | POST | Kick off content generation |
+
+**Note:** The `/quickstart/start/enqueue` endpoint is recommended for production deployments
+where CloudFront enforces a 30-second timeout. The frontend uses this endpoint and polls
+for job completion via `GET /api/v1/jobs/{id}`.
 
 #### Course Selector Service (`artificial_u/services/course_selector_service.py`)
 
@@ -171,10 +176,30 @@ The intro audio feature generates an ephemeral voice sample:
 
 The quickstart flow creates background jobs for:
 
+- `quickstart_start`: Course creation with AI generation and smart department/professor selection.
+  This is the primary entry point, enqueued via `/quickstart/start/enqueue` to avoid CloudFront
+  timeouts on the long-running AI operations. The job result contains `course_id`, `professor_id`,
+  `department_id`, `course_title`, `course_code`, and `course_description`.
 - `generate_professor_image`: When regenerating professor image
 - `generate_topics_for_course`: At finalization, with `generate_first_lecture: true` flag
 
-Jobs can be monitored via the course detail page's real-time SSE updates.
+Jobs can be monitored via:
+
+- The Jobs page (`/jobs`)
+- Real-time SSE updates on course/topic detail pages
+- Polling `GET /api/v1/jobs/{id}` for specific job status
+
+### CloudFront Timeout Considerations
+
+CloudFront enforces a hard 30-second origin response timeout. Any synchronous route that
+takes longer will result in a `504 Gateway Timeout`. The quickstart flow addresses this by:
+
+1. Enqueueing the `quickstart_start` job instead of running synchronously
+2. Frontend polls for job completion using `waitForJobResult()`
+3. Job results are extracted and used to proceed to the next wizard step
+
+This pattern keeps the UI responsive while allowing the AI generation (which can take
+1-2 minutes) to complete in the background via the ECS worker.
 
 ## Home Page Integration
 
