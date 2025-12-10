@@ -14,6 +14,12 @@ A compact, single‑host job system using only Postgres + a FastAPI in‑process
 
 This section adapts the sketch to this repository’s current architecture. Keep the reference scaffold below for inspiration; follow this plan for implementation in ArtificialU.
 
+> **Production note (Dec 2025):** All long-running AI endpoints that sit behind
+> CloudFront/ALB—including professor generation—should now enqueue jobs via
+> `/api/v1/.../enqueue` and rely on the worker + jobs UI. The synchronous
+> `/professors/generate` route exists mainly for local/dev usage where CDN
+> timeouts are not a factor.
+
 ### Current asyncio usage in this codebase
 
 * In `artificial_u/services/lecture_service.py`, summaries are scheduled via `asyncio.get_running_loop().create_task(...)` with a thread fallback. This decouples summary generation from the request that created/updated a lecture.

@@ -18,6 +18,10 @@ export interface JobRow {
   updated_at?: string
 }
 
+export async function getJob(jobId: number): Promise<JobRow> {
+  return httpClient.get<JobRow>(ENDPOINTS.jobs.detail(jobId))
+}
+
 export async function listJobs(params?: {
   status?: JobStatus
   limit?: number

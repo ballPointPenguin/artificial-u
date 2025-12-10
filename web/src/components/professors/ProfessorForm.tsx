@@ -8,6 +8,7 @@ import type {
   ProfessorCreate,
   ProfessorGenerateRequest,
 } from '../../api/types.js'
+import { waitForJobResult } from '../../utils/job-management.js'
 import type { SelectOption } from '../ui'
 import {
   Alert,
@@ -198,20 +199,29 @@ const ProfessorForm: Component<ProfessorFormProps> = (props) => {
     }
 
     try {
-      const generated = await professorService.generateProfessor(payload)
+      const job = await professorService.enqueueGenerateProfessor(payload)
+      const completedJob = await waitForJobResult(job.id)
+      const generatedResult = (
+        completedJob.result as { generated_professor?: Professor } | undefined
+      )?.generated_professor
+
+      if (!generatedResult) {
+        throw new Error('Generation job completed without returning professor data')
+      }
+
       setFormData((prev) => ({
         ...prev, // Keep existing fields like ID if they were there
-        name: generated.name || prev.name,
-        title: generated.title || prev.title,
-        description: generated.description || prev.description,
-        teaching_style: generated.teaching_style || prev.teaching_style,
-        gender: generated.gender || prev.gender,
-        accent: generated.accent || prev.accent,
-        age: generated.age ?? prev.age,
+        name: generatedResult.name || prev.name,
+        title: generatedResult.title || prev.title,
+        description: generatedResult.description || prev.description,
+        teaching_style: generatedResult.teaching_style || prev.teaching_style,
+        gender: generatedResult.gender || prev.gender,
+        accent: generatedResult.accent || prev.accent,
+        age: generatedResult.age ?? prev.age,
         // department_id usually set by user, not overwritten by generation unless specifically designed for it
-        specialization: generated.specialization || prev.specialization,
-        background: generated.background || prev.background,
-        personality: generated.personality || prev.personality,
+        specialization: generatedResult.specialization || prev.specialization,
+        background: generatedResult.background || prev.background,
+        personality: generatedResult.personality || prev.personality,
         // image_url is not typically part of this generation flow
       }))
     } catch (err: unknown) {

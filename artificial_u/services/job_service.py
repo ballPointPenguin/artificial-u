@@ -159,7 +159,12 @@ class JobService:
 
     async def _handle_generate_professor(self, payload: Dict[str, Any]) -> Dict[str, Any]:
         service = self._professor_generator_service_instance()
-        partial = payload.get("partial_attributes") or {}
+        partial = dict(payload.get("partial_attributes") or {})
+        freeform_prompt = payload.get("freeform_prompt")
+        if freeform_prompt:
+            # Align with synchronous API behavior by threading the prompt through the generator
+            partial["freeform_prompt"] = freeform_prompt
+
         result = await service.generate_professor(partial)
         return {"generated_professor": result}
 

@@ -4,7 +4,8 @@
  */
 
 import { createEffect, createSignal, on, onCleanup } from 'solid-js'
-import { type JobEvent, type JobRow, listJobs } from '../api/services/jobs-service.js'
+import { TIMEOUT_CONFIG } from '../api/config.js'
+import { getJob, type JobEvent, type JobRow, listJobs } from '../api/services/jobs-service.js'
 import { useAuth } from '../auth/AuthProvider.js'
 import { jobDebug } from './job-debug.js'
 import { getJobEventHub } from './job-events-hub.js'
@@ -280,4 +281,50 @@ export function getJobMessage(
 
   const kindMessages = messages[kind]
   return kindMessages ? kindMessages[status] || `${kind} ${status}` : `${kind} ${status}`
+}
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
+
+export interface WaitForJobOptions {
+  pollIntervalMs?: number
+  timeoutMs?: number
+}
+
+/**
+ * Polls the job detail endpoint until the job finishes or fails.
+ * Useful when a component immediately needs the job result payload (e.g., generated professor data).
+ */
+export async function waitForJobResult(
+  jobId: number,
+  options: WaitForJobOptions = {}
+): Promise<JobRow> {
+  const pollIntervalMs = options.pollIntervalMs ?? 2000
+  const timeoutMs = options.timeoutMs ?? TIMEOUT_CONFIG.generation
+  const deadline = Date.now() + timeoutMs
+  const jobIdLabel = String(jobId)
+  const timeoutLabel = `${timeoutMs.toString()}ms`
+
+  jobDebug.log('state_change', `Waiting for job ${jobIdLabel} (timeout ${timeoutLabel})`, null)
+
+  while (Date.now() <= deadline) {
+    const job = await getJob(jobId)
+
+    if (job.status === 'done') {
+      jobDebug.log('state_change', `Job ${jobIdLabel} completed`, job)
+      return job
+    }
+
+    if (job.status === 'failed' || job.status === 'cancelled') {
+      const reason = job.last_error || `Job ${job.status}`
+      jobDebug.log('state_change', `Job ${jobIdLabel} ${job.status}: ${reason}`, job)
+      throw new Error(reason)
+    }
+
+    await sleep(pollIntervalMs)
+  }
+
+  const seconds = Math.round(timeoutMs / 1000).toString()
+  const timeoutMessage = `Job ${jobIdLabel} did not finish within ${seconds}s`
+  jobDebug.log('state_change', timeoutMessage, null)
+  throw new Error(timeoutMessage)
 }

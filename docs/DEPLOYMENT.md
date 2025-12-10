@@ -239,6 +239,27 @@ After fixing configuration issues, force a new deployment to restart tasks:
 aws ecs update-service --cluster <ClusterName> --service <ServiceName> --force-new-deployment
 ```
 
+### 504 Gateway Timeout for long-running API calls
+
+CloudFront fronts the Application Load Balancer and enforces a hard **30-second origin
+response timeout** (60 seconds max even if you override the behavior). Any synchronous
+FastAPI route that spends longer than ~30 seconds will therefore bubble up to the client
+as a `504 Gateway Timeout`, regardless of the SolidJS client's configured timeout.
+
+**How to address it:**
+
+- Keep slow AI workflows off synchronous routes. Instead of calling
+  `/api/v1/professors/generate`, enqueue work via `/api/v1/professors/generate/enqueue`
+  (or the generic `/api/v1/jobs` endpoint) and let the in-process worker complete it in
+  the background. See `docs/JOB_MANAGEMENT.md` for details.
+- Surface progress via the Jobs UI / SSE hub or by polling `GET /api/v1/jobs/{id}` until
+  it reaches `done`.
+- If you must keep a synchronous code path for development, guard it so it is not used
+  behind CloudFront/ALB.
+
+Following this pattern keeps the UI responsive while allowing 10-minute AI generations
+to finish inside ECS without fighting CDN-enforced limits.
+
 ### Direct URL Access Returns 404
 
 If accessing routes like `/professors` directly returns a 404 or shows an S3 error, the CloudFront custom error responses are not configured. This has been fixed in the latest CDK stack.
