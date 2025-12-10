@@ -647,11 +647,20 @@ class VoiceService:
         Args:
             professor_id: ID of the professor to assign voice to
             el_voice_id: ID of the voice to assign
+
+        Raises:
+            ValueError: If the voice cannot be found in ElevenLabs (user library
+                        or shared voices)
         """
-        # Verify voice exists
+        # Verify voice exists (checks user library, then searches shared voices)
         voice_data = self.get_voice_by_el_id(el_voice_id)
         if not voice_data:
-            raise ValueError(f"Voice with ID {el_voice_id} not found")
+            raise ValueError(
+                f"Voice with ID {el_voice_id} not found. "
+                "This voice may be private, removed from ElevenLabs, or in a "
+                "less popular category. Try adding the voice to your ElevenLabs "
+                "library first at elevenlabs.io, then retry."
+            )
 
         # Find or Create DB Voice record with el_voice_id
         voice = self.repository_factory.voice.get_by_elevenlabs_id(el_voice_id)

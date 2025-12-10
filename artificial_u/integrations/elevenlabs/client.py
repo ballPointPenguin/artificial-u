@@ -92,12 +92,16 @@ class ElevenLabsClient:
         """
         Get details of a specific voice.
 
+        First tries to fetch from the user's voice library (v1/voices endpoint).
+        If not found, falls back to searching shared voices (v1/shared-voices endpoint).
+
         Args:
-            voice_id: ElevenLabs Voice ID of the voice to retrieve
+            el_voice_id: ElevenLabs Voice ID of the voice to retrieve
 
         Returns:
             Voice details or None if not found
         """
+        # Step 1: Try to get from user's library (works for library + premade voices)
         try:
             response = self.client.voices.get(voice_id=el_voice_id)
 
@@ -112,10 +116,150 @@ class ElevenLabsClient:
                 "preview_url": getattr(response, "preview_url", ""),
             }
 
+            self.logger.debug(f"Found voice {el_voice_id} in user's library")
             return voice_data
         except Exception as e:
-            self.logger.error(f"Error retrieving ElevenLabs voice {el_voice_id}: {e}")
-            return None
+            # Check if it's a "voice_not_found" error before falling back
+            error_str = str(e).lower()
+            if "voice_not_found" not in error_str and "not found" not in error_str:
+                # Some other error, log and return None
+                self.logger.error(f"Error retrieving ElevenLabs voice {el_voice_id}: {e}")
+                return None
+
+            self.logger.debug(
+                f"Voice {el_voice_id} not in user's library, searching shared voices..."
+            )
+
+        # Step 2: Fall back to searching shared voices
+        return self._search_shared_voice_by_id(el_voice_id)
+
+    def _search_shared_voice_by_id(
+        self, el_voice_id: str, max_pages: int = 20
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Search shared voices to find a specific voice by ID.
+
+        The shared-voices endpoint doesn't support direct ID lookup, so we
+        paginate through results looking for a match. Searches popular voices
+        first (sorted by usage) since those are most likely to appear in the UI.
+
+        Args:
+            el_voice_id: ElevenLabs Voice ID to search for
+            max_pages: Maximum number of pages to search (default 20 = ~2000 voices)
+
+        Returns:
+            Voice details or None if not found
+        """
+        page = 0
+        page_size = 100  # Max allowed by API
+
+        while page < max_pages:
+            try:
+                # Sort by usage count - popular voices are more likely to be
+                # the ones users find and copy from the ElevenLabs UI
+                response = self.client.voices.get_shared(
+                    page_size=page_size,
+                    page=page,
+                    language="en",  # Start with English to narrow search
+                    sort="usage_character_count_1y",  # Most used voices first
+                )
+
+                voices = response.voices
+                has_more = getattr(response, "has_more", False)
+
+                # Search for matching voice_id
+                for voice in voices:
+                    if voice.voice_id == el_voice_id:
+                        self.logger.info(
+                            f"Found voice {el_voice_id} in shared voices (page {page})"
+                        )
+                        return {
+                            "el_voice_id": voice.voice_id,
+                            "name": voice.name,
+                            "category": getattr(voice, "category", "shared"),
+                            "gender": getattr(voice, "gender", "neutral"),
+                            "accent": getattr(voice, "accent", "american"),
+                            "age": getattr(voice, "age", "middle_aged"),
+                            "description": getattr(voice, "description", ""),
+                            "preview_url": getattr(voice, "preview_url", ""),
+                        }
+
+                if not has_more:
+                    break
+
+                page += 1
+
+            except Exception as e:
+                self.logger.error(f"Error searching shared voices (page {page}): {e}")
+                break
+
+        # If not found in English voices, try without language filter
+        self.logger.debug(
+            f"Voice {el_voice_id} not found in English shared voices "
+            f"(searched {page + 1} pages), trying all languages..."
+        )
+        return self._search_shared_voice_all_languages(el_voice_id, max_pages=10)
+
+    def _search_shared_voice_all_languages(
+        self, el_voice_id: str, max_pages: int = 10
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Search shared voices without language filter.
+
+        Args:
+            el_voice_id: ElevenLabs Voice ID to search for
+            max_pages: Maximum number of pages to search
+
+        Returns:
+            Voice details or None if not found
+        """
+        page = 0
+        page_size = 100
+
+        while page < max_pages:
+            try:
+                # Search without language filter, sorted by popularity
+                response = self.client.voices.get_shared(
+                    page_size=page_size,
+                    page=page,
+                    sort="usage_character_count_1y",
+                )
+
+                voices = response.voices
+                has_more = getattr(response, "has_more", False)
+
+                for voice in voices:
+                    if voice.voice_id == el_voice_id:
+                        self.logger.info(
+                            f"Found voice {el_voice_id} in shared voices "
+                            f"(all languages, page {page})"
+                        )
+                        return {
+                            "el_voice_id": voice.voice_id,
+                            "name": voice.name,
+                            "category": getattr(voice, "category", "shared"),
+                            "gender": getattr(voice, "gender", "neutral"),
+                            "accent": getattr(voice, "accent", "american"),
+                            "age": getattr(voice, "age", "middle_aged"),
+                            "description": getattr(voice, "description", ""),
+                            "preview_url": getattr(voice, "preview_url", ""),
+                        }
+
+                if not has_more:
+                    break
+
+                page += 1
+
+            except Exception as e:
+                self.logger.error(f"Error searching shared voices all languages (page {page}): {e}")
+                break
+
+        self.logger.warning(
+            f"Voice {el_voice_id} not found. Searched user library and "
+            f"~{(page + 1) * page_size} shared voices. The voice may be private, "
+            "removed, or in a less popular category."
+        )
+        return None
 
     def get_shared_voices(
         self,
