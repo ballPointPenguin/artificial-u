@@ -1,6 +1,7 @@
 from typing import List, Optional, Tuple
 
 from sqlalchemy import func
+from sqlalchemy.engine import Engine
 from sqlalchemy.orm import joinedload
 
 from artificial_u.models.core import Course, Student
@@ -13,8 +14,12 @@ from artificial_u.models.repositories.base import BaseRepository
 
 
 class CourseRepository(BaseRepository):
-    def __init__(self, db_url: Optional[str] = None):
-        super().__init__(db_url)
+    def __init__(
+        self,
+        db_url: Optional[str] = None,
+        engine: Optional[Engine] = None,
+    ):
+        super().__init__(db_url=db_url, engine=engine)
         self.model = CourseModel
 
     # ------------------------------------------------------------------

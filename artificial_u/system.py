@@ -140,8 +140,15 @@ class UniversitySystem:
     def _init_core_components(self):
         """Initialize core system components."""
         try:
-            # Initialize repository factory directly
-            self.repository_factory = RepositoryFactory(db_url=self.settings.DATABASE_URL)
+            # Initialize repository factory with shared engine and pool settings
+            self.repository_factory = RepositoryFactory(
+                db_url=self.settings.DATABASE_URL,
+                pool_size=self.settings.DB_POOL_SIZE,
+                max_overflow=self.settings.DB_MAX_OVERFLOW,
+                pool_timeout=self.settings.DB_POOL_TIMEOUT,
+                pool_recycle=self.settings.DB_POOL_RECYCLE,
+                pool_pre_ping=self.settings.DB_POOL_PRE_PING,
+            )
 
             # Initialize audio components
             self.elevenlabs_client = elevenlabs.ElevenLabsClient(
@@ -209,9 +216,13 @@ class UniversitySystem:
         )
 
         # Initialize generator services needed by selectors
-        from artificial_u.services.department_generator_service import DepartmentGeneratorService
+        from artificial_u.services.department_generator_service import (
+            DepartmentGeneratorService,
+        )
         from artificial_u.services.department_service import DepartmentService
-        from artificial_u.services.professor_generator_service import ProfessorGeneratorService
+        from artificial_u.services.professor_generator_service import (
+            ProfessorGeneratorService,
+        )
 
         department_service = DepartmentService(
             repository_factory=self.repository_factory,

@@ -233,6 +233,13 @@ class CdkStack(Stack):
             "STORAGE_CONTENT_LOGS_BUCKET": content_logs_bucket.bucket_name,
             "STORAGE_REGION": self.region,
             "CORS_ORIGINS": f"https://{domain_name},https://{site_domain}",
+            # Database connection pool settings (conservative for db.t4g.small ~110 max_connections)
+            # These ensure the app uses a shared connection pool and doesn't exhaust RDS connections
+            "DB_POOL_SIZE": "5",
+            "DB_MAX_OVERFLOW": "10",
+            "DB_POOL_TIMEOUT": "30",
+            "DB_POOL_RECYCLE": "1800",
+            "DB_POOL_PRE_PING": "true",
         }
 
         # 6. Create the Fargate Service with a public Load Balancer

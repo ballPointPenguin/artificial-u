@@ -181,6 +181,37 @@ Once the DNS changes have propagated, your website will be live at your custom d
 
 ## Troubleshooting
 
+### PostgreSQL Connection Exhaustion / rds_reserved Errors
+
+If you see errors like "too many connections" or "remaining connection slots are reserved for rds_reserved", the application is exhausting the RDS connection limit.
+
+**Background**: Starting in RDS PostgreSQL 17.1, 16.5, 15.9, and earlier versions' minor releases, AWS introduced the `rds_reserved` role which reserves some connection slots for administrative purposes. A `db.t4g.small` instance supports approximately 110 `max_connections`, minus a few reserved for admin tasks.
+
+**The Fix**: The application uses a shared SQLAlchemy engine singleton with connection pooling. All repositories share one connection pool instead of each creating their own.
+
+**Environment Variables** (configured in CDK stack):
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `DB_POOL_SIZE` | 5 | Number of connections maintained in the pool |
+| `DB_MAX_OVERFLOW` | 10 | Additional connections allowed beyond pool_size |
+| `DB_POOL_TIMEOUT` | 30 | Seconds to wait for a connection from pool |
+| `DB_POOL_RECYCLE` | 1800 | Recycle connections after 30 minutes |
+| `DB_POOL_PRE_PING` | true | Test connections before use (handles failovers) |
+
+**Monitoring**: Use the `/api/v1/health/detailed` endpoint to check pool status:
+
+```bash
+curl https://your-domain.com/api/v1/health/detailed
+```
+
+**If issues persist**:
+
+1. Check pool status via the health endpoint
+2. Consider reducing Gunicorn workers (fewer workers = fewer connection needs)
+3. Upgrade to a larger RDS instance class if traffic demands it
+4. Create a custom RDS parameter group to increase `max_connections` (not recommended for small instances)
+
 ### 502 Bad Gateway Errors
 
 If you're experiencing 502 errors when accessing the API through CloudFront, follow these diagnostic steps:

@@ -42,13 +42,23 @@ from artificial_u.services.job_enqueue_service import JobEnqueueService
 
 def get_repository_factory() -> RepositoryFactory:
     """
-    Get a repository factory instance.
+    Get a repository factory instance with proper connection pooling.
+
+    Uses the shared engine singleton with pool settings from configuration.
+    All repositories share the same connection pool to prevent exhaustion.
 
     Returns:
         RepositoryFactory instance
     """
     settings = get_settings()
-    return RepositoryFactory(db_url=settings.DATABASE_URL)
+    return RepositoryFactory(
+        db_url=settings.DATABASE_URL,
+        pool_size=settings.DB_POOL_SIZE,
+        max_overflow=settings.DB_MAX_OVERFLOW,
+        pool_timeout=settings.DB_POOL_TIMEOUT,
+        pool_recycle=settings.DB_POOL_RECYCLE,
+        pool_pre_ping=settings.DB_POOL_PRE_PING,
+    )
 
 
 def ensure_student(

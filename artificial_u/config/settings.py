@@ -17,6 +17,11 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 from artificial_u.config.defaults import (
     DEFAULT_CONTENT_BACKEND,
     DEFAULT_CONTENT_LOGS_PATH,
+    DEFAULT_DB_MAX_OVERFLOW,
+    DEFAULT_DB_POOL_PRE_PING,
+    DEFAULT_DB_POOL_RECYCLE,
+    DEFAULT_DB_POOL_SIZE,
+    DEFAULT_DB_POOL_TIMEOUT,
     DEFAULT_DB_URL,
     DEFAULT_LOG_LEVEL,
     DEFAULT_STORAGE_AUDIO_BUCKET,
@@ -66,6 +71,14 @@ class Settings(BaseSettings):
 
     # Database settings
     DATABASE_URL: str = DEFAULT_DB_URL
+
+    # Database connection pool settings
+    # These control SQLAlchemy's QueuePool behavior
+    DB_POOL_SIZE: int = DEFAULT_DB_POOL_SIZE
+    DB_MAX_OVERFLOW: int = DEFAULT_DB_MAX_OVERFLOW
+    DB_POOL_TIMEOUT: int = DEFAULT_DB_POOL_TIMEOUT
+    DB_POOL_RECYCLE: int = DEFAULT_DB_POOL_RECYCLE
+    DB_POOL_PRE_PING: bool = DEFAULT_DB_POOL_PRE_PING
 
     # Logging settings
     LOG_LEVEL: str = DEFAULT_LOG_LEVEL
