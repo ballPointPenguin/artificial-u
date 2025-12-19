@@ -48,6 +48,7 @@ class LectureGeneratorService:
         repository_factory,
         topic_service,
         job_enqueue_service,
+        preference_service=None,
         storage_service=None,
         logger=None,
     ):
@@ -62,6 +63,7 @@ class LectureGeneratorService:
             repository_factory: Repository factory instance
             topic_service: Topic management service
             job_enqueue_service: Job enqueueing service for background tasks
+            preference_service: Preference service for retrieving model preferences (optional)
             storage_service: Storage service for file operations (optional)
             logger: Optional logger instance
         """
@@ -74,6 +76,14 @@ class LectureGeneratorService:
         self.job_enqueue_service = job_enqueue_service
         self.storage_service = storage_service
         self.logger = logger or logging.getLogger(__name__)
+
+        # Initialize preference service or create one
+        if preference_service is None:
+            from artificial_u.services.preference_service import PreferenceService
+
+            self.preference_service = PreferenceService(repository_factory, logger=self.logger)
+        else:
+            self.preference_service = preference_service
 
     # --- Core Generation Methods --- #
 
@@ -102,6 +112,10 @@ class LectureGeneratorService:
             f"{list(partial_attributes.keys())}"
         )
 
+        # Get the lecture generation model from preferences or settings
+        student_id = partial_attributes.get("created_by")
+        model = self.preference_service.get_lecture_generation_model(student_id=student_id)
+
         try:
             # Process models and prepare data for generation
             (
@@ -122,8 +136,8 @@ class LectureGeneratorService:
                 all_course_topics_data,
             )
 
-            # Generate and parse content
-            generated_xml_output = await self._generate_and_parse_content(prompt_args)
+            # Generate and parse content with the selected model
+            generated_xml_output = await self._generate_and_parse_content(prompt_args, model)
             self.logger.debug(f"Generated XML for lecture: {generated_xml_output[:500]}...")
 
             # Parse XML and combine with partial attributes
@@ -146,6 +160,7 @@ class LectureGeneratorService:
                 "summary": partial_attributes.get("summary"),
                 "title": parsed_lecture_data.get("title"),
                 "content": parsed_lecture_data.get("content"),
+                "created_with": model,  # Record the model used for generation
             }
 
             # Add other relevant fields from partial_attributes if they are valid for Lecture model
@@ -240,7 +255,6 @@ class LectureGeneratorService:
         self, generated_dict: Dict[str, Any], revision: int
     ) -> Lecture:
         """Create and save a lecture from generated data."""
-        settings = get_settings()
         return self.lecture_service.create_lecture(
             course_id=generated_dict.get("course_id"),
             topic_id=generated_dict.get("topic_id"),
@@ -251,7 +265,7 @@ class LectureGeneratorService:
             transcript_url=generated_dict.get("transcript_url"),
             revision=revision,
             created_by=generated_dict.get("created_by"),
-            created_with=settings.LECTURE_GENERATION_MODEL,
+            created_with=generated_dict.get("created_with"),  # Use the model from generated_dict
         )
 
     async def _upload_and_update_transcript(
@@ -433,14 +447,14 @@ class LectureGeneratorService:
             "word_count": partial_attributes.get("word_count", 3000),
         }
 
-    async def _generate_and_parse_content(self, prompt_args: Dict[str, Any]) -> str:
+    async def _generate_and_parse_content(self, prompt_args: Dict[str, Any], model: str) -> str:
         """Generate lecture content and parse the XML response."""
         lecture_prompt = get_lecture_prompt(**prompt_args)
         system_prompt = get_system_prompt("lecture")
 
-        self.logger.info("Calling content service to generate lecture...")
+        self.logger.info(f"Calling content service to generate lecture with model: {model}...")
         raw_response = await self.content_service.generate_text(
-            model=get_settings().LECTURE_GENERATION_MODEL,
+            model=model,
             prompt=lecture_prompt,
             system_prompt=system_prompt,
             max_tokens=16384,  # 2^14
