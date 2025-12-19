@@ -58,6 +58,9 @@ Instructions:
    - Stage directions in [brackets] that add concrete, unambiguous sensory or physical details
      (e.g., [clicks to next slide: Mona Lisa], [sound of chalk on board], [walking down the aisles])
      rather than abstract cues about tone or structure.
+   - Do NOT include voice-related stage directions (e.g., "voice shifting to narrative tone",
+     "voice becoming more intense", "voice dropping to a whisper") because the text-to-speech
+     system cannot interpret these and will read them literally.
    - Natural transitions between topics
    - Conclusion and preview of next lecture
 
@@ -84,6 +87,11 @@ Instructions:
    - Spell out any year numbers and centuries in words (e.g., "the twentieth century,"
      "Nineteen sixty-nine", "the twenties") rather than numeric forms
      like "20th century", "1969", or "the 20s".
+   - Spell out Roman numerals as ordinals (e.g., "Ramses the Second" instead of "Ramses II",
+     "World War Two" instead of "World War II", "Henry the Eighth" instead of "Henry VIII").
+   - For abbreviations pronounced as individual letters, use periods between letters
+     (e.g., "G.P.T.", "F.B.I.", "U.S.A.") but keep acronyms pronounced as words intact
+     (e.g., "NASA", "UNICEF", "radar").
 
 Before writing the final lecture, outline the structure and main points of your lecture
 inside <lecture_outline></lecture_outline> tags. This will help ensure a well-organized
