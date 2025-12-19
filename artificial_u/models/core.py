@@ -313,3 +313,51 @@ class Student(BaseModel):
     role: str = "viewer"
     coins: int = 0
     is_active: bool = True
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+
+
+class Preference(BaseModel):
+    """
+    Preference model representing a user or global application setting.
+
+    Preferences can be either user-specific (student_id is set) or global
+    (is_global is True). The scope field identifies what the preference
+    controls (e.g., "LECTURE_GENERATION_MODEL"), and value holds the
+    setting value.
+    """
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "id": 1,
+                "student_id": None,
+                "scope": "LECTURE_GENERATION_MODEL",
+                "value": "claude-opus-4-5",
+                "is_global": True,
+                "created_at": "2025-12-19T00:00:00Z",
+                "updated_at": "2025-12-19T00:00:00Z",
+            }
+        }
+    )
+
+    id: Optional[int] = None
+    student_id: Optional[int] = None
+    scope: str
+    value: str
+    is_global: bool = False
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+
+
+class PreferenceCreate(BaseModel):
+    """Request model for creating or updating a preference."""
+
+    scope: str = Field(..., description="The preference scope/key")
+    value: str = Field(..., description="The preference value")
+    is_global: bool = Field(
+        default=False, description="Whether this is a global preference (admin only)"
+    )
+    student_id: Optional[int] = Field(
+        default=None, description="Student ID for user-specific preferences"
+    )

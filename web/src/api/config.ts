@@ -141,4 +141,11 @@ export const ENDPOINTS = {
     regenerateProfessor: '/v1/quickstart/regenerate-professor',
     finalize: '/v1/quickstart/finalize',
   },
+  preferences: {
+    listGlobal: '/v1/preferences/global',
+    getGlobal: (scope: string) => `/v1/preferences/global/${encodeURIComponent(scope)}`,
+    setGlobal: (scope: string) => `/v1/preferences/global/${encodeURIComponent(scope)}`,
+    deleteGlobal: (scope: string) => `/v1/preferences/global/${encodeURIComponent(scope)}`,
+    lectureGenerationModel: '/v1/preferences/models/lecture-generation',
+  },
 }

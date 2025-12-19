@@ -231,3 +231,26 @@ class StudentModel(Base):
     updated_at = Column(DateTime, nullable=False, default=datetime.now)
 
     __table_args__ = (Index("idx_students_email", "email"),)
+
+
+class PreferenceModel(Base):
+    __tablename__ = "preferences"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    student_id = Column(Integer, ForeignKey("students.id"), nullable=True)
+    scope = Column(String, nullable=False)
+    value = Column(String, nullable=False)
+    is_global = Column(Boolean, nullable=False, default=False)
+    created_at = Column(DateTime, nullable=False, default=datetime.now)
+    updated_at = Column(DateTime, nullable=False, default=datetime.now)
+
+    student = relationship("StudentModel")
+
+    __table_args__ = (
+        # For global preferences, scope must be unique
+        Index("idx_preferences_global_scope", "scope", unique=True, postgresql_where=Column("is_global") == True),
+        # For user preferences, student_id + scope must be unique
+        Index("idx_preferences_student_scope", "student_id", "scope", unique=True, postgresql_where=Column("is_global") == False),
+        # Index for efficient lookup of global preferences
+        Index("idx_preferences_is_global", "is_global"),
+    )

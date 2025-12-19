@@ -15,6 +15,7 @@ from artificial_u.models.repositories.department import DepartmentRepository
 from artificial_u.models.repositories.faculty import FacultyRepository
 from artificial_u.models.repositories.job import JobRepository
 from artificial_u.models.repositories.lecture import LectureRepository
+from artificial_u.models.repositories.preference import PreferenceRepository
 from artificial_u.models.repositories.professor import ProfessorRepository
 from artificial_u.models.repositories.student import StudentRepository
 from artificial_u.models.repositories.topic import TopicRepository
@@ -137,6 +138,11 @@ class RepositoryFactory:
     def student(self) -> StudentRepository:
         """Get the student repository."""
         return self.get_repository(StudentRepository)
+
+    @property
+    def preference(self) -> PreferenceRepository:
+        """Get the preference repository."""
+        return self.get_repository(PreferenceRepository)
 
     def create_tables(self):
         """Create all database tables if they don't exist."""
