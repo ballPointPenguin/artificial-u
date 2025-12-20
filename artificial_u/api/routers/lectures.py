@@ -5,7 +5,16 @@ Lecture router for handling lecture-related API endpoints.
 import logging
 from typing import Optional
 
-from fastapi import APIRouter, Depends, File, HTTPException, Path, Query, UploadFile, status
+from fastapi import (
+    APIRouter,
+    Depends,
+    File,
+    HTTPException,
+    Path,
+    Query,
+    UploadFile,
+    status,
+)
 from fastapi.responses import JSONResponse, PlainTextResponse
 
 from artificial_u.api.dependencies import (
@@ -595,6 +604,39 @@ async def generate_lecture(
 
 
 @router.post(
+    "/generate/text-only",
+    response_model=Lecture,
+    status_code=status.HTTP_200_OK,
+    summary="Generate lecture text only",
+    description=(
+        "Generates lecture text content using AI based on partial attributes, "
+        "without automatically enqueueing audio or summary generation jobs."
+    ),
+    responses={
+        500: {"description": "Lecture text generation failed"},
+    },
+    dependencies=[require_coins(cost=get_settings().COIN_COST_LECTURE_GENERATION)],
+)
+async def generate_lecture_text_only(
+    generation_data: LectureGenerate,
+    lecture_service: LectureApiService = Depends(get_lecture_api_service),
+):
+    """
+    Generate lecture text content using AI.
+
+    This endpoint generates only the lecture text content and saves it to the database,
+    without automatically triggering audio or summary generation jobs.
+
+    Args:
+        generation_data: Contains optional partial_attributes and freeform_prompt.
+
+    Returns:
+        The generated and saved lecture data.
+    """
+    return await lecture_service.generate_lecture_text_only(generation_data)
+
+
+@router.post(
     "/generate/enqueue",
     status_code=status.HTTP_202_ACCEPTED,
     summary="Enqueue lecture generation job",
@@ -627,6 +669,54 @@ async def enqueue_generate_lecture(
 
     row = repository_factory.job.create(
         kind="generate_lecture",
+        payload=payload,
+    )
+    return {
+        "id": row.id,
+        "kind": row.kind,
+        "status": row.status,
+        "attempts": row.attempts,
+        "max_attempts": row.max_attempts,
+        "priority": row.priority,
+        "run_after": row.run_after,
+    }
+
+
+@router.post(
+    "/generate/text-only/enqueue",
+    status_code=status.HTTP_202_ACCEPTED,
+    summary="Enqueue lecture text generation job",
+    description=(
+        "Enqueue an async job to generate lecture text content using AI, "
+        "without automatically enqueueing audio or summary generation. "
+        "Returns a job id to poll via GET /api/v1/jobs/{id}."
+    ),
+    dependencies=[require_coins(cost=get_settings().COIN_COST_LECTURE_GENERATION)],
+)
+async def enqueue_generate_lecture_text_only(
+    generation_data: LectureGenerate,
+    repository_factory: RepositoryFactory = Depends(get_repository_factory),
+    student=Depends(ensure_student),
+):
+    """
+    Enqueue a job with kind 'generate_lecture_text_only'. Payload mirrors LectureGenerate.
+    This job will generate only the lecture text without triggering audio/summary jobs.
+    """
+    # Create a new dict to avoid modifying the input
+    partial_attrs = dict(generation_data.partial_attributes or {})
+    # Add created_by to partial attributes
+    partial_attrs["created_by"] = student.id
+
+    payload = {
+        "partial_attributes": partial_attrs,
+        "freeform_prompt": generation_data.freeform_prompt,
+    }
+    # Don't filter out partial_attributes even if it's just {"created_by": ...}
+    if payload.get("freeform_prompt") is None:
+        payload.pop("freeform_prompt", None)
+
+    row = repository_factory.job.create(
+        kind="generate_lecture_text_only",
         payload=payload,
     )
     return {

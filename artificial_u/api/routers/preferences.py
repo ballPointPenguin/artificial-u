@@ -47,7 +47,7 @@ class LectureModelResponse(BaseModel):
     response_model=List[PreferenceResponse],
     summary="List all global preferences",
     description="Get all global application preferences. Admin only.",
-    dependencies=[Depends(require_role("admin"))],
+    dependencies=[require_role("admin")],
 )
 def list_global_preferences(
     repository_factory: RepositoryFactory = Depends(get_repository_factory),
@@ -75,7 +75,7 @@ def list_global_preferences(
     response_model=PreferenceResponse,
     summary="Get a global preference",
     description="Get a specific global preference by scope. Admin only.",
-    dependencies=[Depends(require_role("admin"))],
+    dependencies=[require_role("admin")],
 )
 def get_global_preference(
     scope: str = Path(..., description="The preference scope/key"),
@@ -107,7 +107,7 @@ def get_global_preference(
     response_model=PreferenceResponse,
     summary="Set a global preference",
     description="Create or update a global preference. Admin only.",
-    dependencies=[Depends(require_role("admin"))],
+    dependencies=[require_role("admin")],
 )
 def set_global_preference(
     update_data: PreferenceValueUpdate,
@@ -140,7 +140,7 @@ def set_global_preference(
     status_code=status.HTTP_204_NO_CONTENT,
     summary="Delete a global preference",
     description="Delete a global preference by scope. Admin only.",
-    dependencies=[Depends(require_role("admin"))],
+    dependencies=[require_role("admin")],
 )
 def delete_global_preference(
     scope: str = Path(..., description="The preference scope/key"),

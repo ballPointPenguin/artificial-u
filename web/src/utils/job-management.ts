@@ -256,6 +256,13 @@ export function getJobMessage(
       failed: 'Lecture generation failed',
       cancelled: 'Lecture generation cancelled',
     },
+    generate_lecture_text_only: {
+      queued: 'Lecture text generation queued...',
+      running: 'Generating lecture text...',
+      done: 'Lecture text generated successfully!',
+      failed: 'Lecture text generation failed',
+      cancelled: 'Lecture text generation cancelled',
+    },
     generate_lecture_audio: {
       queued: 'Audio generation queued...',
       running: 'Generating audio narration...',

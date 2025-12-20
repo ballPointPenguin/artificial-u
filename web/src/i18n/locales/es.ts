@@ -383,6 +383,13 @@ export const es = {
     errorLoading: 'Error al cargar lección',
   },
 
+  // Topic Detail page
+  topicDetail: {
+    generateLectureText: 'Generar texto de la lección',
+    generateLectureWithAudio: 'Generar lección con audio',
+    generating: 'Generando...',
+  },
+
   // Theme Switcher
   theme: {
     selectTheme: 'Seleccionar Tema',

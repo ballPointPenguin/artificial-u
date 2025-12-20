@@ -381,6 +381,13 @@ export const en = {
     errorLoading: 'Failed to load lecture',
   },
 
+  // Topic Detail page
+  topicDetail: {
+    generateLectureText: 'Generate Lecture Text',
+    generateLectureWithAudio: 'Generate Lecture with Audio',
+    generating: 'Generating...',
+  },
+
   // Theme Switcher
   theme: {
     selectTheme: 'Select Theme',

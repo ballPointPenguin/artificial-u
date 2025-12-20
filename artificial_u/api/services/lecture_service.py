@@ -29,7 +29,11 @@ from artificial_u.services import (
     ProfessorService,
     TopicService,
 )
-from artificial_u.utils import ContentGenerationError, DatabaseError, LectureNotFoundError
+from artificial_u.utils import (
+    ContentGenerationError,
+    DatabaseError,
+    LectureNotFoundError,
+)
 
 
 class LectureApiService(BaseApiService[CoreLecture, Lecture, LectureListResponse]):
@@ -68,7 +72,9 @@ class LectureApiService(BaseApiService[CoreLecture, Lecture, LectureListResponse
 
         # Initialize generator service for AI generation workflows
         from artificial_u.services.job_enqueue_service import JobEnqueueService
-        from artificial_u.services.lecture_generator_service import LectureGeneratorService
+        from artificial_u.services.lecture_generator_service import (
+            LectureGeneratorService,
+        )
 
         # Create job enqueue service for background processing
         job_enqueue_service = JobEnqueueService(
@@ -536,4 +542,65 @@ class LectureApiService(BaseApiService[CoreLecture, Lecture, LectureListResponse
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=("An unexpected error occurred during lecture generation."),
+            )
+
+    async def generate_lecture_text_only(self, generation_data: LectureGenerate) -> Lecture:
+        """
+        Generate lecture content using AI based on partial data and save to database,
+        without automatically enqueueing audio and summary generation jobs.
+
+        This method generates only the lecture text content and saves it, without
+        triggering background jobs for audio or summary generation.
+
+        Args:
+            generation_data: Input data containing optional partial attributes and prompt.
+
+        Returns:
+            Lecture: The generated and saved lecture data (API model).
+
+        Raises:
+            HTTPException: If generation fails or prerequisites are not found.
+        """
+        log_attrs = (
+            list(generation_data.partial_attributes.keys())
+            if generation_data.partial_attributes
+            else "None"
+        )
+        self.logger.info(
+            f"Received request to generate lecture text only with partial attributes: {log_attrs}"
+        )
+        try:
+            # Prepare attributes for the core service
+            partial_attrs = generation_data.partial_attributes or {}
+            if generation_data.freeform_prompt:
+                partial_attrs["freeform_prompt"] = generation_data.freeform_prompt
+
+            # Use the generator service's method that generates and saves without enqueueing jobs
+            core_lecture = await self.generator_service.generate_and_save_lecture_text_only(
+                partial_attributes=partial_attrs
+            )
+
+            # Convert to API model and return
+            response = Lecture.model_validate(core_lecture)
+
+            self.logger.info(
+                f"Successfully generated and saved lecture text only {response.id} "
+                f"for topic {response.topic_id}"
+            )
+            return response
+
+        except (ContentGenerationError, DatabaseError, ValueError) as e:
+            # Handle errors from core service (generation, DB lookups, parsing)
+            self.logger.error(f"Lecture text generation failed: {e}", exc_info=True)
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Failed to generate lecture text: {e}",
+            )
+        except Exception as e:
+            self.logger.error(
+                f"Unexpected error during lecture text generation: {e}", exc_info=True
+            )
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=("An unexpected error occurred during lecture text generation."),
             )

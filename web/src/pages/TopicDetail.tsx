@@ -79,13 +79,18 @@ const TopicDetail = () => {
   const jobTracker = createJobTracker({
     topicId: () => (isValidIds() ? topicId() : undefined),
     lectureId: () => lectureId(),
-    kinds: ['generate_lecture', 'generate_lecture_audio', 'generate_lecture_summary'],
+    kinds: [
+      'generate_lecture',
+      'generate_lecture_text_only',
+      'generate_lecture_audio',
+      'generate_lecture_summary',
+    ],
     onJobComplete: (event) => {
       if (import.meta.env.DEV) {
         console.log('[TopicDetail] Job completed:', event.kind, event.id)
       }
 
-      if (event.kind === 'generate_lecture') {
+      if (event.kind === 'generate_lecture' || event.kind === 'generate_lecture_text_only') {
         setGenerationTimeout(false)
         setIsGeneratingLecture(false)
 
@@ -109,7 +114,7 @@ const TopicDetail = () => {
         console.log('[TopicDetail] Job failed:', event.kind, event.id)
       }
 
-      if (event.kind === 'generate_lecture') {
+      if (event.kind === 'generate_lecture' || event.kind === 'generate_lecture_text_only') {
         setIsGeneratingLecture(false)
         setLectureError(getJobMessage(event.kind, 'failed'))
       }
@@ -185,6 +190,39 @@ const TopicDetail = () => {
       // The jobTracker will handle clearing it when the job completes
     } catch (error) {
       setLectureError(error instanceof Error ? error.message : 'Failed to generate lecture')
+      setIsGeneratingLecture(false)
+    }
+  }
+
+  const handleGenerateLectureText = async () => {
+    if (!isValidIds()) return
+
+    setIsGeneratingLecture(true)
+    setLectureError('')
+    setGenerationTimeout(false)
+
+    try {
+      // Prevent duplicate enqueue if a job is already active for this topic
+      if (jobTracker.hasActiveJobs()) {
+        setIsGeneratingLecture(false)
+        return
+      }
+
+      const job = await lectureService.enqueueGenerateLectureTextOnly({
+        partial_attributes: {
+          course_id: courseId(),
+          topic_id: topicId(),
+        },
+      })
+
+      if (import.meta.env.DEV) {
+        console.log('[TopicDetail] Enqueued lecture text generation job:', job.id)
+      }
+
+      // Note: Don't set isGeneratingLecture to false here - wait for job completion
+      // The jobTracker will handle clearing it when the job completes
+    } catch (error) {
+      setLectureError(error instanceof Error ? error.message : 'Failed to generate lecture text')
       setIsGeneratingLecture(false)
     }
   }
@@ -352,6 +390,9 @@ const TopicDetail = () => {
                           generationTimeout={generationTimeout()}
                           onGenerateLecture={() => {
                             void handleGenerateLecture()
+                          }}
+                          onGenerateLectureText={() => {
+                            void handleGenerateLectureText()
                           }}
                           onLectureDeleted={handleLectureDeleted}
                           onLectureUpdated={handleLectureUpdated}
