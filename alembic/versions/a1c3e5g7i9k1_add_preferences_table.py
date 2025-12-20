@@ -7,7 +7,6 @@ Create Date: 2025-12-19 00:00:00.000000
 """
 
 import sqlalchemy as sa
-from sqlalchemy.dialects.postgresql import BOOLEAN
 
 from alembic import op
 

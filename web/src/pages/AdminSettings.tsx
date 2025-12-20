@@ -22,7 +22,7 @@ export default function AdminSettings() {
       const response = await preferenceService.getLectureGenerationModel()
       setSelectedModel(response.model)
       return response
-    } catch (error) {
+    } catch {
       // If no preference is set, try to get from global preferences
       try {
         const pref = await preferenceService.getGlobal(LECTURE_GENERATION_MODEL_SCOPE)
@@ -30,8 +30,9 @@ export default function AdminSettings() {
         return { model: pref.value, source: 'preference' as const }
       } catch {
         // Default to first option if nothing is set
-        setSelectedModel(MODEL_OPTIONS[0].value)
-        return { model: MODEL_OPTIONS[0].value, source: 'environment' as const }
+        const defaultValue = String(MODEL_OPTIONS[0].value)
+        setSelectedModel(defaultValue)
+        return { model: defaultValue, source: 'environment' as const }
       }
     }
   })
@@ -99,19 +100,17 @@ export default function AdminSettings() {
                   <strong>Current model:</strong> {resource().model}
                   <br />
                   <strong>Source:</strong>{' '}
-                  {resource().source === 'preference'
-                    ? 'Custom preference'
-                    : 'Environment default'}
+                  {resource().source === 'preference' ? 'Custom preference' : 'Environment default'}
                 </div>
               )}
             </Show>
           </Show>
 
-          <FormField label="Model Selection" htmlFor="model-select">
+          <FormField label="Model Selection" name="model-select">
             <Select
-              id="model-select"
+              name="model-select"
               value={selectedModel()}
-              onChange={setSelectedModel}
+              onChange={(value) => setSelectedModel(value ? String(value) : '')}
               options={MODEL_OPTIONS}
               disabled={isSaving()}
               placeholder="Select a model..."
@@ -137,7 +136,7 @@ export default function AdminSettings() {
           </div>
 
           <div class="flex justify-end gap-2">
-            <Button onClick={handleSave} disabled={isSaving()} variant="primary">
+            <Button onClick={() => void handleSave()} disabled={isSaving()} variant="primary">
               {isSaving() ? 'Saving...' : 'Save Settings'}
             </Button>
           </div>
