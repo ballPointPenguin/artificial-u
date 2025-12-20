@@ -9,7 +9,6 @@ from pydantic import BaseModel, Field
 
 from artificial_u.api.dependencies import ensure_student, get_repository_factory
 from artificial_u.api.security.auth0 import require_auth, require_role
-from artificial_u.models.core import Preference, PreferenceCreate
 from artificial_u.models.repositories.factory import RepositoryFactory
 from artificial_u.services.preference_service import PreferenceService
 
@@ -40,9 +39,7 @@ class LectureModelResponse(BaseModel):
     """Response model for lecture generation model."""
 
     model: str = Field(..., description="The current lecture generation model")
-    source: str = Field(
-        ..., description="Source of the model setting (preference or environment)"
-    )
+    source: str = Field(..., description="Source of the model setting (preference or environment)")
 
 
 @router.get(

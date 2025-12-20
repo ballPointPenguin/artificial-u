@@ -142,16 +142,16 @@ COURSE_GENERATION_MODEL=gpt-5-nano
 DEPARTMENT_GENERATION_MODEL=gpt-5-nano
 
 # Lecture generation model
-LECTURE_GENERATION_MODEL=claude-sonnet-4-5-20250929
+LECTURE_GENERATION_MODEL=claude-sonnet-4-5
 
 # Professor generation model
 PROFESSOR_GENERATION_MODEL=gpt-5-nano
 
 # Topics generation model
-TOPICS_GENERATION_MODEL=gemini-2.5-flash
+TOPICS_GENERATION_MODEL=gemini-3-flash-preview
 
 # Image generation model
-IMAGE_GENERATION_MODEL=gpt-image-1
+IMAGE_GENERATION_MODEL=gemini-3-pro-image-preview
 
 # Text-to-speech voice model (ElevenLabs)
 # Must be supported by the selected voice's verified languages
@@ -235,11 +235,11 @@ TESTING=true
 | `LOG_LEVEL` | Logging level | `INFO` | No |
 | `content_backend` | Backend for content generation | `anthropic` | No |
 | `content_model` | Model for chosen backend | Depends on backend | No |
-| `COURSE_GENERATION_MODEL` | Model for course generation | `claude-sonnet-4-5-20250929` | No |
+| `COURSE_GENERATION_MODEL` | Model for course generation | `gpt-5-nano` | No |
 | `DEPARTMENT_GENERATION_MODEL` | Model for department generation | `gpt-5-nano` | No |
-| `LECTURE_GENERATION_MODEL` | Model for lecture generation | `claude-sonnet-4-5-20250929` | No |
+| `LECTURE_GENERATION_MODEL` | Model for lecture generation | `claude-sonnet-4-5` | No |
 | `LECTURE_SUMMARY_MODEL` | Model for lecture summary generation | `gpt-5-nano` | No |
-| `TOPICS_GENERATION_MODEL` | Model for topics generation | `gemini-3-pro-preview` | No |
+| `TOPICS_GENERATION_MODEL` | Model for topics generation | `gemini-3-flash-preview` | No |
 | `PROFESSOR_GENERATION_MODEL` | Model for professor generation | `gpt-5-nano` | No |
 | `IMAGE_GENERATION_MODEL` | Model for image generation | `gemini-3-pro-image-preview` | No |
 | `TTS_VOICE_MODEL` | Model for text-to-speech voice | `eleven_flash_v2_5` | No |
