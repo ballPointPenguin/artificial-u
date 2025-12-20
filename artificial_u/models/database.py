@@ -248,9 +248,20 @@ class PreferenceModel(Base):
 
     __table_args__ = (
         # For global preferences, scope must be unique
-        Index("idx_preferences_global_scope", "scope", unique=True, postgresql_where=Column("is_global") == True),
+        Index(
+            "idx_preferences_global_scope",
+            "scope",
+            unique=True,
+            postgresql_where=Column("is_global").is_(True),
+        ),
         # For user preferences, student_id + scope must be unique
-        Index("idx_preferences_student_scope", "student_id", "scope", unique=True, postgresql_where=Column("is_global") == False),
+        Index(
+            "idx_preferences_student_scope",
+            "student_id",
+            "scope",
+            unique=True,
+            postgresql_where=Column("is_global").is_(False),
+        ),
         # Index for efficient lookup of global preferences
         Index("idx_preferences_is_global", "is_global"),
     )

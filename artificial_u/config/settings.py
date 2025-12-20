@@ -123,13 +123,13 @@ class Settings(BaseSettings):
     # Department generation model
     DEPARTMENT_GENERATION_MODEL: str = "gpt-5-nano"
     # Lecture generation model
-    LECTURE_GENERATION_MODEL: str = "claude-sonnet-4-5-20250929"
+    LECTURE_GENERATION_MODEL: str = "claude-sonnet-4-5"
     # Lecture summary generation model
     LECTURE_SUMMARY_MODEL: str = "gpt-5-nano"
     # Professor generation model
     PROFESSOR_GENERATION_MODEL: str = "gpt-5-nano"
     # Topics generation model
-    TOPICS_GENERATION_MODEL: str = "gemini-2.5-flash"
+    TOPICS_GENERATION_MODEL: str = "gemini-3-flash-preview"
     # Image generation model
     IMAGE_GENERATION_MODEL: str = "gemini-3-pro-image-preview"
 
@@ -196,9 +196,9 @@ class Settings(BaseSettings):
             if backend == "openai":
                 return "gpt-5-nano"
             elif backend == "gemini":
-                return "gemini-2.5-flash"
+                return "gemini-3-flash-preview"
             elif backend == "anthropic":
-                return "claude-sonnet-4-5-20250929"
+                return "claude-sonnet-4-5"
             else:
                 return "gpt-5-nano"
         return v

@@ -179,7 +179,7 @@ class ImageService:
         or the generate_images API (Imagen 4.x).
         """
         # Gemini 3 Pro Image uses generate_content with multimodal response
-        return model_name.startswith("gemini-3-") or model_name.startswith("gemini-2.5-flash-image")
+        return model_name.startswith("gemini-3-") or model_name.startswith("gemini-2.5-")
 
     async def _generate_gemini_image_via_content(
         self, prompt: str, aspect_ratio: str
