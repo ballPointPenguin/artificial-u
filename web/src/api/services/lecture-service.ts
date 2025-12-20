@@ -134,6 +134,39 @@ export const lectureService = {
   },
 
   /**
+   * Generate lecture text only with extended timeout for long-running operations.
+   * This generates only the lecture text content without automatically triggering
+   * audio or summary generation.
+   */
+  generateLectureTextOnly: (
+    data: LectureGenerateRequest,
+    onTimeout?: () => void
+  ): Promise<Lecture> => {
+    return httpClient.postWithExtendedTimeout<Lecture>(ENDPOINTS.lectures.generateTextOnly, data, {
+      timeout: TIMEOUT_CONFIG.generation,
+      onTimeout,
+    })
+  },
+
+  /**
+   * Enqueue lecture text generation job (async). Returns a job stub with id.
+   * This job will generate only the lecture text without triggering audio/summary jobs.
+   */
+  enqueueGenerateLectureTextOnly: (
+    data: LectureGenerateRequest
+  ): Promise<{
+    id: number
+    kind: string
+    status: string
+    attempts: number
+    max_attempts: number
+    priority?: number
+    run_after?: string
+  }> => {
+    return httpClient.post(ENDPOINTS.lectures.enqueueGenerateTextOnly, data)
+  },
+
+  /**
    * Upload an audio file for a lecture (admin only).
    * Uses FormData to send the file as multipart/form-data.
    */

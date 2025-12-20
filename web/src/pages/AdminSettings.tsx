@@ -121,16 +121,13 @@ export default function AdminSettings() {
             <p class="font-semibold">Model Comparison:</p>
             <ul class="ml-4 mt-2 list-disc space-y-1 text-xs">
               <li>
-                <strong>Opus 4.5:</strong> Highest quality outputs, best for complex lectures,
-                slowest generation (~2-3 min)
+                <strong>Opus 4.5:</strong> Highest quality, slowest
               </li>
               <li>
-                <strong>Sonnet 4.5:</strong> Balanced quality and speed, recommended for most use
-                cases (~1-2 min)
+                <strong>Sonnet 4.5:</strong> Balanced quality and speed
               </li>
               <li>
-                <strong>Haiku 4.5:</strong> Fastest generation, good quality, best for rapid
-                prototyping (~30-60 sec)
+                <strong>Haiku 4.5:</strong> Fastest generation, fair quality
               </li>
             </ul>
           </div>

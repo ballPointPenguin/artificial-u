@@ -95,6 +95,8 @@ export const ENDPOINTS = {
     detail: (id: number) => `/v1/lectures/${String(id)}`,
     generate: '/v1/lectures/generate',
     enqueueGenerate: '/v1/lectures/generate/enqueue',
+    generateTextOnly: '/v1/lectures/generate/text-only',
+    enqueueGenerateTextOnly: '/v1/lectures/generate/text-only/enqueue',
     content: (id: number) => `/v1/lectures/${String(id)}/content`,
     audio: (id: number) => `/v1/lectures/${String(id)}/audio`,
     generateAudio: (id: number) => `/v1/lectures/${String(id)}/generate-audio`,

@@ -383,6 +383,13 @@ export const fr = {
     errorLoading: 'Échec du chargement de la conférence',
   },
 
+  // Topic Detail page
+  topicDetail: {
+    generateLectureText: 'Générer le texte de la leçon',
+    generateLectureWithAudio: "Générer la leçon avec l'audio",
+    generating: 'Génération en cours...',
+  },
+
   // Theme Switcher
   theme: {
     selectTheme: 'Sélectionner le Thème',

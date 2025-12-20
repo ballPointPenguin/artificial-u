@@ -4,6 +4,7 @@ import { type Component, createSignal, Show } from 'solid-js'
 import { lectureService } from '../../api/services/lecture-service.js'
 import type { Lecture } from '../../api/types.js'
 import { RequireRole } from '../../auth/RequireRole'
+import { useTranslations } from '../../i18n'
 import { useAudioPlayer } from '../../utils/audio-player-context.jsx'
 import { createJobTracker, getJobMessage } from '../../utils/job-management.js'
 import { Alert, Button, ConfirmationModal, MagicButton, MetadataInfo } from '../ui'
@@ -17,6 +18,7 @@ interface LectureSectionProps {
   isGeneratingLecture: boolean
   generationTimeout: boolean
   onGenerateLecture: () => void
+  onGenerateLectureText?: () => void
   onLectureDeleted?: () => void
   onLectureUpdated?: () => void
   externalJobActive?: () => boolean
@@ -26,6 +28,7 @@ interface LectureSectionProps {
 }
 
 export const LectureSection: Component<LectureSectionProps> = (props) => {
+  const t = useTranslations()
   const audioPlayer = useAudioPlayer()
   const [isDeleting, setIsDeleting] = createSignal(false)
   const [showDeleteModal, setShowDeleteModal] = createSignal(false)
@@ -47,7 +50,12 @@ export const LectureSection: Component<LectureSectionProps> = (props) => {
   const jobTracker = createJobTracker({
     topicId: () => props.topicId,
     lectureId: () => props.lecture()?.id, // This will reactively update when lecture is created
-    kinds: ['generate_lecture', 'generate_lecture_audio', 'generate_lecture_summary'],
+    kinds: [
+      'generate_lecture',
+      'generate_lecture_text_only',
+      'generate_lecture_audio',
+      'generate_lecture_summary',
+    ],
     onJobComplete: (event) => {
       if (import.meta.env.DEV) {
         console.log('[LectureSection] Job completed:', event.kind, event.id)
@@ -73,6 +81,9 @@ export const LectureSection: Component<LectureSectionProps> = (props) => {
         setAudioError(getJobMessage(event.kind, 'failed'))
       } else if (event.kind === 'generate_lecture_summary') {
         setSummaryError(getJobMessage(event.kind, 'failed'))
+      } else if (event.kind === 'generate_lecture_text_only') {
+        // Handle text-only generation failures
+        // The error will be shown via the lectureError prop from TopicDetail
       }
     },
     onJobStart: (event) => {
@@ -461,27 +472,27 @@ export const LectureSection: Component<LectureSectionProps> = (props) => {
           </p>
           <div class="flex justify-center space-x-4">
             <RequireRole minRole="creator">
-              <Show
-                when={!anyJobActive()}
-                fallback={
-                  <Button variant="outline" disabled={true}>
-                    New Lecture
-                  </Button>
-                }
-              >
-                <A
-                  href={`/courses/${String(props.courseId)}/topics/${String(props.topicId)}/lectures/new`}
-                  class="inline-block"
+              <Show when={props.onGenerateLectureText}>
+                <MagicButton
+                  variant="primary"
+                  onClick={() => {
+                    props.onGenerateLectureText?.()
+                  }}
+                  disabled={anyJobActive()}
                 >
-                  <Button variant="outline">New Lecture</Button>
-                </A>
+                  {props.isGeneratingLecture
+                    ? t().topicDetail.generating
+                    : t().topicDetail.generateLectureText}
+                </MagicButton>
               </Show>
               <MagicButton
                 variant="primary"
                 onClick={props.onGenerateLecture}
                 disabled={anyJobActive()}
               >
-                {props.isGeneratingLecture ? 'Generating...' : 'Generate Lecture'}
+                {props.isGeneratingLecture
+                  ? t().topicDetail.generating
+                  : t().topicDetail.generateLectureWithAudio}
               </MagicButton>
             </RequireRole>
           </div>

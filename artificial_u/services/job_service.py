@@ -81,6 +81,7 @@ class JobService:
             "generate_professor": self._handle_generate_professor,
             "generate_topics_for_course": self._handle_generate_topics_for_course,
             "generate_lecture": self._handle_generate_lecture,
+            "generate_lecture_text_only": self._handle_generate_lecture_text_only,
             "generate_lecture_summary": self._handle_generate_lecture_summary,
             "generate_lecture_audio": self._handle_generate_lecture_audio,
             "generate_professor_image": self._handle_generate_professor_image,
@@ -201,6 +202,25 @@ class JobService:
         saved_lecture = await service.generate_and_save_lecture(partial)
 
         self.logger.info(f"Generate and save lecture completed: {saved_lecture.id}")
+        return {
+            "lecture_id": saved_lecture.id,
+            "course_id": saved_lecture.course_id,
+            "topic_id": saved_lecture.topic_id,
+            "title": saved_lecture.title,
+            "transcript_url": saved_lecture.transcript_url,
+        }
+
+    async def _handle_generate_lecture_text_only(self, payload: Dict[str, Any]) -> Dict[str, Any]:
+        service = self._lecture_generator_service_instance()
+        partial = payload.get("partial_attributes") or {}
+        self.logger.info(
+            f"Generating and saving lecture text only with partial attributes: {partial}"
+        )
+
+        # Use the method that generates and saves without enqueueing background jobs
+        saved_lecture = await service.generate_and_save_lecture_text_only(partial)
+
+        self.logger.info(f"Generate and save lecture text only completed: {saved_lecture.id}")
         return {
             "lecture_id": saved_lecture.id,
             "course_id": saved_lecture.course_id,

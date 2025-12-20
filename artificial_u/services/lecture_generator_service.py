@@ -230,6 +230,46 @@ class LectureGeneratorService:
         )
         return saved_lecture
 
+    async def generate_and_save_lecture_text_only(
+        self,
+        partial_attributes: Optional[Dict[str, Any]] = None,
+    ) -> Lecture:
+        """
+        Generate lecture content using AI and save it as a complete lecture record,
+        without enqueueing background jobs (audio/summary generation).
+
+        This method is useful when you only want to generate the lecture text content
+        without automatically triggering audio and summary generation.
+
+        Args:
+            partial_attributes: Optional dictionary of known attributes to guide generation
+
+        Returns:
+            Lecture: The complete saved lecture object
+
+        Raises:
+            ContentGenerationError: If content generation or parsing fails
+            DatabaseError: If there's an error saving to database
+            ValueError: If required partial_attributes are missing
+        """
+        # Generate the content using AI
+        generated_dict = await self.generate_lecture(partial_attributes)
+
+        # Calculate revision number and create lecture
+        revision = self._calculate_revision_number(generated_dict)
+        saved_lecture = self._create_lecture_from_generated_data(generated_dict, revision)
+
+        # Upload transcript and update lecture with URL
+        saved_lecture = await self._upload_and_update_transcript(saved_lecture, generated_dict)
+
+        # NOTE: Do NOT enqueue background processing jobs (audio/summary)
+
+        self.logger.info(
+            f"Successfully generated and saved lecture text only {saved_lecture.id} "
+            f"for topic {saved_lecture.topic_id}"
+        )
+        return saved_lecture
+
     # --- Helper Methods for generate_and_save_lecture --- #
 
     def _calculate_revision_number(self, generated_dict: Dict[str, Any]) -> int:

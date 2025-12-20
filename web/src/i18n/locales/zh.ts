@@ -381,6 +381,13 @@ export const zh = {
     errorLoading: '加载讲座失败',
   },
 
+  // Topic Detail page
+  topicDetail: {
+    generateLectureText: '生成讲座文本',
+    generateLectureWithAudio: '生成带音频的讲座',
+    generating: '生成中...',
+  },
+
   // Theme Switcher
   theme: {
     selectTheme: '选择主题',
