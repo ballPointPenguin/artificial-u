@@ -550,6 +550,7 @@ class LectureRepository(BaseRepository):
                 "transcript_url",
                 "course_id",
                 "topic_id",
+                "voice_id",
                 "created_by",
                 "created_with",
             }
@@ -574,6 +575,7 @@ class LectureRepository(BaseRepository):
                 transcript_url=db_lecture.transcript_url,
                 course_id=db_lecture.course_id,
                 topic_id=db_lecture.topic_id,
+                voice_id=db_lecture.voice_id,
                 word_count=db_lecture.word_count,
                 created_by=db_lecture.created_by,
                 created_with=db_lecture.created_with,
