@@ -13,7 +13,7 @@ from fastapi import Depends
 from fastapi.security import HTTPAuthorizationCredentials
 
 from artificial_u.api.config import get_settings
-from artificial_u.api.security.auth0 import auth_scheme, require_auth
+from artificial_u.api.security.auth0 import auth_scheme, optional_auth, require_auth
 from artificial_u.api.services import (
     CourseApiService,
     DepartmentApiService,
@@ -61,6 +61,85 @@ def get_repository_factory() -> RepositoryFactory:
     )
 
 
+def _get_or_create_student_from_payload(
+    payload: dict,
+    repository_factory: RepositoryFactory,
+    credentials: Optional[HTTPAuthorizationCredentials] = None,
+) -> Student:
+    """
+    Helper to get or create a student from JWT payload.
+
+    Args:
+        payload: JWT payload with user claims
+        repository_factory: Repository factory for database access
+        credentials: Optional credentials for fetching additional user info from Auth0
+
+    Returns:
+        Student model instance
+    """
+    import logging
+
+    from artificial_u.api.security.auth0 import get_user_info
+
+    logger = logging.getLogger(__name__)
+
+    # Try to fetch additional user info from Auth0 if we have credentials
+    # and the token is missing profile claims
+    user_info = payload
+    if credentials and not payload.get("email") and not payload.get("name"):
+        logger.info("Token missing user profile claims, fetching from /userinfo endpoint")
+        try:
+            access_token = credentials.credentials
+            fetched_info = get_user_info(access_token)
+            logger.info(f"Fetched user info: {fetched_info}")
+            # Merge, with payload taking precedence for auth claims
+            user_info = {**fetched_info, **payload}
+        except Exception as e:
+            logger.warning(f"Failed to fetch user info from Auth0: {e}")
+            # Continue with just the payload
+            user_info = payload
+
+    sub = user_info.get("sub")
+    email = user_info.get("email")
+    email_verified = user_info.get("email_verified", False)
+
+    if not isinstance(sub, str):
+        sub = "unknown"
+
+    # Prefer name->nickname->email->sub for initial display name
+    display_name = (
+        user_info.get("name")
+        or user_info.get("nickname")
+        or (email if isinstance(email, str) else None)
+        or (sub if isinstance(sub, str) else "User")
+    )
+
+    return repository_factory.student.get_or_create_by_auth0(
+        auth0_sub=sub,
+        default_name=display_name,
+        email=email if isinstance(email, str) else None,
+        email_verified=bool(email_verified),
+    )
+
+
+def optional_student(
+    payload: Optional[dict] = Depends(optional_auth),
+    repository_factory: RepositoryFactory = Depends(get_repository_factory),
+) -> Optional[Student]:
+    """
+    Optionally get a Student if the user is authenticated.
+
+    Returns:
+        Student if authenticated, None otherwise
+    """
+    if not payload:
+        return None
+
+    # Use shared helper without credentials (can't fetch from /userinfo)
+    # This is acceptable for optional auth where we just need basic identity
+    return _get_or_create_student_from_payload(payload, repository_factory, credentials=None)
+
+
 def ensure_student(
     payload: dict = Depends(require_auth),
     credentials: HTTPAuthorizationCredentials = Depends(auth_scheme),
@@ -77,61 +156,14 @@ def ensure_student(
     """
     import logging
 
-    from artificial_u.api.security.auth0 import get_user_info
-
     logger = logging.getLogger(__name__)
 
     # Debug: log the entire payload structure
     logger.info(f"JWT Payload keys: {list(payload.keys())}")
     logger.info(f"JWT Payload: {payload}")
 
-    # Check if we have user profile info in the token
-    # If not, fetch it from Auth0's /userinfo endpoint
-    user_info = payload
-    if not payload.get("email") and not payload.get("name"):
-        logger.info("Access token missing user profile claims, fetching from /userinfo endpoint")
-        try:
-            access_token = credentials.credentials
-            user_info = get_user_info(access_token)
-            logger.info(f"Fetched user info: {user_info}")
-            # Merge user info with payload (payload takes precedence for auth claims)
-            user_info = {**user_info, **payload}
-        except Exception as e:
-            logger.warning(f"Failed to fetch user info from Auth0: {e}")
-            # Continue with just the payload
-            user_info = payload
-
-    sub = user_info.get("sub")
-    email = user_info.get("email")
-    email_verified = user_info.get("email_verified", False)
-
-    logger.info(f"Extracted - sub: {sub}, email: {email}, email_verified: {email_verified}")
-    logger.info(f"name: {user_info.get('name')}, nickname: {user_info.get('nickname')}")
-    logger.info(
-        f"given_name: {user_info.get('given_name')}, family_name: {user_info.get('family_name')}"
-    )
-
-    # Prefer name->nickname->email->sub for initial display name
-    display_name = (
-        user_info.get("name")
-        or user_info.get("nickname")
-        or (email if isinstance(email, str) else None)
-        or (sub if isinstance(sub, str) else "User")
-    )
-
-    logger.info(f"Final display_name: {display_name}")
-
-    if not isinstance(sub, str):
-        # Should not happen if token is valid, but guard anyway
-        sub = "unknown"
-
-    student = repository_factory.student.get_or_create_by_auth0(
-        auth0_sub=sub,
-        default_name=display_name,
-        email=email if isinstance(email, str) else None,
-        email_verified=bool(email_verified),
-    )
-    return student
+    # Use shared helper with credentials for /userinfo fallback
+    return _get_or_create_student_from_payload(payload, repository_factory, credentials)
 
 
 def get_content_service() -> ContentService:

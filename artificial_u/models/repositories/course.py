@@ -172,10 +172,17 @@ class CourseRepository(BaseRepository):
         level: Optional[str] = None,
         title: Optional[str] = None,
         created_by: Optional[int] = None,
+        status: Optional[str] = None,
+        include_own_hidden: bool = False,
+        requesting_student_id: Optional[int] = None,
     ) -> Tuple[List[Course], int]:
         """
         List courses with advanced filtering, sorting, pagination, and counts.
         Returns a tuple of (courses, total_count).
+
+        Args:
+            include_own_hidden: If True, include hidden courses created by requesting_student_id
+            requesting_student_id: ID of the student making the request (for own hidden courses)
         """
         with self.get_session() as session:
             # Subquery for lectures with audio
@@ -227,6 +234,22 @@ class CourseRepository(BaseRepository):
                 query = query.filter(CourseModel.title.ilike(f"%{title}%"))
             if created_by:
                 query = query.filter(CourseModel.created_by == created_by)
+
+            # Status filtering with special handling for own hidden courses
+            if status:
+                if include_own_hidden and requesting_student_id:
+                    # Show courses with the specified status OR hidden courses owned by the user
+                    from sqlalchemy import or_
+
+                    query = query.filter(
+                        or_(
+                            CourseModel.status == status,
+                            (CourseModel.status == "hidden")
+                            & (CourseModel.created_by == requesting_student_id),
+                        )
+                    )
+                else:
+                    query = query.filter(CourseModel.status == status)
 
             # Get total count before sorting and pagination
             total_count = query.count()

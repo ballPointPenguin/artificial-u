@@ -214,6 +214,8 @@ def test_list_courses(client: TestClient, mock_api_service):
         created_by=None,
         sort_by="updated_at",
         order="desc",
+        student_id=None,
+        student_role=None,
     )
 
 
@@ -241,6 +243,7 @@ def test_list_courses_with_filters(client: TestClient, mock_api_service):
         created_by=None,
         sort_by="updated_at",
         order="desc",
+        student_id=None,
     )
 
 
@@ -267,6 +270,7 @@ def test_list_courses_with_sorting(client: TestClient, mock_api_service):
         created_by=None,
         sort_by="code",
         order="asc",
+        student_id=None,
     )
 
 
@@ -298,6 +302,7 @@ def test_list_courses_filter_by_created_by(client: TestClient, mock_api_service)
         created_by=student_id,
         sort_by="updated_at",
         order="desc",
+        student_id=None,
     )
 
 

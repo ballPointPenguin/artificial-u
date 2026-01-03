@@ -10,6 +10,7 @@ from jose.exceptions import ExpiredSignatureError, JWTClaimsError, JWTError
 from artificial_u.config.settings import get_settings
 
 auth_scheme = HTTPBearer(auto_error=True)
+optional_auth_scheme = HTTPBearer(auto_error=False)
 
 
 @lru_cache
@@ -87,6 +88,48 @@ def require_auth(
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=f"Invalid claims: {e}")
     except JWTError as e:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=f"Invalid token: {e}")
+
+
+def optional_auth(
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(optional_auth_scheme),
+) -> Optional[Dict[str, Any]]:
+    """
+    Optional authentication that returns None if no credentials are provided.
+
+    Returns:
+        JWT payload if valid token is provided, None otherwise
+    """
+    if not credentials:
+        return None
+
+    settings = get_settings()
+    token = credentials.credentials
+    try:
+        unverified = jwt.get_unverified_header(token)
+        jwk_data = _get_signing_key(unverified["kid"])  # type: ignore[reportGeneralTypeIssues]
+        if not jwk_data:
+            return None
+
+        # Pass RSA key params dict directly (kty,n,e) to python-jose
+        rsa_key = {
+            "kty": jwk_data.get("kty"),
+            "kid": jwk_data.get("kid"),
+            "use": jwk_data.get("use"),
+            "n": jwk_data.get("n"),
+            "e": jwk_data.get("e"),
+        }
+
+        payload = jwt.decode(
+            token,
+            rsa_key,
+            algorithms=[settings.AUTH0_ALG],
+            audience=settings.AUTH0_AUDIENCE,
+            issuer=f"https://{settings.AUTH0_DOMAIN}/",
+        )
+        return payload  # contains sub, scope, etc.
+    except (ExpiredSignatureError, JWTClaimsError, JWTError):
+        # Silently fail for optional auth - return None on any token error
+        return None
 
 
 # Mock JWT payload for testing

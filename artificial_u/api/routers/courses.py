@@ -10,6 +10,7 @@ from artificial_u.api.dependencies import (
     ensure_student,
     get_course_api_service,
     get_repository_factory,
+    optional_student,
 )
 from artificial_u.api.models import (
     CourseCreate,
@@ -41,7 +42,8 @@ router = APIRouter(
     "",
     response_model=CoursesListResponse,
     summary="List courses",
-    description="Get a paginated list of courses with optional filtering and sorting.",
+    description="Get a paginated list of courses with optional filtering and sorting. "
+    "Hidden courses are only visible to authenticated users.",
 )
 async def list_courses(
     page: int = Query(1, ge=1, description="Page number"),
@@ -59,10 +61,18 @@ async def list_courses(
         "desc", description="Sort order (asc or desc)", pattern="^(asc|desc)$"
     ),
     course_service: CourseApiService = Depends(get_course_api_service),
+    student: Optional[Student] = Depends(optional_student),
 ):
     """
     Get a paginated list of courses with filtering and sorting options.
+
+    Visibility rules for hidden courses:
+    - Unauthenticated users: only see published courses
+    - Authenticated non-admin users: see published courses + hidden courses they created
+    - Admin users: see all courses
     """
+    student_id = student.id if student else None
+    student_role = student.role if student else None
     return course_service.get_courses(
         page=page,
         size=size,
@@ -73,6 +83,8 @@ async def list_courses(
         created_by=created_by,
         sort_by=sort_by,
         order=order,
+        student_id=student_id,
+        student_role=student_role,
     )
 
 
