@@ -26,7 +26,8 @@ export function Button(props: ButtonProps) {
       'bg-primary text-on-primary border border-accent/70 shadow-arcane enabled:hover:shadow-glow',
     secondary: 'bg-surface enabled:hover:bg-surface/80 text-foreground border border-border',
     outline: 'bg-transparent text-primary border border-primary enabled:hover:bg-primary/10',
-    ghost: 'bg-transparent text-muted enabled:hover:text-primary enabled:hover:bg-primary/10',
+    ghost:
+      'bg-transparent text-foreground/70 enabled:hover:text-foreground enabled:hover:bg-primary/10',
     link: 'bg-transparent text-primary underline-offset-4 enabled:hover:underline',
     danger:
       'bg-danger-bg border border-danger-border text-danger enabled:hover:bg-danger enabled:hover:text-foreground',

@@ -56,6 +56,13 @@ export function PWAUpdatePrompt() {
   )
 }
 
+// Simple mobile detection based on screen width and touch capability
+const isMobileDevice = () => {
+  const hasTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0
+  const isMobileWidth = window.innerWidth < 768
+  return hasTouch && isMobileWidth
+}
+
 export function InstallPWAPrompt() {
   const [deferredPrompt, setDeferredPrompt] = createSignal<BeforeInstallPromptEvent | null>(null)
   const [isVisible, setIsVisible] = createSignal(false)
@@ -64,7 +71,10 @@ export function InstallPWAPrompt() {
     window.addEventListener('beforeinstallprompt', (e) => {
       e.preventDefault()
       setDeferredPrompt(e as BeforeInstallPromptEvent)
-      setIsVisible(true)
+      // Only show install prompt on mobile devices
+      if (isMobileDevice()) {
+        setIsVisible(true)
+      }
     })
 
     window.addEventListener('appinstalled', () => {
