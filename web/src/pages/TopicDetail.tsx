@@ -249,7 +249,7 @@ const TopicDetail = () => {
                   <div class="mb-6">
                     <A
                       href={`/courses/${String(courseId())}`}
-                      class="text-mystic-500 hover:text-mystic-300"
+                      class="text-mystic-500 hover:text-mystic-300 whitespace-nowrap"
                     >
                       ← Back to Course
                     </A>
@@ -259,7 +259,7 @@ const TopicDetail = () => {
                   <Show when={course()}>
                     {(courseData) => (
                       <div class="mb-6">
-                        <h2 class="text-lg text-parchment-300">
+                        <h2 class="text-lg text-parchment-300 break-words">
                           {courseData().code}: {courseData().title}
                         </h2>
                       </div>
@@ -281,15 +281,15 @@ const TopicDetail = () => {
                           ? items[currentIndex + 1]
                           : null
                       return (
-                        <div class="mb-4 flex items-center justify-between gap-3">
-                          <div>
+                        <div class="mb-4 flex flex-wrap items-center justify-between gap-y-2 gap-x-4">
+                          <div class="min-w-[120px]">
                             <Show when={prev}>
                               {(p) => {
                                 const prevId = p().id
                                 return (
                                   <A
                                     href={`/courses/${String(courseId())}/topics/${String(prevId)}`}
-                                    class="text-mystic-500 hover:text-mystic-300"
+                                    class="text-mystic-500 hover:text-mystic-300 whitespace-nowrap"
                                   >
                                     ← Previous Topic
                                   </A>
@@ -297,14 +297,14 @@ const TopicDetail = () => {
                               }}
                             </Show>
                           </div>
-                          <div>
+                          <div class="min-w-[100px] text-right">
                             <Show when={next}>
                               {(n) => {
                                 const nextId = n().id
                                 return (
                                   <A
                                     href={`/courses/${String(courseId())}/topics/${String(nextId)}`}
-                                    class="text-mystic-500 hover:text-mystic-300"
+                                    class="text-mystic-500 hover:text-mystic-300 whitespace-nowrap"
                                   >
                                     Next Topic →
                                   </A>
@@ -345,9 +345,9 @@ const TopicDetail = () => {
                       <div class="lg:col-span-1">
                         {/* Topic Detail View */}
                         <div class="arcane-card">
-                          <div class="flex justify-between items-start mb-6">
-                            <div class="pr-2">
-                              <h1 class="text-3xl font-display text-parchment-100 mb-2">
+                          <div class="flex flex-col sm:flex-row justify-between items-start gap-4 mb-6">
+                            <div class="flex-1 min-w-0">
+                              <h1 class="text-3xl font-display text-parchment-100 mb-2 break-words">
                                 {topicData.title}
                               </h1>
                               <p class="text-parchment-300">
@@ -356,7 +356,11 @@ const TopicDetail = () => {
                               </p>
                             </div>
                             <RequireRole minRole="creator">
-                              <Button variant="outline" onClick={() => setIsEditing(true)}>
+                              <Button
+                                variant="outline"
+                                class="shrink-0 self-start sm:self-auto"
+                                onClick={() => setIsEditing(true)}
+                              >
                                 Edit
                               </Button>
                             </RequireRole>

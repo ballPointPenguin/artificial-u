@@ -456,15 +456,15 @@ const CourseDetail: Component = () => {
           >
             {(course) => (
               <div>
-                <div class="flex items-center justify-between gap-2 mb-4">
+                <div class="flex flex-wrap items-center justify-between gap-y-3 gap-x-4 mb-4">
                   <A
                     href="/courses"
-                    class="text-mystic-400 hover:text-mystic-300 transition-colors"
+                    class="text-mystic-400 hover:text-mystic-300 transition-colors whitespace-nowrap"
                   >
                     ← {t().courseDetail.backToCourses}
                   </A>
                   <Show when={!isEditing()}>
-                    <div class="flex gap-2">
+                    <div class="flex flex-wrap items-center gap-2 sm:justify-end">
                       <Show
                         when={auth.canModify(course().created_by) && course().status === 'hidden'}
                       >
@@ -641,13 +641,13 @@ const CourseDetail: Component = () => {
 
                   {/* Topics Section */}
                   <div class="mt-8">
-                    <div class="flex items-center justify-between mb-5">
-                      <div class="flex items-center gap-3">
+                    <div class="flex flex-wrap items-center justify-between gap-4 mb-5">
+                      <div class="flex flex-wrap items-center gap-3">
                         <h2 class="text-2xl font-display text-parchment-100">
                           {t().courseDetail.courseTopics}
                         </h2>
                         <Show when={topicJobTracker.hasActiveJobs()}>
-                          <div class="flex items-center gap-2 text-mystic-400">
+                          <div class="flex items-center gap-2 text-mystic-400 whitespace-nowrap">
                             <LoaderCircle class="h-4 w-4 animate-spin" />
                             <span class="text-sm font-serif">{t().common.generating}</span>
                           </div>
@@ -656,9 +656,9 @@ const CourseDetail: Component = () => {
                       <Button
                         variant="primary"
                         disabled={topicJobTracker.hasActiveJobs()}
-                        class={
+                        class={`shrink-0 ${
                           topicJobTracker.hasActiveJobs() ? 'opacity-50 cursor-not-allowed' : ''
-                        }
+                        }`}
                       >
                         <A
                           href={`/courses/${String(courseId)}/topics`}

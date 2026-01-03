@@ -470,11 +470,12 @@ export const LectureSection: Component<LectureSectionProps> = (props) => {
           <p class="text-parchment-400 font-serif mb-6">
             No lecture has been created for this topic yet.
           </p>
-          <div class="flex justify-center space-x-4">
+          <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
             <RequireRole minRole="creator">
               <Show when={props.onGenerateLectureText}>
                 <MagicButton
                   variant="primary"
+                  class="w-full sm:w-auto"
                   onClick={() => {
                     props.onGenerateLectureText?.()
                   }}
@@ -487,6 +488,7 @@ export const LectureSection: Component<LectureSectionProps> = (props) => {
               </Show>
               <MagicButton
                 variant="primary"
+                class="w-full sm:w-auto"
                 onClick={props.onGenerateLecture}
                 disabled={anyJobActive()}
               >

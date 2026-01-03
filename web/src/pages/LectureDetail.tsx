@@ -43,11 +43,13 @@ const LectureDetailView: Component<{
   return (
     <div class="arcane-card">
       <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between mb-6">
-        <div class="space-y-1">
-          <h1 class="text-3xl font-display text-parchment-100">{props.lecture.title}</h1>
+        <div class="space-y-1 flex-1 min-w-0">
+          <h1 class="text-3xl font-display text-parchment-100 break-words">
+            {props.lecture.title}
+          </h1>
           <p class="text-parchment-300">Revision {props.lecture.revision}</p>
         </div>
-        <div class="flex flex-wrap items-center gap-2 md:justify-end">
+        <div class="flex flex-wrap items-center gap-2 md:justify-end shrink-0">
           {/* Transcript button at top */}
           <Show when={props.lecture.transcript_url}>
             <a
@@ -401,18 +403,18 @@ const LectureDetail = () => {
               {(lectureData) => (
                 <div>
                   {/* Breadcrumb navigation */}
-                  <div class="mb-6 flex items-center justify-between text-sm">
-                    <div class="flex items-center space-x-4">
+                  <div class="mb-6 flex flex-wrap items-center justify-between gap-y-3 gap-x-4 text-sm">
+                    <div class="flex flex-wrap items-center gap-4">
                       <A
                         href={`/courses/${String(courseId())}`}
-                        class="text-mystic-500 hover:text-mystic-300"
+                        class="text-mystic-500 hover:text-mystic-300 whitespace-nowrap"
                       >
                         ← Back to Course
                       </A>
-                      <span class="text-parchment-600">•</span>
+                      <span class="text-parchment-600 hidden sm:inline">•</span>
                       <A
                         href={`/courses/${String(courseId())}/topics/${String(lectureData.topic_id)}`}
-                        class="text-mystic-500 hover:text-mystic-300"
+                        class="text-mystic-500 hover:text-mystic-300 whitespace-nowrap"
                       >
                         Back to Topic
                       </A>
@@ -433,7 +435,7 @@ const LectureDetail = () => {
                             ? items[currentIndex + 1]
                             : null
                         return (
-                          <div class="flex items-center gap-3">
+                          <div class="flex items-center gap-3 ml-auto sm:ml-0">
                             <Show when={prev}>
                               {(p) => (
                                 <A
@@ -464,7 +466,7 @@ const LectureDetail = () => {
                   <Show when={course()}>
                     {(courseData) => (
                       <div class="mb-6">
-                        <h2 class="text-lg text-parchment-300">
+                        <h2 class="text-lg text-parchment-300 break-words">
                           {courseData().code}: {courseData().title}
                         </h2>
                       </div>
@@ -474,7 +476,7 @@ const LectureDetail = () => {
                   <Show when={topic()}>
                     {(topicData) => (
                       <div class="mb-6">
-                        <h3 class="text-md text-parchment-400">
+                        <h3 class="text-md text-parchment-400 break-words">
                           Topic: Week {topicData().week} · Lecture {topicData().order} —{' '}
                           {topicData().title}
                         </h3>
