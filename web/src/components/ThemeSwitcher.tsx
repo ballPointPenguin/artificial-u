@@ -103,11 +103,15 @@ export function ThemeSwitcher() {
                           ? 'border-primary ring-2 ring-primary bg-primary/5 shadow-md' // Active state
                           : 'border-border hover:border-primary/60 bg-surface/60 hover:bg-surface opacity-80 hover:opacity-100' // Inactive state
                       }`}
-                    onClick={() => setTheme(option.value)}
+                    onClick={() => {
+                      setTheme(option.value)
+                      setIsOpen(false)
+                    }}
                     onKeyPress={(e) => {
                       if (e.key === 'Enter' || e.key === ' ') {
                         e.preventDefault()
                         setTheme(option.value)
+                        setIsOpen(false)
                       }
                     }}
                     tabindex="0"

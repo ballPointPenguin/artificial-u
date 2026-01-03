@@ -29,16 +29,22 @@ const FacultyCard = (props: { faculty: Faculty; isSelected: boolean; onClick: ()
         props.onClick()
       }}
       class={`
-        arcane-card p-6 text-center transition-all duration-300 cursor-pointer
-        min-w-[280px] max-w-xs
+        arcane-card p-2 text-center transition-all duration-300 cursor-pointer
+        shrink-0 snap-start min-w-[9rem] max-w-[12rem] md:min-w-[12rem] md:max-w-[16rem] h-20 flex items-center justify-center
         ${
           props.isSelected
             ? 'border-primary border-2 shadow-arcane bg-surface/80'
-            : 'border-border/30 hover:shadow-arcane hover:border-primary/50'
+            : 'border-border/30 hover:shadow-arcane hover:border-primary/50 bg-surface/20'
         }
       `}
     >
-      <h3 class="text-2xl font-semibold mb-2 text-parchment-100 transition-colors duration-300">
+      <h3
+        class={`
+        text-xs md:text-sm font-display tracking-wider leading-tight transition-colors duration-300
+        line-clamp-2 whitespace-normal w-full px-1 text-balance
+        ${props.isSelected ? 'text-primary' : 'text-parchment-200'}
+      `}
+      >
         {props.faculty.name}
       </h3>
     </button>
@@ -112,12 +118,12 @@ const AcademicsPage = () => {
               </div>
             }
           >
-            {/* Faculty cards menu */}
-            <div class="mb-8">
-              <h2 class="text-xl font-semibold mb-4 text-parchment-200">
+            {/* Faculty cards menu - Carousel */}
+            <div class="mb-10">
+              <h2 class="text-xs font-display uppercase tracking-[0.2em] mb-4 text-muted/80 px-1">
                 {t().academics.faculties}
               </h2>
-              <div class="flex flex-wrap justify-center gap-4">
+              <div class="flex overflow-x-auto gap-3 pb-6 -mx-4 px-4 snap-x snap-proximity no-scrollbar scroll-smooth">
                 <For each={faculties()?.items}>
                   {(faculty) => (
                     <FacultyCard
@@ -140,17 +146,16 @@ const AcademicsPage = () => {
               </A>
             </div>
 
-            {/* Selected faculty description */}
             <Show when={selectedFaculty()}>
               {(faculty) => (
                 <div class="mb-8">
                   <div class="arcane-card p-6">
-                    <h2 class="text-2xl font-semibold mb-4 text-parchment-100">{faculty().name}</h2>
+                    <h2 class="text-xl font-semibold mb-4 text-parchment-100">{faculty().name}</h2>
                     <Show
                       when={faculty().description}
                       fallback={<p class="text-parchment-300 italic">{t().common.noDescription}</p>}
                     >
-                      <p class="text-parchment-200 whitespace-pre-line text-lg">
+                      <p class="text-parchment-200 whitespace-pre-line text-base">
                         {faculty().description}
                       </p>
                     </Show>

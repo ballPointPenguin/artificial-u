@@ -360,6 +360,16 @@
   color: var(--color-on-primary);
 }
 
+@utility no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+
+  /* stylelint-disable-next-line nesting-selector-no-missing-scoping-root */
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
 /* Base Styles - Mostly fine, body bg uses new system */
 @layer base {
   html {
