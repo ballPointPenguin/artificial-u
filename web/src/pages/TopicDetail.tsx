@@ -9,10 +9,12 @@ import { LectureSection } from '../components/lectures/LectureSection.jsx'
 import { TopicContentRenderer } from '../components/topics/TopicContentRenderer.jsx'
 import { TopicForm } from '../components/topics/TopicForm.jsx'
 import { Alert, Button } from '../components/ui'
+import { useTranslations } from '../i18n/index.js'
 import { createJobTracker, getJobMessage } from '../utils/job-management.js'
 
 const TopicDetail = () => {
   const params = useParams()
+  const t = useTranslations()
 
   const [isEditing, setIsEditing] = createSignal(false)
   const [isSubmitting, setIsSubmitting] = createSignal(false)
@@ -229,16 +231,22 @@ const TopicDetail = () => {
 
   return (
     <div class="container mx-auto px-4 py-8">
-      <Show when={isValidIds()} fallback={<div class="text-parchment-100">Invalid Topic ID.</div>}>
+      <Show
+        when={isValidIds()}
+        fallback={<div class="text-parchment-100">{t().topicDetail.invalidTopicId}</div>}
+      >
         <Show
           when={!topic.loading}
-          fallback={<div class="text-center py-8 text-parchment-300">Loading topic...</div>}
+          fallback={
+            <div class="text-center py-8 text-parchment-300">{t().topicDetail.loadingTopic}</div>
+          }
         >
           <Show
             when={!topic.error}
             fallback={
               <div class="bg-red-900/20 border border-red-500 text-red-300 px-4 py-3 rounded">
-                Error: {topic.error instanceof Error ? topic.error.message : 'Failed to load topic'}
+                {t().common.error}:{' '}
+                {topic.error instanceof Error ? topic.error.message : t().topicDetail.loadingTopic}
               </div>
             }
           >
@@ -251,7 +259,7 @@ const TopicDetail = () => {
                       href={`/courses/${String(courseId())}`}
                       class="text-mystic-500 hover:text-mystic-300 whitespace-nowrap"
                     >
-                      ← Back to Course
+                      ← {t().courseDetail.backToCourse}
                     </A>
                   </div>
 
@@ -291,7 +299,7 @@ const TopicDetail = () => {
                                     href={`/courses/${String(courseId())}/topics/${String(prevId)}`}
                                     class="text-mystic-500 hover:text-mystic-300 whitespace-nowrap"
                                   >
-                                    ← Previous Topic
+                                    ← {t().topicDetail.previousTopic}
                                   </A>
                                 )
                               }}
@@ -306,7 +314,7 @@ const TopicDetail = () => {
                                     href={`/courses/${String(courseId())}/topics/${String(nextId)}`}
                                     class="text-mystic-500 hover:text-mystic-300 whitespace-nowrap"
                                   >
-                                    Next Topic →
+                                    {t().topicDetail.nextTopic} →
                                   </A>
                                 )
                               }}
@@ -351,8 +359,11 @@ const TopicDetail = () => {
                                 {topicData.title}
                               </h1>
                               <p class="text-parchment-300">
-                                Week {topicData.week}
-                                <Show when={topicData.order > 1}> • Topic {topicData.order}</Show>
+                                {t().courseDetail.week} {topicData.week}
+                                <Show when={topicData.order > 1}>
+                                  {' '}
+                                  • {t().courseDetail.topic} {topicData.order}
+                                </Show>
                               </p>
                             </div>
                             <RequireRole minRole="creator">
@@ -361,7 +372,7 @@ const TopicDetail = () => {
                                 class="shrink-0 self-start sm:self-auto"
                                 onClick={() => setIsEditing(true)}
                               >
-                                Edit
+                                {t().topicDetail.editTopic}
                               </Button>
                             </RequireRole>
                           </div>
@@ -376,7 +387,7 @@ const TopicDetail = () => {
                           <Show when={!topicData.content}>
                             <div class="border-t border-parchment-800/30 pt-6">
                               <p class="text-parchment-400 font-serif italic">
-                                No content defined for this topic.
+                                {t().topicDetail.noContent}
                               </p>
                             </div>
                           </Show>

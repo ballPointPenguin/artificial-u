@@ -18,6 +18,7 @@ import { useAuth } from '../auth/AuthProvider'
 import { RequireRole } from '../auth/RequireRole'
 import { LectureForm } from '../components/lectures/LectureForm.jsx'
 import { Alert, Button, ConfirmationModal, MagicButton, MetadataInfo } from '../components/ui'
+import { useTranslations } from '../i18n/index.js'
 import { useAudioPlayer } from '../utils/audio-player-context.jsx'
 import { getJobEventHub } from '../utils/job-events-hub.js'
 
@@ -39,6 +40,7 @@ const LectureDetailView: Component<{
 }> = (props) => {
   const auth = useAuth()
   const audioPlayer = useAudioPlayer()
+  const t = useTranslations()
 
   return (
     <div class="arcane-card">
@@ -47,7 +49,9 @@ const LectureDetailView: Component<{
           <h1 class="text-3xl font-display text-parchment-100 break-words">
             {props.lecture.title}
           </h1>
-          <p class="text-parchment-300">Revision {props.lecture.revision}</p>
+          <p class="text-parchment-300">
+            {t().lectureDetail.revision} {props.lecture.revision}
+          </p>
         </div>
         <div class="flex flex-wrap items-center gap-2 md:justify-end shrink-0">
           {/* Transcript button at top */}
@@ -60,8 +64,8 @@ const LectureDetailView: Component<{
             >
               <Button variant="secondary" size="sm" class="inline-flex items-center gap-2">
                 <FileText class="h-4 w-4" />
-                <span class="hidden sm:inline">View Transcript</span>
-                <span class="sm:hidden">Transcript</span>
+                <span class="hidden sm:inline">{t().lectureDetail.viewTranscript}</span>
+                <span class="sm:hidden">{t().lectureDetail.transcript}</span>
               </Button>
             </a>
           </Show>
@@ -89,7 +93,7 @@ const LectureDetailView: Component<{
               }}
             >
               <Headphones class="h-4 w-4" />
-              <span>Listen</span>
+              <span>{t().lectureDetail.listen}</span>
             </Button>
             <a
               href={props.lecture.audio_download_url || props.lecture.audio_url || undefined}
@@ -98,7 +102,7 @@ const LectureDetailView: Component<{
             >
               <Button variant="outline" size="sm" class="inline-flex items-center gap-2">
                 <Download class="h-4 w-4" />
-                <span>Download</span>
+                <span>{t().lectureDetail.download}</span>
               </Button>
             </a>
           </Show>
@@ -113,10 +117,10 @@ const LectureDetailView: Component<{
               disabled={props.isGeneratingAudio || props.isUploadingAudio}
             >
               {props.isGeneratingAudio
-                ? 'Generating Audio...'
+                ? t().lectureDetail.generatingAudio
                 : props.lecture.audio_url
-                  ? 'Regenerate Audio'
-                  : 'Generate Audio'}
+                  ? t().lectureDetail.regenerateAudio
+                  : t().lectureDetail.generateAudio}
             </MagicButton>
           </RequireRole>
           <RequireRole minRole="admin">
@@ -128,7 +132,11 @@ const LectureDetailView: Component<{
               }}
             >
               <Upload class="h-4 w-4" />
-              <span>{props.isUploadingAudio ? 'Uploading...' : 'Upload Audio'}</span>
+              <span>
+                {props.isUploadingAudio
+                  ? t().lectureDetail.uploading
+                  : t().lectureDetail.uploadAudio}
+              </span>
             </label>
             <input
               id="audio-file-upload"
@@ -148,7 +156,7 @@ const LectureDetailView: Component<{
           </RequireRole>
           <Show when={auth.canModify(props.lecture.created_by)}>
             <Button variant="outline" size="sm" class="whitespace-nowrap" onClick={props.onEdit}>
-              Edit
+              {t().common.edit}
             </Button>
             <Button
               variant="danger"
@@ -157,7 +165,7 @@ const LectureDetailView: Component<{
               onClick={props.onDelete}
               disabled={props.isDeleting}
             >
-              {props.isDeleting ? 'Deleting...' : 'Delete'}
+              {props.isDeleting ? t().common.deleting : t().common.delete}
             </Button>
           </Show>
         </div>
@@ -184,7 +192,7 @@ const LectureDetailView: Component<{
 
       <Show when={!props.lecture.content}>
         <div class="border-t border-parchment-800/30 pt-6">
-          <p class="text-parchment-400 font-serif italic">No content defined for this lecture.</p>
+          <p class="text-parchment-400 font-serif italic">{t().lectureDetail.noContent}</p>
         </div>
       </Show>
 
@@ -196,6 +204,7 @@ const LectureDetailView: Component<{
 const LectureDetail = () => {
   const params = useParams()
   const navigate = useNavigate()
+  const t = useTranslations()
 
   const [isEditing, setIsEditing] = createSignal(false)
   const [isSubmitting, setIsSubmitting] = createSignal(false)
@@ -409,14 +418,14 @@ const LectureDetail = () => {
                         href={`/courses/${String(courseId())}`}
                         class="text-mystic-500 hover:text-mystic-300 whitespace-nowrap"
                       >
-                        ← Back to Course
+                        ← {t().courseDetail.backToCourse}
                       </A>
                       <span class="text-parchment-600 hidden sm:inline">•</span>
                       <A
                         href={`/courses/${String(courseId())}/topics/${String(lectureData.topic_id)}`}
                         class="text-mystic-500 hover:text-mystic-300 whitespace-nowrap"
                       >
-                        Back to Topic
+                        {t().lectureDetail.backToTopic}
                       </A>
                     </div>
 
@@ -442,7 +451,7 @@ const LectureDetail = () => {
                                   href={`/courses/${String(courseId())}/topics/${String(p().id)}`}
                                   class="text-mystic-500 hover:text-mystic-300"
                                 >
-                                  ← Previous Topic
+                                  ← {t().topicDetail.previousTopic}
                                 </A>
                               )}
                             </Show>
@@ -452,7 +461,7 @@ const LectureDetail = () => {
                                   href={`/courses/${String(courseId())}/topics/${String(n().id)}`}
                                   class="text-mystic-500 hover:text-mystic-300"
                                 >
-                                  Next Topic →
+                                  {t().topicDetail.nextTopic} →
                                 </A>
                               )}
                             </Show>
@@ -477,8 +486,10 @@ const LectureDetail = () => {
                     {(topicData) => (
                       <div class="mb-6">
                         <h3 class="text-md text-parchment-400 break-words">
-                          Topic: Week {topicData().week} · Lecture {topicData().order} —{' '}
-                          {topicData().title}
+                          {t()
+                            .lectureDetail.topicContext.replace('{week}', String(topicData().week))
+                            .replace('{order}', String(topicData().order))
+                            .replace('{title}', topicData().title)}
                         </h3>
                       </div>
                     )}
@@ -505,13 +516,12 @@ const LectureDetail = () => {
                   </Show>
                   <Show when={audioTimeout()}>
                     <Alert variant="warning" class="mb-4">
-                      The audio generation request timed out. It may still complete in the
-                      background. Try refreshing in a bit.
+                      {t().lectureDetail.audioGenerationTimeout}
                     </Alert>
                   </Show>
                   <Show when={uploadSuccess()}>
                     <Alert variant="success" class="mb-4">
-                      Audio file uploaded successfully!
+                      {t().lectureDetail.audioUploadSuccess}
                     </Alert>
                   </Show>
 
@@ -555,14 +565,19 @@ const LectureDetail = () => {
                   {/* Delete Confirmation Modal */}
                   <ConfirmationModal
                     isOpen={showDeleteModal()}
-                    title="Delete Lecture"
+                    title={t().lectureDetail.deleteLecture}
                     message={
                       <div>
-                        <p>Are you sure you want to delete the lecture "{lectureData.title}"?</p>
-                        <p class="mt-2 text-sm text-muted">This action cannot be undone.</p>
+                        <p>
+                          {t().lectureDetail.confirmDeleteMessage.replace(
+                            '{title}',
+                            lectureData.title
+                          )}
+                        </p>
+                        <p class="mt-2 text-sm text-muted">{t().lectureDetail.confirmDeleteUndo}</p>
                       </div>
                     }
-                    confirmText="Delete"
+                    confirmText={t().lectureDetail.confirmDelete}
                     onConfirm={() => {
                       void handleDeleteLecture()
                     }}
