@@ -404,6 +404,24 @@ export const en = {
     currentTheme: 'Current theme',
   },
 
+  // Login page
+  login: {
+    redirecting: 'Redirecting to login…',
+    clickIfNotRedirected: 'Click here if not redirected',
+  },
+
+  // PWA (Progressive Web App)
+  pwa: {
+    updateAvailable: 'Update Available',
+    updateMessage: 'A new version of Artificial University is available. Reload to update.',
+    updateNow: 'Update Now',
+    later: 'Later',
+    installApp: 'Install App',
+    installMessage: 'Install Artificial University for quick access and offline use.',
+    install: 'Install',
+    notNow: 'Not Now',
+  },
+
   // Quickstart Wizard
   quickstart: {
     // Access control

@@ -406,7 +406,26 @@ export const es = {
     currentTheme: 'Tema actual',
   },
 
-  // Asistente de inicio rápido
+  // Login page
+  login: {
+    redirecting: 'Redirigiendo al inicio de sesión…',
+    clickIfNotRedirected: 'Haga clic aquí si no es redirigido',
+  },
+
+  // PWA (Progressive Web App)
+  pwa: {
+    updateAvailable: 'Actualización disponible',
+    updateMessage:
+      'Hay una nueva versión de Universidad Artificial disponible. Recarga para actualizar.',
+    updateNow: 'Actualizar ahora',
+    later: 'Más tarde',
+    installApp: 'Instalar aplicación',
+    installMessage: 'Instala Universidad Artificial para acceso rápido y uso sin conexión.',
+    install: 'Instalar',
+    notNow: 'Ahora no',
+  },
+
+  // Quickstart Wizard
   quickstart: {
     creatorAccessRequired: 'Se requiere acceso de creador',
     creatorPrivilegesNeeded: 'La función de inicio rápido requiere privilegios de creador.',

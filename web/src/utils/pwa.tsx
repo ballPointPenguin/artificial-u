@@ -2,6 +2,7 @@ import { useRegisterSW } from 'virtual:pwa-register/solid'
 import { createSignal, onMount, Show } from 'solid-js'
 import { Alert } from '../components/ui/Alert'
 import { Button } from '../components/ui/Button'
+import { useI18n } from '../i18n/index.js'
 
 // Type for the beforeinstallprompt event
 interface BeforeInstallPromptEvent extends Event {
@@ -10,6 +11,7 @@ interface BeforeInstallPromptEvent extends Event {
 }
 
 export function PWAUpdatePrompt() {
+  const { t } = useI18n()
   const {
     needRefresh: [needRefresh, setNeedRefresh],
     updateServiceWorker,
@@ -30,10 +32,8 @@ export function PWAUpdatePrompt() {
         <Alert variant="info">
           <div class="flex flex-col gap-3">
             <div>
-              <h3 class="font-semibold text-lg">Update Available</h3>
-              <p class="text-sm opacity-90 mt-1">
-                A new version of Artificial University is available. Reload to update.
-              </p>
+              <h3 class="font-semibold text-lg">{t().pwa.updateAvailable}</h3>
+              <p class="text-sm opacity-90 mt-1">{t().pwa.updateMessage}</p>
             </div>
             <div class="flex gap-2">
               <Button
@@ -43,10 +43,10 @@ export function PWAUpdatePrompt() {
                 size="sm"
                 variant="primary"
               >
-                Update Now
+                {t().pwa.updateNow}
               </Button>
               <Button onClick={() => setNeedRefresh(false)} size="sm" variant="ghost">
-                Later
+                {t().pwa.later}
               </Button>
             </div>
           </div>
@@ -64,6 +64,7 @@ const isMobileDevice = () => {
 }
 
 export function InstallPWAPrompt() {
+  const { t } = useI18n()
   const [deferredPrompt, setDeferredPrompt] = createSignal<BeforeInstallPromptEvent | null>(null)
   const [isVisible, setIsVisible] = createSignal(false)
 
@@ -111,17 +112,15 @@ export function InstallPWAPrompt() {
         <Alert variant="success">
           <div class="flex flex-col gap-3">
             <div>
-              <h3 class="font-semibold text-lg">Install App</h3>
-              <p class="text-sm opacity-90 mt-1">
-                Install Artificial University for quick access and offline use.
-              </p>
+              <h3 class="font-semibold text-lg">{t().pwa.installApp}</h3>
+              <p class="text-sm opacity-90 mt-1">{t().pwa.installMessage}</p>
             </div>
             <div class="flex gap-2">
               <Button onClick={handleInstall} size="sm" variant="primary">
-                Install
+                {t().pwa.install}
               </Button>
               <Button onClick={handleDismiss} size="sm" variant="ghost">
-                Not Now
+                {t().pwa.notNow}
               </Button>
             </div>
           </div>

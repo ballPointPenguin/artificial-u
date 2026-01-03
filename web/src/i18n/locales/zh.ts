@@ -404,6 +404,24 @@ export const zh = {
     currentTheme: '当前主题',
   },
 
+  // Login page
+  login: {
+    redirecting: '正在重定向到登录页面…',
+    clickIfNotRedirected: '如果没有重定向，请点击这里',
+  },
+
+  // PWA (Progressive Web App)
+  pwa: {
+    updateAvailable: '有可用更新',
+    updateMessage: '人工智能大学 有新版本可用。请重新加载以更新。',
+    updateNow: '立即更新',
+    later: '稍后',
+    installApp: '安装应用',
+    installMessage: '安装 人工智能大学 以便快速访问和离线使用。',
+    install: '安装',
+    notNow: '暂不',
+  },
+
   // Quickstart Wizard
   quickstart: {
     creatorAccessRequired: '需要创作者权限',
