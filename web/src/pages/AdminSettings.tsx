@@ -1,11 +1,15 @@
-import { createResource, createSignal, Show } from 'solid-js'
+import { createResource, createSignal, For, Show } from 'solid-js'
 import { preferenceService } from '../api/services/preference-service'
-import { Button, Card, FormField, Select, type SelectOption } from '../components/ui'
+import { Button, Card, FormField, Input } from '../components/ui'
 
-const MODEL_OPTIONS: SelectOption[] = [
-  { value: 'claude-opus-4-5', label: 'Claude Opus 4.5 (Highest Quality)' },
-  { value: 'claude-sonnet-4-5', label: 'Claude Sonnet 4.5 (Balanced)' },
-  { value: 'claude-haiku-4-5', label: 'Claude Haiku 4.5 (Fastest)' },
+/** Well-known model identifiers shown as quick-pick suggestions. */
+const SUGGESTED_MODELS = [
+  'claude-opus-4-6',
+  'claude-opus-4-5',
+  'claude-sonnet-4-5',
+  'claude-haiku-4-5',
+  'gpt-5-nano',
+  'gemini-3-flash-preview',
 ]
 
 const LECTURE_GENERATION_MODEL_SCOPE = 'LECTURE_GENERATION_MODEL'
@@ -29,18 +33,16 @@ export default function AdminSettings() {
         setSelectedModel(pref.value)
         return { model: pref.value, source: 'preference' as const }
       } catch {
-        // Default to first option if nothing is set
-        const defaultValue = String(MODEL_OPTIONS[0].value)
-        setSelectedModel(defaultValue)
-        return { model: defaultValue, source: 'environment' as const }
+        setSelectedModel('')
+        return { model: '', source: 'environment' as const }
       }
     }
   })
 
   const handleSave = async () => {
-    const model = selectedModel()
+    const model = selectedModel().trim()
     if (!model) {
-      setErrorMessage('Please select a model')
+      setErrorMessage('Please enter a model name')
       setTimeout(() => setErrorMessage(null), 3000)
       return
     }
@@ -51,7 +53,7 @@ export default function AdminSettings() {
 
     try {
       await preferenceService.setGlobal(LECTURE_GENERATION_MODEL_SCOPE, model)
-      setSuccessMessage('Lecture generation model updated successfully!')
+      setSuccessMessage(`Lecture generation model updated to "${model}"`)
       setTimeout(() => setSuccessMessage(null), 3000)
       void refetch()
     } catch (error) {
@@ -62,19 +64,46 @@ export default function AdminSettings() {
     }
   }
 
+  const handleClear = async () => {
+    setIsSaving(true)
+    setErrorMessage(null)
+    setSuccessMessage(null)
+
+    try {
+      await preferenceService.deleteGlobal(LECTURE_GENERATION_MODEL_SCOPE)
+      setSelectedModel('')
+      setSuccessMessage('Preference cleared — will use environment default')
+      setTimeout(() => setSuccessMessage(null), 3000)
+      void refetch()
+    } catch {
+      // 404 is fine — means there was no preference to delete
+      setSelectedModel('')
+      setSuccessMessage('Preference cleared — will use environment default')
+      setTimeout(() => setSuccessMessage(null), 3000)
+      void refetch()
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
   return (
     <div class="container mx-auto max-w-4xl px-4 py-8">
-      <h1 class="mb-6 text-3xl font-bold">Admin Settings</h1>
+      <div class="mb-6 flex items-center justify-between">
+        <h1 class="text-3xl font-bold">Admin Settings</h1>
+        <a href="/admin" class="text-sm text-accent hover:underline">
+          &larr; Back to Admin Dashboard
+        </a>
+      </div>
 
       {/* Success/Error Messages */}
       <Show when={successMessage()}>
-        <div class="mb-4 rounded-md bg-green-100 p-4 text-green-800 dark:bg-green-900 dark:text-green-200">
+        <div class="mb-4 rounded-md border border-success-border bg-success-bg p-4 text-success">
           {successMessage()}
         </div>
       </Show>
 
       <Show when={errorMessage()}>
-        <div class="mb-4 rounded-md bg-red-100 p-4 text-red-800 dark:bg-red-900 dark:text-red-200">
+        <div class="mb-4 rounded-md border border-danger-border bg-danger-bg p-4 text-danger">
           {errorMessage()}
         </div>
       </Show>
@@ -84,20 +113,23 @@ export default function AdminSettings() {
         <div class="space-y-4">
           <div>
             <h2 class="mb-2 text-2xl font-semibold">Lecture Generation Model</h2>
-            <p class="text-muted-foreground text-sm">
-              Select the AI model to use for generating lecture content. This setting applies
-              globally to all lecture generation requests.
+            <p class="text-muted text-sm">
+              Set the AI model used for generating lecture content. This overrides the environment
+              default for all lecture generation requests. You can type any valid model identifier.
             </p>
           </div>
 
           <Show
             when={!currentModelResource.loading}
-            fallback={<div class="text-muted-foreground">Loading current settings...</div>}
+            fallback={<div class="text-muted">Loading current settings...</div>}
           >
             <Show when={currentModelResource()}>
               {(resource) => (
-                <div class="mb-4 rounded-md bg-blue-50 p-3 text-sm dark:bg-blue-900/20">
-                  <strong>Current model:</strong> {resource().model}
+                <div class="mb-4 rounded-md border border-info-border bg-info-bg p-3 text-sm text-info">
+                  <strong>Current model:</strong>{' '}
+                  <code class="rounded bg-surface px-1.5 py-0.5 font-mono text-xs">
+                    {resource().model || '(none)'}
+                  </code>
                   <br />
                   <strong>Source:</strong>{' '}
                   {resource().source === 'preference' ? 'Custom preference' : 'Environment default'}
@@ -106,33 +138,44 @@ export default function AdminSettings() {
             </Show>
           </Show>
 
-          <FormField label="Model Selection" name="model-select">
-            <Select
-              name="model-select"
+          <FormField label="Model Name" name="model-input">
+            <Input
+              name="model-input"
               value={selectedModel()}
-              onChange={(value) => setSelectedModel(value ? String(value) : '')}
-              options={MODEL_OPTIONS}
+              onChange={(value) => setSelectedModel(value)}
+              placeholder="e.g. claude-opus-4-6"
               disabled={isSaving()}
-              placeholder="Select a model..."
+              type="text"
             />
           </FormField>
 
-          <div class="rounded-md bg-amber-50 p-4 text-sm dark:bg-amber-900/20">
-            <p class="font-semibold">Model Comparison:</p>
-            <ul class="ml-4 mt-2 list-disc space-y-1 text-xs">
-              <li>
-                <strong>Opus 4.5:</strong> Highest quality, slowest
-              </li>
-              <li>
-                <strong>Sonnet 4.5:</strong> Balanced quality and speed
-              </li>
-              <li>
-                <strong>Haiku 4.5:</strong> Fastest generation, fair quality
-              </li>
-            </ul>
+          {/* Quick-pick suggestions */}
+          <div>
+            <p class="text-muted mb-2 text-xs font-medium">Quick suggestions:</p>
+            <div class="flex flex-wrap gap-2">
+              <For each={SUGGESTED_MODELS}>
+                {(model) => (
+                  <button
+                    type="button"
+                    class={`rounded-md border px-3 py-1 text-xs font-mono transition-colors ${
+                      selectedModel() === model
+                        ? 'border-accent bg-accent/15 text-accent'
+                        : 'border-border bg-surface hover:bg-muted/30'
+                    }`}
+                    onClick={() => setSelectedModel(model)}
+                    disabled={isSaving()}
+                  >
+                    {model}
+                  </button>
+                )}
+              </For>
+            </div>
           </div>
 
           <div class="flex justify-end gap-2">
+            <Button onClick={() => void handleClear()} disabled={isSaving()} variant="outline">
+              Reset to Default
+            </Button>
             <Button onClick={() => void handleSave()} disabled={isSaving()} variant="primary">
               {isSaving() ? 'Saving...' : 'Save Settings'}
             </Button>
@@ -144,10 +187,10 @@ export default function AdminSettings() {
       <Card class="opacity-50">
         <div class="space-y-2">
           <h2 class="text-xl font-semibold">Future Settings</h2>
-          <p class="text-muted-foreground text-sm">
+          <p class="text-muted text-sm">
             Additional settings will be added here in future updates:
           </p>
-          <ul class="text-muted-foreground ml-6 list-disc text-sm">
+          <ul class="text-muted ml-6 list-disc text-sm">
             <li>Summary generation model selection</li>
             <li>Topic generation model selection</li>
             <li>Default voice selection preferences</li>

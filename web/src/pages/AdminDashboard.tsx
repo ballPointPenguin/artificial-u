@@ -153,14 +153,22 @@ export default function AdminDashboard() {
         <h1 class="text-3xl font-display mb-6 text-parchment-100 text-shadow-golden">
           Admin Dashboard
         </h1>
-        <Button
-          variant="secondary"
-          onClick={() => {
-            void refetch()
-          }}
-        >
-          Refresh
-        </Button>
+        <div class="flex items-center gap-3">
+          <a
+            href="/admin/settings"
+            class="rounded-md border border-border bg-muted/30 px-4 py-2 text-sm font-medium transition-colors hover:bg-muted/60"
+          >
+            Settings
+          </a>
+          <Button
+            variant="secondary"
+            onClick={() => {
+              void refetch()
+            }}
+          >
+            Refresh
+          </Button>
+        </div>
       </div>
 
       {/* Success/Error Messages */}
