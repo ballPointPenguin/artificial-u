@@ -12,7 +12,7 @@ annotated-doc==0.0.4
     # via fastapi
 annotated-types==0.7.0
     # via pydantic
-anthropic==0.75.0
+anthropic==0.78.0
     # via artificial_u (pyproject.toml)
 anyio==4.11.0
     # via
@@ -67,6 +67,8 @@ google-genai==1.52.0
     # via artificial_u (pyproject.toml)
 googleapis-common-protos==1.72.0
     # via google-api-core
+greenlet==3.3.1
+    # via sqlalchemy
 gunicorn==23.0.0
     # via artificial_u (pyproject.toml)
 h11==0.16.0
