@@ -117,8 +117,7 @@ class JobRepository(BaseRepository):
         Returns the reserved JobModel or None if none available.
         """
         with self.get_session() as session:
-            sql = text(
-                """
+            sql = text("""
                 WITH cte AS (
                   SELECT id
                   FROM jobs
@@ -132,8 +131,7 @@ class JobRepository(BaseRepository):
                 FROM cte
                 WHERE j.id = cte.id
                 RETURNING j.id;
-                """
-            )
+                """)
             result = session.execute(sql).first()
             session.commit()
             if not result:

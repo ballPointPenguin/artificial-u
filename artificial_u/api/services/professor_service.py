@@ -282,7 +282,7 @@ class ProfessorApiService(BaseApiService[CoreProfessor, ProfessorResponse, Profe
             verify_asset_ownership(student_id, professor_model.created_by, role, "professor")
 
             return self.core_service.delete_professor(professor_id)
-        except (ProfessorNotFoundError, DatabaseError):
+        except ProfessorNotFoundError, DatabaseError:
             return False
 
     def get_professor_courses(self, professor_id: int) -> Optional[ProfessorCoursesResponse]:

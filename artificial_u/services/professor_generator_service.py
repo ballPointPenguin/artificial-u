@@ -404,7 +404,7 @@ class ProfessorGeneratorService:
         if profile.get("age"):
             try:
                 profile["age"] = int(profile["age"])
-            except (ValueError, TypeError):
+            except ValueError, TypeError:
                 self.logger.warning(
                     f"Could not convert generated age '{profile.get('age')}' to integer. "
                     f"Setting age to None."

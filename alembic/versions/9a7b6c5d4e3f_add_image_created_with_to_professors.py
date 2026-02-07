@@ -22,13 +22,11 @@ def upgrade() -> None:
     op.add_column("professors", sa.Column("image_created_with", sa.String(), nullable=True))
 
     # Data migration: Update existing professors with images to set the legacy model
-    op.execute(
-        """
+    op.execute("""
         UPDATE professors
         SET image_created_with = 'imagen-4.0-generate-001'
         WHERE image_url IS NOT NULL
-        """
-    )
+        """)
 
 
 def downgrade() -> None:

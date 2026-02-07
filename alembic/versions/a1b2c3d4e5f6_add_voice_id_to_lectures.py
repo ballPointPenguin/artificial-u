@@ -35,9 +35,7 @@ def upgrade() -> None:
     # Backfill voice_id for existing lectures based on their course's professor's voice
     # This SQL query updates lectures to use the voice_id from the professor assigned to the course
     connection = op.get_bind()
-    connection.execute(
-        text(
-            """
+    connection.execute(text("""
             UPDATE lectures
             SET voice_id = professors.voice_id
             FROM courses
@@ -45,9 +43,7 @@ def upgrade() -> None:
             WHERE lectures.course_id = courses.id
               AND professors.voice_id IS NOT NULL
               AND lectures.audio_url IS NOT NULL
-        """
-        )
-    )
+        """))
 
 
 def downgrade() -> None:

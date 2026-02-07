@@ -43,10 +43,8 @@ if __name__ == "__main__":
         print("Error: Missing required environment variables:")
         for var in missing_vars:
             print(f"  - {var}")
-        print(
-            "\
-Please set these in a .env file or environment variables before running."
-        )
+        print("\
+Please set these in a .env file or environment variables before running.")
         print("You can copy .env.example to .env and fill in the values.")
         sys.exit(1)
 
