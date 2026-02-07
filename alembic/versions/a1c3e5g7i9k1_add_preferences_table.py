@@ -33,22 +33,18 @@ def upgrade() -> None:
     )
 
     # Create index for global preferences - unique scope when is_global is true
-    op.execute(
-        """
+    op.execute("""
         CREATE UNIQUE INDEX idx_preferences_global_scope
         ON preferences (scope)
         WHERE is_global = true
-        """
-    )
+        """)
 
     # Create index for user preferences - unique student_id + scope when is_global is false
-    op.execute(
-        """
+    op.execute("""
         CREATE UNIQUE INDEX idx_preferences_student_scope
         ON preferences (student_id, scope)
         WHERE is_global = false
-        """
-    )
+        """)
 
     # Create index for efficient lookup of global preferences
     op.create_index("idx_preferences_is_global", "preferences", ["is_global"])

@@ -30,8 +30,7 @@ def create_fts_index():
     engine = create_engine(db_url)
 
     # SQL to create the full-text search index
-    sql = text(
-        """
+    sql = text("""
         DROP INDEX IF EXISTS idx_voices_text_search;
         CREATE INDEX idx_voices_text_search ON voices USING GIN (
             to_tsvector(
@@ -39,8 +38,7 @@ def create_fts_index():
                 COALESCE(name, '') || ' ' || COALESCE(description, '')
             )
         );
-        """
-    )
+        """)
     try:
         # Execute the SQL
         with engine.connect() as conn:
