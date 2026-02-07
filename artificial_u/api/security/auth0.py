@@ -127,7 +127,7 @@ def optional_auth(
             issuer=f"https://{settings.AUTH0_DOMAIN}/",
         )
         return payload  # contains sub, scope, etc.
-    except (ExpiredSignatureError, JWTClaimsError, JWTError):
+    except ExpiredSignatureError, JWTClaimsError, JWTError:
         # Silently fail for optional auth - return None on any token error
         return None
 
