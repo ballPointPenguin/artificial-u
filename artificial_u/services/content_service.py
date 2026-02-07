@@ -1,5 +1,6 @@
 import json
 import logging
+import re
 from datetime import datetime
 from typing import Optional
 
@@ -286,19 +287,45 @@ class ContentService:
         except Exception as e:
             self.logger.error(f"Failed to save content log {filename}: {str(e)}")
 
+    def _is_prefill_supported(self, model: str) -> bool:
+        """Check if a Claude model supports assistant message prefill.
+
+        Claude 4.6+ models return a 400 error when prefill is used.
+        This detects the model version from the name pattern:
+        claude-{tier}-{major}-{minor}[-date]
+        """
+        # Match new-style model names: claude-{tier}-{major}-{minor}...
+        match = re.match(r"claude-\w+-(\d+)-(\d+)", model)
+        if match:
+            major = int(match.group(1))
+            minor_or_date = match.group(2)
+            # If the second number is a date (8+ digits like 20250514), minor is 0
+            if len(minor_or_date) >= 8:
+                minor = 0
+            else:
+                minor = int(minor_or_date)
+            return (major, minor) < (4, 6)
+        # Old-style models (claude-3-*, etc.) and unrecognized patterns: prefill is supported
+        return True
+
     async def _generate_anthropic(
         self, prompt, model, system_prompt, temperature, max_tokens, prefill, **kwargs
     ):
         self.logger.info(f"Generating text with Anthropic model: {model}")
-        try:
-            messages = []
-            if system_prompt:
-                pass  # Anthropic uses 'system' parameter outside messages
-            messages.append({"role": "user", "content": prompt})
 
-            # Add prefill assistant message if provided
-            if prefill:
+        # Check if model supports prefill (Claude 4.6+ does not)
+        use_prefill = bool(prefill) and self._is_prefill_supported(model)
+        if prefill and not use_prefill:
+            self.logger.info(
+                f"Prefill not supported for model {model} (Claude 4.6+), skipping."
+            )
+
+        try:
+            messages = [{"role": "user", "content": prompt}]
+
+            if use_prefill:
                 messages.append({"role": "assistant", "content": prefill})
+
             response = await anthropic_client.messages.create(
                 model=model,
                 max_tokens=max_tokens if max_tokens is not None else DEFAULT_MAX_TOKENS,
@@ -306,14 +333,33 @@ class ContentService:
                 system=system_prompt,
                 temperature=temperature if temperature is not None else DEFAULT_TEMPERATURE,
             )
-            # Get the response and combine with prefill if it was used
-            response_text = response.content[0].text
-            # If prefill was used, combine it with the response for the full output
-            if prefill:
-                response_text = prefill + response_text
         except anthropic.APIError as e:
             # Let the retry logic handle this
             raise e
+
+        # Handle refusal stop reason (Claude 4.5+)
+        if response.stop_reason == "refusal":
+            self.logger.error(f"Model {model} refused to generate content")
+            raise ContentGenerationError(
+                f"Model {model} refused to generate the requested content"
+            )
+
+        # Warn about context window exceeded (truncated output)
+        if response.stop_reason == "model_context_window_exceeded":
+            self.logger.warning(
+                f"Model {model} response was truncated due to context window limit"
+            )
+
+        # Extract text from response, skipping any thinking blocks
+        response_text = ""
+        for block in response.content:
+            if block.type == "text":
+                response_text = block.text
+                break
+
+        # If prefill was used, combine it with the response for the full output
+        if use_prefill:
+            response_text = prefill + response_text
 
         self.logger.info(f"Received response from Anthropic: {response_text[:500]}")
 
