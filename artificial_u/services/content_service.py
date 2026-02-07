@@ -316,9 +316,7 @@ class ContentService:
         # Check if model supports prefill (Claude 4.6+ does not)
         use_prefill = bool(prefill) and self._is_prefill_supported(model)
         if prefill and not use_prefill:
-            self.logger.info(
-                f"Prefill not supported for model {model} (Claude 4.6+), skipping."
-            )
+            self.logger.info(f"Prefill not supported for model {model} (Claude 4.6+), skipping.")
 
         try:
             messages = [{"role": "user", "content": prompt}]
@@ -340,15 +338,11 @@ class ContentService:
         # Handle refusal stop reason (Claude 4.5+)
         if response.stop_reason == "refusal":
             self.logger.error(f"Model {model} refused to generate content")
-            raise ContentGenerationError(
-                f"Model {model} refused to generate the requested content"
-            )
+            raise ContentGenerationError(f"Model {model} refused to generate the requested content")
 
         # Warn about context window exceeded (truncated output)
         if response.stop_reason == "model_context_window_exceeded":
-            self.logger.warning(
-                f"Model {model} response was truncated due to context window limit"
-            )
+            self.logger.warning(f"Model {model} response was truncated due to context window limit")
 
         # Extract text from response, skipping any thinking blocks
         response_text = ""
