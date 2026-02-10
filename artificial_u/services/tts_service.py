@@ -6,6 +6,9 @@ This service handles converting text to speech using ElevenLabs.
 
 import logging
 import os
+import shutil
+import subprocess
+import tempfile
 from typing import Any, Dict, Optional, Union
 
 from artificial_u.audio.speech_processor import SpeechProcessor
@@ -131,7 +134,101 @@ class TTSService:
             raise AudioProcessingError("No audio segments were generated")
 
         audio = b"".join(audio_segments)
+
+        # Fix MP3 headers if multiple segments were concatenated
+        # Raw byte concatenation creates invalid MP3 headers that cause
+        # incorrect duration/seeking in players
+        if len(audio_segments) > 1:
+            audio = self._fix_mp3_headers(audio)
+
         return audio
+
+    def _fix_mp3_headers(self, audio_data: bytes) -> bytes:
+        """
+        Fix MP3 headers after concatenating multiple audio segments.
+
+        When MP3 files are concatenated by joining bytes directly, the resulting
+        file has invalid headers - the first segment's duration metadata is used
+        for the entire file, causing players to show incorrect duration and
+        preventing seeking past the first segment's length.
+
+        This uses ffmpeg to re-mux the audio stream, which fixes the headers
+        without re-encoding the audio data.
+
+        Args:
+            audio_data: Concatenated MP3 audio bytes with potentially invalid headers
+
+        Returns:
+            MP3 audio bytes with corrected headers
+        """
+        # Check if ffmpeg is available
+        ffmpeg_path = shutil.which("ffmpeg")
+        if not ffmpeg_path:
+            self.logger.warning(
+                "ffmpeg not found - skipping MP3 header fix. "
+                "Audio may have incorrect duration metadata."
+            )
+            return audio_data
+
+        temp_dir = None
+        try:
+            # Create temp files for ffmpeg processing
+            temp_dir = tempfile.mkdtemp(prefix="tts_mp3_fix_")
+            input_path = os.path.join(temp_dir, "input.mp3")
+            output_path = os.path.join(temp_dir, "output.mp3")
+
+            # Write input file
+            with open(input_path, "wb") as f:
+                f.write(audio_data)
+
+            # Run ffmpeg to fix headers
+            # -c:a copy: copy audio stream without re-encoding
+            # -write_xing 0: don't write Xing/Info header (avoids duration issues)
+            cmd = [
+                ffmpeg_path,
+                "-y",  # Overwrite output
+                "-i",
+                input_path,
+                "-c:a",
+                "copy",
+                "-write_xing",
+                "0",
+                output_path,
+            ]
+
+            result = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                timeout=60,  # 1 minute timeout should be plenty
+            )
+
+            if result.returncode != 0:
+                self.logger.warning(
+                    f"ffmpeg header fix failed (exit {result.returncode}): {result.stderr}"
+                )
+                return audio_data
+
+            # Read fixed output
+            with open(output_path, "rb") as f:
+                fixed_audio = f.read()
+
+            self.logger.info(f"Fixed MP3 headers: {len(audio_data)} -> {len(fixed_audio)} bytes")
+            return fixed_audio
+
+        except subprocess.TimeoutExpired:
+            self.logger.warning("ffmpeg header fix timed out")
+            return audio_data
+        except Exception as e:
+            self.logger.warning(f"Error fixing MP3 headers: {e}")
+            return audio_data
+        finally:
+            # Clean up temp files
+            if temp_dir and os.path.exists(temp_dir):
+                try:
+                    shutil.rmtree(temp_dir)
+                except Exception as e:
+                    self.logger.debug(f"Error cleaning up temp dir: {e}")
 
     def generate_lecture_audio(
         self,

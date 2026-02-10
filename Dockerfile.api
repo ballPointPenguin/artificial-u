@@ -5,10 +5,11 @@ ENV PYTHONUNBUFFERED=1 \
 
 WORKDIR /app
 
-# System deps (psycopg, build tools as needed)
+# System deps (psycopg, build tools, ffmpeg for MP3 processing)
 RUN apt-get update -y && apt-get install -y --no-install-recommends \
     build-essential \
     curl \
+    ffmpeg \
   && rm -rf /var/lib/apt/lists/*
 
 # Copy only requirements first for better caching
