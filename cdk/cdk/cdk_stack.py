@@ -261,7 +261,9 @@ class CdkStack(Stack):
             },
             public_load_balancer=True,  # Must be public for CloudFront to reach it
             listener_port=80,
-            health_check_grace_period=cdk.Duration.seconds(300),
+            # TEMPORARY: Extended for ID3 backfill (~716 files, ~15 min)
+            # Revert to 300 after backfill completes
+            health_check_grace_period=cdk.Duration.seconds(1200),
         )
 
         # 7. Configure Health Check for the API service
