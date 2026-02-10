@@ -38,7 +38,7 @@ fi
 if [ "${RUN_BACKFILL_ID3}" = "1" ]; then
   if [ -n "$DATABASE_URL" ]; then
     echo "[entrypoint] RUN_BACKFILL_ID3=1 detected; running audio ID3 backfill..."
-    python scripts/backfill_audio_id3_tags.py || echo "[entrypoint] ID3 backfill failed; continuing"
+    python scripts/backfill_audio_id3_tags.py --fix-headers || echo "[entrypoint] ID3 backfill failed; continuing"
   else
     echo "[entrypoint] DATABASE_URL not set; skipping ID3 backfill"
   fi

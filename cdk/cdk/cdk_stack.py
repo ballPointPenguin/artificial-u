@@ -212,6 +212,7 @@ class CdkStack(Stack):
         # Environment variables for the API container
         app_environment = {
             "AUTH0_ALG": "RS256",
+            "CORS_ORIGINS": f"https://{domain_name},https://{site_domain}",
             "COURSE_GENERATION_MODEL": "gpt-5-nano",
             "DEPARTMENT_GENERATION_MODEL": "gpt-5-nano",
             "ENV": "production",
@@ -223,16 +224,16 @@ class CdkStack(Stack):
             "LECTURE_SUMMARY_MODEL": "gpt-5-nano",
             "LOG_LEVEL": "INFO",
             "PROFESSOR_GENERATION_MODEL": "gpt-5-nano",
+            "RUN_BACKFILL_ID3": "1",  # TEMPORARY - comment out when not using it
+            "STORAGE_AUDIO_BUCKET": audio_bucket.bucket_name,
+            "STORAGE_CONTENT_LOGS_BUCKET": content_logs_bucket.bucket_name,
+            "STORAGE_EXPORTS_BUCKET": exports_bucket.bucket_name,
+            "STORAGE_IMAGES_BUCKET": images_bucket.bucket_name,
+            "STORAGE_LECTURES_BUCKET": lectures_bucket.bucket_name,
+            "STORAGE_REGION": self.region,
             "STORAGE_TYPE": "s3",
             "TOPICS_GENERATION_MODEL": "gemini-3-flash-preview",
             "TTS_VOICE_MODEL": "eleven_flash_v2_5",
-            "STORAGE_AUDIO_BUCKET": audio_bucket.bucket_name,
-            "STORAGE_IMAGES_BUCKET": images_bucket.bucket_name,
-            "STORAGE_LECTURES_BUCKET": lectures_bucket.bucket_name,
-            "STORAGE_EXPORTS_BUCKET": exports_bucket.bucket_name,
-            "STORAGE_CONTENT_LOGS_BUCKET": content_logs_bucket.bucket_name,
-            "STORAGE_REGION": self.region,
-            "CORS_ORIGINS": f"https://{domain_name},https://{site_domain}",
             # Database connection pool settings (conservative for db.t4g.small ~110 max_connections)
             # These ensure the app uses a shared connection pool and doesn't exhaust RDS connections
             "DB_POOL_SIZE": "5",

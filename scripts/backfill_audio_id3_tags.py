@@ -7,7 +7,10 @@ import argparse
 import asyncio
 import logging
 import os
+import shutil
+import subprocess
 import sys
+import tempfile
 from pathlib import Path
 from typing import Dict, List
 
@@ -22,6 +25,76 @@ from artificial_u.models.repositories.factory import RepositoryFactory  # noqa: 
 from artificial_u.services.storage_service import StorageService  # noqa: E402
 
 DEFAULT_BATCH_SIZE = 10
+
+
+def fix_mp3_headers(audio_data: bytes, logger: logging.Logger) -> bytes:
+    """
+    Fix MP3 headers for files created by concatenating multiple audio segments.
+
+    When MP3 files are concatenated by joining bytes directly, the resulting
+    file has invalid headers causing incorrect duration/seeking in players.
+    Uses ffmpeg to re-mux the audio stream, fixing the headers without re-encoding.
+
+    Args:
+        audio_data: MP3 audio bytes with potentially invalid headers
+        logger: Logger instance
+
+    Returns:
+        MP3 audio bytes with corrected headers
+    """
+    ffmpeg_path = shutil.which("ffmpeg")
+    if not ffmpeg_path:
+        logger.warning(
+            "ffmpeg not found - skipping MP3 header fix. "
+            "Audio may have incorrect duration metadata."
+        )
+        return audio_data
+
+    temp_dir = None
+    try:
+        temp_dir = tempfile.mkdtemp(prefix="backfill_mp3_fix_")
+        input_path = os.path.join(temp_dir, "input.mp3")
+        output_path = os.path.join(temp_dir, "output.mp3")
+
+        with open(input_path, "wb") as f:
+            f.write(audio_data)
+
+        cmd = [
+            ffmpeg_path,
+            "-y",
+            "-i",
+            input_path,
+            "-c:a",
+            "copy",
+            "-write_xing",
+            "0",
+            output_path,
+        ]
+
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
+
+        if result.returncode != 0:
+            logger.warning(f"ffmpeg header fix failed: {result.stderr}")
+            return audio_data
+
+        with open(output_path, "rb") as f:
+            fixed_audio = f.read()
+
+        logger.debug(f"Fixed MP3 headers: {len(audio_data)} -> {len(fixed_audio)} bytes")
+        return fixed_audio
+
+    except subprocess.TimeoutExpired:
+        logger.warning("ffmpeg header fix timed out")
+        return audio_data
+    except Exception as e:
+        logger.warning(f"Error fixing MP3 headers: {e}")
+        return audio_data
+    finally:
+        if temp_dir and os.path.exists(temp_dir):
+            try:
+                shutil.rmtree(temp_dir)
+            except Exception:
+                pass
 
 
 def parse_args() -> argparse.Namespace:
@@ -58,6 +131,11 @@ def parse_args() -> argparse.Namespace:
         "--dry-run",
         action="store_true",
         help="Preview changes without uploading tagged files.",
+    )
+    parser.add_argument(
+        "--fix-headers",
+        action="store_true",
+        help="Fix MP3 duration headers using ffmpeg (for concatenated files).",
     )
     parser.add_argument(
         "--log-level",
@@ -113,6 +191,7 @@ async def process_lecture_audio(
     storage_service: StorageService,
     tagger: ID3Tagger,
     dry_run: bool,
+    fix_headers: bool,
     logger: logging.Logger,
 ) -> bool:
     """
@@ -156,6 +235,11 @@ async def process_lecture_audio(
             return False
 
         logger.debug(f"Downloaded {len(audio_bytes)} bytes")
+
+        # Fix MP3 headers if requested (for concatenated files with wrong duration)
+        if fix_headers:
+            logger.debug("Fixing MP3 headers for correct duration metadata")
+            audio_bytes = fix_mp3_headers(audio_bytes, logger)
 
         # Calculate track number
         track_number = tagger.calculate_track_number(
@@ -219,6 +303,7 @@ async def backfill_audio_tags(
     repository_factory: RepositoryFactory,
     batch_size: int,
     dry_run: bool,
+    fix_headers: bool,
     logger: logging.Logger,
 ) -> Dict[str, int]:
     """Process audio files in batches and add ID3 tags."""
@@ -244,6 +329,7 @@ async def backfill_audio_tags(
                 storage_service=storage_service,
                 tagger=tagger,
                 dry_run=dry_run,
+                fix_headers=fix_headers,
                 logger=logger,
             )
             for lecture_id in batch_ids
@@ -297,6 +383,7 @@ async def main_async(args: argparse.Namespace, logger: logging.Logger) -> int:
             repository_factory=repository_factory,
             batch_size=max(1, args.batch_size),
             dry_run=args.dry_run,
+            fix_headers=args.fix_headers,
             logger=logger,
         )
 

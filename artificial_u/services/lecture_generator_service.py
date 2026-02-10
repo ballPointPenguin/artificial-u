@@ -907,7 +907,7 @@ class LectureGeneratorService:
             tagged_audio = tagger.add_tags_to_audio(
                 audio_bytes=audio_bytes,
                 title=lecture.title or f"Lecture {topic.week}.{topic.order}",
-                album=course.name,
+                album=course.title,
                 track_number=track_number,
                 year=lecture.created_at.year if hasattr(lecture, "created_at") else None,
                 comment=comment if comment else None,
