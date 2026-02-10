@@ -12,7 +12,7 @@ annotated-doc==0.0.4
     # via fastapi
 annotated-types==0.7.0
     # via pydantic
-anthropic==0.78.0
+anthropic==0.79.0
     # via artificial_u (pyproject.toml)
 anyio==4.12.1
     # via
@@ -22,9 +22,9 @@ anyio==4.12.1
     #   openai
     #   starlette
     #   watchfiles
-boto3==1.42.44
+boto3==1.42.45
     # via artificial_u (pyproject.toml)
-botocore==1.42.44
+botocore==1.42.45
     # via
     #   boto3
     #   s3transfer
@@ -54,9 +54,9 @@ docstring-parser==0.17.0
     # via anthropic
 ecdsa==0.19.1
     # via python-jose
-elevenlabs==2.34.0
+elevenlabs==2.35.0
     # via artificial_u (pyproject.toml)
-fastapi==0.128.4
+fastapi==0.128.7
     # via artificial_u (pyproject.toml)
 google-api-core==2.29.0
     # via artificial_u (pyproject.toml)
@@ -68,7 +68,7 @@ google-genai==1.62.0
     # via artificial_u (pyproject.toml)
 googleapis-common-protos==1.72.0
     # via google-api-core
-gunicorn==25.0.2
+gunicorn==25.0.3
     # via artificial_u (pyproject.toml)
 h11==0.16.0
     # via
@@ -108,7 +108,7 @@ mdurl==0.1.2
     # via markdown-it-py
 mutagen==1.47.0
     # via artificial_u (pyproject.toml)
-openai==2.17.0
+openai==2.18.0
     # via artificial_u (pyproject.toml)
 packaging==26.0
     # via gunicorn
