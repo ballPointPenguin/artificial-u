@@ -1,5 +1,5 @@
-import { A } from '@solidjs/router'
-import { createResource, For, Show } from 'solid-js'
+import { A, useNavigate } from '@solidjs/router'
+import { createResource, createSignal, For, Show } from 'solid-js'
 import { departmentService } from '../api/services/department-service.js'
 import { featuredService } from '../api/services/featured-service.js'
 import { lectureService } from '../api/services/lecture-service.js'
@@ -26,6 +26,16 @@ function formatDuration(seconds: number | null | undefined): string {
 const Home = () => {
   const t = useTranslations()
   const audioPlayer = useAudioPlayer()
+  const navigate = useNavigate()
+  const [searchQuery, setSearchQuery] = createSignal('')
+
+  const handleSearch = (e: Event) => {
+    e.preventDefault()
+    const q = searchQuery().trim()
+    if (q.length >= 2) {
+      navigate(`/search?q=${encodeURIComponent(q)}`)
+    }
+  }
 
   // Fetch live stats
   const [stats] = createResource<PlatformStats>(() => featuredService.getStats())
@@ -412,22 +422,176 @@ const Home = () => {
         </section>
       </Show>
 
+      {/* ─── Search ─── */}
+      <section class="px-6 md:px-12 lg:px-16 py-12 bg-surface-alt">
+        <div class="max-w-3xl mx-auto">
+          <form onSubmit={handleSearch} class="flex gap-3">
+            <div class="relative flex-1">
+              <svg
+                class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted pointer-events-none"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                />
+              </svg>
+              <input
+                type="search"
+                value={searchQuery()}
+                onInput={(e) => {
+                  setSearchQuery(e.currentTarget.value)
+                }}
+                placeholder={t().search.placeholder}
+                class="arcane-input w-full pl-12 pr-4 py-3 text-base"
+              />
+            </div>
+            <button
+              type="submit"
+              class="bg-primary text-background px-6 py-3 rounded font-sans text-sm uppercase tracking-wider hover:opacity-90 transition-opacity flex-shrink-0"
+            >
+              Search
+            </button>
+          </form>
+        </div>
+      </section>
+
       {/* ─── CTA Banner ─── */}
       <section class="px-6 md:px-12 lg:px-16 py-16">
-        <div class="cta-banner max-w-7xl mx-auto">
-          <div class="max-w-2xl">
+        <div class="cta-banner max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-[1fr_auto] gap-8 lg:gap-12 items-center">
+          <div>
             <h2 class="text-2xl md:text-3xl font-display text-foreground mb-3">
-              Create Your Own Courses
+              {t().home.ctaBanner.title}
             </h2>
-            <p class="text-muted mb-6">
-              Pick any subject, customize your professor, and generate complete lecture series with
-              AI — all with natural-sounding audio.
-            </p>
+            <p class="text-muted leading-relaxed max-w-xl mb-4">{t().home.ctaBanner.description}</p>
+            <div class="flex flex-wrap gap-x-6 gap-y-2 text-xs font-sans text-muted">
+              <span class="before:content-['✦_'] before:text-primary/60">
+                {t().home.ctaBanner.feature1}
+              </span>
+              <span class="before:content-['✦_'] before:text-primary/60">
+                {t().home.ctaBanner.feature2}
+              </span>
+              <span class="before:content-['✦_'] before:text-primary/60">
+                {t().home.ctaBanner.feature3}
+              </span>
+            </div>
+          </div>
+          <div class="flex flex-col items-start lg:items-center gap-3">
             <A href="/quickstart">
               <Button variant="primary" size="lg">
-                Get Started Free
+                {t().home.ctaBanner.cta}
               </Button>
             </A>
+            <span class="text-xs font-sans text-muted">{t().home.ctaBanner.priceHint}</span>
+          </div>
+        </div>
+      </section>
+
+      {/* ─── How It Works ─── */}
+      <section class="px-6 md:px-12 lg:px-16 py-16 bg-surface-alt">
+        <div class="max-w-7xl mx-auto">
+          <div class="mb-10">
+            <div class="section-label">{t().home.howItWorks.sectionLabel}</div>
+            <h2 class="text-3xl md:text-4xl font-display text-foreground">
+              {t().home.howItWorks.title}
+            </h2>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {/* Step 1 */}
+            <div class="relative bg-surface border border-border rounded-lg p-7">
+              <span class="absolute top-4 right-5 font-display text-5xl font-bold text-border/60 leading-none select-none">
+                1
+              </span>
+              <h3 class="font-display text-lg font-semibold text-primary mb-2">
+                {t().home.howItWorks.step1Title}
+              </h3>
+              <p class="text-sm text-muted leading-relaxed">{t().home.howItWorks.step1Desc}</p>
+            </div>
+
+            {/* Step 2 */}
+            <div class="relative bg-surface border border-border rounded-lg p-7">
+              <span class="absolute top-4 right-5 font-display text-5xl font-bold text-border/60 leading-none select-none">
+                2
+              </span>
+              <h3 class="font-display text-lg font-semibold text-primary mb-2">
+                {t().home.howItWorks.step2Title}
+              </h3>
+              <p class="text-sm text-muted leading-relaxed">{t().home.howItWorks.step2Desc}</p>
+            </div>
+
+            {/* Step 3 */}
+            <div class="relative bg-surface border border-border rounded-lg p-7">
+              <span class="absolute top-4 right-5 font-display text-5xl font-bold text-border/60 leading-none select-none">
+                3
+              </span>
+              <h3 class="font-display text-lg font-semibold text-primary mb-2">
+                {t().home.howItWorks.step3Title}
+              </h3>
+              <p class="text-sm text-muted leading-relaxed">{t().home.howItWorks.step3Desc}</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ─── Trust & Transparency ─── */}
+      <section class="px-6 md:px-12 lg:px-16 py-16">
+        <div class="max-w-7xl mx-auto">
+          <div class="mb-10">
+            <div class="section-label">{t().home.trust.sectionLabel}</div>
+            <h2 class="text-3xl md:text-4xl font-display text-foreground">
+              {t().home.trust.title}
+            </h2>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* AI Transparency */}
+            <div class="bg-surface border border-border rounded-lg p-7 card-hover-lift flex flex-col">
+              <div class="text-3xl mb-4" aria-hidden="true">
+                🤖
+              </div>
+              <h3 class="font-display text-lg text-foreground mb-2">{t().home.trust.aiTitle}</h3>
+              <p class="text-sm text-muted leading-relaxed mb-4 flex-1">{t().home.trust.aiDesc}</p>
+              <A href="/about/ai-ethics" class="text-sm text-primary hover:underline">
+                {t().home.trust.aiLink}
+              </A>
+            </div>
+
+            {/* Privacy First */}
+            <div class="bg-surface border border-border rounded-lg p-7 card-hover-lift flex flex-col">
+              <div class="text-3xl mb-4" aria-hidden="true">
+                🔒
+              </div>
+              <h3 class="font-display text-lg text-foreground mb-2">
+                {t().home.trust.privacyTitle}
+              </h3>
+              <p class="text-sm text-muted leading-relaxed mb-4 flex-1">
+                {t().home.trust.privacyDesc}
+              </p>
+              <A href="/about/privacy" class="text-sm text-primary hover:underline">
+                {t().home.trust.privacyLink}
+              </A>
+            </div>
+
+            {/* Not a Replacement */}
+            <div class="bg-surface border border-border rounded-lg p-7 card-hover-lift flex flex-col">
+              <div class="text-3xl mb-4" aria-hidden="true">
+                📜
+              </div>
+              <h3 class="font-display text-lg text-foreground mb-2">
+                {t().home.trust.notReplacementTitle}
+              </h3>
+              <p class="text-sm text-muted leading-relaxed mb-4 flex-1">
+                {t().home.trust.notReplacementDesc}
+              </p>
+              <A href="/about/terms" class="text-sm text-primary hover:underline">
+                {t().home.trust.notReplacementLink}
+              </A>
+            </div>
           </div>
         </div>
       </section>

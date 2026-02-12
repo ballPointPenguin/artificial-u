@@ -224,7 +224,7 @@ export const PersistentAudioPlayer: Component = () => {
                     preload="metadata"
                     crossOrigin="anonymous"
                   />
-                  <media-control-bar class="flex flex-wrap items-center gap-x-2 gap-y-2 w-full">
+                  <media-control-bar class="flex flex-wrap items-center gap-x-1 sm:gap-x-2 gap-y-2 w-full">
                     <media-play-button class="text-parchment-100 hover:text-mystic-300 shrink-0" />
                     <media-seek-backward-button
                       seekoffset="10"
@@ -234,12 +234,12 @@ export const PersistentAudioPlayer: Component = () => {
                       seekoffset="10"
                       class="text-parchment-100 hover:text-mystic-300 shrink-0"
                     />
-                    <media-mute-button class="text-parchment-100 hover:text-mystic-300 shrink-0" />
-                    <media-volume-range class="w-full max-w-[180px] sm:w-24 basis-full sm:basis-auto" />
-                    <media-time-range class="flex-1 min-w-[140px] basis-full sm:basis-auto mx-1" />
+                    <media-mute-button class="text-parchment-100 hover:text-mystic-300 shrink-0 hidden sm:block" />
+                    <media-volume-range class="w-24 shrink-0 hidden sm:block" />
+                    <media-time-range class="flex-1 min-w-[100px] basis-full sm:basis-auto order-last sm:order-none mx-1" />
                     <media-time-display
                       showduration
-                      class="text-xs text-parchment-300 min-w-[90px] text-center shrink-0"
+                      class="text-xs text-parchment-300 min-w-[80px] text-center shrink-0"
                     />
                     <media-playback-rate-button class="text-parchment-100 hover:text-mystic-300 text-xs shrink-0" />
                   </media-control-bar>

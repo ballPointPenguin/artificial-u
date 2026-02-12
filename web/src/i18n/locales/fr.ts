@@ -54,6 +54,45 @@ export const fr = {
       aboutLink: 'page À propos',
       forFullDetails: 'pour tous les détails.',
     },
+    ctaBanner: {
+      title: 'Créez vos propres cours',
+      description:
+        "Concevez un cours sur n'importe quel sujet. Choisissez un personnage de professeur — ou laissez-nous en générer un — et nous produirons des cours audio complets dans sa voix et son style. De la mécanique quantique à la théorie queer, du contrepoint baroque à la blockchain.",
+      feature1: 'Cours générés par IA',
+      feature2: 'Synthèse vocale professionnelle',
+      feature3: 'Voix de professeurs uniques',
+      cta: 'Commencer gratuitement',
+      priceHint: "50 pièces gratuites à l'inscription \u00B7 puis à partir de 5\u00A0$",
+    },
+    howItWorks: {
+      sectionLabel: 'Pour les créateurs',
+      title: 'Comment ça marche',
+      step1Title: 'Choisissez un sujet',
+      step1Desc:
+        "Choisissez un département et un sujet, ou décrivez ce que vous voulez apprendre. Le système génère un cours structuré avec des thèmes hebdomadaires et des objectifs d'apprentissage.",
+      step2Title: 'Rencontrez votre professeur',
+      step2Desc:
+        "Chaque cours a un professeur avec une personnalité, un style d'enseignement, un accent et une voix uniques. Personnalisez-le ou laissez le système vous surprendre.",
+      step3Title: 'Écoutez et partagez',
+      step3Desc:
+        "L'IA génère le contenu complet du cours dans la voix du professeur et le convertit en audio. Écoutez dans le navigateur, téléchargez ou partagez avec la communauté.",
+    },
+    trust: {
+      sectionLabel: 'Transparence et confiance',
+      title: 'Construit de manière responsable',
+      aiTitle: 'Transparence IA',
+      aiDesc:
+        "Tout le contenu est généré par IA à l'aide de grands modèles de langage (Claude, GPT, Gemini) et de synthèse vocale professionnelle. Nous sommes transparents sur ce qui est synthétique et ce qui ne l'est pas.",
+      aiLink: "Lire notre politique d'utilisation de l'IA \u2192",
+      privacyTitle: 'Confidentialité d\u2019abord',
+      privacyDesc:
+        'Collecte de données minimale. Authentification via Auth0. Pas de cookies de suivi, pas de réseaux publicitaires, pas de courtage de données. Votre apprentissage ne regarde que vous.',
+      privacyLink: 'Politique de confidentialité \u2192',
+      notReplacementTitle: 'Pas un substitut',
+      notReplacementDesc:
+        "C'est un complément d'apprentissage et un outil créatif, pas une éducation accréditée. Les professeurs IA sont des personnages fictifs. Le contenu peut contenir des erreurs \u2014 considérez-le comme un point de départ, pas un manuel.",
+      notReplacementLink: 'Conditions d\u2019utilisation \u2192',
+    },
     welcome: {
       intro:
         "Bienvenue à l'Université Artificielle. Découvrez des cours audio générés par l'IA qui facilitent l'assimilation de sujets complexes.",
@@ -110,6 +149,45 @@ export const fr = {
         "J'ai construit ceci comme une expérience amusante, conçue pour susciter la joie et la curiosité. J'espère que vous l'apprécierez aussi. Contactez-moi pour partager vos pensées.",
     },
     exploreCourses: 'Explorer les Cours',
+  },
+
+  // Search
+  search: {
+    placeholder: 'Rechercher cours, conférences, professeurs, sujets\u2026',
+    title: 'Résultats de recherche',
+    resultsFor: 'Résultats pour',
+    noResults: 'Aucun résultat trouvé. Essayez un autre terme de recherche.',
+    lectures: 'Conférences',
+    courses: 'Cours',
+    professors: 'Professeurs',
+    departments: 'Départements',
+    topics: 'Sujets',
+    viewAll: 'Voir tout',
+  },
+
+  // Footer
+  footer: {
+    tagline:
+      "Contenu audio éducatif propulsé par l'IA. Explorez le savoir créé par l'IA, façonné par votre curiosité.",
+    explore: 'Explorer',
+    allCourses: 'Tous les cours',
+    departments: 'Départements',
+    professors: 'Professeurs',
+    search: 'Recherche',
+    create: 'Créer',
+    getStarted: 'Commencer',
+    pricing: 'Tarifs',
+    howItWorks: 'Comment ça marche',
+    faq: 'FAQ',
+    about: 'À propos',
+    aboutProject: 'À propos du projet',
+    aiEthics: "Utilisation de l'IA et éthique",
+    contact: 'Contact',
+    github: 'GitHub',
+    copyright: '\u00A9 2026 Université Artificielle. Un projet indépendant de Bennie Rosas.',
+    privacyPolicy: 'Politique de confidentialité',
+    termsOfService: "Conditions d'utilisation",
+    aiTransparency: 'Transparence IA',
   },
 
   // Common UI elements

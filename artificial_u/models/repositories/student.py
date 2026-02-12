@@ -2,6 +2,7 @@
 Student repository for database operations.
 """
 
+import logging
 from typing import Dict, List, Optional
 
 from sqlalchemy import func
@@ -9,6 +10,11 @@ from sqlalchemy import func
 from artificial_u.models.core import Student
 from artificial_u.models.database import StudentModel
 from artificial_u.models.repositories.base import BaseRepository
+
+logger = logging.getLogger(__name__)
+
+# Coins granted to every newly registered student
+SIGNUP_BONUS_COINS = 50
 
 
 class StudentRepository(BaseRepository):
@@ -72,10 +78,21 @@ class StudentRepository(BaseRepository):
     def create(self, *, name: str, email: Optional[str], auth0_sub: Optional[str]) -> Student:
         with self.get_session() as session:
             self._ensure_unique_email(session, email)
-            db_student = StudentModel(name=name, email=email, auth0_sub=auth0_sub)
+            db_student = StudentModel(
+                name=name,
+                email=email,
+                auth0_sub=auth0_sub,
+                coins=SIGNUP_BONUS_COINS,
+            )
             session.add(db_student)
             session.commit()
             session.refresh(db_student)
+            logger.info(
+                "New student created: %s (id=%d) with %d signup bonus coins",
+                name,
+                db_student.id,
+                SIGNUP_BONUS_COINS,
+            )
             return Student(
                 id=db_student.id,
                 name=db_student.name,

@@ -58,6 +58,44 @@ export const zh = {
       aboutLink: '关于页面',
       forFullDetails: '以获取完整信息。',
     },
+    ctaBanner: {
+      title: '创建你自己的课程',
+      description:
+        '设计任何主题的课程。选择一个教授角色——或让我们为你生成一个——我们将以他们的声音和风格制作完整的音频课程。从量子力学到酷儿理论，从巴洛克对位法到区块链。',
+      feature1: 'AI生成的课程',
+      feature2: '专业语音合成',
+      feature3: '独特的教授声音',
+      cta: '免费开始',
+      priceHint: '注册赠送50代币 · 之后低至$5',
+    },
+    howItWorks: {
+      sectionLabel: '面向创作者',
+      title: '使用方法',
+      step1Title: '选择主题',
+      step1Desc:
+        '选择一个院系和主题，或描述你想学习的内容。系统会生成一个包含每周主题和学习目标的结构化课程。',
+      step2Title: '认识你的教授',
+      step2Desc:
+        '每门课程都有一位拥有独特个性、教学风格、口音和声音的教授。你可以自定义或让系统给你惊喜。',
+      step3Title: '聆听与分享',
+      step3Desc: 'AI以教授的声音生成完整的课程内容并转换为音频。在浏览器中收听、下载或与社区分享。',
+    },
+    trust: {
+      sectionLabel: '透明与信任',
+      title: '负责任地构建',
+      aiTitle: 'AI透明度',
+      aiDesc:
+        '所有内容均由大型语言模型（Claude、GPT、Gemini）和专业语音合成技术生成。我们对哪些是合成的、哪些不是保持坦诚。',
+      aiLink: '阅读我们的AI使用政策 \u2192',
+      privacyTitle: '隐私优先',
+      privacyDesc:
+        '最少的数据收集。通过Auth0进行身份验证。没有跟踪Cookie，没有广告网络，没有数据中介。你的学习是你自己的事。',
+      privacyLink: '隐私政策 \u2192',
+      notReplacementTitle: '不是替代品',
+      notReplacementDesc:
+        '这是一个学习辅助工具和创意工具，不是认证教育。AI教授是虚构角色。内容可能包含错误——把它当作起点，而非教科书。',
+      notReplacementLink: '服务条款 \u2192',
+    },
     welcome: {
       intro: '欢迎来到人工智能大学。发现由AI生成的音频课程，轻松吸收复杂主题。',
       explore: '探索课程大纲，聆听充满活力的讲座，并发掘新的研究领域。登录以创建你自己的课程。',
@@ -111,6 +149,44 @@ export const zh = {
         '我建立这个项目是为了进行有趣的实验，旨在激发快乐和好奇心。希望你也喜欢它。欢迎联系我分享你的想法。',
     },
     exploreCourses: '探索课程',
+  },
+
+  // Search
+  search: {
+    placeholder: '搜索讲座、课程、教授、主题\u2026',
+    title: '搜索结果',
+    resultsFor: '搜索结果：',
+    noResults: '未找到结果。请尝试其他搜索词。',
+    lectures: '讲座',
+    courses: '课程',
+    professors: '教授',
+    departments: '院系',
+    topics: '主题',
+    viewAll: '查看全部',
+  },
+
+  // Footer
+  footer: {
+    tagline: 'AI驱动的教育音频内容。探索由AI创建、由你的好奇心塑造的知识。',
+    explore: '探索',
+    allCourses: '所有课程',
+    departments: '院系',
+    professors: '教授',
+    search: '搜索',
+    create: '创建',
+    getStarted: '开始使用',
+    pricing: '定价',
+    howItWorks: '使用方法',
+    faq: '常见问题',
+    about: '关于',
+    aboutProject: '关于项目',
+    aiEthics: 'AI使用与伦理',
+    contact: '联系我们',
+    github: 'GitHub',
+    copyright: '\u00A9 2026 人工智能大学。Bennie Rosas 的独立项目。',
+    privacyPolicy: '隐私政策',
+    termsOfService: '服务条款',
+    aiTransparency: 'AI透明度',
   },
 
   // Common UI elements

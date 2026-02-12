@@ -523,7 +523,7 @@
     color: var(--color-foreground);
     font-family: var(--font-serif);
     background-color: var(--color-background);
-    min-height: 100vh;
+    min-height: 100dvh;
   }
 
   h1,
