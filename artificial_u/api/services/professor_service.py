@@ -2,8 +2,7 @@
 Professor service for handling business logic related to professors.
 """
 
-import random
-from typing import List, Optional
+from typing import Optional
 
 from fastapi import HTTPException, status
 
@@ -456,28 +455,6 @@ class ProfessorApiService(BaseApiService[CoreProfessor, ProfessorResponse, Profe
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=("An unexpected error occurred during profile generation."),
             )
-
-    def get_featured_professors(self) -> List[ProfessorResponse]:
-        """
-        Get a list of up to 3 random featured professors.
-        """
-        try:
-            all_professors_core = self.core_service.list_professors(filters=None)  # Get all
-
-            if not all_professors_core:
-                return []
-
-            num_to_select = min(len(all_professors_core), 3)
-            featured_professors_core = random.sample(all_professors_core, num_to_select)
-
-            featured_responses = [
-                ProfessorResponse.model_validate(p.model_dump()) for p in featured_professors_core
-            ]
-            self.logger.info(f"Returning {len(featured_responses)} featured professors.")
-            return featured_responses
-
-        except Exception as e:
-            self._handle_general_error("get featured professors", e)
 
     def assign_voice_to_professor(
         self, professor_id: int, student_id: int, role: str

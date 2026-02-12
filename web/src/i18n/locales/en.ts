@@ -25,9 +25,22 @@ export const en = {
   // Home page
   home: {
     hero: {
-      title: 'Artificial University',
-      subtitle: 'Explore knowledge crafted by AI, shaped by your curiosity',
-      buttonText: 'Learn More',
+      titleStart: 'Lectures delivered by ',
+      titleEmphasis: 'AI professors',
+      titleEnd: ", on any subject you're curious about",
+      subtitle:
+        'Each course is taught by a unique AI professor with their own voice, personality, and teaching style. Browse the catalog, press play, and learn something new.',
+      browseCta: 'Browse & Listen',
+      createCta: 'Create Your Own Course',
+    },
+    featuredLectures: {
+      label: 'Featured Lectures',
+      nowPlaying: 'Featured Lectures',
+    },
+    stats: {
+      courses: 'Courses',
+      lectures: 'Lectures',
+      audioHours: 'Hours of Audio',
     },
     disclaimer: {
       title: 'Experimental Content — Not a Real University',
@@ -39,6 +52,45 @@ export const en = {
         'Content may contain errors and should not be used for formal education. See our',
       aboutLink: 'About page',
       forFullDetails: 'for full details.',
+    },
+    ctaBanner: {
+      title: 'Create your own courses',
+      description:
+        'Design a course on any subject. Choose a professor persona — or let us generate one — and we\u2019ll produce full audio lectures in their voice and style. From quantum mechanics to queer theory, from Baroque counterpoint to blockchain.',
+      feature1: 'AI-generated lectures',
+      feature2: 'Professional text-to-speech',
+      feature3: 'Unique professor voices',
+      cta: 'Get Started Free',
+      priceHint: '50 free coins on signup \u00B7 then from $5',
+    },
+    howItWorks: {
+      sectionLabel: 'For creators',
+      title: 'How It Works',
+      step1Title: 'Pick a Subject',
+      step1Desc:
+        'Choose a department and topic, or describe what you want to learn. The system generates a structured course with weekly topics and learning objectives.',
+      step2Title: 'Meet Your Professor',
+      step2Desc:
+        'Each course gets a professor with a unique personality, teaching style, accent, and voice. You can customize them or let the system surprise you.',
+      step3Title: 'Listen & Share',
+      step3Desc:
+        'AI generates full lecture content in the professor\u2019s voice and converts it to audio. Listen in the browser, download, or share with the community.',
+    },
+    trust: {
+      sectionLabel: 'Transparency & trust',
+      title: 'Built Responsibly',
+      aiTitle: 'AI Transparency',
+      aiDesc:
+        "All content is AI-generated using large language models (Claude, GPT, Gemini) and professional text-to-speech. We're upfront about what's synthetic and what isn't.",
+      aiLink: 'Read our AI usage policy \u2192',
+      privacyTitle: 'Privacy First',
+      privacyDesc:
+        'Minimal data collection. Authentication via Auth0. No tracking cookies, no ad networks, no data brokering. Your learning is your business.',
+      privacyLink: 'Privacy policy \u2192',
+      notReplacementTitle: 'Not a Replacement',
+      notReplacementDesc:
+        'This is a learning supplement and creative tool, not accredited education. AI professors are fictional characters. Content may contain errors \u2014 think of it as a starting point, not a textbook.',
+      notReplacementLink: 'Terms of service \u2192',
     },
     welcome: {
       intro:
@@ -96,6 +148,45 @@ export const en = {
         'I built this as a fun experiment, designed to spark joy and curiosity. I hope you enjoy it too. Reach out to share your thoughts.',
     },
     exploreCourses: 'Explore Courses',
+  },
+
+  // Search
+  search: {
+    placeholder: 'Search lectures, courses, professors, topics\u2026',
+    title: 'Search Results',
+    resultsFor: 'Results for',
+    noResults: 'No results found. Try a different search term.',
+    lectures: 'Lectures',
+    courses: 'Courses',
+    professors: 'Professors',
+    departments: 'Departments',
+    topics: 'Topics',
+    viewAll: 'View all',
+  },
+
+  // Footer
+  footer: {
+    tagline:
+      'AI-powered educational audio content. Explore knowledge crafted by AI, shaped by your curiosity.',
+    explore: 'Explore',
+    allCourses: 'All Courses',
+    departments: 'Departments',
+    professors: 'Professors',
+    search: 'Search',
+    create: 'Create',
+    getStarted: 'Get Started',
+    pricing: 'Pricing',
+    howItWorks: 'How It Works',
+    faq: 'FAQ',
+    about: 'About',
+    aboutProject: 'About the Project',
+    aiEthics: 'AI Usage & Ethics',
+    contact: 'Contact',
+    github: 'GitHub',
+    copyright: '\u00A9 2026 Artificial University. An indie project by Bennie Rosas.',
+    privacyPolicy: 'Privacy Policy',
+    termsOfService: 'Terms of Service',
+    aiTransparency: 'AI Transparency',
   },
 
   // Common UI elements

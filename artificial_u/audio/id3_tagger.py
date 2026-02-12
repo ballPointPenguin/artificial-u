@@ -29,6 +29,28 @@ class ID3Tagger:
         """
         self.logger = logger or logging.getLogger(__name__)
 
+    def get_duration_seconds(self, audio_bytes: bytes) -> Optional[int]:
+        """
+        Get the duration of an MP3 audio file in whole seconds.
+
+        Args:
+            audio_bytes: Raw MP3 audio data
+
+        Returns:
+            int: Duration in seconds, or None if duration cannot be determined
+        """
+        if not audio_bytes:
+            return None
+
+        try:
+            audio = MP3(io.BytesIO(audio_bytes))
+            if audio.info and audio.info.length:
+                return int(audio.info.length)
+            return None
+        except Exception as e:
+            self.logger.warning(f"Failed to read audio duration: {e}")
+            return None
+
     def add_tags_to_audio(
         self,
         audio_bytes: bytes,

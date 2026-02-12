@@ -105,6 +105,7 @@ export const ENDPOINTS = {
     clearSummary: (id: number) => `/v1/lectures/${String(id)}/summary`,
     uploadAudio: (id: number) => `/v1/lectures/${String(id)}/upload-audio`,
     download: (id: number) => `/v1/lectures/${String(id)}/content/download`,
+    recent: '/v1/lectures/recent',
   },
   topics: {
     list: '/v1/topics',
@@ -143,6 +144,13 @@ export const ENDPOINTS = {
     regenerateProfessor: '/v1/quickstart/regenerate-professor',
     finalize: '/v1/quickstart/finalize',
   },
+  featured: {
+    list: '/v1/featured',
+    detail: (id: number) => `/v1/featured/${String(id)}`,
+    order: (id: number) => `/v1/featured/${String(id)}/order`,
+  },
+  search: '/v1/search',
+  stats: '/v1/stats',
   preferences: {
     listGlobal: '/v1/preferences/global',
     getGlobal: (scope: string) => `/v1/preferences/global/${encodeURIComponent(scope)}`,

@@ -303,6 +303,7 @@ def test_create_lecture(client: TestClient, mock_api_service):
         "audio_download_url": None,
         "transcript_url": new_lecture_data["transcript_url"],
         "word_count": None,
+        "duration": None,
         "created_by": 1,  # Set from authenticated student fixture
         "created_with": None,
         "created_at": None,

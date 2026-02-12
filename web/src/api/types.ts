@@ -227,6 +227,7 @@ export interface Lecture {
   audio_download_url?: string | null
   transcript_url: string | null
   word_count: number | null
+  duration: number | null
   created_by?: number | null
   created_with?: string | null
   created_at?: string | null
@@ -599,4 +600,109 @@ export interface QuickstartFinalizeResponse {
   course_id: number
   topics_job_id: number
   message: string
+}
+
+// Featured items
+export interface FeaturedItem {
+  id: number
+  item_type: 'lecture' | 'professor' | 'department'
+  item_id: number
+  language: string
+  display_order: number
+  created_at: string | null
+}
+
+export interface FeaturedItemCreate {
+  item_type: 'lecture' | 'professor' | 'department'
+  item_id: number
+  language?: string
+  display_order?: number
+}
+
+// Stats
+export interface PlatformStats {
+  course_count: number
+  lecture_count: number
+  audio_hours: number
+}
+
+// Recent / enriched lecture (homepage)
+export interface RecentLecture {
+  id: number
+  title: string
+  summary: string | null
+  audio_url: string | null
+  duration: number | null
+  course_id: number
+  course_code: string | null
+  course_title: string | null
+  topic_id: number
+  topic_title: string | null
+  topic_week: number | null
+  professor_id: number | null
+  professor_name: string | null
+  professor_image_url: string | null
+  professor_accent: string | null
+  professor_specialization: string | null
+  department_name: string | null
+  created_at: string | null
+}
+
+// Search
+export interface LectureSearchResult {
+  id: number
+  title: string
+  summary: string | null
+  course_id: number
+  course_title: string | null
+  course_code: string | null
+  professor_name: string | null
+  department_name: string | null
+  audio_url: string | null
+  duration: number | null
+}
+
+export interface CourseSearchResult {
+  id: number
+  code: string
+  title: string
+  description: string | null
+  level: string | null
+  department_name: string | null
+  professor_name: string | null
+  status: string | null
+}
+
+export interface ProfessorSearchResult {
+  id: number
+  name: string
+  title: string | null
+  specialization: string | null
+  department_name: string | null
+  image_url: string | null
+}
+
+export interface DepartmentSearchResult {
+  id: number
+  name: string
+  code: string
+  description: string | null
+}
+
+export interface TopicSearchResult {
+  id: number
+  title: string
+  week: number
+  course_id: number
+  course_title: string | null
+  course_code: string | null
+}
+
+export interface SearchResponse {
+  query: string
+  lectures: LectureSearchResult[]
+  courses: CourseSearchResult[]
+  professors: ProfessorSearchResult[]
+  departments: DepartmentSearchResult[]
+  topics: TopicSearchResult[]
 }

@@ -3,7 +3,7 @@ Lecture router for handling lecture-related API endpoints.
 """
 
 import logging
-from typing import Optional
+from typing import List, Optional
 
 from fastapi import (
     APIRouter,
@@ -16,6 +16,7 @@ from fastapi import (
     status,
 )
 from fastapi.responses import JSONResponse, PlainTextResponse
+from pydantic import BaseModel, Field
 
 from artificial_u.api.dependencies import (
     ensure_student,
@@ -34,8 +35,41 @@ from artificial_u.api.services import LectureApiService
 from artificial_u.audio import ID3Tagger
 from artificial_u.config.settings import get_settings
 from artificial_u.models.core import Student
+from artificial_u.models.database import (
+    CourseModel,
+    DepartmentModel,
+    LectureModel,
+    ProfessorModel,
+    TopicModel,
+)
 from artificial_u.models.repositories.factory import RepositoryFactory
 from artificial_u.services.storage_service import StorageService
+
+# -- Response model for recent/enriched lectures --
+
+
+class RecentLectureResponse(BaseModel):
+    """Lecture with nested course, professor, topic, and department data."""
+
+    id: int
+    title: str
+    summary: Optional[str] = None
+    audio_url: Optional[str] = None
+    duration: Optional[int] = Field(None, description="Audio duration in seconds")
+    course_id: int
+    course_code: Optional[str] = None
+    course_title: Optional[str] = None
+    topic_id: int
+    topic_title: Optional[str] = None
+    topic_week: Optional[int] = None
+    professor_id: Optional[int] = None
+    professor_name: Optional[str] = None
+    professor_image_url: Optional[str] = None
+    professor_accent: Optional[str] = None
+    professor_specialization: Optional[str] = None
+    department_name: Optional[str] = None
+    created_at: Optional[str] = None
+
 
 # Create the router with dependencies that will be applied to all routes
 router = APIRouter(
@@ -79,6 +113,85 @@ async def list_lectures(
         topic_id=topic_id,
         search=search,
     )
+
+
+@router.get(
+    "/recent",
+    response_model=List[RecentLectureResponse],
+    summary="Get recent lectures with audio",
+    description=(
+        "Returns the most recently created lectures that have audio, "
+        "enriched with course, professor, topic, and department info."
+    ),
+)
+async def get_recent_lectures(
+    limit: int = Query(4, ge=1, le=12, description="Number of lectures to return"),
+    ids: Optional[str] = Query(
+        None,
+        description="Comma-separated lecture IDs to fetch (overrides limit/recency ordering)",
+    ),
+    repository_factory: RepositoryFactory = Depends(get_repository_factory),
+):
+    """
+    Get enriched lectures with nested course/professor/topic/department data.
+
+    Two modes:
+    - **Default**: returns the N most recently created lectures with audio.
+    - **ids=1,2,3**: returns specific lectures by ID (for featured items).
+    """
+    with repository_factory.lecture.get_session() as session:
+        query = (
+            session.query(LectureModel)
+            .outerjoin(CourseModel, LectureModel.course_id == CourseModel.id)
+            .outerjoin(TopicModel, LectureModel.topic_id == TopicModel.id)
+            .outerjoin(ProfessorModel, CourseModel.professor_id == ProfessorModel.id)
+            .outerjoin(DepartmentModel, CourseModel.department_id == DepartmentModel.id)
+        )
+
+        if ids:
+            # Fetch specific lectures by ID
+            id_list = [int(i.strip()) for i in ids.split(",") if i.strip().isdigit()]
+            if not id_list:
+                return []
+            query = query.filter(LectureModel.id.in_(id_list))
+        else:
+            # Default: most recent with audio
+            query = query.filter(LectureModel.audio_url.isnot(None))
+            query = query.order_by(LectureModel.created_at.desc()).limit(limit)
+
+        rows = query.all()
+
+        results = []
+        for lec in rows:
+            course = lec.course
+            topic = lec.topic
+            professor = course.professor if course else None
+            department = course.department if course else None
+
+            results.append(
+                RecentLectureResponse(
+                    id=lec.id,
+                    title=lec.title,
+                    summary=lec.summary,
+                    audio_url=lec.audio_url,
+                    duration=lec.duration,
+                    course_id=lec.course_id,
+                    course_code=course.code if course else None,
+                    course_title=course.title if course else None,
+                    topic_id=lec.topic_id,
+                    topic_title=topic.title if topic else None,
+                    topic_week=topic.week if topic else None,
+                    professor_id=professor.id if professor else None,
+                    professor_name=professor.name if professor else None,
+                    professor_image_url=professor.image_url if professor else None,
+                    professor_accent=professor.accent if professor else None,
+                    professor_specialization=professor.specialization if professor else None,
+                    department_name=department.name if department else None,
+                    created_at=str(lec.created_at) if lec.created_at else None,
+                )
+            )
+
+    return results
 
 
 @router.get(
@@ -496,8 +609,12 @@ async def upload_lecture_audio(
 
         logger.info(f"Uploaded audio to {audio_url}")
 
-        # 6. Update lecture with audio_url
+        # 5b. Extract audio duration
+        duration_seconds = tagger.get_duration_seconds(tagged_audio)
+
+        # 6. Update lecture with audio_url and duration
         lecture.audio_url = audio_url
+        lecture.duration = duration_seconds
         updated_lecture = repository_factory.lecture.update(lecture)
 
         if not updated_lecture:

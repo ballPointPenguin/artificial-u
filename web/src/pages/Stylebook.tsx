@@ -369,7 +369,192 @@ const Stylebook: Component = () => {
         </Card>
       </section>
 
-      {/* Add more component sections here as needed */}
+      {/* Homepage Patterns Section */}
+      <section>
+        <h2 class="text-2xl font-display text-accent mb-6 border-b border-border/50 pb-2">
+          Homepage Patterns
+        </h2>
+
+        {/* Section Labels */}
+        <Card class="mb-6">
+          <CardContent class="space-y-4">
+            <h3 class="text-xl font-semibold text-foreground/80">Section Labels</h3>
+            <p class="text-muted text-sm">
+              Used above section headings for category context (e.g., "Featured Lectures").
+            </p>
+            <div class="space-y-4">
+              <div>
+                <span class="section-label">Recently Added</span>
+                <h2 class="text-2xl font-display text-foreground">Latest Lectures</h2>
+              </div>
+              <div>
+                <span class="section-label">Explore</span>
+                <h2 class="text-2xl font-display text-foreground">Browse Departments</h2>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Stat Numbers */}
+        <Card class="mb-6">
+          <CardContent class="space-y-4">
+            <h3 class="text-xl font-semibold text-foreground/80">Stat Counters</h3>
+            <p class="text-muted text-sm">
+              Large display numbers for the stats strip. Two sizes: default and small.
+            </p>
+            <div class="flex flex-wrap gap-12 items-end">
+              <div class="text-center">
+                <span class="stat-number animate-count-up">42</span>
+                <p class="text-sm text-muted mt-1">Courses</p>
+              </div>
+              <div class="text-center">
+                <span class="stat-number animate-count-up">186</span>
+                <p class="text-sm text-muted mt-1">Lectures</p>
+              </div>
+              <div class="text-center">
+                <span class="stat-number animate-count-up">73</span>
+                <p class="text-sm text-muted mt-1">Hours of Audio</p>
+              </div>
+            </div>
+            <div class="flex flex-wrap gap-8 items-end mt-6">
+              <div class="text-center">
+                <span class="stat-number-sm">42</span>
+                <p class="text-xs text-muted mt-1">Small variant</p>
+              </div>
+              <div class="text-center">
+                <span class="stat-number-sm">186</span>
+                <p class="text-xs text-muted mt-1">Small variant</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Tags / Department Labels */}
+        <Card class="mb-6">
+          <CardContent class="space-y-4">
+            <h3 class="text-xl font-semibold text-foreground/80">Tags &amp; Department Labels</h3>
+            <p class="text-muted text-sm">
+              Colored tags for department labels on lecture cards. Teal and coral variants, plus
+              standard badges for comparison.
+            </p>
+            <div class="flex flex-wrap gap-3 items-center">
+              <span class="tag-teal inline-block rounded px-2.5 py-0.5 text-xs font-sans font-medium">
+                Computer Science
+              </span>
+              <span class="tag-coral inline-block rounded px-2.5 py-0.5 text-xs font-sans font-medium">
+                Philosophy
+              </span>
+              <span class="tag-teal inline-block rounded px-2.5 py-0.5 text-xs font-sans font-medium">
+                Neuroscience
+              </span>
+              <span class="tag-coral inline-block rounded px-2.5 py-0.5 text-xs font-sans font-medium">
+                Music
+              </span>
+              <Badge variant="default">Default Badge</Badge>
+              <Badge variant="outline">Outline Badge</Badge>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Card Hover Lift */}
+        <Card class="mb-6">
+          <CardContent class="space-y-4">
+            <h3 class="text-xl font-semibold text-foreground/80">Card Hover Lift</h3>
+            <p class="text-muted text-sm">
+              Cards with the <code class="text-accent">card-hover-lift</code> utility rise on hover.
+            </p>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div class="card-hover-lift rounded-lg border border-border bg-surface p-4 cursor-pointer">
+                <span class="tag-teal inline-block rounded px-2 py-0.5 text-xs font-sans font-medium mb-2">
+                  Physics
+                </span>
+                <h4 class="font-display text-foreground">Quantum Mechanics 101</h4>
+                <p class="text-sm text-muted mt-1">Dr. Richard Feynstone</p>
+                <p class="text-xs text-muted mt-2">12 min</p>
+              </div>
+              <div class="card-hover-lift rounded-lg border border-border bg-surface p-4 cursor-pointer">
+                <span class="tag-coral inline-block rounded px-2 py-0.5 text-xs font-sans font-medium mb-2">
+                  Philosophy
+                </span>
+                <h4 class="font-display text-foreground">The Ethics of AGI</h4>
+                <p class="text-sm text-muted mt-1">Prof. Helena Marsh</p>
+                <p class="text-xs text-muted mt-2">18 min</p>
+              </div>
+              <div class="card-hover-lift rounded-lg border border-border bg-surface p-4 cursor-pointer">
+                <span class="tag-teal inline-block rounded px-2 py-0.5 text-xs font-sans font-medium mb-2">
+                  Neuroscience
+                </span>
+                <h4 class="font-display text-foreground">Memory &amp; Learning</h4>
+                <p class="text-sm text-muted mt-1">Dr. Amara Osei</p>
+                <p class="text-xs text-muted mt-2">22 min</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Section Backgrounds */}
+        <Card class="mb-6">
+          <CardContent class="space-y-4">
+            <h3 class="text-xl font-semibold text-foreground/80">Section Backgrounds</h3>
+            <p class="text-muted text-sm">
+              Alternating section backgrounds for visual rhythm. Compare{' '}
+              <code class="text-accent">bg-background</code>,{' '}
+              <code class="text-accent">bg-surface</code>, and{' '}
+              <code class="text-accent">bg-surface-alt</code>.
+            </p>
+            <div class="space-y-0 rounded-lg overflow-hidden border border-border">
+              <div class="bg-background p-4">
+                <p class="text-sm font-sans">bg-background — page default</p>
+              </div>
+              <div class="bg-surface p-4">
+                <p class="text-sm font-sans">bg-surface — cards, elevated elements</p>
+              </div>
+              <div class="bg-surface-alt p-4">
+                <p class="text-sm font-sans">bg-surface-alt — alternating sections</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* CTA Banner */}
+        <Card class="mb-6">
+          <CardContent class="space-y-4">
+            <h3 class="text-xl font-semibold text-foreground/80">CTA Banner</h3>
+            <p class="text-muted text-sm">
+              A call-to-action panel with gradient background and border glow.
+            </p>
+          </CardContent>
+        </Card>
+        <div class="cta-banner mb-6">
+          <div class="max-w-2xl">
+            <h2 class="text-2xl font-display text-foreground mb-3">Create Your Own Courses</h2>
+            <p class="text-muted mb-6">
+              Pick any subject, customize your professor, and generate complete lecture series with
+              AI — all with natural-sounding audio.
+            </p>
+            <div class="flex flex-wrap gap-3">
+              <Button variant="primary">Get Started Free</Button>
+              <Button variant="outline">Learn More</Button>
+            </div>
+          </div>
+        </div>
+
+        {/* Fade-in Animation */}
+        <Card>
+          <CardContent class="space-y-4">
+            <h3 class="text-xl font-semibold text-foreground/80">Animations</h3>
+            <p class="text-muted text-sm">
+              <code class="text-accent">animate-fade-in</code> for section entrance,{' '}
+              <code class="text-accent">animate-count-up</code> for stat numbers (shown above).
+            </p>
+            <div class="animate-fade-in rounded-lg border border-border bg-surface p-6">
+              <p class="text-foreground">
+                This element uses <code class="text-accent">animate-fade-in</code>.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      </section>
     </div>
   )
 }

@@ -98,6 +98,7 @@ class LectureModel(Base):
     topic_id = Column(Integer, ForeignKey("topics.id"), nullable=False)
     voice_id = Column(Integer, ForeignKey("voices.id"), nullable=True)
     word_count = Column(Integer, nullable=True)
+    duration = Column(Integer, nullable=True)  # Audio duration in seconds
     # Attribution fields
     created_by = Column(Integer, ForeignKey("students.id"), nullable=True)
     created_with = Column(String, nullable=True)
@@ -264,4 +265,24 @@ class PreferenceModel(Base):
         ),
         # Index for efficient lookup of global preferences
         Index("idx_preferences_is_global", "is_global"),
+    )
+
+
+class FeaturedItemModel(Base):
+    """A featured item that appears on the homepage (lecture, professor, or department)."""
+
+    __tablename__ = "featured_items"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    item_type = Column(String, nullable=False)  # "lecture", "professor", "department"
+    item_id = Column(Integer, nullable=False)  # Reference to the source table's PK
+    language = Column(String, nullable=False, default="en")
+    display_order = Column(Integer, nullable=False, default=0)
+    created_at = Column(DateTime, nullable=False, default=datetime.now)
+
+    __table_args__ = (
+        Index("ix_featured_items_type_language", "item_type", "language"),
+        UniqueConstraint(
+            "item_type", "item_id", "language", name="uq_featured_items_type_id_language"
+        ),
     )

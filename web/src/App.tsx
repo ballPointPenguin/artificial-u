@@ -34,6 +34,9 @@ const Profile = lazy(() => import('./pages/Profile'))
 const Jobs = lazy(() => import('./pages/Jobs'))
 const AdminDashboard = lazy(() => import('./pages/AdminDashboard'))
 const AdminSettings = lazy(() => import('./pages/AdminSettings'))
+const AdminFeatured = lazy(() => import('./pages/AdminFeatured'))
+const Search = lazy(() => import('./pages/Search'))
+const ComingSoon = lazy(() => import('./pages/ComingSoon'))
 const Stylebook = lazy(() => import('./pages/Stylebook'))
 const Login = lazy(() => import('./pages/Login'))
 const Quickstart = lazy(() => import('./pages/Quickstart'))
@@ -43,7 +46,13 @@ const App: Component = () => {
     <Route path="/" component={Layout}>
       <Route path="/" component={Home} />
       <Route path="/about" component={About} />
+      <Route path="/about/privacy" component={ComingSoon} />
+      <Route path="/about/terms" component={ComingSoon} />
+      <Route path="/about/ai-ethics" component={ComingSoon} />
+      <Route path="/about/pricing" component={ComingSoon} />
+      <Route path="/about/faq" component={ComingSoon} />
       <Route path="/academics" component={Academics} />
+      <Route path="/search" component={Search} />
       <Route path="/stylebook" component={Stylebook} />
       <Route path="/login" component={Login} />
 
@@ -121,6 +130,25 @@ const App: Component = () => {
               }
             >
               <AdminSettings />
+            </RequireRole>
+          </RequireAuth>
+        )}
+      />
+
+      {/* Admin Featured Content route - requires admin role */}
+      <Route
+        path="/admin/featured"
+        component={() => (
+          <RequireAuth fallback={<LoginPrompt />}>
+            <RequireRole
+              minRole="admin"
+              fallback={
+                <div class="container mx-auto p-4 text-center">
+                  Access denied. Admin role required.
+                </div>
+              }
+            >
+              <AdminFeatured />
             </RequireRole>
           </RequireAuth>
         )}
