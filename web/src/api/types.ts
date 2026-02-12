@@ -626,6 +626,28 @@ export interface PlatformStats {
   audio_hours: number
 }
 
+// Recent / enriched lecture (homepage)
+export interface RecentLecture {
+  id: number
+  title: string
+  summary: string | null
+  audio_url: string | null
+  duration: number | null
+  course_id: number
+  course_code: string | null
+  course_title: string | null
+  topic_id: number
+  topic_title: string | null
+  topic_week: number | null
+  professor_id: number | null
+  professor_name: string | null
+  professor_image_url: string | null
+  professor_accent: string | null
+  professor_specialization: string | null
+  department_name: string | null
+  created_at: string | null
+}
+
 // Search
 export interface LectureSearchResult {
   id: number

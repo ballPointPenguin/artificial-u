@@ -105,6 +105,7 @@ export const ENDPOINTS = {
     clearSummary: (id: number) => `/v1/lectures/${String(id)}/summary`,
     uploadAudio: (id: number) => `/v1/lectures/${String(id)}/upload-audio`,
     download: (id: number) => `/v1/lectures/${String(id)}/content/download`,
+    recent: '/v1/lectures/recent',
   },
   topics: {
     list: '/v1/topics',

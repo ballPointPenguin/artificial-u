@@ -10,6 +10,7 @@ import type {
   LectureGenerateRequest,
   LectureList,
   LectureUpdate,
+  RecentLecture,
 } from '../types'
 
 interface ListLecturesParams {
@@ -199,5 +200,21 @@ export const lectureService = {
    */
   clearSummary: (lectureId: number): Promise<Lecture> => {
     return httpClient.delete<Lecture>(ENDPOINTS.lectures.clearSummary(lectureId))
+  },
+
+  /**
+   * Get recent lectures with audio, enriched with course/professor/topic data.
+   * Used for homepage "Recently Added" section.
+   *
+   * @param limitOrIds - number for limit (default 4), or number[] for specific IDs
+   */
+  getRecentLectures: (limitOrIds: number | number[] = 4): Promise<RecentLecture[]> => {
+    if (Array.isArray(limitOrIds)) {
+      const ids = limitOrIds.join(',')
+      return httpClient.get<RecentLecture[]>(`${ENDPOINTS.lectures.recent}?ids=${ids}`)
+    }
+    return httpClient.get<RecentLecture[]>(
+      `${ENDPOINTS.lectures.recent}?limit=${String(limitOrIds)}`
+    )
   },
 }

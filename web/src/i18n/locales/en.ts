@@ -25,9 +25,22 @@ export const en = {
   // Home page
   home: {
     hero: {
-      title: 'Artificial University',
-      subtitle: 'Explore knowledge crafted by AI, shaped by your curiosity',
-      buttonText: 'Learn More',
+      titleStart: 'Lectures delivered by ',
+      titleEmphasis: 'AI professors',
+      titleEnd: ", on any subject you're curious about",
+      subtitle:
+        'Each course is taught by a unique AI professor with their own voice, personality, and teaching style. Browse the catalog, press play, and learn something new.',
+      browseCta: 'Browse & Listen',
+      createCta: 'Create Your Own Course',
+    },
+    featuredLectures: {
+      label: 'Featured Lectures',
+      nowPlaying: 'Featured Lectures',
+    },
+    stats: {
+      courses: 'Courses',
+      lectures: 'Lectures',
+      audioHours: 'Hours of Audio',
     },
     disclaimer: {
       title: 'Experimental Content — Not a Real University',

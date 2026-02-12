@@ -98,6 +98,88 @@ These semantic colors are then available as Tailwind utility classes (e.g., `bg-
 - Base HTML element styles, default link styles, and scrollbar styling are defined in the `@layer base` section of `src/index.css`.
 - Custom utility classes like `text-shadow-arcane` and `text-shadow-golden` are defined using the `@utility` directive in `src/index.css`.
 
+## Homepage Component Patterns
+
+The following patterns and utilities were introduced for the homepage and are available globally.
+
+### Section Label
+
+Small, uppercase category labels placed above section headings.
+
+```html
+<span class="section-label">Recently Added</span>
+<h2 class="text-2xl font-display text-foreground">Latest Lectures</h2>
+```
+
+Uses `font-sans`, uppercase, wide letter-spacing, colored with `--color-primary`.
+
+### Stat Counters
+
+Large display numbers for the homepage stats strip.
+
+```html
+<span class="stat-number">42</span>        <!-- default: 3.5rem -->
+<span class="stat-number-sm">42</span>     <!-- small: 2.5rem -->
+```
+
+Uses `font-display`, bold, colored with `--color-primary`. Pair with `animate-count-up` for entrance animation.
+
+### Tags (Department Labels)
+
+Colored tag pills for department badges on lecture cards. Two semantic variants that adapt to every theme:
+
+```html
+<span class="tag-teal inline-block rounded px-2.5 py-0.5 text-xs font-sans font-medium">
+  Computer Science
+</span>
+<span class="tag-coral inline-block rounded px-2.5 py-0.5 text-xs font-sans font-medium">
+  Philosophy
+</span>
+```
+
+Each variant defines background, text color, and border via `--theme-tag-teal-*` / `--theme-tag-coral-*` HSL variables, overridden per theme.
+
+### Card Hover Lift
+
+A utility for interactive cards that rise on hover:
+
+```html
+<div class="card-hover-lift rounded-lg border border-border bg-surface p-4">
+  <!-- card content -->
+</div>
+```
+
+Applies `translateY(-2px)` and a subtle box-shadow on hover.
+
+### Section Backgrounds
+
+Three background levels for visual rhythm when alternating page sections:
+
+- `bg-background` — page default
+- `bg-surface` — cards, elevated panels
+- `bg-surface-alt` — alternating sections (5% lighter than background)
+
+### CTA Banner
+
+A call-to-action component with gradient background and border glow. Applied as a CSS component class:
+
+```html
+<div class="cta-banner">
+  <h2>Create Your Own Courses</h2>
+  <p>Description text...</p>
+  <Button variant="primary">Get Started</Button>
+</div>
+```
+
+Uses a subtle diagonal gradient from `primary` to `accent` with low opacity, and a `primary`-tinted border.
+
+### Animations
+
+- `animate-fade-in` — Fade in + slide up (0.6s ease-out). Good for section entrance.
+- `animate-count-up` — Scale up + fade in (0.8s ease-out). Good for stat numbers.
+
+Both pair with intersection observer logic for scroll-triggered entrance effects.
+
 ## Workflow & Best Practices
 
 - **File Structure**:

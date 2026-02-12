@@ -26,9 +26,22 @@ export const es = {
   // Home page
   home: {
     hero: {
-      title: 'Universidad Artificial',
-      subtitle: 'Explora el conocimiento elaborado por IA, moldeado por tu curiosidad',
-      buttonText: 'Más información',
+      titleStart: 'Clases impartidas por ',
+      titleEmphasis: 'profesores de IA',
+      titleEnd: ', sobre cualquier tema que te interese',
+      subtitle:
+        'Cada curso es impartido por un profesor de IA único con su propia voz, personalidad y estilo de enseñanza. Explora el catálogo, dale play y aprende algo nuevo.',
+      browseCta: 'Explorar y Escuchar',
+      createCta: 'Crea Tu Propio Curso',
+    },
+    featuredLectures: {
+      label: 'Clases Destacadas',
+      nowPlaying: 'Clases Destacadas',
+    },
+    stats: {
+      courses: 'Cursos',
+      lectures: 'Clases',
+      audioHours: 'Horas de Audio',
     },
     disclaimer: {
       title: 'Contenido Experimental — No es una Universidad Real',

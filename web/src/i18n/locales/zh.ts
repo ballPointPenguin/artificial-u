@@ -32,9 +32,22 @@ export const zh = {
   // Home page
   home: {
     hero: {
-      title: '人工智能大学',
-      subtitle: '探索由AI精心打造的知识，由你的好奇心塑造',
-      buttonText: '了解更多',
+      titleStart: '由',
+      titleEmphasis: 'AI教授',
+      titleEnd: '讲授的课程，涵盖你好奇的任何主题',
+      subtitle:
+        '每门课程由独特的AI教授讲授，拥有自己的声音、个性和教学风格。浏览目录，点击播放，学习新知。',
+      browseCta: '浏览和收听',
+      createCta: '创建你的课程',
+    },
+    featuredLectures: {
+      label: '精选课程',
+      nowPlaying: '精选课程',
+    },
+    stats: {
+      courses: '课程',
+      lectures: '讲座',
+      audioHours: '音频时长',
     },
     disclaimer: {
       title: '实验性内容 — 非真实大学',

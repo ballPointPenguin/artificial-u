@@ -26,9 +26,22 @@ export const fr = {
   // Home page
   home: {
     hero: {
-      title: 'Université Artificielle',
-      subtitle: "Explorez des connaissances conçues par l'IA, façonnées par votre curiosité",
-      buttonText: 'En savoir plus',
+      titleStart: 'Des cours donnés par des ',
+      titleEmphasis: 'professeurs IA',
+      titleEnd: ', sur tous les sujets qui vous passionnent',
+      subtitle:
+        "Chaque cours est dispensé par un professeur IA unique avec sa propre voix, personnalité et style d'enseignement. Parcourez le catalogue, appuyez sur lecture et apprenez.",
+      browseCta: 'Explorer et Écouter',
+      createCta: 'Créez Votre Propre Cours',
+    },
+    featuredLectures: {
+      label: 'Cours en Vedette',
+      nowPlaying: 'Cours en Vedette',
+    },
+    stats: {
+      courses: 'Cours',
+      lectures: 'Leçons',
+      audioHours: "Heures d'Audio",
     },
     disclaimer: {
       title: "Contenu Expérimental — Ceci n'est pas une vraie université",

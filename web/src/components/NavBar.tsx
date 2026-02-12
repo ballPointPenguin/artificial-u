@@ -20,95 +20,76 @@ export function NavBar() {
     setIsMobileMenuOpen(!isMobileMenuOpen())
   }
 
+  // Shared link classes
+  const linkClass =
+    'text-muted hover:text-primary font-sans text-xs font-medium uppercase tracking-widest transition-colors duration-200'
+  const mobileLinkClass =
+    'block text-foreground/80 hover:text-primary py-2 font-sans text-sm uppercase tracking-wider transition-colors'
+
   return (
     <nav
-      class={`w-full z-50 transition-all duration-300 ${
-        isScrolled() ? 'bg-arcanum-950/90 backdrop-blur-sm shadow-md' : 'bg-transparent'
+      class={`w-full z-50 transition-all duration-300 border-b border-border/40 ${
+        isScrolled() ? 'bg-background/95 backdrop-blur-sm shadow-sm' : 'bg-transparent'
       }`}
     >
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="flex justify-between items-center py-4">
-          {/* Logo and site name */}
-          <div>{t().site.shortName}</div>
-          <div class="flex items-center">
-            <A href="/" class="flex items-center">
-              <div class="w-12 h-12 rounded-full border-2 border-parchment-300 overflow-hidden flex items-center justify-center bg-arcanum-900">
-                <span class="text-parchment-200 font-display text-xl">A</span>
-              </div>
-              <div class="ml-3">
-                <h1 class="text-parchment-200 font-display text-xl tracking-wider">
-                  {t().site.name}
-                </h1>
-              </div>
-            </A>
-          </div>
+        <div class="flex justify-between items-center py-3">
+          {/* Brand */}
+          <A href="/" class="flex items-center gap-3 no-underline">
+            <div class="w-9 h-9 rounded-full border-2 border-secondary flex items-center justify-center">
+              <span class="font-display text-sm text-secondary font-bold">A</span>
+            </div>
+            <span class="font-display text-sm tracking-[0.12em] uppercase text-foreground">
+              {t().site.name}
+            </span>
+          </A>
 
           {/* Desktop Navigation */}
-          <div class="hidden md:flex items-center space-x-8">
-            <A
-              href="/about"
-              class="text-parchment-200 hover:text-parchment-100 tracking-wide font-serif uppercase text-shadow-golden text-sm"
-            >
-              {t().nav.about}
-            </A>
-            <A
-              href="/academics"
-              class="text-parchment-200 hover:text-parchment-100 tracking-wide font-serif uppercase text-shadow-golden text-sm"
-            >
-              {t().nav.academics}
-            </A>
-            <A
-              href="/professors"
-              class="text-parchment-200 hover:text-parchment-100 tracking-wide font-serif uppercase text-shadow-golden text-sm"
-            >
-              {t().nav.professors}
-            </A>
-            <A
-              href="/courses"
-              class="text-parchment-200 hover:text-parchment-100 tracking-wide font-serif uppercase text-shadow-golden text-sm"
-            >
+          <div class="hidden md:flex items-center gap-7">
+            <A href="/courses" class={linkClass}>
               {t().nav.courses}
             </A>
+            <A href="/professors" class={linkClass}>
+              {t().nav.professors}
+            </A>
+            <A href="/academics" class={linkClass}>
+              Departments
+            </A>
+            <A href="/about" class={linkClass}>
+              {t().nav.about}
+            </A>
             <Show when={auth.isAuthenticated()}>
-              <A
-                href="/profile"
-                class="text-parchment-200 hover:text-parchment-100 tracking-wide font-serif uppercase text-shadow-golden text-sm"
-              >
+              <A href="/profile" class={linkClass}>
                 {t().nav.profile}
               </A>
             </Show>
             <Show when={auth.isAdmin()}>
-              <A
-                href="/jobs"
-                class="text-parchment-200 hover:text-parchment-100 tracking-wide font-serif uppercase text-shadow-golden text-sm"
-              >
+              <A href="/jobs" class={linkClass}>
                 {t().nav.jobs}
               </A>
-              <A
-                href="/admin"
-                class="text-parchment-200 hover:text-parchment-100 tracking-wide font-serif uppercase text-shadow-golden text-sm"
-              >
+              <A href="/admin" class={linkClass}>
                 {t().nav.admin}
               </A>
             </Show>
-            <Show when={!auth.isAuthenticated()}>
+
+            {/* Auth CTA */}
+            <Show
+              when={!auth.isAuthenticated()}
+              fallback={
+                <button type="button" onClick={() => void auth.logout()} class={linkClass}>
+                  {t().nav.logout}
+                </button>
+              }
+            >
               <A
                 href="/login"
-                class="text-parchment-200 hover:text-parchment-100 tracking-wide font-serif uppercase text-shadow-golden text-sm"
+                class="ml-1 px-4 py-1.5 border border-primary rounded text-primary font-sans text-xs font-medium uppercase tracking-widest hover:bg-primary hover:text-on-primary transition-all duration-200"
               >
                 {t().nav.login}
               </A>
             </Show>
-            <Show when={auth.isAuthenticated()}>
-              <button
-                class="text-parchment-200 hover:text-parchment-100 tracking-wide font-serif uppercase text-shadow-golden text-sm"
-                type="button"
-                onClick={() => void auth.logout()}
-              >
-                {t().nav.logout}
-              </button>
-            </Show>
-            <div class="ml-4 pl-4 border-l border-border/30">
+
+            <div class="ml-2 pl-3 border-l border-border/30">
               <LocaleSwitcher />
             </div>
           </div>
@@ -118,7 +99,7 @@ export function NavBar() {
             <button
               type="button"
               onClick={toggleMobileMenu}
-              class="text-parchment-200 hover:text-parchment-100"
+              class="text-foreground/70 hover:text-foreground p-1"
             >
               <span class="sr-only">{t().nav.openMenu}</span>
               {isMobileMenuOpen() ? (
@@ -159,73 +140,41 @@ export function NavBar() {
 
       {/* Mobile Menu */}
       <Show when={isMobileMenuOpen()}>
-        <div class="md:hidden bg-arcanum-950/95 backdrop-blur-sm">
-          <div class="px-4 pt-2 pb-6 space-y-4">
-            <A
-              href="/about"
-              class="block text-parchment-200 hover:text-parchment-100 py-2 tracking-wide font-serif uppercase text-sm"
-              onClick={toggleMobileMenu}
-            >
-              {t().nav.about}
-            </A>
-            <A
-              href="/academics"
-              class="block text-parchment-200 hover:text-parchment-100 py-2 tracking-wide font-serif uppercase text-sm"
-              onClick={toggleMobileMenu}
-            >
-              {t().nav.academics}
-            </A>
-            <A
-              href="/professors"
-              class="block text-parchment-200 hover:text-parchment-100 py-2 tracking-wide font-serif uppercase text-sm"
-              onClick={toggleMobileMenu}
-            >
-              {t().nav.professors}
-            </A>
-            <A
-              href="/courses"
-              class="block text-parchment-200 hover:text-parchment-100 py-2 tracking-wide font-serif uppercase text-sm"
-              onClick={toggleMobileMenu}
-            >
+        <div class="md:hidden bg-background/95 backdrop-blur-sm border-t border-border/30">
+          <div class="px-4 pt-2 pb-6 space-y-1">
+            <A href="/courses" class={mobileLinkClass} onClick={toggleMobileMenu}>
               {t().nav.courses}
             </A>
+            <A href="/professors" class={mobileLinkClass} onClick={toggleMobileMenu}>
+              {t().nav.professors}
+            </A>
+            <A href="/academics" class={mobileLinkClass} onClick={toggleMobileMenu}>
+              Departments
+            </A>
+            <A href="/about" class={mobileLinkClass} onClick={toggleMobileMenu}>
+              {t().nav.about}
+            </A>
             <Show when={auth.isAuthenticated()}>
-              <A
-                href="/profile"
-                class="block text-parchment-200 hover:text-parchment-100 py-2 tracking-wide font-serif uppercase text-sm"
-                onClick={toggleMobileMenu}
-              >
+              <A href="/profile" class={mobileLinkClass} onClick={toggleMobileMenu}>
                 {t().nav.profile}
               </A>
             </Show>
             <Show when={auth.isAdmin()}>
-              <A
-                href="/jobs"
-                class="block text-parchment-200 hover:text-parchment-100 py-2 tracking-wide font-serif uppercase text-sm"
-                onClick={toggleMobileMenu}
-              >
+              <A href="/jobs" class={mobileLinkClass} onClick={toggleMobileMenu}>
                 {t().nav.jobs}
               </A>
-              <A
-                href="/admin"
-                class="block text-parchment-200 hover:text-parchment-100 py-2 tracking-wide font-serif uppercase text-sm"
-                onClick={toggleMobileMenu}
-              >
+              <A href="/admin" class={mobileLinkClass} onClick={toggleMobileMenu}>
                 {t().nav.admin}
               </A>
             </Show>
             <Show when={!auth.isAuthenticated()}>
-              <A
-                href="/login"
-                class="block text-parchment-200 hover:text-parchment-100 py-2 tracking-wide font-serif uppercase text-sm"
-                onClick={toggleMobileMenu}
-              >
+              <A href="/login" class={mobileLinkClass} onClick={toggleMobileMenu}>
                 {t().nav.login}
               </A>
             </Show>
             <Show when={auth.isAuthenticated()}>
               <button
-                class="block text-parchment-200 hover:text-parchment-100 py-2 tracking-wide font-serif uppercase text-sm"
+                class={mobileLinkClass}
                 type="button"
                 onClick={() => {
                   toggleMobileMenu()
