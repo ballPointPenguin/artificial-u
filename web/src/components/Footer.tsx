@@ -94,7 +94,7 @@ export const Footer: Component = () => {
 
       {/* Bottom bar — pb-14 ensures legal links clear any fixed bottom overlays on mobile */}
       <div class="border-t border-border">
-        <div class="max-w-7xl mx-auto px-6 md:px-12 lg:px-16 py-5 pb-16 sm:pb-5 flex flex-col sm:flex-row justify-between items-center gap-3">
+        <div class="max-w-7xl mx-auto px-6 md:px-12 lg:px-16 py-5 flex flex-col sm:flex-row justify-between items-center gap-3">
           <span class="text-xs text-muted">{t().footer.copyright}</span>
           <nav class="flex flex-wrap gap-x-6 gap-y-1">
             <A

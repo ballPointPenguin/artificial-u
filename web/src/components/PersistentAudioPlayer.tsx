@@ -178,7 +178,7 @@ export const PersistentAudioPlayer: Component = () => {
   return (
     <Show when={player.currentTrack()}>
       {(track) => (
-        <div class="fixed bottom-0 left-0 right-0 z-50 border-t border-parchment-800/50 bg-parchment-950/95 backdrop-blur-sm shadow-2xl">
+        <div class="w-full border-t border-parchment-800/50 bg-parchment-950/95 backdrop-blur-sm shadow-2xl">
           <button
             type="button"
             onClick={handleClose}
