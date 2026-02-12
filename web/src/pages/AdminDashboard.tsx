@@ -155,6 +155,12 @@ export default function AdminDashboard() {
         </h1>
         <div class="flex items-center gap-3">
           <a
+            href="/admin/featured"
+            class="rounded-md border border-border bg-muted/30 px-4 py-2 text-sm font-medium transition-colors hover:bg-muted/60"
+          >
+            Featured
+          </a>
+          <a
             href="/admin/settings"
             class="rounded-md border border-border bg-muted/30 px-4 py-2 text-sm font-medium transition-colors hover:bg-muted/60"
           >

@@ -34,6 +34,7 @@ const Profile = lazy(() => import('./pages/Profile'))
 const Jobs = lazy(() => import('./pages/Jobs'))
 const AdminDashboard = lazy(() => import('./pages/AdminDashboard'))
 const AdminSettings = lazy(() => import('./pages/AdminSettings'))
+const AdminFeatured = lazy(() => import('./pages/AdminFeatured'))
 const Stylebook = lazy(() => import('./pages/Stylebook'))
 const Login = lazy(() => import('./pages/Login'))
 const Quickstart = lazy(() => import('./pages/Quickstart'))
@@ -121,6 +122,25 @@ const App: Component = () => {
               }
             >
               <AdminSettings />
+            </RequireRole>
+          </RequireAuth>
+        )}
+      />
+
+      {/* Admin Featured Content route - requires admin role */}
+      <Route
+        path="/admin/featured"
+        component={() => (
+          <RequireAuth fallback={<LoginPrompt />}>
+            <RequireRole
+              minRole="admin"
+              fallback={
+                <div class="container mx-auto p-4 text-center">
+                  Access denied. Admin role required.
+                </div>
+              }
+            >
+              <AdminFeatured />
             </RequireRole>
           </RequireAuth>
         )}

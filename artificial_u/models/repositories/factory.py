@@ -13,6 +13,7 @@ from artificial_u.models.repositories.base import BaseRepository
 from artificial_u.models.repositories.course import CourseRepository
 from artificial_u.models.repositories.department import DepartmentRepository
 from artificial_u.models.repositories.faculty import FacultyRepository
+from artificial_u.models.repositories.featured import FeaturedItemRepository
 from artificial_u.models.repositories.job import JobRepository
 from artificial_u.models.repositories.lecture import LectureRepository
 from artificial_u.models.repositories.preference import PreferenceRepository
@@ -143,6 +144,11 @@ class RepositoryFactory:
     def preference(self) -> PreferenceRepository:
         """Get the preference repository."""
         return self.get_repository(PreferenceRepository)
+
+    @property
+    def featured(self) -> FeaturedItemRepository:
+        """Get the featured item repository."""
+        return self.get_repository(FeaturedItemRepository)
 
     def create_tables(self):
         """Create all database tables if they don't exist."""

@@ -38,15 +38,35 @@ router = APIRouter(
     "/featured",
     response_model=List[ProfessorResponse],
     summary="Get featured professors",
-    description="Get a list of up to 3 randomly selected featured professors.",
+    description=(
+        "Get featured professors. Returns DB-curated selections if available, "
+        "falling back to random selection."
+    ),
 )
 async def get_featured_professors(
+    language: str = Query("en", description="Language code"),
     service: ProfessorApiService = Depends(get_professor_api_service),
+    repository_factory: RepositoryFactory = Depends(get_repository_factory),
 ):
     """
-    Get up to 3 featured professors.
-    The selection is random for this version.
+    Get featured professors. Uses admin-curated featured items from the DB
+    when available, falling back to random selection.
     """
+    try:
+        featured_items = repository_factory.featured.list_by_type("professor", language=language)
+        if featured_items:
+            professors = []
+            for item in featured_items:
+                prof = repository_factory.professor.get(item.item_id)
+                if prof:
+                    professors.append(ProfessorResponse.model_validate(prof.model_dump()))
+            if professors:
+                return professors
+    except Exception:
+        # Gracefully fall back if featured_items table is unavailable
+        pass
+
+    # Fallback to random selection
     return service.get_featured_professors()
 
 

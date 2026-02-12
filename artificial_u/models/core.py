@@ -362,3 +362,14 @@ class PreferenceCreate(BaseModel):
     student_id: Optional[int] = Field(
         default=None, description="Student ID for user-specific preferences"
     )
+
+
+class FeaturedItem(BaseModel):
+    """A featured item displayed on the homepage."""
+
+    id: Optional[int] = None
+    item_type: str  # "lecture", "professor", "department"
+    item_id: int
+    language: str = "en"
+    display_order: int = 0
+    created_at: Optional[datetime] = None

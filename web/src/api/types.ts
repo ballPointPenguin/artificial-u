@@ -227,6 +227,7 @@ export interface Lecture {
   audio_download_url?: string | null
   transcript_url: string | null
   word_count: number | null
+  duration: number | null
   created_by?: number | null
   created_with?: string | null
   created_at?: string | null
@@ -599,4 +600,28 @@ export interface QuickstartFinalizeResponse {
   course_id: number
   topics_job_id: number
   message: string
+}
+
+// Featured items
+export interface FeaturedItem {
+  id: number
+  item_type: 'lecture' | 'professor' | 'department'
+  item_id: number
+  language: string
+  display_order: number
+  created_at: string | null
+}
+
+export interface FeaturedItemCreate {
+  item_type: 'lecture' | 'professor' | 'department'
+  item_id: number
+  language?: string
+  display_order?: number
+}
+
+// Stats
+export interface PlatformStats {
+  course_count: number
+  lecture_count: number
+  audio_hours: number
 }
