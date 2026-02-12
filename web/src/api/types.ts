@@ -625,3 +625,62 @@ export interface PlatformStats {
   lecture_count: number
   audio_hours: number
 }
+
+// Search
+export interface LectureSearchResult {
+  id: number
+  title: string
+  summary: string | null
+  course_id: number
+  course_title: string | null
+  course_code: string | null
+  professor_name: string | null
+  department_name: string | null
+  audio_url: string | null
+  duration: number | null
+}
+
+export interface CourseSearchResult {
+  id: number
+  code: string
+  title: string
+  description: string | null
+  level: string | null
+  department_name: string | null
+  professor_name: string | null
+  status: string | null
+}
+
+export interface ProfessorSearchResult {
+  id: number
+  name: string
+  title: string | null
+  specialization: string | null
+  department_name: string | null
+  image_url: string | null
+}
+
+export interface DepartmentSearchResult {
+  id: number
+  name: string
+  code: string
+  description: string | null
+}
+
+export interface TopicSearchResult {
+  id: number
+  title: string
+  week: number
+  course_id: number
+  course_title: string | null
+  course_code: string | null
+}
+
+export interface SearchResponse {
+  query: string
+  lectures: LectureSearchResult[]
+  courses: CourseSearchResult[]
+  professors: ProfessorSearchResult[]
+  departments: DepartmentSearchResult[]
+  topics: TopicSearchResult[]
+}

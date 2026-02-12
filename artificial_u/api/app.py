@@ -24,6 +24,7 @@ from artificial_u.api.routers.lectures import router as lectures_router
 from artificial_u.api.routers.preferences import router as preferences_router
 from artificial_u.api.routers.professors import router as professors_router
 from artificial_u.api.routers.quickstart import router as quickstart_router
+from artificial_u.api.routers.search import router as search_router
 from artificial_u.api.routers.stats import router as stats_router
 from artificial_u.api.routers.students import router as students_router
 from artificial_u.api.routers.topics import course_topics_router
@@ -127,6 +128,7 @@ def create_application() -> FastAPI:
     app.include_router(topics_router, prefix="/api/v1")
     app.include_router(voice_router, prefix="/api/v1")
     app.include_router(quickstart_router, prefix="/api/v1")
+    app.include_router(search_router, prefix="/api/v1")
     app.include_router(stats_router, prefix="/api/v1")
 
     return app

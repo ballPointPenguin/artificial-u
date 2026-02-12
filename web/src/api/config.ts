@@ -148,6 +148,7 @@ export const ENDPOINTS = {
     detail: (id: number) => `/v1/featured/${String(id)}`,
     order: (id: number) => `/v1/featured/${String(id)}/order`,
   },
+  search: '/v1/search',
   stats: '/v1/stats',
   preferences: {
     listGlobal: '/v1/preferences/global',
