@@ -1,0 +1,1619 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>A|U Homepage Wireframe — Content & Structure</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Fira+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    /* A|U palette approximation from stylebook */
+    --bg-deep: #0c0a14;
+    --bg-section: #111020;
+    --bg-card: #1a1730;
+    --bg-card-hover: #231f40;
+    --surface-muted: #2a2545;
+    --gold: #c4a24e;
+    --gold-bright: #e8c95a;
+    --gold-dim: #8a7234;
+    --purple-accent: #9b7dd4;
+    --purple-bright: #b99af0;
+    --text-primary: #e8e2d4;
+    --text-secondary: #a89f8c;
+    --text-muted: #706a5c;
+    --coral: #d4836b;
+    --teal: #5ca89a;
+    --border: #2e2a42;
+    --serif: 'EB Garamond', 'Cormorant Garamond', Georgia, serif;
+    --display: 'Cormorant Garamond', Georgia, serif;
+    --sans: 'Fira Sans', 'Segoe UI', sans-serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg-deep);
+    color: var(--text-primary);
+    font-family: var(--serif);
+    font-size: 17px;
+    line-height: 1.6;
+    overflow-x: hidden;
+  }
+
+  /* ── Wireframe annotation layer ── */
+  .annotation {
+    position: absolute;
+    top: 8px;
+    right: 12px;
+    background: var(--coral);
+    color: #fff;
+    font-family: var(--sans);
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 3px 8px;
+    border-radius: 3px;
+    z-index: 10;
+    opacity: 0.9;
+  }
+
+  .annotation.browser { background: var(--teal); }
+  .annotation.customer { background: var(--purple-accent); }
+  .annotation.skeptic { background: var(--coral); }
+  .annotation.all { background: var(--gold-dim); color: var(--text-primary); }
+
+  .section-label {
+    font-family: var(--sans);
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    color: var(--gold);
+    margin-bottom: 6px;
+    opacity: 0.7;
+  }
+
+  /* ── Legend ── */
+  .legend {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+    background: rgba(12, 10, 20, 0.95);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--border);
+    padding: 8px 24px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    font-family: var(--sans);
+    font-size: 12px;
+  }
+
+  .legend-title {
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-right: 8px;
+    white-space: nowrap;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    white-space: nowrap;
+  }
+
+  .legend-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+  }
+
+  /* ── Scroll indicator ── */
+  .scroll-progress {
+    position: fixed;
+    top: 36px;
+    left: 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--gold), var(--purple-accent));
+    z-index: 101;
+    transition: width 0.1s;
+  }
+
+  /* ── NAV ── */
+  nav {
+    position: relative;
+    padding: 16px 48px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border);
+    margin-top: 38px;
+  }
+
+  .nav-brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .nav-logo {
+    width: 36px;
+    height: 36px;
+    border: 2px solid var(--purple-accent);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--display);
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--purple-accent);
+  }
+
+  .nav-wordmark {
+    font-family: var(--display);
+    font-size: 16px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-primary);
+  }
+
+  .nav-links {
+    display: flex;
+    gap: 28px;
+    align-items: center;
+  }
+
+  .nav-links a {
+    font-family: var(--sans);
+    font-size: 13px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-secondary);
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+
+  .nav-links a:hover { color: var(--gold); }
+
+  .nav-cta {
+    padding: 8px 20px;
+    background: transparent;
+    border: 1px solid var(--gold);
+    color: var(--gold) !important;
+    border-radius: 4px;
+    transition: all 0.2s;
+    cursor: pointer;
+  }
+
+  .nav-cta:hover {
+    background: var(--gold) !important;
+    color: var(--bg-deep) !important;
+  }
+
+  /* ── HERO ── */
+  .hero {
+    position: relative;
+    padding: 80px 48px 60px;
+    min-height: 520px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 60px;
+    align-items: center;
+    overflow: hidden;
+  }
+
+  .hero::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(ellipse at 20% 50%, rgba(155, 125, 212, 0.06) 0%, transparent 60%),
+      radial-gradient(ellipse at 80% 30%, rgba(196, 162, 78, 0.04) 0%, transparent 50%);
+    pointer-events: none;
+  }
+
+  .hero-text h1 {
+    font-family: var(--display);
+    font-size: 52px;
+    font-weight: 400;
+    line-height: 1.15;
+    color: var(--text-primary);
+    margin-bottom: 20px;
+  }
+
+  .hero-text h1 em {
+    color: var(--gold);
+    font-style: italic;
+  }
+
+  .hero-text .subtitle {
+    font-family: var(--serif);
+    font-size: 19px;
+    color: var(--text-secondary);
+    margin-bottom: 32px;
+    max-width: 480px;
+    line-height: 1.7;
+  }
+
+  .hero-ctas {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+  }
+
+  .btn-primary {
+    font-family: var(--sans);
+    font-size: 14px;
+    font-weight: 500;
+    padding: 14px 28px;
+    background: var(--gold);
+    color: var(--bg-deep);
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    letter-spacing: 0.04em;
+    transition: all 0.2s;
+  }
+
+  .btn-primary:hover { background: var(--gold-bright); }
+
+  .btn-secondary {
+    font-family: var(--sans);
+    font-size: 14px;
+    font-weight: 500;
+    padding: 14px 28px;
+    background: transparent;
+    color: var(--purple-accent);
+    border: 1px solid var(--purple-accent);
+    border-radius: 4px;
+    cursor: pointer;
+    letter-spacing: 0.04em;
+    transition: all 0.2s;
+  }
+
+  .btn-secondary:hover {
+    background: rgba(155, 125, 212, 0.1);
+  }
+
+  /* Hero right: featured player */
+  .hero-player {
+    position: relative;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 28px;
+    max-width: 460px;
+    justify-self: end;
+    overflow: hidden;
+  }
+
+  .carousel-track {
+    display: flex;
+    transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .carousel-slide {
+    min-width: 100%;
+    flex-shrink: 0;
+  }
+
+  .carousel-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 16px;
+  }
+
+  .carousel-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    background: var(--surface-muted);
+    color: var(--text-secondary);
+    font-size: 14px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+  }
+
+  .carousel-btn:hover {
+    border-color: var(--gold-dim);
+    color: var(--gold);
+    background: var(--bg-card-hover);
+  }
+
+  .carousel-dots {
+    display: flex;
+    gap: 8px;
+  }
+
+  .carousel-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--surface-muted);
+    border: 1px solid var(--border);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .carousel-dot.active {
+    background: var(--gold);
+    border-color: var(--gold);
+  }
+
+  .hero-player .now-playing {
+    font-family: var(--sans);
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    color: var(--gold);
+    margin-bottom: 12px;
+  }
+
+  .hero-player .lecture-title {
+    font-family: var(--display);
+    font-size: 22px;
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+
+  .hero-player .lecture-meta {
+    font-family: var(--sans);
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-bottom: 16px;
+  }
+
+  .hero-player .professor-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+
+  .professor-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--purple-accent), var(--gold-dim));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--sans);
+    font-size: 14px;
+    font-weight: 600;
+    color: #fff;
+  }
+
+  .professor-info {
+    font-family: var(--sans);
+    font-size: 13px;
+  }
+
+  .professor-info .name { color: var(--text-primary); font-weight: 500; }
+  .professor-info .dept { color: var(--text-muted); font-size: 11px; }
+
+  .slide-play-btn {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: rgba(196, 162, 78, 0.15);
+    border: 1px solid var(--gold-dim);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    z-index: 2;
+  }
+
+  .slide-play-btn svg { fill: var(--gold); }
+
+  .slide-play-btn:hover {
+    background: var(--gold);
+    border-color: var(--gold);
+  }
+
+  .slide-play-btn:hover svg { fill: var(--bg-deep); }
+
+  .slide-duration {
+    color: var(--gold-dim);
+    font-family: var(--sans);
+    font-weight: 500;
+    font-size: 12px;
+  }
+
+  .carousel-slide {
+    min-width: 100%;
+    flex-shrink: 0;
+    position: relative;
+  }
+
+  /* ── STATS STRIP ── */
+  .stats-strip {
+    display: flex;
+    justify-content: center;
+    gap: 48px;
+    padding: 40px 48px;
+    position: relative;
+  }
+
+  .stat-item {
+    text-align: center;
+  }
+
+  .stat-number {
+    font-family: var(--display);
+    font-size: 42px;
+    font-weight: 700;
+    color: var(--gold);
+    line-height: 1.1;
+    letter-spacing: -0.01em;
+  }
+
+  .stat-label {
+    font-family: var(--sans);
+    font-size: 12px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--text-muted);
+    margin-top: 4px;
+  }
+
+  .stat-divider {
+    width: 1px;
+    background: var(--border);
+    align-self: stretch;
+  }
+
+  /* ── FEATURED LECTURES CAROUSEL ── */
+  .section {
+    position: relative;
+    padding: 56px 48px;
+  }
+
+  .section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 28px;
+  }
+
+  .section h2 {
+    font-family: var(--display);
+    font-size: 28px;
+    font-weight: 400;
+    letter-spacing: 0.04em;
+  }
+
+  .section h2 .sc {
+    font-variant: small-caps;
+    letter-spacing: 0.08em;
+  }
+
+  .view-all {
+    font-family: var(--sans);
+    font-size: 13px;
+    color: var(--purple-accent);
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+
+  .view-all:hover { color: var(--purple-bright); }
+
+  /* Lecture cards */
+  .lecture-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 20px;
+  }
+
+  .lecture-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 20px;
+    transition: all 0.25s;
+    cursor: pointer;
+    position: relative;
+  }
+
+  .lecture-card:hover {
+    background: var(--bg-card-hover);
+    border-color: var(--gold-dim);
+    transform: translateY(-2px);
+  }
+
+  .card-dept {
+    font-family: var(--sans);
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--teal);
+    margin-bottom: 8px;
+  }
+
+  .card-title {
+    font-family: var(--display);
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 6px;
+    line-height: 1.3;
+  }
+
+  .card-course {
+    font-family: var(--serif);
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-bottom: 14px;
+    font-style: italic;
+  }
+
+  .card-bottom {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .card-professor {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .card-professor .mini-avatar {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--surface-muted);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--sans);
+    font-size: 9px;
+    font-weight: 600;
+    color: var(--text-secondary);
+  }
+
+  .card-professor .prof-name {
+    font-family: var(--sans);
+    font-size: 12px;
+    color: var(--text-secondary);
+  }
+
+  .card-duration {
+    font-family: var(--sans);
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+
+  .card-play-overlay {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: rgba(196, 162, 78, 0.15);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+
+  .card-play-overlay svg { fill: var(--gold); }
+  .lecture-card:hover .card-play-overlay { opacity: 1; }
+
+  /* ── DEPARTMENTS / BROWSE BY SUBJECT ── */
+  .dept-grid {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 12px;
+  }
+
+  .dept-tile {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 20px 16px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.25s;
+  }
+
+  .dept-tile:hover {
+    border-color: var(--gold-dim);
+    background: var(--bg-card-hover);
+  }
+
+  .dept-icon {
+    font-size: 28px;
+    margin-bottom: 10px;
+  }
+
+  .dept-name {
+    font-family: var(--display);
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+  }
+
+  .dept-count {
+    font-family: var(--sans);
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+
+  /* ── PROFESSOR SPOTLIGHT ── */
+  .professor-cards {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+  }
+
+  .prof-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 24px;
+    display: flex;
+    gap: 16px;
+    transition: all 0.25s;
+    cursor: pointer;
+  }
+
+  .prof-card:hover {
+    border-color: var(--purple-accent);
+    background: var(--bg-card-hover);
+  }
+
+  .prof-avatar-lg {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--purple-accent), var(--teal));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--sans);
+    font-size: 18px;
+    font-weight: 600;
+    color: #fff;
+    flex-shrink: 0;
+  }
+
+  .prof-details h3 {
+    font-family: var(--display);
+    font-size: 17px;
+    font-weight: 600;
+    margin-bottom: 2px;
+  }
+
+  .prof-details .prof-title {
+    font-family: var(--sans);
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+  }
+
+  .prof-details .prof-style {
+    font-family: var(--serif);
+    font-size: 13px;
+    color: var(--text-secondary);
+    font-style: italic;
+    line-height: 1.5;
+  }
+
+  /* ── CTA BANNER (for potential customers) ── */
+  .cta-banner {
+    position: relative;
+    margin: 0 48px;
+    padding: 48px 56px;
+    background: linear-gradient(135deg, rgba(155, 125, 212, 0.08) 0%, rgba(196, 162, 78, 0.06) 100%);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 40px;
+    align-items: center;
+    overflow: hidden;
+  }
+
+  .cta-banner::before {
+    content: '';
+    position: absolute;
+    top: -80px;
+    right: -40px;
+    width: 300px;
+    height: 300px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(196, 162, 78, 0.06), transparent);
+    pointer-events: none;
+  }
+
+  .cta-banner h2 {
+    font-family: var(--display);
+    font-size: 32px;
+    font-weight: 400;
+    margin-bottom: 12px;
+  }
+
+  .cta-banner p {
+    font-family: var(--serif);
+    font-size: 16px;
+    color: var(--text-secondary);
+    max-width: 520px;
+    line-height: 1.7;
+    margin-bottom: 8px;
+  }
+
+  .cta-features {
+    display: flex;
+    gap: 24px;
+    margin-top: 16px;
+    font-family: var(--sans);
+    font-size: 13px;
+    color: var(--text-muted);
+  }
+
+  .cta-features span::before {
+    content: '✦ ';
+    color: var(--gold-dim);
+  }
+
+  .cta-right {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .cta-right .price-hint {
+    font-family: var(--sans);
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+
+  /* ── HOW IT WORKS ── */
+  .steps {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 32px;
+    counter-reset: step;
+  }
+
+  .step {
+    position: relative;
+    padding: 28px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    counter-increment: step;
+  }
+
+  .step::before {
+    content: counter(step);
+    font-family: var(--display);
+    font-size: 48px;
+    font-weight: 700;
+    color: var(--surface-muted);
+    position: absolute;
+    top: 16px;
+    right: 20px;
+    line-height: 1;
+  }
+
+  .step h3 {
+    font-family: var(--display);
+    font-size: 19px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: var(--gold);
+  }
+
+  .step p {
+    font-family: var(--serif);
+    font-size: 14px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+  }
+
+  /* ── TRUST / TRANSPARENCY (for skeptics) ── */
+  .trust-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+  }
+
+  .trust-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 28px;
+    transition: all 0.2s;
+  }
+
+  .trust-card:hover {
+    border-color: var(--border);
+    background: var(--bg-card-hover);
+  }
+
+  .trust-card .trust-icon {
+    font-size: 24px;
+    margin-bottom: 14px;
+  }
+
+  .trust-card h3 {
+    font-family: var(--display);
+    font-size: 17px;
+    font-weight: 600;
+    margin-bottom: 8px;
+  }
+
+  .trust-card p {
+    font-family: var(--serif);
+    font-size: 14px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+  }
+
+  .trust-card a {
+    display: inline-block;
+    margin-top: 12px;
+    font-family: var(--sans);
+    font-size: 12px;
+    color: var(--purple-accent);
+    text-decoration: none;
+  }
+
+  .trust-card a:hover { color: var(--purple-bright); }
+
+  /* ── FOOTER ── */
+  footer {
+    padding: 48px 48px 28px;
+    border-top: 1px solid var(--border);
+    margin-top: 40px;
+  }
+
+  .footer-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 1fr;
+    gap: 40px;
+    margin-bottom: 32px;
+  }
+
+  .footer-brand p {
+    font-family: var(--serif);
+    font-size: 14px;
+    color: var(--text-muted);
+    line-height: 1.6;
+    max-width: 300px;
+    margin-top: 12px;
+  }
+
+  .footer-col h4 {
+    font-family: var(--sans);
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--text-secondary);
+    margin-bottom: 14px;
+  }
+
+  .footer-col a {
+    display: block;
+    font-family: var(--serif);
+    font-size: 14px;
+    color: var(--text-muted);
+    text-decoration: none;
+    margin-bottom: 8px;
+    transition: color 0.2s;
+  }
+
+  .footer-col a:hover { color: var(--gold); }
+
+  .footer-bottom {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 20px;
+    border-top: 1px solid var(--border);
+    font-family: var(--sans);
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+
+  .footer-legal a {
+    color: var(--text-muted);
+    text-decoration: none;
+    margin-left: 20px;
+  }
+
+  .footer-legal a:hover { color: var(--text-secondary); }
+
+  /* ── SEARCH BAR ── */
+  .search-bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 14px 20px;
+    transition: border-color 0.2s;
+  }
+
+  .search-bar:focus-within {
+    border-color: var(--gold-dim);
+  }
+
+  .search-icon {
+    color: var(--text-muted);
+    flex-shrink: 0;
+  }
+
+  .search-input {
+    flex: 1;
+    background: none;
+    border: none;
+    outline: none;
+    font-family: var(--serif);
+    font-size: 16px;
+    color: var(--text-primary);
+  }
+
+  .search-input::placeholder {
+    color: var(--text-muted);
+    font-style: italic;
+  }
+
+  .search-hint {
+    font-family: var(--sans);
+    font-size: 12px;
+    color: var(--text-muted);
+    white-space: nowrap;
+  }
+
+  /* ── DIVIDERS ── */
+  .section-divider {
+    border: 0;
+    height: 1px;
+    background: var(--border);
+    margin: 0 48px;
+  }
+
+  /* ── ANNOTATIONS PANEL (toggle) ── */
+  .annotations-toggle {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    z-index: 100;
+    background: var(--surface-muted);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px 16px;
+    font-family: var(--sans);
+    font-size: 12px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .annotations-toggle:hover {
+    background: var(--bg-card-hover);
+    color: var(--gold);
+  }
+
+  body.hide-annotations .annotation { display: none !important; }
+  body.hide-annotations .section-notes { display: none !important; }
+
+  .section-notes {
+    margin-top: 16px;
+    padding: 14px 18px;
+    background: rgba(196, 162, 78, 0.05);
+    border-left: 3px solid var(--gold-dim);
+    border-radius: 0 4px 4px 0;
+    font-family: var(--sans);
+    font-size: 12px;
+    color: var(--text-muted);
+    line-height: 1.6;
+  }
+
+  .section-notes strong {
+    color: var(--text-secondary);
+  }
+
+  /* ── Responsive hint ── */
+  @media (max-width: 900px) {
+    .hero { grid-template-columns: 1fr; }
+    .hero-player { justify-self: start; max-width: 100%; }
+    .lecture-grid { grid-template-columns: repeat(2, 1fr); }
+    .dept-grid { grid-template-columns: repeat(3, 1fr); }
+    .professor-cards { grid-template-columns: 1fr; }
+    .cta-banner { grid-template-columns: 1fr; }
+    .steps { grid-template-columns: 1fr; }
+    .trust-grid { grid-template-columns: 1fr; }
+    .footer-grid { grid-template-columns: 1fr 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- LEGEND BAR -->
+<div class="legend">
+  <span class="legend-title">Persona targets:</span>
+  <div class="legend-item">
+    <div class="legend-dot" style="background:var(--teal)"></div>
+    <span style="color:var(--teal)">Browser / Listener</span>
+  </div>
+  <div class="legend-item">
+    <div class="legend-dot" style="background:var(--purple-accent)"></div>
+    <span style="color:var(--purple-accent)">Potential Customer</span>
+  </div>
+  <div class="legend-item">
+    <div class="legend-dot" style="background:var(--coral)"></div>
+    <span style="color:var(--coral)">Skeptic / Academic</span>
+  </div>
+  <div class="legend-item">
+    <div class="legend-dot" style="background:var(--gold-dim)"></div>
+    <span style="color:var(--gold-dim)">Everyone</span>
+  </div>
+</div>
+<div class="scroll-progress" id="scrollProgress"></div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- NAV -->
+<!-- ═══════════════════════════════════════════ -->
+<nav>
+  <div class="annotation all">All personas</div>
+  <div class="nav-brand">
+    <div class="nav-logo">A</div>
+    <span class="nav-wordmark">Artificial University</span>
+  </div>
+  <div class="nav-links">
+    <a href="#">Courses</a>
+    <a href="#">Professors</a>
+    <a href="#">Departments</a>
+    <a href="#">About</a>
+    <a href="#" class="nav-cta">Sign In</a>
+  </div>
+</nav>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- 1. HERO — Dual purpose: listen + understand -->
+<!-- ═══════════════════════════════════════════ -->
+<section class="hero">
+  <div class="hero-text">
+    <div class="annotation browser">Browser / Listener</div>
+    <h1>Lectures delivered by <em>AI professors</em>, on any subject you're curious about</h1>
+    <p class="subtitle">
+      Each course is taught by a unique AI professor with their own voice, personality, and teaching style. Browse the catalog, press play, and learn something new.
+    </p>
+    <div class="hero-ctas">
+      <button class="btn-primary">▶ &nbsp;Browse &amp; Listen</button>
+      <button class="btn-secondary">Create Your Own Course</button>
+    </div>
+  </div>
+
+  <div class="hero-player" id="heroCarousel">
+    <div class="annotation browser">Instant engagement</div>
+    <div class="now-playing">✦ Featured Lectures</div>
+    <div class="carousel-track" id="carouselTrack">
+
+      <!-- Slide 1 -->
+      <div class="carousel-slide">
+        <button class="slide-play-btn" aria-label="Play lecture">
+          <svg width="16" height="18" viewBox="0 0 14 16"><polygon points="0,0 14,8 0,16"/></svg>
+        </button>
+        <div class="lecture-title">The Ethics of Artificial General Intelligence</div>
+        <div class="lecture-meta">Week 3 · CS 4511: Introduction to AI · <span class="slide-duration">28:15</span></div>
+        <div class="professor-row">
+          <div class="professor-avatar">MV</div>
+          <div class="professor-info">
+            <div class="name">Dr. Mikhail Volkov</div>
+            <div class="dept">Computer Science · Russian accent · "Methodical, philosophical"</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Slide 2 -->
+      <div class="carousel-slide">
+        <button class="slide-play-btn" aria-label="Play lecture">
+          <svg width="16" height="18" viewBox="0 0 14 16"><polygon points="0,0 14,8 0,16"/></svg>
+        </button>
+        <div class="lecture-title">Camus, Sisyphus, and the Revolt Against Meaninglessness</div>
+        <div class="lecture-meta">Week 5 · PHIL 301: Continental Philosophy · <span class="slide-duration">24:42</span></div>
+        <div class="professor-row">
+          <div class="professor-avatar" style="background: linear-gradient(135deg, var(--coral), var(--gold-dim));">SB</div>
+          <div class="professor-info">
+            <div class="name">Dr. Simone Beaumont</div>
+            <div class="dept">Philosophy · French-Canadian accent · "Passionate, Socratic"</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Slide 3 -->
+      <div class="carousel-slide">
+        <button class="slide-play-btn" aria-label="Play lecture">
+          <svg width="16" height="18" viewBox="0 0 14 16"><polygon points="0,0 14,8 0,16"/></svg>
+        </button>
+        <div class="lecture-title">Synaptic Plasticity and Long-Term Potentiation</div>
+        <div class="lecture-meta">Week 4 · NEURO 210: Cognitive Neuroscience · <span class="slide-duration">31:08</span></div>
+        <div class="professor-row">
+          <div class="professor-avatar" style="background: linear-gradient(135deg, var(--teal), var(--purple-accent));">AK</div>
+          <div class="professor-info">
+            <div class="name">Dr. Amara Kofi</div>
+            <div class="dept">Neuroscience · Ghanaian-British accent · "Vivid, enthusiastic"</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Slide 4 -->
+      <div class="carousel-slide">
+        <button class="slide-play-btn" aria-label="Play lecture">
+          <svg width="16" height="18" viewBox="0 0 14 16"><polygon points="0,0 14,8 0,16"/></svg>
+        </button>
+        <div class="lecture-title">Bandung, Non-Alignment, and the Third World Project</div>
+        <div class="lecture-meta">Week 2 · POLS 350: Global Politics Since 1945 · <span class="slide-duration">27:20</span></div>
+        <div class="professor-row">
+          <div class="professor-avatar" style="background: linear-gradient(135deg, var(--gold-dim), var(--coral));">FN</div>
+          <div class="professor-info">
+            <div class="name">Dr. Fatima Ndiaye</div>
+            <div class="dept">Political Science · Senegalese-French accent · "Incisive, global"</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="carousel-nav">
+      <button class="carousel-btn" id="carouselPrev" aria-label="Previous lecture">‹</button>
+      <div class="carousel-dots" id="carouselDots"></div>
+      <button class="carousel-btn" id="carouselNext" aria-label="Next lecture">›</button>
+    </div>
+  </div>
+</section>
+
+<div class="section-notes" style="margin: 0 48px;">
+  <strong>Design note — Hero:</strong> The left side communicates what this is in one glance. The right side proves it immediately with a carousel of featured lectures — manually navigated via ‹/› buttons and dot indicators. No auto-rotation; the user controls the pace. This is the Audible/SoundCloud pattern: show the product, not a stock photo. "Browse & Listen" is the primary CTA (no signup required). "Create Your Own Course" is secondary but visible for the customer persona. In production, the featured set is configurable (3–5 lectures).
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- STATS STRIP — scope of content at a glance -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="stats-strip">
+  <div class="annotation all">Everyone — social proof</div>
+  <div class="stat-item">
+    <div class="stat-number">24</div>
+    <div class="stat-label">Courses</div>
+  </div>
+  <div class="stat-divider"></div>
+  <div class="stat-item">
+    <div class="stat-number">142</div>
+    <div class="stat-label">Lectures</div>
+  </div>
+  <div class="stat-divider"></div>
+  <div class="stat-item">
+    <div class="stat-number">68</div>
+    <div class="stat-label">Hours of Audio</div>
+  </div>
+</div>
+
+<div class="section-notes" style="margin: 0 48px 0;">
+  <strong>Design note — Stats:</strong> Three numbers, maximum impact. Answers the question "is there actually anything here?" before the visitor even starts scrolling into content. In production, compute dynamically from your API or cache. The visual weight of the numbers draws the eye and provides a natural transition from the hero into the browsable catalog below.
+</div>
+
+<hr class="section-divider">
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- 2. FEATURED LECTURES — Content-first discovery -->
+<!-- ═══════════════════════════════════════════ -->
+<section class="section">
+  <div class="annotation browser">Browser / Listener</div>
+  <div class="section-header">
+    <div>
+      <div class="section-label">Listen now — no account needed</div>
+      <h2><span class="sc">Recently Added</span> Lectures</h2>
+    </div>
+    <a href="#" class="view-all">View all lectures →</a>
+  </div>
+
+  <div class="lecture-grid">
+    <div class="lecture-card">
+      <div class="card-play-overlay">
+        <svg width="12" height="14" viewBox="0 0 14 16"><polygon points="0,0 14,8 0,16"/></svg>
+      </div>
+      <div class="card-dept">Philosophy</div>
+      <div class="card-title">Existentialism &amp; the Absurd</div>
+      <div class="card-course">PHIL 301: Continental Philosophy</div>
+      <div class="card-bottom">
+        <div class="card-professor">
+          <div class="mini-avatar">SB</div>
+          <span class="prof-name">Dr. Simone Beaumont</span>
+        </div>
+        <span class="card-duration">24 min</span>
+      </div>
+    </div>
+
+    <div class="lecture-card">
+      <div class="card-play-overlay">
+        <svg width="12" height="14" viewBox="0 0 14 16"><polygon points="0,0 14,8 0,16"/></svg>
+      </div>
+      <div class="card-dept">Neuroscience</div>
+      <div class="card-title">Memory Formation &amp; the Hippocampus</div>
+      <div class="card-course">NEURO 210: Cognitive Neuroscience</div>
+      <div class="card-bottom">
+        <div class="card-professor">
+          <div class="mini-avatar">AK</div>
+          <span class="prof-name">Dr. Amara Kofi</span>
+        </div>
+        <span class="card-duration">31 min</span>
+      </div>
+    </div>
+
+    <div class="lecture-card">
+      <div class="card-play-overlay">
+        <svg width="12" height="14" viewBox="0 0 14 16"><polygon points="0,0 14,8 0,16"/></svg>
+      </div>
+      <div class="card-dept">Music Theory</div>
+      <div class="card-title">Counterpoint in the Baroque Era</div>
+      <div class="card-course">MUS 420: Advanced Harmony</div>
+      <div class="card-bottom">
+        <div class="card-professor">
+          <div class="mini-avatar">JR</div>
+          <span class="prof-name">Prof. Jun Reyes</span>
+        </div>
+        <span class="card-duration">19 min</span>
+      </div>
+    </div>
+
+    <div class="lecture-card">
+      <div class="card-play-overlay">
+        <svg width="12" height="14" viewBox="0 0 14 16"><polygon points="0,0 14,8 0,16"/></svg>
+      </div>
+      <div class="card-dept" style="color: var(--coral);">Political Science</div>
+      <div class="card-title">Decolonization &amp; Post-War Order</div>
+      <div class="card-course">POLS 350: Global Politics Since 1945</div>
+      <div class="card-bottom">
+        <div class="card-professor">
+          <div class="mini-avatar">FN</div>
+          <span class="prof-name">Dr. Fatima Ndiaye</span>
+        </div>
+        <span class="card-duration">27 min</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-notes">
+    <strong>Design note — Featured Lectures:</strong> This is the Podbay pattern — trending content immediately visible, playable without friction. Each card shows department (color-coded), lecture title, course context, professor identity, and duration. Hover reveals a play button. The "no account needed" label removes hesitation. In production, populate from your actual API: <code>GET /api/v1/lectures?sort=-created_at&limit=4</code>, filtering for those with audio.
+  </div>
+
+  <!-- Search bar -->
+  <div style="margin: 32px 0 0; position: relative;">
+    <div class="annotation browser">Browser / Listener</div>
+    <div class="search-bar">
+      <svg class="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+      </svg>
+      <input type="text" class="search-input" placeholder="Search lectures, courses, professors, topics…">
+      <span class="search-hint">Explore the full catalog</span>
+    </div>
+    <div class="section-notes" style="margin-top: 12px;">
+      <strong>Design note — Search:</strong> Positioned after the user has already seen real content, so they know what they're searching <em>within</em>. Submitting navigates to <code>/lectures?q=...</code> (or a dedicated search results page). Feels lightweight here — not competing with the nav or the hero.
+    </div>
+  </div>
+</section>
+
+<hr class="section-divider">
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- 3. BROWSE BY DEPARTMENT -->
+<!-- ═══════════════════════════════════════════ -->
+<section class="section">
+  <div class="annotation browser">Browser / Listener</div>
+  <div class="section-header">
+    <div>
+      <div class="section-label">Explore by subject</div>
+      <h2><span class="sc">Featured Departments</span></h2>
+    </div>
+    <a href="#" class="view-all">All departments →</a>
+  </div>
+
+  <div class="dept-grid">
+    <div class="dept-tile">
+      <div class="dept-icon">🖥</div>
+      <div class="dept-name">Computer Science</div>
+      <div class="dept-count">8 courses · 42 lectures</div>
+    </div>
+    <div class="dept-tile">
+      <div class="dept-icon">🧠</div>
+      <div class="dept-name">Philosophy</div>
+      <div class="dept-count">5 courses · 28 lectures</div>
+    </div>
+    <div class="dept-tile">
+      <div class="dept-icon">🎵</div>
+      <div class="dept-name">Music</div>
+      <div class="dept-count">3 courses · 15 lectures</div>
+    </div>
+    <div class="dept-tile">
+      <div class="dept-icon">⚛</div>
+      <div class="dept-name">Physics</div>
+      <div class="dept-count">4 courses · 22 lectures</div>
+    </div>
+    <div class="dept-tile">
+      <div class="dept-icon">🌍</div>
+      <div class="dept-name">Political Science</div>
+      <div class="dept-count">3 courses · 17 lectures</div>
+    </div>
+    <div class="dept-tile">
+      <div class="dept-icon">🧬</div>
+      <div class="dept-name">Neuroscience</div>
+      <div class="dept-count">2 courses · 11 lectures</div>
+    </div>
+  </div>
+
+  <div class="section-notes">
+    <strong>Design note — Featured Departments:</strong> OpenLearn-style subject browsing, limited to six curated departments. Each tile links to a filtered course listing. The counts give social proof that there's real content here, not an empty platform. "All departments →" leads to the full listing. Dynamically populated from <code>GET /api/v1/departments</code> with course/lecture counts, surfacing the six with the most content. Consider whether emoji icons or custom SVGs suit your aesthetic better — these are placeholders.
+  </div>
+</section>
+
+<hr class="section-divider">
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- 4. PROFESSOR SPOTLIGHT — unique differentiator -->
+<!-- ═══════════════════════════════════════════ -->
+<section class="section">
+  <div class="annotation all">All — unique selling point</div>
+  <div class="section-header">
+    <div>
+      <div class="section-label">Meet the faculty</div>
+      <h2><span class="sc">Professor</span> Spotlight</h2>
+    </div>
+    <a href="#" class="view-all">Full faculty directory →</a>
+  </div>
+
+  <div class="professor-cards">
+    <div class="prof-card">
+      <div class="prof-avatar-lg">MV</div>
+      <div class="prof-details">
+        <h3>Dr. Mikhail Volkov</h3>
+        <div class="prof-title">Professor of Computer Science · Russian accent</div>
+        <div class="prof-style">"Methodical explanations with philosophical tangents and dry humor. Expect references to Turing and Dostoevsky in the same breath."</div>
+      </div>
+    </div>
+    <div class="prof-card">
+      <div class="prof-avatar-lg" style="background: linear-gradient(135deg, var(--coral), var(--gold-dim));">SB</div>
+      <div class="prof-details">
+        <h3>Dr. Simone Beaumont</h3>
+        <div class="prof-title">Professor of Philosophy · French-Canadian accent</div>
+        <div class="prof-style">"Socratic questioning meets passionate advocacy. Will challenge your assumptions, then buy you a metaphorical coffee."</div>
+      </div>
+    </div>
+    <div class="prof-card">
+      <div class="prof-avatar-lg" style="background: linear-gradient(135deg, var(--teal), var(--purple-accent));">AK</div>
+      <div class="prof-details">
+        <h3>Dr. Amara Kofi</h3>
+        <div class="prof-title">Professor of Neuroscience · Ghanaian-British accent</div>
+        <div class="prof-style">"Turns complex neural pathways into vivid stories. Known for memorable analogies and an infectious enthusiasm for the brain."</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-notes">
+    <strong>Design note — Professors:</strong> This is your <em>differentiator</em>. No other platform has AI professors with distinct personalities and voices. Show it off. The personality descriptions sell the experience. In production, these would link to professor detail pages with their course listings and sample audio. Consider adding a small "▶ Hear their voice" button on each card.
+  </div>
+</section>
+
+<hr class="section-divider">
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- 5. CTA BANNER — conversion for potential customers -->
+<!-- ═══════════════════════════════════════════ -->
+<section class="section" style="padding-bottom: 40px;">
+  <div class="cta-banner">
+    <div class="annotation customer">Potential Customer</div>
+    <div>
+      <h2>Create your own courses</h2>
+      <p>
+        Design a course on any subject. Choose a professor persona — or let us generate one — and we'll produce full audio lectures in their voice and style. From quantum mechanics to queer theory, from Baroque counterpoint to blockchain.
+      </p>
+      <div class="cta-features">
+        <span>AI-generated lectures</span>
+        <span>Professional text-to-speech</span>
+        <span>Unique professor voices</span>
+      </div>
+    </div>
+    <div class="cta-right">
+      <button class="btn-primary" style="font-size: 15px; padding: 16px 32px;">Get Started Free</button>
+      <span class="price-hint">50 free credits on signup · then from $5</span>
+    </div>
+  </div>
+
+  <div class="section-notes">
+    <strong>Design note — CTA Banner:</strong> This is positioned after the listener has already seen the product, not before. By now they've browsed lectures, seen departments, met professors. The conversion message is: "You've been listening. Now imagine making your own." The "free credits" + price anchoring is the SoundCloud/Udemy pattern — try before you buy. Position this below the fold intentionally.
+  </div>
+</section>
+
+<hr class="section-divider">
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- 6. HOW IT WORKS — brief explainer -->
+<!-- ═══════════════════════════════════════════ -->
+<section class="section">
+  <div class="annotation customer">Potential Customer</div>
+  <div class="section-header">
+    <div>
+      <div class="section-label">For creators</div>
+      <h2><span class="sc">How It</span> Works</h2>
+    </div>
+  </div>
+
+  <div class="steps">
+    <div class="step">
+      <h3>Pick a Subject</h3>
+      <p>Choose a department and topic, or describe what you want to learn. The system generates a structured course with weekly topics and learning objectives.</p>
+    </div>
+    <div class="step">
+      <h3>Meet Your Professor</h3>
+      <p>Each course gets a professor with a unique personality, teaching style, accent, and voice. You can customize them or let the system surprise you.</p>
+    </div>
+    <div class="step">
+      <h3>Listen &amp; Share</h3>
+      <p>AI generates full lecture content in the professor's voice and converts it to audio. Listen in the browser, download, or share with the community.</p>
+    </div>
+  </div>
+
+  <div class="section-notes">
+    <strong>Design note — How It Works:</strong> Three steps max. This addresses the "wait, how does this actually work?" question that the customer persona has after seeing the CTA. Keep it concise — this isn't a features page, it's reassurance.
+  </div>
+</section>
+
+<hr class="section-divider">
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- 7. TRUST & TRANSPARENCY — for skeptics -->
+<!-- ═══════════════════════════════════════════ -->
+<section class="section">
+  <div class="annotation skeptic">Skeptic / Academic</div>
+  <div class="section-header">
+    <div>
+      <div class="section-label">Transparency &amp; trust</div>
+      <h2><span class="sc">Built</span> Responsibly</h2>
+    </div>
+  </div>
+
+  <div class="trust-grid">
+    <div class="trust-card">
+      <div class="trust-icon">🤖</div>
+      <h3>AI Transparency</h3>
+      <p>All content is AI-generated using large language models (Claude, GPT, Gemini) and professional text-to-speech. We're upfront about what's synthetic and what isn't.</p>
+      <a href="#">Read our AI usage policy →</a>
+    </div>
+    <div class="trust-card">
+      <div class="trust-icon">🔒</div>
+      <h3>Privacy First</h3>
+      <p>Minimal data collection. Authentication via Auth0. No tracking cookies, no ad networks, no data brokering. Your learning is your business.</p>
+      <a href="#">Privacy policy →</a>
+    </div>
+    <div class="trust-card">
+      <div class="trust-icon">📜</div>
+      <h3>Not a Replacement</h3>
+      <p>This is a learning supplement and creative tool, not accredited education. AI professors are fictional characters. Content may contain errors — think of it as a starting point, not a textbook.</p>
+      <a href="#">Terms of service →</a>
+    </div>
+  </div>
+
+  <div class="section-notes">
+    <strong>Design note — Trust section:</strong> This is specifically for the academic/skeptic persona who's thinking "this is irresponsible" or "what are they hiding?" Address their concerns directly and with confidence: yes it's AI, no we're not hiding it, no this isn't pretending to be Harvard. The "Not a Replacement" card is crucial — it pre-empts the most common objection. Each card links to the full policy pages you'll write.
+  </div>
+</section>
+
+<hr class="section-divider">
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- FOOTER -->
+<!-- ═══════════════════════════════════════════ -->
+<footer>
+  <div class="annotation all">All personas</div>
+  <div class="footer-grid">
+    <div class="footer-brand">
+      <div class="nav-brand">
+        <div class="nav-logo">A</div>
+        <span class="nav-wordmark">Artificial University</span>
+      </div>
+      <p>AI-powered educational audio content. Explore knowledge crafted by AI, shaped by your curiosity.</p>
+    </div>
+    <div class="footer-col">
+      <h4>Explore</h4>
+      <a href="#">All Courses</a>
+      <a href="#">Departments</a>
+      <a href="#">Professors</a>
+      <a href="#">Latest Lectures</a>
+    </div>
+    <div class="footer-col">
+      <h4>Create</h4>
+      <a href="#">Get Started</a>
+      <a href="#">Pricing</a>
+      <a href="#">How It Works</a>
+      <a href="#">FAQ</a>
+    </div>
+    <div class="footer-col">
+      <h4>About</h4>
+      <a href="#">About the Project</a>
+      <a href="#">AI Usage &amp; Ethics</a>
+      <a href="#">Contact</a>
+      <a href="#">GitHub</a>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <span>© 2026 Artificial University. An indie project by Bennie Rosas.</span>
+    <div class="footer-legal">
+      <a href="#">Privacy Policy</a>
+      <a href="#">Terms of Service</a>
+      <a href="#">AI Transparency</a>
+    </div>
+  </div>
+</footer>
+
+<!-- Toggle annotations -->
+<button class="annotations-toggle" onclick="document.body.classList.toggle('hide-annotations'); this.textContent = document.body.classList.contains('hide-annotations') ? '◉ Show Design Notes' : '◎ Hide Design Notes'">
+  ◎ Hide Design Notes
+</button>
+
+<script>
+  // Carousel
+  const track = document.getElementById('carouselTrack');
+  const slides = track.querySelectorAll('.carousel-slide');
+  const dotsContainer = document.getElementById('carouselDots');
+  const prevBtn = document.getElementById('carouselPrev');
+  const nextBtn = document.getElementById('carouselNext');
+  let current = 0;
+
+  slides.forEach((_, i) => {
+    const dot = document.createElement('div');
+    dot.className = 'carousel-dot' + (i === 0 ? ' active' : '');
+    dot.addEventListener('click', () => goTo(i));
+    dotsContainer.appendChild(dot);
+  });
+
+  function goTo(index) {
+    current = ((index % slides.length) + slides.length) % slides.length;
+    track.style.transform = `translateX(-${current * 100}%)`;
+    dotsContainer.querySelectorAll('.carousel-dot').forEach((d, i) => {
+      d.classList.toggle('active', i === current);
+    });
+  }
+
+  prevBtn.addEventListener('click', () => goTo(current - 1));
+  nextBtn.addEventListener('click', () => goTo(current + 1));
+
+  // Scroll progress
+  window.addEventListener('scroll', () => {
+    const h = document.documentElement.scrollHeight - window.innerHeight;
+    const pct = (window.scrollY / h) * 100;
+    document.getElementById('scrollProgress').style.width = pct + '%';
+  });
+</script>
+
+</body>
+</html>

@@ -44,6 +44,16 @@ if [ "${RUN_BACKFILL_ID3}" = "1" ]; then
   fi
 fi
 
+# Optionally backfill audio durations for lectures missing them
+if [ "${RUN_BACKFILL_DURATIONS}" = "1" ]; then
+  if [ -n "$DATABASE_URL" ]; then
+    echo "[entrypoint] RUN_BACKFILL_DURATIONS=1 detected; backfilling audio durations..."
+    python scripts/backfill_audio_durations.py || echo "[entrypoint] Duration backfill failed; continuing"
+  else
+    echo "[entrypoint] DATABASE_URL not set; skipping duration backfill"
+  fi
+fi
+
 echo "[entrypoint] Starting Gunicorn..."
 exec gunicorn artificial_u.api.app:app \
   -k uvicorn.workers.UvicornWorker \

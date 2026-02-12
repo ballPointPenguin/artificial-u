@@ -5,6 +5,11 @@ This script will create the test database if it does not exist.
 """
 
 import os
+import sys
+from pathlib import Path
+
+# Ensure project root is on the Python path when executing as a script
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from dotenv import load_dotenv
 from sqlalchemy import create_engine, text

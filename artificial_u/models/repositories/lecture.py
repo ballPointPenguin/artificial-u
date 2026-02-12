@@ -47,6 +47,7 @@ class LectureRepository(BaseRepository):
                 course_id=lecture.course_id,
                 topic_id=lecture.topic_id,
                 word_count=word_count,
+                duration=lecture.duration,
                 created_by=lecture.created_by,
                 created_with=lecture.created_with,
             )
@@ -99,6 +100,7 @@ class LectureRepository(BaseRepository):
                 course_id=db_lecture.course_id,
                 topic_id=db_lecture.topic_id,
                 word_count=db_lecture.word_count,
+                duration=db_lecture.duration,
                 created_by=db_lecture.created_by,
                 created_with=db_lecture.created_with,
                 created_at=db_lecture.created_at,
@@ -186,6 +188,7 @@ class LectureRepository(BaseRepository):
                         course_id=lecture.course_id,
                         topic_id=lecture.topic_id,
                         word_count=lecture.word_count,
+                        duration=lecture.duration,
                         created_by=lecture.created_by,
                         created_with=lecture.created_with,
                         created_at=lecture.created_at,
@@ -249,6 +252,7 @@ class LectureRepository(BaseRepository):
                     course_id=db_lecture.course_id,
                     topic_id=db_lecture.topic_id,
                     word_count=db_lecture.word_count,
+                    duration=db_lecture.duration,
                     created_by=db_lecture.created_by,
                     created_with=db_lecture.created_with,
                     created_at=db_lecture.created_at,
@@ -407,6 +411,7 @@ class LectureRepository(BaseRepository):
                         course_id=lecture.course_id,
                         topic_id=lecture.topic_id,
                         word_count=lecture.word_count,
+                        duration=lecture.duration,
                         created_by=lecture.created_by,
                         created_with=lecture.created_with,
                         created_at=lecture.created_at,
@@ -510,6 +515,7 @@ class LectureRepository(BaseRepository):
             db_lecture.course_id = lecture.course_id
             db_lecture.topic_id = lecture.topic_id
             db_lecture.word_count = self._calculate_word_count(lecture.content)
+            db_lecture.duration = lecture.duration
             db_lecture.created_by = lecture.created_by
             db_lecture.created_with = lecture.created_with
 
@@ -551,6 +557,7 @@ class LectureRepository(BaseRepository):
                 "course_id",
                 "topic_id",
                 "voice_id",
+                "duration",
                 "created_by",
                 "created_with",
             }
@@ -577,6 +584,7 @@ class LectureRepository(BaseRepository):
                 topic_id=db_lecture.topic_id,
                 voice_id=db_lecture.voice_id,
                 word_count=db_lecture.word_count,
+                duration=db_lecture.duration,
                 created_by=db_lecture.created_by,
                 created_with=db_lecture.created_with,
                 created_at=db_lecture.created_at,

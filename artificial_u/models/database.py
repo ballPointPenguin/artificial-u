@@ -98,6 +98,7 @@ class LectureModel(Base):
     topic_id = Column(Integer, ForeignKey("topics.id"), nullable=False)
     voice_id = Column(Integer, ForeignKey("voices.id"), nullable=True)
     word_count = Column(Integer, nullable=True)
+    duration = Column(Integer, nullable=True)  # Audio duration in seconds
     # Attribution fields
     created_by = Column(Integer, ForeignKey("students.id"), nullable=True)
     created_with = Column(String, nullable=True)

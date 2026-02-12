@@ -439,13 +439,21 @@ class LectureGeneratorService:
         # 4. Add ID3 metadata tags to audio
         audio_bytes = self._add_id3_tags_to_audio(lecture, course, topic, audio_bytes)
 
+        # 4b. Extract audio duration
+        from artificial_u.audio import ID3Tagger
+
+        tagger = ID3Tagger(logger=self.logger)
+        duration_seconds = tagger.get_duration_seconds(audio_bytes)
+
         # 5. Upload to storage and get public URL
         audio_url = await self._upload_audio_and_get_url(course, topic, audio_bytes)
 
-        # 6. Partial update lecture with audio URL and voice_id (avoid clobbering summary)
+        # 6. Partial update lecture with audio URL, voice_id, and duration (avoid clobbering summary)
         update_data = {"audio_url": audio_url}
         if voice_id:
             update_data["voice_id"] = voice_id
+        if duration_seconds is not None:
+            update_data["duration"] = duration_seconds
 
         updated = self.repository_factory.lecture.update_fields(
             lecture_id=lecture_id,
@@ -463,6 +471,7 @@ class LectureGeneratorService:
             "topic_id": updated.topic_id,
             "audio_url": updated.audio_url,
             "voice_id": updated.voice_id,
+            "duration": updated.duration,
         }
 
     # --- Helper Methods for Generation --- #

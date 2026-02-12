@@ -496,8 +496,12 @@ async def upload_lecture_audio(
 
         logger.info(f"Uploaded audio to {audio_url}")
 
-        # 6. Update lecture with audio_url
+        # 5b. Extract audio duration
+        duration_seconds = tagger.get_duration_seconds(tagged_audio)
+
+        # 6. Update lecture with audio_url and duration
         lecture.audio_url = audio_url
+        lecture.duration = duration_seconds
         updated_lecture = repository_factory.lecture.update(lecture)
 
         if not updated_lecture:

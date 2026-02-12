@@ -25,6 +25,7 @@ class LectureBase(BaseModel):
     word_count: Optional[int] = Field(
         None, description="Approximate number of words in the lecture content"
     )
+    duration: Optional[int] = Field(None, description="Audio duration in seconds")
     created_by: Optional[int] = Field(
         None, description="ID of the student who created this lecture"
     )
@@ -59,6 +60,7 @@ class LectureUpdate(BaseModel):
     created_by: Optional[int] = Field(None, description="Updated student ID")
     created_with: Optional[str] = Field(None, description="Updated AI model name")
     word_count: Optional[int] = Field(None, description="Updated lecture word count")
+    duration: Optional[int] = Field(None, description="Updated audio duration in seconds")
 
 
 # Student brief info model for lecture responses

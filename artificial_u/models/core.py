@@ -291,6 +291,7 @@ class Lecture(BaseModel):
     topic_id: int
     voice_id: Optional[int] = None
     word_count: Optional[int] = None
+    duration: Optional[int] = None  # Audio duration in seconds
     # Attribution
     created_by: Optional[int] = None
     created_with: Optional[str] = None
