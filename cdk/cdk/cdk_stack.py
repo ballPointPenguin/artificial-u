@@ -220,7 +220,7 @@ class CdkStack(Stack):
             "GUNICORN_TIMEOUT": "120",
             "GUNICORN_WORKERS": "2",
             "IMAGE_GENERATION_MODEL": "gemini-3-pro-image-preview",
-            "LECTURE_GENERATION_MODEL": "claude-sonnet-4-5",
+            "LECTURE_GENERATION_MODEL": "claude-sonnet-4-6",
             "LECTURE_SUMMARY_MODEL": "gpt-5-nano",
             "LOG_LEVEL": "INFO",
             "PROFESSOR_GENERATION_MODEL": "gpt-5-nano",

@@ -142,7 +142,7 @@ COURSE_GENERATION_MODEL=gpt-5-nano
 DEPARTMENT_GENERATION_MODEL=gpt-5-nano
 
 # Lecture generation model
-LECTURE_GENERATION_MODEL=claude-sonnet-4-5
+LECTURE_GENERATION_MODEL=claude-sonnet-4-6
 
 # Professor generation model
 PROFESSOR_GENERATION_MODEL=gpt-5-nano
@@ -237,7 +237,7 @@ TESTING=true
 | `content_model` | Model for chosen backend | Depends on backend | No |
 | `COURSE_GENERATION_MODEL` | Model for course generation | `gpt-5-nano` | No |
 | `DEPARTMENT_GENERATION_MODEL` | Model for department generation | `gpt-5-nano` | No |
-| `LECTURE_GENERATION_MODEL` | Model for lecture generation | `claude-sonnet-4-5` | No |
+| `LECTURE_GENERATION_MODEL` | Model for lecture generation | `claude-sonnet-4-6` | No |
 | `LECTURE_SUMMARY_MODEL` | Model for lecture summary generation | `gpt-5-nano` | No |
 | `TOPICS_GENERATION_MODEL` | Model for topics generation | `gemini-3-flash-preview` | No |
 | `PROFESSOR_GENERATION_MODEL` | Model for professor generation | `gpt-5-nano` | No |

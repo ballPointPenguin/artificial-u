@@ -130,7 +130,7 @@ class PreferenceService:
         Set the global lecture generation model preference.
 
         Args:
-            model: The model name (e.g., "claude-opus-4-5")
+            model: The model name (e.g., "claude-opus-4-6")
 
         Returns:
             The created or updated Preference object
