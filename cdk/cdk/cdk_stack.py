@@ -224,7 +224,7 @@ class CdkStack(Stack):
             "LECTURE_SUMMARY_MODEL": "gpt-5-nano",
             "LOG_LEVEL": "INFO",
             "PROFESSOR_GENERATION_MODEL": "gpt-5-nano",
-            "RUN_BACKFILL_DURATIONS": "1",  # TEMPORARY - comment out when not using it
+            # "RUN_BACKFILL_DURATIONS": "1",  # TEMPORARY - comment out when not using it
             # "RUN_BACKFILL_ID3": "1",  # TEMPORARY - comment out when not using it
             "STORAGE_AUDIO_BUCKET": audio_bucket.bucket_name,
             "STORAGE_CONTENT_LOGS_BUCKET": content_logs_bucket.bucket_name,
@@ -263,9 +263,9 @@ class CdkStack(Stack):
             public_load_balancer=True,  # Must be public for CloudFront to reach it
             listener_port=80,
             # TEMPORARY: Extended for ID3 backfill (~716 files, ~15 min)
-            health_check_grace_period=cdk.Duration.seconds(1200),
+            # health_check_grace_period=cdk.Duration.seconds(1200),
             # Revert to 300 after backfill completes
-            # health_check_grace_period=cdk.Duration.seconds(300),
+            health_check_grace_period=cdk.Duration.seconds(300),
         )
 
         # 7. Configure Health Check for the API service
