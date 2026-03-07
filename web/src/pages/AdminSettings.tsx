@@ -10,7 +10,7 @@ const SUGGESTED_MODELS = [
   'gpt-5-nano',
   'gpt-5.4',
   'gemini-3.1-flash-lite-preview',
-  'gemini-3.1-pro-preview'
+  'gemini-3.1-pro-preview',
 ]
 
 const LECTURE_GENERATION_MODEL_SCOPE = 'LECTURE_GENERATION_MODEL'
