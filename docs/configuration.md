@@ -142,16 +142,16 @@ COURSE_GENERATION_MODEL=gpt-5-nano
 DEPARTMENT_GENERATION_MODEL=gpt-5-nano
 
 # Lecture generation model
-LECTURE_GENERATION_MODEL=claude-sonnet-4-6
+LECTURE_GENERATION_MODEL=claude-opus-4-6
 
 # Professor generation model
 PROFESSOR_GENERATION_MODEL=gpt-5-nano
 
 # Topics generation model
-TOPICS_GENERATION_MODEL=gemini-3-flash-preview
+TOPICS_GENERATION_MODEL=gemini-3.1-flash-lite-preview
 
 # Image generation model
-IMAGE_GENERATION_MODEL=gemini-3-pro-image-preview
+IMAGE_GENERATION_MODEL=gemini-3.1-flash-image-preview
 
 # Text-to-speech voice model (ElevenLabs)
 # Must be supported by the selected voice's verified languages
@@ -237,11 +237,11 @@ TESTING=true
 | `content_model` | Model for chosen backend | Depends on backend | No |
 | `COURSE_GENERATION_MODEL` | Model for course generation | `gpt-5-nano` | No |
 | `DEPARTMENT_GENERATION_MODEL` | Model for department generation | `gpt-5-nano` | No |
-| `LECTURE_GENERATION_MODEL` | Model for lecture generation | `claude-sonnet-4-6` | No |
+| `LECTURE_GENERATION_MODEL` | Model for lecture generation | `claude-opus-4-6` | No |
 | `LECTURE_SUMMARY_MODEL` | Model for lecture summary generation | `gpt-5-nano` | No |
-| `TOPICS_GENERATION_MODEL` | Model for topics generation | `gemini-3-flash-preview` | No |
+| `TOPICS_GENERATION_MODEL` | Model for topics generation | `gemini-3.1-flash-lite-preview` | No |
 | `PROFESSOR_GENERATION_MODEL` | Model for professor generation | `gpt-5-nano` | No |
-| `IMAGE_GENERATION_MODEL` | Model for image generation | `gemini-3-pro-image-preview` | No |
+| `IMAGE_GENERATION_MODEL` | Model for image generation | `gemini-3.1-flash-image-preview` | No |
 | `TTS_VOICE_MODEL` | Model for text-to-speech voice | `eleven_flash_v2_5` | No |
 | `STORAGE_TYPE` | Storage type ("minio" or "s3") | `minio` | No |
 | `STORAGE_ENDPOINT_URL` | MinIO endpoint URL | `http://localhost:9000` | No |

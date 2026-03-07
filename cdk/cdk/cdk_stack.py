@@ -219,8 +219,8 @@ class CdkStack(Stack):
             "GUNICORN_THREADS": "8",
             "GUNICORN_TIMEOUT": "120",
             "GUNICORN_WORKERS": "2",
-            "IMAGE_GENERATION_MODEL": "gemini-3-pro-image-preview",
-            "LECTURE_GENERATION_MODEL": "claude-sonnet-4-6",
+            "IMAGE_GENERATION_MODEL": "gemini-3.1-flash-image-preview",
+            "LECTURE_GENERATION_MODEL": "claude-opus-4-6",
             "LECTURE_SUMMARY_MODEL": "gpt-5-nano",
             "LOG_LEVEL": "INFO",
             "PROFESSOR_GENERATION_MODEL": "gpt-5-nano",
@@ -233,7 +233,7 @@ class CdkStack(Stack):
             "STORAGE_LECTURES_BUCKET": lectures_bucket.bucket_name,
             "STORAGE_REGION": self.region,
             "STORAGE_TYPE": "s3",
-            "TOPICS_GENERATION_MODEL": "gemini-3-flash-preview",
+            "TOPICS_GENERATION_MODEL": "gemini-3.1-flash-lite-preview",
             "TTS_VOICE_MODEL": "eleven_flash_v2_5",
             # Database connection pool settings (conservative for db.t4g.small ~110 max_connections)
             # These ensure the app uses a shared connection pool and doesn't exhaust RDS connections

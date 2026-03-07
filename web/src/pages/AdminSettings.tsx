@@ -8,7 +8,9 @@ const SUGGESTED_MODELS = [
   'claude-sonnet-4-6',
   'claude-haiku-4-5',
   'gpt-5-nano',
-  'gemini-3-flash-preview',
+  'gpt-5.4',
+  'gemini-3.1-flash-lite-preview',
+  'gemini-3.1-pro-preview'
 ]
 
 const LECTURE_GENERATION_MODEL_SCOPE = 'LECTURE_GENERATION_MODEL'
