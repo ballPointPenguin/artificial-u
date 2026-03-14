@@ -175,11 +175,11 @@ class ImageService:
 
     def _use_generate_content_api(self, model_name: str) -> bool:
         """
-        Determine if model uses the generate_content API (Gemini 3 Pro Image)
-        or the generate_images API (Imagen 4.x).
+        Determine if model uses the generate_content API (Gemini models)
+        or the generate_images API (Imagen models).
         """
-        # Gemini 3 Pro Image uses generate_content with multimodal response
-        return model_name.startswith("gemini-3-") or model_name.startswith("gemini-2.5-")
+        # All gemini- models use generate_content; imagen- models use generate_images
+        return model_name.startswith("gemini-")
 
     async def _generate_gemini_image_via_content(
         self, prompt: str, aspect_ratio: str
