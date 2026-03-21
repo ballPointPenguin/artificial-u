@@ -213,17 +213,17 @@ class CdkStack(Stack):
         app_environment = {
             "AUTH0_ALG": "RS256",
             "CORS_ORIGINS": f"https://{domain_name},https://{site_domain}",
-            "COURSE_GENERATION_MODEL": "gpt-5-nano",
-            "DEPARTMENT_GENERATION_MODEL": "gpt-5-nano",
+            "COURSE_GENERATION_MODEL": "gpt-5.4-nano",
+            "DEPARTMENT_GENERATION_MODEL": "gpt-5.4-nano",
             "ENV": "production",
             "GUNICORN_THREADS": "8",
             "GUNICORN_TIMEOUT": "120",
             "GUNICORN_WORKERS": "2",
             "IMAGE_GENERATION_MODEL": "gemini-3.1-flash-image-preview",
             "LECTURE_GENERATION_MODEL": "claude-opus-4-6",
-            "LECTURE_SUMMARY_MODEL": "gpt-5-nano",
+            "LECTURE_SUMMARY_MODEL": "gpt-5.4-nano",
             "LOG_LEVEL": "INFO",
-            "PROFESSOR_GENERATION_MODEL": "gpt-5-nano",
+            "PROFESSOR_GENERATION_MODEL": "gpt-5.4-nano",
             # "RUN_BACKFILL_DURATIONS": "1",  # TEMPORARY - comment out when not using it
             # "RUN_BACKFILL_ID3": "1",  # TEMPORARY - comment out when not using it
             "STORAGE_AUDIO_BUCKET": audio_bucket.bucket_name,

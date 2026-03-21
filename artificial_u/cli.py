@@ -316,7 +316,7 @@ def create_professor(name, department, specialization, gender, accent, age, titl
 @cli.command()
 @click.option("--course-code", "-c", help="Filter by course code")
 @click.option("--limit", "-l", default=5, help="Maximum number of lectures to show")
-@click.option("--model", "-m", help="Filter by model (e.g., 'gpt-5-nano')")
+@click.option("--model", "-m", help="Filter by model (e.g., 'gpt-5.4-nano')")
 def list_lectures(course_code, limit, model):
     """List available lectures."""
     try:

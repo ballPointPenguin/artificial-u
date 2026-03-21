@@ -405,9 +405,9 @@ class ContentService:
                 )
                 self.logger.debug(f"Using max_tokens parameter for model {model}")
 
-            # Handle temperature - gpt-5-nano and some other models don't support custom temperature
-            # For now, we'll skip temperature for gpt-5-nano specifically
-            if model == "gpt-5-nano":
+            # Handle temperature - gpt-5.4-nano and some other models don't support custom temperature
+            # For now, we'll skip temperature for gpt-5.4-nano specifically
+            if model == "gpt-5.4-nano":
                 self.logger.debug(f"Skipping temperature parameter for {model} (not supported)")
             else:
                 completion_params["temperature"] = (

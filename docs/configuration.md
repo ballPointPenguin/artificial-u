@@ -136,16 +136,16 @@ ArtificialU allows configuration of different AI models for various services:
 
 ```python
 # Course generation model
-COURSE_GENERATION_MODEL=gpt-5-nano
+COURSE_GENERATION_MODEL=gpt-5.4-nano
 
 # Department generation model
-DEPARTMENT_GENERATION_MODEL=gpt-5-nano
+DEPARTMENT_GENERATION_MODEL=gpt-5.4-nano
 
 # Lecture generation model
 LECTURE_GENERATION_MODEL=claude-opus-4-6
 
 # Professor generation model
-PROFESSOR_GENERATION_MODEL=gpt-5-nano
+PROFESSOR_GENERATION_MODEL=gpt-5.4-nano
 
 # Topics generation model
 TOPICS_GENERATION_MODEL=gemini-3.1-flash-lite-preview
@@ -235,12 +235,12 @@ TESTING=true
 | `LOG_LEVEL` | Logging level | `INFO` | No |
 | `content_backend` | Backend for content generation | `anthropic` | No |
 | `content_model` | Model for chosen backend | Depends on backend | No |
-| `COURSE_GENERATION_MODEL` | Model for course generation | `gpt-5-nano` | No |
-| `DEPARTMENT_GENERATION_MODEL` | Model for department generation | `gpt-5-nano` | No |
+| `COURSE_GENERATION_MODEL` | Model for course generation | `gpt-5.4-nano` | No |
+| `DEPARTMENT_GENERATION_MODEL` | Model for department generation | `gpt-5.4-nano` | No |
 | `LECTURE_GENERATION_MODEL` | Model for lecture generation | `claude-opus-4-6` | No |
-| `LECTURE_SUMMARY_MODEL` | Model for lecture summary generation | `gpt-5-nano` | No |
+| `LECTURE_SUMMARY_MODEL` | Model for lecture summary generation | `gpt-5.4-nano` | No |
 | `TOPICS_GENERATION_MODEL` | Model for topics generation | `gemini-3.1-flash-lite-preview` | No |
-| `PROFESSOR_GENERATION_MODEL` | Model for professor generation | `gpt-5-nano` | No |
+| `PROFESSOR_GENERATION_MODEL` | Model for professor generation | `gpt-5.4-nano` | No |
 | `IMAGE_GENERATION_MODEL` | Model for image generation | `gemini-3.1-flash-image-preview` | No |
 | `TTS_VOICE_MODEL` | Model for text-to-speech voice | `eleven_flash_v2_5` | No |
 | `STORAGE_TYPE` | Storage type ("minio" or "s3") | `minio` | No |

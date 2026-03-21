@@ -119,15 +119,15 @@ class Settings(BaseSettings):
     content_model: Optional[str] = None
 
     # Course generation model
-    COURSE_GENERATION_MODEL: str = "gpt-5-nano"
+    COURSE_GENERATION_MODEL: str = "gpt-5.4-nano"
     # Department generation model
-    DEPARTMENT_GENERATION_MODEL: str = "gpt-5-nano"
+    DEPARTMENT_GENERATION_MODEL: str = "gpt-5.4-nano"
     # Lecture generation model
     LECTURE_GENERATION_MODEL: str = "claude-opus-4-6"
     # Lecture summary generation model
-    LECTURE_SUMMARY_MODEL: str = "gpt-5-nano"
+    LECTURE_SUMMARY_MODEL: str = "gpt-5.4-nano"
     # Professor generation model
-    PROFESSOR_GENERATION_MODEL: str = "gpt-5-nano"
+    PROFESSOR_GENERATION_MODEL: str = "gpt-5.4-nano"
     # Topics generation model
     TOPICS_GENERATION_MODEL: str = "gemini-3.1-flash-lite-preview"
     # Image generation model
@@ -194,13 +194,13 @@ class Settings(BaseSettings):
         if v is None:
             backend = info.data.get("content_backend")
             if backend == "openai":
-                return "gpt-5-nano"
+                return "gpt-5.4-nano"
             elif backend == "gemini":
                 return "gemini-3.1-flash-lite-preview"
             elif backend == "anthropic":
                 return "claude-opus-4-6"
             else:
-                return "gpt-5-nano"
+                return "gpt-5.4-nano"
         return v
 
     @model_validator(mode="after")
