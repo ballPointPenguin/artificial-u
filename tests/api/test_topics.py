@@ -15,7 +15,9 @@ from fastapi.testclient import TestClient
 from artificial_u.api.models.topics import (
     Topic,
     TopicCreate,
+    TopicDraft,
     TopicGenerate,
+    TopicGenerateSingle,
     TopicListResponse,
     TopicUpdate,
 )
@@ -32,6 +34,7 @@ def mock_api_service(monkeypatch):
     mock_service.update_topic = MagicMock()
     mock_service.delete_topic = MagicMock()
     mock_service.generate_topics_for_course = AsyncMock()  # This one remains async
+    mock_service.generate_topic_for_course_slot = AsyncMock()
 
     base_path = "artificial_u.api.services.topic_service.TopicApiService"
 
@@ -42,6 +45,10 @@ def mock_api_service(monkeypatch):
     monkeypatch.setattr(f"{base_path}.delete_topic", mock_service.delete_topic)
     monkeypatch.setattr(
         f"{base_path}.generate_topics_for_course", mock_service.generate_topics_for_course
+    )
+    monkeypatch.setattr(
+        f"{base_path}.generate_topic_for_course_slot",
+        mock_service.generate_topic_for_course_slot,
     )
 
     return mock_service
@@ -329,6 +336,58 @@ def test_generate_topics_for_course_generation_error(
     )
 
     response = client.post(f"{BASE_COURSE_TOPICS_URL}/{SAMPLE_COURSE_ID}/topics/generate")
+
+    assert response.status_code == status_code
+    assert response.json() == {
+        "message": error_message,
+        "details": None,
+        "error_code": "HTTP_ERROR",
+        "status_code": status_code,
+    }
+
+
+@pytest.mark.unit
+def test_generate_single_topic_for_course_success(client: TestClient, mock_api_service: MagicMock):
+    """Test successfully generating a single topic draft for a course slot."""
+    generation_data_obj = TopicGenerateSingle(
+        week=3,
+        order=1,
+        freeform_prompt="Focus on synaptic plasticity",
+    )
+    expected_topic = TopicDraft(
+        title="Synaptic Plasticity and Learning",
+        course_id=SAMPLE_COURSE_ID,
+        week=3,
+        order=1,
+        content={"lecture": "Hebbian learning and long-term potentiation"},
+    )
+    mock_api_service.generate_topic_for_course_slot.return_value = expected_topic
+
+    url = f"{BASE_COURSE_TOPICS_URL}/{SAMPLE_COURSE_ID}/topics/generate-single"
+    response = client.post(url, json=generation_data_obj.model_dump())
+
+    assert response.status_code == status.HTTP_200_OK
+    assert response.json() == expected_topic.model_dump()
+    mock_api_service.generate_topic_for_course_slot.assert_called_once_with(
+        course_id=SAMPLE_COURSE_ID,
+        generation_data=generation_data_obj,
+        created_by=1,
+    )
+
+
+@pytest.mark.unit
+def test_generate_single_topic_for_course_invalid_slot(
+    client: TestClient, mock_api_service: MagicMock
+):
+    """Test single topic draft generation with an invalid slot."""
+    error_message = "order must be between 1 and 1"
+    status_code = status.HTTP_400_BAD_REQUEST
+    mock_api_service.generate_topic_for_course_slot.side_effect = HTTPException(
+        status_code=status_code, detail=error_message
+    )
+
+    url = f"{BASE_COURSE_TOPICS_URL}/{SAMPLE_COURSE_ID}/topics/generate-single"
+    response = client.post(url, json={"week": 2, "order": 9})
 
     assert response.status_code == status_code
     assert response.json() == {

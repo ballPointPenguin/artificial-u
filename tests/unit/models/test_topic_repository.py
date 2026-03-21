@@ -35,6 +35,9 @@ class TestTopicRepository:
         }
         mock_topic.created_by = None
         mock_topic.created_with = None
+        mock_topic.created_at = None
+        mock_topic.updated_at = None
+        mock_topic.student = None
         return mock_topic
 
     def test_create(self, topic_repository, mock_session):
@@ -72,6 +75,8 @@ class TestTopicRepository:
         assert result.course_id == 1
         assert result.content is not None
         assert result.content["lecture"] == "Python Basics - Introduction to Python syntax"
+        assert result.created_at is None
+        assert result.updated_at is None
 
     def test_create_batch(self, topic_repository, mock_session):
         """Test creating multiple topics in a batch."""
@@ -121,6 +126,7 @@ class TestTopicRepository:
         assert result.content is not None
         assert result.content["lecture"] == "Python Basics"
         assert result.content["objectives"] == ["Learn Python syntax", "Understand variables"]
+        assert result.student is None
 
     def test_get_not_found(self, topic_repository, mock_session):
         """Test getting a non-existent topic returns None."""
@@ -154,6 +160,7 @@ class TestTopicRepository:
         assert result.content is not None
         assert result.content["lecture"] == "Python Basics"
         assert result.content["objectives"] == ["Learn Python syntax", "Understand variables"]
+        assert result.student is None
 
     def test_list_by_course(self, topic_repository, mock_session):
         """Test listing topics by course."""
@@ -171,6 +178,9 @@ class TestTopicRepository:
         }
         mock_topic1.created_by = None
         mock_topic1.created_with = None
+        mock_topic1.created_at = None
+        mock_topic1.updated_at = None
+        mock_topic1.student = None
 
         mock_topic2 = MagicMock(spec=TopicModel)
         mock_topic2.id = 2
@@ -181,6 +191,9 @@ class TestTopicRepository:
         mock_topic2.content = None
         mock_topic2.created_by = None
         mock_topic2.created_with = None
+        mock_topic2.created_at = None
+        mock_topic2.updated_at = None
+        mock_topic2.student = None
 
         query_mock = mock_session.query.return_value
         query_mock.filter_by.return_value.order_by.return_value.all.return_value = [
@@ -202,9 +215,11 @@ class TestTopicRepository:
             "readings": ["Topic 1 reading 1", "Topic 1 reading 2"],
             "objectives": ["Topic 1 objective 1", "Topic 1 objective 2"],
         }
+        assert result[0].student is None
         assert result[1].id == 2
         assert result[1].title == "Topic 2"
         assert result[1].content is None
+        assert result[1].student is None
 
     def test_list_by_course_week(self, topic_repository, mock_session):
         """Test listing topics by course and week."""
@@ -220,6 +235,9 @@ class TestTopicRepository:
         }
         mock_topic1.created_by = None
         mock_topic1.created_with = None
+        mock_topic1.created_at = None
+        mock_topic1.updated_at = None
+        mock_topic1.student = None
 
         mock_topic2 = MagicMock(spec=TopicModel)
         mock_topic2.id = 2
@@ -230,6 +248,9 @@ class TestTopicRepository:
         mock_topic2.content = None
         mock_topic2.created_by = None
         mock_topic2.created_with = None
+        mock_topic2.created_at = None
+        mock_topic2.updated_at = None
+        mock_topic2.student = None
 
         query_mock = mock_session.query.return_value
         query_mock.filter_by.return_value.order_by.return_value.all.return_value = [
@@ -249,9 +270,11 @@ class TestTopicRepository:
         assert result[0].content == {
             "lecture": "Topic 1 lecture",
         }
+        assert result[0].student is None
         assert result[1].id == 2
         assert result[1].title == "Topic 2"
         assert result[1].content is None
+        assert result[1].student is None
 
     def test_update(self, topic_repository, mock_session, mock_topic_model):
         """Test updating a topic."""

@@ -2,6 +2,7 @@
 Topic API models for request and response validation.
 """
 
+from datetime import datetime
 from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, Field
@@ -40,10 +41,30 @@ class TopicUpdate(BaseModel):
     )
 
 
+class StudentBrief(BaseModel):
+    """Brief student information for topic responses."""
+
+    id: int = Field(..., description="Student ID")
+    name: str = Field(..., description="Student name")
+    email: Optional[str] = Field(None, description="Student email")
+
+    class Config:
+        from_attributes = True
+
+
 class Topic(TopicBase):
     """Topic model matching the core model, including ID."""
 
     id: int = Field(..., description="Unique topic identifier")
+    created_at: Optional[datetime] = Field(None, description="Timestamp when topic was created")
+    student: Optional[StudentBrief] = Field(None, description="Student who created the topic")
+
+    class Config:
+        from_attributes = True
+
+
+class TopicDraft(TopicBase):
+    """Generated topic draft that has not been persisted yet."""
 
     class Config:
         from_attributes = True
@@ -63,6 +84,16 @@ class TopicGenerate(BaseModel):
     """Model for requesting topic generation for a course."""
 
     course_id: int = Field(..., description="ID of the course for which to generate topics")
+    freeform_prompt: Optional[str] = Field(
+        None, description="Optional freeform text prompt for additional guidance."
+    )
+
+
+class TopicGenerateSingle(BaseModel):
+    """Model for requesting a single generated topic draft for a course slot."""
+
+    week: int = Field(..., ge=1, description="Week number to generate")
+    order: int = Field(..., ge=1, description="Order within the week to generate")
     freeform_prompt: Optional[str] = Field(
         None, description="Optional freeform text prompt for additional guidance."
     )

@@ -568,6 +568,9 @@ def parse_topic_xml(topic_xml: str) -> Dict[str, Any]:
         ValueError: If the XML is invalid or missing required elements
     """
     try:
+        # Reuse the topic XML repair pass here too. The single-topic generation
+        # path can still contain the same malformed text content as batch output.
+        topic_xml = _repair_topics_xml(topic_xml)
         root = ET.fromstring(topic_xml.strip())
         # The root element should be the topic
         if root.tag != "topic":

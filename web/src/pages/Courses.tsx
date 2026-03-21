@@ -1,4 +1,4 @@
-import { A } from '@solidjs/router'
+import { A, useNavigate } from '@solidjs/router'
 import { type Component, createResource, createSignal, For, Show } from 'solid-js'
 import { courseService } from '../api/services/course-service.js'
 import { departmentService } from '../api/services/department-service.js'
@@ -19,6 +19,7 @@ type SortOrder = 'asc' | 'desc'
 const Courses: Component = () => {
   const t = useTranslations()
   const auth = useAuth()
+  const navigate = useNavigate()
   const [page, setPage] = createSignal(1)
   const [size] = createSignal(10)
   const [sortBy, setSortBy] = createSignal<SortField>('updated_at')
@@ -233,11 +234,21 @@ const Courses: Component = () => {
       const unsubscribe = hub.subscribe({ kinds: ['create_course'] }, (ev) => {
         if (ev.id !== job.id) return
         if (ev.status === 'done') {
-          // Refresh list and close form
           setShowCreateForm(false)
-          void refetch()
           unsubscribe()
           setSubmitting(false)
+
+          const createdCourseId =
+            ev.result && typeof ev.result === 'object' && 'course_id' in ev.result
+              ? Number((ev.result as { course_id?: unknown }).course_id)
+              : Number.NaN
+
+          if (!Number.isNaN(createdCourseId)) {
+            navigate(`/courses/${String(createdCourseId)}`)
+            return
+          }
+
+          void refetch()
         } else if (ev.status === 'failed' || ev.status === 'cancelled') {
           setFormError(ev.last_error || t().courses.courseCreationFailed)
           unsubscribe()

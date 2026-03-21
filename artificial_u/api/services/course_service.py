@@ -359,7 +359,10 @@ class CourseApiService(BaseApiService[CoreCourse, CourseResponse, CoursesListRes
                     repository_factory=self.repository_factory,
                     logger=self.logger,
                 )
-                job_enqueue_service.enqueue_topics_generation(created_course_model.id)
+                job_enqueue_service.enqueue_topics_generation(
+                    created_course_model.id,
+                    created_by=created_by,
+                )
                 self.logger.info(f"Enqueued topic generation for course {created_course_model.id}")
             except Exception as e:
                 self.logger.warning(

@@ -727,6 +727,32 @@ def test_parse_topic_xml_with_content():
 
 
 @pytest.mark.unit
+def test_parse_topic_xml_repairs_unescaped_ampersands():
+    """Test parsing single-topic XML that contains unescaped ampersands."""
+    topic_xml = """
+    <topic>
+      <title>Circuit Motifs</title>
+      <week>7</week>
+      <order>1</order>
+      <content>
+        <readings>
+          <reading>Douglas, R. J., & Martin, K. A. "Neuronal circuits of the neocortex."</reading>
+        </readings>
+      </content>
+    </topic>
+    """
+
+    result = parse_topic_xml(topic_xml)
+
+    assert result["title"] == "Circuit Motifs"
+    assert result["week"] == 7
+    assert result["order"] == 1
+    assert result["content"]["readings"] == [
+        'Douglas, R. J., & Martin, K. A. "Neuronal circuits of the neocortex."'
+    ]
+
+
+@pytest.mark.unit
 def test_parse_topics_xml():
     """Test parsing topics XML into a list of dictionaries."""
     # Create a valid topics XML

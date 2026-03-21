@@ -386,6 +386,11 @@ export interface Topic {
   created_by?: number | null
   created_with?: string | null
   created_at?: string | null
+  student?: {
+    id: number
+    name: string
+    email: string | null
+  } | null
 }
 
 export interface TopicCreate {
@@ -394,6 +399,16 @@ export interface TopicCreate {
   week: number
   order: number
   content: TopicContent
+}
+
+export interface TopicDraft {
+  title: string
+  course_id: number
+  week: number
+  order: number
+  content: TopicContent
+  created_by?: number | null
+  created_with?: string | null
 }
 
 export interface TopicUpdate {
@@ -413,6 +428,12 @@ export interface TopicList {
 
 export interface TopicsGenerateRequest {
   course_id: number
+  freeform_prompt?: string
+}
+
+export interface TopicGenerateSingleRequest {
+  week: number
+  order: number
   freeform_prompt?: string
 }
 

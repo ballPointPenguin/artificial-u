@@ -1,6 +1,14 @@
 import { httpClient } from '../client.js'
 import { ENDPOINTS, TIMEOUT_CONFIG } from '../config.js'
-import type { Topic, TopicCreate, TopicList, TopicsGenerateRequest, TopicUpdate } from '../types.js'
+import type {
+  Topic,
+  TopicCreate,
+  TopicDraft,
+  TopicGenerateSingleRequest,
+  TopicList,
+  TopicsGenerateRequest,
+  TopicUpdate,
+} from '../types.js'
 
 export const topicService = {
   createTopic: (data: TopicCreate): Promise<Topic> => {
@@ -44,6 +52,18 @@ export const topicService = {
     return httpClient.postWithExtendedTimeout<Topic[]>(
       `${ENDPOINTS.topics.generateForCourse(courseId)}${queryString}`,
       requestBody,
+      { timeout: TIMEOUT_CONFIG.generation, onTimeout }
+    )
+  },
+
+  generateSingleTopicForCourse: (
+    courseId: number,
+    data: TopicGenerateSingleRequest,
+    onTimeout?: () => void
+  ): Promise<TopicDraft> => {
+    return httpClient.postWithExtendedTimeout<TopicDraft>(
+      ENDPOINTS.topics.generateSingleForCourse(courseId),
+      data,
       { timeout: TIMEOUT_CONFIG.generation, onTimeout }
     )
   },

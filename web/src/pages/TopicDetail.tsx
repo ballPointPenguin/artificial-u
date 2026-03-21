@@ -8,7 +8,7 @@ import { RequireRole } from '../auth/RequireRole'
 import { LectureSection } from '../components/lectures/LectureSection.jsx'
 import { TopicContentRenderer } from '../components/topics/TopicContentRenderer.jsx'
 import { TopicForm } from '../components/topics/TopicForm.jsx'
-import { Alert, Button } from '../components/ui'
+import { Alert, Button, MetadataInfo } from '../components/ui'
 import { useTranslations } from '../i18n/index.js'
 import { createJobTracker, getJobMessage } from '../utils/job-management.js'
 
@@ -376,6 +376,13 @@ const TopicDetail = () => {
                               </Button>
                             </RequireRole>
                           </div>
+
+                          <MetadataInfo
+                            createdBy={topicData.student}
+                            createdWith={topicData.created_with}
+                            createdAt={topicData.created_at}
+                            class="mb-6 border-t border-parchment-800/30 pt-6"
+                          />
 
                           {/* Topic Content */}
                           <Show when={topicData.content}>

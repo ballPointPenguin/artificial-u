@@ -9,15 +9,10 @@ import logging
 from typing import Any, Dict, List, Optional
 
 from artificial_u.config import get_settings
-from artificial_u.models.converters import (
-    course_model_to_dict,
-    parse_topics_xml,
-    topics_model_to_dict,
-    topics_to_xml,
-)
+from artificial_u.models.converters import course_model_to_dict, parse_topic_xml, topics_to_xml
 from artificial_u.models.core import Topic
 from artificial_u.models.repositories.factory import RepositoryFactory
-from artificial_u.prompts import get_system_prompt, get_topics_prompt
+from artificial_u.prompts import get_next_topic_prompt, get_system_prompt
 from artificial_u.services.content_service import ContentService
 from artificial_u.utils import (
     ContentGenerationError,
@@ -25,7 +20,6 @@ from artificial_u.utils import (
     DatabaseError,
     detect_truncation,
     ensure_xml_wrapper,
-    extract_partial_xml_content,
     extract_xml_between_tags,
 )
 
@@ -88,35 +82,40 @@ class TopicGeneratorService:
         )
 
         try:
-            # 1. Fetch Course data
             course_model = self.course_service.get_course(course_id)
-            # get_course raises CourseNotFoundError if not found, so direct check not essential here
             course_data = course_model_to_dict(course_model)
+            topic_slots = self._build_topic_slots(course_data)
+            existing_topics = sorted(
+                self.topic_service.list_topics_by_course(course_id),
+                key=self._topic_sort_key,
+            )
+            existing_topics_by_slot = {
+                (topic.week, topic.order): topic for topic in existing_topics
+            }
+            prior_topics_context = []
+            created_topics = []
 
-            # 2. Fetch existing topics for context
-            existing_topics = self.topic_service.list_topics_by_course(course_id)
-            existing_topics_xml = None
+            self.logger.info(
+                f"Preparing canonical topic generation for {len(topic_slots)} slots "
+                f"({len(existing_topics)} already exist)"
+            )
 
-            if existing_topics:
-                self.logger.info(
-                    f"Found {len(existing_topics)} existing topics for course {course_id}"
+            for week, order in topic_slots:
+                existing_topic = existing_topics_by_slot.get((week, order))
+                if existing_topic:
+                    prior_topics_context.append(self._topic_model_to_prompt_dict(existing_topic))
+                    continue
+
+                topic_dict = await self._generate_topic_for_slot(
+                    course_data=course_data,
+                    freeform_prompt=freeform_prompt,
+                    prior_topics_context=prior_topics_context,
+                    target_week=week,
+                    target_order=order,
                 )
-                existing_topics_dicts = topics_model_to_dict(existing_topics)
-                existing_topics_xml = topics_to_xml(existing_topics_dicts)
-                self.logger.debug(f"Existing topics XML: {existing_topics_xml}")
-            else:
-                self.logger.info(f"No existing topics found for course {course_id}")
-
-            # 3. Generate XML content
-            generated_xml_output = await self._generate_and_parse_topic_content(
-                course_data, freeform_prompt, existing_topics_xml
-            )
-            self.logger.debug(f"Generated XML for topics: {generated_xml_output[:500]}...")
-
-            # 4. Parse XML, convert to Topic models, and save to DB
-            created_topics = self._parse_convert_and_save_topics(
-                generated_xml_output, course_id, created_by
-            )
+                created_topic = self._save_topic_dict(topic_dict, course_id, created_by)
+                created_topics.append(created_topic)
+                prior_topics_context.append(self._topic_model_to_prompt_dict(created_topic))
 
             self.logger.info(
                 f"Overall success: generated and saved {len(created_topics)} topics for course "
@@ -142,173 +141,182 @@ class TopicGeneratorService:
                 f"An unexpected error occurred during topic generation: {e}"
             ) from e
 
-    async def _generate_and_parse_topic_content(
+    async def generate_topic_for_course_slot(
+        self,
+        course_id: int,
+        week: int,
+        order: int,
+        freeform_prompt: Optional[str] = None,
+        created_by: Optional[int] = None,
+    ) -> Topic:
+        """Generate a single unsaved topic draft for a canonical course slot."""
+        course_model = self.course_service.get_course(course_id)
+        course_data = course_model_to_dict(course_model)
+        self._validate_topic_slot(course_data, week, order)
+
+        existing_topics = sorted(
+            self.topic_service.list_topics_by_course(course_id),
+            key=self._topic_sort_key,
+        )
+        prior_topics_context = [
+            self._topic_model_to_prompt_dict(topic)
+            for topic in existing_topics
+            if self._topic_sort_key(topic) < (week, order, 0)
+        ]
+
+        topic_dict = await self._generate_topic_for_slot(
+            course_data=course_data,
+            freeform_prompt=freeform_prompt,
+            prior_topics_context=prior_topics_context,
+            target_week=week,
+            target_order=order,
+        )
+
+        return Topic(
+            title=topic_dict["title"],
+            course_id=course_id,
+            week=topic_dict["week"],
+            order=topic_dict["order"],
+            content=topic_dict.get("content"),
+            created_by=created_by,
+            created_with=get_settings().TOPICS_GENERATION_MODEL,
+        )
+
+    def _build_topic_slots(self, course_data: Dict[str, Any]) -> List[tuple[int, int]]:
+        lectures_per_week = max(1, int(course_data.get("lectures_per_week") or 1))
+        total_weeks = max(1, int(course_data.get("total_weeks") or 1))
+        return [
+            (week, order)
+            for week in range(1, total_weeks + 1)
+            for order in range(1, lectures_per_week + 1)
+        ]
+
+    def _validate_topic_slot(self, course_data: Dict[str, Any], week: int, order: int) -> None:
+        lectures_per_week = max(1, int(course_data.get("lectures_per_week") or 1))
+        total_weeks = max(1, int(course_data.get("total_weeks") or 1))
+
+        if week < 1 or week > total_weeks:
+            raise ValueError(f"week must be between 1 and {total_weeks}")
+        if order < 1 or order > lectures_per_week:
+            raise ValueError(f"order must be between 1 and {lectures_per_week}")
+
+    def _topic_sort_key(self, topic: Topic) -> tuple[int, int, int]:
+        return (topic.week, topic.order, topic.id or 0)
+
+    def _topic_model_to_prompt_dict(self, topic: Topic) -> Dict[str, Any]:
+        return {
+            "title": topic.title,
+            "week": topic.week,
+            "order": topic.order,
+            "content": topic.content,
+        }
+
+    async def _generate_topic_for_slot(
         self,
         course_data: Dict[str, Any],
         freeform_prompt: Optional[str],
-        existing_topics_xml: Optional[str] = None,
-    ) -> str:
-        """Generate topic content and parse the XML response."""
-        topics_prompt = get_topics_prompt(
+        prior_topics_context: List[Dict[str, Any]],
+        target_week: int,
+        target_order: int,
+    ) -> Dict[str, Any]:
+        """Generate a single topic for a specific canonical week/order slot."""
+        prior_topics_xml = topics_to_xml(prior_topics_context) if prior_topics_context else None
+        topic_prompt = get_next_topic_prompt(
             course_data=course_data,
+            target_week=target_week,
+            target_order=target_order,
             freeform_prompt=freeform_prompt,
-            existing_topics_xml=existing_topics_xml,
+            prior_topics_xml=prior_topics_xml,
         )
         system_prompt = get_system_prompt("topics")
         settings = get_settings()
 
         self.logger.info(
-            f"Calling content service to generate topics for course ID: {course_data.get('id')}"
+            f"Generating topic for course ID {course_data.get('id')} "
+            f"(week={target_week}, order={target_order})"
         )
         raw_response = await self.content_service.generate_text(
             model=settings.TOPICS_GENERATION_MODEL,
-            prompt=topics_prompt,
+            prompt=topic_prompt,
             system_prompt=system_prompt,
-            max_tokens=16384,  # 2^14
+            max_tokens=2048,
         )
-        self.logger.info("Received response from content service for topics.")
+        generated_topic_xml = self._extract_generated_topic_xml(raw_response)
 
-        # Check if response appears truncated
+        try:
+            topic_dict = parse_topic_xml(generated_topic_xml)
+        except ValueError as e:
+            self.logger.error(f"XML parsing error for topic slot {target_week}/{target_order}: {e}")
+            raise ContentGenerationError(f"Error parsing generated topic XML: {e}") from e
+
+        if not topic_dict.get("title"):
+            raise ContentGenerationError("Generated topic XML did not include a title")
+
+        if topic_dict.get("week") != target_week or topic_dict.get("order") != target_order:
+            self.logger.warning(
+                "Generated topic returned mismatched positioning; normalizing to requested slot "
+                f"(expected week={target_week}, order={target_order}, "
+                f"received week={topic_dict.get('week')}, order={topic_dict.get('order')})"
+            )
+
+        topic_dict["week"] = target_week
+        topic_dict["order"] = target_order
+        return topic_dict
+
+    def _extract_generated_topic_xml(self, raw_response: str) -> str:
         is_truncated = detect_truncation(raw_response)
-        if is_truncated:
-            self.logger.warning("Response appears to be truncated due to token limits")
+        generated_topic_output = extract_xml_between_tags(raw_response, "output")
 
-        # Simplified XML extraction logic
-        generated_xml_output = None
-
-        # First try to extract from <output> tags
-        generated_xml_output = extract_xml_between_tags(raw_response, "output")
-        if generated_xml_output:
-            self.logger.info("Successfully extracted content from <output> tags")
-        else:
-            self.logger.info("<output> tag not found, trying direct <topics> extraction...")
-
-            # Check if the response directly contains <topics>...</topics>
-            if raw_response.strip().startswith("<topics>") and raw_response.strip().endswith(
-                "</topics>"
-            ):
-                # Use the raw response directly
-                generated_xml_output = raw_response.strip()
-                self.logger.info("Using raw response as it contains valid <topics> structure")
+        if not generated_topic_output:
+            stripped_response = raw_response.strip()
+            if stripped_response.startswith("<topic>") and stripped_response.endswith("</topic>"):
+                generated_topic_output = stripped_response
             else:
-                # For truncated responses, try to extract partial content
-                if is_truncated:
-                    generated_xml_output = extract_partial_xml_content(
-                        raw_response,
-                        root_element="topics",
-                        child_element="topic",
-                        required_children=["title", "week", "order"],
-                        metadata_tags=["course_title", "lectures_per_week", "total_weeks"],
-                    )
-                    if generated_xml_output:
-                        self.logger.info("Extracted partial XML from truncated response")
-                else:
-                    # Try to extract inner content and wrap it
-                    inner_content = extract_xml_between_tags(raw_response, "topics")
-                    if inner_content:
-                        generated_xml_output = f"<topics>\n{inner_content}\n</topics>"
-                        self.logger.info("Extracted <topics> inner content and wrapped it")
+                inner_content = extract_xml_between_tags(raw_response, "topic")
+                if inner_content:
+                    generated_topic_output = f"<topic>\n{inner_content}\n</topic>"
 
-        if not generated_xml_output:
+        if not generated_topic_output:
             error_msg = (
-                f"Could not extract <output> or <topics> tag from response"
+                f"Could not extract <output> or <topic> tag from response"
                 f"{' (response was truncated)' if is_truncated else ''}:\n"
                 f"{raw_response[:500]}..."
             )
             self.logger.error(error_msg)
             raise ContentGenerationError(error_msg)
 
-        # Ensure the extracted content has the proper <topics> wrapper
-        generated_xml_output = ensure_xml_wrapper(generated_xml_output, "topics")
+        return ensure_xml_wrapper(generated_topic_output, "topic")
 
-        return generated_xml_output
+    def _save_topic_dict(
+        self, topic_dict: Dict[str, Any], course_id: int, created_by: Optional[int]
+    ) -> Topic:
+        title = topic_dict.get("title")
+        week = topic_dict.get("week")
+        order = topic_dict.get("order")
 
-    def _parse_convert_and_save_topics(
-        self, generated_xml_output: str, course_id: int, created_by: Optional[int] = None
-    ) -> List[Topic]:
-        """
-        Parses XML topic data, converts to Topic models, and saves them to the DB.
-        If generated topics have the same course_id + week + order as existing topics,
-        the existing topics will be replaced with the generated ones.
+        if not title or week is None or order is None:
+            raise ContentGenerationError(f"Generated topic data is incomplete: {topic_dict}")
 
-        Args:
-            generated_xml_output: The XML string containing topic data.
-            course_id: The ID of the course these topics belong to.
-            created_by: Optional student ID who triggered the generation.
-
-        Returns:
-            A list of created Topic objects.
-
-        Raises:
-            ContentGenerationError: If XML parsing fails.
-            DatabaseError: If there's an error saving topics to the database.
-        """
-        try:
-            parsed_topic_dicts = parse_topics_xml(generated_xml_output)
-        except ValueError as e:  # Catch parsing errors specifically
-            self.logger.error(f"XML parsing error for topics: {e}", exc_info=True)
-            raise ContentGenerationError(f"Error parsing generated topic XML: {e}") from e
-
-        if not parsed_topic_dicts:
-            self.logger.warning(
-                f"No topics were parsed from the generated XML for course {course_id}."
-            )
-            return []
-
-        topic_models_to_create = []
-        replaced_topics_count = 0
         settings = get_settings()
-
-        for topic_dict in parsed_topic_dicts:
-            title = topic_dict.get("title")
-            week = topic_dict.get("week")
-            order = topic_dict.get("order")
-
-            if not title or week is None or order is None:
-                self.logger.warning(f"Skipping incomplete topic data: {topic_dict}")
-                continue
-
-            # Check if there's an existing topic with the same course_id + week + order
-            existing_topic = self.repository_factory.topic.get_by_course_week_order(
-                course_id=course_id, week=week, order=order
-            )
-
-            if existing_topic:
-                # Delete the existing topic to avoid constraint violation
-                self.logger.info(
-                    f"Replacing existing topic '{existing_topic.title}' "
-                    f"(course={course_id}, week={week}, order={order}) "
-                    f"with new topic '{title}'"
-                )
-                self.repository_factory.topic.delete(existing_topic.id)
-                replaced_topics_count += 1
-
-            new_topic = Topic(
-                title=title,
-                course_id=course_id,
-                week=week,
-                order=order,
-                content=topic_dict.get("content"),
-                created_by=created_by,
-                created_with=settings.TOPICS_GENERATION_MODEL,
-            )
-            topic_models_to_create.append(new_topic)
-
-        if not topic_models_to_create:
-            self.logger.warning(f"No valid topics to create for course {course_id} after parsing.")
-            return []
-
-        # Batch create topics in the database (can raise DatabaseError)
-        created_topics = self.repository_factory.topic.create_batch(topic_models_to_create)
-
-        if replaced_topics_count > 0:
+        existing_topic = self.repository_factory.topic.get_by_course_week_order(
+            course_id=course_id,
+            week=week,
+            order=order,
+        )
+        if existing_topic:
             self.logger.info(
-                f"Successfully replaced {replaced_topics_count} existing topics and "
-                f"created {len(created_topics)} topics for course {course_id}"
+                f"Replacing existing topic '{existing_topic.title}' "
+                f"(course={course_id}, week={week}, order={order}) with '{title}'"
             )
-        else:
-            self.logger.info(
-                f"Successfully created {len(created_topics)} new topics for course {course_id}"
-            )
+            self.repository_factory.topic.delete(existing_topic.id)
 
-        return created_topics
+        new_topic = Topic(
+            title=title,
+            course_id=course_id,
+            week=week,
+            order=order,
+            content=topic_dict.get("content"),
+            created_by=created_by,
+            created_with=settings.TOPICS_GENERATION_MODEL,
+        )
+        return self.repository_factory.topic.create(new_topic)

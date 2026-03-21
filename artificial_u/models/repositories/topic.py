@@ -4,13 +4,43 @@ Topic repository for database operations.
 
 from typing import List, Optional
 
-from artificial_u.models.core import Topic
+from artificial_u.models.core import Student, Topic
 from artificial_u.models.database import TopicModel
 from artificial_u.models.repositories.base import BaseRepository
 
 
 class TopicRepository(BaseRepository):
     """Repository for Topic operations."""
+
+    @staticmethod
+    def _to_model(db_topic: TopicModel) -> Topic:
+        student = None
+        if db_topic.student:
+            student = Student(
+                id=db_topic.student.id,
+                name=db_topic.student.name,
+                email=db_topic.student.email,
+                auth0_sub=db_topic.student.auth0_sub,
+                role=db_topic.student.role,
+                coins=db_topic.student.coins,
+                is_active=db_topic.student.is_active,
+                created_at=db_topic.student.created_at,
+                updated_at=db_topic.student.updated_at,
+            )
+
+        return Topic(
+            id=db_topic.id,
+            title=db_topic.title,
+            order=db_topic.order,
+            week=db_topic.week,
+            course_id=db_topic.course_id,
+            content=db_topic.content,
+            created_by=db_topic.created_by,
+            created_with=db_topic.created_with,
+            created_at=db_topic.created_at,
+            updated_at=db_topic.updated_at,
+            student=student,
+        )
 
     def create(self, topic: Topic) -> Topic:
         """Create a new topic."""
@@ -30,6 +60,8 @@ class TopicRepository(BaseRepository):
             session.refresh(db_topic)
 
             topic.id = db_topic.id
+            topic.created_at = db_topic.created_at
+            topic.updated_at = db_topic.updated_at
             return topic
 
     def create_batch(self, topics: List[Topic]) -> List[Topic]:
@@ -66,6 +98,8 @@ class TopicRepository(BaseRepository):
             # Update the original topic objects with their new IDs
             for topic, db_topic in zip(topics, db_topics):
                 topic.id = db_topic.id
+                topic.created_at = db_topic.created_at
+                topic.updated_at = db_topic.updated_at
 
             return topics
 
@@ -77,18 +111,7 @@ class TopicRepository(BaseRepository):
             if not db_topic:
                 return None
 
-            return Topic(
-                id=db_topic.id,
-                title=db_topic.title,
-                order=db_topic.order,
-                week=db_topic.week,
-                course_id=db_topic.course_id,
-                content=db_topic.content,
-                created_by=db_topic.created_by,
-                created_with=db_topic.created_with,
-                created_at=db_topic.created_at,
-                updated_at=db_topic.updated_at,
-            )
+            return self._to_model(db_topic)
 
     def get_by_course_week_order(self, course_id: int, week: int, order: int) -> Optional[Topic]:
         """Get a topic by course ID, week, and order."""
@@ -102,18 +125,7 @@ class TopicRepository(BaseRepository):
             if not db_topic:
                 return None
 
-            return Topic(
-                id=db_topic.id,
-                title=db_topic.title,
-                order=db_topic.order,
-                week=db_topic.week,
-                course_id=db_topic.course_id,
-                content=db_topic.content,
-                created_by=db_topic.created_by,
-                created_with=db_topic.created_with,
-                created_at=db_topic.created_at,
-                updated_at=db_topic.updated_at,
-            )
+            return self._to_model(db_topic)
 
     def list_by_course(self, course_id: int) -> List[Topic]:
         """List all topics for a specific course."""
@@ -125,19 +137,7 @@ class TopicRepository(BaseRepository):
                 .all()
             )
 
-            return [
-                Topic(
-                    id=t.id,
-                    title=t.title,
-                    order=t.order,
-                    week=t.week,
-                    course_id=t.course_id,
-                    content=t.content,
-                    created_by=t.created_by,
-                    created_with=t.created_with,
-                )
-                for t in db_topics
-            ]
+            return [self._to_model(t) for t in db_topics]
 
     def list_by_course_week(self, course_id: int, week: int) -> List[Topic]:
         """List all topics for a specific course and week."""
@@ -149,19 +149,7 @@ class TopicRepository(BaseRepository):
                 .all()
             )
 
-            return [
-                Topic(
-                    id=t.id,
-                    title=t.title,
-                    order=t.order,
-                    week=t.week,
-                    course_id=t.course_id,
-                    content=t.content,
-                    created_by=t.created_by,
-                    created_with=t.created_with,
-                )
-                for t in db_topics
-            ]
+            return [self._to_model(t) for t in db_topics]
 
     def update(self, topic: Topic) -> Topic:
         """Update an existing topic."""

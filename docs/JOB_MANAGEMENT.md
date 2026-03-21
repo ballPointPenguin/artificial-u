@@ -114,6 +114,7 @@ Each of these should be enqueued via `POST /api/v1/jobs` (or specific “enqueue
 * generate course → kind: `generate_course`, payload: `{ "partial_attributes"?: dict, "freeform_prompt"?: string }`
 * generate professor → kind: `generate_professor`, payload: `{ "partial_attributes"?: dict, "freeform_prompt"?: string }`
 * generate topics → kind: `generate_topics_for_course`, payload: `{ "course_id": number, "freeform_prompt"?: string }`
+  * Handler behavior: generate canonical topic slots sequentially by `(week, order)`, one topic at a time, so each prompt sees the full prior course progression.
 * generate lecture → kind: `generate_lecture`, payload: `{ "partial_attributes": { "course_id": number, "topic_id": number, ... }, "freeform_prompt"?: string }`
 * generate lecture summary → kind: `generate_lecture_summary`, payload: `{ "lecture_id": number }`
 * generate lecture audio → kind: `generate_lecture_audio`, payload: `{ "lecture_id": number }`

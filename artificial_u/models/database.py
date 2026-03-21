@@ -159,6 +159,7 @@ class TopicModel(Base):
 
     course = relationship("CourseModel", back_populates="topics")
     lectures = relationship("LectureModel", back_populates="topic")
+    student = relationship("StudentModel", foreign_keys=[created_by])
 
     # Ensure unique combination of course_id + week + order
     __table_args__ = (

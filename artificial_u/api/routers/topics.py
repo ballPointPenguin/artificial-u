@@ -14,7 +14,9 @@ from artificial_u.api.dependencies import (  # Will be created later
 from artificial_u.api.models.topics import (
     Topic,
     TopicCreate,
+    TopicDraft,
     TopicGenerate,
+    TopicGenerateSingle,
     TopicListResponse,
     TopicUpdate,
 )
@@ -160,6 +162,28 @@ async def generate_topics_for_course(
     # Current TopicApiService.generate_topics_for_course expects a TopicGenerate object.
     generation_data = TopicGenerate(course_id=course_id, freeform_prompt=freeform_prompt)
     return await topic_service.generate_topics_for_course(generation_data, created_by=student.id)
+
+
+@course_topics_router.post(
+    "/generate-single",
+    response_model=TopicDraft,
+    status_code=status.HTTP_200_OK,
+    summary="Generate a single topic draft",
+    description="Generates a single unsaved topic draft for a specific week/order slot.",
+    dependencies=[require_coins(cost=get_settings().COIN_COST_TOPIC_GENERATION)],
+)
+async def generate_single_topic_for_course(
+    generation_data: TopicGenerateSingle,
+    course_id: int = Path(..., description="The ID of the course to generate a topic for"),
+    topic_service: TopicApiService = Depends(get_topic_api_service),
+    student=Depends(ensure_student),
+):
+    """Generate a single topic draft for a given course slot."""
+    return await topic_service.generate_topic_for_course_slot(
+        course_id=course_id,
+        generation_data=generation_data,
+        created_by=student.id,
+    )
 
 
 @course_topics_router.post(

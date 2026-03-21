@@ -11,7 +11,7 @@ from artificial_u.prompts.image import format_professor_image_prompt
 from artificial_u.prompts.lecture import get_lecture_prompt
 from artificial_u.prompts.professor import get_professor_prompt
 from artificial_u.prompts.system import get_system_prompt
-from artificial_u.prompts.topics import get_topics_prompt
+from artificial_u.prompts.topics import get_next_topic_prompt
 
 __all__ = [
     # Base utilities
@@ -29,5 +29,5 @@ __all__ = [
     # System prompts
     "get_system_prompt",
     # Topics prompts
-    "get_topics_prompt",
+    "get_next_topic_prompt",
 ]

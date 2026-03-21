@@ -10,7 +10,9 @@ from fastapi import HTTPException, status
 from artificial_u.api.models.topics import (
     Topic,
     TopicCreate,
+    TopicDraft,
     TopicGenerate,
+    TopicGenerateSingle,
     TopicListResponse,
     TopicUpdate,
 )
@@ -244,3 +246,39 @@ class TopicApiService(BaseApiService[CoreTopic, Topic, TopicListResponse]):
             self._handle_database_error("generate topics for course", e)
         except Exception as e:
             self._handle_general_error("generate topics for course", e)
+
+    async def generate_topic_for_course_slot(
+        self,
+        course_id: int,
+        generation_data: TopicGenerateSingle,
+        created_by: int = None,
+    ) -> TopicDraft:
+        """Generate a single unsaved topic draft for a canonical course slot."""
+        try:
+            core_topic = await self.generator_service.generate_topic_for_course_slot(
+                course_id=course_id,
+                week=generation_data.week,
+                order=generation_data.order,
+                freeform_prompt=generation_data.freeform_prompt,
+                created_by=created_by,
+            )
+            return TopicDraft.model_validate(core_topic)
+        except CourseNotFoundError as e:
+            self.logger.warning(f"Course not found for single topic generation: {e}")
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+        except ValueError as e:
+            self.logger.warning(f"Invalid topic slot requested: {e}")
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+        except ContentGenerationError as e:
+            self.logger.error(
+                f"Content generation error for single topic draft: {e}",
+                exc_info=True,
+            )
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Content generation error: {str(e)[:500]}",
+            )
+        except DatabaseError as e:
+            self._handle_database_error("generate single topic draft", e)
+        except Exception as e:
+            self._handle_general_error("generate single topic draft", e)

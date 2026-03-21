@@ -111,6 +111,8 @@ export const ENDPOINTS = {
     list: '/v1/topics',
     detail: (id: number) => `/v1/topics/${String(id)}`,
     generateForCourse: (courseId: number) => `/v1/courses/${String(courseId)}/topics/generate`,
+    generateSingleForCourse: (courseId: number) =>
+      `/v1/courses/${String(courseId)}/topics/generate-single`,
     enqueueGenerateForCourse: (courseId: number) =>
       `/v1/courses/${String(courseId)}/topics/generate/enqueue`,
     generateRemainingLectures: (id: number) =>

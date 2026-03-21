@@ -256,6 +256,8 @@ class Topic(BaseModel):
     # Timestamps
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
+    # Related objects
+    student: Optional["Student"] = None
 
 
 class Lecture(BaseModel):
