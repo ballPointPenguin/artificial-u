@@ -403,7 +403,6 @@ export const en = {
     failedToDelete: 'Failed to delete course',
     failedToExport: 'Failed to export course',
     level: 'Level',
-    credits: 'Credits',
     noTopicsDefined: 'No topics defined for this course.',
     generatingTopics: 'Generating course topics...',
     week: 'Week',
@@ -450,7 +449,6 @@ export const en = {
     failedToDelete: 'Failed to delete department',
     invalidDepartmentId: 'Invalid department ID',
     level: 'Level',
-    credits: 'Credits',
   },
 
   // Lecture Detail page

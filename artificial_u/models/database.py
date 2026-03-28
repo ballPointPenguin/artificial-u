@@ -31,7 +31,6 @@ class CourseModel(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     code = Column(String, nullable=False, unique=True)
     title = Column(String, nullable=False)
-    credits = Column(Integer, nullable=True, default=3)
     description = Column(Text, nullable=True)
     lectures_per_week = Column(Integer, nullable=True, default=1)
     level = Column(String, nullable=True)

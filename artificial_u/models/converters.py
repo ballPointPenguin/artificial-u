@@ -271,7 +271,6 @@ def partial_course_to_xml(
     fields = [
         "code",
         "title",
-        "credits",
         "description",
         "lectures_per_week",
         "level",
@@ -544,7 +543,7 @@ def parse_course_xml(course_xml: str) -> Dict[str, Any]:
             course_data[field] = _parse_text_field(root.find(field))
 
         # Process numeric fields
-        for field in ["credits", "lectures_per_week", "total_weeks"]:
+        for field in ["lectures_per_week", "total_weeks"]:
             course_data[field] = _parse_numeric_field(root.find(field))
 
         return course_data

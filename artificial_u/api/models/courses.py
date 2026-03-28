@@ -18,12 +18,6 @@ class CourseBase(BaseModel):
         None, description="ID of the department offering the course (optional for smart selection)"
     )
     level: str = Field(..., description="Course level (e.g., Undergraduate, Graduate)")
-    credits: int = Field(
-        default=3,
-        ge=1,
-        le=100,
-        description="Number of credit hours (1-100)",
-    )
     professor_id: Optional[int] = Field(
         None, description="ID of the professor teaching the course (optional for smart selection)"
     )
@@ -67,12 +61,6 @@ class CourseUpdate(BaseModel):
     title: Optional[str] = Field(None, description="Updated course title")
     department_id: Optional[int] = Field(None, description="Updated department ID")
     level: Optional[str] = Field(None, description="Updated course level")
-    credits: Optional[int] = Field(
-        None,
-        ge=1,
-        le=100,
-        description="Updated number of credits (1-100)",
-    )
     professor_id: Optional[int] = Field(None, description="Updated professor ID")
     description: Optional[str] = Field(None, description="Updated course description")
     lectures_per_week: Optional[int] = Field(
@@ -213,12 +201,6 @@ class GeneratedCourseData(BaseModel):
     title: Optional[str] = Field(None, description="Generated course title")
     department_id: Optional[int] = Field(None, description="Generated department ID")
     level: Optional[str] = Field(None, description="Generated course level")
-    credits: Optional[int] = Field(
-        None,
-        ge=1,
-        le=100,
-        description="Generated number of credits (1-100)",
-    )
     professor_id: Optional[int] = Field(None, description="Generated professor ID")
     description: Optional[str] = Field(None, description="Generated course description")
     lectures_per_week: Optional[int] = Field(

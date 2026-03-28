@@ -306,7 +306,6 @@ class CourseExportService:
             "id": course.id,
             "code": course.code,
             "title": course.title,
-            "credits": course.credits,
             "description": course.description,
             "lectures_per_week": course.lectures_per_week,
             "level": course.level,

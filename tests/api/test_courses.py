@@ -33,7 +33,6 @@ sample_courses_base = [
         title=f"Test Course {i}",
         department_id=1 if i < 3 else 2,
         level="Undergraduate",
-        credits=3,
         professor_id=i,
         description=f"Description {i}",
         lectures_per_week=2,
@@ -360,7 +359,6 @@ def test_create_course(client: TestClient, mock_api_service):
         "title": "Newly Created Course",
         "department_id": 1,
         "level": "Graduate",
-        "credits": 4,
         "professor_id": 2,
         "description": "A course created via API test",
         "lectures_per_week": 1,
@@ -400,7 +398,7 @@ def test_create_course(client: TestClient, mock_api_service):
 @pytest.mark.unit
 def test_update_course(client: TestClient, mock_api_service):
     """Test updating an existing course."""
-    update_data = {"title": "Updated Course Title", "credits": 5}
+    update_data = {"title": "Updated Course Title"}
     course_id_to_update = 2
 
     response = client.put(f"/api/v1/courses/{course_id_to_update}", json=update_data)
@@ -410,7 +408,6 @@ def test_update_course(client: TestClient, mock_api_service):
     # Verify the updates were applied
     assert data["id"] == course_id_to_update
     assert data["title"] == update_data["title"]
-    assert data["credits"] == update_data["credits"]
     # Verify timestamp fields exist
     assert "created_at" in data
     assert "updated_at" in data
@@ -529,7 +526,7 @@ def test_generate_course_partial_data(client: TestClient, mock_api_service: Magi
         "level": "Introductory",
         "created_with": "test-llm",
         # department_id and professor_id are intentionally missing
-        # Other optional fields like credits, topics, etc., are also missing
+        # Other optional fields like topics, etc., are also missing
     }
     # The service method is async, so the mock should be an AsyncMock returning the dict
     # The mock_api_service fixture already makes generate_course an AsyncMock
@@ -547,7 +544,6 @@ def test_generate_course_partial_data(client: TestClient, mock_api_service: Magi
     assert data["created_with"] == "test-llm"
     assert data["department_id"] is None  # Assert that fields can be missing or None
     assert data["professor_id"] is None
-    assert data["credits"] is None  # Check another optional field
 
     mock_api_service["generate_course"].assert_called_once()
     # Check the arguments passed to the service method

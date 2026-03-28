@@ -27,7 +27,6 @@ class TestCourseRepository:
         mock_course.id = 1
         mock_course.code = "CS101"
         mock_course.title = "Introduction to Programming"
-        mock_course.credits = 3
         mock_course.description = "Basic programming concepts"
         mock_course.lectures_per_week = 2
         mock_course.level = "Undergraduate"
@@ -55,7 +54,6 @@ class TestCourseRepository:
         course = Course(
             code="CS101",
             title="Introduction to Programming",
-            credits=3,
             description="Basic programming concepts",
             lectures_per_week=2,
             level="Undergraduate",
@@ -74,7 +72,6 @@ class TestCourseRepository:
         assert result.id == 1
         assert result.code == "CS101"
         assert result.title == "Introduction to Programming"
-        assert result.credits == 3
         assert result.description == "Basic programming concepts"
         assert result.lectures_per_week == 2
         assert result.level == "Undergraduate"
@@ -100,7 +97,6 @@ class TestCourseRepository:
         assert result.id == 1
         assert result.code == "CS101"
         assert result.title == "Introduction to Programming"
-        assert result.credits == 3
         assert result.description == "Basic programming concepts"
         assert result.lectures_per_week == 2
         assert result.level == "Undergraduate"
@@ -149,7 +145,6 @@ class TestCourseRepository:
         mock_course1.id = 1
         mock_course1.code = "CS101"
         mock_course1.title = "Introduction to Programming"
-        mock_course1.credits = 3
         mock_course1.description = "Basic programming concepts"
         mock_course1.lectures_per_week = 2
         mock_course1.level = "Undergraduate"
@@ -167,7 +162,6 @@ class TestCourseRepository:
         mock_course2.id = 2
         mock_course2.code = "CS102"
         mock_course2.title = "Advanced Programming"
-        mock_course2.credits = 4
         mock_course2.description = "Advanced programming concepts"
         mock_course2.lectures_per_week = 3
         mock_course2.level = "Graduate"
@@ -206,7 +200,6 @@ class TestCourseRepository:
         mock_course.id = 1
         mock_course.code = "CS101"
         mock_course.title = "Introduction to Programming"
-        mock_course.credits = 3
         mock_course.description = "Basic programming concepts"
         mock_course.lectures_per_week = 2
         mock_course.level = "Undergraduate"
@@ -246,7 +239,6 @@ class TestCourseRepository:
             id=1,
             code="CS101-NEW",
             title="Updated Introduction to Programming",
-            credits=4,
             description="Updated programming concepts",
             lectures_per_week=3,
             level="Graduate",
@@ -266,7 +258,6 @@ class TestCourseRepository:
         # Check that the model was updated with new values
         assert mock_course_model.code == "CS101-NEW"
         assert mock_course_model.title == "Updated Introduction to Programming"
-        assert mock_course_model.credits == 4
         assert mock_course_model.description == "Updated programming concepts"
         assert mock_course_model.lectures_per_week == 3
         assert mock_course_model.level == "Graduate"
@@ -278,7 +269,6 @@ class TestCourseRepository:
         assert result.id == 1
         assert result.code == "CS101-NEW"
         assert result.title == "Updated Introduction to Programming"
-        assert result.credits == 4
         assert result.description == "Updated programming concepts"
         assert result.lectures_per_week == 3
         assert result.level == "Graduate"
@@ -297,7 +287,6 @@ class TestCourseRepository:
             id=999,
             code="CS999",
             title="Non-existent Course",
-            credits=3,
             description="This course doesn't exist",
             lectures_per_week=2,
             level="Undergraduate",

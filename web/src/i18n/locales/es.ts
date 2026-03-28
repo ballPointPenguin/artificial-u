@@ -404,7 +404,6 @@ export const es = {
     failedToDelete: 'Error al eliminar el curso',
     failedToExport: 'Error al exportar el curso',
     level: 'Nivel',
-    credits: 'Créditos',
     noTopicsDefined: 'No hay temas definidos para este curso.',
     generatingTopics: 'Generando temas del curso...',
     week: 'Semana',
@@ -452,7 +451,6 @@ export const es = {
     failedToDelete: 'Error al eliminar departamento',
     invalidDepartmentId: 'ID de departamento inválido',
     level: 'Nivel',
-    credits: 'Créditos',
   },
 
   // Lecture Detail page

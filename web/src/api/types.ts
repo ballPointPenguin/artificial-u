@@ -35,7 +35,6 @@ export interface Course {
   title: string
   department_id: number
   level: string
-  credits: number
   professor_id: number
   description: string
   lectures_per_week: number
@@ -85,7 +84,6 @@ export interface CourseCreate {
   title: string
   department_id?: number | null
   level?: string | null
-  credits?: number
   professor_id?: number | null
   description: string
   lectures_per_week?: number
@@ -98,7 +96,6 @@ export interface CourseUpdate {
   title?: string
   department_id?: number | null
   level?: string | null
-  credits?: number
   professor_id?: number | null
   description?: string
   lectures_per_week?: number
@@ -195,7 +192,6 @@ export interface DepartmentCourse {
   code: string
   title: string
   level: string
-  credits: number
   professor_id?: number
 }
 
@@ -353,7 +349,6 @@ export interface ProfessorCourseBrief {
   title: string
   department_id?: number | null
   level: string
-  credits: number
 }
 
 export interface ProfessorCoursesResponse {

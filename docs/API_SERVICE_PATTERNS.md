@@ -201,7 +201,6 @@ class CourseBrief(BaseModel):
     code: str
     title: str
     level: str
-    credits: int
 ```
 
 ## Migration Guide

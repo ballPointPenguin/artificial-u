@@ -55,7 +55,7 @@ async def list_courses(
     created_by: Optional[int] = Query(None, description="Filter by creator student ID"),
     sort_by: Optional[str] = Query(
         "updated_at",
-        description="Field to sort by (code, title, level, credits, updated_at, created_at)",
+        description="Field to sort by (code, title, level, updated_at, created_at)",
     ),
     order: Optional[str] = Query(
         "desc", description="Sort order (asc or desc)", pattern="^(asc|desc)$"
@@ -436,7 +436,6 @@ async def enqueue_create_course(
         "title": course_data.title,
         "department_id": course_data.department_id,
         "level": course_data.level,
-        "credits": course_data.credits,
         "professor_id": course_data.professor_id,
         "description": course_data.description,
         "lectures_per_week": course_data.lectures_per_week,

@@ -20,7 +20,6 @@ MOCK_COURSE_XML = """
     <code>CS501</code>
     <description>Deep dive into modern machine learning algorithms and applications.</description>
     <level>Graduate</level>
-    <credits>4</credits>
     <lectures_per_week>2</lectures_per_week>
     <total_weeks>14</total_weeks>
   </course>
@@ -185,7 +184,6 @@ class TestCourseService:
             level="Undergraduate",
             professor_id=professor.id,
             description="An introductory course to programming concepts",
-            credits=3,
             weeks=14,
             lectures_per_week=2,
         )
@@ -285,7 +283,6 @@ class TestCourseService:
             level="Undergraduate",
             professor_id=professor.id,
             description="Introduction to differential calculus",
-            credits=4,
         )
         course = course_result[0]
 
@@ -295,14 +292,12 @@ class TestCourseService:
             {
                 "title": "Advanced Calculus I",
                 "description": "In-depth study of differential calculus",
-                "credits": 5,
             },
         )
 
         # Verify updates
         assert updated.title == "Advanced Calculus I"
         assert updated.description == "In-depth study of differential calculus"
-        assert updated.credits == 5
         # Unchanged fields
         assert updated.code == "MATH201"
         assert updated.department_id == department.id
@@ -312,7 +307,6 @@ class TestCourseService:
         retrieved = course_service.get_course(course.id)
         assert retrieved.title == "Advanced Calculus I"
         assert retrieved.description == "In-depth study of differential calculus"
-        assert retrieved.credits == 5
 
     @pytest.mark.asyncio
     async def test_list_courses(

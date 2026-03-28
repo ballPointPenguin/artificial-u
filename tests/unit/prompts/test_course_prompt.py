@@ -35,7 +35,6 @@ def test_course_prompt_with_full_data():
         "code": "CS201",
         "title": "Data Structures",
         "level": "Undergraduate",
-        "credits": 3,
     }
 
     prompt = get_course_prompt(

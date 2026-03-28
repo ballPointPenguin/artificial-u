@@ -91,7 +91,6 @@ class CourseBrief(BaseModel):
     code: str = Field(..., description="Course code")
     title: str = Field(..., description="Course title")
     level: str = Field(..., description="Course level")
-    credits: int = Field(..., description="Number of credits")
     professor_id: Optional[int] = Field(None, description="ID of the professor")
 
 

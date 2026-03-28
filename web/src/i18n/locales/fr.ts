@@ -404,7 +404,6 @@ export const fr = {
     failedToDelete: 'Échec de la suppression du cours',
     failedToExport: "Échec de l'exportation du cours",
     level: 'Niveau',
-    credits: 'Créditos',
     noTopicsDefined: 'Aucun sujet défini pour ce cours.',
     generatingTopics: 'Génération des sujets du cours...',
     week: 'Semaine',
@@ -452,7 +451,6 @@ export const fr = {
     failedToDelete: 'Échec de la suppression du département',
     invalidDepartmentId: 'ID de département invalide',
     level: 'Niveau',
-    credits: 'Crédits',
   },
 
   // Lecture Detail page

@@ -175,7 +175,6 @@ class Course(BaseModel):
                 "id": 1,
                 "code": "CS4511",
                 "title": "Introduction to Artificial Intelligence",
-                "credits": 3,
                 "description": "Foundational concepts and techniques in AI.",
                 "lectures_per_week": 1,
                 "level": "Undergraduate",
@@ -190,7 +189,6 @@ class Course(BaseModel):
     id: Optional[int] = None
     code: str
     title: str
-    credits: int = Field(default=3, ge=0)
     description: Optional[str] = None
     lectures_per_week: int = 1
     level: Optional[str] = None

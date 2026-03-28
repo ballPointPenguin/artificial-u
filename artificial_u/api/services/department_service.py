@@ -320,7 +320,6 @@ class DepartmentApiService(
                     code=c.code,
                     title=c.title,
                     level=c.level,
-                    credits=c.credits,
                     professor_id=c.professor_id,
                 )
                 for c in courses

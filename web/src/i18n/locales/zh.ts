@@ -403,7 +403,6 @@ export const zh = {
     failedToDelete: '课程删除失败',
     failedToExport: '课程导出失败',
     level: '级别',
-    credits: '学分',
     noTopicsDefined: '本课程未定义主题。',
     generatingTopics: '正在生成课程主题...',
     week: '周',
@@ -448,7 +447,6 @@ export const zh = {
     failedToDelete: '删除系失败',
     invalidDepartmentId: '无效的系 ID',
     level: '级别',
-    credits: '学分',
   },
 
   // Lecture Detail page

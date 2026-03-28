@@ -194,7 +194,7 @@ const CourseForm: Component<CourseFormProps> = (props) => {
         ...(currentData.department_id && { department_id: currentData.department_id }),
         ...(currentData.professor_id && { professor_id: currentData.professor_id }),
         ...(currentData.level && { level: currentData.level }),
-        // Let credits, description etc. be generated if not filled
+        // Let description etc. be generated if not filled
       },
       ...(currentData.freeform_prompt && { freeform_prompt: currentData.freeform_prompt }),
     }

@@ -124,7 +124,6 @@ def test_course_model_to_dict():
         "title": "Introduction to Programming",
         "department_id": 2,
         "level": "Undergraduate",
-        "credits": 3,
         "professor_id": 3,
         "description": "Basic programming concepts",
         "lectures_per_week": 2,
@@ -437,7 +436,7 @@ def test_partial_course_to_xml():
     empty_xml = partial_course_to_xml({})
     root = ET.fromstring(empty_xml)
     assert root.tag == "course"
-    assert len(root.findall("*")) == 7  # 7 fields
+    assert len(root.findall("*")) == 6  # 6 fields
 
     # Test with partial data
     partial_data = {
@@ -451,7 +450,6 @@ def test_partial_course_to_xml():
     assert root.find("code").text == "CS101"
     assert root.find("title").text == "Introduction to Programming"
     assert root.find("level").text == "Undergraduate"
-    assert root.find("credits").text == "[GENERATE]"
 
 
 @pytest.mark.unit
@@ -464,7 +462,6 @@ def test_parse_course_xml():
       <title>Introduction to Programming</title>
       <description>Basic programming concepts</description>
       <level>Undergraduate</level>
-      <credits>3</credits>
       <lectures_per_week>2</lectures_per_week>
       <total_weeks>14</total_weeks>
     </course>
@@ -476,7 +473,6 @@ def test_parse_course_xml():
     assert result["title"] == "Introduction to Programming"
     assert result["description"] == "Basic programming concepts"
     assert result["level"] == "Undergraduate"
-    assert result["credits"] == 3
     assert result["lectures_per_week"] == 2
     assert result["total_weeks"] == 14
 
@@ -487,7 +483,6 @@ def test_parse_course_xml():
       <title>[GENERATE]</title>
       <description>Basic programming concepts</description>
       <level>Undergraduate</level>
-      <credits>[GENERATE]</credits>
     </course>
     """
 
@@ -496,7 +491,6 @@ def test_parse_course_xml():
     assert result["title"] is None  # [GENERATE] values should be None
     assert result["description"] == "Basic programming concepts"
     assert result["level"] == "Undergraduate"
-    assert result["credits"] is None
 
     # Test error handling
     with pytest.raises(ValueError):

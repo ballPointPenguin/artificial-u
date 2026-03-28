@@ -51,7 +51,6 @@ class CourseRepository(BaseRepository):
             id=db_course.id,
             code=db_course.code,
             title=db_course.title,
-            credits=db_course.credits,
             description=db_course.description,
             lectures_per_week=db_course.lectures_per_week,
             level=db_course.level,
@@ -77,7 +76,6 @@ class CourseRepository(BaseRepository):
             db_course = CourseModel(
                 code=course.code,
                 title=course.title,
-                credits=course.credits,
                 description=course.description,
                 lectures_per_week=course.lectures_per_week,
                 level=course.level,
@@ -134,7 +132,6 @@ class CourseRepository(BaseRepository):
 
             db_course.code = course.code
             db_course.title = course.title
-            db_course.credits = course.credits
             db_course.description = course.description
             db_course.lectures_per_week = course.lectures_per_week
             db_course.level = course.level

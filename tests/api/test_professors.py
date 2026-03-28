@@ -47,7 +47,6 @@ sample_courses_brief_base = [
         title=f"Test Course {i}",
         department_id=1,
         level="Undergraduate",
-        credits=3,
     )
     for i in range(1, 4)
 ]

@@ -111,7 +111,6 @@ class CourseBrief(BaseModel):
     title: str = Field(..., description="Course title")
     department_id: Optional[int] = Field(None, description="ID of the department")
     level: str = Field(..., description="Course level (e.g., Undergraduate, Graduate)")
-    credits: int = Field(..., description="Number of credits")
 
 
 # Lecture brief info model for professor's lectures endpoint

@@ -43,9 +43,7 @@ const CoursesList: Component<{
                       <h3 class="font-medium text-parchment-100 group-hover:text-primary transition-colors duration-300">
                         {course.code} - {course.title}
                       </h3>
-                      <p class="text-sm text-parchment-400 mt-1">
-                        Level: {course.level} • Credits: {course.credits}
-                      </p>
+                      <p class="text-sm text-parchment-400 mt-1">Level: {course.level}</p>
                     </div>
                   </div>
                 </A>

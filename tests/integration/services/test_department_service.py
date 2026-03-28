@@ -187,7 +187,6 @@ class TestDepartmentService:
             title="Introduction to Biology",
             department_id=dept.id,
             level="Undergraduate",
-            credits=3,
             description="Basic biology concepts",
             lectures_per_week=2,
             total_weeks=14,

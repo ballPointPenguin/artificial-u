@@ -73,7 +73,6 @@ def sample_course(db_professor, db_department):
     return Course(
         code="TEST101",
         title="Introduction to Testing",
-        credits=3,
         description="A comprehensive introduction to software testing principles",
         lectures_per_week=2,
         level="Undergraduate",

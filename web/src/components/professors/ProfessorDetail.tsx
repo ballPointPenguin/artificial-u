@@ -51,7 +51,7 @@ const ProfessorCourses: Component<{
                       {course.title}
                     </A>
                     <div class="text-xs text-muted mt-1">
-                      <span>Level: {course.level}</span> | <span>Credits: {course.credits}</span>
+                      <span>Level: {course.level}</span>
                     </div>
                   </li>
                 )}

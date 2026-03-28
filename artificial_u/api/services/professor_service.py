@@ -306,7 +306,6 @@ class ProfessorApiService(BaseApiService[CoreProfessor, ProfessorResponse, Profe
                     title=c.title,
                     department_id=c.department_id,
                     level=c.level,
-                    credits=c.credits,
                 )
                 for c in courses
             ]

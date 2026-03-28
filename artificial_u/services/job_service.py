@@ -109,7 +109,6 @@ class JobService:
         title = payload.get("title")
         code = payload.get("code")
         level = payload.get("level")
-        credits = payload.get("credits", 3)
         weeks = payload.get("weeks", payload.get("total_weeks", 12))
         lectures_per_week = payload.get("lectures_per_week", 1)
         department_id = payload.get("department_id")
@@ -125,7 +124,6 @@ class JobService:
             title=title,
             code=code,
             level=level,
-            credits=credits,
             weeks=weeks,
             lectures_per_week=lectures_per_week,
             department_id=department_id,
@@ -301,7 +299,6 @@ class JobService:
             title=generated_data.get("title") or "Quickstart Course",
             code=generated_data.get("code") or "QS001",
             level=generated_data.get("level") or "Undergraduate",
-            credits=generated_data.get("credits") or 3,
             weeks=12,  # Quickstart courses use consistent 12 weeks
             lectures_per_week=1,
             department_id=None,  # Smart selection will handle this

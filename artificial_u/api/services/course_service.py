@@ -194,7 +194,6 @@ class CourseApiService(BaseApiService[CoreCourse, CourseResponse, CoursesListRes
             "code",
             "title",
             "level",
-            "credits",
             "updated_at",
             "created_at",
         ]
@@ -345,7 +344,6 @@ class CourseApiService(BaseApiService[CoreCourse, CourseResponse, CoursesListRes
                 level=course_data.level,
                 professor_id=course_data.professor_id,  # Can be None for smart selection
                 description=course_data.description,
-                credits=course_data.credits,
                 weeks=course_data.total_weeks,
                 lectures_per_week=course_data.lectures_per_week,
                 created_by=created_by,

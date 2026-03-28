@@ -174,7 +174,6 @@ async def start_quickstart(
             title=generated_data.title or "Quickstart Course",
             code=generated_data.code or "QS001",
             level=generated_data.level or "Undergraduate",
-            credits=generated_data.credits or 3,
             weeks=12,
             lectures_per_week=1,
             department_id=None,  # Smart selection will handle this

@@ -122,7 +122,7 @@ The system revolves around these primary entities:
   - Profile images (planned)
 
 - **Course**: Academic courses with structured content
-  - Course code, title, description, credits
+  - Course code, title, description
   - Associated with a professor and department
   - Contains multiple topics across weeks
 

@@ -53,7 +53,6 @@ sample_courses_brief_base = [
         code=f"TEST{i}01",
         title=f"Test Course {i}",
         level="Undergraduate",
-        credits=3,
         professor_id=i,
     )
     for i in range(1, 5)

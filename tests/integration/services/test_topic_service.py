@@ -151,7 +151,6 @@ class TestTopicService:
             level="Undergraduate",
             professor_id=professor.id,
             description="An introductory course to programming concepts",
-            credits=3,
             weeks=14,
             lectures_per_week=2,
         )

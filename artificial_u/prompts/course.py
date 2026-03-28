@@ -17,7 +17,6 @@ COURSE_XML_STRUCTURE = """<course>
   <title>[Course title]</title>
   <description>[Course description]</description>
   <level>[Course level: "Undergraduate" or "Graduate"]</level>
-  <credits>[Course credits]</credits>
   <lectures_per_week>[Course lectures per week]</lectures_per_week>
   <total_weeks>[Course total weeks]</total_weeks>
 </course>"""
@@ -29,7 +28,6 @@ EXAMPLE_COURSE_1 = """<course>
   <description>A beginner-friendly introduction to computer science principles, programming basics,
   and computational thinking.</description>
   <level>Undergraduate</level>
-  <credits>3</credits>
   <lectures_per_week>1</lectures_per_week>
   <total_weeks>12</total_weeks>
 </course>"""
@@ -40,7 +38,6 @@ EXAMPLE_COURSE_2 = """<course>
   <description>An exploration of European history from the fall of Rome to the Renaissance,
   examining social, political, and cultural developments.</description>
   <level>Undergraduate</level>
-  <credits>4</credits>
   <lectures_per_week>2</lectures_per_week>
   <total_weeks>10</total_weeks>
 </course>"""

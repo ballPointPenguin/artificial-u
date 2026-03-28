@@ -56,7 +56,6 @@ class CourseService:
         title: str,
         code: str,
         level: str,
-        credits: Optional[int] = 3,
         weeks: int = 12,
         lectures_per_week: int = 1,
         department_id: Optional[int] = None,
@@ -72,7 +71,6 @@ class CourseService:
             title: Course title
             code: Course code (e.g., "CS101")
             level: Course level (Undergraduate, Graduate, etc.)
-            credits: Number of credits for the course (default: 3)
             weeks: Number of weeks in the course
             lectures_per_week: Number of lectures per week
             department_id: ID of existing department (will be selected if not provided)
@@ -89,7 +87,6 @@ class CourseService:
             "title": title,
             "code": code,
             "level": level,
-            "credits": credits,
             "description": description,
         }
 
@@ -105,7 +102,6 @@ class CourseService:
             code,
             title,
             level,
-            credits,
             weeks,
             lectures_per_week,
             resolved_department_id,
@@ -167,7 +163,6 @@ class CourseService:
         code: str,
         title: str,
         level: str,
-        credits: int,
         weeks: int,
         lectures_per_week: int,
         department_id: int,
@@ -182,7 +177,6 @@ class CourseService:
             level=level,
             professor_id=professor_id,
             description=description,
-            credits=credits,
             total_weeks=weeks,
             lectures_per_week=lectures_per_week,
         )

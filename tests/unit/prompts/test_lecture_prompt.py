@@ -11,7 +11,6 @@ def test_lecture_prompt_with_full_data():
     course_data = {
         "code": "CS101",
         "title": "Introduction to Computer Science",
-        "credits": 3,
         "description": "Fundamentals of computer science",
         "lectures_per_week": 2,
         "level": "Undergraduate",
