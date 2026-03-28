@@ -1,6 +1,6 @@
 # Current Tasks
 
-- [ ] Display lecture durations
+- [x] Display lecture durations
 - [ ] Sort and filter professors
 - [ ] Easy Course Generation UI (single prompt field, no form)
 - [ ] Encourage more foreign and older professors

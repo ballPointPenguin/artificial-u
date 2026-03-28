@@ -36,7 +36,11 @@ const AdminDashboard = lazy(() => import('./pages/AdminDashboard'))
 const AdminSettings = lazy(() => import('./pages/AdminSettings'))
 const AdminFeatured = lazy(() => import('./pages/AdminFeatured'))
 const Search = lazy(() => import('./pages/Search'))
-const ComingSoon = lazy(() => import('./pages/ComingSoon'))
+const AboutPrivacy = lazy(() => import('./pages/AboutPrivacy'))
+const AboutTerms = lazy(() => import('./pages/AboutTerms'))
+const AboutAiEthics = lazy(() => import('./pages/AboutAiEthics'))
+const AboutPricing = lazy(() => import('./pages/AboutPricing'))
+const AboutFaq = lazy(() => import('./pages/AboutFaq'))
 const Stylebook = lazy(() => import('./pages/Stylebook'))
 const Login = lazy(() => import('./pages/Login'))
 const Quickstart = lazy(() => import('./pages/Quickstart'))
@@ -46,11 +50,11 @@ const App: Component = () => {
     <Route path="/" component={Layout}>
       <Route path="/" component={Home} />
       <Route path="/about" component={About} />
-      <Route path="/about/privacy" component={ComingSoon} />
-      <Route path="/about/terms" component={ComingSoon} />
-      <Route path="/about/ai-ethics" component={ComingSoon} />
-      <Route path="/about/pricing" component={ComingSoon} />
-      <Route path="/about/faq" component={ComingSoon} />
+      <Route path="/about/privacy" component={AboutPrivacy} />
+      <Route path="/about/terms" component={AboutTerms} />
+      <Route path="/about/ai-ethics" component={AboutAiEthics} />
+      <Route path="/about/pricing" component={AboutPricing} />
+      <Route path="/about/faq" component={AboutFaq} />
       <Route path="/academics" component={Academics} />
       <Route path="/search" component={Search} />
       <Route path="/stylebook" component={Stylebook} />

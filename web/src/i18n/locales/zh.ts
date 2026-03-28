@@ -536,6 +536,24 @@ export const zh = {
     notNow: '暂不',
   },
 
+  // Pricing page (untranslated — English placeholder)
+  pricing: {
+    title: 'Pricing',
+    tagline: 'We\u2019re working on a simple, fair pricing model.',
+    taglineDetail:
+      'The goal is to cover the cost of running the platform \u2014 AI generation and text-to-speech aren\u2019t free. We\u2019re figuring out what makes sense.',
+    currentStatus: 'Current Status',
+    currentStatusDetail:
+      'ArtificialU is free to use right now, with per-account limits on how many lectures and audio files you can generate. You receive 50 coins when you sign up.',
+    coinsExplained:
+      'Coins are the internal currency for generation. Each AI lecture costs a small number of coins; audio conversion costs a few more. When you run out, generation is paused \u2014 but browsing and listening to existing content is always free.',
+    wantMore: 'Want More Coins?',
+    wantMoreDetail:
+      'Just email me. I\u2019m happy to top up your account while pricing is still being figured out.',
+    contactCta: 'ben@aliencyb.org',
+    stayTuned: 'Stay tuned \u2014 a proper pricing page is coming.',
+  },
+
   // Quickstart Wizard
   quickstart: {
     creatorAccessRequired: '需要创作者权限',
