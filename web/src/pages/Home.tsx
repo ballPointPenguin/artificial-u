@@ -1,10 +1,12 @@
 import { A, useNavigate } from '@solidjs/router'
 import { createResource, createSignal, For, Show } from 'solid-js'
+import { courseService } from '../api/services/course-service.js'
 import { departmentService } from '../api/services/department-service.js'
 import { featuredService } from '../api/services/featured-service.js'
 import { lectureService } from '../api/services/lecture-service.js'
 import { professorService } from '../api/services/professor-service.js'
 import type {
+  Course,
   Department,
   FeaturedItem,
   PlatformStats,
@@ -14,18 +16,9 @@ import type {
 import { FeaturedLectureCarousel } from '../components/FeaturedLectureCarousel.jsx'
 import { Button } from '../components/ui'
 import { useTranslations } from '../i18n'
-import { useAudioPlayer } from '../utils/audio-player-context.jsx'
-
-// Helper: format seconds as "12 min"
-function formatDuration(seconds: number | null | undefined): string {
-  if (!seconds) return ''
-  const mins = Math.round(seconds / 60)
-  return `${String(mins)} min`
-}
 
 const Home = () => {
   const t = useTranslations()
-  const audioPlayer = useAudioPlayer()
   const navigate = useNavigate()
   const [searchQuery, setSearchQuery] = createSignal('')
 
@@ -57,10 +50,16 @@ const Home = () => {
     return ids.map((id) => byId.get(id)).filter((l): l is RecentLecture => l != null)
   })
 
-  // Fetch recent lectures (for the grid section) — purely chronological
-  const [recentLectures] = createResource<RecentLecture[]>(() =>
-    lectureService.getRecentLectures(4)
-  )
+  // Fetch recently added published courses (for the grid section)
+  const [recentCourses] = createResource<Course[]>(async () => {
+    const result = await courseService.listCourses({
+      page: 1,
+      size: 8,
+      sortBy: 'created_at',
+      order: 'desc',
+    })
+    return result.items.filter((c) => c.status === 'published').slice(0, 4)
+  })
 
   // Fetch featured professors
   const [featuredProfessors] = createResource<Professor[]>(async () => {
@@ -101,22 +100,6 @@ const Home = () => {
     )
     return departments.filter((d): d is Department => d !== null)
   })
-
-  const handlePlayRecent = (lecture: RecentLecture) => {
-    if (!lecture.audio_url) return
-    audioPlayer.playTrack({
-      url: lecture.audio_url,
-      title: lecture.title,
-      subtitle: lecture.course_code
-        ? `${lecture.course_code}: ${lecture.course_title ?? ''}`
-        : undefined,
-      lectureId: lecture.id,
-      courseId: lecture.course_id,
-      topicId: lecture.topic_id,
-      courseCode: lecture.course_code ?? undefined,
-      topicWeek: lecture.topic_week ?? undefined,
-    })
-  }
 
   return (
     <div>
@@ -238,84 +221,68 @@ const Home = () => {
         </div>
       </section>
 
-      {/* ─── Recently Added Lectures ─── */}
-      <Show when={(recentLectures() ?? []).length > 0}>
+      {/* ─── Recently Added Courses ─── */}
+      <Show when={(recentCourses() ?? []).length > 0}>
         <section class="py-16 px-6 md:px-12 lg:px-16">
           <div class="max-w-7xl mx-auto">
             <div class="flex items-center justify-between mb-8">
               <div>
-                <span class="section-label">Listen now</span>
-                <h2 class="text-2xl font-display text-foreground">Recently Added Lectures</h2>
+                <span class="section-label">New arrivals</span>
+                <h2 class="text-2xl font-display text-foreground">Recently Added Courses</h2>
               </div>
               <A
                 href="/courses"
                 class="text-sm font-sans text-accent hover:text-primary transition-colors"
               >
-                View all lectures &rarr;
+                View all courses &rarr;
               </A>
             </div>
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              <For each={recentLectures()}>
-                {(lecture) => (
-                  <div class="card-hover-lift rounded-lg border border-border bg-surface p-4">
+              <For each={recentCourses()}>
+                {(course) => (
+                  <A
+                    href={`/courses/${String(course.id)}`}
+                    class="card-hover-lift rounded-lg border border-border bg-surface p-4 flex flex-col no-underline text-inherit"
+                  >
                     {/* Department tag */}
-                    <Show when={lecture.department_name}>
-                      <span class="tag-teal inline-block rounded px-2 py-0.5 text-xs font-sans font-medium mb-2">
-                        {lecture.department_name}
+                    <Show when={course.department?.name}>
+                      <span class="tag-teal inline-block rounded px-2 py-0.5 text-xs font-sans font-medium mb-2 self-start">
+                        {course.department!.name}
                       </span>
                     </Show>
 
                     {/* Title */}
-                    <A
-                      href={`/lectures/${String(lecture.id)}`}
-                      class="block no-underline text-inherit"
-                    >
-                      <h4 class="font-display text-foreground text-base mb-1 leading-snug">
-                        {lecture.title}
-                      </h4>
-                    </A>
+                    <h4 class="font-display text-foreground text-base mb-2 leading-snug flex-1">
+                      {course.title}
+                    </h4>
 
-                    {/* Course code + topic */}
-                    <p class="text-xs text-muted mb-2">
-                      <Show when={lecture.course_code}>
-                        <span>{lecture.course_code}</span>
-                      </Show>
-                      <Show when={lecture.topic_title}>
-                        <span class="mx-1">&middot;</span>
-                        <span>{lecture.topic_title}</span>
-                      </Show>
-                    </p>
-
-                    {/* Professor + duration row */}
-                    <div class="flex items-center justify-between mt-auto">
-                      <Show when={lecture.professor_name}>
-                        <span class="text-xs text-muted truncate">{lecture.professor_name}</span>
-                      </Show>
-                      <div class="flex items-center gap-2 flex-shrink-0">
-                        <Show when={lecture.duration}>
-                          <span class="text-xs text-muted">{formatDuration(lecture.duration)}</span>
-                        </Show>
-                        <Show when={lecture.audio_url}>
-                          <button
-                            type="button"
-                            class="w-7 h-7 rounded-full bg-primary/20 border border-primary/40 flex items-center justify-center hover:bg-primary/30 transition-colors"
-                            onClick={() => {
-                              handlePlayRecent(lecture)
-                            }}
-                            aria-label={`Play ${lecture.title}`}
+                    {/* Professor row */}
+                    <Show when={course.professor}>
+                      <div class="flex items-center gap-2 mt-auto pt-2 border-t border-border/40">
+                        <div class="w-7 h-7 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                          <Show
+                            when={course.professor!.image_url}
+                            fallback={
+                              <span class="font-sans text-xs font-semibold text-primary">
+                                {course
+                                  .professor!.name.split(' ')
+                                  .map((n: string) => n[0])
+                                  .join('')
+                                  .slice(0, 2)}
+                              </span>
+                            }
                           >
-                            <svg
-                              class="w-2.5 h-2.5 text-primary ml-0.5"
-                              viewBox="0 0 14 16"
-                              fill="currentColor"
-                            >
-                              <polygon points="0,0 14,8 0,16" />
-                            </svg>
-                          </button>
-                        </Show>
+                            <img
+                              src={course.professor!.image_url!}
+                              alt={course.professor!.name}
+                              class="w-7 h-7 rounded-full object-cover"
+                            />
+                          </Show>
+                        </div>
+                        <span class="text-xs text-muted truncate">{course.professor!.name}</span>
                       </div>
-                    </div>
-                  </div>
+                    </Show>
+                  </A>
                 )}
               </For>
             </div>
