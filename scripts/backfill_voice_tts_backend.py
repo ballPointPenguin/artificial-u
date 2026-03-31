@@ -71,9 +71,7 @@ def backfill_voices(db_url: str, dry_run: bool, logger: logging.Logger) -> dict:
             logger.info("Total voice records: %d", stats["total"])
 
             # Count voices missing tts_backend (shouldn't happen after migration, but just in case)
-            result = session.execute(
-                text("SELECT COUNT(*) FROM voices WHERE tts_backend IS NULL")
-            )
+            result = session.execute(text("SELECT COUNT(*) FROM voices WHERE tts_backend IS NULL"))
             missing_backend = result.scalar() or 0
 
             # Count voices missing external_id
@@ -110,8 +108,7 @@ def backfill_voices(db_url: str, dry_run: bool, logger: logging.Logger) -> dict:
             if missing_backend > 0:
                 result = session.execute(
                     text(
-                        "UPDATE voices SET tts_backend = 'elevenlabs' "
-                        "WHERE tts_backend IS NULL"
+                        "UPDATE voices SET tts_backend = 'elevenlabs' " "WHERE tts_backend IS NULL"
                     )
                 )
                 stats["backfilled_backend"] = result.rowcount
