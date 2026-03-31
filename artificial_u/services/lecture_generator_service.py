@@ -428,12 +428,12 @@ class LectureGeneratorService:
         # 1. Fetch required entities
         lecture, course, topic, professor = self._fetch_entities_for_audio(lecture_id)
 
-        # 2. Ensure we have an ElevenLabs voice id and get the voice_id
-        el_voice_id, voice_id = self._ensure_professor_el_voice_id(professor)
+        # 2. Resolve the professor's voice and TTS backend
+        voice_identifier, voice_id, backend_name = self._ensure_professor_voice(professor)
 
         # 3. Generate audio bytes (blocking TTS executed in a thread)
         audio_bytes = await asyncio.to_thread(
-            self._generate_audio_bytes, lecture, professor, el_voice_id
+            self._generate_audio_bytes, lecture, professor, voice_identifier, backend_name
         )
 
         # 4. Add ID3 metadata tags to audio
@@ -800,27 +800,38 @@ class LectureGeneratorService:
 
         return lecture, course, topic, professor
 
-    def _ensure_professor_el_voice_id(self, professor) -> tuple[str, Optional[int]]:
-        """Resolve or auto-assign an ElevenLabs voice id for the professor.
+    def _ensure_professor_voice(
+        self, professor
+    ) -> tuple[str, Optional[int], str]:
+        """Resolve or auto-assign a voice for the professor.
 
         Returns:
-            A tuple of (el_voice_id, voice_id) where voice_id is the database ID
+            A tuple of (voice_identifier, voice_id, backend_name) where:
+            - voice_identifier is the provider-specific voice ID
+            - voice_id is the database ID
+            - backend_name is the TTS backend (e.g., 'elevenlabs', 'mistral')
         """
-        el_voice_id: Optional[str] = None
+        voice_identifier: Optional[str] = None
         voice_id: Optional[int] = None
+        backend_name = "elevenlabs"  # Default
 
         if professor.voice_id:
             voice_repo = self.repository_factory.voice
             voice = voice_repo.get(professor.voice_id)
             if voice:
-                el_voice_id = voice.el_voice_id
+                backend_name = voice.tts_backend or "elevenlabs"
                 voice_id = voice.id
+                # Use the appropriate identifier for the backend
+                if backend_name == "elevenlabs":
+                    voice_identifier = voice.el_voice_id or voice.external_id
+                else:
+                    voice_identifier = voice.external_id or voice.el_voice_id
 
-        if not el_voice_id:
+        if not voice_identifier:
+            # Auto-assign via VoiceService (currently only supports ElevenLabs)
             from artificial_u.integrations import elevenlabs
             from artificial_u.services.voice_service import VoiceService
 
-            # Create ElevenLabs client with API key
             settings = get_settings()
             elevenlabs_client = None
             if settings.ELEVENLABS_API_KEY:
@@ -837,22 +848,31 @@ class LectureGeneratorService:
                 logger=self.logger,
             )
             selected = voice_service.select_voice_for_professor(professor)
-            el_voice_id = selected.get("el_voice_id")
+            voice_identifier = selected.get("el_voice_id")
             voice_id = selected.get("db_voice_id")
-            if not el_voice_id:
-                raise DatabaseError("Failed to select or resolve an ElevenLabs voice ID")
+            backend_name = "elevenlabs"
+            if not voice_identifier:
+                raise DatabaseError("Failed to select or resolve a voice ID")
 
-        return el_voice_id, voice_id
+        return voice_identifier, voice_id, backend_name
 
-    def _generate_audio_bytes(self, lecture, professor, el_voice_id: str) -> bytes:
+    # Backward-compatible alias
+    def _ensure_professor_el_voice_id(self, professor) -> tuple[str, Optional[int]]:
+        """Legacy wrapper - returns (el_voice_id, voice_id)."""
+        voice_id_str, db_voice_id, _ = self._ensure_professor_voice(professor)
+        return voice_id_str, db_voice_id
+
+    def _generate_audio_bytes(
+        self, lecture, professor, el_voice_id: str, backend_name: str = "elevenlabs"
+    ) -> bytes:
         """Use TTSService to generate audio bytes for a lecture."""
-        from artificial_u.config import get_settings
+        from artificial_u.integrations.tts.factory import create_tts_backend
         from artificial_u.services.tts_service import TTSService
 
-        settings = get_settings()
+        backend = create_tts_backend(backend_name=backend_name, logger=self.logger)
 
         tts_service = TTSService(
-            api_key=settings.ELEVENLABS_API_KEY,
+            backend=backend,
             repository_factory=self.repository_factory,
             logger=self.logger,
         )
@@ -860,7 +880,7 @@ class LectureGeneratorService:
             audio_bytes = tts_service.generate_lecture_audio(
                 lecture=lecture,
                 professor=professor,
-                el_voice_id=el_voice_id,
+                voice_id=el_voice_id,
             )
             return audio_bytes
         except Exception as e:
