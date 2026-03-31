@@ -49,7 +49,8 @@ class MistralTTSBackend:
 
         Args:
             text: Text to convert.
-            voice_id: Mistral preset voice name (e.g., "alloy", "nova").
+            voice_id: Mistral voice identifier — a preset name (e.g., "alloy")
+                or a saved custom voice ID from the Voices API.
             **kwargs: Optional overrides:
                 - model: Mistral model name.
                 - response_format: Audio format (mp3, wav, etc.)
@@ -57,7 +58,7 @@ class MistralTTSBackend:
         Returns:
             Audio data as bytes.
         """
-        voice = voice_id or self.DEFAULT_VOICE
+        effective_voice_id = voice_id or self.DEFAULT_VOICE
         model = kwargs.get("model") or getattr(
             self._settings, "TTS_MISTRAL_MODEL", MistralTTSClient.DEFAULT_MODEL
         )
@@ -65,7 +66,7 @@ class MistralTTSBackend:
 
         return self._client.text_to_speech(
             text=text,
-            voice=voice,
+            voice_id=effective_voice_id,
             model=model,
             response_format=response_format,
         )

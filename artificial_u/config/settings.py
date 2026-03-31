@@ -139,7 +139,7 @@ class Settings(BaseSettings):
     # ElevenLabs voice model. Example values: "eleven_flash_v2_5", "eleven_multilingual_v2"
     TTS_VOICE_MODEL: str = "eleven_flash_v2_5"
     # Mistral TTS model
-    TTS_MISTRAL_MODEL: str = "mistral-tts-latest"
+    TTS_MISTRAL_MODEL: str = "voxtral-mini-tts-2603"
     # Mistral API key (optional, required only if tts_backend="mistral")
     MISTRAL_API_KEY: Optional[str] = None
 

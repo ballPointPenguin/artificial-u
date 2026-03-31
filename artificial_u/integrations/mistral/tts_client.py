@@ -1,21 +1,21 @@
 """
-Mistral TTS (Voxtral) API client.
+Mistral TTS (Voxtral) client using the official mistralai SDK.
 
-Low-level client for the Mistral text-to-speech endpoint.
+Wraps the SDK's audio.speech endpoint for text-to-speech generation.
 """
 
+import base64
 import logging
 import time
 from typing import Any, Dict, List, Optional
 
-import httpx
+from mistralai import Mistral
 
 
 class MistralTTSClient:
-    """Low-level client for the Mistral TTS API."""
+    """Client for Mistral TTS using the official SDK."""
 
-    BASE_URL = "https://api.mistral.ai/v1"
-    DEFAULT_MODEL = "mistral-tts-latest"
+    DEFAULT_MODEL = "voxtral-mini-tts-2603"
     DEFAULT_FORMAT = "mp3"
     MAX_RETRIES = 3
     RETRY_WAIT = 2
@@ -54,28 +54,22 @@ class MistralTTSClient:
 
         self.logger = logger or logging.getLogger(__name__)
         self.api_key = api_key
-        self._client = httpx.Client(
-            base_url=self.BASE_URL,
-            headers={
-                "Authorization": f"Bearer {api_key}",
-                "Accept": "audio/mpeg",
-            },
-            timeout=120.0,
-        )
+        self._client = Mistral(api_key=api_key)
 
     def text_to_speech(
         self,
         text: str,
-        voice: str = "alloy",
+        voice_id: str = "alloy",
         model: Optional[str] = None,
         response_format: Optional[str] = None,
     ) -> bytes:
-        """Convert text to speech via Mistral API.
+        """Convert text to speech via Mistral SDK.
 
         Args:
             text: Text to convert.
-            voice: Preset voice name (e.g., "alloy", "nova").
-            model: Model name (default: mistral-tts-latest).
+            voice_id: Voice identifier - a preset name (e.g., "alloy") or
+                a saved custom voice ID from audio.voices.create().
+            model: Model name (default: voxtral-mini-tts-2603).
             response_format: Audio format (default: mp3).
 
         Returns:
@@ -84,25 +78,24 @@ class MistralTTSClient:
         model = model or self.DEFAULT_MODEL
         response_format = response_format or self.DEFAULT_FORMAT
 
-        payload: Dict[str, Any] = {
-            "model": model,
-            "input": text,
-            "voice": voice,
-            "response_format": response_format,
-        }
-
         for attempt in range(self.MAX_RETRIES):
             try:
                 self.logger.debug(
-                    "Mistral TTS attempt %d: voice=%s, text_len=%d",
+                    "Mistral TTS attempt %d: voice_id=%s, text_len=%d",
                     attempt + 1,
-                    voice,
+                    voice_id,
                     len(text),
                 )
-                response = self._client.post("/audio/speech", json=payload)
-                response.raise_for_status()
+                response = self._client.audio.speech.complete(
+                    model=model,
+                    input=text,
+                    voice_id=voice_id,
+                    response_format=response_format,
+                )
 
-                audio_data = response.content
+                # SDK returns base64-encoded audio in response.audio_data
+                audio_data = base64.b64decode(response.audio_data)
+
                 if len(audio_data) < 1000 and len(text) > 100:
                     self.logger.warning(
                         "Unexpectedly small audio from Mistral: %d bytes for %d chars",
@@ -111,21 +104,12 @@ class MistralTTSClient:
                     )
                 return audio_data
 
-            except httpx.HTTPStatusError as e:
-                self.logger.error("Mistral TTS HTTP error: %s", e)
-                if e.response.status_code == 429 and attempt < self.MAX_RETRIES - 1:
-                    wait = self.RETRY_WAIT * (attempt + 1)
-                    self.logger.info("Rate limited, waiting %ds before retry...", wait)
-                    time.sleep(wait)
-                    continue
-                if attempt < self.MAX_RETRIES - 1:
-                    time.sleep(self.RETRY_WAIT)
-                    continue
-                raise
             except Exception as e:
-                self.logger.error("Mistral TTS error: %s", e)
+                self.logger.error("Mistral TTS error (attempt %d): %s", attempt + 1, e)
                 if attempt < self.MAX_RETRIES - 1:
-                    time.sleep(self.RETRY_WAIT)
+                    wait = self.RETRY_WAIT * (attempt + 1)
+                    self.logger.info("Waiting %ds before retry...", wait)
+                    time.sleep(wait)
                     continue
                 raise
 
@@ -133,5 +117,7 @@ class MistralTTSClient:
         raise RuntimeError("Mistral TTS failed after all retries")
 
     def close(self) -> None:
-        """Close the HTTP client."""
-        self._client.close()
+        """Close the SDK client."""
+        # The mistralai SDK client doesn't require explicit cleanup,
+        # but we keep this method for interface consistency.
+        pass

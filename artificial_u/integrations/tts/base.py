@@ -22,7 +22,7 @@ class TTSBackend(Protocol):
             text: Text to convert to speech.
             voice_id: Provider-specific voice identifier.
                 For ElevenLabs: the el_voice_id.
-                For Mistral: a preset voice name (e.g., "casual_male").
+                For Mistral: a preset name (e.g., "alloy") or saved voice ID.
             **kwargs: Provider-specific options (model_id, voice_settings, etc.)
 
         Returns:
