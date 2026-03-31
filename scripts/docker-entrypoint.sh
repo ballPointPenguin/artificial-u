@@ -64,6 +64,16 @@ if [ "${RUN_BACKFILL_VOICE_TTS_BACKEND}" = "1" ]; then
   fi
 fi
 
+# Optionally seed Mistral Voxtral preset voices
+if [ "${RUN_SEED_MISTRAL_VOICES}" = "1" ]; then
+  if [ -n "$DATABASE_URL" ]; then
+    echo "[entrypoint] RUN_SEED_MISTRAL_VOICES=1 detected; seeding Mistral voices..."
+    python scripts/seed_mistral_voices.py || echo "[entrypoint] Mistral voice seeding failed; continuing"
+  else
+    echo "[entrypoint] DATABASE_URL not set; skipping Mistral voice seeding"
+  fi
+fi
+
 echo "[entrypoint] Starting Gunicorn..."
 exec gunicorn artificial_u.api.app:app \
   -k uvicorn.workers.UvicornWorker \

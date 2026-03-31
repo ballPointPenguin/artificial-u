@@ -129,6 +129,7 @@ class ProfessorModel(Base):
     image_created_with = Column(String, nullable=True)
     department_id = Column(Integer, ForeignKey("departments.id"), nullable=True)
     voice_id = Column(Integer, ForeignKey("voices.id"), nullable=True)
+    tts_backend = Column(String(50), nullable=True)  # Per-professor TTS backend override
     # Attribution fields
     created_by = Column(Integer, ForeignKey("students.id"), nullable=True)
     created_with = Column(String, nullable=True)

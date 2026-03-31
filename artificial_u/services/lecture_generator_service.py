@@ -813,13 +813,16 @@ class LectureGeneratorService:
         """
         voice_identifier: Optional[str] = None
         voice_id: Optional[int] = None
-        backend_name = "elevenlabs"  # Default
+        # Professor-level override takes priority, then voice record, then system default
+        backend_name = getattr(professor, "tts_backend", None) or "elevenlabs"
 
         if professor.voice_id:
             voice_repo = self.repository_factory.voice
             voice = voice_repo.get(professor.voice_id)
             if voice:
-                backend_name = voice.tts_backend or "elevenlabs"
+                # Only use voice record's backend if professor doesn't override
+                if not getattr(professor, "tts_backend", None):
+                    backend_name = voice.tts_backend or "elevenlabs"
                 voice_id = voice.id
                 # Use the appropriate identifier for the backend
                 if backend_name == "elevenlabs":

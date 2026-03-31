@@ -100,7 +100,7 @@ class TTSService:
         if self.backend.supports_ssml():
             normalized_text = self.speech_processor.normalize_text(text)
         else:
-            normalized_text = self.speech_processor.normalize_text(text)
+            normalized_text = self.speech_processor.normalize_text(text, supports_ssml=False)
 
         # Split text into chunks if necessary
         chunks = self.speech_processor.split_into_chunks(normalized_text, max_chunk_size=chunk_size)
