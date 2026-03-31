@@ -61,12 +61,14 @@ class Department(BaseModel):
 
 
 class Voice(BaseModel):
-    """Voice model representing an ElevenLabs voice."""
+    """Voice model representing a TTS voice from any provider."""
 
     model_config = ConfigDict(
         json_schema_extra={
             "example": {
                 "id": 1,
+                "tts_backend": "elevenlabs",
+                "external_id": "MF4J4IDTRo0AxOO4dpFR",
                 "el_voice_id": "MF4J4IDTRo0AxOO4dpFR",
                 "name": "Devi - Clear Hindi pronunciation",
                 "accent": "standard",
@@ -98,7 +100,9 @@ class Voice(BaseModel):
     )
 
     id: Optional[int] = None
-    el_voice_id: str
+    tts_backend: str = "elevenlabs"
+    external_id: Optional[str] = None
+    el_voice_id: Optional[str] = None
     name: Optional[str] = None
     accent: Optional[str] = None
     age: Optional[str] = None

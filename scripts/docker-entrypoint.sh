@@ -54,6 +54,16 @@ if [ "${RUN_BACKFILL_DURATIONS}" = "1" ]; then
   fi
 fi
 
+# Optionally backfill tts_backend and external_id on voice records
+if [ "${RUN_BACKFILL_VOICE_TTS_BACKEND}" = "1" ]; then
+  if [ -n "$DATABASE_URL" ]; then
+    echo "[entrypoint] RUN_BACKFILL_VOICE_TTS_BACKEND=1 detected; backfilling voice tts_backend..."
+    python scripts/backfill_voice_tts_backend.py || echo "[entrypoint] Voice tts_backend backfill failed; continuing"
+  else
+    echo "[entrypoint] DATABASE_URL not set; skipping voice tts_backend backfill"
+  fi
+fi
+
 echo "[entrypoint] Starting Gunicorn..."
 exec gunicorn artificial_u.api.app:app \
   -k uvicorn.workers.UvicornWorker \
