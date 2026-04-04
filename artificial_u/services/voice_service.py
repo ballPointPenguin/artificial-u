@@ -676,6 +676,36 @@ class VoiceService:
 
         self.logger.info(f"Manually assigned voice {el_voice_id} to professor {professor_id}")
 
+    def manual_voice_assignment_generic(
+        self, professor_id: str, external_id: str, tts_backend: str
+    ) -> None:
+        """
+        Manually assign a non-ElevenLabs voice to a professor.
+
+        The voice must already exist in the database (e.g., seeded preset or
+        previously created custom voice).
+
+        Args:
+            professor_id: ID of the professor to assign voice to
+            external_id: Provider-specific voice identifier
+            tts_backend: TTS backend name (e.g., "mistral")
+
+        Raises:
+            ValueError: If the voice is not found in the database
+        """
+        voice = self.repository_factory.voice.get_by_external_id(tts_backend, external_id)
+        if not voice:
+            raise ValueError(
+                f"Voice with external_id '{external_id}' not found for "
+                f"backend '{tts_backend}'. Ensure the voice has been seeded "
+                f"or created before assigning it."
+            )
+
+        self.repository_factory.professor.update_field(professor_id, voice_id=voice.id)
+        self.logger.info(
+            f"Assigned voice {external_id} (backend={tts_backend}) to professor {professor_id}"
+        )
+
     def list_available_voices(
         self,
         gender: Optional[str] = None,
@@ -686,6 +716,7 @@ class VoiceService:
         category: Optional[str] = None,
         limit: int = 100,
         offset: int = 0,
+        tts_backend: Optional[str] = None,
     ) -> List[Dict[str, Any]]:
         """
         List available voices with optional filtering.
@@ -699,6 +730,7 @@ class VoiceService:
             category: Optional filter by category
             limit: Maximum number of results (for DB/API pagination)
             offset: Offset for pagination
+            tts_backend: Optional filter by TTS backend
 
         Returns:
             List of voice dictionaries
@@ -713,12 +745,18 @@ class VoiceService:
             category=category,
             limit=limit,
             offset=offset,
+            tts_backend=tts_backend,
         )
 
         if voices:
             return [v.model_dump() for v in voices]
 
-        # Get from API
+        # Fall back to ElevenLabs API only when no backend filter is set
+        # or explicitly filtering for elevenlabs
+        if tts_backend and tts_backend != "elevenlabs":
+            return []
+
+        # Get from ElevenLabs API
         voices_page, _ = self.client.get_shared_voices(
             gender=gender,
             accent=accent,
@@ -744,6 +782,7 @@ class VoiceService:
         language: Optional[str] = None,
         use_case: Optional[str] = None,
         category: Optional[str] = None,
+        tts_backend: Optional[str] = None,
     ) -> int:
         """
         Count available voices with optional filtering.
@@ -755,13 +794,11 @@ class VoiceService:
             language: Optional filter by language
             use_case: Optional filter by use case
             category: Optional filter by category
+            tts_backend: Optional filter by TTS backend
 
         Returns:
             Total count of matching voices in the database.
         """
-        # This primarily counts from the database.
-        # If the expectation is to count from API if DB is empty, logic would need to be added,
-        # but for typical pagination, counting existing DB entries is standard.
         return self.repository_factory.voice.count(
             gender=gender,
             accent=accent,
@@ -769,4 +806,5 @@ class VoiceService:
             language=language,
             use_case=use_case,
             category=category,
+            tts_backend=tts_backend,
         )

@@ -292,6 +292,7 @@ export interface Professor {
   image_url: string | null
   image_created_with?: string | null
   voice_id?: number | null
+  tts_backend?: string | null
   created_by?: number | null
   created_with?: string | null
   created_at?: string | null
@@ -447,6 +448,8 @@ export interface FacultiesListResponse {
 // Voice types
 export interface Voice {
   id: number
+  tts_backend: string
+  external_id: string | null
   el_voice_id: string | null
   name: string | null
   accent: string | null
@@ -472,7 +475,9 @@ export interface PaginatedVoices {
 }
 
 export interface ManualVoiceAssignmentPayload {
-  el_voice_id: string
+  external_id: string
+  tts_backend?: string
+  el_voice_id?: string
 }
 
 export interface VoiceListParams {

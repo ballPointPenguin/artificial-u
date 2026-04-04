@@ -31,9 +31,32 @@ async def manual_assign_voice(
 ):
     """
     Manually assign a voice to a professor.
+
+    Accepts either `external_id` + `tts_backend` (preferred) or legacy
+    `el_voice_id` for backward compatibility.
     """
+    # Resolve the effective external_id: prefer new field, fall back to legacy
+    external_id = assignment_request.external_id or assignment_request.el_voice_id
+    if not external_id:
+        raise HTTPException(
+            status_code=400,
+            detail="Either 'external_id' or 'el_voice_id' must be provided",
+        )
+
+    tts_backend = assignment_request.tts_backend
+    # If only el_voice_id was provided (no external_id), force elevenlabs backend
+    if not assignment_request.external_id and assignment_request.el_voice_id:
+        tts_backend = "elevenlabs"
+
     try:
-        voice_service.manual_voice_assignment(professor_id, assignment_request.el_voice_id)
+        if tts_backend == "elevenlabs":
+            # Use the existing ElevenLabs-aware path (verifies voice via EL API)
+            voice_service.manual_voice_assignment(professor_id, external_id)
+        else:
+            # Generic path: look up by backend + external_id in the DB
+            voice_service.manual_voice_assignment_generic(
+                professor_id, external_id, tts_backend
+            )
     except ValueError as e:
         # Use 400 instead of 404 to avoid CloudFront's error response
         # converting it to index.html (CloudFront converts 404/403 to 200+index.html for SPA)
@@ -49,6 +72,7 @@ async def list_voices(
     language: Optional[str] = Query(None, description="Filter by language (default: 'en')"),
     use_case: Optional[str] = Query(None, description="Filter by use case"),
     category: Optional[str] = Query(None, description="Filter by category"),
+    tts_backend: Optional[str] = Query(None, description="Filter by TTS backend"),
     limit: int = Query(100, ge=1, le=1000, description="Maximum number of results"),
     offset: int = Query(0, ge=0, description="Offset for pagination"),
     voice_service: VoiceService = Depends(get_voice_service),
@@ -65,6 +89,7 @@ async def list_voices(
         category=category,
         limit=limit,
         offset=offset,
+        tts_backend=tts_backend,
     )
 
     total_count = voice_service.count_available_voices(
@@ -74,6 +99,7 @@ async def list_voices(
         language=language,
         use_case=use_case,
         category=category,
+        tts_backend=tts_backend,
     )
 
     # Calculate pagination values
@@ -103,6 +129,33 @@ async def get_voice(
     return VoiceResponse(**voice)
 
 
+@router.get("/by_external/{backend}/{external_id:path}", response_model=VoiceResponse)
+async def get_voice_by_external_id(
+    backend: str = Path(..., description="TTS backend (e.g., 'elevenlabs', 'mistral')"),
+    external_id: str = Path(..., description="Provider-specific voice identifier"),
+    voice_service: VoiceService = Depends(get_voice_service),
+):
+    """
+    Get a voice by its TTS backend and external identifier.
+
+    For ElevenLabs voices this is the el_voice_id. For Mistral voices
+    this is the preset name or custom voice ID.
+    """
+    if backend == "elevenlabs":
+        voice = voice_service.get_voice_by_el_id(external_id)
+    else:
+        voice_obj = voice_service.repository_factory.voice.get_by_external_id(
+            backend, external_id
+        )
+        voice = voice_obj.model_dump() if voice_obj else None
+
+    if not voice:
+        raise HTTPException(status_code=404, detail="Voice not found")
+    if "id" not in voice or voice.get("id") is None:
+        raise HTTPException(status_code=502, detail="Voice fetched but not persisted")
+    return VoiceResponse(**voice)
+
+
 @router.get("/by_el/{el_voice_id}", response_model=VoiceResponse)
 async def get_voice_by_elevenlabs_id(
     el_voice_id: str = Path(..., description="ElevenLabs voice_id to retrieve"),
@@ -111,6 +164,8 @@ async def get_voice_by_elevenlabs_id(
     """
     Get a specific voice by its ElevenLabs voice_id. If not present in DB,
     fetch from ElevenLabs, persist, and return the DB-backed record.
+
+    Legacy endpoint — prefer /by_external/elevenlabs/{external_id}.
     """
     voice = voice_service.get_voice_by_el_id(el_voice_id)
     if not voice:

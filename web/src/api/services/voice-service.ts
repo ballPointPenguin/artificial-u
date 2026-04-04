@@ -13,8 +13,11 @@ import type {
 /**
  * Manually assign a voice to a professor.
  *
+ * Sends external_id + tts_backend to the API. For backward compatibility,
+ * el_voice_id is also accepted (the API will treat it as an ElevenLabs external_id).
+ *
  * @param professorId - ID of the professor to assign voice to.
- * @param payload - ManualVoiceAssignmentPayload containing the el_voice_id.
+ * @param payload - ManualVoiceAssignmentPayload containing external_id and optional tts_backend.
  * @returns Promise<void> as the API returns 204 No Content.
  */
 export const manualAssignVoice = async (
@@ -66,8 +69,22 @@ export const getVoice = async (voiceId: number): Promise<Voice> => {
 }
 
 /**
+ * Get a voice by its TTS backend and external identifier.
+ *
+ * @param backend - TTS backend name (e.g., "elevenlabs", "mistral")
+ * @param externalId - Provider-specific voice identifier
+ * @returns Promise<Voice> containing the voice details.
+ */
+export const getVoiceByExternalId = async (
+  backend: string,
+  externalId: string
+): Promise<Voice> => {
+  return httpClient.get<Voice>(ENDPOINTS.voices.getVoiceByExternalId(backend, externalId))
+}
+
+/**
  * Get a specific voice by its ElevenLabs voice_id.
- * Ensures the response includes a DB id after persistence.
+ * Legacy convenience wrapper — prefer getVoiceByExternalId("elevenlabs", id).
  */
 export const getVoiceByElId = async (elVoiceId: string): Promise<Voice> => {
   return httpClient.get<Voice>(ENDPOINTS.voices.getVoiceByElId(elVoiceId))

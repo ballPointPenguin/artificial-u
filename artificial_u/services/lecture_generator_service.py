@@ -437,7 +437,9 @@ class LectureGeneratorService:
         )
 
         # 4. Add ID3 metadata tags to audio
-        audio_bytes = self._add_id3_tags_to_audio(lecture, course, topic, audio_bytes)
+        audio_bytes = self._add_id3_tags_to_audio(
+            lecture, course, topic, audio_bytes, tts_backend=backend_name
+        )
 
         # 4b. Extract audio duration
         from artificial_u.audio import ID3Tagger
@@ -911,7 +913,9 @@ class LectureGeneratorService:
             raise DatabaseError("Failed to upload generated audio to storage")
         return audio_url
 
-    def _add_id3_tags_to_audio(self, lecture, course, topic, audio_bytes: bytes) -> bytes:
+    def _add_id3_tags_to_audio(
+        self, lecture, course, topic, audio_bytes: bytes, tts_backend: str = "elevenlabs"
+    ) -> bytes:
         """Add ID3 metadata tags to audio bytes."""
         from artificial_u.audio import ID3Tagger
         from artificial_u.config import get_settings
@@ -927,12 +931,12 @@ class LectureGeneratorService:
                 repository_factory=self.repository_factory,
             )
 
-            # Generate comment with model and ElevenLabs info
+            # Generate comment with model and TTS backend info
             settings = get_settings()
             model_name = getattr(lecture, "created_with", None) or settings.TTS_VOICE_MODEL
             comment = tagger.generate_comment(
                 model_name=model_name,
-                include_elevenlabs=True,
+                tts_backend=tts_backend,
             )
 
             # Add tags to audio
