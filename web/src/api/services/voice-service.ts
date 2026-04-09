@@ -8,6 +8,8 @@ import type {
   PaginatedVoices,
   Voice,
   VoiceListParams,
+  VoicePreviewRequest,
+  VoicePreviewResponse,
 } from '../types'
 
 /**
@@ -47,6 +49,7 @@ export const listVoices = async (params: VoiceListParams = {}): Promise<Paginate
   if (params.language !== undefined) queryParams.set('language', params.language)
   if (params.use_case !== undefined) queryParams.set('use_case', params.use_case)
   if (params.category !== undefined) queryParams.set('category', params.category)
+  if (params.tts_backend !== undefined) queryParams.set('tts_backend', params.tts_backend)
 
   // Pagination parameters, usually included if provided and not undefined
   if (params.limit !== undefined) queryParams.set('limit', String(params.limit))
@@ -88,4 +91,16 @@ export const getVoiceByExternalId = async (
  */
 export const getVoiceByElId = async (elVoiceId: string): Promise<Voice> => {
   return httpClient.get<Voice>(ENDPOINTS.voices.getVoiceByElId(elVoiceId))
+}
+
+/**
+ * Generate a short TTS audio preview for a voice.
+ *
+ * @param request - VoicePreviewRequest with voice_id, tts_backend, and optional text.
+ * @returns Promise<VoicePreviewResponse> containing a base64 audio data URI.
+ */
+export const previewVoice = async (
+  request: VoicePreviewRequest
+): Promise<VoicePreviewResponse> => {
+  return httpClient.post<VoicePreviewResponse>(ENDPOINTS.voices.preview, request)
 }

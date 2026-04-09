@@ -123,7 +123,7 @@ const VoiceProfileSection: Component<{
                 <p class="text-sm text-muted">
                   <strong class="font-semibold text-foreground">Backend:</strong>{' '}
                   <span class="inline-block px-2 py-0.5 rounded text-xs font-medium bg-accent/20 text-accent">
-                    {backendDisplayName(voice().tts_backend ?? 'elevenlabs')}
+                    {backendDisplayName(voice().tts_backend)}
                   </span>
                 </p>
 
@@ -135,7 +135,7 @@ const VoiceProfileSection: Component<{
                 </Show>
 
                 {/* ElevenLabs link — only for elevenlabs backend */}
-                <Show when={(voice().tts_backend ?? 'elevenlabs') === 'elevenlabs' && voice().el_voice_id}>
+                <Show when={voice().tts_backend === 'elevenlabs' && voice().el_voice_id}>
                   <p class="text-sm text-muted">
                     <strong class="font-semibold text-foreground">ElevenLabs ID:</strong>{' '}
                     <a
@@ -235,6 +235,16 @@ const VoiceProfileSection: Component<{
                 </MagicButton>
               </div>
             </div>
+            <Show when={props.professorResource()?.id}>
+              <div class="mt-2">
+                <A
+                  href={`/professors/${String(props.professorResource()?.id ?? '')}/voice`}
+                  class="text-sm text-accent hover:text-accent/80 underline"
+                >
+                  Voice Selection &amp; Preview &rarr;
+                </A>
+              </div>
+            </Show>
           </RequireRole>
         </div>
       </div>

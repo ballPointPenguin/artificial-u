@@ -2,19 +2,25 @@
 API router for voice-related operations.
 """
 
+import base64
+import logging
 from math import ceil
 from typing import Optional
 
 from fastapi import APIRouter, Body, Depends, HTTPException, Path, Query
+from pydantic import BaseModel, Field
 
-from artificial_u.api.dependencies import get_voice_service
+from artificial_u.api.dependencies import get_tts_backend, get_voice_service
 from artificial_u.api.models.voice import (
     ManualVoiceAssignmentRequest,
     VoiceListResponse,
     VoiceResponse,
 )
 from artificial_u.api.security.auth0 import require_auth
+from artificial_u.integrations.tts import TTSBackend, create_tts_backend
 from artificial_u.services.voice_service import VoiceService
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(
     prefix="/voices",
@@ -174,3 +180,73 @@ async def get_voice_by_elevenlabs_id(
     if "id" not in voice or voice.get("id") is None:
         raise HTTPException(status_code=502, detail="Voice fetched but not persisted")
     return VoiceResponse(**voice)
+
+
+# ---------------------------------------------------------------------------
+# Voice preview (TTS sample generation)
+# ---------------------------------------------------------------------------
+
+class VoicePreviewRequest(BaseModel):
+    text: Optional[str] = Field(
+        None,
+        description="Text to synthesize. If omitted a default sample is used.",
+    )
+    tts_backend: str = Field(
+        "mistral",
+        description="TTS backend to use for the preview.",
+    )
+    voice_id: str = Field(
+        ...,
+        description="Voice identifier (preset name or external ID).",
+    )
+
+
+class VoicePreviewResponse(BaseModel):
+    audio_data_uri: str = Field(
+        ..., description="Base64-encoded data URI (audio/mpeg)."
+    )
+    text: str = Field(..., description="The text that was spoken.")
+
+
+DEFAULT_PREVIEW_TEXT = (
+    "Welcome to Artificial University. "
+    "Today we'll explore how ideas take shape and transform our understanding of the world."
+)
+
+
+@router.post("/preview", response_model=VoicePreviewResponse, dependencies=[Depends(require_auth)])
+async def preview_voice(
+    request: VoicePreviewRequest = Body(...),
+):
+    """
+    Generate a short TTS audio sample for a given voice.
+
+    Returns the audio as a base64 data-URI string so the frontend can play
+    it directly without storing a file.
+    """
+    text = request.text or DEFAULT_PREVIEW_TEXT
+
+    try:
+        backend: TTSBackend = create_tts_backend(
+            backend_name=request.tts_backend,
+            logger=logger,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    try:
+        audio_bytes = backend.text_to_speech(
+            text=text,
+            voice_id=request.voice_id,
+        )
+    except Exception as e:
+        logger.error("Voice preview generation failed: %s", e)
+        raise HTTPException(
+            status_code=502,
+            detail=f"TTS generation failed: {e}",
+        )
+
+    b64 = base64.b64encode(audio_bytes).decode("ascii")
+    data_uri = f"data:audio/mpeg;base64,{b64}"
+
+    return VoicePreviewResponse(audio_data_uri=data_uri, text=text)

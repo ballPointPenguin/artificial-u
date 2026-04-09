@@ -487,8 +487,21 @@ export interface VoiceListParams {
   language?: string
   use_case?: string
   category?: string
+  tts_backend?: string
   limit?: number
   offset?: number
+}
+
+// Voice preview
+export interface VoicePreviewRequest {
+  voice_id: string
+  tts_backend?: string
+  text?: string
+}
+
+export interface VoicePreviewResponse {
+  audio_data_uri: string
+  text: string
 }
 
 // Error response type

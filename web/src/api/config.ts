@@ -128,6 +128,7 @@ export const ENDPOINTS = {
     getVoiceByElId: (elVoiceId: string) => `/v1/voices/by_el/${encodeURIComponent(elVoiceId)}`,
     getVoiceByExternalId: (backend: string, externalId: string) =>
       `/v1/voices/by_external/${encodeURIComponent(backend)}/${encodeURIComponent(externalId)}`,
+    preview: '/v1/voices/preview',
   },
   students: {
     me: '/v1/students/me',
