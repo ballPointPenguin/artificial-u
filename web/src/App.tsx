@@ -170,7 +170,14 @@ const App: Component = () => {
         path="/professors/:id/voice"
         component={() => (
           <RequireAuth fallback={<LoginPrompt />}>
-            <RequireRole minRole="creator" fallback={<div class="container mx-auto p-4 text-center">Access denied. Creator role required.</div>}>
+            <RequireRole
+              minRole="creator"
+              fallback={
+                <div class="container mx-auto p-4 text-center">
+                  Access denied. Creator role required.
+                </div>
+              }
+            >
               <ProfessorVoice />
             </RequireRole>
           </RequireAuth>

@@ -2,11 +2,11 @@ import { A, useNavigate, useParams } from '@solidjs/router'
 import {
   type Accessor,
   type Component,
-  type Resource,
-  type Setter,
   createResource,
   createSignal,
   For,
+  type Resource,
+  type Setter,
   Show,
 } from 'solid-js'
 import { departmentService } from '../../api/services/department-service.js'
@@ -111,9 +111,7 @@ const VoiceProfileSection: Component<{
 
   return (
     <>
-      <h3 class="text-lg font-display text-parchment-100 mb-3 text-shadow-golden">
-        Voice Profile
-      </h3>
+      <h3 class="text-lg font-display text-parchment-100 mb-3 text-shadow-golden">Voice Profile</h3>
       <div class="bg-surface rounded-lg p-4 space-y-2">
         <Show when={props.professorResource()?.voice_id}>
           <Show when={!props.voiceResource.loading && props.voiceResource()}>
@@ -218,9 +216,7 @@ const VoiceProfileSection: Component<{
                   class="input input-bordered w-full sm:w-64"
                   placeholder="Voice ID Override"
                   value={props.manualElVoiceId()}
-                  onInput={(e) =>
-                    props.setManualElVoiceId((e.target as HTMLInputElement).value)
-                  }
+                  onInput={(e) => props.setManualElVoiceId((e.target as HTMLInputElement).value)}
                   aria-label="Voice ID Override"
                 />
                 <MagicButton

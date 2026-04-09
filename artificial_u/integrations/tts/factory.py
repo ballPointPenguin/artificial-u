@@ -47,6 +47,5 @@ def create_tts_backend(
         )
     else:
         raise ValueError(
-            f"Unknown TTS backend: '{backend_name}'. "
-            "Supported backends: 'elevenlabs', 'mistral'"
+            f"Unknown TTS backend: '{backend_name}'. " "Supported backends: 'elevenlabs', 'mistral'"
         )

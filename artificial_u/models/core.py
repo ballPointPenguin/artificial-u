@@ -160,7 +160,9 @@ class Professor(BaseModel):
     image_created_with: Optional[str] = None
     department_id: Optional[int] = None
     voice_id: Optional[int] = None
-    tts_backend: Optional[str] = None  # Override TTS backend for this professor (None = system default)
+    tts_backend: Optional[str] = (
+        None  # Override TTS backend for this professor (None = system default)
+    )
     # Attribution
     created_by: Optional[int] = None
     created_with: Optional[str] = None

@@ -78,10 +78,7 @@ export const getVoice = async (voiceId: number): Promise<Voice> => {
  * @param externalId - Provider-specific voice identifier
  * @returns Promise<Voice> containing the voice details.
  */
-export const getVoiceByExternalId = async (
-  backend: string,
-  externalId: string
-): Promise<Voice> => {
+export const getVoiceByExternalId = async (backend: string, externalId: string): Promise<Voice> => {
   return httpClient.get<Voice>(ENDPOINTS.voices.getVoiceByExternalId(backend, externalId))
 }
 
@@ -99,8 +96,6 @@ export const getVoiceByElId = async (elVoiceId: string): Promise<Voice> => {
  * @param request - VoicePreviewRequest with voice_id, tts_backend, and optional text.
  * @returns Promise<VoicePreviewResponse> containing a base64 audio data URI.
  */
-export const previewVoice = async (
-  request: VoicePreviewRequest
-): Promise<VoicePreviewResponse> => {
+export const previewVoice = async (request: VoicePreviewRequest): Promise<VoicePreviewResponse> => {
   return httpClient.post<VoicePreviewResponse>(ENDPOINTS.voices.preview, request)
 }

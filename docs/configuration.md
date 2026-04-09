@@ -229,6 +229,7 @@ TESTING=true
 | `DATABASE_URL` | Database connection string | `postgresql://postgres:postgres@localhost:5432/artificial_u_dev` | Yes |
 | `ANTHROPIC_API_KEY` | API key for Anthropic | None | No |
 | `ELEVENLABS_API_KEY` | API key for ElevenLabs | None | No |
+| `MISTRAL_API_KEY` | API key for Mistral (TTS when using Mistral backend) | None | No |
 | `GOOGLE_API_KEY` | API key for Google | None | No |
 | `OPENAI_API_KEY` | API key for OpenAI | None | No |
 | `CONTENT_LOGS_PATH` | (Deprecated) Path for content generation logs | `content_logs` | No |

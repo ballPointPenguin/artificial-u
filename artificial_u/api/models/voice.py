@@ -53,6 +53,10 @@ class VoiceListResponse(BaseModel):
 
 class ManualVoiceAssignmentRequest(BaseModel):
     external_id: Optional[str] = Field(None, description="Provider-specific voice identifier")
-    tts_backend: str = Field("elevenlabs", description="TTS backend for the voice (e.g., elevenlabs, mistral)")
+    tts_backend: str = Field(
+        "elevenlabs", description="TTS backend for the voice (e.g., elevenlabs, mistral)"
+    )
     # Legacy alias — accepted for backward compatibility
-    el_voice_id: Optional[str] = Field(None, description="ElevenLabs Voice ID (legacy, use external_id instead)")
+    el_voice_id: Optional[str] = Field(
+        None, description="ElevenLabs Voice ID (legacy, use external_id instead)"
+    )

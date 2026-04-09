@@ -1,12 +1,5 @@
 import { useParams } from '@solidjs/router'
-import {
-  type Component,
-  For,
-  Show,
-  createMemo,
-  createResource,
-  createSignal,
-} from 'solid-js'
+import { type Component, createMemo, createResource, createSignal, For, Show } from 'solid-js'
 import { professorService } from '../../api/services/professor-service.js'
 import {
   getVoice,
@@ -55,11 +48,11 @@ const VoiceCard: Component<{
   return (
     <button
       type="button"
-      onClick={() => { props.onSelect() }}
+      onClick={() => {
+        props.onSelect()
+      }}
       class={`arcane-card-sm p-4 text-left w-full transition-colors cursor-pointer ${
-        props.isSelected
-          ? 'ring-2 ring-accent bg-accent/10'
-          : 'hover:bg-surface-hover'
+        props.isSelected ? 'ring-2 ring-accent bg-accent/10' : 'hover:bg-surface-hover'
       }`}
     >
       <div class="flex items-start justify-between gap-2">
@@ -126,8 +119,7 @@ const ProfessorVoice: Component = () => {
   // ---- Voices list for current backend ----
   const [voicesResource] = createResource(
     () => selectedBackend(),
-    async (backend) =>
-      listVoices({ tts_backend: backend, limit: 100 })
+    async (backend) => listVoices({ tts_backend: backend, limit: 100 })
   )
 
   // ---- Selected voice from grid ----
@@ -205,9 +197,7 @@ const ProfessorVoice: Component = () => {
         external_id: externalId,
         tts_backend: ttsBackend,
       })
-      setAssignSuccess(
-        `Voice assigned successfully (${ttsBackend}: ${externalId}).`
-      )
+      setAssignSuccess(`Voice assigned successfully (${ttsBackend}: ${externalId}).`)
       void refetchProfessor()
     } catch (e) {
       setAssignError(e instanceof Error ? e.message : 'Assignment failed.')
@@ -275,7 +265,9 @@ const ProfessorVoice: Component = () => {
                     ? 'bg-surface text-accent border-b-2 border-accent'
                     : 'bg-transparent text-muted hover:text-foreground'
                 }`}
-                onClick={() => { switchBackend(opt.value) }}
+                onClick={() => {
+                  switchBackend(opt.value)
+                }}
               >
                 {opt.label}
               </button>
@@ -330,10 +322,7 @@ const ProfessorVoice: Component = () => {
                 </Show>
               </div>
 
-              <Show
-                when={!voicesResource.loading}
-                fallback={<LoadingSpinner />}
-              >
+              <Show when={!voicesResource.loading} fallback={<LoadingSpinner />}>
                 <Show
                   when={(voicesResource()?.items.length ?? 0) > 0}
                   fallback={
@@ -353,7 +342,9 @@ const ProfessorVoice: Component = () => {
                           isSelected={selectedVoiceId() === voice.id}
                           isPreviewing={isPreviewingId() === voice.id}
                           onSelect={() => setSelectedVoiceId(voice.id)}
-                          onPreview={() => { void handlePreview(voice) }}
+                          onPreview={() => {
+                            void handlePreview(voice)
+                          }}
                         />
                       )}
                     </For>

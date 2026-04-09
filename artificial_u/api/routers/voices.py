@@ -10,7 +10,7 @@ from typing import Optional
 from fastapi import APIRouter, Body, Depends, HTTPException, Path, Query
 from pydantic import BaseModel, Field
 
-from artificial_u.api.dependencies import get_tts_backend, get_voice_service
+from artificial_u.api.dependencies import get_voice_service
 from artificial_u.api.models.voice import (
     ManualVoiceAssignmentRequest,
     VoiceListResponse,
@@ -60,9 +60,7 @@ async def manual_assign_voice(
             voice_service.manual_voice_assignment(professor_id, external_id)
         else:
             # Generic path: look up by backend + external_id in the DB
-            voice_service.manual_voice_assignment_generic(
-                professor_id, external_id, tts_backend
-            )
+            voice_service.manual_voice_assignment_generic(professor_id, external_id, tts_backend)
     except ValueError as e:
         # Use 400 instead of 404 to avoid CloudFront's error response
         # converting it to index.html (CloudFront converts 404/403 to 200+index.html for SPA)
@@ -150,9 +148,7 @@ async def get_voice_by_external_id(
     if backend == "elevenlabs":
         voice = voice_service.get_voice_by_el_id(external_id)
     else:
-        voice_obj = voice_service.repository_factory.voice.get_by_external_id(
-            backend, external_id
-        )
+        voice_obj = voice_service.repository_factory.voice.get_by_external_id(backend, external_id)
         voice = voice_obj.model_dump() if voice_obj else None
 
     if not voice:
@@ -186,6 +182,7 @@ async def get_voice_by_elevenlabs_id(
 # Voice preview (TTS sample generation)
 # ---------------------------------------------------------------------------
 
+
 class VoicePreviewRequest(BaseModel):
     text: Optional[str] = Field(
         None,
@@ -202,9 +199,7 @@ class VoicePreviewRequest(BaseModel):
 
 
 class VoicePreviewResponse(BaseModel):
-    audio_data_uri: str = Field(
-        ..., description="Base64-encoded data URI (audio/mpeg)."
-    )
+    audio_data_uri: str = Field(..., description="Base64-encoded data URI (audio/mpeg).")
     text: str = Field(..., description="The text that was spoken.")
 
 

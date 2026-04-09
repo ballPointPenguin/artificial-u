@@ -802,9 +802,7 @@ class LectureGeneratorService:
 
         return lecture, course, topic, professor
 
-    def _ensure_professor_voice(
-        self, professor
-    ) -> tuple[str, Optional[int], str]:
+    def _ensure_professor_voice(self, professor) -> tuple[str, Optional[int], str]:
         """Resolve or auto-assign a voice for the professor.
 
         Returns:

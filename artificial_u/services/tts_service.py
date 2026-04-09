@@ -224,9 +224,7 @@ class TTSService:
             with open(output_path, "rb") as f:
                 fixed_audio = f.read()
 
-            self.logger.info(
-                "Fixed MP3 headers: %d -> %d bytes", len(audio_data), len(fixed_audio)
-            )
+            self.logger.info("Fixed MP3 headers: %d -> %d bytes", len(audio_data), len(fixed_audio))
             return fixed_audio
 
         except subprocess.TimeoutExpired:

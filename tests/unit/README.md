@@ -24,6 +24,7 @@ This will run only tests marked with `@pytest.mark.unit`.
 Unit tests use dummy API keys from `.env.test`:
 
 - `ELEVENLABS_API_KEY=test_elevenlabs_key`
+- `MISTRAL_API_KEY=test_mistral_key`
 - `ANTHROPIC_API_KEY=test_anthropic_key`
 - `GOOGLE_API_KEY=test_google_key`
 - `OPENAI_API_KEY=test_openai_key`

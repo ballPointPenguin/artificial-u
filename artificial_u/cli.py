@@ -32,12 +32,14 @@ def get_system():
         # Get API keys from environment
         anthropic_key = os.environ.get("ANTHROPIC_API_KEY")
         elevenlabs_key = os.environ.get("ELEVENLABS_API_KEY")
+        mistral_key = os.environ.get("MISTRAL_API_KEY")
         google_key = os.environ.get("GOOGLE_API_KEY")
         openai_key = os.environ.get("OPENAI_API_KEY")
 
         university_system = UniversitySystem(
             anthropic_api_key=anthropic_key,
             elevenlabs_api_key=elevenlabs_key,
+            mistral_api_key=mistral_key,
             google_api_key=google_key,
             openai_api_key=openai_key,
             db_url=os.environ.get("DATABASE_URL"),

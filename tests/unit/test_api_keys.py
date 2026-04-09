@@ -20,6 +20,11 @@ def test_environment_variables_are_set():
         os.environ.get("ELEVENLABS_API_KEY") == "test_elevenlabs_key"
     ), "ElevenLabs API key not set to test value"
 
+    # Verify Mistral API key
+    assert (
+        os.environ.get("MISTRAL_API_KEY") == "test_mistral_key"
+    ), "Mistral API key not set to test value"
+
     # Verify Google API key
     assert (
         os.environ.get("GOOGLE_API_KEY") == "test_google_key"

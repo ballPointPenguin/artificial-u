@@ -10,7 +10,6 @@ guiding users through a simplified flow:
 
 import base64
 import logging
-from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status
 
@@ -23,7 +22,6 @@ from artificial_u.api.dependencies import (
     get_repository_factory,
     get_voice_service,
 )
-from artificial_u.integrations.tts import create_tts_backend
 from artificial_u.api.models.quickstart import (
     CourseBrief,
     IntroAudioRequest,
@@ -42,6 +40,7 @@ from artificial_u.api.models.quickstart import (
 from artificial_u.api.security.auth0 import require_coins, require_role
 from artificial_u.api.services import CourseApiService
 from artificial_u.config.settings import get_settings
+from artificial_u.integrations.tts import create_tts_backend
 from artificial_u.models.core import Student
 from artificial_u.models.repositories.factory import RepositoryFactory
 from artificial_u.services import (

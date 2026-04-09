@@ -294,6 +294,7 @@ def test_create_professor(client: TestClient, mock_api_service):
     # The model_dump should include attribution fields and timestamps (even if None)
     expected_with_attribution = {
         **new_professor_data,
+        "tts_backend": None,
         "image_created_with": None,
         "created_by": None,
         "created_with": None,

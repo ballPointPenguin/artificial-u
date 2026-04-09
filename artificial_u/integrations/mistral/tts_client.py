@@ -7,7 +7,7 @@ Wraps the SDK's audio.speech endpoint for text-to-speech generation.
 import base64
 import logging
 import time
-from typing import Any, Dict, List, Optional
+from typing import List, Optional
 
 from mistralai import Mistral
 
