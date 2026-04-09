@@ -696,28 +696,52 @@ class VoiceService:
         """
         Manually assign a non-ElevenLabs voice to a professor.
 
-        The voice must already exist in the database (e.g., seeded preset or
-        previously created custom voice).
+        If the voice does not yet exist in the database it will be
+        auto-created (e.g. from a Mistral catalog voice UUID).
 
         Args:
             professor_id: ID of the professor to assign voice to
             external_id: Provider-specific voice identifier
             tts_backend: TTS backend name (e.g., "mistral")
-
-        Raises:
-            ValueError: If the voice is not found in the database
         """
+        from artificial_u.models.core import Voice
+
         voice = self.repository_factory.voice.get_by_external_id(tts_backend, external_id)
         if not voice:
-            raise ValueError(
-                f"Voice with external_id '{external_id}' not found for "
-                f"backend '{tts_backend}'. Ensure the voice has been seeded "
-                f"or created before assigning it."
+            voice = Voice(
+                tts_backend=tts_backend,
+                external_id=external_id,
+                name=external_id,
+            )
+            # Try to enrich from the provider API (best-effort)
+            if tts_backend == "mistral":
+                try:
+                    from artificial_u.integrations.mistral.voice_manager import MistralVoiceManager
+
+                    mgr = MistralVoiceManager()
+                    info = mgr.get_voice(external_id)
+                    if info:
+                        voice.name = info.get("name") or external_id
+                        voice.gender = info.get("gender")
+                        lang_list = info.get("languages") or []
+                        if lang_list:
+                            voice.language = str(lang_list[0])
+                except Exception as e:
+                    self.logger.warning("Could not enrich Mistral voice metadata: %s", e)
+
+            voice = self.repository_factory.voice.upsert(voice)
+            self.logger.info(
+                "Auto-created voice record for %s/%s (db id=%s)",
+                tts_backend,
+                external_id,
+                voice.id,
             )
 
-        self.repository_factory.professor.update_field(professor_id, voice_id=voice.id)
+        self.repository_factory.professor.update_field(
+            professor_id, voice_id=voice.id, tts_backend=tts_backend
+        )
         self.logger.info(
-            f"Assigned voice {external_id} (backend={tts_backend}) to professor {professor_id}"
+            "Assigned voice %s (backend=%s) to professor %s", external_id, tts_backend, professor_id
         )
 
     def list_available_voices(

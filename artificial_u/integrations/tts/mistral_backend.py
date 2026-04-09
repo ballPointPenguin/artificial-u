@@ -14,7 +14,7 @@ from artificial_u.integrations.mistral.tts_client import MistralTTSClient
 class MistralTTSBackend:
     """TTS backend implementation for Mistral Voxtral."""
 
-    DEFAULT_VOICE = "alloy"
+    DEFAULT_VOICE = ""
 
     def __init__(
         self,
@@ -49,8 +49,8 @@ class MistralTTSBackend:
 
         Args:
             text: Text to convert.
-            voice_id: Mistral voice identifier — a preset name (e.g., "alloy")
-                or a saved custom voice ID from the Voices API.
+            voice_id: Mistral voice UUID from the Voices API or a custom
+                voice ID from audio.voices.create().
             **kwargs: Optional overrides:
                 - model: Mistral model name.
                 - response_format: Audio format (mp3, wav, etc.)

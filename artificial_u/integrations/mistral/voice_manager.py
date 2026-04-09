@@ -10,7 +10,7 @@ import logging
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from mistralai import Mistral
+from mistralai.client import Mistral
 
 
 class MistralVoiceManager:
@@ -37,14 +37,16 @@ class MistralVoiceManager:
 
     def list_voices(
         self,
-        voice_type: str = "all",
         limit: int = 100,
         offset: int = 0,
     ) -> List[Dict[str, Any]]:
         """List available voices.
 
+        Note: The Mistral Voices list API accepts only limit/offset — there is
+        no type filter. User-created voices may not yet appear (Mistral API
+        limitation as of April 2026).
+
         Args:
-            voice_type: Filter by type — "all", "preset", or "custom".
             limit: Max results to return.
             offset: Pagination offset.
 
@@ -52,16 +54,16 @@ class MistralVoiceManager:
             List of voice dicts with id, name, languages, gender, etc.
         """
         response = self._client.audio.voices.list(
-            type_=voice_type,
             limit=limit,
             offset=offset,
         )
 
         voices = []
-        for voice in response.data:
+        voice_list = getattr(response, "items", None) or getattr(response, "data", [])
+        for voice in voice_list:
             voices.append(self._voice_to_dict(voice))
 
-        self.logger.info("Listed %d Mistral voices (type=%s)", len(voices), voice_type)
+        self.logger.info("Listed %d Mistral voices", len(voices))
         return voices
 
     def get_voice(self, voice_id: str) -> Optional[Dict[str, Any]]:

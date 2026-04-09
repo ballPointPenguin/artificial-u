@@ -179,6 +179,77 @@ async def get_voice_by_elevenlabs_id(
 
 
 # ---------------------------------------------------------------------------
+# Mistral voice catalog (on-demand from Mistral API)
+# ---------------------------------------------------------------------------
+
+
+class MistralVoiceCatalogItem(BaseModel):
+    """A voice from the Mistral API, mapped into a shape the frontend can use."""
+
+    id: str = Field(..., description="Mistral voice UUID")
+    name: str = Field(..., description="Display name")
+    slug: Optional[str] = None
+    gender: Optional[str] = None
+    age: Optional[int] = None
+    languages: Optional[list] = None
+    tags: Optional[list] = None
+
+
+class MistralVoiceCatalogResponse(BaseModel):
+    items: list[MistralVoiceCatalogItem]
+    total: int
+
+
+@router.get(
+    "/mistral/catalog",
+    response_model=MistralVoiceCatalogResponse,
+    dependencies=[Depends(require_auth)],
+)
+async def list_mistral_catalog(
+    language: Optional[str] = Query(None, description="Filter by language prefix (e.g. 'en')"),
+    gender: Optional[str] = Query(None, description="Filter by gender"),
+):
+    """
+    List voices directly from the Mistral Voices API.
+
+    These are **not** stored in our database. The frontend uses the Mistral
+    voice ``id`` (UUID) as the ``voice_id`` when previewing or assigning.
+    """
+    try:
+        from artificial_u.integrations.mistral.voice_manager import MistralVoiceManager
+
+        mgr = MistralVoiceManager()
+        raw_voices = mgr.list_voices(limit=100)
+    except Exception as e:
+        logger.error("Failed to fetch Mistral voice catalog: %s", e)
+        raise HTTPException(status_code=502, detail=f"Mistral API error: {e}")
+
+    items: list[MistralVoiceCatalogItem] = []
+    for v in raw_voices:
+        # Optional client-side filters
+        if language:
+            langs = v.get("languages") or []
+            if not any(str(lang).startswith(language) for lang in langs):
+                continue
+        if gender and v.get("gender") != gender:
+            continue
+
+        items.append(
+            MistralVoiceCatalogItem(
+                id=v["id"],
+                name=v.get("name") or v["id"],
+                slug=v.get("slug"),
+                gender=v.get("gender"),
+                age=v.get("age"),
+                languages=v.get("languages"),
+                tags=v.get("tags"),
+            )
+        )
+
+    return MistralVoiceCatalogResponse(items=items, total=len(items))
+
+
+# ---------------------------------------------------------------------------
 # Voice preview (TTS sample generation)
 # ---------------------------------------------------------------------------
 

@@ -5,6 +5,7 @@ import { httpClient } from '../client'
 import { ENDPOINTS } from '../config'
 import type {
   ManualVoiceAssignmentPayload,
+  MistralVoiceCatalog,
   PaginatedVoices,
   Voice,
   VoiceListParams,
@@ -88,6 +89,25 @@ export const getVoiceByExternalId = async (backend: string, externalId: string):
  */
 export const getVoiceByElId = async (elVoiceId: string): Promise<Voice> => {
   return httpClient.get<Voice>(ENDPOINTS.voices.getVoiceByElId(elVoiceId))
+}
+
+/**
+ * List Mistral voices on-demand from the Mistral API (not stored in DB).
+ *
+ * @param language - Optional language prefix filter (e.g. "en").
+ * @param gender - Optional gender filter.
+ * @returns Promise<MistralVoiceCatalog>
+ */
+export const listMistralCatalog = async (
+  language?: string,
+  gender?: string
+): Promise<MistralVoiceCatalog> => {
+  const params = new URLSearchParams()
+  if (language) params.set('language', language)
+  if (gender) params.set('gender', gender)
+  const qs = params.toString()
+  const url = qs ? `${ENDPOINTS.voices.mistralCatalog}?${qs}` : ENDPOINTS.voices.mistralCatalog
+  return httpClient.get<MistralVoiceCatalog>(url)
 }
 
 /**

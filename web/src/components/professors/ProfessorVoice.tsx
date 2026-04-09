@@ -3,11 +3,11 @@ import { type Component, createMemo, createResource, createSignal, For, Show } f
 import { professorService } from '../../api/services/professor-service.js'
 import {
   getVoice,
-  listVoices,
+  listMistralCatalog,
   manualAssignVoice,
   previewVoice,
 } from '../../api/services/voice-service.js'
-import type { Voice } from '../../api/types.js'
+import type { MistralCatalogVoice } from '../../api/types.js'
 import { RequireRole } from '../../auth/RequireRole'
 import { Alert, Badge, Button, LoadingSpinner } from '../ui'
 
@@ -17,6 +17,14 @@ const BACKEND_OPTIONS: Array<{ value: TtsBackendKey; label: string }> = [
   { value: 'elevenlabs', label: 'ElevenLabs' },
   { value: 'mistral', label: 'Voxtral (Mistral)' },
 ]
+
+const EXCLUDED_MISTRAL_EMOTIONS = new Set([
+  'sad',
+  'angry',
+  'shameful',
+  'jealousy',
+  'frustrated',
+])
 
 /** Display-friendly name for a gender value. */
 const genderLabel = (g: string | null | undefined): string => {
@@ -29,7 +37,7 @@ const genderLabel = (g: string | null | undefined): string => {
 // Voice card shown in the browsing grid
 // ---------------------------------------------------------------------------
 const VoiceCard: Component<{
-  voice: Voice
+  voice: MistralCatalogVoice
   isSelected: boolean
   isPreviewing: boolean
   onSelect: () => void
@@ -39,17 +47,28 @@ const VoiceCard: Component<{
     const v = props.voice
     const items: Array<{ label: string; value: string }> = []
     if (v.gender) items.push({ label: 'Gender', value: genderLabel(v.gender) })
-    if (v.descriptive) items.push({ label: 'Style', value: v.descriptive })
-    if (v.accent) items.push({ label: 'Accent', value: v.accent })
-    if (v.age) items.push({ label: 'Age', value: v.age })
+    if (v.tags?.length) {
+      const emotion = v.tags[v.tags.length - 1]
+      if (emotion) items.push({ label: 'Style', value: emotion })
+    }
+    if (v.languages?.length) {
+      items.push({ label: 'Lang', value: v.languages.join(', ') })
+    }
     return items
   })
 
   return (
-    <button
-      type="button"
+    <div
+      role="button"
+      tabIndex={0}
       onClick={() => {
         props.onSelect()
+      }}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault()
+          props.onSelect()
+        }
       }}
       class={`arcane-card-sm p-4 text-left w-full transition-colors cursor-pointer ${
         props.isSelected ? 'ring-2 ring-accent bg-accent/10' : 'hover:bg-surface-hover'
@@ -57,9 +76,7 @@ const VoiceCard: Component<{
     >
       <div class="flex items-start justify-between gap-2">
         <div class="min-w-0 flex-1">
-          <p class="font-semibold text-foreground truncate">
-            {props.voice.name ?? props.voice.external_id ?? `Voice #${String(props.voice.id)}`}
-          </p>
+          <p class="font-semibold text-foreground truncate">{props.voice.name}</p>
           <div class="flex flex-wrap gap-1.5 mt-1.5">
             <For each={attrs()}>
               {(attr) => (
@@ -82,7 +99,7 @@ const VoiceCard: Component<{
           {props.isPreviewing ? '...' : '▶ Preview'}
         </button>
       </div>
-    </button>
+    </div>
   )
 }
 
@@ -116,33 +133,40 @@ const ProfessorVoice: Component = () => {
   // ---- ElevenLabs manual ID ----
   const [elVoiceId, setElVoiceId] = createSignal('')
 
-  // ---- Voices list for current backend ----
-  const [voicesResource] = createResource(
-    () => selectedBackend(),
-    async (backend) => listVoices({ tts_backend: backend, limit: 100 })
+  // ---- Mistral catalog (on-demand from Mistral API) ----
+  const [showAllMistralEmotions, setShowAllMistralEmotions] = createSignal(false)
+  const [mistralCatalog] = createResource(
+    () => (selectedBackend() === 'mistral' ? true : null),
+    async (enabled) => (enabled ? listMistralCatalog() : undefined)
   )
+  const filteredMistralVoices = createMemo(() => {
+    const items = mistralCatalog()?.items ?? []
+    if (showAllMistralEmotions()) return items
+    return items.filter((v) => {
+      const tags = v.tags ?? []
+      return !tags.some((t) => EXCLUDED_MISTRAL_EMOTIONS.has(t.toLowerCase()))
+    })
+  })
 
-  // ---- Selected voice from grid ----
-  const [selectedVoiceId, setSelectedVoiceId] = createSignal<number | null>(null)
-  const selectedVoice = createMemo(() => {
-    const id = selectedVoiceId()
-    if (id === null) return null
-    return voicesResource()?.items.find((v) => v.id === id) ?? null
+  // ---- Selected Mistral voice (by UUID string) ----
+  const [selectedMistralId, setSelectedMistralId] = createSignal<string | null>(null)
+  const selectedMistralVoice = createMemo(() => {
+    const id = selectedMistralId()
+    if (!id) return null
+    return mistralCatalog()?.items.find((v) => v.id === id) ?? null
   })
 
   // ---- Audio preview ----
   const [previewAudioUri, setPreviewAudioUri] = createSignal<string | null>(null)
-  const [isPreviewingId, setIsPreviewingId] = createSignal<number | null>(null)
+  const [isPreviewingId, setIsPreviewingId] = createSignal<string | null>(null)
 
-  const handlePreview = async (voice: Voice) => {
-    const externalId = voice.external_id ?? voice.el_voice_id
-    if (!externalId) return
+  const handlePreview = async (voice: MistralCatalogVoice) => {
     setIsPreviewingId(voice.id)
     setPreviewAudioUri(null)
     try {
       const resp = await previewVoice({
-        voice_id: externalId,
-        tts_backend: voice.tts_backend,
+        voice_id: voice.id,
+        tts_backend: 'mistral',
       })
       setPreviewAudioUri(resp.audio_data_uri)
     } catch (e) {
@@ -177,13 +201,13 @@ const ProfessorVoice: Component = () => {
       externalId = id
       ttsBackend = 'elevenlabs'
     } else {
-      const voice = selectedVoice()
+      const voice = selectedMistralVoice()
       if (!voice) {
         setAssignError('Please select a voice first.')
         return
       }
-      externalId = voice.external_id ?? undefined
-      ttsBackend = voice.tts_backend
+      externalId = voice.id
+      ttsBackend = 'mistral'
     }
 
     if (!externalId) {
@@ -209,7 +233,7 @@ const ProfessorVoice: Component = () => {
   // Reset selection when backend changes
   const switchBackend = (b: TtsBackendKey) => {
     setSelectedBackend(b)
-    setSelectedVoiceId(null)
+    setSelectedMistralId(null)
     setPreviewAudioUri(null)
     setAssignError('')
     setAssignSuccess('')
@@ -302,14 +326,14 @@ const ProfessorVoice: Component = () => {
             </div>
           </Show>
 
-          {/* Mistral: voice browsing grid */}
+          {/* Mistral: voice browsing grid (on-demand from Mistral API) */}
           <Show when={selectedBackend() === 'mistral'}>
             <div class="space-y-4">
               <div class="flex items-center justify-between">
                 <p class="text-sm text-muted">
-                  Browse Voxtral preset voices and preview them before assigning.
+                  Browse Voxtral voices and preview them before assigning.
                 </p>
-                <Show when={selectedVoice()}>
+                <Show when={selectedMistralVoice()}>
                   <Button
                     variant="primary"
                     onClick={() => void handleAssign()}
@@ -317,31 +341,38 @@ const ProfessorVoice: Component = () => {
                   >
                     {isAssigning()
                       ? 'Assigning...'
-                      : `Assign "${selectedVoice()?.name ?? 'voice'}"`}
+                      : `Assign "${selectedMistralVoice()?.name ?? 'voice'}"`}
                   </Button>
                 </Show>
               </div>
 
-              <Show when={!voicesResource.loading} fallback={<LoadingSpinner />}>
+              <Show when={!mistralCatalog.loading} fallback={<LoadingSpinner />}>
                 <Show
-                  when={(voicesResource()?.items.length ?? 0) > 0}
+                  when={filteredMistralVoices().length > 0}
                   fallback={
                     <p class="text-muted text-sm">
-                      No Mistral voices found in the database. Run the seed script first:
-                      <code class="ml-1 text-accent">
-                        hatch run python scripts/seed_mistral_voices.py
-                      </code>
+                      No Mistral voices found. Check that MISTRAL_API_KEY is configured.
                     </p>
                   }
                 >
+                  <label class="flex items-center gap-2 text-xs text-muted">
+                    <input
+                      type="checkbox"
+                      checked={showAllMistralEmotions()}
+                      onChange={(e) =>
+                        setShowAllMistralEmotions((e.target as HTMLInputElement).checked)
+                      }
+                    />
+                    Show all emotional tones (including sad/angry/frustrated/etc.)
+                  </label>
                   <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                    <For each={voicesResource()?.items ?? []}>
+                    <For each={filteredMistralVoices()}>
                       {(voice) => (
                         <VoiceCard
                           voice={voice}
-                          isSelected={selectedVoiceId() === voice.id}
+                          isSelected={selectedMistralId() === voice.id}
                           isPreviewing={isPreviewingId() === voice.id}
-                          onSelect={() => setSelectedVoiceId(voice.id)}
+                          onSelect={() => setSelectedMistralId(voice.id)}
                           onPreview={() => {
                             void handlePreview(voice)
                           }}

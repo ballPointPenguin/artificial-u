@@ -129,6 +129,7 @@ export const ENDPOINTS = {
     getVoiceByExternalId: (backend: string, externalId: string) =>
       `/v1/voices/by_external/${encodeURIComponent(backend)}/${encodeURIComponent(externalId)}`,
     preview: '/v1/voices/preview',
+    mistralCatalog: '/v1/voices/mistral/catalog',
   },
   students: {
     me: '/v1/students/me',

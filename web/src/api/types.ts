@@ -492,6 +492,22 @@ export interface VoiceListParams {
   offset?: number
 }
 
+// Mistral voice catalog (on-demand from Mistral API, not stored in DB)
+export interface MistralCatalogVoice {
+  id: string
+  name: string
+  slug: string | null
+  gender: string | null
+  age: number | null
+  languages: string[] | null
+  tags: string[] | null
+}
+
+export interface MistralVoiceCatalog {
+  items: MistralCatalogVoice[]
+  total: number
+}
+
 // Voice preview
 export interface VoicePreviewRequest {
   voice_id: string

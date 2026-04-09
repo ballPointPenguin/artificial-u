@@ -7,9 +7,9 @@ Wraps the SDK's audio.speech endpoint for text-to-speech generation.
 import base64
 import logging
 import time
-from typing import List, Optional
+from typing import Optional
 
-from mistralai import Mistral
+from mistralai.client import Mistral
 
 
 class MistralTTSClient:
@@ -19,30 +19,6 @@ class MistralTTSClient:
     DEFAULT_FORMAT = "mp3"
     MAX_RETRIES = 3
     RETRY_WAIT = 2
-
-    # Preset voices available in Voxtral TTS
-    PRESET_VOICES: List[str] = [
-        "alloy",
-        "ash",
-        "breeze",
-        "cove",
-        "echo",
-        "ember",
-        "fable",
-        "haze",
-        "lark",
-        "maple",
-        "nova",
-        "onyx",
-        "orbit",
-        "reed",
-        "sage",
-        "shimmer",
-        "vale",
-        "vortex",
-        "whisper",
-        "zen",
-    ]
 
     def __init__(
         self,
@@ -59,7 +35,7 @@ class MistralTTSClient:
     def text_to_speech(
         self,
         text: str,
-        voice_id: str = "alloy",
+        voice_id: str = "",
         model: Optional[str] = None,
         response_format: Optional[str] = None,
     ) -> bytes:
@@ -67,8 +43,8 @@ class MistralTTSClient:
 
         Args:
             text: Text to convert.
-            voice_id: Voice identifier - a preset name (e.g., "alloy") or
-                a saved custom voice ID from audio.voices.create().
+            voice_id: Voice UUID from the Mistral Voices API, or a
+                custom voice ID from audio.voices.create().
             model: Model name (default: voxtral-mini-tts-2603).
             response_format: Audio format (default: mp3).
 
