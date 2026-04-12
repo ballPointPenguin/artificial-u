@@ -231,8 +231,8 @@ class CdkStack(Stack):
             "PROFESSOR_GENERATION_MODEL": "gpt-5.4-nano",
             # "RUN_BACKFILL_DURATIONS": "1",  # TEMPORARY - comment out when not using it
             # "RUN_BACKFILL_ID3": "1",  # TEMPORARY - comment out when not using it
-            "RUN_BACKFILL_VOICE_TTS_BACKEND": "1",  # TEMPORARY - backfill tts_backend on voices
-            "RUN_SEED_MISTRAL_VOICES": "1",  # TEMPORARY - seed Mistral Voxtral preset voices
+            # "RUN_BACKFILL_VOICE_TTS_BACKEND": "1",  # TEMPORARY - backfill tts_backend on voices
+            # "RUN_SEED_MISTRAL_VOICES": "1",  # TEMPORARY - seed Mistral Voxtral preset voices
             "STORAGE_AUDIO_BUCKET": audio_bucket.bucket_name,
             "STORAGE_CONTENT_LOGS_BUCKET": content_logs_bucket.bucket_name,
             "STORAGE_EXPORTS_BUCKET": exports_bucket.bucket_name,
