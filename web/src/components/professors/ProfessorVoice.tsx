@@ -18,13 +18,7 @@ const BACKEND_OPTIONS: Array<{ value: TtsBackendKey; label: string }> = [
   { value: 'mistral', label: 'Voxtral (Mistral)' },
 ]
 
-const EXCLUDED_MISTRAL_EMOTIONS = new Set([
-  'sad',
-  'angry',
-  'shameful',
-  'jealousy',
-  'frustrated',
-])
+const EXCLUDED_MISTRAL_EMOTIONS = new Set(['sad', 'angry', 'shameful', 'jealousy', 'frustrated'])
 
 /** Display-friendly name for a gender value. */
 const genderLabel = (g: string | null | undefined): string => {
