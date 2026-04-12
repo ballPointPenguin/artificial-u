@@ -69,13 +69,16 @@ class SpeechProcessor:
         """
         self.logger = logger or logging.getLogger(__name__)
 
-    def normalize_text(self, text: str) -> str:
+    def normalize_text(self, text: str, supports_ssml: bool = True) -> str:
         """
         Normalize text for TTS without aggressive markup.
         This is a light-touch normalization focused on common issues.
 
         Args:
             text: The text to normalize
+            supports_ssml: Whether the TTS backend supports SSML-like tags
+                (e.g., <break> tags). Defaults to True for ElevenLabs
+                compatibility. Set to False for backends like Mistral.
 
         Returns:
             Normalized text suitable for TTS
@@ -105,8 +108,13 @@ class SpeechProcessor:
         # Remove markdown title prefixes
         normalized_text = re.sub(r"^#+\s+", "", normalized_text, flags=re.MULTILINE)
 
-        # Apply pause → <break> conversions for bracketed stage directions
-        normalized_text = self._apply_pause_breaks(normalized_text)
+        # Apply pause conversions for bracketed stage directions
+        if supports_ssml:
+            # Convert to <break> SSML tags (ElevenLabs and other SSML-capable backends)
+            normalized_text = self._apply_pause_breaks(normalized_text)
+        else:
+            # For non-SSML backends, strip stage direction brackets entirely
+            normalized_text = self._strip_pause_directions(normalized_text)
 
         return normalized_text.strip()
 
@@ -361,6 +369,22 @@ class SpeechProcessor:
         )
 
         # Collapse any excess whitespace again after insertions
+        text = re.sub(r"\s+", " ", text)
+        return text
+
+    def _strip_pause_directions(self, text: str) -> str:
+        """Remove bracketed pause stage directions for non-SSML backends.
+
+        Instead of converting to <break> tags, simply removes the bracketed
+        directives so the TTS engine sees clean prose with natural punctuation.
+        """
+        # Remove all pause-related bracketed directions
+        text = re.sub(
+            r"\[\s*(?:slight\s+)?(?:brief\s+)?pauses?\b[^\]]*\]",
+            " ",
+            text,
+            flags=re.IGNORECASE,
+        )
         text = re.sub(r"\s+", " ", text)
         return text
 

@@ -13,10 +13,35 @@ from artificial_u.models.repositories.base import BaseRepository
 class VoiceRepository(BaseRepository):
     """Repository for Voice operations."""
 
+    def _to_domain(self, db_voice: VoiceModel) -> Voice:
+        """Convert a database model to a domain Voice object."""
+        return Voice(
+            id=db_voice.id,
+            tts_backend=db_voice.tts_backend or "elevenlabs",
+            external_id=db_voice.external_id,
+            el_voice_id=db_voice.el_voice_id,
+            name=db_voice.name,
+            accent=db_voice.accent,
+            age=db_voice.age,
+            category=db_voice.category,
+            description=db_voice.description,
+            descriptive=db_voice.descriptive,
+            gender=db_voice.gender,
+            language=db_voice.language,
+            locale=db_voice.locale,
+            popularity_score=db_voice.popularity_score,
+            preview_url=db_voice.preview_url,
+            use_case=db_voice.use_case,
+            verified_languages=db_voice.verified_languages or [],
+            last_updated=db_voice.last_updated,
+        )
+
     def create(self, voice: Voice) -> Voice:
         """Create a new voice record."""
         with self.get_session() as session:
             db_voice = VoiceModel(
+                tts_backend=voice.tts_backend or "elevenlabs",
+                external_id=voice.external_id,
                 el_voice_id=voice.el_voice_id,
                 name=voice.name,
                 accent=voice.accent,
@@ -49,24 +74,7 @@ class VoiceRepository(BaseRepository):
             if not db_voice:
                 return None
 
-            return Voice(
-                id=db_voice.id,
-                el_voice_id=db_voice.el_voice_id,
-                name=db_voice.name,
-                accent=db_voice.accent,
-                age=db_voice.age,
-                category=db_voice.category,
-                description=db_voice.description,
-                descriptive=db_voice.descriptive,
-                gender=db_voice.gender,
-                language=db_voice.language,
-                locale=db_voice.locale,
-                popularity_score=db_voice.popularity_score,
-                preview_url=db_voice.preview_url,
-                use_case=db_voice.use_case,
-                verified_languages=db_voice.verified_languages or [],
-                last_updated=db_voice.last_updated,
-            )
+            return self._to_domain(db_voice)
 
     def get_by_elevenlabs_id(self, elevenlabs_id: str) -> Optional[Voice]:
         """Get a voice by ElevenLabs voice ID."""
@@ -76,24 +84,21 @@ class VoiceRepository(BaseRepository):
             if not db_voice:
                 return None
 
-            return Voice(
-                id=db_voice.id,
-                el_voice_id=db_voice.el_voice_id,
-                name=db_voice.name,
-                accent=db_voice.accent,
-                age=db_voice.age,
-                category=db_voice.category,
-                description=db_voice.description,
-                descriptive=db_voice.descriptive,
-                gender=db_voice.gender,
-                language=db_voice.language,
-                locale=db_voice.locale,
-                popularity_score=db_voice.popularity_score,
-                preview_url=db_voice.preview_url,
-                use_case=db_voice.use_case,
-                verified_languages=db_voice.verified_languages or [],
-                last_updated=db_voice.last_updated,
+            return self._to_domain(db_voice)
+
+    def get_by_external_id(self, backend: str, external_id: str) -> Optional[Voice]:
+        """Get a voice by TTS backend and external ID."""
+        with self.get_session() as session:
+            db_voice = (
+                session.query(VoiceModel)
+                .filter_by(tts_backend=backend, external_id=external_id)
+                .first()
             )
+
+            if not db_voice:
+                return None
+
+            return self._to_domain(db_voice)
 
     def list(
         self,
@@ -103,6 +108,7 @@ class VoiceRepository(BaseRepository):
         gender: Optional[str] = None,
         language: Optional[str] = None,
         use_case: Optional[str] = None,
+        tts_backend: Optional[str] = None,
         limit: int = 100,
         offset: int = 0,
     ) -> List[Voice]:
@@ -123,33 +129,15 @@ class VoiceRepository(BaseRepository):
                 query = query.filter(VoiceModel.language.ilike(language))
             if use_case:
                 query = query.filter(VoiceModel.use_case.ilike(use_case))
+            if tts_backend:
+                query = query.filter(VoiceModel.tts_backend == tts_backend)
 
             # Apply pagination
             voices = (
                 query.order_by(VoiceModel.popularity_score.desc()).limit(limit).offset(offset).all()
             )
 
-            return [
-                Voice(
-                    id=v.id,
-                    el_voice_id=v.el_voice_id,
-                    name=v.name,
-                    accent=v.accent,
-                    age=v.age,
-                    category=v.category,
-                    description=v.description,
-                    descriptive=v.descriptive,
-                    gender=v.gender,
-                    language=v.language,
-                    locale=v.locale,
-                    popularity_score=v.popularity_score,
-                    preview_url=v.preview_url,
-                    use_case=v.use_case,
-                    verified_languages=v.verified_languages or [],
-                    last_updated=v.last_updated,
-                )
-                for v in voices
-            ]
+            return [self._to_domain(v) for v in voices]
 
     def update(self, voice: Voice) -> Voice:
         """Update an existing voice."""
@@ -159,6 +147,8 @@ class VoiceRepository(BaseRepository):
             if not db_voice:
                 raise ValueError(f"Voice with ID {voice.id} not found")
 
+            db_voice.tts_backend = voice.tts_backend or db_voice.tts_backend
+            db_voice.external_id = voice.external_id
             db_voice.el_voice_id = voice.el_voice_id
             db_voice.name = voice.name
             db_voice.accent = voice.accent
@@ -179,8 +169,21 @@ class VoiceRepository(BaseRepository):
             return voice
 
     def upsert(self, voice: Voice) -> Voice:
-        """Create or update a voice based on ElevenLabs voice_id."""
-        existing_voice = self.get_by_elevenlabs_id(voice.el_voice_id)
+        """Create or update a voice based on its identity.
+
+        For ElevenLabs voices: looks up by el_voice_id.
+        For other backends: looks up by (tts_backend, external_id).
+        """
+        existing_voice = None
+
+        # Try ElevenLabs lookup first (backward compatibility)
+        if voice.el_voice_id:
+            existing_voice = self.get_by_elevenlabs_id(voice.el_voice_id)
+
+        # Try backend + external_id lookup for non-EL voices
+        if not existing_voice and voice.external_id and voice.tts_backend:
+            existing_voice = self.get_by_external_id(voice.tts_backend, voice.external_id)
+
         if existing_voice:
             voice.id = existing_voice.id
             return self.update(voice)
@@ -194,6 +197,7 @@ class VoiceRepository(BaseRepository):
         gender: Optional[str] = None,
         language: Optional[str] = None,
         use_case: Optional[str] = None,
+        tts_backend: Optional[str] = None,
     ) -> int:
         """Count voices with optional filters."""
         with self.get_session() as session:
@@ -212,5 +216,7 @@ class VoiceRepository(BaseRepository):
                 query = query.filter(VoiceModel.language.ilike(language))
             if use_case:
                 query = query.filter(VoiceModel.use_case.ilike(use_case))
+            if tts_backend:
+                query = query.filter(VoiceModel.tts_backend == tts_backend)
 
             return query.count()

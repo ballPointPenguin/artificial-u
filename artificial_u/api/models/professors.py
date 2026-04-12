@@ -34,6 +34,9 @@ class ProfessorBase(BaseModel):
         None, description="Name of model used to generate image"
     )
     voice_id: Optional[int] = Field(None, description="ID of the voice assigned to this professor")
+    tts_backend: Optional[str] = Field(
+        None, description="TTS backend override for this professor (None = system default)"
+    )
     # Attribution
     created_by: Optional[int] = Field(None, description="Student ID who created the professor")
     created_with: Optional[str] = Field(None, description="Name of LLM used, if any")

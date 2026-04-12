@@ -24,6 +24,7 @@ const Departments = lazy(() => import('./pages/Departments'))
 const DepartmentDetail = lazy(() => import('./pages/DepartmentDetail'))
 const Professors = lazy(() => import('./pages/Professors'))
 const ProfessorDetail = lazy(() => import('./pages/ProfessorDetail'))
+const ProfessorVoice = lazy(() => import('./pages/ProfessorVoice'))
 const Courses = lazy(() => import('./pages/Courses'))
 const CourseDetail = lazy(() => import('./pages/CourseDetail'))
 const CourseTopics = lazy(() => import('./pages/CourseTopics'))
@@ -165,6 +166,23 @@ const App: Component = () => {
       {/* Professor routes */}
       <Route path="/professors" component={Professors} />
       <Route path="/professors/:id" component={ProfessorDetail} />
+      <Route
+        path="/professors/:id/voice"
+        component={() => (
+          <RequireAuth fallback={<LoginPrompt />}>
+            <RequireRole
+              minRole="creator"
+              fallback={
+                <div class="container mx-auto p-4 text-center">
+                  Access denied. Creator role required.
+                </div>
+              }
+            >
+              <ProfessorVoice />
+            </RequireRole>
+          </RequireAuth>
+        )}
+      />
 
       {/* Courses routes */}
       <Route path="/courses" component={Courses} />

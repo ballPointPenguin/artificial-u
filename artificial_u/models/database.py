@@ -14,6 +14,7 @@ from sqlalchemy import (
     String,
     Text,
     UniqueConstraint,
+    text,
 )
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import DeclarativeBase, relationship
@@ -128,6 +129,7 @@ class ProfessorModel(Base):
     image_created_with = Column(String, nullable=True)
     department_id = Column(Integer, ForeignKey("departments.id"), nullable=True)
     voice_id = Column(Integer, ForeignKey("voices.id"), nullable=True)
+    tts_backend = Column(String(50), nullable=True)  # Per-professor TTS backend override
     # Attribution fields
     created_by = Column(Integer, ForeignKey("students.id"), nullable=True)
     created_with = Column(String, nullable=True)
@@ -170,7 +172,9 @@ class VoiceModel(Base):
     __tablename__ = "voices"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    el_voice_id = Column(String, nullable=False, unique=True)
+    tts_backend = Column(String(50), nullable=False, default="elevenlabs")
+    external_id = Column(String, nullable=True)
+    el_voice_id = Column(String, nullable=True, unique=True)
     name = Column(String, nullable=False)
     accent = Column(String(100), nullable=True)
     age = Column(String(50), nullable=True)
@@ -191,6 +195,14 @@ class VoiceModel(Base):
     # Create indexes
     __table_args__ = (
         Index("idx_voices_language", "language"),
+        Index("idx_voices_tts_backend", "tts_backend"),
+        Index(
+            "uq_voices_backend_external_id",
+            "tts_backend",
+            "external_id",
+            unique=True,
+            postgresql_where=text("external_id IS NOT NULL"),
+        ),
         # We'll create the text search index manually after migrations
         # to avoid Alembic issues with REGCONFIG type
     )

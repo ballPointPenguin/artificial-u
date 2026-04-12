@@ -18,6 +18,7 @@ from artificial_u.config.defaults import (
     DEFAULT_STORAGE_PUBLIC_URL,
     DEFAULT_STORAGE_REGION,
     DEFAULT_STORAGE_TYPE,
+    DEFAULT_TTS_BACKEND,
 )
 
 # Export the consolidated settings functionality
@@ -48,6 +49,8 @@ __all__ = [
     "DEFAULT_STORAGE_CONTENT_LOGS_BUCKET",
     # Content generation defaults
     "DEFAULT_CONTENT_BACKEND",
+    # TTS defaults
+    "DEFAULT_TTS_BACKEND",
     # Course and lecture defaults
     "DEFAULT_LECTURE_WORD_COUNT",
     # System defaults

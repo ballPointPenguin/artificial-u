@@ -22,6 +22,7 @@ from artificial_u.api.services import (
     TopicApiService,
 )
 from artificial_u.integrations import elevenlabs
+from artificial_u.integrations.tts import TTSBackend, create_tts_backend
 from artificial_u.models.core import Student
 from artificial_u.models.repositories import RepositoryFactory
 from artificial_u.services import (
@@ -232,6 +233,23 @@ def get_voice_mapper() -> elevenlabs.VoiceMapper:
     """
     return elevenlabs.VoiceMapper(
         logger=logging.getLogger("artificial_u.integrations.elevenlabs.voice_mapper"),
+    )
+
+
+def get_tts_backend(backend_name: Optional[str] = None) -> TTSBackend:
+    """
+    Get a TTS backend instance.
+
+    Args:
+        backend_name: Backend to use ("elevenlabs", "mistral").
+            Defaults to the system-wide tts_backend setting.
+
+    Returns:
+        TTSBackend implementation
+    """
+    return create_tts_backend(
+        backend_name=backend_name,
+        logger=logging.getLogger("artificial_u.integrations.tts"),
     )
 
 

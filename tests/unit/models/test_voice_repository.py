@@ -25,6 +25,8 @@ class TestVoiceRepository:
         """Create a mock voice model for testing."""
         mock_voice = MagicMock(spec=VoiceModel)
         mock_voice.id = 1
+        mock_voice.tts_backend = "elevenlabs"
+        mock_voice.external_id = "el_voice_1"
         mock_voice.el_voice_id = "el_voice_1"
         mock_voice.name = "Test Voice"
         mock_voice.accent = "Standard"
@@ -141,6 +143,8 @@ class TestVoiceRepository:
         # Configure mock behavior
         mock_voice2 = MagicMock(spec=VoiceModel)
         mock_voice2.id = 2
+        mock_voice2.tts_backend = "elevenlabs"
+        mock_voice2.external_id = "el_voice_2"
         mock_voice2.el_voice_id = "el_voice_2"
         mock_voice2.name = "Another Voice"
         mock_voice2.accent = "British"

@@ -567,11 +567,11 @@ async def upload_lecture_audio(
             repository_factory=repository_factory,
         )
 
-        # Generate comment indicating uploaded file
+        # Generate comment for uploaded file
         model_name = getattr(lecture, "created_with", None)
         comment = tagger.generate_comment(
             model_name=model_name,
-            include_elevenlabs=True,
+            include_elevenlabs=False,
         )
 
         # Add tags to audio

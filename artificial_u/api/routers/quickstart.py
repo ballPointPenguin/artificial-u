@@ -10,7 +10,6 @@ guiding users through a simplified flow:
 
 import base64
 import logging
-from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status
 
@@ -19,7 +18,6 @@ from artificial_u.api.dependencies import (
     get_content_service,
     get_course_api_service,
     get_course_service,
-    get_elevenlabs_client,
     get_professor_service,
     get_repository_factory,
     get_voice_service,
@@ -42,7 +40,7 @@ from artificial_u.api.models.quickstart import (
 from artificial_u.api.security.auth0 import require_coins, require_role
 from artificial_u.api.services import CourseApiService
 from artificial_u.config.settings import get_settings
-from artificial_u.integrations.elevenlabs import ElevenLabsClient
+from artificial_u.integrations.tts import create_tts_backend
 from artificial_u.models.core import Student
 from artificial_u.models.repositories.factory import RepositoryFactory
 from artificial_u.services import (
@@ -324,7 +322,6 @@ async def get_professor_for_review(
 async def generate_intro_audio(
     request: IntroAudioRequest,
     repository_factory: RepositoryFactory = Depends(get_repository_factory),
-    elevenlabs_client: Optional[ElevenLabsClient] = Depends(get_elevenlabs_client),
     student: Student = Depends(ensure_student),
 ):
     """
@@ -334,13 +331,8 @@ async def generate_intro_audio(
     "Hello, my name is Dr. Smith and I'll be teaching Introduction to AI."
 
     The audio is returned as a base64 data URI and is not stored.
+    Uses whichever TTS backend is configured for the professor's voice.
     """
-    if not elevenlabs_client:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Text-to-speech service is not configured",
-        )
-
     professor = repository_factory.professor.get(request.professor_id)
     if not professor:
         raise HTTPException(
@@ -354,22 +346,39 @@ async def generate_intro_audio(
             detail="Professor does not have an assigned voice",
         )
 
-    # Get the voice's ElevenLabs ID
     voice = repository_factory.voice.get(professor.voice_id)
-    if not voice or not voice.el_voice_id:
+    if not voice:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Professor's voice is not properly configured",
+        )
+
+    # Resolve the voice identifier and backend
+    voice_identifier = voice.external_id or voice.el_voice_id
+    if not voice_identifier:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Professor's voice has no external identifier configured",
+        )
+
+    # Professor-level backend override takes priority, then voice's backend
+    backend_name = professor.tts_backend or voice.tts_backend or "elevenlabs"
+
+    try:
+        backend = create_tts_backend(backend_name=backend_name, logger=logger)
+    except (ValueError, Exception) as e:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=f"TTS backend '{backend_name}' is not available: {e}",
         )
 
     # Generate the intro text
     intro_text = f"Hello, my name is {professor.name} and I'll be teaching {request.course_title}."
 
     try:
-        # Generate audio using ElevenLabs
-        audio_bytes = elevenlabs_client.text_to_speech(
+        audio_bytes = backend.text_to_speech(
             text=intro_text,
-            voice_id=voice.el_voice_id,
+            voice_id=voice_identifier,
         )
 
         # Convert to base64 data URI

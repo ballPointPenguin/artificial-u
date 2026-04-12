@@ -12,9 +12,9 @@ annotated-doc==0.0.4
     # via fastapi
 annotated-types==0.7.0
     # via pydantic
-anthropic==0.86.0
+anthropic==0.92.0
     # via artificial_u (pyproject.toml)
-anyio==4.12.1
+anyio==4.13.0
     # via
     #   anthropic
     #   google-genai
@@ -24,13 +24,13 @@ anyio==4.12.1
     #   watchfiles
 black==26.3.1
     # via artificial_u (pyproject.toml)
-boto3==1.42.73
+boto3==1.42.86
     # via artificial_u (pyproject.toml)
-botocore==1.42.73
+botocore==1.42.86
     # via
     #   boto3
     #   s3transfer
-build==1.4.0
+build==1.4.2
     # via pip-tools
 certifi==2026.2.25
     # via
@@ -41,9 +41,9 @@ cffi==2.0.0
     # via cryptography
 cfgv==3.5.0
     # via pre-commit
-charset-normalizer==3.4.6
+charset-normalizer==3.4.7
     # via requests
-click==8.3.1
+click==8.3.2
     # via
     #   artificial_u (pyproject.toml)
     #   black
@@ -51,7 +51,7 @@ click==8.3.1
     #   uvicorn
 coverage[toml]==7.13.5
     # via pytest-cov
-cryptography==46.0.5
+cryptography==46.0.7
     # via
     #   google-auth
     #   python-jose
@@ -64,11 +64,13 @@ distro==1.9.0
     #   openai
 docstring-parser==0.17.0
     # via anthropic
-ecdsa==0.19.1
+ecdsa==0.19.2
     # via python-jose
-elevenlabs==2.39.0
+elevenlabs==2.42.0
     # via artificial_u (pyproject.toml)
-fastapi==0.135.1
+eval-type-backport==0.3.1
+    # via mistralai
+fastapi==0.135.3
     # via artificial_u (pyproject.toml)
 filelock==3.25.2
     # via
@@ -76,17 +78,17 @@ filelock==3.25.2
     #   virtualenv
 flake8==7.3.0
     # via artificial_u (pyproject.toml)
-google-api-core==2.30.0
+google-api-core==2.30.2
     # via artificial_u (pyproject.toml)
 google-auth[requests]==2.49.1
     # via
     #   google-api-core
     #   google-genai
-google-genai==1.68.0
+google-genai==1.71.0
     # via artificial_u (pyproject.toml)
-googleapis-common-protos==1.73.0
+googleapis-common-protos==1.74.0
     # via google-api-core
-gunicorn==25.1.0
+gunicorn==25.3.0
     # via artificial_u (pyproject.toml)
 h11==0.16.0
     # via
@@ -102,6 +104,7 @@ httpx==0.28.1
     #   artificial_u (pyproject.toml)
     #   elevenlabs
     #   google-genai
+    #   mistralai
     #   openai
 identify==2.6.18
     # via pre-commit
@@ -110,6 +113,8 @@ idna==3.11
     #   anyio
     #   httpx
     #   requests
+importlib-metadata==8.7.1
+    # via opentelemetry-api
 iniconfig==2.3.0
     # via pytest
 isort==8.0.1
@@ -122,6 +127,8 @@ jmespath==1.1.0
     # via
     #   boto3
     #   botocore
+jsonpath-python==1.1.5
+    # via mistralai
 librt==0.8.1
     # via mypy
 mako==1.3.10
@@ -134,9 +141,11 @@ mccabe==0.7.0
     # via flake8
 mdurl==0.1.2
     # via markdown-it-py
+mistralai==2.3.1
+    # via artificial_u (pyproject.toml)
 mutagen==1.47.0
     # via artificial_u (pyproject.toml)
-mypy==1.19.1
+mypy==1.20.0
     # via artificial_u (pyproject.toml)
 mypy-extensions==1.1.0
     # via
@@ -144,8 +153,14 @@ mypy-extensions==1.1.0
     #   mypy
 nodeenv==1.10.0
     # via pre-commit
-openai==2.29.0
+openai==2.31.0
     # via artificial_u (pyproject.toml)
+opentelemetry-api==1.39.1
+    # via
+    #   mistralai
+    #   opentelemetry-semantic-conventions
+opentelemetry-semantic-conventions==0.60b1
+    # via mistralai
 packaging==26.0
     # via
     #   black
@@ -159,7 +174,7 @@ pathspec==1.0.4
     #   mypy
 pip-tools==7.5.3
     # via artificial_u (pyproject.toml)
-platformdirs==4.9.4
+platformdirs==4.9.6
     # via
     #   black
     #   python-discovery
@@ -170,9 +185,9 @@ pluggy==1.6.0
     #   pytest-cov
 pre-commit==4.5.1
     # via artificial_u (pyproject.toml)
-proto-plus==1.27.1
+proto-plus==1.27.2
     # via google-api-core
-protobuf==6.33.6
+protobuf==7.34.1
     # via
     #   google-api-core
     #   googleapis-common-protos
@@ -197,6 +212,7 @@ pydantic==2.12.5
     #   elevenlabs
     #   fastapi
     #   google-genai
+    #   mistralai
     #   openai
     #   pydantic-settings
 pydantic-core==2.41.5
@@ -207,7 +223,7 @@ pydantic-settings==2.13.1
     # via artificial_u (pyproject.toml)
 pyflakes==3.4.0
     # via flake8
-pygments==2.19.2
+pygments==2.20.0
     # via
     #   pytest
     #   rich
@@ -215,7 +231,7 @@ pyproject-hooks==1.2.0
     # via
     #   build
     #   pip-tools
-pytest==9.0.2
+pytest==9.0.3
     # via
     #   artificial_u (pyproject.toml)
     #   pytest-asyncio
@@ -224,15 +240,17 @@ pytest==9.0.2
     #   pytest-mock
 pytest-asyncio==1.3.0
     # via artificial_u (pyproject.toml)
-pytest-cov==7.0.0
+pytest-cov==7.1.0
     # via artificial_u (pyproject.toml)
 pytest-env==1.6.0
     # via artificial_u (pyproject.toml)
 pytest-mock==3.15.1
     # via artificial_u (pyproject.toml)
 python-dateutil==2.9.0.post0
-    # via botocore
-python-discovery==1.2.0
+    # via
+    #   botocore
+    #   mistralai
+python-discovery==1.2.2
     # via virtualenv
 python-dotenv==1.2.2
     # via
@@ -242,7 +260,7 @@ python-dotenv==1.2.2
     #   uvicorn
 python-jose[cryptography]==3.5.0
     # via artificial_u (pyproject.toml)
-python-multipart==0.0.22
+python-multipart==0.0.24
     # via artificial_u (pyproject.toml)
 pytokens==0.4.1
     # via black
@@ -250,7 +268,7 @@ pyyaml==6.0.3
     # via
     #   pre-commit
     #   uvicorn
-requests==2.32.5
+requests==2.33.1
     # via
     #   elevenlabs
     #   google-api-core
@@ -271,11 +289,11 @@ sniffio==1.3.1
     #   anthropic
     #   google-genai
     #   openai
-sqlalchemy==2.0.48
+sqlalchemy==2.0.49
     # via
     #   alembic
     #   artificial_u (pyproject.toml)
-starlette==0.52.1
+starlette==1.0.0
     # via fastapi
 tenacity==9.1.4
     # via google-genai
@@ -290,6 +308,8 @@ typing-extensions==4.15.0
     #   google-genai
     #   mypy
     #   openai
+    #   opentelemetry-api
+    #   opentelemetry-semantic-conventions
     #   pydantic
     #   pydantic-core
     #   sqlalchemy
@@ -297,13 +317,14 @@ typing-extensions==4.15.0
 typing-inspection==0.4.2
     # via
     #   fastapi
+    #   mistralai
     #   pydantic
     #   pydantic-settings
 urllib3==2.6.3
     # via
     #   botocore
     #   requests
-uvicorn[standard]==0.42.0
+uvicorn[standard]==0.44.0
     # via artificial_u (pyproject.toml)
 uvloop==0.22.1
     # via uvicorn
@@ -318,6 +339,8 @@ websockets==16.0
     #   uvicorn
 wheel==0.46.3
     # via pip-tools
+zipp==3.23.0
+    # via importlib-metadata
 
 # The following packages are considered to be unsafe in a requirements file:
 # pip

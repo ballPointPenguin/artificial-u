@@ -33,6 +33,7 @@ from artificial_u.config.defaults import (
     DEFAULT_STORAGE_PUBLIC_URL,
     DEFAULT_STORAGE_REGION,
     DEFAULT_STORAGE_TYPE,
+    DEFAULT_TTS_BACKEND,
 )
 
 
@@ -133,9 +134,14 @@ class Settings(BaseSettings):
     # Image generation model
     IMAGE_GENERATION_MODEL: str = "gemini-3.1-flash-image-preview"
 
-    # Text-to-speech voice model (ElevenLabs)
-    # Example values: "eleven_flash_v2_5", "eleven_multilingual_v2"
+    # Text-to-speech settings
+    tts_backend: str = DEFAULT_TTS_BACKEND  # "elevenlabs" or "mistral"
+    # ElevenLabs voice model. Example values: "eleven_flash_v2_5", "eleven_multilingual_v2"
     TTS_VOICE_MODEL: str = "eleven_flash_v2_5"
+    # Mistral TTS model
+    TTS_MISTRAL_MODEL: str = "voxtral-mini-tts-2603"
+    # Mistral API key (optional, required only if tts_backend="mistral")
+    MISTRAL_API_KEY: Optional[str] = None
 
     # Coin costs for generation operations (can be tuned via environment variables)
     COIN_COST_COURSE_GENERATION: int = 1
@@ -248,7 +254,9 @@ class Settings(BaseSettings):
             "content_model": self.content_model,
             "content_logs_path": self.CONTENT_LOGS_PATH,
             "anthropic_api_key": self.ANTHROPIC_API_KEY,
+            "tts_backend": self.tts_backend,
             "elevenlabs_api_key": self.ELEVENLABS_API_KEY,
+            "mistral_api_key": self.MISTRAL_API_KEY,
             "google_api_key": self.GOOGLE_API_KEY,
             "openai_api_key": self.OPENAI_API_KEY,
             "storage_type": self.STORAGE_TYPE,
@@ -278,6 +286,7 @@ class Settings(BaseSettings):
         logger.info(f"Content backend: {self.content_backend}")
         if self.content_model:
             logger.info(f"Content model: {self.content_model}")
+        logger.info(f"TTS backend: {self.tts_backend}")
         logger.info(f"Storage type: {self.STORAGE_TYPE}")
         if self.STORAGE_TYPE == "minio":
             logger.info(f"MinIO endpoint: {self.STORAGE_ENDPOINT_URL}")

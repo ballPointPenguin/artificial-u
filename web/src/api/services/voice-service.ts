@@ -5,16 +5,22 @@ import { httpClient } from '../client'
 import { ENDPOINTS } from '../config'
 import type {
   ManualVoiceAssignmentPayload,
+  MistralVoiceCatalog,
   PaginatedVoices,
   Voice,
   VoiceListParams,
+  VoicePreviewRequest,
+  VoicePreviewResponse,
 } from '../types'
 
 /**
  * Manually assign a voice to a professor.
  *
+ * Sends external_id + tts_backend to the API. For backward compatibility,
+ * el_voice_id is also accepted (the API will treat it as an ElevenLabs external_id).
+ *
  * @param professorId - ID of the professor to assign voice to.
- * @param payload - ManualVoiceAssignmentPayload containing the el_voice_id.
+ * @param payload - ManualVoiceAssignmentPayload containing external_id and optional tts_backend.
  * @returns Promise<void> as the API returns 204 No Content.
  */
 export const manualAssignVoice = async (
@@ -44,6 +50,7 @@ export const listVoices = async (params: VoiceListParams = {}): Promise<Paginate
   if (params.language !== undefined) queryParams.set('language', params.language)
   if (params.use_case !== undefined) queryParams.set('use_case', params.use_case)
   if (params.category !== undefined) queryParams.set('category', params.category)
+  if (params.tts_backend !== undefined) queryParams.set('tts_backend', params.tts_backend)
 
   // Pagination parameters, usually included if provided and not undefined
   if (params.limit !== undefined) queryParams.set('limit', String(params.limit))
@@ -66,9 +73,49 @@ export const getVoice = async (voiceId: number): Promise<Voice> => {
 }
 
 /**
+ * Get a voice by its TTS backend and external identifier.
+ *
+ * @param backend - TTS backend name (e.g., "elevenlabs", "mistral")
+ * @param externalId - Provider-specific voice identifier
+ * @returns Promise<Voice> containing the voice details.
+ */
+export const getVoiceByExternalId = async (backend: string, externalId: string): Promise<Voice> => {
+  return httpClient.get<Voice>(ENDPOINTS.voices.getVoiceByExternalId(backend, externalId))
+}
+
+/**
  * Get a specific voice by its ElevenLabs voice_id.
- * Ensures the response includes a DB id after persistence.
+ * Legacy convenience wrapper — prefer getVoiceByExternalId("elevenlabs", id).
  */
 export const getVoiceByElId = async (elVoiceId: string): Promise<Voice> => {
   return httpClient.get<Voice>(ENDPOINTS.voices.getVoiceByElId(elVoiceId))
+}
+
+/**
+ * List Mistral voices on-demand from the Mistral API (not stored in DB).
+ *
+ * @param language - Optional language prefix filter (e.g. "en").
+ * @param gender - Optional gender filter.
+ * @returns Promise<MistralVoiceCatalog>
+ */
+export const listMistralCatalog = async (
+  language?: string,
+  gender?: string
+): Promise<MistralVoiceCatalog> => {
+  const params = new URLSearchParams()
+  if (language) params.set('language', language)
+  if (gender) params.set('gender', gender)
+  const qs = params.toString()
+  const url = qs ? `${ENDPOINTS.voices.mistralCatalog}?${qs}` : ENDPOINTS.voices.mistralCatalog
+  return httpClient.get<MistralVoiceCatalog>(url)
+}
+
+/**
+ * Generate a short TTS audio preview for a voice.
+ *
+ * @param request - VoicePreviewRequest with voice_id, tts_backend, and optional text.
+ * @returns Promise<VoicePreviewResponse> containing a base64 audio data URI.
+ */
+export const previewVoice = async (request: VoicePreviewRequest): Promise<VoicePreviewResponse> => {
+  return httpClient.post<VoicePreviewResponse>(ENDPOINTS.voices.preview, request)
 }

@@ -18,6 +18,9 @@ DEFAULT_DB_POOL_PRE_PING = True  # Test connections before use (handles RDS fail
 DEFAULT_CONTENT_BACKEND = "anthropic"
 DEFAULT_CONTENT_LOGS_PATH = "content_logs"
 
+# TTS defaults
+DEFAULT_TTS_BACKEND = "elevenlabs"
+
 # Storage defaults (MinIO/S3)
 DEFAULT_STORAGE_TYPE = "minio"  # "minio" or "s3"
 DEFAULT_STORAGE_ENDPOINT_URL = "http://localhost:9000"

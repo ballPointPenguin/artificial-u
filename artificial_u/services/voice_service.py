@@ -431,13 +431,27 @@ class VoiceService:
         """
         Select an appropriate voice for a professor and update the professor record.
 
+        Uses ElevenLabs-specific voice matching logic. For professors with a
+        non-ElevenLabs tts_backend, this is a no-op and returns an empty dict.
+
         Args:
             professor: Professor for whom to select voice
             selection_strategy: Strategy for voice selection ('top', 'top_random', 'weighted')
 
         Returns:
-            Selected voice data including both el_voice_id and db voice record id
+            Selected voice data including both el_voice_id and db voice record id,
+            or empty dict if the professor uses a non-ElevenLabs backend.
         """
+        # Voice mapper only works with ElevenLabs voices
+        if getattr(professor, "tts_backend", None) and professor.tts_backend != "elevenlabs":
+            self.logger.info(
+                "Skipping automatic voice selection for professor %s "
+                "(tts_backend=%s, not elevenlabs)",
+                professor.name,
+                professor.tts_backend,
+            )
+            return {}
+
         self.logger.info(
             f"=== Starting voice selection for professor: "
             f"{professor.name} (ID: {professor.id}) ==="
@@ -676,6 +690,60 @@ class VoiceService:
 
         self.logger.info(f"Manually assigned voice {el_voice_id} to professor {professor_id}")
 
+    def manual_voice_assignment_generic(
+        self, professor_id: str, external_id: str, tts_backend: str
+    ) -> None:
+        """
+        Manually assign a non-ElevenLabs voice to a professor.
+
+        If the voice does not yet exist in the database it will be
+        auto-created (e.g. from a Mistral catalog voice UUID).
+
+        Args:
+            professor_id: ID of the professor to assign voice to
+            external_id: Provider-specific voice identifier
+            tts_backend: TTS backend name (e.g., "mistral")
+        """
+        from artificial_u.models.core import Voice
+
+        voice = self.repository_factory.voice.get_by_external_id(tts_backend, external_id)
+        if not voice:
+            voice = Voice(
+                tts_backend=tts_backend,
+                external_id=external_id,
+                name=external_id,
+            )
+            # Try to enrich from the provider API (best-effort)
+            if tts_backend == "mistral":
+                try:
+                    from artificial_u.integrations.mistral.voice_manager import MistralVoiceManager
+
+                    mgr = MistralVoiceManager()
+                    info = mgr.get_voice(external_id)
+                    if info:
+                        voice.name = info.get("name") or external_id
+                        voice.gender = info.get("gender")
+                        lang_list = info.get("languages") or []
+                        if lang_list:
+                            voice.language = str(lang_list[0])
+                except Exception as e:
+                    self.logger.warning("Could not enrich Mistral voice metadata: %s", e)
+
+            voice = self.repository_factory.voice.upsert(voice)
+            self.logger.info(
+                "Auto-created voice record for %s/%s (db id=%s)",
+                tts_backend,
+                external_id,
+                voice.id,
+            )
+
+        self.repository_factory.professor.update_field(
+            professor_id, voice_id=voice.id, tts_backend=tts_backend
+        )
+        self.logger.info(
+            "Assigned voice %s (backend=%s) to professor %s", external_id, tts_backend, professor_id
+        )
+
     def list_available_voices(
         self,
         gender: Optional[str] = None,
@@ -686,6 +754,7 @@ class VoiceService:
         category: Optional[str] = None,
         limit: int = 100,
         offset: int = 0,
+        tts_backend: Optional[str] = None,
     ) -> List[Dict[str, Any]]:
         """
         List available voices with optional filtering.
@@ -699,6 +768,7 @@ class VoiceService:
             category: Optional filter by category
             limit: Maximum number of results (for DB/API pagination)
             offset: Offset for pagination
+            tts_backend: Optional filter by TTS backend
 
         Returns:
             List of voice dictionaries
@@ -713,12 +783,18 @@ class VoiceService:
             category=category,
             limit=limit,
             offset=offset,
+            tts_backend=tts_backend,
         )
 
         if voices:
             return [v.model_dump() for v in voices]
 
-        # Get from API
+        # Fall back to ElevenLabs API only when no backend filter is set
+        # or explicitly filtering for elevenlabs
+        if tts_backend and tts_backend != "elevenlabs":
+            return []
+
+        # Get from ElevenLabs API
         voices_page, _ = self.client.get_shared_voices(
             gender=gender,
             accent=accent,
@@ -744,6 +820,7 @@ class VoiceService:
         language: Optional[str] = None,
         use_case: Optional[str] = None,
         category: Optional[str] = None,
+        tts_backend: Optional[str] = None,
     ) -> int:
         """
         Count available voices with optional filtering.
@@ -755,13 +832,11 @@ class VoiceService:
             language: Optional filter by language
             use_case: Optional filter by use case
             category: Optional filter by category
+            tts_backend: Optional filter by TTS backend
 
         Returns:
             Total count of matching voices in the database.
         """
-        # This primarily counts from the database.
-        # If the expectation is to count from API if DB is empty, logic would need to be added,
-        # but for typical pagination, counting existing DB entries is standard.
         return self.repository_factory.voice.count(
             gender=gender,
             accent=accent,
@@ -769,4 +844,5 @@ class VoiceService:
             language=language,
             use_case=use_case,
             category=category,
+            tts_backend=tts_backend,
         )

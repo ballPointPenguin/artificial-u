@@ -304,6 +304,7 @@ Required in `.env` file:
 
 - `ANTHROPIC_API_KEY`: Anthropic Claude API key
 - `ELEVENLABS_API_KEY`: ElevenLabs TTS API key
+- `MISTRAL_API_KEY`: Mistral API key (TTS when using Mistral backend)
 - `DATABASE_URL`: PostgreSQL connection string
 - `AUTH0_DOMAIN`, `AUTH0_CLIENT_ID`, `AUTH0_CLIENT_SECRET`: Auth0 configuration
 - `MINIO_*` or `AWS_*`: Storage configuration

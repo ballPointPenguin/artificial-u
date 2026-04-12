@@ -9,7 +9,9 @@ from pydantic import BaseModel, Field
 
 
 class VoiceBase(BaseModel):
-    el_voice_id: Optional[str] = Field(None, description="ElevenLabs Voice ID")
+    tts_backend: str = Field("elevenlabs", description="TTS backend provider (e.g., elevenlabs)")
+    external_id: Optional[str] = Field(None, description="Provider-specific voice identifier")
+    el_voice_id: Optional[str] = Field(None, description="ElevenLabs Voice ID (legacy)")
     name: Optional[str] = Field(None, description="Name of the voice")
     accent: Optional[str] = Field(None, description="Accent of the voice")
     age: Optional[str] = Field(None, description="Age category of the voice")
@@ -50,4 +52,11 @@ class VoiceListResponse(BaseModel):
 
 
 class ManualVoiceAssignmentRequest(BaseModel):
-    el_voice_id: str = Field(..., description="ElevenLabs Voice ID to assign")
+    external_id: Optional[str] = Field(None, description="Provider-specific voice identifier")
+    tts_backend: str = Field(
+        "elevenlabs", description="TTS backend for the voice (e.g., elevenlabs, mistral)"
+    )
+    # Legacy alias — accepted for backward compatibility
+    el_voice_id: Optional[str] = Field(
+        None, description="ElevenLabs Voice ID (legacy, use external_id instead)"
+    )
