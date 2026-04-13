@@ -130,6 +130,9 @@ export const ENDPOINTS = {
       `/v1/voices/by_external/${encodeURIComponent(backend)}/${encodeURIComponent(externalId)}`,
     preview: '/v1/voices/preview',
     mistralCatalog: '/v1/voices/mistral/catalog',
+    designPreviews: '/v1/voices/design/previews',
+    designSave: '/v1/voices/design/save',
+    cloneToMistral: '/v1/voices/clone-to-mistral',
   },
   students: {
     me: '/v1/students/me',

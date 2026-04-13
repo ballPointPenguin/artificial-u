@@ -744,6 +744,238 @@ class VoiceService:
             "Assigned voice %s (backend=%s) to professor %s", external_id, tts_backend, professor_id
         )
 
+    # ---------------------------------------------------------------------------
+    # Voice Design
+    # ---------------------------------------------------------------------------
+
+    def generate_voice_design_previews(self, professor_id: int) -> List[Dict[str, Any]]:
+        """Generate ElevenLabs Voice Design previews for a professor.
+
+        Builds a voice prompt from professor attributes and calls the
+        ElevenLabs Voice Design API to generate audio previews.
+
+        Args:
+            professor_id: Database ID of the professor.
+
+        Returns:
+            List of preview dicts, each with ``generated_voice_id``,
+            ``audio_sample`` (base64), ``media_type``, ``duration_secs``,
+            and ``voice_description`` (the prompt used, needed when saving).
+        """
+        from artificial_u.prompts.voice import build_voice_design_prompt
+
+        professor = self.repository_factory.professor.get(professor_id)
+        if not professor:
+            raise ValueError(f"Professor {professor_id} not found")
+
+        prompt = build_voice_design_prompt(professor.model_dump())
+        self.logger.info(
+            "Voice Design prompt for professor %d (%s): %s",
+            professor_id,
+            professor.name,
+            prompt,
+        )
+
+        previews = self.client.generate_voice_previews(voice_description=prompt)
+
+        # Attach the prompt so the caller can pass it back when saving
+        return [{**p, "voice_description": prompt} for p in previews]
+
+    def save_designed_voice(
+        self,
+        professor_id: int,
+        generated_voice_id: str,
+        voice_name: str,
+        voice_description: str,
+    ) -> Dict[str, Any]:
+        """Save a Voice Design preview and assign the resulting voice to a professor.
+
+        Steps:
+        1. Save the preview to the ElevenLabs voice library (permanent voice_id).
+        2. Fetch full voice metadata from ElevenLabs (including preview_url).
+        3. Create/upsert a Voice record in the database.
+        4. Assign the voice to the professor.
+
+        Args:
+            professor_id: Database ID of the professor.
+            generated_voice_id: Temporary ID from ``generate_voice_design_previews``.
+            voice_name: Name to give the saved voice.
+            voice_description: The Voice Design prompt (stored as description).
+
+        Returns:
+            Saved Voice as a dict (includes the database ``id``).
+        """
+        # 1. Save to ElevenLabs library
+        el_voice_id = self.client.save_voice_to_library(
+            generated_voice_id=generated_voice_id,
+            voice_name=voice_name,
+            voice_description=voice_description,
+        )
+
+        # 2. Fetch voice metadata (best-effort; preview_url may not be available immediately)
+        voice_data = self.client.get_el_voice(el_voice_id)
+
+        # 3. Create DB record
+        voice = Voice(
+            tts_backend="elevenlabs",
+            el_voice_id=el_voice_id,
+            name=voice_name,
+            description=voice_description,
+            category="generated",
+            preview_url=voice_data.get("preview_url") if voice_data else None,
+        )
+        voice_db = self.repository_factory.voice.upsert(voice)
+
+        # 4. Assign to professor
+        self.repository_factory.professor.update_field(professor_id, voice_id=voice_db.id)
+
+        self.logger.info(
+            "Saved designed voice '%s' (el_voice_id=%s, db_id=%s) " "and assigned to professor %d",
+            voice_name,
+            el_voice_id,
+            voice_db.id,
+            professor_id,
+        )
+
+        return voice_db.model_dump()
+
+    def clone_elevenlabs_voice_to_mistral(self, professor_id: int) -> Dict[str, Any]:
+        """Clone a professor's current ElevenLabs voice into the Mistral voice library.
+
+        Downloads the ElevenLabs voice preview audio and uses it as the reference
+        sample for Mistral voice cloning.  Creates a new ``Voice`` DB record with
+        ``tts_backend="mistral"`` and re-associates the professor with that voice.
+
+        Args:
+            professor_id: Database ID of the professor.
+
+        Returns:
+            The newly created Mistral ``Voice`` record as a dict.
+
+        Raises:
+            ValueError: If the professor has no ElevenLabs voice, the voice has no
+                preview URL, or the audio download / Mistral API call fails.
+        """
+        import httpx as _httpx
+
+        from artificial_u.integrations.mistral.voice_manager import MistralVoiceManager
+
+        # --- Validate professor and current voice ---
+        professor = self.repository_factory.professor.get(professor_id)
+        if not professor:
+            raise ValueError(f"Professor {professor_id} not found")
+
+        if not professor.voice_id:
+            raise ValueError("Professor has no voice assigned")
+
+        current_voice = self.repository_factory.voice.get(professor.voice_id)
+        if not current_voice:
+            raise ValueError("Professor's voice record not found in database")
+
+        if current_voice.tts_backend != "elevenlabs":
+            raise ValueError(
+                f"Professor's current voice is not ElevenLabs "
+                f"(tts_backend={current_voice.tts_backend!r}). "
+                "Only ElevenLabs voices can be cloned to Mistral."
+            )
+
+        if not current_voice.preview_url:
+            raise ValueError(
+                "The current ElevenLabs voice has no preview URL. "
+                "Try reassigning or regenerating the voice first."
+            )
+
+        # --- Download preview audio ---
+        self.logger.info(
+            "Downloading ElevenLabs preview for voice %d (%s): %s",
+            current_voice.id,
+            current_voice.name,
+            current_voice.preview_url,
+        )
+        try:
+            with _httpx.Client(timeout=30) as http:
+                resp = http.get(current_voice.preview_url)
+                resp.raise_for_status()
+                audio_bytes = resp.content
+        except Exception as e:
+            raise ValueError(f"Failed to download voice preview audio: {e}") from e
+
+        if len(audio_bytes) < 1000:
+            raise ValueError(
+                f"Downloaded audio is too small ({len(audio_bytes)} bytes) "
+                "to use as a voice clone sample."
+            )
+
+        self.logger.info("Downloaded %d bytes of audio for Mistral cloning", len(audio_bytes))
+
+        # --- Duplicate prevention: block re-cloning the same EL voice to Mistral ---
+        existing_clones = self.repository_factory.voice.get_clones_of(
+            current_voice.id, tts_backend="mistral"
+        )
+        if existing_clones:
+            raise ValueError(
+                f"This ElevenLabs voice has already been cloned to Mistral "
+                f"(voice id={existing_clones[0].id}, name={existing_clones[0].name!r}). "
+                "Assign the professor a different ElevenLabs voice before cloning again."
+            )
+
+        # --- Build metadata ---
+        base_name = professor.name or f"Professor {professor_id}"
+        # Auto-increment suffix to avoid name collisions: "Dr. Smith", "Dr. Smith 2", ...
+        existing_count = self.repository_factory.voice.count_by_name_prefix(
+            base_name, tts_backend="mistral"
+        )
+        voice_name = base_name if existing_count == 0 else f"{base_name} {existing_count + 1}"
+
+        # Normalise gender: Mistral accepts "male" or "female"
+        gender = (current_voice.gender or getattr(professor, "gender", None) or "").lower()
+        gender = gender if gender in ("male", "female") else None
+        # Age: Mistral expects an integer; professor.age is already int
+        age = getattr(professor, "age", None)
+
+        # --- Create Mistral voice ---
+        self.logger.info("Creating Mistral clone '%s' from ElevenLabs preview", voice_name)
+        mgr = MistralVoiceManager()
+        mistral_voice = mgr.create_voice(
+            name=voice_name,
+            sample_audio_bytes=audio_bytes,
+            sample_filename="preview.mp3",
+            languages=["en"],
+            gender=gender,
+            age=age,  # int; type hint in create_voice is Optional[str] but SDK accepts int
+            tags=["professor", "academic"],
+        )
+
+        mistral_voice_id = mistral_voice.get("id")
+        if not mistral_voice_id:
+            raise ValueError(f"Mistral voice creation returned no id: {mistral_voice}")
+
+        # --- Persist DB record ---
+        voice = Voice(
+            tts_backend="mistral",
+            external_id=mistral_voice_id,
+            name=voice_name,
+            gender=gender,
+            language="en",
+            cloned_from=current_voice.id,
+        )
+        voice_db = self.repository_factory.voice.upsert(voice)
+
+        # --- Re-associate professor ---
+        self.repository_factory.professor.update_field(
+            professor_id, voice_id=voice_db.id, tts_backend="mistral"
+        )
+
+        self.logger.info(
+            "Cloned ElevenLabs voice → Mistral: '%s' (mistral_id=%s, db_id=%s) " "for professor %d",
+            voice_name,
+            mistral_voice_id,
+            voice_db.id,
+            professor_id,
+        )
+
+        return voice_db.model_dump()
+
     def list_available_voices(
         self,
         gender: Optional[str] = None,

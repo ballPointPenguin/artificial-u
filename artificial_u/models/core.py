@@ -117,6 +117,7 @@ class Voice(BaseModel):
     use_case: Optional[str] = None
     verified_languages: List[Dict[str, Any]] = Field(default_factory=list)
     last_updated: datetime = Field(default_factory=datetime.now)
+    cloned_from: Optional[int] = None
 
 
 class Professor(BaseModel):

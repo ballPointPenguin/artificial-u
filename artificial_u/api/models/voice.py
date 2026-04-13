@@ -31,6 +31,9 @@ class VoiceBase(BaseModel):
     verified_languages: List[Dict[str, Any]] = Field(
         default_factory=list, description="Verified languages for the voice"
     )
+    cloned_from: Optional[int] = Field(
+        None, description="ID of the source voice this was cloned from, if any"
+    )
 
 
 class VoiceResponse(VoiceBase):
@@ -49,6 +52,41 @@ class VoiceListResponse(BaseModel):
     page: int = Field(..., description="Current page number")
     size: int = Field(..., description="Number of items per page")
     pages: int = Field(..., description="Total number of pages")
+
+
+class VoiceDesignPreview(BaseModel):
+    """A single audio preview returned by the ElevenLabs Voice Design API."""
+
+    generated_voice_id: str = Field(
+        ..., description="Temporary voice ID; valid only until saved to the library"
+    )
+    audio_sample: str = Field(..., description="Base64-encoded MP3 audio sample")
+    media_type: str = Field("audio/mpeg", description="MIME type of the audio sample")
+    duration_secs: Optional[float] = Field(None, description="Duration of the audio sample")
+    voice_description: str = Field(..., description="The Voice Design prompt that was used")
+
+
+class VoiceDesignPreviewsResponse(BaseModel):
+    """Response containing multiple Voice Design previews for a professor."""
+
+    previews: List[VoiceDesignPreview]
+
+
+class VoiceDesignSaveRequest(BaseModel):
+    """Request to save a selected Voice Design preview and assign it to a professor."""
+
+    professor_id: int = Field(..., description="Database ID of the professor")
+    generated_voice_id: str = Field(..., description="Temporary ID from the Voice Design preview")
+    voice_name: str = Field(..., description="Name to give the saved voice in the library")
+    voice_description: str = Field(
+        ..., description="The Voice Design prompt (stored as the voice description)"
+    )
+
+
+class VoiceCloneToMistralRequest(BaseModel):
+    """Request to clone a professor's current ElevenLabs voice into Mistral."""
+
+    professor_id: int = Field(..., description="Database ID of the professor")
 
 
 class ManualVoiceAssignmentRequest(BaseModel):

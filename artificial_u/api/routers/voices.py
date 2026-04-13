@@ -13,6 +13,9 @@ from pydantic import BaseModel, Field
 from artificial_u.api.dependencies import get_voice_service
 from artificial_u.api.models.voice import (
     ManualVoiceAssignmentRequest,
+    VoiceCloneToMistralRequest,
+    VoiceDesignPreviewsResponse,
+    VoiceDesignSaveRequest,
     VoiceListResponse,
     VoiceResponse,
 )
@@ -66,6 +69,94 @@ async def manual_assign_voice(
         # converting it to index.html (CloudFront converts 404/403 to 200+index.html for SPA)
         raise HTTPException(status_code=400, detail=str(e))
     return
+
+
+# ---------------------------------------------------------------------------
+# Voice Design (ElevenLabs text-to-voice)
+# ---------------------------------------------------------------------------
+
+
+@router.post(
+    "/design/previews",
+    response_model=VoiceDesignPreviewsResponse,
+    dependencies=[Depends(require_auth)],
+)
+async def generate_voice_design_previews(
+    professor_id: int = Body(..., embed=True),
+    voice_service: VoiceService = Depends(get_voice_service),
+):
+    """Generate Voice Design audio previews for a professor.
+
+    Builds a voice prompt from the professor's attributes and calls the
+    ElevenLabs Voice Design API.  Returns up to 3 short audio previews
+    (base64 MP3) along with their temporary ``generated_voice_id`` values.
+
+    The client should present the previews to the user and call
+    ``POST /design/save`` with the chosen ``generated_voice_id``.
+    """
+    try:
+        previews = voice_service.generate_voice_design_previews(professor_id)
+        return VoiceDesignPreviewsResponse(previews=previews)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error("Voice Design preview generation failed: %s", e)
+        raise HTTPException(status_code=502, detail=f"Voice Design API error: {e}")
+
+
+@router.post(
+    "/design/save",
+    response_model=VoiceResponse,
+    dependencies=[Depends(require_auth)],
+)
+async def save_voice_design(
+    request: VoiceDesignSaveRequest = Body(...),
+    voice_service: VoiceService = Depends(get_voice_service),
+):
+    """Save a selected Voice Design preview to the ElevenLabs library.
+
+    Permanently saves the chosen preview as a named voice in the ElevenLabs
+    voice library, creates a ``Voice`` record in the database, and assigns
+    the voice to the professor.
+    """
+    try:
+        voice = voice_service.save_designed_voice(
+            professor_id=request.professor_id,
+            generated_voice_id=request.generated_voice_id,
+            voice_name=request.voice_name,
+            voice_description=request.voice_description,
+        )
+        return VoiceResponse(**voice)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error("Failed to save designed voice: %s", e)
+        raise HTTPException(status_code=502, detail=f"Failed to save voice: {e}")
+
+
+@router.post(
+    "/clone-to-mistral",
+    response_model=VoiceResponse,
+    dependencies=[Depends(require_auth)],
+)
+async def clone_voice_to_mistral(
+    request: VoiceCloneToMistralRequest = Body(...),
+    voice_service: VoiceService = Depends(get_voice_service),
+):
+    """Clone a professor's current ElevenLabs voice into the Mistral voice library.
+
+    Downloads the ElevenLabs voice preview audio and submits it to Mistral as a
+    voice clone sample.  The professor is re-associated with the resulting Mistral
+    voice; the original ElevenLabs voice record is left intact.
+    """
+    try:
+        voice = voice_service.clone_elevenlabs_voice_to_mistral(request.professor_id)
+        return VoiceResponse(**voice)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error("Failed to clone voice to Mistral: %s", e)
+        raise HTTPException(status_code=502, detail=f"Voice cloning failed: {e}")
 
 
 @router.get("/", response_model=VoiceListResponse)
