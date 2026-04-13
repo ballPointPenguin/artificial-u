@@ -77,6 +77,13 @@ Instructions:
     such as office hours, grading policies, or administrative reminders.
 
 9. Ensure that the text is suitable for a text-to-speech engine:
+   - A line break alone does not create a clear pause in speech; end the preceding
+     sentence with a period (or other closing punctuation) before starting a new line
+     when you want a noticeable break.
+   - Do not use ALL CAPS for emphasis; the synthesizer reads it awkwardly. Convey
+     emphasis through wording, rhythm, or short clauses instead.
+   - Spell out mathematical symbols and operators in words (e.g., "equals", "plus",
+     "minus", "times", "divided by") rather than "=", "+", "-", "×", "÷", and similar.
    - Avoid superfluous punctuation such as asterisks or dashes.
    - Do NOT use markdown formatting. This means:
      * No double asterisks (**text**) for bold
