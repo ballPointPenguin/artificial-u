@@ -685,8 +685,10 @@ class VoiceService:
             )
             self.repository_factory.voice.upsert(voice)
 
-        # Update professor with voice ID
-        self.repository_factory.professor.update_field(professor_id, voice_id=voice.id)
+        # Update professor with voice ID and ensure backend is set to elevenlabs
+        self.repository_factory.professor.update_field(
+            professor_id, voice_id=voice.id, tts_backend="elevenlabs"
+        )
 
         self.logger.info(f"Manually assigned voice {el_voice_id} to professor {professor_id}")
 
@@ -716,7 +718,9 @@ class VoiceService:
             # Try to enrich from the provider API (best-effort)
             if tts_backend == "mistral":
                 try:
-                    from artificial_u.integrations.mistral.voice_manager import MistralVoiceManager
+                    from artificial_u.integrations.mistral.voice_manager import (
+                        MistralVoiceManager,
+                    )
 
                     mgr = MistralVoiceManager()
                     info = mgr.get_voice(external_id)
