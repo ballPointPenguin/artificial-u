@@ -1,19 +1,9 @@
 import { A, useNavigate, useParams } from '@solidjs/router'
-import {
-  type Accessor,
-  type Component,
-  createResource,
-  createSignal,
-  For,
-  type Resource,
-  type Setter,
-  Show,
-} from 'solid-js'
+import { type Component, createResource, createSignal, For, type Resource, Show } from 'solid-js'
 import { departmentService } from '../../api/services/department-service.js'
 import { professorService } from '../../api/services/professor-service.js'
-import { getVoice, manualAssignVoice } from '../../api/services/voice-service.js'
+import { getVoice } from '../../api/services/voice-service.js'
 import type {
-  LectureBrief,
   Professor,
   ProfessorCourseBrief,
   ProfessorCoursesResponse,
@@ -87,13 +77,6 @@ const backendDisplayName = (backend: string): string => {
 const VoiceProfileSection: Component<{
   professorResource: Resource<Professor | undefined>
   voiceResource: Resource<Voice | undefined>
-  voiceAssignError: Accessor<string>
-  manualElVoiceId: Accessor<string>
-  setManualElVoiceId: Setter<string>
-  isAssigningVoice: Accessor<boolean>
-  isAssigningManual: Accessor<boolean>
-  handleAssignVoice: () => Promise<void>
-  handleManualAssign: () => Promise<void>
 }> = (props) => {
   /** Optional voice attributes shown only when non-empty. */
   const optionalAttrs = (): Array<{ label: string; value: string }> => {
@@ -191,58 +174,19 @@ const VoiceProfileSection: Component<{
           </Show>
         </Show>
 
-        {/* Assign/reassign & Voice ID Override inline controls */}
-        <div class="mt-3">
-          <Show when={props.voiceAssignError()}>
-            <Alert variant="danger" class="text-sm mb-2">
-              {props.voiceAssignError()}
-            </Alert>
-          </Show>
+        {/* Link to Voice Selection page */}
+        <Show when={props.professorResource()?.id}>
           <RequireRole minRole="creator">
-            <div class="flex flex-col sm:flex-row sm:items-center sm:space-x-3 space-y-2 sm:space-y-0">
-              <MagicButton
-                variant="secondary"
-                size="sm"
-                onClick={() => void props.handleAssignVoice()}
-                disabled={props.isAssigningVoice()}
-                isLoading={props.isAssigningVoice()}
-                loadingText="Assigning..."
+            <div class="mt-3">
+              <A
+                href={`/professors/${String(props.professorResource()?.id ?? '')}/voice`}
+                class="text-sm text-accent hover:text-accent/80 underline"
               >
-                {props.professorResource()?.voice_id ? 'Reassign Voice' : 'Assign Voice'}
-              </MagicButton>
-              <div class="flex items-center space-x-2">
-                <input
-                  type="text"
-                  class="input input-bordered w-full sm:w-64"
-                  placeholder="Voice ID Override"
-                  value={props.manualElVoiceId()}
-                  onInput={(e) => props.setManualElVoiceId((e.target as HTMLInputElement).value)}
-                  aria-label="Voice ID Override"
-                />
-                <MagicButton
-                  size="sm"
-                  variant="primary"
-                  onClick={() => void props.handleManualAssign()}
-                  disabled={!props.manualElVoiceId().trim() || props.isAssigningManual()}
-                  isLoading={props.isAssigningManual()}
-                  loadingText="Overriding..."
-                >
-                  Override
-                </MagicButton>
-              </div>
+                Voice Selection &amp; Preview &rarr;
+              </A>
             </div>
-            <Show when={props.professorResource()?.id}>
-              <div class="mt-2">
-                <A
-                  href={`/professors/${String(props.professorResource()?.id ?? '')}/voice`}
-                  class="text-sm text-accent hover:text-accent/80 underline"
-                >
-                  Voice Selection &amp; Preview &rarr;
-                </A>
-              </div>
-            </Show>
           </RequireRole>
-        </div>
+        </Show>
       </div>
     </>
   )
@@ -259,12 +203,6 @@ export default function ProfessorDetail() {
   const [isGeneratingImage, setIsGeneratingImage] = createSignal(false)
   const [generationError, setGenerationError] = createSignal('')
   const [isImageLoading, setIsImageLoading] = createSignal(false)
-  const [isAssigningVoice, setIsAssigningVoice] = createSignal(false)
-  const [voiceAssignError, setVoiceAssignError] = createSignal('')
-  // Manual voice entry state
-  const [manualElVoiceId, setManualElVoiceId] = createSignal('')
-  const [isAssigningManual, setIsAssigningManual] = createSignal(false)
-
   const [professorResource, { refetch: refetchProfessor }] = createResource(
     () => {
       const id = Number.parseInt(params.id ?? '', 10)
@@ -275,7 +213,6 @@ export default function ProfessorDetail() {
     },
     async (id) => {
       setIsImageLoading(false) // Reset image loading state when professor data changes
-      setVoiceAssignError('') // Clear voice assignment error when professor data changes
       return professorService.getProfessor(id)
     }
   )
@@ -308,17 +245,6 @@ export default function ProfessorDetail() {
     async (voiceId) => {
       if (voiceId) {
         return getVoice(voiceId)
-      }
-      return undefined
-    }
-  )
-
-  // Fetch professor's lectures to detect if any existing audio has been generated
-  const [lecturesResource] = createResource(
-    () => professorResource()?.id,
-    async (professorId: number) => {
-      if (professorId) {
-        return professorService.getProfessorLectures(professorId)
       }
       return undefined
     }
@@ -393,71 +319,6 @@ export default function ProfessorDetail() {
       setGenerationError(error instanceof Error ? error.message : 'Failed to generate image')
     } finally {
       setIsGeneratingImage(false)
-    }
-  }
-
-  const handleAssignVoice = async () => {
-    setIsAssigningVoice(true)
-    setVoiceAssignError('')
-    setError('')
-
-    try {
-      const id = Number.parseInt(params.id ?? '', 10)
-      if (Number.isNaN(id)) {
-        throw new Error('Invalid professor ID')
-      }
-
-      // Phase 2: warn if reassigning and lectures already have audio
-      const hasExistingVoice = Boolean(professorResource()?.voice_id)
-      const lecturesResponse = lecturesResource()
-      const lectures: LectureBrief[] | undefined = lecturesResponse?.lectures
-      const hasAudio = Array.isArray(lectures) && lectures.some((l) => l.audio_url != null)
-      if (hasExistingVoice && hasAudio) {
-        const proceed = window.confirm(
-          'This professor already has lectures with generated audio. Reassigning the voice may make future audio sound different. Are you sure you want to continue?'
-        )
-        if (!proceed) {
-          return
-        }
-      }
-
-      await professorService.assignVoiceToProfessor(id)
-      void refetchProfessor()
-    } catch (error) {
-      setVoiceAssignError(error instanceof Error ? error.message : 'Failed to assign voice')
-    } finally {
-      setIsAssigningVoice(false)
-    }
-  }
-
-  const handleManualAssign = async () => {
-    setIsAssigningManual(true)
-    setVoiceAssignError('')
-    try {
-      const professorId = Number.parseInt(params.id ?? '', 10)
-      if (Number.isNaN(professorId)) throw new Error('Invalid professor ID')
-
-      // Warn if reassigning and there is audio
-      const hasExistingVoice = Boolean(professorResource()?.voice_id)
-      const lecturesResponse = lecturesResource()
-      const lectures: LectureBrief[] | undefined = lecturesResponse?.lectures
-      const hasAudio = Array.isArray(lectures) && lectures.some((l) => l.audio_url != null)
-      if (hasExistingVoice && hasAudio) {
-        const proceed = window.confirm(
-          'This professor already has lectures with generated audio. Reassigning the voice may make future audio sound different. Are you sure you want to continue?'
-        )
-        if (!proceed) return
-      }
-
-      const externalId = manualElVoiceId().trim()
-      if (!externalId) throw new Error('Please enter a voice ID to assign')
-      await manualAssignVoice(String(professorId), { external_id: externalId })
-      setManualElVoiceId('')
-      void refetchProfessor()
-    } catch (error) {
-      setVoiceAssignError(error instanceof Error ? error.message : 'Failed to assign voice')
-    } finally {
-      setIsAssigningManual(false)
     }
   }
 
@@ -695,13 +556,6 @@ export default function ProfessorDetail() {
                     <VoiceProfileSection
                       professorResource={professorResource}
                       voiceResource={voiceResource}
-                      voiceAssignError={voiceAssignError}
-                      manualElVoiceId={manualElVoiceId}
-                      setManualElVoiceId={setManualElVoiceId}
-                      isAssigningVoice={isAssigningVoice}
-                      isAssigningManual={isAssigningManual}
-                      handleAssignVoice={handleAssignVoice}
-                      handleManualAssign={handleManualAssign}
                     />
                   </div>
                 </div>
@@ -711,13 +565,6 @@ export default function ProfessorDetail() {
                   <VoiceProfileSection
                     professorResource={professorResource}
                     voiceResource={voiceResource}
-                    voiceAssignError={voiceAssignError}
-                    manualElVoiceId={manualElVoiceId}
-                    setManualElVoiceId={setManualElVoiceId}
-                    isAssigningVoice={isAssigningVoice}
-                    isAssigningManual={isAssigningManual}
-                    handleAssignVoice={handleAssignVoice}
-                    handleManualAssign={handleManualAssign}
                   />
                 </div>
               </div>

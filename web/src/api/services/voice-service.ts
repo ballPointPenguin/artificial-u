@@ -8,6 +8,9 @@ import type {
   MistralVoiceCatalog,
   PaginatedVoices,
   Voice,
+  VoiceCloneToMistralRequest,
+  VoiceDesignPreviewsResponse,
+  VoiceDesignSaveRequest,
   VoiceListParams,
   VoicePreviewRequest,
   VoicePreviewResponse,
@@ -118,4 +121,39 @@ export const listMistralCatalog = async (
  */
 export const previewVoice = async (request: VoicePreviewRequest): Promise<VoicePreviewResponse> => {
   return httpClient.post<VoicePreviewResponse>(ENDPOINTS.voices.preview, request)
+}
+
+/**
+ * Generate Voice Design previews for a professor.
+ *
+ * The backend builds a voice prompt from the professor's attributes and calls
+ * the ElevenLabs Voice Design API.  Returns up to 3 short audio previews
+ * (base64 MP3) along with their temporary generated_voice_id values.
+ */
+export const generateVoiceDesignPreviews = async (
+  professorId: number
+): Promise<VoiceDesignPreviewsResponse> => {
+  return httpClient.post<VoiceDesignPreviewsResponse>(ENDPOINTS.voices.designPreviews, {
+    professor_id: professorId,
+  })
+}
+
+/**
+ * Save a selected Voice Design preview to the ElevenLabs library.
+ *
+ * Permanently saves the chosen preview as a named voice, creates a DB record,
+ * and assigns it to the professor.  Returns the saved Voice.
+ */
+export const saveDesignedVoice = async (request: VoiceDesignSaveRequest): Promise<Voice> => {
+  return httpClient.post<Voice>(ENDPOINTS.voices.designSave, request)
+}
+
+/**
+ * Clone a professor's current ElevenLabs voice into the Mistral voice library.
+ *
+ * Downloads the ElevenLabs preview audio and submits it to Mistral as a clone
+ * sample.  The professor is re-associated with the new Mistral voice.
+ */
+export const cloneVoiceToMistral = async (request: VoiceCloneToMistralRequest): Promise<Voice> => {
+  return httpClient.post<Voice>(ENDPOINTS.voices.cloneToMistral, request)
 }

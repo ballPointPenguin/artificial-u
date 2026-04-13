@@ -34,6 +34,7 @@ class VoiceRepository(BaseRepository):
             use_case=db_voice.use_case,
             verified_languages=db_voice.verified_languages or [],
             last_updated=db_voice.last_updated,
+            cloned_from=db_voice.cloned_from,
         )
 
     def create(self, voice: Voice) -> Voice:
@@ -57,6 +58,7 @@ class VoiceRepository(BaseRepository):
                 use_case=voice.use_case,
                 verified_languages=voice.verified_languages,
                 last_updated=datetime.now(),
+                cloned_from=voice.cloned_from,
             )
 
             session.add(db_voice)
@@ -164,6 +166,7 @@ class VoiceRepository(BaseRepository):
             db_voice.use_case = voice.use_case
             db_voice.verified_languages = voice.verified_languages
             db_voice.last_updated = datetime.now()
+            db_voice.cloned_from = voice.cloned_from
 
             session.commit()
             return voice
@@ -219,4 +222,20 @@ class VoiceRepository(BaseRepository):
             if tts_backend:
                 query = query.filter(VoiceModel.tts_backend == tts_backend)
 
+            return query.count()
+
+    def get_clones_of(self, source_voice_id: int, tts_backend: Optional[str] = None) -> List[Voice]:
+        """Return all voices that were cloned from the given source voice."""
+        with self.get_session() as session:
+            query = session.query(VoiceModel).filter(VoiceModel.cloned_from == source_voice_id)
+            if tts_backend:
+                query = query.filter(VoiceModel.tts_backend == tts_backend)
+            return [self._to_domain(v) for v in query.all()]
+
+    def count_by_name_prefix(self, prefix: str, tts_backend: Optional[str] = None) -> int:
+        """Count voices whose name starts with the given prefix (case-insensitive)."""
+        with self.get_session() as session:
+            query = session.query(VoiceModel).filter(VoiceModel.name.ilike(f"{prefix}%"))
+            if tts_backend:
+                query = query.filter(VoiceModel.tts_backend == tts_backend)
             return query.count()

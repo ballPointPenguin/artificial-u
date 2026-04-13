@@ -189,6 +189,7 @@ class VoiceModel(Base):
     use_case = Column(String(100), nullable=True)
     verified_languages = Column(JSONB, nullable=True)
     last_updated = Column(DateTime, nullable=False, default=datetime.now)
+    cloned_from = Column(Integer, ForeignKey("voices.id", ondelete="SET NULL"), nullable=True)
 
     professor = relationship("ProfessorModel", back_populates="voice")
 

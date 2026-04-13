@@ -11,6 +11,7 @@ import time
 from typing import Any, Dict, List, Optional, Tuple
 from unittest.mock import MagicMock
 
+import httpx
 from elevenlabs import play
 from elevenlabs.client import ElevenLabs
 
@@ -532,6 +533,118 @@ class ElevenLabsClient:
         except Exception as e:
             self.logger.error(f"Error retrieving user info: {e}")
             return {}
+
+    # ---------------------------------------------------------------------------
+    # Voice Design (text-to-voice) API
+    # ---------------------------------------------------------------------------
+
+    # Default sample text used when generating voice previews
+    VOICE_DESIGN_PREVIEW_TEXT = (
+        "Welcome to Artificial University. "
+        "Today we will explore ideas that challenge our assumptions "
+        "and deepen our understanding of the world around us."
+    )
+
+    def generate_voice_previews(
+        self,
+        voice_description: str,
+        text: Optional[str] = None,
+    ) -> List[Dict[str, Any]]:
+        """Generate voice previews using the ElevenLabs Voice Design API.
+
+        Calls POST /v1/text-to-voice/create-previews.
+
+        Args:
+            voice_description: Prose description of the desired voice.
+            text: Optional text to synthesise in the preview.
+                  Defaults to a short academic sentence.
+
+        Returns:
+            List of preview dicts, each containing:
+            ``generated_voice_id`` (str), ``audio_sample`` (base64 str),
+            ``media_type`` (str), ``duration_secs`` (float).
+        """
+        url = f"{self.BASE_URL}/text-to-voice/create-previews"
+        payload: Dict[str, Any] = {
+            "voice_description": voice_description,
+            "text": text or self.VOICE_DESIGN_PREVIEW_TEXT,
+            # Recommended model for voice design
+            "model_id": "eleven_multilingual_ttv_v2",
+        }
+
+        try:
+            with httpx.Client(timeout=90) as http:
+                resp = http.post(url, json=payload, headers=self.headers)
+                resp.raise_for_status()
+                data = resp.json()
+            raw_previews = data.get("previews", [])
+            self.logger.info("Voice Design: received %d preview(s)", len(raw_previews))
+            # Normalise field name: ElevenLabs returns audio_base_64; we expose audio_sample
+            previews = []
+            for p in raw_previews:
+                preview = dict(p)
+                if "audio_base_64" in preview and "audio_sample" not in preview:
+                    preview["audio_sample"] = preview.pop("audio_base_64")
+                previews.append(preview)
+            return previews
+        except httpx.HTTPStatusError as e:
+            self.logger.error(
+                "Voice Design preview request failed (%s): %s",
+                e.response.status_code,
+                e.response.text,
+            )
+            raise
+        except Exception as e:
+            self.logger.error("Voice Design preview generation failed: %s", e)
+            raise
+
+    def save_voice_to_library(
+        self,
+        generated_voice_id: str,
+        voice_name: str,
+        voice_description: str,
+    ) -> str:
+        """Save a Voice Design preview to the ElevenLabs voice library.
+
+        Calls POST /v1/text-to-voice/create-voice-from-preview.
+
+        Args:
+            generated_voice_id: Temporary ID returned by ``generate_voice_previews``.
+            voice_name: Name to give the saved voice in the library.
+            voice_description: Description of the voice (stored in the library).
+
+        Returns:
+            Permanent ElevenLabs ``voice_id`` string that can be used with TTS.
+        """
+        url = f"{self.BASE_URL}/text-to-voice/create-voice-from-preview"
+        payload: Dict[str, Any] = {
+            "voice_name": voice_name,
+            "voice_description": voice_description,
+            "generated_voice_id": generated_voice_id,
+        }
+
+        try:
+            with httpx.Client(timeout=30) as http:
+                resp = http.post(url, json=payload, headers=self.headers)
+                resp.raise_for_status()
+                data = resp.json()
+            el_voice_id = data.get("voice_id")
+            if not el_voice_id:
+                raise ValueError(f"No voice_id in ElevenLabs response: {data}")
+            self.logger.info(
+                "Voice Design: saved voice '%s' → el_voice_id=%s", voice_name, el_voice_id
+            )
+            return el_voice_id
+        except httpx.HTTPStatusError as e:
+            self.logger.error(
+                "Failed to save voice to library (%s): %s",
+                e.response.status_code,
+                e.response.text,
+            )
+            raise
+        except Exception as e:
+            self.logger.error("Failed to save voice to library: %s", e)
+            raise
 
     def play_audio(self, audio_data: bytes) -> None:
         """

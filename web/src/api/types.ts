@@ -465,6 +465,7 @@ export interface Voice {
   verified_languages: Array<Record<string, unknown>>
   popularity_score: number | null
   last_updated: string | null
+  cloned_from: number | null
 }
 
 export interface PaginatedVoices {
@@ -506,6 +507,31 @@ export interface MistralCatalogVoice {
 export interface MistralVoiceCatalog {
   items: MistralCatalogVoice[]
   total: number
+}
+
+// Voice cloning
+export interface VoiceCloneToMistralRequest {
+  professor_id: number
+}
+
+// Voice Design (ElevenLabs text-to-voice generation)
+export interface VoiceDesignPreview {
+  generated_voice_id: string
+  audio_sample: string // base64-encoded MP3
+  media_type: string
+  duration_secs: number | null
+  voice_description: string
+}
+
+export interface VoiceDesignPreviewsResponse {
+  previews: VoiceDesignPreview[]
+}
+
+export interface VoiceDesignSaveRequest {
+  professor_id: number
+  generated_voice_id: string
+  voice_name: string
+  voice_description: string
 }
 
 // Voice preview
