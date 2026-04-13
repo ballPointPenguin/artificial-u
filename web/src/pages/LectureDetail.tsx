@@ -44,16 +44,16 @@ const LectureDetailView: Component<{
 
   return (
     <div class="arcane-card">
-      <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between mb-6">
-        <div class="space-y-1 flex-1 min-w-0">
-          <h1 class="text-3xl font-display text-parchment-100 break-words">
+      <div class="mb-6 flex flex-col gap-4">
+        <div class="min-w-0 w-full space-y-1">
+          <h1 class="font-display text-3xl break-words text-parchment-100">
             {props.lecture.title}
           </h1>
           <p class="text-parchment-300">
             {t().lectureDetail.revision} {props.lecture.revision}
           </p>
         </div>
-        <div class="flex flex-wrap items-center gap-2 md:justify-end shrink-0">
+        <div class="flex w-full shrink-0 flex-wrap items-center gap-2 justify-end">
           {/* Transcript button at top */}
           <Show when={props.lecture.transcript_url}>
             <a
