@@ -92,6 +92,9 @@ Instructions:
    - For abbreviations pronounced as individual letters, use periods between letters
      (e.g., "G.P.T.", "F.B.I.", "U.S.A.") but keep acronyms pronounced as words intact
      (e.g., "NASA", "UNICEF", "radar").
+   - For shorthand that people say as ordinary words, spell out the spoken form
+     (e.g., "Limited" instead of "Ltd", "versus" instead of "vs", "and" instead of "&")
+     rather than clipped or symbolic written abbreviations.
 
 Before writing the final lecture, outline the structure and main points of your lecture
 inside <lecture_outline></lecture_outline> tags. This will help ensure a well-organized
