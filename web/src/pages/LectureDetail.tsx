@@ -16,6 +16,7 @@ import { topicService } from '../api/services/topic-service.js'
 import type { Lecture, LectureUpdate } from '../api/types.js'
 import { useAuth } from '../auth/AuthProvider'
 import { RequireRole } from '../auth/RequireRole'
+import { AnimatedCaptions } from '../components/lectures/AnimatedCaptions.jsx'
 import { LectureForm } from '../components/lectures/LectureForm.jsx'
 import { Alert, Button, ConfirmationModal, MagicButton, MetadataInfo } from '../components/ui'
 import { useTranslations } from '../i18n/index.js'
@@ -82,6 +83,7 @@ const LectureDetailView: Component<{
                     url: props.lecture.audio_url,
                     title: props.lecture.title,
                     subtitle: props.topicTitle,
+                    timelineUrl: props.lecture.timeline_url,
                     courseId: props.courseId,
                     lectureId: props.lecture.id,
                     topicId: props.lecture.topic_id,
@@ -178,6 +180,13 @@ const LectureDetailView: Component<{
         createdAt={props.lecture.created_at}
         class="mb-6 pb-6 border-b border-parchment-800/30"
       />
+
+      {/* Animated Captions */}
+      <Show when={props.lecture.timeline_url}>
+        <div class="mb-8">
+          <AnimatedCaptions timelineUrl={props.lecture.timeline_url!} />
+        </div>
+      </Show>
 
       {/* Lecture Content */}
       <Show when={props.lecture.content}>

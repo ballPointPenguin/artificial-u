@@ -93,6 +93,7 @@ class LectureModel(Base):
     title = Column(String, nullable=False)
     audio_url = Column(String, nullable=True)
     transcript_url = Column(String, nullable=True)
+    timeline_url = Column(String, nullable=True)
     language = Column(String, nullable=True)
     course_id = Column(Integer, ForeignKey("courses.id"), nullable=False)
     topic_id = Column(Integer, ForeignKey("topics.id"), nullable=False)

@@ -450,12 +450,24 @@ class LectureGeneratorService:
         # 5. Upload to storage and get public URL
         audio_url = await self._upload_audio_and_get_url(course, topic, audio_bytes)
 
+        # 5.5 Forced Alignment
+        timeline_url = None
+        if backend_name == "elevenlabs":
+            try:
+                timeline_url = await self._generate_and_upload_timeline(
+                    lecture, course, topic, audio_bytes
+                )
+            except Exception as e:
+                self.logger.warning(f"Failed to generate/upload timeline: {e}", exc_info=True)
+
         # 6. Partial update lecture with audio URL, voice_id, and duration (avoid clobbering summary)
         update_data = {"audio_url": audio_url}
         if voice_id:
             update_data["voice_id"] = voice_id
         if duration_seconds is not None:
             update_data["duration"] = duration_seconds
+        if timeline_url:
+            update_data["timeline_url"] = timeline_url
 
         updated = self.repository_factory.lecture.update_fields(
             lecture_id=lecture_id,
@@ -472,6 +484,7 @@ class LectureGeneratorService:
             "lecture_id": updated.id,
             "topic_id": updated.topic_id,
             "audio_url": updated.audio_url,
+            "timeline_url": updated.timeline_url,
             "voice_id": updated.voice_id,
             "duration": updated.duration,
         }
@@ -910,6 +923,73 @@ class LectureGeneratorService:
         if not success or not audio_url:
             raise DatabaseError("Failed to upload generated audio to storage")
         return audio_url
+
+    async def _generate_and_upload_timeline(
+        self, lecture, course, topic, audio_bytes: bytes
+    ) -> Optional[str]:
+        """Perform forced alignment and upload the resulting timeline JSON."""
+        import json
+
+        from artificial_u.audio.speech_processor import SpeechProcessor
+        from artificial_u.config import get_settings
+        from artificial_u.integrations import elevenlabs
+        from artificial_u.services.storage_service import StorageService
+
+        settings = get_settings()
+        if not settings.ELEVENLABS_API_KEY:
+            self.logger.warning("No ElevenLabs API key, skipping forced alignment")
+            return None
+
+        # Normalize text for alignment
+        speech_processor = SpeechProcessor(logger=self.logger)
+        normalized_text = speech_processor.normalize_text(lecture.content)
+
+        client = elevenlabs.ElevenLabsClient(api_key=settings.ELEVENLABS_API_KEY)
+
+        self.logger.info(f"Starting forced alignment for lecture {lecture.id}")
+        alignment_result = await asyncio.to_thread(
+            client.forced_alignment, audio_bytes, normalized_text
+        )
+
+        # Convert to generic timeline format
+        events = []
+        if "words" in alignment_result:
+            for word in alignment_result["words"]:
+                events.append(
+                    {
+                        "type": "word",
+                        "content": word.get("text", ""),
+                        "start": word.get("start", 0.0),
+                        "end": word.get("end", 0.0),
+                    }
+                )
+
+        timeline_data = {"events": events}
+        timeline_json = json.dumps(timeline_data, ensure_ascii=False).encode("utf-8")
+
+        storage_service = StorageService(logger=self.logger)
+        course_code = getattr(course, "code", str(course.id))
+        week = getattr(topic, "week", 1)
+        number = getattr(topic, "order", 1)
+
+        object_key = storage_service.generate_timeline_key(
+            course_code=str(course_code),
+            week_number=int(week),
+            lecture_order=int(number),
+        )
+
+        success, timeline_url = await storage_service.upload_timeline_file(
+            file_data=timeline_json,
+            object_name=object_key,
+            content_type="application/json",
+        )
+
+        if success:
+            self.logger.info(f"Successfully uploaded timeline for lecture {lecture.id}")
+            return timeline_url
+        else:
+            self.logger.error(f"Failed to upload timeline for lecture {lecture.id}")
+            return None
 
     def _add_id3_tags_to_audio(
         self, lecture, course, topic, audio_bytes: bytes, tts_backend: str = "elevenlabs"
