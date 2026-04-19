@@ -84,6 +84,23 @@ export const lectureService = {
     return httpClient.post(ENDPOINTS.lectures.enqueueGenerateAudio(lectureId), undefined)
   },
 
+  /**
+   * Enqueue lecture timeline generation job (async). Returns a job stub with id.
+   */
+  enqueueGenerateLectureTimeline: (
+    lectureId: number
+  ): Promise<{
+    id: number
+    kind: string
+    status: string
+    attempts: number
+    max_attempts: number
+    priority?: number
+    run_after?: string
+  }> => {
+    return httpClient.post(ENDPOINTS.lectures.enqueueGenerateTimeline(lectureId), undefined)
+  },
+
   createLecture: (data: LectureCreate): Promise<Lecture> => {
     return httpClient.post<Lecture>(ENDPOINTS.lectures.list, data)
   },

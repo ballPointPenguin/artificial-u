@@ -43,6 +43,21 @@ const LectureDetailView: Component<{
   const audioPlayer = useAudioPlayer()
   const t = useTranslations()
 
+  const [isGeneratingTimeline, setIsGeneratingTimeline] = createSignal(false)
+  const [timelineError, setTimelineError] = createSignal('')
+
+  const handleGenerateTimeline = async () => {
+    setIsGeneratingTimeline(true)
+    setTimelineError('')
+    try {
+      await lectureService.enqueueGenerateLectureTimeline(props.lecture.id)
+    } catch (error) {
+      setTimelineError(error instanceof Error ? error.message : 'Failed to generate timeline')
+    } finally {
+      setIsGeneratingTimeline(false)
+    }
+  }
+
   return (
     <div class="arcane-card">
       <div class="mb-6 flex flex-col gap-4">
@@ -54,124 +69,149 @@ const LectureDetailView: Component<{
             {t().lectureDetail.revision} {props.lecture.revision}
           </p>
         </div>
-        <div class="flex w-full shrink-0 flex-wrap items-center gap-2 justify-end">
-          {/* Transcript button at top */}
-          <Show when={props.lecture.transcript_url}>
-            <a
-              href={props.lecture.transcript_url || undefined}
-              target="_blank"
-              rel="noopener noreferrer"
-              class="inline-block"
-            >
-              <Button variant="secondary" size="sm" class="inline-flex items-center gap-2">
-                <FileText class="h-4 w-4" />
-                <span class="hidden sm:inline">{t().lectureDetail.viewTranscript}</span>
-                <span class="sm:hidden">{t().lectureDetail.transcript}</span>
-              </Button>
-            </a>
-          </Show>
 
-          {/* Audio actions: listen and download if available, plus generate/regenerate */}
-          <Show when={props.lecture.audio_url}>
-            <Button
-              variant="outline"
-              size="sm"
-              class="inline-flex items-center gap-2"
-              onClick={() => {
-                if (props.lecture.audio_url) {
-                  audioPlayer.playTrack({
-                    url: props.lecture.audio_url,
-                    title: props.lecture.title,
-                    subtitle: props.topicTitle,
-                    timelineUrl: props.lecture.timeline_url ?? undefined,
-                    courseId: props.courseId,
-                    lectureId: props.lecture.id,
-                    topicId: props.lecture.topic_id,
-                    courseCode: props.courseCode,
-                    topicWeek: props.topicWeek,
-                    topicOrder: props.topicOrder,
-                  })
-                }
-              }}
-            >
-              <Headphones class="h-4 w-4" />
-              <span>{t().lectureDetail.listen}</span>
-            </Button>
-            <a
-              href={props.lecture.audio_download_url || props.lecture.audio_url || undefined}
-              download=""
-              class="inline-block"
-            >
-              <Button variant="outline" size="sm" class="inline-flex items-center gap-2">
-                <Download class="h-4 w-4" />
-                <span>{t().lectureDetail.download}</span>
+        <div class="flex w-full shrink-0 flex-col sm:flex-row sm:flex-wrap items-center gap-3 sm:gap-2 sm:justify-end">
+          {/* Essential Actions Group */}
+          <div class="flex flex-col sm:flex-row w-full sm:w-auto gap-2">
+            {/* Transcript button at top */}
+            <Show when={props.lecture.transcript_url}>
+              <a
+                href={props.lecture.transcript_url || undefined}
+                target="_blank"
+                rel="noopener noreferrer"
+                class="inline-block w-full sm:w-auto"
+              >
+                <Button variant="secondary" size="sm" class="min-h-[44px] sm:min-h-[32px] w-full flex items-center justify-center gap-2">
+                  <FileText class="h-4 w-4" />
+                  <span class="hidden sm:inline">{t().lectureDetail.viewTranscript}</span>
+                  <span class="sm:hidden">{t().lectureDetail.transcript}</span>
+                </Button>
+              </a>
+            </Show>
+
+            {/* Audio actions: listen and download if available */}
+            <Show when={props.lecture.audio_url}>
+              <Button
+                variant="outline"
+                size="sm"
+                class="min-h-[44px] sm:min-h-[32px] w-full sm:w-auto flex items-center justify-center gap-2"
+                onClick={() => {
+                  if (props.lecture.audio_url) {
+                    audioPlayer.playTrack({
+                      url: props.lecture.audio_url,
+                      title: props.lecture.title,
+                      subtitle: props.topicTitle,
+                      timelineUrl: props.lecture.timeline_url,
+                      courseId: props.courseId,
+                      lectureId: props.lecture.id,
+                      topicId: props.lecture.topic_id,
+                      courseCode: props.courseCode,
+                      topicWeek: props.topicWeek,
+                      topicOrder: props.topicOrder,
+                    })
+                  }
+                }}
+              >
+                <Headphones class="h-4 w-4" />
+                <span>{t().lectureDetail.listen}</span>
               </Button>
-            </a>
-          </Show>
+              <a
+                href={props.lecture.audio_download_url || props.lecture.audio_url || undefined}
+                download=""
+                class="inline-block w-full sm:w-auto"
+              >
+                <Button variant="outline" size="sm" class="min-h-[44px] sm:min-h-[32px] w-full flex items-center justify-center gap-2">
+                  <Download class="h-4 w-4" />
+                  <span>{t().lectureDetail.download}</span>
+                </Button>
+              </a>
+            </Show>
+          </div>
+
+          {/* Admin/Creator Actions Group */}
           <RequireRole minRole="creator">
-            <MagicButton
-              variant="primary"
-              size="sm"
-              class="whitespace-nowrap"
-              onClick={() => {
-                void props.onGenerateAudio()
-              }}
-              disabled={props.isGeneratingAudio || props.isUploadingAudio}
-            >
-              {props.isGeneratingAudio
-                ? t().lectureDetail.generatingAudio
-                : props.lecture.audio_url
-                  ? t().lectureDetail.regenerateAudio
-                  : t().lectureDetail.generateAudio}
-            </MagicButton>
+            <div class="flex flex-col sm:flex-row w-full sm:w-auto gap-2 pt-3 sm:pt-0 border-t sm:border-t-0 border-parchment-800/30">
+              <MagicButton
+                variant="primary"
+                size="sm"
+                class="min-h-[44px] sm:min-h-[32px] w-full sm:w-auto flex items-center justify-center whitespace-nowrap"
+                onClick={() => {
+                  void props.onGenerateAudio()
+                }}
+                disabled={props.isGeneratingAudio || props.isUploadingAudio}
+              >
+                {props.isGeneratingAudio
+                  ? t().lectureDetail.generatingAudio
+                  : props.lecture.audio_url
+                    ? t().lectureDetail.regenerateAudio
+                    : t().lectureDetail.generateAudio}
+              </MagicButton>
+              <RequireRole minRole="admin">
+                <Show when={props.lecture.audio_url && !props.lecture.timeline_url}>
+                  <MagicButton
+                    variant="primary"
+                    size="sm"
+                    class="min-h-[44px] sm:min-h-[32px] w-full sm:w-auto flex items-center justify-center whitespace-nowrap"
+                    onClick={() => void handleGenerateTimeline()}
+                    disabled={isGeneratingTimeline()}
+                  >
+                    {isGeneratingTimeline() ? 'Generating Timeline...' : 'Generate Timeline'}
+                  </MagicButton>
+                </Show>
+                <label
+                  for="audio-file-upload"
+                  class="inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium rounded-md border border-mystic-600 bg-mystic-900/20 text-mystic-300 hover:bg-mystic-900/40 hover:border-mystic-500 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px] sm:min-h-[32px] w-full sm:w-auto"
+                  classList={{
+                    'opacity-50 cursor-not-allowed': props.isUploadingAudio || props.isGeneratingAudio,
+                  }}
+                >
+                  <Upload class="h-4 w-4" />
+                  <span>
+                    {props.isUploadingAudio
+                      ? t().lectureDetail.uploading
+                      : t().lectureDetail.uploadAudio}
+                  </span>
+                </label>
+                <input
+                  id="audio-file-upload"
+                  type="file"
+                  accept="audio/mpeg,audio/mp3,.mp3"
+                  class="hidden"
+                  disabled={props.isUploadingAudio || props.isGeneratingAudio}
+                  onChange={(e) => {
+                    const file = e.target.files?.[0]
+                    if (file) {
+                      void props.onUploadAudio(file)
+                      e.target.value = ''
+                    }
+                  }}
+                />
+              </RequireRole>
+              <Show when={auth.canModify(props.lecture.created_by)}>
+                <Button variant="outline" size="sm" class="min-h-[44px] sm:min-h-[32px] w-full sm:w-auto flex items-center justify-center whitespace-nowrap" onClick={props.onEdit}>
+                  {t().common.edit}
+                </Button>
+                <Button
+                  variant="danger"
+                  size="sm"
+                  class="min-h-[44px] sm:min-h-[32px] w-full sm:w-auto flex items-center justify-center gap-2 whitespace-nowrap"
+                  onClick={props.onDelete}
+                  disabled={props.isDeleting}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-trash-2"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>
+                  {props.isDeleting ? t().common.deleting : t().common.delete}
+                </Button>
+              </Show>
+            </div>
           </RequireRole>
-          <RequireRole minRole="admin">
-            <label
-              for="audio-file-upload"
-              class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md border border-mystic-600 bg-mystic-900/20 text-mystic-300 hover:bg-mystic-900/40 hover:border-mystic-500 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-              classList={{
-                'opacity-50 cursor-not-allowed': props.isUploadingAudio || props.isGeneratingAudio,
-              }}
-            >
-              <Upload class="h-4 w-4" />
-              <span>
-                {props.isUploadingAudio
-                  ? t().lectureDetail.uploading
-                  : t().lectureDetail.uploadAudio}
-              </span>
-            </label>
-            <input
-              id="audio-file-upload"
-              type="file"
-              accept="audio/mpeg,audio/mp3,.mp3"
-              class="hidden"
-              disabled={props.isUploadingAudio || props.isGeneratingAudio}
-              onChange={(e) => {
-                const file = e.target.files?.[0]
-                if (file) {
-                  void props.onUploadAudio(file)
-                  // Reset the input so the same file can be selected again if needed
-                  e.target.value = ''
-                }
-              }}
-            />
-          </RequireRole>
-          <Show when={auth.canModify(props.lecture.created_by)}>
-            <Button variant="outline" size="sm" class="whitespace-nowrap" onClick={props.onEdit}>
-              {t().common.edit}
-            </Button>
-            <Button
-              variant="danger"
-              size="sm"
-              class="whitespace-nowrap"
-              onClick={props.onDelete}
-              disabled={props.isDeleting}
-            >
-              {props.isDeleting ? t().common.deleting : t().common.delete}
-            </Button>
-          </Show>
         </div>
       </div>
+
+      <Show when={timelineError()}>
+        <Alert variant="danger" class="mb-4">
+          {timelineError()}
+        </Alert>
+      </Show>
 
       {/* Metadata Section */}
       <MetadataInfo
@@ -204,12 +244,9 @@ const LectureDetailView: Component<{
           <p class="text-parchment-400 font-serif italic">{t().lectureDetail.noContent}</p>
         </div>
       </Show>
-
-      {/* Additional Resources removed per request */}
     </div>
   )
 }
-
 const LectureDetail = () => {
   const params = useParams()
   const navigate = useNavigate()

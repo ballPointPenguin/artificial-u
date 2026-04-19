@@ -489,6 +489,55 @@ async def enqueue_generate_lecture_audio(
 
 
 @router.post(
+    "/{lecture_id}/generate-timeline/enqueue",
+    status_code=status.HTTP_202_ACCEPTED,
+    summary="Enqueue lecture timeline generation job",
+    description=(
+        "Enqueue an async job to generate a timeline (forced alignment) for an existing lecture audio. "
+        "Returns a job id to poll via GET /api/v1/jobs/{id}. Admin only."
+    ),
+    responses={
+        404: {"description": "Lecture not found"},
+        403: {"description": "Admin access required"},
+    },
+    dependencies=[require_role("admin")],
+)
+async def enqueue_generate_lecture_timeline(
+    lecture_id: int = Path(..., description="The ID of the lecture to generate a timeline for"),
+    repository_factory: RepositoryFactory = Depends(get_repository_factory),
+):
+    # Look up the lecture
+    lecture = repository_factory.lecture.get(lecture_id)
+    if not lecture:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"Lecture {lecture_id} not found"
+        )
+
+    if not lecture.audio_url:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail=f"Lecture {lecture_id} has no audio"
+        )
+
+    payload = {"lecture_id": lecture_id}
+    if lecture.topic_id:
+        payload["topic_id"] = lecture.topic_id
+
+    row = repository_factory.job.create(
+        kind="generate_lecture_timeline",
+        payload=payload,
+    )
+    return {
+        "id": row.id,
+        "kind": row.kind,
+        "status": row.status,
+        "attempts": row.attempts,
+        "max_attempts": row.max_attempts,
+        "priority": row.priority,
+        "run_after": row.run_after,
+    }
+
+
+@router.post(
     "/{lecture_id}/upload-audio",
     response_model=Lecture,
     status_code=status.HTTP_200_OK,

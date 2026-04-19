@@ -489,6 +489,68 @@ class LectureGeneratorService:
             "duration": updated.duration,
         }
 
+    async def generate_lecture_timeline(self, lecture_id: int) -> Dict[str, Any]:
+        """Generate and store timeline JSON (forced alignment) for an existing lecture audio."""
+        # 1. Fetch required entities
+        lecture, course, topic, professor = self._fetch_entities_for_audio(lecture_id)
+
+        if not lecture.audio_url:
+            raise ContentGenerationError("Lecture has no audio_url; cannot generate timeline")
+
+        # 2. Resolve the professor's voice and TTS backend
+        _, _, backend_name = self._ensure_professor_voice(professor)
+
+        if backend_name != "elevenlabs":
+            raise ContentGenerationError(
+                "Forced alignment is currently only supported for ElevenLabs voices"
+            )
+
+        # 3. Download the existing audio file from storage
+        from artificial_u.services.storage_service import StorageService
+
+        storage_service = StorageService(logger=self.logger)
+
+        bucket, object_key = storage_service.parse_storage_url(lecture.audio_url)
+        if not bucket or not object_key:
+            raise ContentGenerationError(f"Could not parse storage URL: {lecture.audio_url}")
+
+        audio_bytes, _ = await storage_service.download_file(bucket, object_key)
+        if not audio_bytes:
+            raise ContentGenerationError(
+                f"Failed to download audio file from {bucket}/{object_key}"
+            )
+
+        # 4. Generate and upload timeline
+        timeline_url = None
+        try:
+            timeline_url = await self._generate_and_upload_timeline(
+                lecture, course, topic, audio_bytes
+            )
+        except Exception as e:
+            self.logger.error(f"Failed to generate/upload timeline: {e}", exc_info=True)
+            raise ContentGenerationError(f"Timeline generation failed: {e}")
+
+        if not timeline_url:
+            raise ContentGenerationError("Timeline generation returned no URL")
+
+        # 5. Update lecture with timeline URL
+        updated = self.repository_factory.lecture.update_fields(
+            lecture_id=lecture_id,
+            update_data={"timeline_url": timeline_url},
+        )
+
+        self.logger.info(
+            "Generated timeline for lecture %s and uploaded to storage: %s",
+            lecture_id,
+            timeline_url,
+        )
+
+        return {
+            "lecture_id": updated.id,
+            "topic_id": updated.topic_id,
+            "timeline_url": updated.timeline_url,
+        }
+
     # --- Helper Methods for Generation --- #
 
     def _prepare_prompt_arguments(
