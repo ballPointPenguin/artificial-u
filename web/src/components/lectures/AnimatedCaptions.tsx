@@ -1,4 +1,12 @@
-import { type Component, createEffect, createResource, createSignal, For, onCleanup, Show } from 'solid-js'
+import {
+  type Component,
+  createEffect,
+  createResource,
+  createSignal,
+  For,
+  onCleanup,
+  Show,
+} from 'solid-js'
 import { useAudioPlayer } from '../../utils/audio-player-context.jsx'
 
 interface TimelineEvent {
@@ -18,7 +26,8 @@ const fetchTimeline = async (url: string): Promise<TimelineData> => {
   if (!response.ok) {
     throw new Error('Failed to fetch timeline')
   }
-  return response.json()
+  const body: unknown = await response.json()
+  return body as TimelineData
 }
 
 export const AnimatedCaptions: Component<{ timelineUrl: string }> = (props) => {
@@ -36,7 +45,7 @@ export const AnimatedCaptions: Component<{ timelineUrl: string }> = (props) => {
     const data = timeline()
     if (!data || !data.events.length) return
 
-    const words = data.events.filter(e => e.type === 'word')
+    const words = data.events.filter((e) => e.type === 'word')
 
     let animationFrameId: number
 
@@ -54,14 +63,18 @@ export const AnimatedCaptions: Component<{ timelineUrl: string }> = (props) => {
           const currentWord = words[currentIdx]
           if (time >= currentWord.start && time <= currentWord.end) {
             newIndex = currentIdx
-          } else if (currentIdx + 1 < words.length && time >= words[currentIdx + 1].start && time <= words[currentIdx + 1].end) {
+          } else if (
+            currentIdx + 1 < words.length &&
+            time >= words[currentIdx + 1].start &&
+            time <= words[currentIdx + 1].end
+          ) {
             newIndex = currentIdx + 1
           } else {
             // Fallback to binary search or linear search
-            newIndex = words.findIndex(w => time >= w.start && time <= w.end)
+            newIndex = words.findIndex((w) => time >= w.start && time <= w.end)
           }
         } else {
-          newIndex = words.findIndex(w => time >= w.start && time <= w.end)
+          newIndex = words.findIndex((w) => time >= w.start && time <= w.end)
         }
 
         if (newIndex !== activeIndex()) {
@@ -69,7 +82,7 @@ export const AnimatedCaptions: Component<{ timelineUrl: string }> = (props) => {
 
           // Auto-scroll to active word
           if (newIndex !== -1 && containerRef) {
-            const activeElement = containerRef.querySelector(`[data-index="${newIndex}"]`)
+            const activeElement = containerRef.querySelector(`[data-index="${String(newIndex)}"]`)
             if (activeElement) {
               activeElement.scrollIntoView({
                 behavior: 'smooth',
@@ -118,7 +131,7 @@ export const AnimatedCaptions: Component<{ timelineUrl: string }> = (props) => {
             class="max-h-[400px] overflow-y-auto pr-4 scrollbar-thin scrollbar-thumb-parchment-700 scrollbar-track-transparent"
           >
             <div class="text-xl leading-loose font-serif text-parchment-400">
-              <For each={timeline()?.events.filter(e => e.type === 'word')}>
+              <For each={timeline()?.events.filter((e) => e.type === 'word')}>
                 {(word, index) => {
                   const isActive = () => activeIndex() === index()
                   const isPast = () => activeIndex() > index()
@@ -126,12 +139,14 @@ export const AnimatedCaptions: Component<{ timelineUrl: string }> = (props) => {
                   return (
                     <span
                       data-index={index()}
-                      onClick={() => handleWordClick(word.start)}
+                      onClick={() => {
+                        handleWordClick(word.start)
+                      }}
                       class="inline-block mx-1 cursor-pointer transition-all duration-200"
                       classList={{
                         'text-mystic-300 font-medium scale-110 drop-shadow-md': isActive(),
                         'text-parchment-200': isPast() && !isActive(),
-                        'hover:text-mystic-400': !isActive()
+                        'hover:text-mystic-400': !isActive(),
                       }}
                     >
                       {word.content}

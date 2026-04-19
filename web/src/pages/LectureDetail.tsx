@@ -83,7 +83,7 @@ const LectureDetailView: Component<{
                     url: props.lecture.audio_url,
                     title: props.lecture.title,
                     subtitle: props.topicTitle,
-                    timelineUrl: props.lecture.timeline_url,
+                    timelineUrl: props.lecture.timeline_url ?? undefined,
                     courseId: props.courseId,
                     lectureId: props.lecture.id,
                     topicId: props.lecture.topic_id,
