@@ -1,24 +1,28 @@
-import { X } from 'lucide-solid'
+import { ChevronUp, X } from 'lucide-solid'
 import 'media-chrome'
-import { type Component, createEffect, onCleanup, onMount, Show, untrack } from 'solid-js'
+import { type Component, createEffect, createSignal, onCleanup, Show, untrack } from 'solid-js'
 import { useAudioPlayer } from '../utils/audio-player-context.jsx'
 
 export const PersistentAudioPlayer: Component = () => {
   const player = useAudioPlayer()
-  let audioRef: HTMLAudioElement | undefined
+
+  // Signal-backed ref so effects react when the <audio> element mounts/unmounts.
+  // (It lives inside <Show when={currentTrack}>, so it is NOT available at first
+  // render on a fresh session — a plain `let audioRef` misses the initial mount
+  // and leaves timeupdate/play/pause listeners permanently unattached.)
+  const [audioEl, setAudioEl] = createSignal<HTMLAudioElement | null>(null)
   let controllerRef: HTMLElement | undefined
   let pendingRestoreTime: number | null = null
   let previousTrackUrl: string | null = null
 
-  const restoreFromPending = () => {
-    if (!audioRef) return
+  const restoreFromPending = (audio: HTMLAudioElement) => {
     if (pendingRestoreTime == null) return
     if (!Number.isFinite(pendingRestoreTime) || pendingRestoreTime <= 0.25) {
       pendingRestoreTime = null
       return
     }
-    if (Math.abs(audioRef.currentTime - pendingRestoreTime) > 0.35) {
-      audioRef.currentTime = pendingRestoreTime
+    if (Math.abs(audio.currentTime - pendingRestoreTime) > 0.35) {
+      audio.currentTime = pendingRestoreTime
     }
     pendingRestoreTime = null
   }
@@ -33,24 +37,20 @@ export const PersistentAudioPlayer: Component = () => {
     return track.title
   }
 
-  // Sync audio element with context state
-  onMount(() => {
-    if (!audioRef) return
+  // Attach listeners whenever the <audio> element mounts. Detach on unmount.
+  createEffect(() => {
+    const audio = audioEl()
+    if (!audio) return
 
-    // Capture ref in local variable to avoid closure issues
-    const audio = audioRef
+    audio.volume = untrack(() => player.volume())
 
-    // Set initial volume
-    audio.volume = player.volume()
-
-    // Listen to audio events and update context
     const handlePlay = () => {
       player.setIsPlaying(true)
     }
     const handlePause = () => {
       player.setIsPlaying(false)
       player.setCurrentTime(audio.currentTime || 0)
-      player.saveCurrentTime() // Save position when user pauses via media controls
+      player.saveCurrentTime()
     }
     const handleTimeUpdate = () => {
       player.setCurrentTime(audio.currentTime || 0)
@@ -62,7 +62,7 @@ export const PersistentAudioPlayer: Component = () => {
       player.setVolume(audio.volume || 0.7)
     }
     const handleLoadedMetadata = () => {
-      restoreFromPending()
+      restoreFromPending(audio)
     }
     const handleError = () => {
       if (import.meta.env.DEV) {
@@ -91,64 +91,56 @@ export const PersistentAudioPlayer: Component = () => {
 
   // Handle play/pause from context
   createEffect(() => {
-    if (!audioRef) return
+    const audio = audioEl()
+    if (!audio) return
     if (player.isPlaying()) {
-      audioRef.play().catch((error: unknown) => {
+      audio.play().catch((error: unknown) => {
         if (import.meta.env.DEV) {
           console.error('Failed to play audio:', error)
         }
         player.setIsPlaying(false)
       })
     } else {
-      audioRef.pause()
+      audio.pause()
     }
   })
 
   // Handle track changes
   createEffect(() => {
+    const audio = audioEl()
     const track = player.currentTrack()
-    if (!audioRef || !track) {
+    if (!audio || !track) {
       previousTrackUrl = null
       return
     }
 
-    // Check if this is a different track than before
     const isNewTrack = previousTrackUrl !== track.url
     previousTrackUrl = track.url
 
-    // Load new track
-    audioRef.src = track.url
+    audio.src = track.url
 
-    // Only restore saved time if it's the same track (resuming), not a new track
-    // When playTrack is called, it sets currentTime to 0, so new tracks should start from 0
     if (isNewTrack) {
-      // New track - always start from beginning
       pendingRestoreTime = null
-      // Ensure context time is 0 for new tracks
       player.setCurrentTime(0)
-      // Explicitly reset audio element to start
-      audioRef.currentTime = 0
+      audio.currentTime = 0
     } else {
-      // Same track - restore saved position if available
       const savedTime = untrack(() => player.currentTime())
       pendingRestoreTime = savedTime > 0.25 ? savedTime : null
     }
 
-    audioRef.load()
-    if (audioRef.readyState >= 1) {
+    audio.load()
+    if (audio.readyState >= 1) {
       queueMicrotask(() => {
-        restoreFromPending()
-        // For new tracks, ensure we're at the start after load
+        restoreFromPending(audio)
         if (isNewTrack) {
-          audioRef.currentTime = 0
+          audio.currentTime = 0
         }
       })
     }
 
-    // If we're supposed to be playing, play
     const shouldAutoPlay = untrack(() => player.isPlaying())
     if (shouldAutoPlay) {
-      audioRef.play().catch((error: unknown) => {
+      audio.play().catch((error: unknown) => {
         if (import.meta.env.DEV) {
           console.error('Failed to play audio:', error)
         }
@@ -156,19 +148,25 @@ export const PersistentAudioPlayer: Component = () => {
     }
   })
 
-  // Handle seek from context
+  // Handle explicit seek requests from the UI. We subscribe to `seekRequest`
+  // (not `currentTime`) so ongoing `timeupdate` events can't race a seek into
+  // oblivion: if the user clicks a caption word, we want exactly that seek to
+  // land, regardless of whether a queued `timeupdate` then writes the old
+  // position back into `currentTime`.
   createEffect(() => {
-    if (!audioRef) return
-    const time = player.currentTime()
-    if (Math.abs(audioRef.currentTime - time) > 0.5) {
-      audioRef.currentTime = time
+    const req = player.seekRequest()
+    const audio = audioEl()
+    if (!req || !audio) return
+    if (Math.abs(audio.currentTime - req.time) > 0.05) {
+      audio.currentTime = req.time
     }
   })
 
   // Handle volume from context
   createEffect(() => {
-    if (!audioRef) return
-    audioRef.volume = player.volume()
+    const audio = audioEl()
+    if (!audio) return
+    audio.volume = player.volume()
   })
 
   const handleClose = () => {
@@ -178,21 +176,46 @@ export const PersistentAudioPlayer: Component = () => {
   return (
     <Show when={player.currentTrack()}>
       {(track) => (
-        <div class="w-full border-t border-parchment-800/50 bg-parchment-950/95 backdrop-blur-sm shadow-2xl">
-          <button
-            type="button"
-            onClick={handleClose}
-            class="absolute right-4 top-2 z-10 flex-shrink-0 rounded-full border border-parchment-800/50 bg-parchment-950/90 p-2 text-parchment-300 shadow-lg hover:text-parchment-100 hover:bg-parchment-800/70 transition-colors sm:right-6 sm:top-3"
-            aria-label="Close player"
-            title="Close player"
-          >
-            <X class="h-4 w-4" />
-          </button>
+        <div
+          class="w-full border-t border-parchment-800/50 bg-parchment-950/95 backdrop-blur-sm shadow-2xl"
+          classList={{
+            // Hide the mini-bar entirely while the Now Playing sheet is open.
+            // The <audio> element is still present in the DOM, so playback continues.
+            hidden: player.isExpanded(),
+          }}
+          aria-hidden={player.isExpanded() ? 'true' : 'false'}
+        >
+          {/* Action cluster (expand + close) */}
+          <div class="absolute right-2 top-2 z-10 flex items-center gap-1 sm:right-4 sm:top-3">
+            <button
+              type="button"
+              onClick={() => { player.expand(); }}
+              class="rounded-full border border-parchment-800/50 bg-parchment-950/90 p-2 text-parchment-300 shadow-lg hover:text-parchment-100 hover:bg-parchment-800/70 transition-colors"
+              aria-label="Expand player"
+              title="Expand player"
+            >
+              <ChevronUp class="h-4 w-4" />
+            </button>
+            <button
+              type="button"
+              onClick={handleClose}
+              class="rounded-full border border-parchment-800/50 bg-parchment-950/90 p-2 text-parchment-300 shadow-lg hover:text-parchment-100 hover:bg-parchment-800/70 transition-colors"
+              aria-label="Close player"
+              title="Close player"
+            >
+              <X class="h-4 w-4" />
+            </button>
+          </div>
 
           <div class="container mx-auto px-4 py-3">
             <div class="relative flex flex-col gap-4 pt-6 sm:flex-row sm:items-center sm:gap-6 sm:pt-0">
-              {/* Track Info */}
-              <div class="flex-1 min-w-0 space-y-1 pr-10">
+              {/* Track Info — clicking expands the Now Playing sheet */}
+              <button
+                type="button"
+                onClick={() => { player.expand(); }}
+                class="flex-1 min-w-0 space-y-1 pr-20 text-left cursor-pointer hover:opacity-90 transition-opacity"
+                aria-label="Open Now Playing"
+              >
                 <h4 class="text-sm font-medium text-parchment-100 leading-tight whitespace-normal break-words sm:text-base">
                   {getShortName(track())}
                 </h4>
@@ -201,13 +224,14 @@ export const PersistentAudioPlayer: Component = () => {
                     {track().subtitle}
                   </p>
                 </Show>
-              </div>
+              </button>
 
               {/* Media Chrome Player */}
               <div class="flex-[2] min-w-0 w-full">
                 <media-controller
                   ref={controllerRef}
                   audio
+                  nohotkeys
                   class="persistent-audio-controller w-full overflow-visible sm:max-w-[calc(100%-3.5rem)]"
                   style={{
                     '--media-control-background': 'transparent',
@@ -218,7 +242,7 @@ export const PersistentAudioPlayer: Component = () => {
                   }}
                 >
                   <audio
-                    ref={audioRef}
+                    ref={setAudioEl}
                     slot="media"
                     src={track().url}
                     preload="metadata"

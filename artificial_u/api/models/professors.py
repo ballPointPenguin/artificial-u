@@ -126,6 +126,10 @@ class LectureBrief(BaseModel):
     title: str = Field(..., description="Lecture title")
     summary: Optional[str] = Field(None, description="Lecture summary")
     audio_url: Optional[str] = Field(None, description="Audio URL if generated for this lecture")
+    timeline_url: Optional[str] = Field(
+        None,
+        description="URL to forced-alignment timeline JSON for synchronized captions",
+    )
 
 
 # Professor's courses response model

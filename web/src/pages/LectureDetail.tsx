@@ -16,7 +16,6 @@ import { topicService } from '../api/services/topic-service.js'
 import type { Lecture, LectureUpdate } from '../api/types.js'
 import { useAuth } from '../auth/AuthProvider'
 import { RequireRole } from '../auth/RequireRole'
-import { AnimatedCaptions } from '../components/lectures/AnimatedCaptions.jsx'
 import { LectureForm } from '../components/lectures/LectureForm.jsx'
 import { Alert, Button, ConfirmationModal, MagicButton, MetadataInfo } from '../components/ui'
 import { useTranslations } from '../i18n/index.js'
@@ -58,6 +57,22 @@ const LectureDetailView: Component<{
     }
   }
 
+  const handleListen = () => {
+    if (!props.lecture.audio_url) return
+    audioPlayer.playTrack({
+      url: props.lecture.audio_url,
+      title: props.lecture.title,
+      subtitle: props.topicTitle,
+      timelineUrl: props.lecture.timeline_url ?? undefined,
+      courseId: props.courseId,
+      lectureId: props.lecture.id,
+      topicId: props.lecture.topic_id,
+      courseCode: props.courseCode,
+      topicWeek: props.topicWeek,
+      topicOrder: props.topicOrder,
+    })
+  }
+
   return (
     <div class="arcane-card">
       <div class="mb-6 flex flex-col gap-4">
@@ -81,7 +96,11 @@ const LectureDetailView: Component<{
                 rel="noopener noreferrer"
                 class="inline-block w-full sm:w-auto"
               >
-                <Button variant="secondary" size="sm" class="min-h-[44px] sm:min-h-[32px] w-full flex items-center justify-center gap-2">
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  class="min-h-[44px] sm:min-h-[32px] w-full flex items-center justify-center gap-2"
+                >
                   <FileText class="h-4 w-4" />
                   <span class="hidden sm:inline">{t().lectureDetail.viewTranscript}</span>
                   <span class="sm:hidden">{t().lectureDetail.transcript}</span>
@@ -95,22 +114,7 @@ const LectureDetailView: Component<{
                 variant="outline"
                 size="sm"
                 class="min-h-[44px] sm:min-h-[32px] w-full sm:w-auto flex items-center justify-center gap-2"
-                onClick={() => {
-                  if (props.lecture.audio_url) {
-                    audioPlayer.playTrack({
-                      url: props.lecture.audio_url,
-                      title: props.lecture.title,
-                      subtitle: props.topicTitle,
-                      timelineUrl: props.lecture.timeline_url,
-                      courseId: props.courseId,
-                      lectureId: props.lecture.id,
-                      topicId: props.lecture.topic_id,
-                      courseCode: props.courseCode,
-                      topicWeek: props.topicWeek,
-                      topicOrder: props.topicOrder,
-                    })
-                  }
-                }}
+                onClick={handleListen}
               >
                 <Headphones class="h-4 w-4" />
                 <span>{t().lectureDetail.listen}</span>
@@ -120,7 +124,11 @@ const LectureDetailView: Component<{
                 download=""
                 class="inline-block w-full sm:w-auto"
               >
-                <Button variant="outline" size="sm" class="min-h-[44px] sm:min-h-[32px] w-full flex items-center justify-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  class="min-h-[44px] sm:min-h-[32px] w-full flex items-center justify-center gap-2"
+                >
                   <Download class="h-4 w-4" />
                   <span>{t().lectureDetail.download}</span>
                 </Button>
@@ -162,7 +170,8 @@ const LectureDetailView: Component<{
                   for="audio-file-upload"
                   class="inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium rounded-md border border-mystic-600 bg-mystic-900/20 text-mystic-300 hover:bg-mystic-900/40 hover:border-mystic-500 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px] sm:min-h-[32px] w-full sm:w-auto"
                   classList={{
-                    'opacity-50 cursor-not-allowed': props.isUploadingAudio || props.isGeneratingAudio,
+                    'opacity-50 cursor-not-allowed':
+                      props.isUploadingAudio || props.isGeneratingAudio,
                   }}
                 >
                   <Upload class="h-4 w-4" />
@@ -188,7 +197,12 @@ const LectureDetailView: Component<{
                 />
               </RequireRole>
               <Show when={auth.canModify(props.lecture.created_by)}>
-                <Button variant="outline" size="sm" class="min-h-[44px] sm:min-h-[32px] w-full sm:w-auto flex items-center justify-center whitespace-nowrap" onClick={props.onEdit}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  class="min-h-[44px] sm:min-h-[32px] w-full sm:w-auto flex items-center justify-center whitespace-nowrap"
+                  onClick={props.onEdit}
+                >
                   {t().common.edit}
                 </Button>
                 <Button
@@ -198,7 +212,24 @@ const LectureDetailView: Component<{
                   onClick={props.onDelete}
                   disabled={props.isDeleting}
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-trash-2"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    class="lucide lucide-trash-2"
+                  >
+                    <path d="M3 6h18" />
+                    <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+                    <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+                    <line x1="10" x2="10" y1="11" y2="17" />
+                    <line x1="14" x2="14" y1="11" y2="17" />
+                  </svg>
                   {props.isDeleting ? t().common.deleting : t().common.delete}
                 </Button>
               </Show>
@@ -221,12 +252,8 @@ const LectureDetailView: Component<{
         class="mb-6 pb-6 border-b border-parchment-800/30"
       />
 
-      {/* Animated Captions */}
-      <Show when={props.lecture.timeline_url}>
-        <div class="mb-8">
-          <AnimatedCaptions timelineUrl={props.lecture.timeline_url!} />
-        </div>
-      </Show>
+      {/* Synchronized live captions now live in the Now Playing sheet
+          (opened via the Listen button above or the mini player). */}
 
       {/* Lecture Content */}
       <Show when={props.lecture.content}>

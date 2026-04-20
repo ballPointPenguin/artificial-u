@@ -450,24 +450,12 @@ class LectureGeneratorService:
         # 5. Upload to storage and get public URL
         audio_url = await self._upload_audio_and_get_url(course, topic, audio_bytes)
 
-        # 5.5 Forced Alignment
-        timeline_url = None
-        if backend_name == "elevenlabs":
-            try:
-                timeline_url = await self._generate_and_upload_timeline(
-                    lecture, course, topic, audio_bytes
-                )
-            except Exception as e:
-                self.logger.warning(f"Failed to generate/upload timeline: {e}", exc_info=True)
-
         # 6. Partial update lecture with audio URL, voice_id, and duration (avoid clobbering summary)
         update_data = {"audio_url": audio_url}
         if voice_id:
             update_data["voice_id"] = voice_id
         if duration_seconds is not None:
             update_data["duration"] = duration_seconds
-        if timeline_url:
-            update_data["timeline_url"] = timeline_url
 
         updated = self.repository_factory.lecture.update_fields(
             lecture_id=lecture_id,
@@ -479,6 +467,20 @@ class LectureGeneratorService:
             voice_id,
             audio_url,
         )
+
+        # 7. Enqueue forced-alignment timeline as its own background job.
+        # Decoupling keeps failures visible (as a failed job) and mirrors how
+        # summary/audio are enqueued after content generation.
+        try:
+            self.job_enqueue_service.enqueue_lecture_timeline_generation(
+                updated.id, topic_id=updated.topic_id
+            )
+        except Exception as e:
+            self.logger.error(
+                "Failed to enqueue timeline generation for lecture %s: %s",
+                updated.id,
+                e,
+            )
 
         return {
             "lecture_id": updated.id,
@@ -994,9 +996,14 @@ class LectureGeneratorService:
             self.logger.warning("No ElevenLabs API key, skipping forced alignment")
             return None
 
-        # Normalize text for alignment
+        # Normalize text for alignment using the human-readable lecture content
+        # (not the SSML-laced TTS transcript). Passing supports_ssml=False strips
+        # stage directions like "[Pause]" / "[pauses for emphasis]" entirely
+        # instead of rewriting them as `<break time="…s" />`, which would leak
+        # markup tokens into the resulting word timeline and into the captions UI.
+        # Actual audio silences are skipped naturally by forced alignment.
         speech_processor = SpeechProcessor(logger=self.logger)
-        normalized_text = speech_processor.normalize_text(lecture.content)
+        normalized_text = speech_processor.normalize_text(lecture.content, supports_ssml=False)
 
         client = elevenlabs.ElevenLabsClient(api_key=settings.ELEVENLABS_API_KEY)
 

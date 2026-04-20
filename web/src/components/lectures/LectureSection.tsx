@@ -418,6 +418,13 @@ export const LectureSection: Component<LectureSectionProps> = (props) => {
         </Alert>
       </Show>
 
+      {/* Timeline generation error */}
+      <Show when={timelineError()}>
+        <Alert variant="danger" class="mb-4">
+          {timelineError()}
+        </Alert>
+      </Show>
+
       {/* Summary generation error messages */}
       <Show when={summaryError()}>
         <Alert variant="danger" class="mb-4">
