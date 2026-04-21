@@ -64,6 +64,35 @@ class JobEnqueueService:
             self.logger.error(error_msg, exc_info=True)
             raise DatabaseError(error_msg) from e
 
+    def enqueue_course_image_generation(self, course_id: int, aspect_ratio: str = "1:1") -> None:
+        """
+        Enqueue a background job to generate album art for a course.
+
+        Args:
+            course_id: The ID of the course
+            aspect_ratio: The desired aspect ratio for the image
+
+        Raises:
+            DatabaseError: If job enqueueing fails
+        """
+        try:
+            job_repo = self.repository_factory.job
+            job = job_repo.create(
+                kind="generate_course_image",
+                payload={
+                    "course_id": course_id,
+                    "aspect_ratio": aspect_ratio,
+                },
+            )
+            job_id = job.id
+            self.logger.info(
+                f"Enqueued course image generation job {job_id} for course {course_id}"
+            )
+        except Exception as e:
+            error_msg = f"Failed to enqueue course image generation job for course {course_id}: {e}"
+            self.logger.error(error_msg, exc_info=True)
+            raise DatabaseError(error_msg) from e
+
     def enqueue_lecture_summary_generation(
         self, lecture_id: int, *, topic_id: int | None = None
     ) -> None:

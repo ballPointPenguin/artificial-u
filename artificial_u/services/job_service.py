@@ -86,6 +86,7 @@ class JobService:
             "generate_lecture_audio": self._handle_generate_lecture_audio,
             "generate_lecture_timeline": self._handle_generate_lecture_timeline,
             "generate_professor_image": self._handle_generate_professor_image,
+            "generate_course_image": self._handle_generate_course_image,
             # Export tasks
             "export_course": self._handle_export_course,
             # Quickstart tasks
@@ -310,6 +311,17 @@ class JobService:
         )
         return {"professor_id": updated.id, "image_url": getattr(updated, "image_url", None)}
 
+    async def _handle_generate_course_image(self, payload: Dict[str, Any]) -> Dict[str, Any]:
+        service = self._course_generator_service_instance()
+        course_id = payload.get("course_id")
+        aspect_ratio = payload.get("aspect_ratio", "1:1")
+        if course_id is None:
+            raise ValueError("course_id is required")
+        updated = await service.generate_and_set_course_image(
+            course_id=course_id, aspect_ratio=aspect_ratio
+        )
+        return {"course_id": updated.id, "image_url": getattr(updated, "image_url", None)}
+
     async def _handle_export_course(self, payload: Dict[str, Any]) -> Dict[str, Any]:
         """Export a course with all related data and assets."""
         service = self._course_export_service_instance()
@@ -467,6 +479,7 @@ class JobService:
                 professor_service=self._professor_service_instance(),
                 department_selector_service=self._department_selector_service_instance(),
                 professor_selector_service=self._professor_selector_service_instance(),
+                job_enqueue_service=self._job_enqueue_service_instance(),
                 logger=self.logger,
             )
         return self._course_service
@@ -532,6 +545,7 @@ class JobService:
                 course_service=self._course_service_instance(),
                 professor_service=self._professor_service_instance(),
                 content_service=self._content_service_instance(),
+                image_service=self._image_service_instance(),
                 repository_factory=self.repository_factory,
                 job_enqueue_service=self._job_enqueue_service_instance(),
                 logger=self.logger,

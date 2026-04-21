@@ -139,6 +139,51 @@ async def get_course_by_code(
 
 
 @router.post(
+    "/{course_id}/generate-image",
+    response_model=CourseResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Generate course album art",
+    description=(
+        "Generates or regenerates AI album-art imagery for a course. "
+        "Only the creator or an admin can modify a course."
+    ),
+    responses={
+        404: {"description": "Course not found"},
+        403: {"description": "Forbidden - user doesn't own this course"},
+        500: {"description": "Image generation failed"},
+    },
+    dependencies=[require_coins(cost=get_settings().COIN_COST_COURSE_IMAGE)],
+)
+async def generate_course_image(
+    course_id: int = Path(..., description="The ID of the course to generate art for"),
+    course_service: CourseApiService = Depends(get_course_api_service),
+    student: Student = Depends(ensure_student),
+):
+    """
+    Generate album art for a course (sync; may take several minutes).
+    """
+    updated = await course_service.generate_course_image(course_id, student.id, student.role)
+    if updated:
+        return updated
+
+    try:
+        existing = course_service.get_course(course_id)
+    except HTTPException as e:
+        if e.status_code == status.HTTP_404_NOT_FOUND:
+            raise
+        raise
+    if existing is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Course with ID {course_id} not found",
+        )
+    raise HTTPException(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        detail=f"Failed to generate image for course {course_id}",
+    )
+
+
+@router.post(
     "",
     response_model=CourseResponse,
     status_code=status.HTTP_201_CREATED,

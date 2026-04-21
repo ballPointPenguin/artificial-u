@@ -60,6 +60,8 @@ class CourseRepository(BaseRepository):
             professor_id=db_course.professor_id,
             created_by=db_course.created_by,
             created_with=db_course.created_with,
+            image_url=db_course.image_url,
+            image_created_with=db_course.image_created_with,
             created_at=db_course.created_at,
             updated_at=db_course.updated_at,
             student=course_student,
@@ -85,6 +87,8 @@ class CourseRepository(BaseRepository):
                 professor_id=course.professor_id,
                 created_by=course.created_by,
                 created_with=course.created_with,
+                image_url=getattr(course, "image_url", None),
+                image_created_with=getattr(course, "image_created_with", None),
             )
 
             session.add(db_course)
@@ -141,6 +145,10 @@ class CourseRepository(BaseRepository):
             db_course.professor_id = course.professor_id
             db_course.created_by = course.created_by
             db_course.created_with = course.created_with
+            if hasattr(db_course, "image_url"):
+                db_course.image_url = getattr(course, "image_url", None)
+            if hasattr(db_course, "image_created_with"):
+                db_course.image_created_with = getattr(course, "image_created_with", None)
 
             session.commit()
             session.refresh(db_course)

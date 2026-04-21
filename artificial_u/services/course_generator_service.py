@@ -24,9 +24,12 @@ from artificial_u.prompts import (
     get_system_prompt,
 )
 from artificial_u.services.content_service import ContentService
+from artificial_u.services.image_service import ImageService
 from artificial_u.utils import (
     ContentGenerationError,
     DatabaseError,
+    GenerationError,
+    ProfessorNotFoundError,
 )
 
 
@@ -38,6 +41,7 @@ class CourseGeneratorService:
         course_service,
         professor_service,
         content_service: ContentService,
+        image_service: ImageService,
         repository_factory: RepositoryFactory,
         job_enqueue_service,
         logger=None,
@@ -50,12 +54,14 @@ class CourseGeneratorService:
             professor_service: Professor service for professor-related operations
             content_service: Content generation service
             repository_factory: Repository factory instance
+            image_service: Image generation and storage service
             job_enqueue_service: Job enqueueing service for background tasks
             logger: Optional logger instance
         """
         self.course_service = course_service
         self.professor_service = professor_service
         self.content_service = content_service
+        self.image_service = image_service
         self.repository_factory = repository_factory
         self.job_enqueue_service = job_enqueue_service
         self.logger = logger or logging.getLogger(__name__)
@@ -318,3 +324,101 @@ class CourseGeneratorService:
                     exc_info=True,
                 )
                 raise DatabaseError("Error fetching recent courses from repository.") from e
+
+    async def generate_and_set_course_image(
+        self, course_id: int, aspect_ratio: str = "1:1"
+    ) -> Course:
+        """
+        Generate album art for a course and persist image_url / image_created_with.
+
+        Args:
+            course_id: Course primary key
+            aspect_ratio: Image aspect ratio (default 1:1 for MP3 / UI thumbnails)
+
+        Returns:
+            Updated Course model
+
+        Raises:
+            CourseNotFoundError: If the course does not exist
+            GenerationError: If generation or persistence fails
+        """
+        self.logger.info(f"Generating album art for course ID: {course_id}")
+
+        course = self.course_service.get_course(course_id)
+
+        professor = None
+        if course.professor_id:
+            try:
+                professor = self.professor_service.get_professor(course.professor_id)
+            except ProfessorNotFoundError:
+                self.logger.warning(
+                    "Professor %s not found; course image prompt will omit optional credits",
+                    course.professor_id,
+                )
+
+        try:
+            result = await self.image_service.generate_course_image(
+                course=course,
+                professor=professor,
+                aspect_ratio=aspect_ratio,
+            )
+        except Exception as e:
+            self.logger.error(
+                f"Image generation step failed for course {course_id}: {e}",
+                exc_info=True,
+            )
+            raise GenerationError(f"Failed to generate image for course {course_id}") from e
+
+        image_key = self._validate_course_image_result(result, course_id)
+        image_url = self._get_course_image_url_from_key(image_key, course_id)
+
+        settings = get_settings()
+        try:
+            updated = self.course_service.update_course(
+                course_id,
+                {
+                    "image_url": image_url,
+                    "image_created_with": settings.IMAGE_GENERATION_MODEL,
+                },
+            )
+            self.logger.info(
+                f"Course {course_id} updated with album art (model: {settings.IMAGE_GENERATION_MODEL})."
+            )
+            return updated
+        except Exception as e:
+            self.logger.error(f"Failed to update course {course_id} with image URL: {e}")
+            raise
+
+    def _validate_course_image_result(self, result, course_id: int) -> str:
+        """Validate image generation result and return the storage key."""
+        if not result.success:
+            error_msg = f"Image generation failed for course {course_id}"
+            if result.error:
+                error_msg += f": {result.error.error_type.value} - {result.error}"
+                if result.error.backend:
+                    error_msg += f" (backend: {result.error.backend})"
+            self.logger.error(error_msg)
+            raise GenerationError(error_msg)
+
+        if not result.image_keys:
+            self.logger.error(
+                f"Image generation succeeded but returned no keys for course {course_id}"
+            )
+            raise GenerationError(
+                f"Image generation succeeded but yielded no result for course {course_id}"
+            )
+
+        return result.image_keys[0]
+
+    def _get_course_image_url_from_key(self, image_key: str, course_id: int) -> str:
+        """Build public URL for a stored image object key."""
+        try:
+            bucket = self.image_service.storage_service.images_bucket
+            image_url = self.image_service.storage_service.get_file_url(
+                bucket=bucket, object_name=image_key
+            )
+            self.logger.info(f"Image URL for course {course_id}: {image_url}")
+            return image_url
+        except Exception as e:
+            self.logger.error(f"Failed to get image URL for key {image_key}: {e}", exc_info=True)
+            raise GenerationError(f"Failed to construct image URL for course {course_id}") from e

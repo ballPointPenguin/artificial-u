@@ -151,6 +151,7 @@ class Settings(BaseSettings):
     COIN_COST_TOPIC_GENERATION: int = 3
     COIN_COST_PROFESSOR_GENERATION: int = 0
     COIN_COST_PROFESSOR_IMAGE: int = 2
+    COIN_COST_COURSE_IMAGE: int = 2
     COIN_COST_DEPARTMENT_GENERATION: int = 0
 
     # Async worker and rate limiting
@@ -275,6 +276,7 @@ class Settings(BaseSettings):
             "coin_cost_topic_generation": self.COIN_COST_TOPIC_GENERATION,
             "coin_cost_professor_generation": self.COIN_COST_PROFESSOR_GENERATION,
             "coin_cost_professor_image": self.COIN_COST_PROFESSOR_IMAGE,
+            "coin_cost_course_image": self.COIN_COST_COURSE_IMAGE,
             "coin_cost_department_generation": self.COIN_COST_DEPARTMENT_GENERATION,
         }
 

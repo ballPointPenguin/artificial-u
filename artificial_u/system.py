@@ -276,6 +276,7 @@ class UniversitySystem:
             professor_service=self.professor_service,
             department_selector_service=self.department_selector_service,
             professor_selector_service=self.professor_selector_service,
+            job_enqueue_service=job_enqueue_service,
             logger=logging.getLogger("artificial_u.services.course_service"),
         )
 

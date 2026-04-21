@@ -43,6 +43,8 @@ class CourseModel(Base):
     # New attribution fields
     created_by = Column(Integer, ForeignKey("students.id"), nullable=True)
     created_with = Column(String, nullable=True)
+    image_url = Column(String, nullable=True)
+    image_created_with = Column(String, nullable=True)
     created_at = Column(DateTime, nullable=False, default=datetime.now)
     updated_at = Column(DateTime, nullable=False, default=datetime.now)
 

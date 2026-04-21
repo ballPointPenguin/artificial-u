@@ -1,5 +1,5 @@
 """
-Image generation prompts for ArtificialU.
+Image generation prompts for professor portraits (ArtificialU).
 """
 
 

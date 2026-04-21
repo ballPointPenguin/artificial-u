@@ -12,8 +12,9 @@ from google.genai.errors import ClientError, ServerError
 from google.genai.types import Modality
 
 from artificial_u.integrations import gemini_client, openai_client
-from artificial_u.models.core import Professor
-from artificial_u.prompts.image import format_professor_image_prompt
+from artificial_u.models.core import Course, Professor
+from artificial_u.prompts.course_image import format_course_image_prompt
+from artificial_u.prompts.professor_image import format_professor_image_prompt
 from artificial_u.services.storage_service import StorageService
 
 logger = logging.getLogger(__name__)
@@ -548,6 +549,30 @@ class ImageService:
                 logger.error(f"Failed to upload image prompt log: {filename}")
         except Exception as e:
             logger.error(f"Failed to save image prompt log {filename}: {str(e)}")
+
+    async def generate_course_image(
+        self,
+        course: Course,
+        professor: Optional[Professor] = None,
+        aspect_ratio: str = "1:1",
+    ) -> ImageGenerationResult:
+        """
+        Generates album-art style imagery for a course.
+
+        Args:
+            course: The Course object
+            professor: Optional professor for optional name/credits in the prompt
+            aspect_ratio: Desired aspect ratio (default square for thumbnails / ID3 art)
+
+        Returns:
+            An ImageGenerationResult object with success/failure information.
+        """
+        prompt = format_course_image_prompt(course, professor=professor, aspect_ratio=aspect_ratio)
+        cid = getattr(course, "id", None)
+        logger.info(
+            f"Generating course album art for course {cid} ({getattr(course, 'title', '?')})"
+        )
+        return await self.generate_image(prompt=prompt, aspect_ratio=aspect_ratio)
 
     async def generate_professor_image(
         self, professor: Professor, aspect_ratio: str = "1:1"

@@ -41,6 +41,10 @@ class CourseBase(BaseModel):
     # Attribution (not required for create)
     created_by: Optional[int] = Field(None, description="Student ID who created the course")
     created_with: Optional[str] = Field(None, description="Name of LLM used, if any")
+    image_url: Optional[str] = Field(None, description="URL of AI-generated course album art")
+    image_created_with: Optional[str] = Field(
+        None, description="Image model used to generate course art, if any"
+    )
     # Timestamps
     created_at: Optional[datetime] = Field(None, description="Course creation timestamp")
     updated_at: Optional[datetime] = Field(None, description="Course last update timestamp")
