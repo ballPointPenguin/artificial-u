@@ -273,7 +273,7 @@ export const LectureSection: Component<LectureSectionProps> = (props) => {
                           url: lecture.audio_url,
                           title: lecture.title,
                           subtitle: `Revision ${String(lecture.revision)}`,
-                          timelineUrl: lecture.timeline_url,
+                          timelineUrl: lecture.timeline_url ?? undefined,
                           courseId: props.courseId,
                           lectureId: lecture.id,
                           topicId: props.topicId,

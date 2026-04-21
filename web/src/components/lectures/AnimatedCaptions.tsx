@@ -1,11 +1,4 @@
-import {
-  type Component,
-  createEffect,
-  createMemo,
-  createResource,
-  For,
-  Show,
-} from 'solid-js'
+import { type Component, createEffect, createMemo, createResource, For, Show } from 'solid-js'
 import { useAudioPlayer } from '../../utils/audio-player-context.jsx'
 
 interface TimelineEvent {
@@ -139,7 +132,9 @@ export const AnimatedCaptions: Component<AnimatedCaptionsProps> = (props) => {
                   return (
                     <span
                       data-index={index()}
-                      onClick={() => { handleWordClick(word.start); }}
+                      onClick={() => {
+                        handleWordClick(word.start)
+                      }}
                       class="inline-block mx-1 cursor-pointer transition-colors duration-150 [scroll-margin-top:4rem] [scroll-margin-bottom:6rem]"
                       classList={{
                         'text-mystic-300': isActive(),

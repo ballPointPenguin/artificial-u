@@ -1,17 +1,9 @@
 import { A } from '@solidjs/router'
-import {
-  ChevronDown,
-  ImageIcon,
-  Pause,
-  Play,
-  Rewind,
-  FastForward,
-  X,
-} from 'lucide-solid'
+import { ChevronDown, FastForward, ImageIcon, Pause, Play, Rewind, X } from 'lucide-solid'
 import { type Component, createEffect, onCleanup, Show } from 'solid-js'
 import { Portal } from 'solid-js/web'
-import { CaptionWindow } from './lectures/CaptionWindow.jsx'
 import { useAudioPlayer } from '../utils/audio-player-context.jsx'
+import { CaptionWindow } from './lectures/CaptionWindow.jsx'
 
 const formatTime = (seconds: number): string => {
   if (!Number.isFinite(seconds) || seconds < 0) return '0:00'
@@ -92,7 +84,9 @@ export const NowPlayingSheet: Component = () => {
           <button
             type="button"
             aria-label="Close Now Playing"
-            onClick={() => { player.collapse(); }}
+            onClick={() => {
+              player.collapse()
+            }}
             class="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm lg:bg-transparent lg:backdrop-blur-none lg:pointer-events-none"
           />
 
@@ -108,7 +102,9 @@ export const NowPlayingSheet: Component = () => {
             <header class="flex items-start gap-3 px-4 py-3 sm:px-6 border-b border-border/60 bg-surface">
               <button
                 type="button"
-                onClick={() => { player.collapse(); }}
+                onClick={() => {
+                  player.collapse()
+                }}
                 class="flex-shrink-0 rounded-full p-2 text-foreground/70 hover:text-foreground hover:bg-background/60 transition-colors"
                 aria-label="Minimize player"
                 title="Minimize (Esc)"
@@ -136,7 +132,9 @@ export const NowPlayingSheet: Component = () => {
                 {(href) => (
                   <A
                     href={href()}
-                    onClick={() => { player.collapse(); }}
+                    onClick={() => {
+                      player.collapse()
+                    }}
                     class="hidden sm:inline-flex flex-shrink-0 items-center gap-1 text-xs text-mystic-400 hover:text-mystic-300 underline underline-offset-2"
                   >
                     Open page

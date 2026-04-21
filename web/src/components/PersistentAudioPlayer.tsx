@@ -197,7 +197,9 @@ export const PersistentAudioPlayer: Component = () => {
           <div class="absolute right-2 top-2 z-10 flex items-center gap-1 sm:right-4 sm:top-3">
             <button
               type="button"
-              onClick={() => { player.expand(); }}
+              onClick={() => {
+                player.expand()
+              }}
               class="rounded-full border border-parchment-800/50 bg-parchment-950/90 p-2 text-parchment-300 shadow-lg hover:text-parchment-100 hover:bg-parchment-800/70 transition-colors"
               aria-label="Expand player"
               title="Expand player"
@@ -220,7 +222,9 @@ export const PersistentAudioPlayer: Component = () => {
               {/* Track Info — clicking expands the Now Playing sheet */}
               <button
                 type="button"
-                onClick={() => { player.expand(); }}
+                onClick={() => {
+                  player.expand()
+                }}
                 class="flex-1 min-w-0 space-y-1 pr-20 text-left cursor-pointer hover:opacity-90 transition-opacity"
                 aria-label="Open Now Playing"
               >
