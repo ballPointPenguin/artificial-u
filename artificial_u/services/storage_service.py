@@ -9,7 +9,7 @@ import asyncio
 import io
 import logging
 from typing import Any, Dict, List, Optional, Tuple
-from urllib.parse import urlencode
+from urllib.parse import urlencode, urlparse
 
 import boto3
 from botocore.client import Config
@@ -525,30 +525,35 @@ class StorageService:
             return None, None
 
         try:
-            # Handle MinIO URL format: http://localhost:9000/bucket/key
-            if self.settings.STORAGE_TYPE == "minio":
-                # Remove the base URL
-                base_url = self.settings.STORAGE_PUBLIC_URL.rstrip("/")
-                if url.startswith(base_url):
-                    path = url[len(base_url) :].lstrip("/")
-                    # Split into bucket and key
-                    parts = path.split("/", 1)
-                    if len(parts) == 2:
-                        return parts[0], parts[1]
+            # NOTE: We intentionally parse by URL shape, not by STORAGE_TYPE.
+            # It's useful to run scripts locally (STORAGE_TYPE=minio) against
+            # production/public S3 URLs stored in the database.
+            parsed = urlparse(url)
+            host = parsed.netloc
+            path = parsed.path.lstrip("/")
 
-            # Handle S3 URL format: https://bucket.s3.region.amazonaws.com/key
-            elif ".s3." in url and ".amazonaws.com/" in url:
-                # Extract bucket from subdomain
-                start = url.find("://") + 3
-                end = url.find(".s3.")
-                bucket = url[start:end]
+            # MinIO-style URLs: http(s)://<endpoint>/<bucket>/<key>
+            minio_host = urlparse(self.settings.STORAGE_PUBLIC_URL).netloc
+            if host == minio_host and path:
+                parts = path.split("/", 1)
+                if len(parts) == 2 and parts[0] and parts[1]:
+                    return parts[0], parts[1]
 
-                # Extract key after the domain
-                key_start = url.find(".amazonaws.com/") + 15
-                key = url[key_start:]
+            # S3 virtual-hosted-style:
+            #   https://<bucket>.s3.<region>.amazonaws.com/<key>
+            #   https://<bucket>.s3.amazonaws.com/<key>
+            if host.endswith(".amazonaws.com") and ".s3" in host and path:
+                bucket = host.split(".s3", 1)[0]
+                if bucket:
+                    return bucket, path
 
-                if bucket and key:
-                    return bucket, key
+            # S3 path-style:
+            #   https://s3.<region>.amazonaws.com/<bucket>/<key>
+            #   https://s3.amazonaws.com/<bucket>/<key>
+            if host.startswith("s3.") and host.endswith(".amazonaws.com") and path:
+                parts = path.split("/", 1)
+                if len(parts) == 2 and parts[0] and parts[1]:
+                    return parts[0], parts[1]
 
             self.logger.warning(f"Could not parse storage URL: {url}")
             return None, None

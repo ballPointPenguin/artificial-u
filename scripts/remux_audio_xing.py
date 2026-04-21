@@ -51,6 +51,7 @@ import sys
 import tempfile
 from pathlib import Path
 from typing import Dict, List, Optional
+from urllib.parse import urlparse
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 if str(PROJECT_ROOT) not in sys.path:
@@ -157,37 +158,69 @@ def verify_prerequisites(logger: logging.Logger) -> bool:
         return False
     logger.info("Using ffmpeg at %s", ffmpeg_path)
 
+    # We don't always know up-front whether the DB contains MinIO URLs,
+    # public S3 URLs, or a mix (common when running locally against prod DB).
+    # We validate AWS credentials lazily the first time we actually need S3.
     settings = get_settings()
-    if settings.STORAGE_TYPE != "s3":
-        logger.info(
-            "STORAGE_TYPE=%s - skipping AWS credential check (local/MinIO).",
-            settings.STORAGE_TYPE,
-        )
-        return True
+    logger.info(
+        "Storage config: STORAGE_TYPE=%s (MinIO/S3 URL detection is done per object URL).",
+        settings.STORAGE_TYPE,
+    )
+    return True
 
+
+def _is_aws_s3_url(url: str) -> bool:
+    """Return True if URL appears to be an AWS S3 public URL."""
     try:
-        session = boto3.session.Session(region_name=settings.STORAGE_REGION)
+        host = urlparse(url).netloc
+        return host.endswith(".amazonaws.com") and ("s3" in host)
+    except Exception:
+        return False
+
+
+def _create_verified_s3_client(logger: logging.Logger):
+    """Create an AWS S3 client and verify creds via STS."""
+    settings = get_settings()
+    session = boto3.session.Session(region_name=settings.STORAGE_REGION)
+    try:
         identity = session.client("sts").get_caller_identity()
-    except NoCredentialsError:
-        logger.error(
-            "No AWS credentials found. Run `aws sso login` (or set "
-            "AWS_PROFILE / AWS_ACCESS_KEY_ID) and retry."
-        )
-        return False
+    except NoCredentialsError as e:
+        raise RuntimeError(
+            "No AWS credentials found. Run `aws sso login` (or set AWS_PROFILE / "
+            "AWS_ACCESS_KEY_ID) and retry."
+        ) from e
     except (ClientError, BotoCoreError) as e:
-        logger.error(
-            "AWS credentials are present but invalid or expired (%s). "
-            "Re-authenticate (e.g. `aws sso login`) and retry.",
-            e,
-        )
-        return False
+        raise RuntimeError(
+            f"AWS credentials are present but invalid or expired ({e}). "
+            "Re-authenticate (e.g. `aws sso login`) and retry."
+        ) from e
 
     logger.info(
         "AWS identity verified: account=%s arn=%s",
         identity.get("Account"),
         identity.get("Arn"),
     )
-    return True
+    return session.client("s3")
+
+
+async def _s3_download_bytes(s3_client, bucket: str, key: str) -> Optional[bytes]:
+    file_obj = io.BytesIO()
+    await asyncio.to_thread(s3_client.download_fileobj, bucket, key, file_obj)
+    file_obj.seek(0)
+    return file_obj.read()
+
+
+async def _s3_upload_bytes(
+    s3_client, bucket: str, key: str, body: bytes, content_type: str
+) -> None:
+    file_obj = io.BytesIO(body)
+    await asyncio.to_thread(
+        s3_client.upload_fileobj,
+        file_obj,
+        bucket,
+        key,
+        ExtraArgs={"ContentType": content_type} if content_type else None,
+    )
 
 
 def read_mp3_duration_seconds(audio_bytes: bytes) -> Optional[float]:
@@ -298,6 +331,7 @@ async def process_lecture(
     lecture_id: int,
     repository_factory: RepositoryFactory,
     storage_service: StorageService,
+    s3_client,
     ffmpeg_path: str,
     force: bool,
     dry_run: bool,
@@ -315,19 +349,40 @@ async def process_lecture(
             logger.warning("Lecture %d has no audio URL, skipping", lecture_id)
             return "skipped"
 
-        bucket, object_key = storage_service.parse_storage_url(lecture.audio_url)
+        url = lecture.audio_url
+        bucket, object_key = storage_service.parse_storage_url(url)
         if not bucket or not object_key:
             logger.error(
                 "Failed to parse audio URL for lecture %d: %s",
                 lecture_id,
-                lecture.audio_url,
+                url,
             )
             return "failed"
 
-        audio_bytes, _content_type = await storage_service.download_file(bucket, object_key)
-        if not audio_bytes:
-            logger.error("Failed to download audio for lecture %d", lecture_id)
-            return "failed"
+        # Download from MinIO or AWS S3 depending on URL shape (not on local STORAGE_TYPE).
+        if _is_aws_s3_url(url):
+            if not s3_client:
+                logger.error(
+                    "Lecture %d uses an AWS S3 URL but no S3 client is available.",
+                    lecture_id,
+                )
+                return "failed"
+            try:
+                audio_bytes = await _s3_download_bytes(s3_client, bucket, object_key)
+            except Exception as e:
+                logger.error(
+                    "Failed to download S3 object for lecture %d (%s/%s): %s",
+                    lecture_id,
+                    bucket,
+                    object_key,
+                    e,
+                )
+                return "failed"
+        else:
+            audio_bytes, _content_type = await storage_service.download_file(bucket, object_key)
+            if not audio_bytes:
+                logger.error("Failed to download audio for lecture %d", lecture_id)
+                return "failed"
 
         orig_size = len(audio_bytes)
         orig_duration = read_mp3_duration_seconds(audio_bytes)
@@ -385,15 +440,34 @@ async def process_lecture(
             logger.info("[Dry Run] Would remux and update: %s", action_summary)
             return "fixed"
 
-        upload_success, _url = await storage_service.upload_file(
-            file_data=fixed_bytes,
-            bucket=bucket,
-            object_name=object_key,
-            content_type="audio/mpeg",
-        )
-        if not upload_success:
-            logger.error("Failed to upload remuxed audio for lecture %d", lecture_id)
-            return "failed"
+        if _is_aws_s3_url(url):
+            try:
+                await _s3_upload_bytes(
+                    s3_client,
+                    bucket=bucket,
+                    key=object_key,
+                    body=fixed_bytes,
+                    content_type="audio/mpeg",
+                )
+            except Exception as e:
+                logger.error(
+                    "Failed to upload S3 object for lecture %d (%s/%s): %s",
+                    lecture_id,
+                    bucket,
+                    object_key,
+                    e,
+                )
+                return "failed"
+        else:
+            upload_success, _uploaded_url = await storage_service.upload_file(
+                file_data=fixed_bytes,
+                bucket=bucket,
+                object_name=object_key,
+                content_type="audio/mpeg",
+            )
+            if not upload_success:
+                logger.error("Failed to upload remuxed audio for lecture %d", lecture_id)
+                return "failed"
 
         repository_factory.lecture.update_fields(
             lecture_id=lecture_id,
@@ -422,6 +496,8 @@ async def remux_all(
         return stats
 
     storage_service = StorageService(logger=logger)
+    # Lazily created only if we encounter AWS S3 URLs.
+    s3_client = None
 
     for start in range(0, len(lecture_ids), batch_size):
         batch_ids = lecture_ids[start : start + batch_size]
@@ -432,11 +508,28 @@ async def remux_all(
             batch_ids,
         )
 
+        # Ensure we have an S3 client if this batch includes any AWS S3 URLs.
+        if s3_client is None:
+            try:
+                # Fetch audio_url values for the batch with a single DB roundtrip.
+                urls = [repository_factory.lecture.get(lid).audio_url for lid in batch_ids]
+                if any(u and _is_aws_s3_url(u) for u in urls):
+                    s3_client = _create_verified_s3_client(logger)
+            except Exception as e:
+                logger.error("Failed to initialize AWS S3 client: %s", e)
+                return {
+                    "total": len(lecture_ids),
+                    "fixed": 0,
+                    "skipped": 0,
+                    "failed": len(lecture_ids),
+                }
+
         tasks = [
             process_lecture(
                 lecture_id=lid,
                 repository_factory=repository_factory,
                 storage_service=storage_service,
+                s3_client=s3_client,
                 ffmpeg_path=ffmpeg_path,
                 force=force,
                 dry_run=dry_run,
