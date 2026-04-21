@@ -22,6 +22,10 @@ class LectureBase(BaseModel):
         None, description="Presigned URL for downloading audio file (mobile-friendly)"
     )
     transcript_url: Optional[str] = Field(None, description="URL to transcript file if available")
+    timeline_url: Optional[str] = Field(
+        None,
+        description="URL to forced-alignment timeline JSON for synchronized captions",
+    )
     word_count: Optional[int] = Field(
         None, description="Approximate number of words in the lecture content"
     )
@@ -56,6 +60,7 @@ class LectureUpdate(BaseModel):
     title: Optional[str] = Field(None, description="Updated title of the lecture")
     audio_url: Optional[str] = Field(None, description="Updated audio URL")
     transcript_url: Optional[str] = Field(None, description="Updated transcript URL")
+    timeline_url: Optional[str] = Field(None, description="Updated timeline JSON URL")
     revision: Optional[int] = Field(None, description="Updated revision number")
     created_by: Optional[int] = Field(None, description="Updated student ID")
     created_with: Optional[str] = Field(None, description="Updated AI model name")

@@ -159,23 +159,31 @@ class TTSService:
 
         audio = b"".join(audio_segments)
 
-        # Fix MP3 headers if multiple segments were concatenated
-        if len(audio_segments) > 1:
-            audio = self._fix_mp3_headers(audio)
+        # Always remux so the output has a fresh, accurate Xing/Info header
+        # describing the full file. This matters even for single-segment output
+        # because some providers ship raw frames or a header that only describes
+        # a partial stream. Without a trustworthy Xing header, readers fall back
+        # to CBR extrapolation and report wildly wrong durations (browsers end
+        # up "chasing" the playhead, Finder/mutagen read short values, and
+        # scrubbing maps to wrong real-time positions).
+        audio = self._fix_mp3_headers(audio)
 
         return audio
 
     def _fix_mp3_headers(self, audio_data: bytes) -> bytes:
         """
-        Fix MP3 headers after concatenating multiple audio segments.
+        Re-mux an MP3 so it has a correct Xing/Info header.
 
-        When MP3 files are concatenated by joining bytes directly, the resulting
-        file has invalid headers - the first segment's duration metadata is used
-        for the entire file, causing players to show incorrect duration and
-        preventing seeking past the first segment's length.
+        MP3 has no file-level duration field; readers rely on the Xing header
+        tucked into the first MPEG frame (total frames + total bytes + TOC) to
+        know the duration accurately. When we concatenate per-chunk MP3s from
+        a TTS backend, the inherited Xing from chunk 1 no longer describes the
+        whole file, and single-chunk responses may not include a Xing at all.
 
-        This uses ffmpeg to re-mux the audio stream, which fixes the headers
-        without re-encoding the audio data.
+        We use ffmpeg with stream copy (no re-encoding), letting the MP3 muxer
+        regenerate the Xing header from the actual frame count. This is the
+        default behavior - do NOT pass `-write_xing 0` here, it would strip
+        the header and leave downstream readers guessing via CBR extrapolation.
         """
         ffmpeg_path = shutil.which("ffmpeg")
         if not ffmpeg_path:
@@ -201,8 +209,6 @@ class TTSService:
                 input_path,
                 "-c:a",
                 "copy",
-                "-write_xing",
-                "0",
                 output_path,
             ]
 

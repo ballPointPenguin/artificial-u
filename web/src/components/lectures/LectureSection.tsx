@@ -45,6 +45,9 @@ export const LectureSection: Component<LectureSectionProps> = (props) => {
   const [showClearSummaryModal, setShowClearSummaryModal] = createSignal(false)
   const [isClearingSummary, setIsClearingSummary] = createSignal(false)
 
+  const [isGeneratingTimeline, setIsGeneratingTimeline] = createSignal(false)
+  const [timelineError, setTimelineError] = createSignal('')
+
   // Track jobs for this topic AND lecture (lecture ID will be undefined initially,
   // then change when created)
   const jobTracker = createJobTracker({
@@ -54,6 +57,7 @@ export const LectureSection: Component<LectureSectionProps> = (props) => {
       'generate_lecture',
       'generate_lecture_text_only',
       'generate_lecture_audio',
+      'generate_lecture_timeline',
       'generate_lecture_summary',
     ],
     onJobComplete: (event) => {
@@ -64,6 +68,8 @@ export const LectureSection: Component<LectureSectionProps> = (props) => {
       // Clear error messages when jobs complete
       if (event.kind === 'generate_lecture_audio') {
         setAudioError('')
+      } else if (event.kind === 'generate_lecture_timeline') {
+        setTimelineError('')
       }
 
       // Always refresh lecture data when any lecture-related job completes
@@ -81,6 +87,8 @@ export const LectureSection: Component<LectureSectionProps> = (props) => {
         setAudioError(getJobMessage(event.kind, 'failed'))
       } else if (event.kind === 'generate_lecture_summary') {
         setSummaryError(getJobMessage(event.kind, 'failed'))
+      } else if (event.kind === 'generate_lecture_timeline') {
+        setTimelineError(getJobMessage(event.kind, 'failed'))
       } else if (event.kind === 'generate_lecture_text_only') {
         // Handle text-only generation failures
         // The error will be shown via the lectureError prop from TopicDetail
@@ -228,119 +236,152 @@ export const LectureSection: Component<LectureSectionProps> = (props) => {
     }
   }
 
+  const handleGenerateTimeline = async () => {
+    const lecture = props.lecture()
+    if (!lecture) return
+
+    setIsGeneratingTimeline(true)
+    setTimelineError('')
+
+    try {
+      await lectureService.enqueueGenerateLectureTimeline(lecture.id)
+    } catch (error) {
+      setTimelineError(error instanceof Error ? error.message : 'Failed to generate timeline')
+    } finally {
+      setIsGeneratingTimeline(false)
+    }
+  }
+
   return (
     <div class="arcane-card">
       <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between mb-4">
         <h3 class="text-xl font-display text-parchment-100 pr-4">Lecture</h3>
         <Show when={props.lecture()}>
           {(lectureData) => (
-            <div class="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:justify-end sm:items-center">
-              {/* Audio actions: listen and download if available */}
-              <Show when={lectureData().audio_url}>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  class="h-8 w-full sm:w-auto flex items-center justify-center gap-2"
-                  onClick={() => {
-                    const lecture = lectureData()
-                    if (lecture.audio_url) {
-                      audioPlayer.playTrack({
-                        url: lecture.audio_url,
-                        title: lecture.title,
-                        subtitle: `Revision ${String(lecture.revision)}`,
-                        courseId: props.courseId,
-                        lectureId: lecture.id,
-                        topicId: props.topicId,
-                        courseCode: props.courseCode,
-                        topicWeek: props.topicWeek,
-                        topicOrder: props.topicOrder,
-                      })
-                    }
-                  }}
-                >
-                  <Headphones class="h-4 w-4" aria-hidden="true" />
-                  Listen
-                </Button>
-                <a
-                  href={lectureData().audio_download_url || lectureData().audio_url || undefined}
-                  download=""
-                  class="inline-block"
-                >
+            <div class="flex flex-col gap-3 sm:items-end w-full sm:w-auto">
+              {/* Essential Actions Group */}
+              <div class="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:justify-end sm:items-center w-full">
+                <Show when={lectureData().audio_url}>
                   <Button
                     variant="outline"
                     size="sm"
-                    class="h-8 w-full sm:w-auto flex items-center justify-center gap-2"
+                    class="min-h-[44px] sm:min-h-[32px] w-full sm:w-auto flex items-center justify-center gap-2"
+                    onClick={() => {
+                      const lecture = lectureData()
+                      if (lecture.audio_url) {
+                        audioPlayer.playTrack({
+                          url: lecture.audio_url,
+                          title: lecture.title,
+                          subtitle: `Revision ${String(lecture.revision)}`,
+                          timelineUrl: lecture.timeline_url ?? undefined,
+                          courseId: props.courseId,
+                          lectureId: lecture.id,
+                          topicId: props.topicId,
+                          courseCode: props.courseCode,
+                          topicWeek: props.topicWeek,
+                          topicOrder: props.topicOrder,
+                        })
+                      }
+                    }}
                   >
-                    <Download class="h-4 w-4" aria-hidden="true" />
-                    Download
+                    <Headphones class="h-4 w-4" aria-hidden="true" />
+                    Listen
                   </Button>
-                </a>
-              </Show>
+                  <a
+                    href={lectureData().audio_download_url || lectureData().audio_url || undefined}
+                    download=""
+                    class="inline-block w-full sm:w-auto"
+                  >
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      class="min-h-[44px] sm:min-h-[32px] w-full flex items-center justify-center gap-2"
+                    >
+                      <Download class="h-4 w-4" aria-hidden="true" />
+                      Download
+                    </Button>
+                  </a>
+                </Show>
+                <A
+                  href={`/courses/${String(props.courseId)}/lectures/${String(lectureData().id)}`}
+                  class="inline-block w-full sm:w-auto"
+                >
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    class="min-h-[44px] sm:min-h-[32px] w-full flex items-center justify-center gap-2"
+                  >
+                    <FileText class="h-4 w-4" aria-hidden="true" />
+                    View
+                  </Button>
+                </A>
+              </div>
+
+              {/* Admin/Creator Actions Group */}
               <RequireRole minRole="creator">
-                <MagicButton
-                  variant="primary"
-                  size="sm"
-                  class="h-8 w-full sm:w-auto"
-                  onClick={() => void handleGenerateAudio()}
-                  disabled={isGeneratingAudio() || anyJobActive() || isUploadingAudio()}
-                >
-                  {isGeneratingAudio()
-                    ? 'Generating Audio...'
-                    : lectureData().audio_url
-                      ? 'Regenerate Audio'
-                      : 'Generate Audio'}
-                </MagicButton>
-              </RequireRole>
-              <RequireRole minRole="admin">
-                <label
-                  for={`audio-file-upload-${String(lectureData().id)}`}
-                  class="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md border border-mystic-600 bg-mystic-900/20 text-mystic-300 hover:bg-mystic-900/40 hover:border-mystic-500 transition-colors cursor-pointer h-8"
-                  classList={{
-                    'opacity-50 cursor-not-allowed': isUploadingAudio() || anyJobActive(),
-                  }}
-                >
-                  <Upload class="h-4 w-4" />
-                  <span>{isUploadingAudio() ? 'Uploading...' : 'Upload'}</span>
-                </label>
-                <input
-                  id={`audio-file-upload-${String(lectureData().id)}`}
-                  type="file"
-                  accept="audio/mpeg,audio/mp3,.mp3"
-                  class="hidden"
-                  disabled={isUploadingAudio() || anyJobActive()}
-                  onChange={(e) => {
-                    const file = e.target.files?.[0]
-                    if (file) {
-                      void handleUploadAudio(file)
-                      // Reset the input so the same file can be selected again if needed
-                      e.target.value = ''
-                    }
-                  }}
-                />
-              </RequireRole>
-              <A
-                href={`/courses/${String(props.courseId)}/lectures/${String(lectureData().id)}`}
-                class="inline-block"
-              >
-                <Button
-                  variant="primary"
-                  size="sm"
-                  class="h-8 w-full sm:w-auto flex items-center justify-center gap-2"
-                >
-                  <FileText class="h-4 w-4" aria-hidden="true" />
-                  View
-                </Button>
-              </A>
-              <RequireRole minRole="creator">
-                <Button
-                  variant="danger"
-                  size="sm"
-                  class="h-8 w-full sm:w-auto"
-                  onClick={() => setShowDeleteModal(true)}
-                  disabled={isDeleting()}
-                >
-                  {isDeleting() ? 'Deleting...' : 'Delete'}
-                </Button>
+                <div class="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:justify-end sm:items-center w-full pt-3 sm:pt-2 border-t sm:border-t-0 border-parchment-800/30">
+                  <MagicButton
+                    variant="primary"
+                    size="sm"
+                    class="min-h-[44px] sm:min-h-[32px] w-full sm:w-auto flex items-center justify-center"
+                    onClick={() => void handleGenerateAudio()}
+                    disabled={isGeneratingAudio() || anyJobActive() || isUploadingAudio()}
+                  >
+                    {isGeneratingAudio()
+                      ? 'Generating Audio...'
+                      : lectureData().audio_url
+                        ? 'Regenerate Audio'
+                        : 'Generate Audio'}
+                  </MagicButton>
+                  <RequireRole minRole="admin">
+                    <Show when={lectureData().audio_url && !lectureData().timeline_url}>
+                      <MagicButton
+                        variant="primary"
+                        size="sm"
+                        class="min-h-[44px] sm:min-h-[32px] w-full sm:w-auto flex items-center justify-center"
+                        onClick={() => void handleGenerateTimeline()}
+                        disabled={isGeneratingTimeline() || anyJobActive()}
+                      >
+                        {isGeneratingTimeline() ? 'Generating Timeline...' : 'Generate Timeline'}
+                      </MagicButton>
+                    </Show>
+                    <label
+                      for={`audio-file-upload-${String(lectureData().id)}`}
+                      class="inline-flex items-center justify-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md border border-mystic-600 bg-mystic-900/20 text-mystic-300 hover:bg-mystic-900/40 hover:border-mystic-500 transition-colors cursor-pointer min-h-[44px] sm:min-h-[32px] w-full sm:w-auto"
+                      classList={{
+                        'opacity-50 cursor-not-allowed': isUploadingAudio() || anyJobActive(),
+                      }}
+                    >
+                      <Upload class="h-4 w-4" />
+                      <span>{isUploadingAudio() ? 'Uploading...' : 'Upload'}</span>
+                    </label>
+                    <input
+                      id={`audio-file-upload-${String(lectureData().id)}`}
+                      type="file"
+                      accept="audio/mpeg,audio/mp3,.mp3"
+                      class="hidden"
+                      disabled={isUploadingAudio() || anyJobActive()}
+                      onChange={(e) => {
+                        const file = e.target.files?.[0]
+                        if (file) {
+                          void handleUploadAudio(file)
+                          // Reset the input so the same file can be selected again if needed
+                          e.target.value = ''
+                        }
+                      }}
+                    />
+                  </RequireRole>
+                  <Button
+                    variant="danger"
+                    size="sm"
+                    class="min-h-[44px] sm:min-h-[32px] w-full sm:w-auto flex items-center justify-center gap-2"
+                    onClick={() => setShowDeleteModal(true)}
+                    disabled={isDeleting()}
+                  >
+                    <Trash2 class="h-4 w-4" aria-hidden="true" />
+                    {isDeleting() ? 'Deleting...' : 'Delete'}
+                  </Button>
+                </div>
               </RequireRole>
             </div>
           )}
@@ -374,6 +415,13 @@ export const LectureSection: Component<LectureSectionProps> = (props) => {
       <Show when={uploadSuccess()}>
         <Alert variant="success" class="mb-4">
           Audio file uploaded successfully!
+        </Alert>
+      </Show>
+
+      {/* Timeline generation error */}
+      <Show when={timelineError()}>
+        <Alert variant="danger" class="mb-4">
+          {timelineError()}
         </Alert>
       </Show>
 

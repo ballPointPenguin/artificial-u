@@ -174,6 +174,24 @@ class StorageService:
             file_data, self.lectures_bucket, object_name, content_type=content_type
         )
 
+    async def upload_timeline_file(
+        self, file_data: bytes, object_name: str, content_type: str = "application/json"
+    ) -> Tuple[bool, Optional[str]]:
+        """
+        Upload timeline JSON file data to storage.
+
+        Args:
+            file_data: Binary file data
+            object_name: Object key/name
+            content_type: Content type of the timeline file
+
+        Returns:
+            Tuple of (success, url)
+        """
+        return await self.upload_file(
+            file_data, self.lectures_bucket, object_name, content_type=content_type
+        )
+
     async def upload_export_file(
         self, file_data: bytes, object_name: str, content_type: str = "application/zip"
     ) -> Tuple[bool, Optional[str]]:
@@ -471,6 +489,27 @@ class StorageService:
             Object key for S3/MinIO
         """
         return f"{course_code}/{course_code}_{week_number}_{lecture_order}.{extension}"
+
+    def generate_timeline_key(
+        self,
+        course_code: str,
+        week_number: int,
+        lecture_order: int,
+        extension: str = "json",
+    ) -> str:
+        """
+        Generate a standard object key for a lecture timeline JSON file.
+
+        Args:
+            course_code: Course code (human-friendly)
+            week_number: Week number
+            lecture_order: Lecture order within week
+            extension: File extension (default: json)
+
+        Returns:
+            Object key for S3/MinIO
+        """
+        return f"{course_code}/{course_code}_{week_number}_{lecture_order}_timeline.{extension}"
 
     def parse_storage_url(self, url: str) -> Tuple[Optional[str], Optional[str]]:
         """

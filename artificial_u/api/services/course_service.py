@@ -678,6 +678,7 @@ class CourseApiService(BaseApiService[CoreCourse, CourseResponse, CoursesListRes
                         audio_url=audio_url,
                         audio_download_url=audio_download_url,
                         transcript_url=lecture_dict.get("transcript_url"),
+                        timeline_url=lecture_dict.get("timeline_url"),
                     )
                 )
 

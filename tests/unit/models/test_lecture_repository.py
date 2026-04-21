@@ -48,6 +48,7 @@ class TestLectureRepository:
         lecture.title = "Test Title"
         lecture.audio_url = "test_audio_url"
         lecture.transcript_url = "test_transcript_url"
+        lecture.timeline_url = None
         lecture.course_id = 1
         lecture.topic_id = 1
         lecture.created_by = None
@@ -431,6 +432,7 @@ class TestLectureRepository:
         lecture1.title = "Old Title"
         lecture1.audio_url = "old_audio_url"
         lecture1.transcript_url = "old_transcript_url"
+        lecture1.timeline_url = None
         lecture1.course_id = 1
         lecture1.topic_id = 1
         lecture1.created_by = None
@@ -447,6 +449,7 @@ class TestLectureRepository:
         lecture2.title = "New Title"
         lecture2.audio_url = "new_audio_url"
         lecture2.transcript_url = "new_transcript_url"
+        lecture2.timeline_url = None
         lecture2.course_id = 1
         lecture2.topic_id = 1
         lecture2.created_by = None
@@ -491,6 +494,7 @@ class TestLectureRepository:
         latest_lecture.title = "Latest Title"
         latest_lecture.audio_url = "latest_audio_url"
         latest_lecture.transcript_url = "latest_transcript_url"
+        latest_lecture.timeline_url = None
         latest_lecture.course_id = 1
         latest_lecture.topic_id = 1
         latest_lecture.created_by = None

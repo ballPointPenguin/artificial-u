@@ -162,6 +162,10 @@ class LectureBrief(BaseModel):
         None, description="Presigned URL for downloading audio file (mobile-friendly)"
     )
     transcript_url: Optional[str] = Field(None, description="Lecture transcript URL if available")
+    timeline_url: Optional[str] = Field(
+        None,
+        description="URL to forced-alignment timeline JSON for synchronized captions",
+    )
 
 
 # Course's lectures response model

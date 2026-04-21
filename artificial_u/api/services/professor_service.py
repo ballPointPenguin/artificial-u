@@ -344,6 +344,7 @@ class ProfessorApiService(BaseApiService[CoreProfessor, ProfessorResponse, Profe
                     title=lecture.title,
                     summary=lecture.summary,
                     audio_url=lecture.audio_url,
+                    timeline_url=lecture.timeline_url,
                 )
                 for lecture in lectures
             ]

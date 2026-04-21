@@ -5,6 +5,7 @@ export interface AudioTrack {
   url: string
   title: string
   subtitle?: string // e.g., "Week 1 - Introduction"
+  timelineUrl?: string // URL to the JSON timeline for forced alignment captions
   courseId?: number
   lectureId?: number
   topicId?: number
@@ -21,6 +22,18 @@ interface AudioPlayerState {
   volume: number
 }
 
+/**
+ * A seek request from the UI. The `token` makes every call unique so the
+ * player effect fires even if the user seeks to the same time twice.
+ * Separating seek intent from `currentTime` (which also reflects ongoing
+ * playback via `timeupdate`) prevents `timeupdate` races from silently
+ * reverting a seek.
+ */
+export interface SeekRequest {
+  time: number
+  token: number
+}
+
 interface AudioPlayerContextValue {
   // State accessors
   currentTrack: Accessor<AudioTrack | null>
@@ -28,12 +41,16 @@ interface AudioPlayerContextValue {
   currentTime: Accessor<number>
   duration: Accessor<number>
   volume: Accessor<number>
+  isExpanded: Accessor<boolean>
+  /** Last seek request. Subscribe to this (not `currentTime`) to perform seeks. */
+  seekRequest: Accessor<SeekRequest | null>
 
   // Actions
-  playTrack: (track: AudioTrack) => void
+  playTrack: (track: AudioTrack, options?: { autoExpand?: boolean }) => void
   clearTrack: () => void
   pause: () => void
   resume: () => void
+  togglePlay: () => void
   stop: () => void
   seek: (time: number) => void
   setVolume: (volume: number) => void
@@ -41,6 +58,9 @@ interface AudioPlayerContextValue {
   setDuration: (duration: number) => void
   setIsPlaying: (playing: boolean) => void
   saveCurrentTime: () => void
+  expand: () => void
+  collapse: () => void
+  toggleExpanded: () => void
 }
 
 const AudioPlayerContext = createContext<AudioPlayerContextValue>()
@@ -79,6 +99,12 @@ export const AudioPlayerProvider: ParentComponent = (props) => {
   const [currentTime, setCurrentTime] = createSignal(initialState.currentTime || 0)
   const [duration, setDuration] = createSignal(initialState.duration || 0)
   const [volume, setVolume] = createSignal(initialState.volume ?? 0.7)
+  // Expanded "Now Playing" sheet is session-only (don't persist across reloads)
+  const [isExpanded, setIsExpanded] = createSignal(false)
+  // Seek requests are a separate signal so the player's seek effect isn't
+  // triggered by (or racing with) `timeupdate`-driven `currentTime` changes.
+  const [seekRequest, setSeekRequest] = createSignal<SeekRequest | null>(null)
+  let seekToken = 0
 
   // Persist track, duration, and volume changes to localStorage (infrequent updates)
   createEffect(() => {
@@ -116,10 +142,18 @@ export const AudioPlayerProvider: ParentComponent = (props) => {
     }
   })
 
-  const playTrack = (track: AudioTrack) => {
+  const playTrack = (track: AudioTrack, options: { autoExpand?: boolean } = {}) => {
     setCurrentTrack(track)
     setIsPlaying(true)
     setCurrentTime(0)
+    // Clicking "Listen" should *always* start from the beginning, even if the
+    // same underlying URL is reused or the same track is already loaded.
+    seekToken += 1
+    setSeekRequest({ time: 0, token: seekToken })
+    // Default behavior: auto-open the Now Playing sheet on play
+    if (options.autoExpand ?? true) {
+      setIsExpanded(true)
+    }
   }
 
   const clearTrack = () => {
@@ -127,6 +161,7 @@ export const AudioPlayerProvider: ParentComponent = (props) => {
     setIsPlaying(false)
     setCurrentTime(0)
     setDuration(0)
+    setIsExpanded(false)
   }
 
   const pause = () => {
@@ -138,6 +173,14 @@ export const AudioPlayerProvider: ParentComponent = (props) => {
     setIsPlaying(true)
   }
 
+  const togglePlay = () => {
+    if (isPlaying()) {
+      pause()
+    } else if (currentTrack()) {
+      resume()
+    }
+  }
+
   const stop = () => {
     setIsPlaying(false)
     setCurrentTime(0)
@@ -145,7 +188,21 @@ export const AudioPlayerProvider: ParentComponent = (props) => {
   }
 
   const seek = (time: number) => {
+    // Optimistically update `currentTime` so UI (slider, active caption word)
+    // reflects the target immediately; the real `timeupdate` will confirm
+    // shortly once the audio element actually seeks.
     setCurrentTime(time)
+    seekToken += 1
+    setSeekRequest({ time, token: seekToken })
+  }
+
+  const expand = () => {
+    if (currentTrack()) setIsExpanded(true)
+  }
+  const collapse = () => setIsExpanded(false)
+  const toggleExpanded = () => {
+    if (isExpanded()) setIsExpanded(false)
+    else if (currentTrack()) setIsExpanded(true)
   }
 
   const value: AudioPlayerContextValue = {
@@ -154,10 +211,13 @@ export const AudioPlayerProvider: ParentComponent = (props) => {
     currentTime,
     duration,
     volume,
+    isExpanded,
+    seekRequest,
     playTrack,
     clearTrack,
     pause,
     resume,
+    togglePlay,
     stop,
     seek,
     setVolume,
@@ -165,6 +225,9 @@ export const AudioPlayerProvider: ParentComponent = (props) => {
     setDuration,
     setIsPlaying,
     saveCurrentTime,
+    expand,
+    collapse,
+    toggleExpanded,
   }
 
   return <AudioPlayerContext.Provider value={value}>{props.children}</AudioPlayerContext.Provider>

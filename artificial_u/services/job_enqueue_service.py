@@ -126,6 +126,35 @@ class JobEnqueueService:
             self.logger.error(error_msg, exc_info=True)
             raise DatabaseError(error_msg) from e
 
+    def enqueue_lecture_timeline_generation(
+        self, lecture_id: int, *, topic_id: int | None = None
+    ) -> None:
+        """
+        Enqueue a background job to generate a lecture timeline (forced alignment).
+
+        Args:
+            lecture_id: The ID of the lecture
+
+        Raises:
+            DatabaseError: If job enqueueing fails
+        """
+        if get_settings().testing:
+            self.logger.debug("Skipping lecture timeline job enqueue: running in test mode")
+            return
+
+        try:
+            job_repo = self.repository_factory.job
+            payload = {"lecture_id": lecture_id}
+            if topic_id is not None:
+                payload["topic_id"] = topic_id
+            job = job_repo.create(kind="generate_lecture_timeline", payload=payload)
+            job_id = job.id
+            self.logger.info(f"Enqueued lecture timeline job {job_id} for lecture {lecture_id}")
+        except Exception as e:
+            error_msg = f"Failed to enqueue lecture timeline job for lecture {lecture_id}: {e}"
+            self.logger.error(error_msg, exc_info=True)
+            raise DatabaseError(error_msg) from e
+
     def enqueue_topics_generation(self, course_id: int, created_by: int = None) -> None:
         """
         Enqueue a background job to generate topics for a course.

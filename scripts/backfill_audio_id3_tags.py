@@ -66,8 +66,6 @@ def fix_mp3_headers(audio_data: bytes, logger: logging.Logger) -> bytes:
             input_path,
             "-c:a",
             "copy",
-            "-write_xing",
-            "0",
             output_path,
         ]
 

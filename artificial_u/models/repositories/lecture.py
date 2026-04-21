@@ -44,6 +44,7 @@ class LectureRepository(BaseRepository):
                 title=lecture.title,
                 audio_url=lecture.audio_url,
                 transcript_url=lecture.transcript_url,
+                timeline_url=lecture.timeline_url,
                 course_id=lecture.course_id,
                 topic_id=lecture.topic_id,
                 word_count=word_count,
@@ -97,6 +98,7 @@ class LectureRepository(BaseRepository):
                 title=db_lecture.title,
                 audio_url=db_lecture.audio_url,
                 transcript_url=db_lecture.transcript_url,
+                timeline_url=db_lecture.timeline_url,
                 course_id=db_lecture.course_id,
                 topic_id=db_lecture.topic_id,
                 word_count=db_lecture.word_count,
@@ -185,6 +187,7 @@ class LectureRepository(BaseRepository):
                         title=lecture.title,
                         audio_url=lecture.audio_url,
                         transcript_url=lecture.transcript_url,
+                        timeline_url=lecture.timeline_url,
                         course_id=lecture.course_id,
                         topic_id=lecture.topic_id,
                         word_count=lecture.word_count,
@@ -249,6 +252,7 @@ class LectureRepository(BaseRepository):
                     title=db_lecture.title,
                     audio_url=db_lecture.audio_url,
                     transcript_url=db_lecture.transcript_url,
+                    timeline_url=db_lecture.timeline_url,
                     course_id=db_lecture.course_id,
                     topic_id=db_lecture.topic_id,
                     word_count=db_lecture.word_count,
@@ -408,6 +412,7 @@ class LectureRepository(BaseRepository):
                         title=lecture.title,
                         audio_url=lecture.audio_url,
                         transcript_url=lecture.transcript_url,
+                        timeline_url=lecture.timeline_url,
                         course_id=lecture.course_id,
                         topic_id=lecture.topic_id,
                         word_count=lecture.word_count,
@@ -458,6 +463,7 @@ class LectureRepository(BaseRepository):
                 LectureModel.summary,
                 LectureModel.audio_url,
                 LectureModel.transcript_url,
+                LectureModel.timeline_url,
             ).join(
                 latest_revisions,
                 (LectureModel.topic_id == latest_revisions.c.topic_id)
@@ -486,6 +492,7 @@ class LectureRepository(BaseRepository):
                     "summary": row.summary,
                     "audio_url": row.audio_url,
                     "transcript_url": row.transcript_url,
+                    "timeline_url": row.timeline_url,
                 }
                 for row in results
             ]
@@ -512,6 +519,7 @@ class LectureRepository(BaseRepository):
             db_lecture.title = lecture.title
             db_lecture.audio_url = lecture.audio_url
             db_lecture.transcript_url = lecture.transcript_url
+            db_lecture.timeline_url = lecture.timeline_url
             db_lecture.course_id = lecture.course_id
             db_lecture.topic_id = lecture.topic_id
             db_lecture.word_count = self._calculate_word_count(lecture.content)
@@ -555,6 +563,7 @@ class LectureRepository(BaseRepository):
                 "audio_url",
                 "transcript_url",
                 "course_id",
+                "timeline_url",
                 "topic_id",
                 "voice_id",
                 "duration",
@@ -580,6 +589,7 @@ class LectureRepository(BaseRepository):
                 title=db_lecture.title,
                 audio_url=db_lecture.audio_url,
                 transcript_url=db_lecture.transcript_url,
+                timeline_url=db_lecture.timeline_url,
                 course_id=db_lecture.course_id,
                 topic_id=db_lecture.topic_id,
                 voice_id=db_lecture.voice_id,

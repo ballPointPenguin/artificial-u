@@ -658,3 +658,51 @@ class ElevenLabsClient:
         except Exception as e:
             self.logger.error(f"Error playing audio: {e}")
             raise
+
+    def forced_alignment(
+        self, audio_bytes: bytes, text: str, filename: str = "audio.mp3"
+    ) -> Dict[str, Any]:
+        """
+        Force align an audio file to text.
+
+        Use this endpoint to get the timing information for each character and word
+        in an audio file based on a provided text transcript.
+
+        Args:
+            audio_bytes: Audio data as bytes
+            text: The text to align with the audio
+            filename: Filename to send in the multipart request
+
+        Returns:
+            Dictionary containing characters, words, and loss score.
+        """
+        url = f"{self.BASE_URL}/forced-alignment"
+
+        # We don't use self.headers here because httpx needs to set the
+        # multipart/form-data boundary automatically. We just pass the API key.
+        headers = {
+            "xi-api-key": self.api_key,
+            "Accept": "application/json",
+        }
+
+        files = {"file": (filename, audio_bytes, "audio/mpeg")}
+        data = {"text": text}
+
+        try:
+            with httpx.Client(timeout=300) as http:  # Alignment can take a while for large files
+                self.logger.info(f"Starting forced alignment for text length {len(text)}")
+                resp = http.post(url, files=files, data=data, headers=headers)
+                resp.raise_for_status()
+                result = resp.json()
+                self.logger.info("Forced alignment completed successfully")
+                return result
+        except httpx.HTTPStatusError as e:
+            self.logger.error(
+                "Forced alignment request failed (%s): %s",
+                e.response.status_code,
+                e.response.text,
+            )
+            raise
+        except Exception as e:
+            self.logger.error("Forced alignment failed: %s", e)
+            raise

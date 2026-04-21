@@ -84,6 +84,7 @@ class JobService:
             "generate_lecture_text_only": self._handle_generate_lecture_text_only,
             "generate_lecture_summary": self._handle_generate_lecture_summary,
             "generate_lecture_audio": self._handle_generate_lecture_audio,
+            "generate_lecture_timeline": self._handle_generate_lecture_timeline,
             "generate_professor_image": self._handle_generate_professor_image,
             # Export tasks
             "export_course": self._handle_export_course,
@@ -241,6 +242,14 @@ class JobService:
         if lecture_id is None:
             raise ValueError("lecture_id is required")
         result = await service.generate_lecture_audio(lecture_id)
+        return result
+
+    async def _handle_generate_lecture_timeline(self, payload: Dict[str, Any]) -> Dict[str, Any]:
+        service = self._lecture_generator_service_instance()
+        lecture_id = payload.get("lecture_id")
+        if lecture_id is None:
+            raise ValueError("lecture_id is required")
+        result = await service.generate_lecture_timeline(lecture_id)
         return result
 
     async def _handle_generate_professor_image(self, payload: Dict[str, Any]) -> Dict[str, Any]:
