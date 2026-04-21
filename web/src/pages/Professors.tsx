@@ -1,3 +1,4 @@
+import { useNavigate } from '@solidjs/router'
 import { createResource, createSignal, For, Show } from 'solid-js'
 import { departmentService } from '../api/services/department-service.js'
 import { facultyService } from '../api/services/faculty-service.js'
@@ -11,6 +12,7 @@ import { useTranslations } from '../i18n'
 
 export default function ProfessorsPage() {
   const t = useTranslations()
+  const navigate = useNavigate()
   const [searchQuery, setSearchQuery] = createSignal('')
   const [selectedFacultyId, setSelectedFacultyId] = createSignal<number | null>(null)
   const [selectedDepartmentId, setSelectedDepartmentId] = createSignal<number | null>(null)
@@ -111,9 +113,9 @@ export default function ProfessorsPage() {
         image_url: formData.image_url || '',
       }
 
-      await professorService.createProfessor(newProfessor)
+      const created = await professorService.createProfessor(newProfessor)
       setShowCreateForm(false)
-      void refetch()
+      navigate(`/professors/${created.id.toString()}`)
     } catch (error) {
       setFormError(error instanceof Error ? error.message : t().professors.failedToCreate)
     } finally {
