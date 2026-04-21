@@ -146,6 +146,10 @@ export const AudioPlayerProvider: ParentComponent = (props) => {
     setCurrentTrack(track)
     setIsPlaying(true)
     setCurrentTime(0)
+    // Clicking "Listen" should *always* start from the beginning, even if the
+    // same underlying URL is reused or the same track is already loaded.
+    seekToken += 1
+    setSeekRequest({ time: 0, token: seekToken })
     // Default behavior: auto-open the Now Playing sheet on play
     if (options.autoExpand ?? true) {
       setIsExpanded(true)

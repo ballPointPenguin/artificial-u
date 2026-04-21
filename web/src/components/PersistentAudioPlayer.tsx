@@ -13,7 +13,14 @@ export const PersistentAudioPlayer: Component = () => {
   const [audioEl, setAudioEl] = createSignal<HTMLAudioElement | null>(null)
   let controllerRef: HTMLElement | undefined
   let pendingRestoreTime: number | null = null
-  let previousTrackUrl: string | null = null
+  let previousTrackKey: string | null = null
+
+  const trackKey = (t: ReturnType<typeof player.currentTrack>): string | null => {
+    if (!t) return null
+    // Some deployments may serve lecture audio from a stable URL (e.g. a proxy endpoint),
+    // so URL alone is not a reliable "new track" identifier.
+    return `${String(t.lectureId ?? t.topicId ?? '')}::${t.url}`
+  }
 
   const restoreFromPending = (audio: HTMLAudioElement) => {
     if (pendingRestoreTime == null) return
@@ -110,12 +117,13 @@ export const PersistentAudioPlayer: Component = () => {
     const audio = audioEl()
     const track = player.currentTrack()
     if (!audio || !track) {
-      previousTrackUrl = null
+      previousTrackKey = null
       return
     }
 
-    const isNewTrack = previousTrackUrl !== track.url
-    previousTrackUrl = track.url
+    const nextKey = trackKey(track)
+    const isNewTrack = previousTrackKey !== nextKey
+    previousTrackKey = nextKey
 
     audio.src = track.url
 
