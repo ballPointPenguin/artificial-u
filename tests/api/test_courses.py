@@ -74,6 +74,7 @@ def mock_api_service(monkeypatch):
         "get_course_department": MagicMock(),
         "get_course_lectures": MagicMock(),
         "generate_course": AsyncMock(),
+        "generate_course_image": AsyncMock(),
     }
 
     # --- Configure Mock Return Values ---
@@ -167,6 +168,18 @@ def mock_api_service(monkeypatch):
         0
     ]  # Return a sample generated course
 
+    # GENERATE course album art
+    def _mock_generate_course_image(course_id: int, student_id: int, role: str):
+        base = next((c for c in sample_courses_base if c.id == course_id), None)
+        if not base:
+            return None
+        data = base.model_dump()
+        data["image_url"] = "https://example.com/album.png"
+        data["image_created_with"] = "gemini-3.1-flash-image-preview"
+        return CourseResponse(**data)
+
+    mock_service["generate_course_image"].side_effect = _mock_generate_course_image
+
     # --- Apply Patches ---
     base_path = "artificial_u.api.services.CourseApiService"
     monkeypatch.setattr(f"{base_path}.get_courses", mock_service["get_courses"])
@@ -179,6 +192,7 @@ def mock_api_service(monkeypatch):
     monkeypatch.setattr(f"{base_path}.get_course_department", mock_service["get_course_department"])
     monkeypatch.setattr(f"{base_path}.get_course_lectures", mock_service["get_course_lectures"])
     monkeypatch.setattr(f"{base_path}.generate_course", mock_service["generate_course"])
+    monkeypatch.setattr(f"{base_path}.generate_course_image", mock_service["generate_course_image"])
 
     return mock_service
 
@@ -388,6 +402,8 @@ def test_create_course(client: TestClient, mock_api_service):
         **new_course_data,
         "created_by": None,
         "created_with": None,
+        "image_url": None,
+        "image_created_with": None,
         "created_at": None,
         "updated_at": None,
         "status": "hidden",
@@ -551,6 +567,24 @@ def test_generate_course_partial_data(client: TestClient, mock_api_service: Magi
     assert isinstance(called_with_arg, CourseGenerate)
     assert called_with_arg.partial_attributes == generation_request_data["partial_attributes"]
     assert called_with_arg.freeform_prompt == generation_request_data["freeform_prompt"]
+
+
+@pytest.mark.unit
+def test_generate_course_image(client: TestClient, mock_api_service):
+    """POST /courses/{id}/generate-image delegates to CourseApiService."""
+    response = client.post("/api/v1/courses/1/generate-image")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["image_url"] == "https://example.com/album.png"
+    assert data["image_created_with"] == "gemini-3.1-flash-image-preview"
+    mock_api_service["generate_course_image"].assert_called_once_with(1, 1, "admin")
+
+    mock_api_service["generate_course_image"].reset_mock()
+    mock_api_service["generate_course_image"].return_value = None
+    mock_api_service["generate_course_image"].side_effect = None
+    response = client.post("/api/v1/courses/999/generate-image")
+    assert response.status_code == 404
+    mock_api_service["generate_course_image"].assert_called_once_with(999, 1, "admin")
 
 
 @pytest.mark.unit

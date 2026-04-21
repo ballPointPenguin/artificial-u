@@ -7,7 +7,7 @@ import { useAuth } from '../auth/AuthProvider'
 import { RequireRole } from '../auth/RequireRole'
 import CourseForm from '../components/courses/CourseForm.jsx'
 import type { CourseFormData } from '../components/courses/types.jsx'
-import { Button } from '../components/ui'
+import { Alert, Button, MagicButton } from '../components/ui'
 import type { SelectOption } from '../components/ui/Select.jsx'
 import Select from '../components/ui/Select.jsx'
 import { useTranslations } from '../i18n'
@@ -29,6 +29,10 @@ const Courses: Component = () => {
   const [showCreateForm, setShowCreateForm] = createSignal(false)
   const [submitting, setSubmitting] = createSignal(false)
   const [formError, setFormError] = createSignal('')
+  const [isGeneratingCourseImageId, setIsGeneratingCourseImageId] = createSignal<number | null>(
+    null
+  )
+  const [courseImageError, setCourseImageError] = createSignal('')
 
   // Helper function to get student name safely
   const getStudentName = (course: Course): string => {
@@ -261,6 +265,77 @@ const Courses: Component = () => {
     }
   }
 
+  const handleGenerateCourseImage = async (courseId: number) => {
+    setCourseImageError('')
+    setIsGeneratingCourseImageId(courseId)
+    try {
+      await courseService.generateCourseImage(courseId)
+      void refetch()
+    } catch (error) {
+      setCourseImageError(error instanceof Error ? error.message : 'Failed to generate image')
+    } finally {
+      setIsGeneratingCourseImageId(null)
+    }
+  }
+
+  const CourseThumb: Component<{ course: Course; size: 'sm' | 'md' }> = (props) => {
+    const courseId = () => props.course.id
+    const isMissing = () => !props.course.image_url
+    const isLoading = () => isGeneratingCourseImageId() === courseId()
+
+    const boxClass = () =>
+      props.size === 'sm' ? 'h-12 w-12 rounded-md' : 'h-16 w-16 shrink-0 rounded-lg'
+
+    const imgClass = () =>
+      props.size === 'sm'
+        ? 'h-12 w-12 rounded-md object-cover border border-parchment-800/30'
+        : 'h-16 w-16 shrink-0 rounded-lg object-cover border border-parchment-800/30'
+
+    const placeholderClass = () =>
+      props.size === 'sm'
+        ? 'h-12 w-12 rounded-md bg-parchment-900/40 border border-parchment-800/30'
+        : 'h-16 w-16 shrink-0 rounded-lg bg-parchment-900/40 border border-parchment-800/30'
+
+    return (
+      <>
+        <Show
+          when={auth.canModify(props.course.created_by) && isMissing()}
+          fallback={
+            <A href={`/courses/${String(courseId())}`} class="block">
+              <Show
+                when={props.course.image_url}
+                fallback={<div class={placeholderClass()} aria-hidden />}
+              >
+                <img
+                  src={props.course.image_url ?? ''}
+                  alt=""
+                  width={props.size === 'sm' ? 48 : 64}
+                  height={props.size === 'sm' ? 48 : 64}
+                  loading="lazy"
+                  class={imgClass()}
+                />
+              </Show>
+            </A>
+          }
+        >
+          <MagicButton
+            type="button"
+            variant="ghost"
+            size="sm"
+            iconOnly
+            class={`${boxClass()} p-0 flex items-center justify-center`}
+            aria-label="Generate course image"
+            title="Generate course image"
+            disabled={isLoading()}
+            onClick={() => void handleGenerateCourseImage(courseId())}
+          >
+            Generate Image
+          </MagicButton>
+        </Show>
+      </>
+    )
+  }
+
   return (
     <div class="container mx-auto px-4 py-6 sm:px-6">
       <div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -292,6 +367,11 @@ const Courses: Component = () => {
         when={!coursesData.loading}
         fallback={<div class="text-parchment-200 font-serif p-4">{t().courses.loading}</div>}
       >
+        <Show when={courseImageError()}>
+          <Alert variant="danger" class="mb-4">
+            {courseImageError()}
+          </Alert>
+        </Show>
         {/* Filter section */}
         <div class="mb-6 flex flex-col gap-4 lg:flex-row lg:items-center">
           <div class="w-full max-w-xs sm:max-w-sm lg:w-64">
@@ -362,6 +442,9 @@ const Courses: Component = () => {
             <table class="min-w-full">
               <thead>
                 <tr class="border-b border-parchment-800/30">
+                  <th class="py-3 px-2 w-14 align-middle text-left font-display text-parchment-200">
+                    {/* Album art */}
+                  </th>
                   <SortableHeader field="code" label={t().courses.code} />
                   <SortableHeader field="title" label={t().courses.courseTitle} />
                   <th class="py-3 px-4 align-middle text-left font-display text-parchment-200">
@@ -386,6 +469,9 @@ const Courses: Component = () => {
                 <For each={coursesData()?.items}>
                   {(course: Course) => (
                     <tr class="border-b border-parchment-800/20 hover:bg-arcanum-800/50 transition-colors">
+                      <td class="py-3 px-2 align-middle w-14">
+                        <CourseThumb course={course} size="sm" />
+                      </td>
                       <td class="py-3 px-4 align-middle text-parchment-100">{course.code}</td>
                       <td class="py-3 px-4 align-middle text-parchment-100">
                         <A
@@ -437,7 +523,8 @@ const Courses: Component = () => {
                 <div class="arcane-card p-4">
                   <div class="flex flex-col gap-4">
                     <div class="flex items-start justify-between gap-4">
-                      <div class="flex-1">
+                      <CourseThumb course={course} size="md" />
+                      <div class="flex-1 min-w-0">
                         <div class="flex items-center gap-2 mb-1">
                           <p class="text-xs font-serif uppercase tracking-wide text-parchment-400">
                             {course.code}

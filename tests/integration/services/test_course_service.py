@@ -122,11 +122,18 @@ def course_service(
     repository_factory, professor_service, department_selector_service, professor_selector_service
 ):
     """Create a CourseService with selector services."""
+    from artificial_u.services.job_enqueue_service import JobEnqueueService
+
+    job_enqueue_service = JobEnqueueService(
+        repository_factory=repository_factory,
+        logger=logging.getLogger(__name__),
+    )
     return CourseService(
         repository_factory=repository_factory,
         professor_service=professor_service,
         department_selector_service=department_selector_service,
         professor_selector_service=professor_selector_service,
+        job_enqueue_service=job_enqueue_service,
         logger=logging.getLogger(__name__),
     )
 

@@ -2,7 +2,7 @@
  * Course service
  */
 import { httpClient } from '../client.js'
-import { ENDPOINTS } from '../config.js'
+import { ENDPOINTS, TIMEOUT_CONFIG } from '../config.js'
 import type {
   Course,
   CourseCreate,
@@ -66,6 +66,14 @@ export const courseService = {
 
   publishCourse: (courseId: number): Promise<Course> => {
     return httpClient.post<Course>(`${ENDPOINTS.courses.detail(courseId)}/publish`, {})
+  },
+
+  generateCourseImage: (courseId: number): Promise<Course> => {
+    return httpClient.post<Course>(
+      ENDPOINTS.courses.generateImage(courseId),
+      {},
+      { timeout: TIMEOUT_CONFIG.generation }
+    )
   },
 
   getCourseProfessor: (courseId: number): Promise<ProfessorBrief> => {

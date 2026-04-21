@@ -42,6 +42,8 @@ export interface Course {
   status: CourseStatus
   created_by?: number | null
   created_with?: string | null
+  image_url?: string | null
+  image_created_with?: string | null
   created_at?: string | null
   updated_at?: string | null
   lectures_with_audio_count?: number

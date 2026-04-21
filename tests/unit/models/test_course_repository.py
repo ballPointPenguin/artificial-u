@@ -36,6 +36,8 @@ class TestCourseRepository:
         mock_course.professor_id = 1
         mock_course.created_by = 1
         mock_course.created_with = "test-llm"
+        mock_course.image_url = None
+        mock_course.image_created_with = None
         mock_course.created_at = None
         mock_course.updated_at = None
         mock_course.student = None  # Mock student relationship
@@ -154,6 +156,8 @@ class TestCourseRepository:
         mock_course1.professor_id = 1
         mock_course1.created_by = 1
         mock_course1.created_with = "test-llm"
+        mock_course1.image_url = None
+        mock_course1.image_created_with = None
         mock_course1.created_at = None
         mock_course1.updated_at = None
         mock_course1.student = None
@@ -171,6 +175,8 @@ class TestCourseRepository:
         mock_course2.professor_id = 2
         mock_course2.created_by = 2
         mock_course2.created_with = "test-llm-2"
+        mock_course2.image_url = None
+        mock_course2.image_created_with = None
         mock_course2.created_at = None
         mock_course2.updated_at = None
         mock_course2.student = None
@@ -209,6 +215,8 @@ class TestCourseRepository:
         mock_course.professor_id = 1
         mock_course.created_by = 1
         mock_course.created_with = "test-llm"
+        mock_course.image_url = None
+        mock_course.image_created_with = None
         mock_course.created_at = None
         mock_course.updated_at = None
         mock_course.student = None

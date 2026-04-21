@@ -319,6 +319,7 @@ def get_professor_service(
 def get_course_service(
     repository_factory: RepositoryFactory = Depends(get_repository_factory),
     professor_service: ProfessorService = Depends(get_professor_service),
+    job_enqueue_service: JobEnqueueService = Depends(get_job_enqueue_service),
 ) -> CourseService:
     """
     Get a course service instance.
@@ -365,6 +366,7 @@ def get_course_service(
         professor_service=professor_service,
         department_selector_service=department_selector_service,
         professor_selector_service=professor_selector_service,
+        job_enqueue_service=job_enqueue_service,
         logger=logging.getLogger("artificial_u.services.course_service"),
     )
 
@@ -592,6 +594,7 @@ def get_course_api_service(
     professor_service: ProfessorService = Depends(get_professor_service),
     course_service: CourseService = Depends(get_course_service),
     storage_service: StorageService = Depends(get_storage_service),
+    image_service: ImageService = Depends(get_image_service),
 ) -> CourseApiService:
     """
     Get a course API service instance.
@@ -602,6 +605,7 @@ def get_course_api_service(
         professor_service: Professor service
         course_service: Core course service with smart selection
         storage_service: Storage service
+        image_service: Image generation service
 
     Returns:
         CourseApiService instance
@@ -612,6 +616,7 @@ def get_course_api_service(
         professor_service=professor_service,
         course_service=course_service,
         storage_service=storage_service,
+        image_service=image_service,
         logger=logging.getLogger("artificial_u.api.services.course_service"),
     )
 

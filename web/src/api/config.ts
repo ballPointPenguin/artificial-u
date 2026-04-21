@@ -75,6 +75,7 @@ export const ENDPOINTS = {
   courses: {
     list: '/v1/courses',
     detail: (id: number) => `/v1/courses/${String(id)}`,
+    generateImage: (id: number) => `/v1/courses/${String(id)}/generate-image`,
     lectures: (id: number) => `/v1/courses/${String(id)}/lectures`,
     professor: (id: number) => `/v1/courses/${String(id)}/professor`,
     department: (id: number) => `/v1/courses/${String(id)}/department`,

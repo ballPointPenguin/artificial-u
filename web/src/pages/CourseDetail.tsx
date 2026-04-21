@@ -295,6 +295,8 @@ const CourseDetail: Component = () => {
   const [exportMessage, setExportMessage] = createSignal('')
   const [isPublishing, setIsPublishing] = createSignal(false)
   const [topicGenMessage, setTopicGenMessage] = createSignal('')
+  const [isGeneratingImage, setIsGeneratingImage] = createSignal(false)
+  const [imageGenerationError, setImageGenerationError] = createSignal('')
 
   // Check if courseId is a valid number before creating resources
   const isValidId = !Number.isNaN(courseId)
@@ -431,6 +433,23 @@ const CourseDetail: Component = () => {
   }
 
   // Handler for publishing a course
+  const handleGenerateCourseImage = async () => {
+    if (!isValidId) return
+    setIsGeneratingImage(true)
+    setImageGenerationError('')
+    setError('')
+    try {
+      await courseService.generateCourseImage(courseId)
+      void refetch()
+    } catch (err: unknown) {
+      setImageGenerationError(
+        err instanceof Error ? err.message : 'Failed to generate course image'
+      )
+    } finally {
+      setIsGeneratingImage(false)
+    }
+  }
+
   const handlePublishCourse = () => {
     if (!isValidId) return
 
@@ -493,6 +512,14 @@ const CourseDetail: Component = () => {
                         </MagicButton>
                       </Show>
                       <Show when={auth.canModify(course().created_by)}>
+                        <MagicButton
+                          variant="ghost"
+                          onClick={() => void handleGenerateCourseImage()}
+                          isLoading={isGeneratingImage()}
+                          loadingText={t().common.generating}
+                        >
+                          {course().image_url ? 'Regenerate Image' : 'Generate Image'}
+                        </MagicButton>
                         <Button variant="primary" onClick={() => setIsEditing(true)}>
                           {t().courseDetail.editCourse}
                         </Button>
@@ -517,6 +544,12 @@ const CourseDetail: Component = () => {
                 <Show when={error()}>
                   <Alert variant="danger" class="mb-4">
                     {error()}
+                  </Alert>
+                </Show>
+
+                <Show when={imageGenerationError()}>
+                  <Alert variant="danger" class="mb-4">
+                    {imageGenerationError()}
                   </Alert>
                 </Show>
 
@@ -585,28 +618,44 @@ const CourseDetail: Component = () => {
                     </RequireRole>
                   }
                 >
-                  <div class="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 mb-3">
-                    <h1 class="text-3xl font-display text-parchment-100">
-                      {course().code}: {course().title}
-                    </h1>
-                    <span
-                      class={`inline-flex items-center gap-1.5 px-3 py-1 text-sm font-medium rounded-full whitespace-nowrap self-start ${
-                        course().status === 'published'
-                          ? 'bg-green-500/20 text-green-300 border border-green-400/30'
-                          : 'bg-amber-500/20 text-amber-300 border border-amber-400/30'
-                      }`}
-                    >
-                      <span class="text-xs">{course().status === 'published' ? '✓' : '●'}</span>
-                      <span>
-                        {course().status === 'published'
-                          ? t().courseDetail.published
-                          : t().courseDetail.hidden}
-                      </span>
-                    </span>
+                  <div class="flex flex-col gap-6 md:flex-row md:items-start mb-6">
+                    <Show when={course().image_url}>
+                      <div class="shrink-0">
+                        <img
+                          src={course().image_url ?? ''}
+                          alt=""
+                          width={256}
+                          height={256}
+                          loading="lazy"
+                          class="w-48 h-48 md:w-64 md:h-64 rounded-lg border border-parchment-800/40 object-cover shadow-lg"
+                        />
+                      </div>
+                    </Show>
+                    <div class="flex flex-col gap-2 min-w-0 flex-1">
+                      <div class="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+                        <h1 class="text-3xl font-display text-parchment-100">
+                          {course().code}: {course().title}
+                        </h1>
+                        <span
+                          class={`inline-flex items-center gap-1.5 px-3 py-1 text-sm font-medium rounded-full whitespace-nowrap self-start ${
+                            course().status === 'published'
+                              ? 'bg-green-500/20 text-green-300 border border-green-400/30'
+                              : 'bg-amber-500/20 text-amber-300 border border-amber-400/30'
+                          }`}
+                        >
+                          <span class="text-xs">{course().status === 'published' ? '✓' : '●'}</span>
+                          <span>
+                            {course().status === 'published'
+                              ? t().courseDetail.published
+                              : t().courseDetail.hidden}
+                          </span>
+                        </span>
+                      </div>
+                      <p class="text-base italic text-parchment-200 font-serif">
+                        {course().description}
+                      </p>
+                    </div>
                   </div>
-                  <p class="text-base italic text-parchment-200 mb-6 font-serif">
-                    {course().description}
-                  </p>
 
                   {/* Metadata Section */}
                   <MetadataInfo

@@ -30,6 +30,7 @@ from artificial_u.models.repositories import RepositoryFactory
 from artificial_u.services import (
     ContentService,
     CourseService,
+    ImageService,
     ProfessorService,
     StorageService,
 )
@@ -52,6 +53,7 @@ class CourseApiService(BaseApiService[CoreCourse, CourseResponse, CoursesListRes
         repository_factory: RepositoryFactory,
         course_service: CourseService,
         storage_service: "StorageService",
+        image_service: ImageService,
         logger=None,
     ):
         """
@@ -63,6 +65,7 @@ class CourseApiService(BaseApiService[CoreCourse, CourseResponse, CoursesListRes
             professor_service: Core ProfessorService instance.
             course_service: Core CourseService instance with smart selection.
             storage_service: Storage service for file operations.
+            image_service: Image generation service for course album art.
             logger: Optional logger instance.
         """
         super().__init__(logger)
@@ -88,6 +91,7 @@ class CourseApiService(BaseApiService[CoreCourse, CourseResponse, CoursesListRes
             course_service=self.core_service,
             professor_service=professor_service,
             content_service=content_service,
+            image_service=image_service,
             repository_factory=repository_factory,
             job_enqueue_service=job_enqueue_service,
             logger=self.logger,
@@ -538,6 +542,38 @@ class CourseApiService(BaseApiService[CoreCourse, CourseResponse, CoursesListRes
             self._handle_database_error("publish course", e)
         except Exception as e:
             self._handle_general_error("publish course", e)
+
+    async def generate_course_image(
+        self, course_id: int, student_id: int, role: str
+    ) -> Optional[CourseResponse]:
+        """
+        Generate or regenerate AI album art for a course (sync; may take minutes).
+
+        Ownership is enforced via verify_asset_ownership (creator or admin).
+        """
+        try:
+            course_model = self.core_service.get_course(course_id)
+
+            from artificial_u.api.security.auth0 import verify_asset_ownership
+
+            verify_asset_ownership(student_id, course_model.created_by, role, "course")
+
+            updated_course = await self.generator_service.generate_and_set_course_image(
+                course_id=course_id
+            )
+            if updated_course:
+                return self._build_course_response(updated_course)
+            return None
+
+        except CourseNotFoundError:
+            return None
+
+        except Exception as e:
+            self.logger.error(
+                f"Error generating image for course {course_id}: {e}",
+                exc_info=True,
+            )
+            return None
 
     def get_course_professor(self, course_id: int) -> ProfessorBrief:
         """

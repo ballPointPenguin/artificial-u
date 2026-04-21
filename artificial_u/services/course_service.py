@@ -31,6 +31,7 @@ class CourseService:
         professor_service: ProfessorService,
         department_selector_service,
         professor_selector_service,
+        job_enqueue_service=None,
         logger=None,
     ):
         """
@@ -41,12 +42,14 @@ class CourseService:
             professor_service: Service for professor operations
             department_selector_service: Service for smart department selection
             professor_selector_service: Service for smart professor selection
+            job_enqueue_service: Optional service for enqueueing background jobs (e.g. album art)
             logger: Optional logger instance
         """
         self.repository_factory = repository_factory
         self.professor_service = professor_service
         self.department_selector_service = department_selector_service
         self.professor_selector_service = professor_selector_service
+        self.job_enqueue_service = job_enqueue_service
         self.logger = logger or logging.getLogger(__name__)
 
     # --- CRUD Methods --- #
@@ -186,6 +189,22 @@ class CourseService:
         try:
             created_course = self.repository_factory.course.create(course)
             self.logger.info(f"Course created with ID: {created_course.id}")
+            if self.job_enqueue_service:
+                try:
+                    if not getattr(created_course, "image_url", None):
+                        self.job_enqueue_service.enqueue_course_image_generation(created_course.id)
+                    else:
+                        self.logger.debug(
+                            "Skipping course image job on create: course %s already has image",
+                            created_course.id,
+                        )
+                except Exception as bg_e:
+                    self.logger.error(
+                        "Failed to enqueue album art generation for course %s: %s",
+                        created_course.id,
+                        bg_e,
+                        exc_info=True,
+                    )
             return created_course, professor
         except Exception as e:
             error_msg = f"Failed to save course {code}: {str(e)}"
