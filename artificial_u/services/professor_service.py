@@ -8,7 +8,6 @@ are handled by the ProfessorGeneratorService.
 import logging
 from typing import Any, Dict, List, Optional
 
-from artificial_u.config import get_settings
 from artificial_u.models.core import Course, Professor
 from artificial_u.models.repositories.factory import RepositoryFactory
 from artificial_u.services.voice_service import VoiceService
@@ -63,24 +62,22 @@ class ProfessorService:
         try:
             saved_professor = self.repository_factory.professor.create(professor)
             self.logger.info(f"Professor created successfully with ID: {saved_professor.id}")
-            # Enqueue background image generation if no image yet (skip during tests)
-            if not get_settings().testing:
-                try:
-                    if not getattr(saved_professor, "image_url", None):
-                        self.job_enqueue_service.enqueue_professor_image_generation(
-                            saved_professor.id
-                        )
-                    else:
-                        self.logger.debug(
-                            "Skipping image generation on create: professor %s already has image",
-                            saved_professor.id,
-                        )
-                except Exception as bg_e:
-                    self.logger.error(
-                        "Failed to enqueue image generation for professor %s: %s",
+            # Enqueue background image generation if no image yet.
+            # We intentionally do not fail professor creation if enqueueing fails.
+            try:
+                if not getattr(saved_professor, "image_url", None):
+                    self.job_enqueue_service.enqueue_professor_image_generation(saved_professor.id)
+                else:
+                    self.logger.debug(
+                        "Skipping image generation on create: professor %s already has image",
                         saved_professor.id,
-                        bg_e,
                     )
+            except Exception as bg_e:
+                self.logger.error(
+                    "Failed to enqueue image generation for professor %s: %s",
+                    saved_professor.id,
+                    bg_e,
+                )
             return saved_professor
         except Exception as e:
             error_msg = f"Failed to save professor '{professor.name}': {str(e)}"

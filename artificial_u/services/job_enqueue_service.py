@@ -43,10 +43,6 @@ class JobEnqueueService:
         Raises:
             DatabaseError: If job enqueueing fails
         """
-        if get_settings().testing:
-            self.logger.debug("Skipping image generation job enqueue: running in test mode")
-            return
-
         try:
             job_repo = self.repository_factory.job
             job = job_repo.create(

@@ -115,8 +115,8 @@ def sample_faculties(repository_factory):
 class TestProfessorService:
     """Integration tests for ProfessorService."""
 
-    def test_create_and_get_professor(self, professor_service):
-        """Test creating and retrieving a professor."""
+    def test_create_and_get_professor(self, professor_service, repository_factory):
+        """Test creating and retrieving a professor (and auto-enqueue image job)."""
         # Create a new professor (without department)
         professor = professor_service.create_professor(
             Professor(
@@ -137,6 +137,10 @@ class TestProfessorService:
         assert professor.id is not None
         assert professor.name == "Dr. John Doe"
         assert professor.specialization == "Machine Learning"
+
+        # Verify a professor image generation job was enqueued
+        jobs = repository_factory.job.list(kind="generate_professor_image", limit=50)
+        assert any((j.payload or {}).get("professor_id") == professor.id for j in jobs)
 
         # Retrieve the professor and verify
         retrieved = professor_service.get_professor(professor.id)
