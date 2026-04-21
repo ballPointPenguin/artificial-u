@@ -351,7 +351,7 @@ export default function ProfessorDetail() {
                 <RequireRole minRole="creator">
                   <h2 class="text-xl font-semibold mb-4">Edit Professor</h2>
                   <ProfessorForm
-                    professor={professorResource() as Professor}
+                    professor={professorResource()}
                     onSubmit={handleSubmitUpdate}
                     onCancel={() => setIsEditing(false)}
                     isSubmitting={isSubmitting()}

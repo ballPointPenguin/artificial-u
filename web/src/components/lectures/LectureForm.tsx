@@ -1,5 +1,5 @@
 import { createSignal, onMount, Show } from 'solid-js'
-import type { APIError, Lecture, LectureCreate, LectureUpdate } from '../../api/types.js'
+import type { APIError, Lecture, LectureUpdate } from '../../api/types.js'
 import { Button } from '../ui/Button.jsx'
 import FormField from '../ui/FormField.jsx'
 import Input from '../ui/Input.jsx'
@@ -39,7 +39,7 @@ export function LectureForm(props: LectureFormProps) {
     }
 
     if (props.existingLecture) {
-      await props.onSubmit(lectureData as LectureUpdate)
+      await props.onSubmit(lectureData)
     } else {
       if (!props.topicId) {
         throw new Error('topicId is required for creating a new lecture')
@@ -48,7 +48,7 @@ export function LectureForm(props: LectureFormProps) {
         ...lectureData,
         course_id: props.courseId,
         topic_id: props.topicId,
-      } as LectureCreate)
+      })
     }
   }
 

@@ -495,7 +495,9 @@ const ProfessorVoice: Component = () => {
                     class="arcane-input flex-1"
                     placeholder="e.g. pNInz6obpgDQGcFmaJgB"
                     value={elVoiceId()}
-                    onInput={(e) => setElVoiceId((e.target as HTMLInputElement).value)}
+                    onInput={(e: InputEvent & { currentTarget: HTMLInputElement }) =>
+                      setElVoiceId(e.currentTarget.value)
+                    }
                     aria-label="ElevenLabs Voice ID"
                   />
                   <Button
@@ -572,11 +574,10 @@ const ProfessorVoice: Component = () => {
                                 previewNames()[preview.generated_voice_id] ??
                                 `Voice ${String(i() + 1)}`
                               }
-                              onInput={(e) =>
+                              onInput={(e: InputEvent & { currentTarget: HTMLInputElement }) =>
                                 setPreviewNames((prev) => ({
                                   ...prev,
-                                  [preview.generated_voice_id]: (e.target as HTMLInputElement)
-                                    .value,
+                                  [preview.generated_voice_id]: e.currentTarget.value,
                                 }))
                               }
                               aria-label={`Name for voice option ${String(i() + 1)}`}
@@ -680,8 +681,8 @@ const ProfessorVoice: Component = () => {
                     <input
                       type="checkbox"
                       checked={showAllMistralEmotions()}
-                      onChange={(e) =>
-                        setShowAllMistralEmotions((e.target as HTMLInputElement).checked)
+                      onChange={(e: Event & { currentTarget: HTMLInputElement }) =>
+                        setShowAllMistralEmotions(e.currentTarget.checked)
                       }
                     />
                     Show all emotional tones (including sad/angry/frustrated/etc.)

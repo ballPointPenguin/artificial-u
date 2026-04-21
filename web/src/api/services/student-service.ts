@@ -3,13 +3,7 @@
  */
 import { httpClient } from '../client.js'
 import { ENDPOINTS } from '../config.js'
-import type {
-  PaginatedResponse,
-  Student,
-  StudentCoinsAdd,
-  StudentRoleUpdate,
-  StudentUpdate,
-} from '../types.js'
+import type { PaginatedResponse, Student, StudentUpdate } from '../types.js'
 
 interface ListStudentsParams {
   page?: number
@@ -57,14 +51,14 @@ export const studentService = {
   updateStudentRole: (id: number, role: 'viewer' | 'creator' | 'admin'): Promise<Student> => {
     return httpClient.patch<Student>(ENDPOINTS.students.updateRole(id), {
       role,
-    } as StudentRoleUpdate)
+    })
   },
 
   /**
    * Add coins to student account (Admin only)
    */
   addStudentCoins: (id: number, amount: number): Promise<Student> => {
-    return httpClient.post<Student>(ENDPOINTS.students.addCoins(id), { amount } as StudentCoinsAdd)
+    return httpClient.post<Student>(ENDPOINTS.students.addCoins(id), { amount })
   },
 
   /**

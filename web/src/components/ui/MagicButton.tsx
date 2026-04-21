@@ -15,14 +15,12 @@ interface MagicButtonProps extends Omit<JSX.ButtonHTMLAttributes<HTMLButtonEleme
 }
 
 export function MagicButton(props: MagicButtonProps) {
-  const merged = mergeProps(
-    {
-      variant: 'secondary' as ButtonVariant,
-      size: 'md' as ButtonSize,
-      iconOnly: false,
-    },
-    props
-  )
+  const defaults: Pick<MagicButtonProps, 'variant' | 'size' | 'iconOnly'> = {
+    variant: 'secondary',
+    size: 'md',
+    iconOnly: false,
+  }
+  const merged = mergeProps(defaults, props)
 
   const [local, others] = splitProps(merged, [
     'class',
