@@ -7,7 +7,10 @@
   "background_color": "#1a1311",
   "theme_color": "#5d4037",
   "orientation": "portrait-primary",
-  "categories": ["education", "productivity"],
+  "categories": [
+    "education",
+    "productivity"
+  ],
   "icons": [
     {
       "src": "/icons/icon-72x72.png",
@@ -72,13 +75,13 @@
   ],
   "screenshots": [
     {
-      "src": "/screenshots/mobile-1.png",
+      "src": "/screenshots/mobile-dark-en.png",
       "sizes": "540x720",
       "type": "image/png",
       "form_factor": "narrow"
     },
     {
-      "src": "/screenshots/desktop-1.png",
+      "src": "/screenshots/desktop-dark-en.png",
       "sizes": "1280x720",
       "type": "image/png",
       "form_factor": "wide"

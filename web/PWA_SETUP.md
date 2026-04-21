@@ -41,7 +41,7 @@ Configured with `vite-plugin-pwa` using Workbox for:
 
 - **NetworkFirst** for API calls
   - 10-second network timeout
-  - Falls back to cache if network fails
+  - Falls back to cache if the network fails or times out
   - Cached for 5 minutes, up to 50 entries
 
 #### Service Worker Features
@@ -256,7 +256,14 @@ All built assets are automatically precached. Be mindful of total cache size.
 
 ### API Caching
 
-API responses are cached for 5 minutes. Adjust in `vite.config.ts` if needed.
+API requests use a conservative **NetworkFirst** strategy (GET-only):
+
+- Prefer fresh network responses
+- Fall back to cached responses when offline / network times out
+- Cache window is short (5 minutes, up to 50 entries) to reduce staleness for mutable or user-specific data
+- A few user-specific / streaming endpoints are explicitly excluded from caching (e.g. `students/me`, `preferences/*`, `jobs/stream`)
+
+Adjust in `vite.config.ts` if needed.
 
 ## Troubleshooting
 

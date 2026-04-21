@@ -14,6 +14,10 @@ export default defineConfig(({ mode }) => ({
       workbox: {
         // Disable precaching in dev mode since files are served from memory
         globPatterns: mode === 'development' ? [] : ['**/*.{js,css,html,ico,png,svg,woff2}'],
+        // For SPA navigations, serve the app shell (when online) and show a branded
+        // offline fallback when the network is unavailable.
+        navigateFallback: '/offline.html',
+        navigateFallbackDenylist: [/^\/api\//],
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
@@ -44,13 +48,22 @@ export default defineConfig(({ mode }) => ({
             },
           },
           {
-            urlPattern: /\/api\/.*/i,
-            handler: 'NetworkOnly',
+            // Cache only safe-ish API reads (GET), and explicitly exclude user-specific/streaming endpoints.
+            method: 'GET',
+            urlPattern:
+              /\/api\/(?!v1\/students\/me(?:\?|$))(?!v1\/preferences\/)(?!v1\/jobs\/stream(?:\?|$)).*/i,
+            handler: 'NetworkFirst',
             options: {
               cacheName: 'api-cache',
-              // NetworkOnly strategy: always fetch from network, never use cache
-              // This ensures fresh data after mutations (create/update/delete)
-              // Trade-off: No offline support for API data, but ensures data consistency
+              networkTimeoutSeconds: 10,
+              cacheableResponse: {
+                statuses: [0, 200],
+              },
+              expiration: {
+                // Keep this intentionally small: API data can be user-specific and mutable.
+                maxEntries: 50,
+                maxAgeSeconds: 60 * 5, // 5 minutes
+              },
             },
           },
           {
