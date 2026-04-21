@@ -120,7 +120,9 @@ export const AnimatedCaptions: Component<AnimatedCaptionsProps> = (props) => {
           fallback={<div class="text-red-400">Failed to load captions.</div>}
         >
           <div
-            ref={containerRef}
+            ref={(el) => {
+              containerRef = el
+            }}
             class={`flex-1 min-h-0 overflow-y-auto pr-4 scrollbar-thin scrollbar-thumb-parchment-700 scrollbar-track-transparent ${containerMaxHeight()}`}
           >
             <div class={`${textSizeClass()} ${leadingClass()} font-serif text-parchment-400`}>

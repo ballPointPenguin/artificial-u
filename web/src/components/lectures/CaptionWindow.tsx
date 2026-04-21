@@ -288,7 +288,9 @@ export const CaptionWindow: Component<CaptionWindowProps> = (props) => {
 
   return (
     <div
-      ref={cardRef}
+      ref={(el) => {
+        cardRef = el
+      }}
       class={`relative w-full rounded-lg bg-surface border border-border/60 flex items-center justify-center p-6 sm:p-8 overflow-hidden ${
         props.class ?? ''
       }`}
@@ -307,7 +309,9 @@ export const CaptionWindow: Component<CaptionWindowProps> = (props) => {
           >
             {(phrase) => (
               <p
-                ref={pRef}
+                ref={(el) => {
+                  pRef = el
+                }}
                 class="leading-relaxed font-serif text-center max-w-prose break-words"
                 classList={{
                   // Stage directions read as descriptive meta-text, not speech.
