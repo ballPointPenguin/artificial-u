@@ -195,7 +195,7 @@ class Worker:
             self.logger.info(f"Job {job_id} marked as done")
 
             # Check for follow-up action and enqueue next job if present
-            await self._handle_follow_up(payload)
+            await self._handle_follow_up(kind, payload)
 
             await self._publish_event(job_id, kind, "done", payload, result=result)
 
@@ -309,10 +309,7 @@ class Worker:
             # Never fail the worker due to SSE publish errors
             pass
 
-    async def _handle_follow_up(
-        self,
-        payload: Dict[str, Any],
-    ) -> None:
+    async def _handle_follow_up(self, kind: str, payload: Dict[str, Any]) -> None:
         """
         Handle follow-up actions after job completion.
 
@@ -330,6 +327,16 @@ class Worker:
         """
         follow_up = payload.get("follow_up")
         if not follow_up:
+            return
+
+        # IMPORTANT: For batched lecture generation, we intentionally chain via the
+        # `generate_lecture_summary` job (which is enqueued by the lecture generation handler).
+        # That ensures each subsequent lecture prompt includes the fully-updated summary context
+        # from the prior lecture.
+        if kind == "generate_lecture":
+            self.logger.info(
+                "Skipping direct follow-up enqueue for generate_lecture; chaining occurs after summary"
+            )
             return
 
         remaining_topic_ids = follow_up.get("remaining_topic_ids", [])

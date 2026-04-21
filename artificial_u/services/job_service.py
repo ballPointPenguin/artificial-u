@@ -197,8 +197,55 @@ class JobService:
         partial = payload.get("partial_attributes") or {}
         self.logger.info(f"Generating and saving lecture with partial attributes: {partial}")
 
-        # Use the new generate_and_save_lecture method for complete processing
-        saved_lecture = await service.generate_and_save_lecture(partial)
+        # Batch mode: when the job payload includes a follow-up chain (created by the Topics
+        # admin batch operations), we must ensure the lecture summary is fully generated before
+        # enqueuing the next lecture in the chain. We achieve this by:
+        # - generating/saving the lecture text only (no auto-enqueued summary/audio),
+        # - enqueueing a `generate_lecture_summary` job that carries the follow_up chain,
+        # - enqueueing audio in parallel (optional; doesn't affect narrative continuity).
+        follow_up = payload.get("follow_up")
+        if follow_up:
+            saved_lecture = await service.generate_and_save_lecture_text_only(partial)
+
+            # Enqueue summary job with follow-up chain so the worker advances only after summary.
+            try:
+                summary_payload: Dict[str, Any] = {
+                    "lecture_id": saved_lecture.id,
+                    "topic_id": saved_lecture.topic_id,
+                    "follow_up": follow_up,
+                }
+                self.repository_factory.job.create(
+                    kind="generate_lecture_summary",
+                    payload=summary_payload,
+                    priority=payload.get("priority", 0),
+                )
+            except Exception as e:  # noqa: BLE001
+                self.logger.error(
+                    "Failed to enqueue chained summary generation for lecture %s: %s",
+                    saved_lecture.id,
+                    e,
+                    exc_info=True,
+                )
+                raise
+
+            # Enqueue audio (does not participate in chaining).
+            try:
+                self.repository_factory.job.create(
+                    kind="generate_lecture_audio",
+                    payload={"lecture_id": saved_lecture.id, "topic_id": saved_lecture.topic_id},
+                    priority=payload.get("priority", 0),
+                )
+            except Exception as e:  # noqa: BLE001
+                # Don't fail the batch chain if audio enqueue fails.
+                self.logger.warning(
+                    "Failed to enqueue audio generation for lecture %s: %s",
+                    saved_lecture.id,
+                    e,
+                    exc_info=True,
+                )
+        else:
+            # Use the complete workflow for non-batch jobs.
+            saved_lecture = await service.generate_and_save_lecture(partial)
 
         self.logger.info(f"Generate and save lecture completed: {saved_lecture.id}")
         return {
