@@ -121,6 +121,8 @@ export const ENDPOINTS = {
     regenerateRemainingAudio: (id: number) => `/v1/topics/${String(id)}/regenerate-remaining-audio`,
     regenerateRemainingLectures: (id: number) =>
       `/v1/topics/${String(id)}/regenerate-remaining-lectures`,
+    generateRemainingTimelines: (id: number) =>
+      `/v1/topics/${String(id)}/generate-remaining-timelines`,
   },
   voices: {
     manualAssignVoice: (professorId: string) => `/v1/voices/${professorId}/assign_voice`,

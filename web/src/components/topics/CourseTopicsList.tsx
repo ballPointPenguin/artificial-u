@@ -245,6 +245,32 @@ export function CourseTopicsList(props: CourseTopicsListProps) {
     }
   }
 
+  const handleGenerateRemainingTimelines = async (topicId: number) => {
+    if (
+      !confirm(
+        'This will (re)generate timelines for all lectures with audio from this topic forward. Continue?'
+      )
+    ) {
+      return
+    }
+
+    try {
+      const result = await topicService.generateRemainingTimelines(topicId)
+      setBatchJobMessage(result.message || 'Batch timeline generation started')
+      console.log('Started batch timeline generation:', result)
+      setTimeout(() => {
+        setBatchJobMessage(null)
+      }, 3000)
+    } catch (err) {
+      console.error('Failed to start batch timeline generation:', err)
+      setError(
+        err instanceof Error
+          ? { detail: err.message }
+          : { detail: 'Failed to start batch timeline generation' }
+      )
+    }
+  }
+
   return (
     <div class="space-y-6">
       <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
@@ -397,6 +423,16 @@ export function CourseTopicsList(props: CourseTopicsListProps) {
                         title="Regenerate audio for existing lectures from this topic forward"
                       >
                         Regenerate Remaining Audio
+                      </Button>
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => {
+                          void handleGenerateRemainingTimelines(topic.id)
+                        }}
+                        title="(Re)generate forced-alignment timelines for lectures with audio from this topic forward"
+                      >
+                        Generate Remaining Timelines
                       </Button>
                       <Button
                         variant="outline"

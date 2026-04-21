@@ -318,7 +318,7 @@ class Worker:
 
         Follow-up structure:
         {
-            "action": "generate_lecture" | "generate_lecture_audio",
+            "action": "generate_lecture" | "generate_lecture_audio" | "generate_lecture_timeline",
             "remaining_topic_ids": [4, 5, 6, ...],
             "course_id": 10,
             "created_by": "user@example.com",
@@ -385,6 +385,8 @@ class Worker:
             return self._build_lecture_payload(next_topic_id, follow_up, new_remaining)
         elif action == "generate_lecture_audio":
             return await self._build_audio_payload(next_topic_id, follow_up, new_remaining)
+        elif action == "generate_lecture_timeline":
+            return await self._build_timeline_payload(next_topic_id, follow_up, new_remaining)
         else:
             self.logger.warning(f"Unknown follow-up action: {action}")
             return None
@@ -431,6 +433,51 @@ class Worker:
         course_id = follow_up.get("course_id")
         if not course_id:
             self.logger.error("Follow-up audio generation missing course_id")
+            return None
+
+    async def _build_timeline_payload(
+        self,
+        next_topic_id: int,
+        follow_up: Dict[str, Any],
+        new_remaining: list[int],
+    ) -> Dict[str, Any] | None:
+        """Build payload for timeline generation follow-up job."""
+        course_id = follow_up.get("course_id")
+        if not course_id:
+            self.logger.error("Follow-up timeline generation missing course_id")
+            return None
+
+        # Query for the lecture with this topic_id
+        try:
+            lecture_repo = self.repository_factory.lecture
+            lectures = await asyncio.to_thread(lecture_repo.list_by_topic, next_topic_id)
+            if not lectures or len(lectures) == 0:
+                self.logger.warning(
+                    f"No lecture found for topic {next_topic_id}, skipping timeline generation"
+                )
+                return None
+
+            lecture = lectures[0]
+            if not getattr(lecture, "audio_url", None):
+                self.logger.warning(
+                    f"No lecture audio found for topic {next_topic_id}, skipping timeline generation"
+                )
+                return None
+
+            payload: Dict[str, Any] = {
+                "lecture_id": lecture.id,
+                "topic_id": next_topic_id,
+            }
+
+            if new_remaining:
+                payload["follow_up"] = {
+                    **follow_up,
+                    "remaining_topic_ids": new_remaining,
+                }
+
+            return payload
+        except Exception as e:
+            self.logger.error(f"Error querying lecture for topic {next_topic_id}: {e}")
             return None
 
         # Query for the lecture with this topic_id

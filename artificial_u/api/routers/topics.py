@@ -271,6 +271,35 @@ def get_remaining_topic_ids_with_lectures(
     return topic_ids_with_lectures
 
 
+def get_remaining_topic_ids_with_audio(repository_factory: RepositoryFactory, topic) -> List[int]:
+    """
+    Returns a list of topic IDs from this topic forward (sorted), only including topics whose
+    latest lecture has an audio_url (required for timeline generation).
+
+    Notes:
+    - Topics with no lecture are skipped.
+    - Topics whose lecture has no audio_url are skipped.
+    - Topics whose lecture already has a timeline_url are still included (this endpoint regenerates).
+    """
+    all_topics = repository_factory.topic.list_by_course(topic.course_id)
+    remaining_topics = [
+        t
+        for t in sorted(all_topics, key=lambda t: (t.week, t.order))
+        if (t.week > topic.week) or (t.week == topic.week and t.order >= topic.order)
+    ]
+
+    topic_ids_with_audio: List[int] = []
+    for t in remaining_topics:
+        lectures = repository_factory.lecture.list_by_topic(t.id)
+        if not lectures:
+            continue
+        lecture = lectures[0]
+        if getattr(lecture, "audio_url", None):
+            topic_ids_with_audio.append(t.id)
+
+    return topic_ids_with_audio
+
+
 @router.post(
     "/{topic_id}/generate-remaining-lectures",
     status_code=status.HTTP_202_ACCEPTED,
@@ -408,6 +437,77 @@ def regenerate_remaining_audio(
         "run_after": row.run_after,
         "total_lectures": len(topic_ids_with_lectures),
         "message": f"Queued batch audio regeneration for {len(topic_ids_with_lectures)} lectures",
+    }
+
+
+@router.post(
+    "/{topic_id}/generate-remaining-timelines",
+    status_code=status.HTTP_202_ACCEPTED,
+    summary="Generate remaining timelines starting from this topic",
+    description=(
+        "Generate (or regenerate) forced-alignment timelines for lectures from this topic forward. "
+        "Admin only. Only processes topics whose latest lecture has audio. "
+        "Lectures that already have timelines are regenerated. "
+        "Jobs execute serially to respect API rate limits."
+    ),
+    dependencies=[require_role("admin")],
+)
+def generate_remaining_timelines(
+    topic_id: int = Path(..., description="The starting topic ID"),
+    repository_factory: RepositoryFactory = Depends(get_repository_factory),
+    student: Student = Depends(ensure_student),
+):
+    # 1. Get the topic and validate
+    topic = repository_factory.topic.get(topic_id)
+    if not topic:
+        raise HTTPException(status_code=404, detail="Topic not found")
+
+    # 2. Get all topics from this one forward and filter to only topics that have lectures with audio
+    topic_ids_with_audio = get_remaining_topic_ids_with_audio(repository_factory, topic)
+    if not topic_ids_with_audio:
+        raise HTTPException(status_code=400, detail="No lecture audio found for these topics")
+
+    # 3. Create first job with follow_up chain (serial)
+    first_topic_id = topic_ids_with_audio[0]
+    follow_up_ids = topic_ids_with_audio[1:]
+
+    first_lectures = repository_factory.lecture.list_by_topic(first_topic_id)
+    if not first_lectures:
+        raise HTTPException(status_code=400, detail="No lecture found for first topic")
+
+    first_lecture = first_lectures[0]
+    if not getattr(first_lecture, "audio_url", None):
+        raise HTTPException(status_code=400, detail="First lecture has no audio")
+
+    payload: Dict[str, Any] = {
+        "lecture_id": first_lecture.id,
+        "topic_id": first_topic_id,
+    }
+
+    if follow_up_ids:
+        payload["follow_up"] = {
+            "action": "generate_lecture_timeline",
+            "remaining_topic_ids": follow_up_ids,
+            "course_id": topic.course_id,
+            "created_by": student.email,
+        }
+
+    row = repository_factory.job.create(
+        kind="generate_lecture_timeline",
+        payload=payload,
+        priority=1,
+    )
+
+    return {
+        "id": row.id,
+        "kind": row.kind,
+        "status": row.status,
+        "attempts": row.attempts,
+        "max_attempts": row.max_attempts,
+        "priority": row.priority,
+        "run_after": row.run_after,
+        "total_lectures": len(topic_ids_with_audio),
+        "message": f"Queued batch timeline generation for {len(topic_ids_with_audio)} lectures",
     }
 
 

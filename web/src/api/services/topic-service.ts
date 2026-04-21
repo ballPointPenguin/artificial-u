@@ -141,4 +141,20 @@ export const topicService = {
   }> => {
     return httpClient.post(ENDPOINTS.topics.regenerateRemainingLectures(topicId), undefined)
   },
+
+  generateRemainingTimelines: (
+    topicId: number
+  ): Promise<{
+    id: number
+    kind: string
+    status: string
+    attempts: number
+    max_attempts: number
+    priority?: number
+    run_after?: string
+    total_lectures?: number
+    message?: string
+  }> => {
+    return httpClient.post(ENDPOINTS.topics.generateRemainingTimelines(topicId), undefined)
+  },
 }
