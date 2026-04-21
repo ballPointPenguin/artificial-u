@@ -38,7 +38,7 @@ function getInitialLocale(): LocaleCode {
   if (typeof window !== 'undefined') {
     const stored = localStorage.getItem(LOCALE_STORAGE_KEY)
     if (stored && (stored === 'en' || stored === 'es' || stored === 'fr' || stored === 'zh')) {
-      return stored as LocaleCode
+      return stored
     }
 
     // Try browser language

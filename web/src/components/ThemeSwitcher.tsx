@@ -25,8 +25,8 @@ export function ThemeSwitcher() {
 
   const themeOptions: ThemeOption[] = themeOptionValues.map((mode) => {
     const properties = themeProperties[mode]
-    let description = ''
-    let label = ''
+    let description: string
+    let label: string
 
     // Descriptions from i18n
     switch (mode) {

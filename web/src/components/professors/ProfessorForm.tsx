@@ -90,10 +90,12 @@ const ProfessorForm: Component<ProfessorFormProps> = (props) => {
   const [departmentsResource] = createResource(async () => {
     try {
       const response = await departmentService.listDepartments({ page: 1, size: 100 })
-      return response.items.map((dept: Department) => ({
-        value: dept.id,
-        label: `${dept.name} (${dept.code})`,
-      })) as SelectOption[]
+      return response.items.map(
+        (dept: Department): SelectOption => ({
+          value: dept.id,
+          label: `${dept.name} (${dept.code})`,
+        })
+      )
     } catch (error: unknown) {
       console.error('Failed to fetch departments:', error)
       if (props.setError) {

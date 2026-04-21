@@ -22,6 +22,16 @@ export function CourseTopicsList(props: CourseTopicsListProps) {
   const [error, setError] = createSignal<APIError | null>(null)
   const [listVersion, setListVersion] = createSignal(0)
 
+  const isTopicCreate = (data: TopicCreate | TopicUpdate): data is TopicCreate => {
+    return (
+      typeof data.title === 'string' &&
+      typeof data.course_id === 'number' &&
+      typeof data.week === 'number' &&
+      typeof data.order === 'number' &&
+      'content' in data
+    )
+  }
+
   const [showForm, setShowForm] = createSignal(false)
   const [editingTopic, setEditingTopic] = createSignal<Topic | null>(null)
   const [formError, setFormError] = createSignal<APIError | null>(null)
@@ -112,9 +122,12 @@ export function CourseTopicsList(props: CourseTopicsListProps) {
     try {
       const currentEditingTopic = editingTopic()
       if (currentEditingTopic) {
-        await topicService.updateTopic(currentEditingTopic.id, data as TopicUpdate)
+        await topicService.updateTopic(currentEditingTopic.id, data)
       } else {
-        await topicService.createTopic(data as TopicCreate)
+        if (!isTopicCreate(data)) {
+          throw new Error('Invalid topic create payload')
+        }
+        await topicService.createTopic(data)
       }
       setShowForm(false)
       setEditingTopic(null)

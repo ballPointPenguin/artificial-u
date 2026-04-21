@@ -11,7 +11,6 @@ export const PersistentAudioPlayer: Component = () => {
   // render on a fresh session — a plain `let audioRef` misses the initial mount
   // and leaves timeupdate/play/pause listeners permanently unattached.)
   const [audioEl, setAudioEl] = createSignal<HTMLAudioElement | null>(null)
-  let controllerRef: HTMLElement | undefined
   let pendingRestoreTime: number | null = null
   let previousTrackKey: string | null = null
 
@@ -241,7 +240,7 @@ export const PersistentAudioPlayer: Component = () => {
               {/* Media Chrome Player */}
               <div class="flex-[2] min-w-0 w-full">
                 <media-controller
-                  ref={controllerRef}
+                  ref={() => {}}
                   audio
                   nohotkeys
                   class="persistent-audio-controller w-full overflow-visible sm:max-w-[calc(100%-3.5rem)]"

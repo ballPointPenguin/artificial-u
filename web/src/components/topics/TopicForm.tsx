@@ -117,9 +117,9 @@ export function TopicForm(props: TopicFormProps) {
       await props.onSubmit({
         ...topicData,
         course_id: props.existingTopic.course_id,
-      } as TopicUpdate)
+      })
     } else {
-      await props.onSubmit({ ...topicData, course_id: props.courseId } as TopicCreate)
+      await props.onSubmit({ ...topicData, course_id: props.courseId })
     }
   }
 

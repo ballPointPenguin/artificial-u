@@ -1,5 +1,5 @@
 import { useRegisterSW } from 'virtual:pwa-register/solid'
-import { createSignal, onMount, Show } from 'solid-js'
+import { createSignal, onCleanup, onMount, Show } from 'solid-js'
 import { Alert } from '../components/ui/Alert'
 import { Button } from '../components/ui/Button'
 import { useI18n } from '../i18n/index.js'
@@ -69,19 +69,27 @@ export function InstallPWAPrompt() {
   const [isVisible, setIsVisible] = createSignal(false)
 
   onMount(() => {
-    window.addEventListener('beforeinstallprompt', (e) => {
+    const onBeforeInstallPrompt = (e: Event) => {
       e.preventDefault()
       setDeferredPrompt(e as BeforeInstallPromptEvent)
       // Only show install prompt on mobile devices
       if (isMobileDevice()) {
         setIsVisible(true)
       }
-    })
+    }
 
-    window.addEventListener('appinstalled', () => {
+    const onAppInstalled = () => {
       setDeferredPrompt(null)
       setIsVisible(false)
       console.log('PWA was installed')
+    }
+
+    window.addEventListener('beforeinstallprompt', onBeforeInstallPrompt)
+    window.addEventListener('appinstalled', onAppInstalled)
+
+    onCleanup(() => {
+      window.removeEventListener('beforeinstallprompt', onBeforeInstallPrompt)
+      window.removeEventListener('appinstalled', onAppInstalled)
     })
   })
 
