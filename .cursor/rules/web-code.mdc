@@ -37,7 +37,7 @@ alwaysApply: false
   - `src/index.css`: HSL component values for CSS custom properties
 - **Semantic Colors**: Uses semantic color names (primary, secondary, accent, background, foreground, muted, border, surface) plus status colors (info, success, warning, danger)
 - **Component Library**: Custom UI components in `src/components/ui/` built on Kobalte UI
-- **Fonts**: Cormorant Garamond (body), Cinzel (headings), Inter (UI elements)
+- **Fonts**: Libre Baskerville (body), Cinzel (headings), Inter (UI elements)
 - **Testing**: Use `src/pages/Stylebook.tsx` to test UI components across themes
 
 ## Key Files & Directories

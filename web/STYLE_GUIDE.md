@@ -88,7 +88,7 @@ These semantic colors are then available as Tailwind utility classes (e.g., `bg-
 ## Fonts
 
 - Three main font families are defined in `src/index.css` and `tailwind.config.js`:
-  - `--font-serif`: "Cormorant Garamond" (default body font)
+  - `--font-serif`: "Libre Baskerville" (default body font)
   - `--font-display`: "Cinzel" (for headings)
   - `--font-sans`: "Inter" (for UI elements or specific sans-serif needs)
 - Google Fonts are imported at the top of `src/index.css`.
