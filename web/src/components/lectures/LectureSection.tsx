@@ -1,5 +1,5 @@
 import { A } from '@solidjs/router'
-import { Download, FileText, Headphones, Pencil, Trash2, Upload } from 'lucide-solid'
+import { Download, FileText, Headphones, Pencil, Play, Trash2, Upload } from 'lucide-solid'
 import { type Component, createSignal, Show } from 'solid-js'
 import { lectureService } from '../../api/services/lecture-service.js'
 import type { Lecture } from '../../api/types.js'
@@ -284,8 +284,13 @@ export const LectureSection: Component<LectureSectionProps> = (props) => {
                       }
                     }}
                   >
-                    <Headphones class="h-4 w-4" aria-hidden="true" />
-                    Listen
+                    <Show
+                      when={lectureData().timeline_url}
+                      fallback={<Headphones class="h-4 w-4" aria-hidden="true" />}
+                    >
+                      <Play class="h-4 w-4" aria-hidden="true" />
+                    </Show>
+                    {lectureData().timeline_url ? t().lectureDetail.play : t().lectureDetail.listen}
                   </Button>
                   <a
                     href={lectureData().audio_download_url || lectureData().audio_url || undefined}

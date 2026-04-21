@@ -1,5 +1,5 @@
 import { A, useNavigate, useParams } from '@solidjs/router'
-import { Download, FileText, Headphones, LoaderCircle } from 'lucide-solid'
+import { Download, FileText, Headphones, LoaderCircle, Play } from 'lucide-solid'
 import { type Component, createResource, createSignal, For, Show } from 'solid-js'
 import { courseService } from '../api/services/course-service.js'
 import { topicService } from '../api/services/topic-service.js'
@@ -196,8 +196,16 @@ const TopicsList: Component<{
                             <Show when={lecture?.audio_url}>
                               <button
                                 class="inline-flex h-9 w-9 items-center justify-center rounded-full border border-parchment-800/40 text-mystic-300 hover:text-mystic-200 hover:border-mystic-400 hover:bg-mystic-500/10 transition-colors"
-                                aria-label={t().courseDetail.playAudio}
-                                title={t().courseDetail.playAudio}
+                                aria-label={
+                                  lecture?.timeline_url
+                                    ? t().courseDetail.playAudio
+                                    : t().courseDetail.listenAudio
+                                }
+                                title={
+                                  lecture?.timeline_url
+                                    ? t().courseDetail.playAudio
+                                    : t().courseDetail.listenAudio
+                                }
                                 onClick={(event) => {
                                   event.stopPropagation()
                                   if (lecture?.audio_url) {
@@ -205,6 +213,7 @@ const TopicsList: Component<{
                                       url: lecture.audio_url,
                                       title: lecture.title,
                                       subtitle: `${t().courseDetail.week} ${String(topic.week)} - ${topic.title}`,
+                                      timelineUrl: lecture.timeline_url ?? undefined,
                                       courseId: props.courseId,
                                       lectureId: lecture.id,
                                       topicId: topic.id,
@@ -215,7 +224,12 @@ const TopicsList: Component<{
                                   }
                                 }}
                               >
-                                <Headphones class="h-4 w-4" />
+                                <Show
+                                  when={lecture?.timeline_url}
+                                  fallback={<Headphones class="h-4 w-4" />}
+                                >
+                                  <Play class="h-4 w-4" />
+                                </Show>
                               </button>
                               <a
                                 href={

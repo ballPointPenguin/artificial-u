@@ -1,5 +1,5 @@
 import { A, useNavigate, useParams } from '@solidjs/router'
-import { Download, FileText, Headphones, Upload } from 'lucide-solid'
+import { Download, FileText, Headphones, Play, Upload } from 'lucide-solid'
 import {
   type Component,
   createMemo,
@@ -116,8 +116,12 @@ const LectureDetailView: Component<{
                 class="min-h-[44px] sm:min-h-[32px] w-full sm:w-auto flex items-center justify-center gap-2"
                 onClick={handleListen}
               >
-                <Headphones class="h-4 w-4" />
-                <span>{t().lectureDetail.listen}</span>
+                <Show when={props.lecture.timeline_url} fallback={<Headphones class="h-4 w-4" />}>
+                  <Play class="h-4 w-4" />
+                </Show>
+                <span>
+                  {props.lecture.timeline_url ? t().lectureDetail.play : t().lectureDetail.listen}
+                </span>
               </Button>
               <a
                 href={props.lecture.audio_download_url || props.lecture.audio_url || undefined}
