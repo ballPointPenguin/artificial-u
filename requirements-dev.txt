@@ -199,6 +199,8 @@ pathspec==1.0.4
     # via
     #   black
     #   mypy
+pillow==12.2.0
+    # via artificial_u (pyproject.toml)
 pip-tools==7.5.3
     # via artificial_u (pyproject.toml)
 platformdirs==4.9.6
