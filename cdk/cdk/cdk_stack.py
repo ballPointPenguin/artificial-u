@@ -229,6 +229,7 @@ class CdkStack(Stack):
             "LECTURE_SUMMARY_MODEL": "gpt-5.4-nano",
             "LOG_LEVEL": "INFO",
             "PROFESSOR_GENERATION_MODEL": "gpt-5.4-nano",
+            # "RUN_INITIALIZE_VOICES": "1",  # TEMPORARY - initialize/refresh voice records at boot
             # "RUN_BACKFILL_DURATIONS": "1",  # TEMPORARY - comment out when not using it
             # "RUN_BACKFILL_ID3": "1",  # TEMPORARY - comment out when not using it
             # "RUN_BACKFILL_VOICE_TTS_BACKEND": "1",  # TEMPORARY - backfill tts_backend on voices

@@ -25,13 +25,15 @@ else
   echo "[entrypoint] DATABASE_URL not set; skipping data seeding"
 fi
 
-# Optionally initialize voices if ElevenLabs is configured
-if [ -n "$ELEVENLABS_API_KEY" ]; then
-  echo "[entrypoint] ELEVENLABS_API_KEY detected; initializing voices (this may take a while)"
-  # Do not fail hard if this step errors; it's non-critical for API boot
-  python scripts/initialize_voices.py || echo "[entrypoint] Voice initialization failed; continuing"
-else
-  echo "[entrypoint] ELEVENLABS_API_KEY not set; skipping voice initialization"
+# Optionally initialize voices (explicit toggle; off by default)
+if [ "${RUN_INITIALIZE_VOICES}" = "1" ]; then
+  if [ -n "$ELEVENLABS_API_KEY" ]; then
+    echo "[entrypoint] RUN_INITIALIZE_VOICES=1 detected; initializing voices (this may take a while)"
+    # Do not fail hard if this step errors; it's non-critical for API boot
+    python scripts/initialize_voices.py || echo "[entrypoint] Voice initialization failed; continuing"
+  else
+    echo "[entrypoint] ELEVENLABS_API_KEY not set; skipping voice initialization"
+  fi
 fi
 
 # Optionally run ID3 backfill on existing audio (simple toggle)
