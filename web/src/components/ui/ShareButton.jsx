@@ -5,6 +5,8 @@ import { Button } from './Button.jsx'
 export const ShareButton = (props) => {
   const [status, setStatus] = createSignal('idle') // idle | copied | failed
 
+  const layout = () => props.layout ?? 'inline' // inline | stacked
+
   const copyToClipboard = async (text) => {
     if (navigator.clipboard?.writeText) {
       await navigator.clipboard.writeText(text)
@@ -52,11 +54,16 @@ export const ShareButton = (props) => {
     <Button
       variant={props.variant ?? 'outline'}
       size={props.size ?? 'sm'}
-      class={props.class}
+      class={[
+        layout() === 'stacked'
+          ? 'inline-flex flex-col items-center justify-center gap-1'
+          : 'inline-flex items-center justify-center gap-2',
+        props.class ?? '',
+      ].join(' ')}
       onClick={() => void onShare()}
     >
-      <Share2 class="h-4 w-4" />
-      <span class="ml-2">
+      <Share2 class="h-4 w-4 shrink-0" />
+      <span class={layout() === 'stacked' ? 'leading-none' : ''}>
         <Show when={status() === 'copied'} fallback={props.label ?? 'Share'}>
           Copied
         </Show>
