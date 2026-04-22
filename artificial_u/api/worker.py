@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import os
 from typing import Any, Awaitable, Callable, Dict
 
 from aiolimiter import AsyncLimiter  # type: ignore
@@ -23,6 +24,9 @@ class Worker:
         self.job_service = JobService(repository_factory)
         self.logger = logging.getLogger("artificial_u.api.worker")
         self.event_hub = event_hub
+        # If set to a positive int, logs an idle message every N polling cycles.
+        # Default is 0 (disabled) to avoid log spam during development.
+        self._idle_log_every = int(os.environ.get("WORKER_IDLE_LOG_EVERY", "0"))
 
     async def start(self):
         if self._task and not self._task.done():
@@ -146,7 +150,7 @@ class Worker:
 
     async def _idle_or_log(self, loop_count: int) -> None:
         """Log occasionally when idle and sleep briefly while remaining cancellable."""
-        if loop_count % 40 == 0:
+        if self._idle_log_every > 0 and loop_count % self._idle_log_every == 0:
             self.logger.debug(f"No jobs found after {loop_count} polling cycles")
         if self._stopped.is_set():
             return

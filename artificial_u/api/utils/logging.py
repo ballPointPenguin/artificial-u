@@ -88,6 +88,18 @@ def setup_logging(settings: Settings) -> None:
     root_logger.addHandler(console_handler)
     api_logger.addHandler(console_handler)
 
+    # Reduce noisy third-party / infrastructure loggers while keeping app logs at LOG_LEVEL.
+    # This is especially helpful in development with SQLAlchemy pool pre-ping enabled.
+    db_noise_level_name = os.environ.get("DB_NOISE_LOG_LEVEL", "WARNING").upper()
+    db_noise_level = getattr(logging, db_noise_level_name, logging.WARNING)
+
+    for noisy_logger_name in (
+        "sqlalchemy.engine",
+        "sqlalchemy.pool",
+        "artificial_u.models.engine",
+    ):
+        logging.getLogger(noisy_logger_name).setLevel(db_noise_level)
+
     # Add file logging in production
     if settings.environment == "production":
         # Create logs directory if it doesn't exist
