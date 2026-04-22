@@ -498,7 +498,9 @@ const CourseDetail: Component = () => {
                   </A>
                   <Show when={!isEditing()}>
                     <div class="flex flex-wrap items-center gap-2 sm:justify-end">
-                      <ShareButton url={`${window.location.origin}/share/courses/${String(courseId)}`} />
+                      <ShareButton
+                        url={`${window.location.origin}/share/courses/${String(courseId)}`}
+                      />
                       <Show
                         when={auth.canModify(course().created_by) && course().status === 'hidden'}
                       >

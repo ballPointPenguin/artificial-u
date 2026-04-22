@@ -1,28 +1,36 @@
 import { Share2 } from 'lucide-solid'
-import { createSignal, Show } from 'solid-js'
+import { type ComponentProps, createSignal, Show } from 'solid-js'
 import { Button } from './Button.jsx'
 
-export const ShareButton = (props) => {
-  const [status, setStatus] = createSignal('idle') // idle | copied | failed
+type ShareStatus = 'idle' | 'copied' | 'failed'
+type ShareLayout = 'inline' | 'stacked'
 
-  const layout = () => props.layout ?? 'inline' // inline | stacked
+export interface ShareButtonProps {
+  url?: string
+  title?: string
+  text?: string
+  label?: string
+  layout?: ShareLayout
+  class?: string
+  variant?: ComponentProps<typeof Button>['variant']
+  size?: ComponentProps<typeof Button>['size']
+}
 
-  const copyToClipboard = async (text) => {
-    if (navigator.clipboard?.writeText) {
+export const ShareButton = (props: ShareButtonProps) => {
+  const [status, setStatus] = createSignal<ShareStatus>('idle')
+
+  const layout = () => props.layout ?? 'inline'
+
+  const copyToClipboard = async (text: string) => {
+    try {
       await navigator.clipboard.writeText(text)
       return
+    } catch {
+      // Clipboard API may fail in non-secure contexts or due to permissions.
+      // Use a non-deprecated fallback that still lets the user copy.
+      const ok = window.prompt('Copy this link:', text)
+      if (ok === null) throw new Error('Copy cancelled')
     }
-
-    // Fallback for older browsers / non-secure contexts
-    const el = document.createElement('textarea')
-    el.value = text
-    el.setAttribute('readonly', '')
-    el.style.position = 'absolute'
-    el.style.left = '-9999px'
-    document.body.appendChild(el)
-    el.select()
-    document.execCommand('copy')
-    document.body.removeChild(el)
   }
 
   const onShare = async () => {
@@ -31,7 +39,7 @@ export const ShareButton = (props) => {
 
     try {
       // Prefer native share sheet when available
-      if (navigator.share) {
+      if ('share' in navigator && typeof navigator.share === 'function') {
         await navigator.share({
           url,
           title: props.title,
@@ -72,4 +80,3 @@ export const ShareButton = (props) => {
     </Button>
   )
 }
-
