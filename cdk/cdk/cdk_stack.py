@@ -403,6 +403,18 @@ class CdkStack(Stack):
                     cache_policy=cloudfront.CachePolicy.CACHING_DISABLED,
                     origin_request_policy=cloudfront.OriginRequestPolicy.ALL_VIEWER,
                 ),
+                # OG / unfurl HTML pages (rendered by FastAPI, NOT the SPA).
+                # Without this, /share/* falls back to S3 + SPA index.html and link previews are dull.
+                "/share/*": cloudfront.BehaviorOptions(
+                    origin=origins.LoadBalancerV2Origin(
+                        fargate_service.load_balancer,
+                        protocol_policy=cloudfront.OriginProtocolPolicy.HTTP_ONLY,
+                    ),
+                    allowed_methods=cloudfront.AllowedMethods.ALLOW_GET_HEAD_OPTIONS,
+                    viewer_protocol_policy=cloudfront.ViewerProtocolPolicy.HTTPS_ONLY,
+                    cache_policy=cloudfront.CachePolicy.CACHING_DISABLED,
+                    origin_request_policy=cloudfront.OriginRequestPolicy.ALL_VIEWER,
+                ),
             },
             default_root_object="index.html",
             # Custom error response for SPA routing
