@@ -50,7 +50,9 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
+    "aws-cdk-lib>=2.0.0",
     "black>=26.3.1",
+    "constructs>=10.0.0",
     "flake8>=7.3.0",
     "isort>=8.0.1",
     "mypy>=1.17.1",

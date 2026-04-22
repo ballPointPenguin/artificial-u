@@ -276,6 +276,19 @@ class CdkStack(Stack):
             health_check_grace_period=cdk.Duration.seconds(300),
         )
 
+        # Ensure deployments keep the desired number of tasks running.
+        # With desired_count=1, the ECS default minHealthyPercent=50% allows scaling down to 0 during a deployment.
+        api_cfn_service = fargate_service.service.node.default_child
+        if isinstance(api_cfn_service, ecs.CfnService):
+            api_cfn_service.add_property_override(
+                "DeploymentConfiguration.MinimumHealthyPercent",
+                100,
+            )
+            api_cfn_service.add_property_override(
+                "DeploymentConfiguration.MaximumPercent",
+                200,
+            )
+
         # 7. Configure Health Check for the API service
         fargate_service.target_group.configure_health_check(
             path="/api/v1/health",
