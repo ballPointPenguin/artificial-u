@@ -522,10 +522,9 @@ const Courses: Component = () => {
               {(course: Course) => (
                 <div class="arcane-card p-4">
                   <div class="flex flex-col gap-4">
-                    <div class="flex items-start justify-between gap-4">
-                      <CourseThumb course={course} size="md" />
-                      <div class="flex-1 min-w-0">
-                        <div class="flex items-center gap-2 mb-1">
+                    <div class="flex items-start justify-between gap-3">
+                      <div class="min-w-0">
+                        <div class="flex flex-wrap items-center gap-2">
                           <p class="text-xs font-serif uppercase tracking-wide text-parchment-400">
                             {course.code}
                           </p>
@@ -544,17 +543,21 @@ const Courses: Component = () => {
                             </span>
                           </span>
                         </div>
-                        <A
-                          href={`/courses/${String(course.id)}`}
-                          class="block text-lg font-display text-parchment-100 leading-tight hover:text-mystic-300 transition-colors"
-                        >
-                          {course.title}
-                        </A>
                       </div>
-                      <div class="text-xs font-serif text-parchment-400 text-right">
+                      <div class="shrink-0 text-xs font-serif text-parchment-400 text-right whitespace-nowrap">
                         <span class="block uppercase tracking-wide">{t().courses.updated}</span>
                         <span class="text-parchment-200">{formatDate(course.updated_at)}</span>
                       </div>
+                    </div>
+
+                    <div class="flex flex-col gap-4 min-[420px]:flex-row min-[420px]:items-start">
+                      <CourseThumb course={course} size="md" />
+                      <A
+                        href={`/courses/${String(course.id)}`}
+                        class="block min-w-0 flex-1 text-lg font-display text-parchment-100 leading-tight hover:text-mystic-300 transition-colors"
+                      >
+                        {course.title}
+                      </A>
                     </div>
                     <div class="grid gap-3 text-sm font-serif text-parchment-200">
                       <div>
