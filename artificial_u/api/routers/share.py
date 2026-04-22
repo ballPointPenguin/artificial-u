@@ -273,9 +273,11 @@ def share_topic(
         f" Topic {topic.order}" if topic.order > 1 else ""
     )
     title = f"{title}: {topic.title}"
+    # Topic content is a JSON blob; for sharing use the lecture summary instead.
+    lecture = (repository_factory.lecture.list_by_topic(topic_id) or [None])[0]
     description = _truncate_description(
-        str(topic.content) if topic.content is not None else None,
-        fallback=f"{course.code}: {course.title}",
+        lecture.summary if lecture else None,
+        fallback=topic.title or f"{course.code}: {course.title}",
     )
     image_url = course.image_url or _default_og_image_url(base, settings)
     og_image_url = _og_card_proxy_url(base, image_url)
