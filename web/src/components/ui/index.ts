@@ -12,6 +12,7 @@ export { LoadingSpinner } from './LoadingSpinner.jsx'
 export { MagicButton } from './MagicButton.jsx'
 export { default as MetadataInfo } from './MetadataInfo.jsx'
 export { default as NumberInput } from './NumberInput.jsx'
+export { ShareButton } from './ShareButton.jsx'
 export type { SelectOption } from './Select.jsx'
 // Ensure SelectOption is also exported if it's meant to be used externally
 export { default as Select } from './Select.jsx'

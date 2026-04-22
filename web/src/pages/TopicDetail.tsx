@@ -8,7 +8,7 @@ import { RequireRole } from '../auth/RequireRole'
 import { LectureSection } from '../components/lectures/LectureSection.jsx'
 import { TopicContentRenderer } from '../components/topics/TopicContentRenderer.jsx'
 import { TopicForm } from '../components/topics/TopicForm.jsx'
-import { Alert, Button, MetadataInfo } from '../components/ui'
+import { Alert, Button, MetadataInfo, ShareButton } from '../components/ui'
 import { useTranslations } from '../i18n/index.js'
 import { createJobTracker, getJobMessage } from '../utils/job-management.js'
 
@@ -255,12 +255,19 @@ const TopicDetail = () => {
                 <div>
                   {/* Breadcrumb navigation */}
                   <div class="mb-6">
-                    <A
-                      href={`/courses/${String(courseId())}`}
-                      class="text-mystic-500 hover:text-mystic-300 whitespace-nowrap"
-                    >
-                      ← {t().courseDetail.backToCourse}
-                    </A>
+                    <div class="flex flex-wrap items-center justify-between gap-3">
+                      <A
+                        href={`/courses/${String(courseId())}`}
+                        class="text-mystic-500 hover:text-mystic-300 whitespace-nowrap"
+                      >
+                        ← {t().courseDetail.backToCourse}
+                      </A>
+                      <ShareButton
+                        url={`${window.location.origin}/share/courses/${String(
+                          courseId()
+                        )}/topics/${String(topicId())}`}
+                      />
+                    </div>
                   </div>
 
                   {/* Course context */}
