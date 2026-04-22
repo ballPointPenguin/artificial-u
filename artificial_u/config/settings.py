@@ -70,6 +70,11 @@ class Settings(BaseSettings):
         ]
     )
 
+    # Public URLs (used for OG tags, canonical links, redirects)
+    # These should be set in production so share/unfurl pages generate stable absolute URLs.
+    PUBLIC_WEB_URL: str = "https://artificial-u.com"
+    PUBLIC_OG_DEFAULT_IMAGE_URL: Optional[str] = None
+
     # Database settings
     DATABASE_URL: str = DEFAULT_DB_URL
 

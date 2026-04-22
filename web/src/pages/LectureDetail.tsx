@@ -17,7 +17,14 @@ import type { Lecture, LectureUpdate } from '../api/types.js'
 import { useAuth } from '../auth/AuthProvider'
 import { RequireRole } from '../auth/RequireRole'
 import { LectureForm } from '../components/lectures/LectureForm.jsx'
-import { Alert, Button, ConfirmationModal, MagicButton, MetadataInfo } from '../components/ui'
+import {
+  Alert,
+  Button,
+  ConfirmationModal,
+  MagicButton,
+  MetadataInfo,
+  ShareButton,
+} from '../components/ui'
 import { useTranslations } from '../i18n/index.js'
 import { useAudioPlayer } from '../utils/audio-player-context.jsx'
 import { getJobEventHub } from '../utils/job-events-hub.js'
@@ -505,6 +512,12 @@ const LectureDetail = () => {
                         {t().lectureDetail.backToTopic}
                       </A>
                     </div>
+
+                    <ShareButton
+                      url={`${window.location.origin}/share/courses/${String(
+                        courseId()
+                      )}/lectures/${String(lectureId())}`}
+                    />
 
                     {/* Prev/Next Topic navigation */}
                     <Show when={topicsList() && topic()}>
