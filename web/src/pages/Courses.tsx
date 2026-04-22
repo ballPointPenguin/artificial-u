@@ -284,17 +284,17 @@ const Courses: Component = () => {
     const isLoading = () => isGeneratingCourseImageId() === courseId()
 
     const boxClass = () =>
-      props.size === 'sm' ? 'h-12 w-12 rounded-md' : 'h-16 w-16 shrink-0 rounded-lg'
+      props.size === 'sm' ? 'h-14 w-14 rounded-md' : 'h-36 w-36 shrink-0 rounded-2xl'
 
     const imgClass = () =>
       props.size === 'sm'
-        ? 'h-12 w-12 rounded-md object-cover border border-parchment-800/30'
-        : 'h-16 w-16 shrink-0 rounded-lg object-cover border border-parchment-800/30'
+        ? 'h-14 w-14 rounded-md object-cover border border-parchment-800/30 shadow'
+        : 'h-36 w-36 shrink-0 rounded-2xl object-cover border border-parchment-800/30 shadow-xl'
 
     const placeholderClass = () =>
       props.size === 'sm'
-        ? 'h-12 w-12 rounded-md bg-parchment-900/40 border border-parchment-800/30'
-        : 'h-16 w-16 shrink-0 rounded-lg bg-parchment-900/40 border border-parchment-800/30'
+        ? 'h-14 w-14 rounded-md bg-parchment-900/40 border border-parchment-800/30'
+        : 'h-36 w-36 shrink-0 rounded-2xl bg-parchment-900/40 border border-parchment-800/30'
 
     return (
       <>
@@ -309,8 +309,8 @@ const Courses: Component = () => {
                 <img
                   src={props.course.image_url ?? ''}
                   alt=""
-                  width={props.size === 'sm' ? 48 : 64}
-                  height={props.size === 'sm' ? 48 : 64}
+                  width={props.size === 'sm' ? 56 : 144}
+                  height={props.size === 'sm' ? 56 : 144}
                   loading="lazy"
                   class={imgClass()}
                 />
@@ -442,7 +442,7 @@ const Courses: Component = () => {
             <table class="min-w-full">
               <thead>
                 <tr class="border-b border-parchment-800/30">
-                  <th class="py-3 px-2 w-14 align-middle text-left font-display text-parchment-200">
+                  <th class="py-3 px-2 w-20 align-middle text-left font-display text-parchment-200">
                     {/* Album art */}
                   </th>
                   <SortableHeader field="code" label={t().courses.code} />
@@ -469,7 +469,7 @@ const Courses: Component = () => {
                 <For each={coursesData()?.items}>
                   {(course: Course) => (
                     <tr class="border-b border-parchment-800/20 hover:bg-arcanum-800/50 transition-colors">
-                      <td class="py-3 px-2 align-middle w-14">
+                      <td class="py-3 px-2 align-middle w-20">
                         <CourseThumb course={course} size="sm" />
                       </td>
                       <td class="py-3 px-4 align-middle text-parchment-100">{course.code}</td>

@@ -623,18 +623,18 @@ const CourseDetail: Component = () => {
                 >
                   <div class="flex flex-col gap-6 md:flex-row md:items-start mb-6">
                     <Show when={course().image_url}>
-                      <div class="shrink-0">
+                      <div class="w-full md:w-1/2 md:shrink-0">
                         <img
                           src={course().image_url ?? ''}
                           alt=""
                           width={256}
                           height={256}
                           loading="lazy"
-                          class="w-48 h-48 md:w-64 md:h-64 rounded-lg border border-parchment-800/40 object-cover shadow-lg"
+                          class="w-full aspect-square rounded-lg border border-parchment-800/40 object-cover shadow-lg"
                         />
                       </div>
                     </Show>
-                    <div class="flex flex-col gap-2 min-w-0 flex-1">
+                    <div class="flex flex-col gap-2 min-w-0 flex-1 md:w-1/2">
                       <div class="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
                         <h1 class="text-3xl font-display text-parchment-100">
                           {course().code}: {course().title}
