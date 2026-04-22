@@ -1,0 +1,35 @@
+{
+  "setup-worktree": [
+    "# Ensure expected directories exist",
+    "mkdir -p web",
+    "",
+    "# Copy required env files from the root worktree (best-effort, but loud)",
+    "[ -f \"$ROOT_WORKTREE_PATH/.env\" ] && cp -f \"$ROOT_WORKTREE_PATH/.env\" .env || (echo \"Missing $ROOT_WORKTREE_PATH/.env\" && false)",
+    "[ -f \"$ROOT_WORKTREE_PATH/web/.env.local\" ] && cp -f \"$ROOT_WORKTREE_PATH/web/.env.local\" web/.env.local || (echo \"Missing $ROOT_WORKTREE_PATH/web/.env.local\" && false)",
+    "",
+    "# Optional: if you keep additional env overrides, copy them too (non-fatal)",
+    "[ -f \"$ROOT_WORKTREE_PATH/.env.local\" ] && cp -f \"$ROOT_WORKTREE_PATH/.env.local\" .env.local || true",
+    "[ -f \"$ROOT_WORKTREE_PATH/web/.env\" ] && cp -f \"$ROOT_WORKTREE_PATH/web/.env\" web/.env || true"
+  ],
+  "setup-python": [
+    "# Prefer mise if available, otherwise use system python/hatch",
+    "command -v mise >/dev/null 2>&1 && mise install -q || true",
+    "",
+    "# Create/sync hatch env and install dev deps",
+    "command -v hatch >/dev/null 2>&1 || (echo \"hatch not found; install hatch to work on the backend\" && false)",
+    "hatch run pip install -e \".[dev]\""
+  ],
+  "setup-web": [
+    "# Prefer mise if available, otherwise rely on system node/pnpm",
+    "command -v mise >/dev/null 2>&1 && mise install -q || true",
+    "",
+    "cd web",
+    "command -v pnpm >/dev/null 2>&1 || (echo \"pnpm not found; install pnpm to work on ./web\" && false)",
+    "pnpm install"
+  ],
+  "setup-services-local": [
+    "# Best-effort local services; skip cleanly if docker isn't present",
+    "command -v docker >/dev/null 2>&1 || (echo \"docker not found; skipping services\" && exit 0)",
+    "docker compose up -d"
+  ]
+}
