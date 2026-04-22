@@ -15,7 +15,7 @@ import { useAuth } from '../auth/AuthProvider'
 import { RequireRole } from '../auth/RequireRole'
 import CourseForm from '../components/courses/CourseForm.jsx'
 import type { CourseFormData } from '../components/courses/types.jsx'
-import { Alert, Button, MagicButton, MetadataInfo } from '../components/ui'
+import { Alert, Button, MagicButton, MetadataInfo, ShareButton } from '../components/ui'
 import { useTranslations } from '../i18n'
 import { useAudioPlayer } from '../utils/audio-player-context.jsx'
 import { createJobTracker, getJobMessage } from '../utils/job-management.js'
@@ -498,6 +498,9 @@ const CourseDetail: Component = () => {
                   </A>
                   <Show when={!isEditing()}>
                     <div class="flex flex-wrap items-center gap-2 sm:justify-end">
+                      <ShareButton
+                        url={`${window.location.origin}/share/courses/${String(courseId)}`}
+                      />
                       <Show
                         when={auth.canModify(course().created_by) && course().status === 'hidden'}
                       >

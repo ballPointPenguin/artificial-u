@@ -15,5 +15,6 @@ export { default as NumberInput } from './NumberInput.jsx'
 export type { SelectOption } from './Select.jsx'
 // Ensure SelectOption is also exported if it's meant to be used externally
 export { default as Select } from './Select.jsx'
+export { ShareButton } from './ShareButton'
 export { default as Textarea } from './Textarea.jsx'
 export { Tooltip } from './Tooltip.jsx'
