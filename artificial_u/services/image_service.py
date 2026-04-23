@@ -3,7 +3,7 @@ import logging
 import uuid
 from datetime import datetime
 from enum import Enum
-from typing import List, Optional
+from typing import Any, List, Optional, Tuple
 
 import httpx  # Added httpx import
 import openai  # Added openai import
@@ -14,6 +14,7 @@ from google.genai.types import Modality
 from artificial_u.integrations import gemini_client, openai_client
 from artificial_u.models.core import Course, Professor
 from artificial_u.prompts.course_image import format_course_image_prompt
+from artificial_u.prompts.lecture_image import format_lecture_slide_prompt
 from artificial_u.prompts.professor_image import format_professor_image_prompt
 from artificial_u.services.storage_service import StorageService
 
@@ -182,19 +183,47 @@ class ImageService:
         # All gemini- models use generate_content; imagen- models use generate_images
         return model_name.startswith("gemini-")
 
-    async def _generate_gemini_image_via_content(
-        self, prompt: str, aspect_ratio: str
+    async def _fetch_bytes_and_mime(self, url: str) -> Tuple[bytes, str]:
+        async with httpx.AsyncClient() as client:
+            resp = await client.get(url, timeout=30.0)
+            resp.raise_for_status()
+            mime = resp.headers.get("content-type") or "application/octet-stream"
+            return resp.content, mime.split(";")[0].strip()
+
+    async def _generate_gemini_image_via_content(  # noqa: C901
+        self,
+        *,
+        model_name: str,
+        prompt: str,
+        aspect_ratio: str,
+        reference_image_urls: Optional[List[str]] = None,
     ) -> List[bytes]:
         """
         Generates image(s) using the Gemini generate_content API.
         Used for gemini-3-pro-image-preview (Nano Banana Pro) and similar models.
         """
         try:
+            contents: object
+            if reference_image_urls:
+                parts: List[types.Part] = []
+                for url in reference_image_urls:
+                    try:
+                        data, mime = await self._fetch_bytes_and_mime(url)
+                        parts.append(types.Part.from_bytes(data=data, mime_type=mime))
+                    except Exception as e:
+                        logger.warning(
+                            f"Failed to fetch reference image for Gemini prompt ({url[:80]}...): {e}"
+                        )
+                parts.append(types.Part.from_text(text=prompt))
+                contents = parts
+            else:
+                contents = prompt
+
             # Use generate_content API with image modality
             # Note: aspect_ratio is also included in prompt text as a fallback
             response = await gemini_client.aio.models.generate_content(
-                model=self.model_name,
-                contents=prompt,
+                model=model_name,
+                contents=contents,
                 config=types.GenerateContentConfig(
                     response_modalities=[Modality.IMAGE],
                     image_config=types.ImageConfig(aspect_ratio=aspect_ratio),
@@ -225,7 +254,7 @@ class ImageService:
             raise  # Re-raise to allow retry logic to handle it
 
     async def _generate_gemini_image_via_images(
-        self, prompt: str, aspect_ratio: str
+        self, *, model_name: str, prompt: str, aspect_ratio: str
     ) -> List[bytes]:
         """
         Generates image(s) using the Gemini generate_images API.
@@ -234,7 +263,7 @@ class ImageService:
         try:
             # Use the async client for proper async operation
             response = await gemini_client.aio.models.generate_images(
-                model=self.model_name,
+                model=model_name,
                 prompt=prompt,
                 config=types.GenerateImagesConfig(
                     number_of_images=1,  # Currently generating only 1 image
@@ -255,29 +284,42 @@ class ImageService:
             logger.error(f"Error calling Gemini generate_images API: {e}", exc_info=True)
             raise  # Re-raise to allow retry logic to handle it
 
-    async def _generate_gemini_image(self, prompt: str, aspect_ratio: str) -> List[bytes]:
+    async def _generate_gemini_image(
+        self,
+        *,
+        model_name: str,
+        prompt: str,
+        aspect_ratio: str,
+        reference_image_urls: Optional[List[str]] = None,
+    ) -> List[bytes]:
         """
         Generates image(s) using the Google Gemini backend.
         Automatically selects the appropriate API based on the model name.
         """
-        if self._use_generate_content_api(self.model_name):
+        if self._use_generate_content_api(model_name):
             logger.info(
-                f"Using generate_content API for {self.model_name} "
-                "(Gemini 3 Pro Image / multimodal)"
+                f"Using generate_content API for {model_name} " "(Gemini 3 Pro Image / multimodal)"
             )
-            return await self._generate_gemini_image_via_content(prompt, aspect_ratio)
+            return await self._generate_gemini_image_via_content(
+                model_name=model_name,
+                prompt=prompt,
+                aspect_ratio=aspect_ratio,
+                reference_image_urls=reference_image_urls,
+            )
         else:
-            logger.info(f"Using generate_images API for {self.model_name} (Imagen 4.x)")
-            return await self._generate_gemini_image_via_images(prompt, aspect_ratio)
+            logger.info(f"Using generate_images API for {model_name} (Imagen 4.x)")
+            return await self._generate_gemini_image_via_images(
+                model_name=model_name, prompt=prompt, aspect_ratio=aspect_ratio
+            )
 
     async def _call_openai_api(
-        self, prompt: str, aspect_ratio: str
+        self, *, model_name: str, prompt: str, aspect_ratio: str
     ) -> Optional[openai.types.images_response.ImagesResponse]:
         """Makes the API call to OpenAI's image generation service."""
         try:
             openai_size = self._map_aspect_ratio_to_openai_size(aspect_ratio)
             response = await openai_client.images.generate(
-                model=self.model_name,
+                model=model_name,
                 prompt=prompt,
                 n=1,  # Currently generating only 1 image
                 size=openai_size,
@@ -349,10 +391,14 @@ class ImageService:
             logger.error(f"Unexpected error fetching image from URL {url}: {fetch_err}")
             raise
 
-    async def _generate_openai_image(self, prompt: str, aspect_ratio: str) -> List[bytes]:
+    async def _generate_openai_image(
+        self, *, model_name: str, prompt: str, aspect_ratio: str
+    ) -> List[bytes]:
         """Generates image(s) using the OpenAI (DALL-E) backend."""
         # Step 1: Call the OpenAI API
-        response = await self._call_openai_api(prompt, aspect_ratio)
+        response = await self._call_openai_api(
+            model_name=model_name, prompt=prompt, aspect_ratio=aspect_ratio
+        )
         if not response or not response.data:
             logger.warning("No image data returned by the OpenAI API.")
             return []
@@ -388,13 +434,26 @@ class ImageService:
         return image_data_list
 
     async def _generate_with_backend(
-        self, prompt: str, aspect_ratio: str, backend: str
+        self,
+        *,
+        model_name: str,
+        prompt: str,
+        aspect_ratio: str,
+        backend: str,
+        reference_image_urls: Optional[List[str]] = None,
     ) -> List[bytes]:
         """Generate image with a specific backend."""
         if backend == "gemini":
-            return await self._generate_gemini_image(prompt, aspect_ratio)
+            return await self._generate_gemini_image(
+                model_name=model_name,
+                prompt=prompt,
+                aspect_ratio=aspect_ratio,
+                reference_image_urls=reference_image_urls,
+            )
         elif backend == "openai":
-            return await self._generate_openai_image(prompt, aspect_ratio)
+            return await self._generate_openai_image(
+                model_name=model_name, prompt=prompt, aspect_ratio=aspect_ratio
+            )
         else:
             raise ImageGenerationError(
                 f"Unsupported backend: {backend}",
@@ -402,7 +461,14 @@ class ImageService:
                 backend=backend,
             )
 
-    async def generate_image(self, prompt: str, aspect_ratio: str = "1:1") -> ImageGenerationResult:
+    async def generate_image(
+        self,
+        prompt: str,
+        aspect_ratio: str = "1:1",
+        *,
+        reference_image_urls: Optional[List[str]] = None,
+        model_name_override: Optional[str] = None,
+    ) -> ImageGenerationResult:
         """
         Generates an image based on the provided prompt using the configured AI model.
 
@@ -415,14 +481,23 @@ class ImageService:
             An ImageGenerationResult object containing either success with image keys
             or failure with error information.
         """
+        model_name = model_name_override or self.model_name
+        backend = self._determine_backend(model_name)
+
         logger.info(
-            f"Generating image via {self.backend} backend (model: {self.model_name}) "
+            f"Generating image via {backend} backend (model: {model_name}) "
             f"with prompt: '{prompt[:100]}...' (aspect ratio: {aspect_ratio})"
         )
 
         # Try backend with retry logic
         try:
-            image_bytes_list = await self._generate_with_backend(prompt, aspect_ratio, self.backend)
+            image_bytes_list = await self._generate_with_backend(
+                model_name=model_name,
+                prompt=prompt,
+                aspect_ratio=aspect_ratio,
+                backend=backend,
+                reference_image_urls=reference_image_urls,
+            )
 
             if image_bytes_list:
                 # Upload images to storage
@@ -438,16 +513,16 @@ class ImageService:
                     error = ImageGenerationError(
                         "Image generation succeeded but upload failed",
                         ImageGenerationErrorType.TRANSIENT,
-                        backend=self.backend,
+                        backend=backend,
                     )
                     return ImageGenerationResult(success=False, error=error)
             else:
                 # Log the prompt even if no image data was returned
                 await self._log_image_prompt(prompt, aspect_ratio)
                 error = ImageGenerationError(
-                    f"Backend {self.backend} returned no image data",
+                    f"Backend {backend} returned no image data",
                     ImageGenerationErrorType.BACKEND_UNAVAILABLE,
-                    backend=self.backend,
+                    backend=backend,
                 )
                 return ImageGenerationResult(success=False, error=error)
 
@@ -456,8 +531,8 @@ class ImageService:
             await self._log_image_prompt(prompt, aspect_ratio)
             error = ImageGenerationError(
                 f"Image generation failed: {str(e)}",
-                self._categorize_error(e, self.backend),
-                backend=self.backend,
+                self._categorize_error(e, backend),
+                backend=backend,
                 original_error=e,
             )
 
@@ -602,3 +677,74 @@ class ImageService:
             logger.error(f"Failed to generate image for professor {professor.id}: {result.error}")
 
         return result
+
+    async def generate_lecture_slide_image(
+        self,
+        *,
+        professor: Any,
+        course: Any,
+        topic: Any,
+        lecture_summary: Optional[str],
+        chunk_text: str,
+        slot_idx: int,
+        previous_chunk_text: Optional[str] = None,
+        previous_slide_url: Optional[str] = None,
+        aspect_ratio: str = "1:1",
+        model_name_override: Optional[str] = None,
+    ) -> Optional[str]:
+        """
+        Generate and upload a single lecture slideshow image.
+
+        Returns the public URL if successful, otherwise None.
+        """
+        model_name = model_name_override or self.model_name
+        backend = self._determine_backend(model_name)
+
+        course_code = getattr(course, "code", str(getattr(course, "id", "course")))
+        week = int(getattr(topic, "week", 1))
+        order = int(getattr(topic, "order", 1))
+
+        prompt, refs = format_lecture_slide_prompt(
+            professor=professor,
+            course=course,
+            topic=topic,
+            lecture_summary=lecture_summary,
+            chunk_text=chunk_text,
+            previous_chunk_text=previous_chunk_text,
+            professor_image_url=getattr(professor, "image_url", None),
+            previous_slide_url=previous_slide_url,
+            aspect_ratio=aspect_ratio,
+        )
+
+        try:
+            image_bytes_list = await self._generate_with_backend(
+                model_name=model_name,
+                prompt=prompt,
+                aspect_ratio=aspect_ratio,
+                backend=backend,
+                reference_image_urls=refs if backend == "gemini" else None,
+            )
+            if not image_bytes_list:
+                await self._log_image_prompt(prompt, aspect_ratio)
+                return None
+
+            object_name = self.storage_service.generate_lecture_image_key(
+                course_code=str(course_code),
+                week_number=week,
+                lecture_order=order,
+                slot_idx=slot_idx,
+            )
+
+            success, url = await self.storage_service.upload_file(
+                file_data=image_bytes_list[0],
+                bucket=self.storage_service.images_bucket,
+                object_name=object_name,
+                content_type="image/png",
+            )
+
+            await self._log_image_prompt(prompt, aspect_ratio, image_keys=[object_name])
+            return url if success else None
+        except Exception as e:
+            await self._log_image_prompt(prompt, aspect_ratio)
+            logger.error(f"Failed to generate lecture slide image: {e}", exc_info=True)
+            return None

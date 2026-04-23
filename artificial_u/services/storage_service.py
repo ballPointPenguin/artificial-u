@@ -8,6 +8,7 @@ to work with either local MinIO (development) or AWS S3 (production).
 import asyncio
 import io
 import logging
+import uuid
 from typing import Any, Dict, List, Optional, Tuple
 from urllib.parse import urlencode, urlparse
 
@@ -510,6 +511,46 @@ class StorageService:
             Object key for S3/MinIO
         """
         return f"{course_code}/{course_code}_{week_number}_{lecture_order}_timeline.{extension}"
+
+    def generate_lecture_images_timeline_key(
+        self,
+        course_code: str,
+        week_number: int,
+        lecture_order: int,
+        extension: str = "json",
+    ) -> str:
+        """
+        Generate a standard object key for a lecture images timeline JSON file.
+
+        Args:
+            course_code: Course code (human-friendly)
+            week_number: Week number
+            lecture_order: Lecture order within week
+            extension: File extension (default: json)
+
+        Returns:
+            Object key for S3/MinIO
+        """
+        return f"{course_code}/{course_code}_{week_number}_{lecture_order}_images.{extension}"
+
+    def generate_lecture_image_key(
+        self,
+        course_code: str,
+        week_number: int,
+        lecture_order: int,
+        slot_idx: int,
+        extension: str = "png",
+    ) -> str:
+        """
+        Generate an object key for an individual lecture slide image.
+
+        The `lectures/` prefix keeps these assets organized (separate from
+        course/professor images, which use flat UUID keys).
+        """
+        return (
+            f"lectures/{course_code}/{course_code}_{week_number}_{lecture_order}/"
+            f"{slot_idx:02d}_{uuid.uuid4().hex}.{extension}"
+        )
 
     def parse_storage_url(self, url: str) -> Tuple[Optional[str], Optional[str]]:
         """

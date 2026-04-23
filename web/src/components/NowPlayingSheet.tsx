@@ -4,6 +4,7 @@ import { type Component, createEffect, onCleanup, Show } from 'solid-js'
 import { Portal } from 'solid-js/web'
 import { useAudioPlayer } from '../utils/audio-player-context.jsx'
 import { CaptionWindow } from './lectures/CaptionWindow.jsx'
+import { LectureSlideshow } from './lectures/LectureSlideshow.jsx'
 
 const formatTime = (seconds: number): string => {
   if (!Number.isFinite(seconds) || seconds < 0) return '0:00'
@@ -157,19 +158,26 @@ export const NowPlayingSheet: Component = () => {
 
             {/* Body: stage stays pinned, captions scroll within themselves */}
             <div class="flex-1 flex flex-col min-h-0 px-4 sm:px-6 py-4 gap-4 bg-background">
-              {/* Stage area — fixed aspect, never scrolls out of view.
-                  `max-h-[40vh]` prevents the stage from dominating tall-narrow
-                  viewports and starving the caption area. */}
-              <div
-                class="aspect-video w-full flex-shrink-0 max-h-[40vh] rounded-lg border border-dashed border-border/60
-                       bg-surface flex items-center justify-center"
-                aria-hidden="true"
+              {/* Stage area — synced images when available. */}
+              <Show
+                when={track().imagesTimelineUrl}
+                fallback={
+                  <div
+                    class="aspect-square w-full flex-shrink-0 max-h-[40vh] rounded-lg border border-dashed border-border/60
+                           bg-surface flex items-center justify-center"
+                    aria-hidden="true"
+                  >
+                    <div class="flex flex-col items-center gap-2 text-muted">
+                      <ImageIcon class="h-10 w-10 opacity-60" />
+                      <p class="text-xs font-serif italic">Visuals coming soon</p>
+                    </div>
+                  </div>
+                }
               >
-                <div class="flex flex-col items-center gap-2 text-muted">
-                  <ImageIcon class="h-10 w-10 opacity-60" />
-                  <p class="text-xs font-serif italic">Visuals coming soon</p>
-                </div>
-              </div>
+                {(imagesTimelineUrl) => (
+                  <LectureSlideshow imagesTimelineUrl={imagesTimelineUrl()} class="max-h-[40vh]" />
+                )}
+              </Show>
 
               {/* Captions — fill remaining height, scroll internally.
                   `min-h-[12rem]` guarantees readable caption height even when

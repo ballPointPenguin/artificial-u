@@ -6,6 +6,7 @@ export interface AudioTrack {
   title: string
   subtitle?: string // e.g., "Week 1 - Introduction"
   timelineUrl?: string // URL to the JSON timeline for forced alignment captions
+  imagesTimelineUrl?: string // URL to the JSON images timeline for synced lecture images
   courseId?: number
   lectureId?: number
   topicId?: number

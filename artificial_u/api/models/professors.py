@@ -130,6 +130,10 @@ class LectureBrief(BaseModel):
         None,
         description="URL to forced-alignment timeline JSON for synchronized captions",
     )
+    images_timeline_url: Optional[str] = Field(
+        None,
+        description="URL to image-slideshow timeline JSON for synced lecture images",
+    )
 
 
 # Professor's courses response model

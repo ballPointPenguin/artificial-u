@@ -298,6 +298,7 @@ class Lecture(BaseModel):
     audio_url: Optional[str] = None
     transcript_url: Optional[str] = None
     timeline_url: Optional[str] = None
+    images_timeline_url: Optional[str] = None
     language: Optional[str] = None
     course_id: int
     topic_id: int
