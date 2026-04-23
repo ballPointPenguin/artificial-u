@@ -339,7 +339,7 @@ export const LectureSection: Component<LectureSectionProps> = (props) => {
                         : 'Generate Audio'}
                   </MagicButton>
                   <RequireRole minRole="admin">
-                    <Show when={lectureData().audio_url && !lectureData().timeline_url}>
+                    <Show when={lectureData().audio_url}>
                       <MagicButton
                         variant="primary"
                         size="sm"
@@ -347,7 +347,11 @@ export const LectureSection: Component<LectureSectionProps> = (props) => {
                         onClick={() => void handleGenerateTimeline()}
                         disabled={isGeneratingTimeline() || anyJobActive()}
                       >
-                        {isGeneratingTimeline() ? 'Generating Timeline...' : 'Generate Timeline'}
+                        {isGeneratingTimeline()
+                          ? 'Generating Timeline...'
+                          : lectureData().timeline_url
+                            ? 'Regenerate Timeline'
+                            : 'Generate Timeline'}
                       </MagicButton>
                     </Show>
                     <label

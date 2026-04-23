@@ -94,7 +94,7 @@ const LectureDetailView: Component<{
 
         <div class="flex w-full shrink-0 flex-col sm:flex-row sm:flex-wrap items-center gap-3 sm:gap-2 sm:justify-end">
           {/* Essential Actions Group */}
-          <div class="flex flex-col sm:flex-row w-full sm:w-auto gap-2">
+          <div class="flex flex-col sm:flex-row sm:flex-wrap w-full sm:w-auto gap-2">
             {/* Transcript button at top */}
             <Show when={props.lecture.transcript_url}>
               <a
@@ -149,7 +149,7 @@ const LectureDetailView: Component<{
 
           {/* Admin/Creator Actions Group */}
           <RequireRole minRole="creator">
-            <div class="flex flex-col sm:flex-row w-full sm:w-auto gap-2 pt-3 sm:pt-0 border-t sm:border-t-0 border-parchment-800/30">
+            <div class="flex flex-col sm:flex-row sm:flex-wrap sm:justify-end w-full sm:w-auto gap-2 pt-3 sm:pt-0 border-t sm:border-t-0 border-parchment-800/30">
               <MagicButton
                 variant="primary"
                 size="sm"
@@ -166,7 +166,7 @@ const LectureDetailView: Component<{
                     : t().lectureDetail.generateAudio}
               </MagicButton>
               <RequireRole minRole="admin">
-                <Show when={props.lecture.audio_url && !props.lecture.timeline_url}>
+                <Show when={props.lecture.audio_url}>
                   <MagicButton
                     variant="primary"
                     size="sm"
@@ -174,7 +174,11 @@ const LectureDetailView: Component<{
                     onClick={() => void handleGenerateTimeline()}
                     disabled={isGeneratingTimeline()}
                   >
-                    {isGeneratingTimeline() ? 'Generating Timeline...' : 'Generate Timeline'}
+                    {isGeneratingTimeline()
+                      ? 'Generating Timeline...'
+                      : props.lecture.timeline_url
+                        ? 'Regenerate Timeline'
+                        : 'Generate Timeline'}
                   </MagicButton>
                 </Show>
                 <label
