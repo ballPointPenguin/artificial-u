@@ -71,8 +71,7 @@ def create_application() -> FastAPI:
             # Close SSE connections by clearing the hub
             try:
                 if hasattr(app.state, "job_events") and app.state.job_events:
-                    # Clear all subscribers to close SSE connections
-                    app.state.job_events._subscribers.clear()
+                    await app.state.job_events.close()
             except Exception as e:
                 logger = logging.getLogger(__name__)
                 logger.warning(f"Error closing SSE connections: {e}")

@@ -149,7 +149,7 @@ services-restart: ## Restart Docker services
 .PHONY: run-api
 run-api: ## Run the FastAPI application
 	@echo "$(GREEN)Starting FastAPI application...$(NC)"
-	@$(HATCH) run uvicorn $(PROJECT_NAME).api.app:app --reload --host 0.0.0.0 --port $(FASTAPI_PORT)
+	@$(HATCH) run uvicorn $(PROJECT_NAME).api.app:app --reload --reload-delay 1.0 --reload-dir $(SRC_DIR) --reload-include "*.py" --host 0.0.0.0 --port $(FASTAPI_PORT)
 
 .PHONY: run-worker
 run-worker: ## Run the background worker

@@ -28,6 +28,22 @@ class JobEventHub:
                 if not q.full():
                     q.put_nowait(event)
 
+    async def close(self) -> None:
+        """
+        Gracefully close all subscriptions.
+
+        This is important for dev reload/shutdown: any active subscribers may be blocked
+        on `queue.get()` and need a sentinel to exit promptly.
+        """
+        async with self._lock:
+            for q in list(self._subscribers):
+                try:
+                    q.put_nowait(_STREAM_CLOSED)
+                except Exception:
+                    # Best-effort: never fail shutdown due to a subscriber queue
+                    pass
+            self._subscribers.clear()
+
     async def subscribe(self) -> AsyncIterator[Dict[str, Any]]:
         """Subscribe to job events. Yields events as they are published."""
         queue: asyncio.Queue = asyncio.Queue(maxsize=256)
@@ -38,6 +54,8 @@ class JobEventHub:
         try:
             while True:
                 event = await queue.get()
+                if event is _STREAM_CLOSED:
+                    break
                 yield event
         except asyncio.CancelledError:
             raise
@@ -115,6 +133,16 @@ async def sse_stream(
     try:
         while True:
             iteration_count += 1
+
+            # Client disconnected: exit promptly so reload/shutdown doesn't hang.
+            if request is not None:
+                try:
+                    if await request.is_disconnected():
+                        logger.debug("SSE client disconnected")
+                        break
+                except Exception:
+                    # If disconnect checks fail, keep streaming; cancellation/shutdown will still stop us.
+                    pass
 
             # Send keepalive to maintain connection
             yield f": keepalive {iteration_count}\n\n"
