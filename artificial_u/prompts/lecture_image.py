@@ -41,7 +41,7 @@ def format_lecture_slide_prompt(  # noqa: C901
         refs.append(previous_slide_url)
 
     context_lines: List[str] = [
-        "Task: Generate a lecture slide image for the following moment in a lecture.",
+        "Task: Generate an image for the following moment in a lecture.",
         "Professor: "
         + f"{professor_name}"
         + (f" ({professor_title})" if professor_title else "")
@@ -76,10 +76,10 @@ def format_lecture_slide_prompt(  # noqa: C901
         context_lines.append("Lecture summary (optional context):")
         context_lines.append(lecture_summary.strip())
 
-    if previous_chunk_text:
-        context_lines.append("")
-        context_lines.append("Immediately prior context (optional):")
-        context_lines.append(previous_chunk_text.strip())
+    # if previous_chunk_text:
+    #     context_lines.append("")
+    #     context_lines.append("Immediately prior context (optional):")
+    #     context_lines.append(previous_chunk_text.strip())
 
     context_lines.append("")
     context_lines.append("Current lecture moment (primary source text):")
@@ -90,16 +90,16 @@ def format_lecture_slide_prompt(  # noqa: C901
             "",
             "Art Direction: Semi-realistic, highly polished digital art. Smooth textures, illustrative style "
             "similar to Riot Games art, Hearthstone card art, or ArtStation trending.",
-            "Negative Prompt: Do not make this photorealistic. Do not make it grainy.",
-            "Atmosphere: Subtle atmospheric lighting, a hint of wonder in the air, soft rim lighting, very "
-            "faint floating dust motes.",
-            "Background: A blurred, idealized academic setting (lab or classroom) that feels cozy and slightly "
+            # "Negative Prompt: Do not make this photorealistic. Do not make it grainy.",
+            "Atmosphere: Subtle atmospheric lighting, a hint of wonder in the air, soft rim lighting.",
+            "Background: Idealized academic setting (e.g., a lab or classroom) that feels cozy and slightly "
             "magical.",
-            'Lighting: Volumetric, cinematic, perfectly lit with no harsh shadows, "hero" lighting.',
+            # 'Lighting: Volumetric, cinematic, perfectly lit with no harsh shadows, "hero" lighting.',
             "Details: High resolution, vivid colors, 8k, masterpiece.",
             "",
             "Composition Guidance:",
             "- The professor should feel like the same person as the reference image (if provided).",
+            "- The professor does not always need to be shown; some frames can be full-screen slides/visual aids only.",
             "- Consider including visual aids relevant to the lecture moment (e.g., a digital slide, "
             "whiteboard, diagrams, instruments, lab apparatus, props).",
             f"Aspect Ratio: {aspect_ratio}",

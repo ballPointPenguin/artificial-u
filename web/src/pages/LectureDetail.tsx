@@ -71,6 +71,7 @@ const LectureDetailView: Component<{
       title: props.lecture.title,
       subtitle: props.topicTitle,
       timelineUrl: props.lecture.timeline_url ?? undefined,
+      imagesTimelineUrl: props.lecture.images_timeline_url ?? undefined,
       courseId: props.courseId,
       lectureId: props.lecture.id,
       topicId: props.lecture.topic_id,
