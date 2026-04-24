@@ -187,11 +187,15 @@ export default function AdminFeatured() {
   ]
 
   return (
-    <div class="container mx-auto px-4 py-8 max-w-4xl">
-      <h1 class="text-3xl font-display text-primary mb-2">Featured Content</h1>
-      <p class="text-muted mb-8 font-serif">
-        Manage which lectures, professors, and departments appear on the homepage.
-      </p>
+    <main class="container mx-auto p-4 max-w-5xl">
+      <div class="mb-6">
+        <h1 class="text-3xl font-display text-parchment-100 text-shadow-golden">
+          Featured Content
+        </h1>
+        <p class="mt-1 text-sm text-muted font-serif">
+          Manage which lectures, professors, and departments appear on the homepage.
+        </p>
+      </div>
 
       {/* Flash messages */}
       <Show when={successMsg()}>
@@ -206,7 +210,7 @@ export default function AdminFeatured() {
       </Show>
 
       {/* Tabs */}
-      <div class="flex gap-2 mb-6 border-b border-border pb-2">
+      <div class="flex flex-wrap gap-2 mb-6 border-b border-border pb-2">
         <For each={tabs}>
           {(tab) => (
             <button
@@ -326,6 +330,6 @@ export default function AdminFeatured() {
           <p class="text-muted text-sm italic">No results found.</p>
         </Show>
       </Card>
-    </div>
+    </main>
   )
 }

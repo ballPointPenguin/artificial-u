@@ -88,12 +88,10 @@ export default function AdminSettings() {
   }
 
   return (
-    <div class="container mx-auto max-w-4xl px-4 py-8">
-      <div class="mb-6 flex items-center justify-between">
-        <h1 class="text-3xl font-bold">Admin Settings</h1>
-        <a href="/admin" class="text-sm text-accent hover:underline">
-          &larr; Back to Admin Dashboard
-        </a>
+    <main class="container mx-auto p-4">
+      <div class="mb-6">
+        <h1 class="text-3xl font-display text-parchment-100 text-shadow-golden">Settings</h1>
+        <p class="mt-1 text-sm text-muted font-serif">Configure admin-wide preferences.</p>
       </div>
 
       {/* Success/Error Messages */}
@@ -199,6 +197,6 @@ export default function AdminSettings() {
           </ul>
         </div>
       </Card>
-    </div>
+    </main>
   )
 }

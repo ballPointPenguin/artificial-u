@@ -1,3 +1,4 @@
+import type { RouteSectionProps } from '@solidjs/router'
 import { Route } from '@solidjs/router'
 import { type Component, lazy } from 'solid-js'
 import { LoginPrompt, RequireAuth } from './auth/RequireAuth'
@@ -32,10 +33,12 @@ const TopicDetail = lazy(() => import('./pages/TopicDetail'))
 const LectureDetail = lazy(() => import('./pages/LectureDetail'))
 const LectureCreate = lazy(() => import('./pages/LectureCreate'))
 const Profile = lazy(() => import('./pages/Profile'))
-const Jobs = lazy(() => import('./pages/Jobs'))
-const AdminDashboard = lazy(() => import('./pages/AdminDashboard'))
-const AdminSettings = lazy(() => import('./pages/AdminSettings'))
-const AdminFeatured = lazy(() => import('./pages/AdminFeatured'))
+const AdminLayout = lazy(() => import('./pages/admin/AdminLayout'))
+const AdminIndex = lazy(() => import('./pages/admin/AdminIndex'))
+const AdminUsers = lazy(() => import('./pages/admin/AdminUsers'))
+const AdminSettings = lazy(() => import('./pages/admin/AdminSettings'))
+const AdminFeatured = lazy(() => import('./pages/admin/AdminFeatured'))
+const AdminJobs = lazy(() => import('./pages/admin/AdminJobs'))
 const Search = lazy(() => import('./pages/Search'))
 const AboutPrivacy = lazy(() => import('./pages/AboutPrivacy'))
 const AboutTerms = lazy(() => import('./pages/AboutTerms'))
@@ -45,6 +48,19 @@ const AboutFaq = lazy(() => import('./pages/AboutFaq'))
 const Stylebook = lazy(() => import('./pages/Stylebook'))
 const Login = lazy(() => import('./pages/Login'))
 const Quickstart = lazy(() => import('./pages/Quickstart'))
+
+const AdminRoute: Component<RouteSectionProps> = (props) => (
+  <RequireAuth fallback={<LoginPrompt />}>
+    <RequireRole
+      minRole="admin"
+      fallback={
+        <div class="container mx-auto p-4 text-center">Access denied. Admin role required.</div>
+      }
+    >
+      <AdminLayout {...props} />
+    </RequireRole>
+  </RequireAuth>
+)
 
 const App: Component = () => {
   return (
@@ -96,68 +112,21 @@ const App: Component = () => {
                 </div>
               }
             >
-              <Jobs />
+              {/* Canonical admin jobs route is /admin/jobs; keep /jobs for compatibility */}
+              <AdminJobs />
             </RequireRole>
           </RequireAuth>
         )}
       />
 
-      {/* Admin Dashboard route - requires admin role */}
-      <Route
-        path="/admin"
-        component={() => (
-          <RequireAuth fallback={<LoginPrompt />}>
-            <RequireRole
-              minRole="admin"
-              fallback={
-                <div class="container mx-auto p-4 text-center">
-                  Access denied. Admin role required.
-                </div>
-              }
-            >
-              <AdminDashboard />
-            </RequireRole>
-          </RequireAuth>
-        )}
-      />
-
-      {/* Admin Settings route - requires admin role */}
-      <Route
-        path="/admin/settings"
-        component={() => (
-          <RequireAuth fallback={<LoginPrompt />}>
-            <RequireRole
-              minRole="admin"
-              fallback={
-                <div class="container mx-auto p-4 text-center">
-                  Access denied. Admin role required.
-                </div>
-              }
-            >
-              <AdminSettings />
-            </RequireRole>
-          </RequireAuth>
-        )}
-      />
-
-      {/* Admin Featured Content route - requires admin role */}
-      <Route
-        path="/admin/featured"
-        component={() => (
-          <RequireAuth fallback={<LoginPrompt />}>
-            <RequireRole
-              minRole="admin"
-              fallback={
-                <div class="container mx-auto p-4 text-center">
-                  Access denied. Admin role required.
-                </div>
-              }
-            >
-              <AdminFeatured />
-            </RequireRole>
-          </RequireAuth>
-        )}
-      />
+      {/* Admin routes - requires admin role */}
+      <Route path="/admin" component={AdminRoute}>
+        <Route path="/" component={AdminIndex} />
+        <Route path="/users" component={AdminUsers} />
+        <Route path="/featured" component={AdminFeatured} />
+        <Route path="/settings" component={AdminSettings} />
+        <Route path="/jobs" component={AdminJobs} />
+      </Route>
 
       {/* Departments routes */}
       <Route path="/departments" component={Departments} />

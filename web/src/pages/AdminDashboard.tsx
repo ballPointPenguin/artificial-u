@@ -149,35 +149,15 @@ export default function AdminDashboard() {
 
   return (
     <main class="container mx-auto p-4">
-      <div class="flex justify-between items-center mb-6">
-        <h1 class="text-3xl font-display mb-6 text-parchment-100 text-shadow-golden">
-          Admin Dashboard
-        </h1>
-        <div class="flex items-center gap-3">
-          <a
-            href="/admin/featured"
-            class="rounded-md border border-border bg-muted/30 px-4 py-2 text-sm font-medium transition-colors hover:bg-muted/60"
-          >
-            Featured
-          </a>
-          <a
-            href="/admin/settings"
-            class="rounded-md border border-border bg-muted/30 px-4 py-2 text-sm font-medium transition-colors hover:bg-muted/60"
-          >
-            Settings
-          </a>
-          <a
-            href="/jobs"
-            class="rounded-md border border-border bg-muted/30 px-4 py-2 text-sm font-medium transition-colors hover:bg-muted/60"
-          >
-            Jobs
-          </a>
-          <Button
-            variant="secondary"
-            onClick={() => {
-              void refetch()
-            }}
-          >
+      <div class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div class="min-w-0">
+          <h1 class="text-3xl font-display text-parchment-100 text-shadow-golden">Users</h1>
+          <p class="mt-1 text-sm text-muted font-serif">
+            Manage accounts, roles, and coin balances.
+          </p>
+        </div>
+        <div class="flex items-center justify-end">
+          <Button variant="secondary" onClick={() => void refetch()}>
             Refresh
           </Button>
         </div>
