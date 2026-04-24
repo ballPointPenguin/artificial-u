@@ -22,6 +22,11 @@ class JobEventHub:
         self._subscribers: Set[asyncio.Queue] = set()
         self._lock = asyncio.Lock()
 
+    async def subscriber_count(self) -> int:
+        """Return current subscriber count (for telemetry)."""
+        async with self._lock:
+            return len(self._subscribers)
+
     async def publish(self, event: Dict[str, Any]) -> None:
         async with self._lock:
             for q in list(self._subscribers):

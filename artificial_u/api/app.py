@@ -31,6 +31,7 @@ from artificial_u.api.routers.students import router as students_router
 from artificial_u.api.routers.topics import course_topics_router
 from artificial_u.api.routers.topics import router as topics_router
 from artificial_u.api.routers.voices import router as voice_router
+from artificial_u.api.telemetry import process_telemetry_loop
 from artificial_u.api.utils.logging import setup_logging
 from artificial_u.api.worker import Worker
 from artificial_u.config.settings import Environment
@@ -56,6 +57,17 @@ def create_application() -> FastAPI:
         app.state.repository_factory = repository_factory
         # attach event hub to app state for routers and worker to use
         app.state.job_events = job_events
+        # attach worker for telemetry/introspection
+        app.state.worker = worker
+
+        telemetry_task: asyncio.Task | None = None
+        if os.environ.get("DIAG_PROCESS_METRICS", "").strip() == "1":
+            try:
+                interval = float(os.environ.get("DIAG_PROCESS_METRICS_INTERVAL_SEC", "30"))
+            except ValueError:
+                interval = 30.0
+            telemetry_task = asyncio.create_task(process_telemetry_loop(app, interval_sec=interval))
+
         # Increase default executor for blocking offloads
         loop = asyncio.get_running_loop()
         if not hasattr(app.state, "default_executor"):
@@ -65,6 +77,13 @@ def create_application() -> FastAPI:
         try:
             yield
         finally:
+            if telemetry_task and not telemetry_task.done():
+                telemetry_task.cancel()
+                try:
+                    await telemetry_task
+                except asyncio.CancelledError:
+                    pass
+
             # Stop worker first
             await worker.stop()
 
