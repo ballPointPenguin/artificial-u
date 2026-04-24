@@ -44,12 +44,17 @@ const Layout: Component<RouteSectionProps> = (props) => {
   })
 
   return (
-    <div class="flex flex-col min-h-dvh bg-background text-foreground">
-      <header>
+    <div class="flex min-h-dvh flex-col bg-background text-foreground">
+      <header class="shrink-0">
         <NavBar />
       </header>
 
-      <main class="flex-grow">{props.children}</main>
+      <div class="flex min-h-0 flex-1 flex-col">
+        <div class="flex min-h-0 flex-1 flex-col lg:flex-row lg:items-start">
+          <main class="min-w-0 flex-1">{props.children}</main>
+          <NowPlayingSheet />
+        </div>
+      </div>
 
       <Footer />
 
@@ -58,9 +63,6 @@ const Layout: Component<RouteSectionProps> = (props) => {
         <PersistentAudioPlayer />
         <ThemeSwitcher />
       </div>
-
-      {/* Expanded "Now Playing" sheet, portalled above everything */}
-      <NowPlayingSheet />
 
       {/* PWA Components — transient, keep fixed */}
       <PWAUpdatePrompt />

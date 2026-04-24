@@ -123,6 +123,8 @@ class LectureImagesGeneratorService:
 
         chunks = self._chunk_text(lecture.content, total)
 
+        resolved_model_name = model_name_override or getattr(self.image_service, "model_name", None)
+
         # Build scaffold json and upload it first.
         slots: List[Dict[str, Any]] = []
         for i in range(total):
@@ -137,7 +139,7 @@ class LectureImagesGeneratorService:
                     "chunk_preview": preview,
                     "url": None,
                     "status": "pending",
-                    "model": model_name_override,
+                    "model": resolved_model_name,
                 }
             )
 
@@ -145,7 +147,7 @@ class LectureImagesGeneratorService:
             "version": 1,
             "lecture_id": lecture_id,
             "aspect_ratio": aspect_ratio,
-            "model": model_name_override,
+            "model": resolved_model_name,
             "slots": slots,
         }
 

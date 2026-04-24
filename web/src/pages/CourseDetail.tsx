@@ -214,6 +214,7 @@ const TopicsList: Component<{
                                       title: lecture.title,
                                       subtitle: `${t().courseDetail.week} ${String(topic.week)} - ${topic.title}`,
                                       timelineUrl: lecture.timeline_url ?? undefined,
+                                      imagesTimelineUrl: lecture.images_timeline_url ?? undefined,
                                       courseId: props.courseId,
                                       lectureId: lecture.id,
                                       topicId: topic.id,

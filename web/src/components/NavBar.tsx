@@ -49,14 +49,8 @@ export function NavBar() {
             <A href="/courses" class={linkClass}>
               {t().nav.courses}
             </A>
-            <A href="/professors" class={linkClass}>
-              {t().nav.professors}
-            </A>
             <A href="/academics" class={linkClass}>
               Departments
-            </A>
-            <A href="/about" class={linkClass}>
-              {t().nav.about}
             </A>
             <Show when={auth.isAuthenticated()}>
               <A href="/profile" class={linkClass}>
@@ -64,9 +58,6 @@ export function NavBar() {
               </A>
             </Show>
             <Show when={auth.isAdmin()}>
-              <A href="/jobs" class={linkClass}>
-                {t().nav.jobs}
-              </A>
               <A href="/admin" class={linkClass}>
                 {t().nav.admin}
               </A>
@@ -145,14 +136,8 @@ export function NavBar() {
             <A href="/courses" class={mobileLinkClass} onClick={toggleMobileMenu}>
               {t().nav.courses}
             </A>
-            <A href="/professors" class={mobileLinkClass} onClick={toggleMobileMenu}>
-              {t().nav.professors}
-            </A>
             <A href="/academics" class={mobileLinkClass} onClick={toggleMobileMenu}>
               Departments
-            </A>
-            <A href="/about" class={mobileLinkClass} onClick={toggleMobileMenu}>
-              {t().nav.about}
             </A>
             <Show when={auth.isAuthenticated()}>
               <A href="/profile" class={mobileLinkClass} onClick={toggleMobileMenu}>
@@ -160,9 +145,6 @@ export function NavBar() {
               </A>
             </Show>
             <Show when={auth.isAdmin()}>
-              <A href="/jobs" class={mobileLinkClass} onClick={toggleMobileMenu}>
-                {t().nav.jobs}
-              </A>
               <A href="/admin" class={mobileLinkClass} onClick={toggleMobileMenu}>
                 {t().nav.admin}
               </A>

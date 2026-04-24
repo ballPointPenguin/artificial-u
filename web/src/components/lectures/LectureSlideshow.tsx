@@ -1,4 +1,11 @@
-import { type Component, createEffect, createMemo, createResource, createSignal, Show } from 'solid-js'
+import {
+  type Component,
+  createEffect,
+  createMemo,
+  createResource,
+  createSignal,
+  Show,
+} from 'solid-js'
 import { useAudioPlayer } from '../../utils/audio-player-context.jsx'
 
 interface ImageSlot {
@@ -7,6 +14,7 @@ interface ImageSlot {
   end: number
   url: string | null
   status: string
+  model?: string | null
 }
 
 interface ImagesTimeline {
@@ -57,6 +65,11 @@ export const LectureSlideshow: Component<LectureSlideshowProps> = (props) => {
     const idx = activeIdx()
     return idx >= 0 && idx < ss.length ? ss[idx] : null
   })
+  const imageModel = createMemo(() => {
+    const raw = activeSlot()?.model ?? timeline()?.model ?? null
+    const trimmed = typeof raw === 'string' ? raw.trim() : null
+    return trimmed || null
+  })
 
   // Crossfade by tracking the last url we rendered.
   const [shownUrl, setShownUrl] = createSignal<string | null>(null)
@@ -77,45 +90,54 @@ export const LectureSlideshow: Component<LectureSlideshowProps> = (props) => {
     img.src = next.url
   })
 
+  // Stage is 1:1. Cap max edge with min(100%, 50vh) so a fixed max-height (e.g. max-h-[40vh])
+  // does not collapse the box to a wide strip; letterbox in <img> via object-contain.
   return (
-    <div
-      class={`relative w-full aspect-square overflow-hidden rounded-lg border border-border/60 bg-surface ${
-        props.class ?? ''
-      }`}
-    >
-      <Show
-        when={!timeline.loading}
-        fallback={<div class="h-full w-full animate-pulse bg-surface/60" />}
+    <div class="flex flex-col items-center">
+      <div
+        class={`relative mx-auto w-[min(100%,50vh)] max-w-full aspect-square shrink-0 overflow-hidden rounded-lg border border-border/60 bg-surface ${
+          props.class ?? ''
+        }`}
       >
         <Show
-          when={!timeline.error && timeline() && activeSlot()}
-          fallback={
-            <div class="h-full w-full flex items-center justify-center text-muted text-sm">
-              {timeline.error ? 'Failed to load lecture images.' : 'No lecture images.'}
-            </div>
-          }
+          when={!timeline.loading}
+          fallback={<div class="h-full w-full animate-pulse bg-surface/60" />}
         >
           <Show
-            when={(activeSlot()?.status ?? 'pending') === 'done' && shownUrl()}
+            when={!timeline.error && timeline() && activeSlot()}
             fallback={
               <div class="h-full w-full flex items-center justify-center text-muted text-sm">
-                Generating images…
+                {timeline.error ? 'Failed to load lecture images.' : 'No lecture images.'}
               </div>
             }
           >
-            {(url) => (
-              <img
-                src={url()}
-                alt="Lecture slide"
-                class="absolute inset-0 h-full w-full object-cover transition-opacity duration-500 opacity-100"
-                loading="eager"
-                decoding="async"
-              />
-            )}
+            <Show
+              when={(activeSlot()?.status ?? 'pending') === 'done' && shownUrl()}
+              fallback={
+                <div class="h-full w-full flex items-center justify-center text-muted text-sm">
+                  Generating images…
+                </div>
+              }
+            >
+              {(url) => (
+                <img
+                  src={url()}
+                  alt="Lecture slide"
+                  class="absolute inset-0 h-full w-full object-contain object-center transition-opacity duration-500 opacity-100"
+                  loading="eager"
+                  decoding="async"
+                />
+              )}
+            </Show>
           </Show>
         </Show>
+      </div>
+
+      <Show when={imageModel()}>
+        {(m) => (
+          <p class="text-xs text-muted italic mt-2 text-center">Image generated with {m()}</p>
+        )}
       </Show>
     </div>
   )
 }
-
