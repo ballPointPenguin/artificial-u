@@ -240,32 +240,33 @@ class CourseApiService(BaseApiService[CoreCourse, CourseResponse, CoursesListRes
         order: Optional[str] = "desc",
         student_id: Optional[int] = None,
         student_role: Optional[str] = None,
+        include_hidden: bool = False,
     ) -> CoursesListResponse:
         """
         Get a paginated list of courses with optional filtering and sorting.
         This now bypasses the core_service and uses the repository directly for performance.
 
         Visibility rules for hidden courses:
-        - Unauthenticated users: only see published courses
-        - Authenticated non-admin users: see published courses + hidden courses they created
-        - Admin users: see all courses (published and hidden)
+        - Unauthenticated users: always see only published courses (`include_hidden`
+          is ignored).
+        - Authenticated users, `include_hidden=False` (default): only published
+          courses.
+        - Authenticated non-admin users, `include_hidden=True`: published
+          courses plus hidden courses they created.
+        - Admin users, `include_hidden=True`: all courses (published and
+          hidden).
         """
         try:
-            # Determine status filter based on authentication and role
-            status_filter = None
+            # Determine status filter based on authentication, role, and the
+            # explicit `include_hidden` toggle.
+            status_filter: Optional[str] = "published"
             show_own_hidden = False
 
-            if student_id is None:
-                # Not authenticated: only show published courses
-                status_filter = "published"
-            elif student_role == "admin":
-                # Admin: show all courses (no status filter)
-                status_filter = None
-            else:
-                # Authenticated non-admin: show published + own hidden courses
-                # We'll filter published courses at repository level, then add own hidden courses
-                status_filter = "published"
-                show_own_hidden = True
+            if student_id is not None and include_hidden:
+                if student_role == "admin":
+                    status_filter = None
+                else:
+                    show_own_hidden = True
 
             # Get courses based on filters
             courses, total = self.repository_factory.course.list_and_count(

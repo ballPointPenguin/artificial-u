@@ -1,4 +1,4 @@
-import { A, useNavigate } from '@solidjs/router'
+import { A, useNavigate, useSearchParams } from '@solidjs/router'
 import { type Component, createResource, createSignal, For, Show } from 'solid-js'
 import { courseService } from '../api/services/course-service.js'
 import { departmentService } from '../api/services/department-service.js'
@@ -13,19 +13,105 @@ import Select from '../components/ui/Select.jsx'
 import { useTranslations } from '../i18n'
 import { getJobEventHub } from '../utils/job-events-hub.js'
 
-type SortField = 'code' | 'title' | 'level' | 'updated_at' | 'created_at'
+type SortField =
+  | 'code'
+  | 'title'
+  | 'level'
+  | 'status'
+  | 'updated_at'
+  | 'created_at'
+  | 'professor'
+  | 'department'
+  | 'creator'
+  | 'audio_count'
 type SortOrder = 'asc' | 'desc'
+
+const VALID_SORT_FIELDS: readonly SortField[] = [
+  'code',
+  'title',
+  'level',
+  'status',
+  'updated_at',
+  'created_at',
+  'professor',
+  'department',
+  'creator',
+  'audio_count',
+]
+
+const DEFAULT_SORT_FIELD: SortField = 'updated_at'
+const DEFAULT_SORT_ORDER: SortOrder = 'desc'
 
 const Courses: Component = () => {
   const t = useTranslations()
   const auth = useAuth()
   const navigate = useNavigate()
-  const [page, setPage] = createSignal(1)
+  const [searchParams, setSearchParams] = useSearchParams()
+
+  // ---------------------------------------------------------------------------
+  // URL-backed state (source of truth: location query string). This means that
+  // navigating back, reloading the page, or copying the URL preserves sort,
+  // filter, and page state. Using URL params (rather than localStorage) keeps
+  // the state scoped to this tab so independent tabs can hold independent
+  // views.
+  // ---------------------------------------------------------------------------
+  const readStr = (key: string): string | undefined => {
+    const v = searchParams[key]
+    return Array.isArray(v) ? v[0] : v
+  }
+
+  const page = (): number => {
+    const n = Number(readStr('page'))
+    return Number.isFinite(n) && n > 0 ? Math.floor(n) : 1
+  }
+
+  const sortBy = (): SortField => {
+    const v = readStr('sort_by') ?? DEFAULT_SORT_FIELD
+    return (VALID_SORT_FIELDS as readonly string[]).includes(v)
+      ? (v as SortField)
+      : DEFAULT_SORT_FIELD
+  }
+
+  const order = (): SortOrder => (readStr('order') === 'asc' ? 'asc' : 'desc')
+
+  const departmentFilter = (): number | null => {
+    const n = Number(readStr('department_id'))
+    return Number.isFinite(n) && n > 0 ? n : null
+  }
+
+  const myCoursesOnly = (): boolean => readStr('mine') === '1'
+
+  const showHidden = (): boolean => readStr('hidden') === '1'
+
+  // Updater helpers - `null`/`undefined`/`''` clear the param (solid-router).
+  const setPage = (nextPage: number) => {
+    setSearchParams({ page: nextPage > 1 ? String(nextPage) : null })
+  }
+
+  const setSort = (nextField: SortField, nextOrder: SortOrder) => {
+    setSearchParams({
+      sort_by: nextField === DEFAULT_SORT_FIELD ? null : nextField,
+      order: nextOrder === DEFAULT_SORT_ORDER ? null : nextOrder,
+      page: null,
+    })
+  }
+
+  const setDepartmentFilter = (id: number | null) => {
+    setSearchParams({
+      department_id: id && id > 0 ? String(id) : null,
+      page: null,
+    })
+  }
+
+  const setMyCoursesOnly = (enabled: boolean) => {
+    setSearchParams({ mine: enabled ? '1' : null, page: null })
+  }
+
+  const setShowHidden = (enabled: boolean) => {
+    setSearchParams({ hidden: enabled ? '1' : null, page: null })
+  }
+
   const [size] = createSignal(10)
-  const [sortBy, setSortBy] = createSignal<SortField>('updated_at')
-  const [order, setOrder] = createSignal<SortOrder>('desc')
-  const [departmentFilter, setDepartmentFilter] = createSignal<number | null>(null)
-  const [myCoursesOnly, setMyCoursesOnly] = createSignal(false)
   const [showCreateForm, setShowCreateForm] = createSignal(false)
   const [submitting, setSubmitting] = createSignal(false)
   const [formError, setFormError] = createSignal('')
@@ -86,7 +172,7 @@ const Courses: Component = () => {
     ]
   }
 
-  const [coursesData, { refetch }] = createResource(
+  const [coursesData, { refetch, mutate: mutateCourses }] = createResource(
     () => ({
       page: page(),
       size: size(),
@@ -94,8 +180,9 @@ const Courses: Component = () => {
       order: order(),
       departmentId: departmentFilter(),
       createdBy: myCoursesOnly() ? auth.student()?.id : undefined,
+      includeHidden: showHidden(),
     }),
-    ({ page, size, sortBy, order, departmentId, createdBy }) =>
+    ({ page, size, sortBy, order, departmentId, createdBy, includeHidden }) =>
       courseService.listCourses({
         page,
         size,
@@ -103,6 +190,7 @@ const Courses: Component = () => {
         order,
         departmentId: departmentId || undefined,
         createdBy,
+        includeHidden,
       })
   )
 
@@ -112,54 +200,75 @@ const Courses: Component = () => {
     { value: 'code', label: t().courses.code },
     { value: 'title', label: t().courses.courseTitle },
     { value: 'level', label: t().courses.level },
+    { value: 'status', label: t().courses.status },
+    { value: 'professor', label: t().courses.teacher },
+    { value: 'department', label: t().courses.department },
+    { value: 'creator', label: t().courses.creator },
+    { value: 'audio_count', label: t().courses.audioFiles },
   ]
 
-  // Handle sorting - if clicking same column, toggle order; otherwise set new column with desc
+  // Handle sorting - if clicking same column, toggle order; otherwise set new
+  // column with sensible default direction (desc for dates/counts, asc for
+  // text-y columns).
+  const textSortFields: readonly SortField[] = [
+    'code',
+    'title',
+    'level',
+    'status',
+    'professor',
+    'department',
+    'creator',
+  ]
+
   const handleSort = (field: SortField) => {
     if (sortBy() === field) {
-      // Toggle order
-      setOrder(order() === 'asc' ? 'desc' : 'asc')
+      setSort(field, order() === 'asc' ? 'desc' : 'asc')
     } else {
-      // New column, default to descending
-      setSortBy(field)
-      setOrder('desc')
+      const nextOrder: SortOrder = (textSortFields as readonly string[]).includes(field)
+        ? 'asc'
+        : 'desc'
+      setSort(field, nextOrder)
     }
-    // Reset to first page when sorting changes
-    setPage(1)
   }
 
   const handleMobileSortFieldChange = (value: SelectOption['value'] | null) => {
     if (value) {
-      setSortBy(value as SortField)
-      setPage(1)
+      const field = value as SortField
+      if ((VALID_SORT_FIELDS as readonly string[]).includes(field)) {
+        setSort(field, order())
+      }
     }
   }
 
   const toggleSortOrder = () => {
-    setOrder(order() === 'asc' ? 'desc' : 'asc')
-    setPage(1)
+    setSort(sortBy(), order() === 'asc' ? 'desc' : 'asc')
   }
 
   // Handle department filter change
   const handleDepartmentFilterChange = (value: number | string | null) => {
     const deptId = typeof value === 'number' ? value : null
     setDepartmentFilter(deptId === 0 ? null : deptId)
-    // Reset to first page when filter changes
-    setPage(1)
   }
 
-  // Sortable column header component
-  const SortableHeader: Component<{ field: SortField; label: string }> = (props) => {
+  // Sortable column header button (shared between a `th` and the mobile
+  // controls). Uses the same visual affordance so users know every column is
+  // sortable.
+  const SortableHeader: Component<{ field: SortField; label: string; thClass?: string }> = (
+    props
+  ) => {
     const isActive = () => sortBy() === props.field
     const currentOrder = () => (isActive() ? order() : null)
 
     return (
-      <th class="py-3 px-4 align-middle text-left font-display text-parchment-200">
+      <th
+        class={`py-3 px-3 align-middle text-left font-display text-parchment-200 whitespace-nowrap ${props.thClass ?? ''}`}
+      >
         <button
           type="button"
           onClick={() => {
             handleSort(props.field)
           }}
+          aria-sort={isActive() ? (currentOrder() === 'asc' ? 'ascending' : 'descending') : 'none'}
           class="flex items-center gap-2 hover:text-parchment-100 transition-colors cursor-pointer select-none"
         >
           <span>{props.label}</span>
@@ -212,6 +321,40 @@ const Courses: Component = () => {
       setPage(page() + 1)
     }
   }
+
+  // Pagination controls rendered both above and below the table so users
+  // don't have to scroll to find Next/Previous.
+  const Pagination: Component<{ position: 'top' | 'bottom' }> = (props) => (
+    <Show when={getPages() > 1}>
+      <div
+        class={`flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between ${
+          props.position === 'top' ? 'mb-4' : 'mt-6'
+        }`}
+      >
+        <div class="font-serif text-parchment-300">
+          {t().common.page} {page()} {t().common.of} {getPages()}
+        </div>
+        <div class="flex gap-3 sm:justify-end">
+          <Button
+            variant="outline"
+            onClick={handlePrevPage}
+            disabled={page() <= 1}
+            aria-label={t().common.previous}
+          >
+            {t().common.previous}
+          </Button>
+          <Button
+            variant="outline"
+            onClick={handleNextPage}
+            disabled={page() >= getPages()}
+            aria-label={t().common.next}
+          >
+            {t().common.next}
+          </Button>
+        </div>
+      </div>
+    </Show>
+  )
 
   const handleSubmitCreate = async (formData: CourseFormData) => {
     setSubmitting(true)
@@ -269,8 +412,26 @@ const Courses: Component = () => {
     setCourseImageError('')
     setIsGeneratingCourseImageId(courseId)
     try {
-      await courseService.generateCourseImage(courseId)
-      void refetch()
+      const updatedCourse = await courseService.generateCourseImage(courseId)
+      // Patch the updated course into the existing list instead of doing a
+      // full refetch. This keeps scroll position, avoids a loading flash, and
+      // lets the new thumbnail fade in gracefully next to its neighbors.
+      mutateCourses((data) => {
+        if (!data) return data
+        return {
+          ...data,
+          items: data.items.map((c) =>
+            c.id === courseId
+              ? {
+                  ...c,
+                  image_url: updatedCourse.image_url,
+                  image_created_with: updatedCourse.image_created_with,
+                  updated_at: updatedCourse.updated_at,
+                }
+              : c
+          ),
+        }
+      })
     } catch (error) {
       setCourseImageError(error instanceof Error ? error.message : 'Failed to generate image')
     } finally {
@@ -280,7 +441,8 @@ const Courses: Component = () => {
 
   const CourseThumb: Component<{ course: Course; size: 'sm' | 'md' }> = (props) => {
     const courseId = () => props.course.id
-    const isMissing = () => !props.course.image_url
+    const hasImage = () => Boolean(props.course.image_url)
+    const canGenerate = () => auth.canModify(props.course.created_by)
     const isLoading = () => isGeneratingCourseImageId() === courseId()
 
     const boxClass = () =>
@@ -296,43 +458,60 @@ const Courses: Component = () => {
         ? 'h-14 w-14 rounded-md bg-parchment-900/40 border border-parchment-800/30'
         : 'h-36 w-36 shrink-0 rounded-2xl bg-parchment-900/40 border border-parchment-800/30'
 
+    // Tracks whether the <img> has fully decoded so we can fade it in over
+    // the placeholder (avoids the harsh pop when a newly-generated thumbnail
+    // swaps in after `handleGenerateCourseImage`).
+    const [imgLoaded, setImgLoaded] = createSignal(false)
+
+    // Deliberately flat control flow: always render one of three branches so
+    // the `<td>` can never end up visually empty, regardless of auth timing
+    // or missing data.
     return (
-      <>
-        <Show
-          when={auth.canModify(props.course.created_by) && isMissing()}
-          fallback={
-            <A href={`/courses/${String(courseId())}`} class="block">
-              <Show
-                when={props.course.image_url}
-                fallback={<div class={placeholderClass()} aria-hidden />}
-              >
-                <img
-                  src={props.course.image_url ?? ''}
-                  alt=""
-                  width={props.size === 'sm' ? 56 : 144}
-                  height={props.size === 'sm' ? 56 : 144}
-                  loading="lazy"
-                  class={imgClass()}
-                />
-              </Show>
-            </A>
-          }
-        >
-          <MagicButton
-            type="button"
-            variant="ghost"
-            size="sm"
-            iconOnly
-            class={`${boxClass()} p-0 flex items-center justify-center`}
-            aria-label="Generate course image"
-            title="Generate course image"
-            disabled={isLoading()}
-            onClick={() => void handleGenerateCourseImage(courseId())}
+      <Show
+        when={hasImage()}
+        fallback={
+          <Show
+            when={canGenerate()}
+            fallback={
+              <A href={`/courses/${String(courseId())}`} class="block">
+                <div class={placeholderClass()} aria-hidden />
+                <span class="sr-only">{t().courses.courseImage}</span>
+              </A>
+            }
           >
-            Generate Image
-          </MagicButton>
-        </Show>
-      </>
+            <MagicButton
+              type="button"
+              variant="ghost"
+              size="sm"
+              iconOnly
+              class={`${boxClass()} p-0 flex items-center justify-center`}
+              aria-label="Generate course image"
+              title="Generate course image"
+              disabled={isLoading()}
+              onClick={() => void handleGenerateCourseImage(courseId())}
+            >
+              Generate Image
+            </MagicButton>
+          </Show>
+        }
+      >
+        <A href={`/courses/${String(courseId())}`} class={`block relative ${boxClass()}`}>
+          {/* Placeholder sits under the image so the slot is never empty,
+              even while the browser is still decoding. */}
+          <div class={`absolute inset-0 ${placeholderClass()}`} aria-hidden />
+          <img
+            src={props.course.image_url ?? ''}
+            alt=""
+            width={props.size === 'sm' ? 56 : 144}
+            height={props.size === 'sm' ? 56 : 144}
+            loading="lazy"
+            decoding="async"
+            onLoad={() => setImgLoaded(true)}
+            onError={() => setImgLoaded(false)}
+            class={`${imgClass()} relative transition-opacity duration-500 ${imgLoaded() ? 'opacity-100' : 'opacity-0'}`}
+          />
+        </A>
+      </Show>
     )
   }
 
@@ -364,7 +543,7 @@ const Courses: Component = () => {
       </Show>
 
       <Show
-        when={!coursesData.loading}
+        when={coursesData() !== undefined}
         fallback={<div class="text-parchment-200 font-serif p-4">{t().courses.loading}</div>}
       >
         <Show when={courseImageError()}>
@@ -404,15 +583,25 @@ const Courses: Component = () => {
                   checked={myCoursesOnly()}
                   onChange={(e) => {
                     setMyCoursesOnly(e.currentTarget.checked)
-                    setPage(1) // Reset to first page when filter changes
                   }}
                   class="h-4 w-4 rounded border-parchment-600 bg-arcanum-900 text-mystic-500 focus:ring-mystic-500 focus:ring-offset-arcanum-900"
                 />
                 <span class="font-serif text-sm">{t().courses.myCourses}</span>
               </label>
+              <label class="flex items-center gap-2 cursor-pointer text-parchment-200 transition-colors hover:text-parchment-100">
+                <input
+                  type="checkbox"
+                  checked={showHidden()}
+                  onChange={(e) => {
+                    setShowHidden(e.currentTarget.checked)
+                  }}
+                  class="h-4 w-4 rounded border-parchment-600 bg-arcanum-900 text-mystic-500 focus:ring-mystic-500 focus:ring-offset-arcanum-900"
+                />
+                <span class="font-serif text-sm">{t().courses.hiddenCourses}</span>
+              </label>
             </Show>
           </div>
-          <div class="flex flex-col gap-3 sm:hidden">
+          <div class="flex flex-col gap-3 lg:hidden">
             <Select
               name="sort-field"
               label={t().courses.sortField}
@@ -438,31 +627,27 @@ const Courses: Component = () => {
           when={hasCourses()}
           fallback={<div class="arcane-card p-6 text-center">{t().courses.noCoursesFound}</div>}
         >
-          <div class="arcane-card mb-6 hidden lg:block">
+          {/* Top pagination mirror so users can page without scrolling past
+              large result sets */}
+          <div class="hidden lg:block">
+            <Pagination position="top" />
+          </div>
+
+          <div class="arcane-card mb-6 hidden lg:block overflow-x-auto">
             <table class="min-w-full">
               <thead>
                 <tr class="border-b border-parchment-800/30">
                   <th class="py-3 px-2 w-20 align-middle text-left font-display text-parchment-200">
-                    {/* Album art */}
+                    <span class="sr-only">{t().courses.courseImage}</span>
                   </th>
                   <SortableHeader field="code" label={t().courses.code} />
                   <SortableHeader field="title" label={t().courses.courseTitle} />
-                  <th class="py-3 px-4 align-middle text-left font-display text-parchment-200">
-                    Status
-                  </th>
-                  <th class="py-3 px-4 align-middle text-left font-display text-parchment-200">
-                    {t().courses.teacher}
-                  </th>
-                  <th class="py-3 px-4 align-middle text-left font-display text-parchment-200">
-                    {t().courses.department}
-                  </th>
-                  <th class="py-3 px-4 align-middle text-left font-display text-parchment-200">
-                    {t().courses.creator}
-                  </th>
+                  <SortableHeader field="status" label={t().courses.status} />
+                  <SortableHeader field="professor" label={t().courses.teacher} />
+                  <SortableHeader field="department" label={t().courses.department} />
+                  <SortableHeader field="creator" label={t().courses.creator} />
                   <SortableHeader field="updated_at" label={t().courses.lastUpdate} />
-                  <th class="py-3 px-4 align-middle text-left font-display text-parchment-200">
-                    {t().courses.audioFiles}
-                  </th>
+                  <SortableHeader field="audio_count" label={t().courses.audioFiles} />
                 </tr>
               </thead>
               <tbody>
@@ -472,8 +657,10 @@ const Courses: Component = () => {
                       <td class="py-3 px-2 align-middle w-20">
                         <CourseThumb course={course} size="sm" />
                       </td>
-                      <td class="py-3 px-4 align-middle text-parchment-100">{course.code}</td>
-                      <td class="py-3 px-4 align-middle text-parchment-100">
+                      <td class="py-3 px-3 align-middle text-parchment-100 whitespace-nowrap">
+                        {course.code}
+                      </td>
+                      <td class="py-3 px-3 align-middle text-parchment-100">
                         <A
                           href={`/courses/${String(course.id)}`}
                           class="text-parchment-100 hover:text-mystic-300 transition-colors"
@@ -481,7 +668,7 @@ const Courses: Component = () => {
                           {course.title}
                         </A>
                       </td>
-                      <td class="py-3 px-4 align-middle">
+                      <td class="py-3 px-3 align-middle">
                         <span
                           class={`inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-full whitespace-nowrap ${
                             course.status === 'published'
@@ -495,19 +682,19 @@ const Courses: Component = () => {
                           <span>{course.status === 'published' ? 'Published' : 'Hidden'}</span>
                         </span>
                       </td>
-                      <td class="py-3 px-4 align-middle text-parchment-100">
+                      <td class="py-3 px-3 align-middle text-parchment-100 whitespace-nowrap">
                         {getProfessorName(course)}
                       </td>
-                      <td class="py-3 px-4 align-middle text-parchment-100">
+                      <td class="py-3 px-3 align-middle text-parchment-100 whitespace-nowrap">
                         {getDepartmentName(course)}
                       </td>
-                      <td class="py-3 px-4 align-middle text-parchment-100">
+                      <td class="py-3 px-3 align-middle text-parchment-100 whitespace-nowrap">
                         {getStudentName(course)}
                       </td>
-                      <td class="py-3 px-4 align-middle text-parchment-100">
+                      <td class="py-3 px-3 align-middle text-parchment-100 whitespace-nowrap">
                         {formatDate(course.updated_at)}
                       </td>
-                      <td class="py-3 px-4 align-middle text-parchment-100">
+                      <td class="py-3 px-3 align-middle text-parchment-100 whitespace-nowrap tabular-nums">
                         {course.lectures_with_audio_count ?? 0} / {course.topics_count ?? 0}
                       </td>
                     </tr>
@@ -601,22 +788,8 @@ const Courses: Component = () => {
             </For>
           </div>
 
-          {/* Pagination controls */}
-          <Show when={getPages() > 1}>
-            <div class="mt-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <div class="font-serif text-parchment-300">
-                {t().common.page} {page()} {t().common.of} {getPages()}
-              </div>
-              <div class="flex gap-3 sm:justify-end">
-                <Button variant="outline" onClick={handlePrevPage} disabled={page() <= 1}>
-                  {t().common.previous}
-                </Button>
-                <Button variant="outline" onClick={handleNextPage} disabled={page() >= getPages()}>
-                  {t().common.next}
-                </Button>
-              </div>
-            </div>
-          </Show>
+          {/* Bottom pagination */}
+          <Pagination position="bottom" />
         </Show>
       </Show>
     </div>

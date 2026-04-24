@@ -55,10 +55,22 @@ async def list_courses(
     created_by: Optional[int] = Query(None, description="Filter by creator student ID"),
     sort_by: Optional[str] = Query(
         "updated_at",
-        description="Field to sort by (code, title, level, updated_at, created_at)",
+        description=(
+            "Field to sort by (code, title, level, status, updated_at, created_at, "
+            "professor, department, creator, audio_count, topics_count)"
+        ),
     ),
     order: Optional[str] = Query(
         "desc", description="Sort order (asc or desc)", pattern="^(asc|desc)$"
+    ),
+    include_hidden: bool = Query(
+        False,
+        description=(
+            "When true, authenticated users see hidden courses they are allowed "
+            "to see (admins: all hidden; non-admins: their own hidden). "
+            "Ignored for unauthenticated requests, which always see only "
+            "published courses."
+        ),
     ),
     course_service: CourseApiService = Depends(get_course_api_service),
     student: Optional[Student] = Depends(optional_student),
@@ -85,6 +97,7 @@ async def list_courses(
         order=order,
         student_id=student_id,
         student_role=student_role,
+        include_hidden=include_hidden,
     )
 
 

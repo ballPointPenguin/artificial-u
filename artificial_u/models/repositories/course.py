@@ -7,10 +7,20 @@ from sqlalchemy.orm import joinedload
 from artificial_u.models.core import Course, Student
 from artificial_u.models.database import (
     CourseModel,
+    DepartmentModel,
     LectureModel,
+    ProfessorModel,
+    StudentModel,
     TopicModel,
 )
 from artificial_u.models.repositories.base import BaseRepository
+
+# Sort fields that require an outer join on a related table (driven by sort_by value)
+_RELATION_JOIN_COLUMNS = {
+    "professor": (ProfessorModel, CourseModel.professor_id == ProfessorModel.id),
+    "department": (DepartmentModel, CourseModel.department_id == DepartmentModel.id),
+    "creator": (StudentModel, CourseModel.created_by == StudentModel.id),
+}
 
 
 class CourseRepository(BaseRepository):
@@ -259,12 +269,33 @@ class CourseRepository(BaseRepository):
             # Get total count before sorting and pagination
             total_count = query.count()
 
-            # Sorting
-            sort_column = getattr(CourseModel, sort_by, CourseModel.updated_at)
-            if order == "asc":
-                query = query.order_by(sort_column.asc())
-            else:
-                query = query.order_by(sort_column.desc())
+            # Sorting - explicit whitelist of supported sort columns.
+            # Coalesce the two subquery counts so courses with no audio/topics
+            # (NULL via OUTER JOIN) sort as 0 rather than as "largest".
+            sort_column_map = {
+                "code": CourseModel.code,
+                "title": CourseModel.title,
+                "level": CourseModel.level,
+                "status": CourseModel.status,
+                "created_at": CourseModel.created_at,
+                "updated_at": CourseModel.updated_at,
+                "professor": ProfessorModel.name,
+                "department": DepartmentModel.name,
+                "creator": StudentModel.name,
+                "audio_count": func.coalesce(lectures_audio_sq.c.audio_count, 0),
+                "topics_count": func.coalesce(topics_sq.c.topics_count, 0),
+            }
+
+            # Add the join required to sort by a related table's column
+            join_spec = _RELATION_JOIN_COLUMNS.get(sort_by or "")
+            if join_spec is not None:
+                join_model, join_on = join_spec
+                query = query.outerjoin(join_model, join_on)
+
+            sort_column = sort_column_map.get(sort_by or "", CourseModel.updated_at)
+            direction_fn = sort_column.asc if order == "asc" else sort_column.desc
+            # Secondary sort by id keeps pagination stable when primary values tie
+            query = query.order_by(direction_fn(), CourseModel.id.desc())
 
             # Pagination
             query = query.limit(size).offset((page - 1) * size)
