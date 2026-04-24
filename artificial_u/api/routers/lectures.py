@@ -569,8 +569,6 @@ async def enqueue_generate_lecture_images(
         )
 
     payload = {"lecture_id": lecture_id}
-    if lecture.topic_id:
-        payload["topic_id"] = lecture.topic_id
 
     row = repository_factory.job.create(
         kind="generate_lecture_images",

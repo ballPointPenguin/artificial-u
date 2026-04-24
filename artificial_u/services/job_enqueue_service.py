@@ -180,9 +180,7 @@ class JobEnqueueService:
             self.logger.error(error_msg, exc_info=True)
             raise DatabaseError(error_msg) from e
 
-    def enqueue_lecture_images_generation(
-        self, lecture_id: int, *, topic_id: int | None = None
-    ) -> None:
+    def enqueue_lecture_images_generation(self, lecture_id: int) -> None:
         """
         Enqueue a background job to generate a lecture images timeline + slide images.
 
@@ -195,8 +193,6 @@ class JobEnqueueService:
         try:
             job_repo = self.repository_factory.job
             payload = {"lecture_id": lecture_id}
-            if topic_id is not None:
-                payload["topic_id"] = topic_id
             job = job_repo.create(kind="generate_lecture_images", payload=payload)
             job_id = job.id
             self.logger.info(f"Enqueued lecture images job {job_id} for lecture {lecture_id}")

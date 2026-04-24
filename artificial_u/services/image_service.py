@@ -683,7 +683,8 @@ class ImageService:
         *,
         professor: Any,
         course: Any,
-        topic: Any,
+        week_number: int,
+        lecture_order: int,
         lecture_summary: Optional[str],
         chunk_text: str,
         slot_idx: int,
@@ -701,13 +702,12 @@ class ImageService:
         backend = self._determine_backend(model_name)
 
         course_code = getattr(course, "code", str(getattr(course, "id", "course")))
-        week = int(getattr(topic, "week", 1))
-        order = int(getattr(topic, "order", 1))
+        week = int(week_number or 1)
+        order = int(lecture_order or 1)
 
         prompt, refs = format_lecture_slide_prompt(
             professor=professor,
             course=course,
-            topic=topic,
             lecture_summary=lecture_summary,
             chunk_text=chunk_text,
             previous_chunk_text=previous_chunk_text,

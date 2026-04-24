@@ -191,7 +191,8 @@ class LectureImagesGeneratorService:
             slide_url = await self.image_service.generate_lecture_slide_image(
                 professor=professor or course,  # fallback; prompt builder tolerates missing attrs
                 course=course,
-                topic=topic,
+                week_number=week,
+                lecture_order=order,
                 lecture_summary=getattr(lecture, "summary", None),
                 chunk_text=chunks[i],
                 previous_chunk_text=chunks[i - 1] if i > 0 else None,

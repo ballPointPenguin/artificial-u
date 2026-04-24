@@ -9,7 +9,6 @@ def format_lecture_slide_prompt(  # noqa: C901
     *,
     professor: Any,
     course: Any,
-    topic: Any,
     lecture_summary: Optional[str],
     chunk_text: str,
     previous_chunk_text: Optional[str] = None,
@@ -27,13 +26,12 @@ def format_lecture_slide_prompt(  # noqa: C901
     professor_title = getattr(professor, "title", None)
     professor_description = getattr(professor, "description", None)
     professor_specialization = getattr(professor, "specialization", None)
+    professor_gender = getattr(professor, "gender", None)
+    professor_age = getattr(professor, "age", None)
+    professor_accent = getattr(professor, "accent", None)
 
     course_code = getattr(course, "code", None)
     course_title = getattr(course, "title", None)
-
-    topic_title = getattr(topic, "title", None)
-    topic_week = getattr(topic, "week", None)
-    topic_order = getattr(topic, "order", None)
 
     # Reference image URLs (multimodal context) - keep order stable.
     refs: List[str] = []
@@ -50,8 +48,18 @@ def format_lecture_slide_prompt(  # noqa: C901
         + ".",
     ]
 
+    professor_traits: List[str] = []
+    if professor_gender:
+        professor_traits.append(str(professor_gender))
+    if professor_age:
+        professor_traits.append(f"Age {professor_age}")
+    if professor_traits:
+        context_lines.append(f"Professor traits: {', '.join(professor_traits)}.")
+    if professor_accent:
+        context_lines.append(f"Professor accent (voice): {professor_accent}.")
+
     if professor_description:
-        context_lines.append(f"Professor appearance: {professor_description}")
+        context_lines.append(f"Professor description: {professor_description}")
     if professor_specialization:
         context_lines.append(f"Professor specialization: {professor_specialization}")
 
@@ -62,16 +70,6 @@ def format_lecture_slide_prompt(  # noqa: C901
         course_bits.append(str(course_title))
     if course_bits:
         context_lines.append(f"Course: {' — '.join(course_bits)}")
-
-    topic_bits: List[str] = []
-    if topic_week is not None:
-        topic_bits.append(f"Week {topic_week}")
-    if topic_order is not None:
-        topic_bits.append(f"Lecture {topic_order}")
-    if topic_title:
-        topic_bits.append(str(topic_title))
-    if topic_bits:
-        context_lines.append(f"Topic: {' — '.join(topic_bits)}")
 
     if lecture_summary:
         context_lines.append("")
@@ -90,12 +88,20 @@ def format_lecture_slide_prompt(  # noqa: C901
     context_lines.extend(
         [
             "",
-            "Art Direction:",
+            "Art Direction: Semi-realistic, highly polished digital art. Smooth textures, illustrative style "
+            "similar to Riot Games art, Hearthstone card art, or ArtStation trending.",
+            "Negative Prompt: Do not make this photorealistic. Do not make it grainy.",
+            "Atmosphere: Subtle atmospheric lighting, a hint of wonder in the air, soft rim lighting, very "
+            "faint floating dust motes.",
+            "Background: A blurred, idealized academic setting (lab or classroom) that feels cozy and slightly "
+            "magical.",
+            'Lighting: Volumetric, cinematic, perfectly lit with no harsh shadows, "hero" lighting.',
+            "Details: High resolution, vivid colors, 8k, masterpiece.",
+            "",
+            "Composition Guidance:",
             "- The professor should feel like the same person as the reference image (if provided).",
-            "- Prefer educational, textbook-like visuals where appropriate "
-            "(diagrams, labeled illustrations, maps, charts).",
-            "- Compose like a lecture slide or visual aid that supports what is being said here.",
-            "- Avoid watermarks, UI chrome, screenshots of apps, and random unrelated logos.",
+            "- Consider including visual aids relevant to the lecture moment (e.g., a digital slide, "
+            "whiteboard, diagrams, instruments, lab apparatus, props).",
             f"Aspect Ratio: {aspect_ratio}",
         ]
     )
