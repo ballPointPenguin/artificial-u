@@ -124,7 +124,7 @@ Added animations for PWA prompts:
    pnpm dev
    ```
 
-   The PWA will work in dev mode with the service worker enabled.
+   The PWA service worker is disabled by default in dev mode to prevent caching issues. To test it locally, you can temporarily set `devOptions.enabled: true` in `vite.config.ts`.
 
 2. **Production Build**:
 
