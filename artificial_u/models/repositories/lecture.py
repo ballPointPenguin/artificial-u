@@ -45,6 +45,7 @@ class LectureRepository(BaseRepository):
                 audio_url=lecture.audio_url,
                 transcript_url=lecture.transcript_url,
                 timeline_url=lecture.timeline_url,
+                images_timeline_url=lecture.images_timeline_url,
                 course_id=lecture.course_id,
                 topic_id=lecture.topic_id,
                 word_count=word_count,
@@ -99,6 +100,7 @@ class LectureRepository(BaseRepository):
                 audio_url=db_lecture.audio_url,
                 transcript_url=db_lecture.transcript_url,
                 timeline_url=db_lecture.timeline_url,
+                images_timeline_url=getattr(db_lecture, "images_timeline_url", None),
                 course_id=db_lecture.course_id,
                 topic_id=db_lecture.topic_id,
                 word_count=db_lecture.word_count,
@@ -188,6 +190,7 @@ class LectureRepository(BaseRepository):
                         audio_url=lecture.audio_url,
                         transcript_url=lecture.transcript_url,
                         timeline_url=lecture.timeline_url,
+                        images_timeline_url=getattr(lecture, "images_timeline_url", None),
                         course_id=lecture.course_id,
                         topic_id=lecture.topic_id,
                         word_count=lecture.word_count,
@@ -253,6 +256,7 @@ class LectureRepository(BaseRepository):
                     audio_url=db_lecture.audio_url,
                     transcript_url=db_lecture.transcript_url,
                     timeline_url=db_lecture.timeline_url,
+                    images_timeline_url=db_lecture.images_timeline_url,
                     course_id=db_lecture.course_id,
                     topic_id=db_lecture.topic_id,
                     word_count=db_lecture.word_count,
@@ -413,6 +417,7 @@ class LectureRepository(BaseRepository):
                         audio_url=lecture.audio_url,
                         transcript_url=lecture.transcript_url,
                         timeline_url=lecture.timeline_url,
+                        images_timeline_url=lecture.images_timeline_url,
                         course_id=lecture.course_id,
                         topic_id=lecture.topic_id,
                         word_count=lecture.word_count,
@@ -464,6 +469,7 @@ class LectureRepository(BaseRepository):
                 LectureModel.audio_url,
                 LectureModel.transcript_url,
                 LectureModel.timeline_url,
+                LectureModel.images_timeline_url,
             ).join(
                 latest_revisions,
                 (LectureModel.topic_id == latest_revisions.c.topic_id)
@@ -493,6 +499,7 @@ class LectureRepository(BaseRepository):
                     "audio_url": row.audio_url,
                     "transcript_url": row.transcript_url,
                     "timeline_url": row.timeline_url,
+                    "images_timeline_url": row.images_timeline_url,
                 }
                 for row in results
             ]
@@ -520,6 +527,7 @@ class LectureRepository(BaseRepository):
             db_lecture.audio_url = lecture.audio_url
             db_lecture.transcript_url = lecture.transcript_url
             db_lecture.timeline_url = lecture.timeline_url
+            db_lecture.images_timeline_url = lecture.images_timeline_url
             db_lecture.course_id = lecture.course_id
             db_lecture.topic_id = lecture.topic_id
             db_lecture.word_count = self._calculate_word_count(lecture.content)
@@ -564,6 +572,7 @@ class LectureRepository(BaseRepository):
                 "transcript_url",
                 "course_id",
                 "timeline_url",
+                "images_timeline_url",
                 "topic_id",
                 "voice_id",
                 "duration",
@@ -590,6 +599,7 @@ class LectureRepository(BaseRepository):
                 audio_url=db_lecture.audio_url,
                 transcript_url=db_lecture.transcript_url,
                 timeline_url=db_lecture.timeline_url,
+                images_timeline_url=db_lecture.images_timeline_url,
                 course_id=db_lecture.course_id,
                 topic_id=db_lecture.topic_id,
                 voice_id=db_lecture.voice_id,

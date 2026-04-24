@@ -47,6 +47,8 @@ export const LectureSection: Component<LectureSectionProps> = (props) => {
 
   const [isGeneratingTimeline, setIsGeneratingTimeline] = createSignal(false)
   const [timelineError, setTimelineError] = createSignal('')
+  const [isGeneratingImages, setIsGeneratingImages] = createSignal(false)
+  const [imagesError, setImagesError] = createSignal('')
 
   // Track jobs for this topic AND lecture (lecture ID will be undefined initially,
   // then change when created)
@@ -58,6 +60,7 @@ export const LectureSection: Component<LectureSectionProps> = (props) => {
       'generate_lecture_text_only',
       'generate_lecture_audio',
       'generate_lecture_timeline',
+      'generate_lecture_images',
       'generate_lecture_summary',
     ],
     onJobComplete: (event) => {
@@ -70,6 +73,8 @@ export const LectureSection: Component<LectureSectionProps> = (props) => {
         setAudioError('')
       } else if (event.kind === 'generate_lecture_timeline') {
         setTimelineError('')
+      } else if (event.kind === 'generate_lecture_images') {
+        setImagesError('')
       }
 
       // Always refresh lecture data when any lecture-related job completes
@@ -89,6 +94,8 @@ export const LectureSection: Component<LectureSectionProps> = (props) => {
         setSummaryError(getJobMessage(event.kind, 'failed'))
       } else if (event.kind === 'generate_lecture_timeline') {
         setTimelineError(getJobMessage(event.kind, 'failed'))
+      } else if (event.kind === 'generate_lecture_images') {
+        setImagesError(getJobMessage(event.kind, 'failed'))
       } else if (event.kind === 'generate_lecture_text_only') {
         // Handle text-only generation failures
         // The error will be shown via the lectureError prop from TopicDetail
@@ -252,6 +259,22 @@ export const LectureSection: Component<LectureSectionProps> = (props) => {
     }
   }
 
+  const handleGenerateImages = async () => {
+    const lecture = props.lecture()
+    if (!lecture) return
+
+    setIsGeneratingImages(true)
+    setImagesError('')
+
+    try {
+      await lectureService.enqueueGenerateLectureImages(lecture.id)
+    } catch (error) {
+      setImagesError(error instanceof Error ? error.message : 'Failed to generate lecture images')
+    } finally {
+      setIsGeneratingImages(false)
+    }
+  }
+
   return (
     <div class="arcane-card">
       <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between mb-4">
@@ -274,6 +297,7 @@ export const LectureSection: Component<LectureSectionProps> = (props) => {
                           title: lecture.title,
                           subtitle: `Revision ${String(lecture.revision)}`,
                           timelineUrl: lecture.timeline_url ?? undefined,
+                          imagesTimelineUrl: lecture.images_timeline_url ?? undefined,
                           courseId: props.courseId,
                           lectureId: lecture.id,
                           topicId: props.topicId,
@@ -354,6 +378,21 @@ export const LectureSection: Component<LectureSectionProps> = (props) => {
                             : 'Generate Timeline'}
                       </MagicButton>
                     </Show>
+                    <Show when={lectureData().timeline_url}>
+                      <MagicButton
+                        variant="primary"
+                        size="sm"
+                        class="min-h-[44px] sm:min-h-[32px] w-full sm:w-auto flex items-center justify-center"
+                        onClick={() => void handleGenerateImages()}
+                        disabled={isGeneratingImages() || anyJobActive()}
+                      >
+                        {isGeneratingImages()
+                          ? 'Generating Images...'
+                          : lectureData().images_timeline_url
+                            ? 'Regenerate Lecture Images'
+                            : 'Generate Lecture Images'}
+                      </MagicButton>
+                    </Show>
                     <label
                       for={`audio-file-upload-${String(lectureData().id)}`}
                       class="inline-flex items-center justify-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md border border-mystic-600 bg-mystic-900/20 text-mystic-300 hover:bg-mystic-900/40 hover:border-mystic-500 transition-colors cursor-pointer min-h-[44px] sm:min-h-[32px] w-full sm:w-auto"
@@ -431,6 +470,13 @@ export const LectureSection: Component<LectureSectionProps> = (props) => {
       <Show when={timelineError()}>
         <Alert variant="danger" class="mb-4">
           {timelineError()}
+        </Alert>
+      </Show>
+
+      {/* Lecture images generation error */}
+      <Show when={imagesError()}>
+        <Alert variant="danger" class="mb-4">
+          {imagesError()}
         </Alert>
       </Show>
 

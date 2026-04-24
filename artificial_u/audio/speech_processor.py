@@ -16,50 +16,6 @@ class SpeechProcessor:
     Handles specialized text enhancements for academic content.
     """
 
-    # Technical term pronunciation dictionary
-    PRONUNCIATION_DICT = {
-        # Format: "term": "IPA pronunciation"
-        "Anthropic": "ænˈθrɒpɪk",
-        "Claude": "klɔːd",
-        "Python": "ˈpaɪθɑːn",
-        "LaTeX": "ˈleɪtɛk",
-        "NumPy": "nʌmˈpaɪ",
-        "GOFAI": "ɡoʊˈfaɪ",
-        "Tensorflow": "ˈtɛnsərˌfloʊ",
-        "PyTorch": "paɪˈtɔːrtʃ",
-        "SQL": "ˌɛs kjuː ˈɛl",
-        "NoSQL": "noʊ ˌɛs kjuː ˈɛl",
-    }
-
-    # Mathematical notation mapping
-    MATH_NOTATION = {
-        # Greek letters
-        "α": "alpha",
-        "β": "beta",
-        "γ": "gamma",
-        "δ": "delta",
-        "ε": "epsilon",
-        "θ": "theta",
-        "λ": "lambda",
-        "π": "pi",
-        "σ": "sigma",
-        "τ": "tau",
-        "φ": "phi",
-        "ω": "omega",
-        # Mathematical operators
-        "≈": "approximately equal to",
-        "≠": "not equal to",
-        "≤": "less than or equal to",
-        "≥": "greater than or equal to",
-        "∑": "sum",
-        "∫": "integral",
-        "∂": "partial derivative",
-        "∞": "infinity",
-        "∈": "element of",
-        "∩": "intersection",
-        "∪": "union",
-    }
-
     def __init__(self, logger=None):
         """
         Initialize the speech processor.
@@ -83,12 +39,39 @@ class SpeechProcessor:
         Returns:
             Normalized text suitable for TTS
         """
+
+        def _append_period_to_unpunctuated_lines(s: str) -> str:
+            pause_punct = {".", ",", ";", "?", "!", ":", "…"}
+            out_lines: List[str] = []
+
+            for line in s.splitlines(keepends=True):
+                line_ending = "\n" if line.endswith("\n") else ""
+                core = line[:-1] if line_ending else line
+
+                stripped = core.rstrip(" \t")
+                if stripped and any(ch.isalnum() for ch in stripped):
+                    last_char = stripped[-1]
+                    if last_char not in pause_punct:
+                        core = stripped + "." + core[len(stripped) :]
+
+                out_lines.append(core + line_ending)
+
+            return "".join(out_lines)
+
         normalized_text = text
 
         # Fix hyphenated words being read as "minus"
         # Replace hyphens with spaces in hyphenated words (but not standalone dashes)
         # Use a more comprehensive approach to handle multi-word hyphenated phrases
         normalized_text = re.sub(r"(\w)-(\w)", r"\1 \2", normalized_text)
+
+        # Handle leading-dash letter clusters like "-ER" → "E R" or "-ed" → "e d"
+        normalized_text = re.sub(
+            r"(?:(?<=\s)|^)-([A-Z]{2,})(?=\b)",
+            lambda m: " ".join(m.group(1)),
+            normalized_text,
+            flags=re.IGNORECASE,
+        )
 
         # Handle em dashes and en dashes more aggressively
         # Remove em dashes completely (they're usually just long pauses)
@@ -102,8 +85,11 @@ class SpeechProcessor:
         # This preserves "5 - 1" while removing "She paused - and took a sip"
         normalized_text = re.sub(r"(?<!\d)\s+-\s+(?!\d)", " ", normalized_text)
 
-        # Handle multiple spaces that might result from replacements
-        normalized_text = re.sub(r"\s+", " ", normalized_text)
+        # Handle multiple spaces that might result from replacements (preserve newlines)
+        normalized_text = re.sub(r"[ \t]+", " ", normalized_text)
+
+        # Add a pause at the end of unpunctuated lines (preserve newlines)
+        normalized_text = _append_period_to_unpunctuated_lines(normalized_text)
 
         # Remove markdown title prefixes
         normalized_text = re.sub(r"^#+\s+", "", normalized_text, flags=re.MULTILINE)
@@ -118,157 +104,6 @@ class SpeechProcessor:
 
         return normalized_text.strip()
 
-    def enhance_speech_markup(self, text: str) -> str:
-        """
-        Enhance text with speech markup for better pronunciation.
-        This includes both normalization and advanced markup.
-
-        Args:
-            text: The text to enhance
-
-        Returns:
-            Enhanced text with speech markup
-        """
-        # Start with normalized text
-        enhanced_text = self.normalize_text(text)
-
-        # Add pronunciation guides for technical terms
-        for term, pronunciation in self.PRONUNCIATION_DICT.items():
-            # Only replace whole words (not substrings)
-            pattern = r"\b" + re.escape(term) + r"\b"
-            replacement = f'<phoneme alphabet="ipa" ph="{pronunciation}">{term}</phoneme>'
-            enhanced_text = re.sub(pattern, replacement, enhanced_text)
-
-        # Handle mathematical notation
-        for symbol, spoken_form in self.MATH_NOTATION.items():
-            enhanced_text = enhanced_text.replace(symbol, spoken_form)
-
-        enhanced_text = self._enhance_code_syntax(enhanced_text)
-        enhanced_text = self._enhance_equations(enhanced_text)
-        enhanced_text = self._enhance_scientific_notation(enhanced_text)
-
-        return enhanced_text
-
-    def _enhance_code_syntax(self, text: str) -> str:
-        """
-        Enhance code syntax for better speech rendering.
-
-        Args:
-            text: The text to enhance
-
-        Returns:
-            Text with enhanced code syntax
-        """
-        # Replace common code syntax elements
-        replacements = {
-            # Variable declarations
-            r"\bvar\b": "variable",
-            r"\blet\b": "let",
-            r"\bconst\b": "constant",
-            # Operators
-            r"===": "strictly equals",
-            r"!==": "strictly not equals",
-            r"==": "equals",
-            r"!=": "not equals",
-            r"<=": "less than or equal to",
-            r">=": "greater than or equal to",
-            r"->": "arrow",
-            r"=>": "fat arrow",
-            # Common syntax
-            r"\bfunction\b": "function",
-            r"\breturn\b": "return",
-            r"\bif\b": "if",
-            r"\belse\b": "else",
-            r"\bfor\b": "for",
-            r"\bwhile\b": "while",
-        }
-
-        # Apply replacements
-        for pattern, replacement in replacements.items():
-            text = re.sub(pattern, replacement, text)
-
-        return text
-
-    def _enhance_equations(self, text: str) -> str:
-        """
-        Enhance mathematical equations for better speech rendering.
-        Only applies mathematical replacements within likely equation contexts.
-
-        Args:
-            text: The text to enhance
-
-        Returns:
-            Text with enhanced equations
-        """
-        # First, handle mathematical operators that don't conflict with regular text
-        safe_replacements = {
-            # Multi-character operators that are clearly mathematical
-            r"\*\*": " to the power of ",
-            r">=": " greater than or equal to ",
-            r"<=": " less than or equal to ",
-            r"!=": " not equal to ",
-            r"==": " equals ",
-            # Functions
-            r"\bsin\b": "sine",
-            r"\bcos\b": "cosine",
-            r"\btan\b": "tangent",
-            r"\blog\b": "logarithm",
-            r"\bln\b": "natural logarithm",
-            r"\bexp\b": "exponential",
-            r"\bsqrt\b": "square root",
-            r"\blim\b": "limit",
-        }
-
-        # Apply safe replacements globally
-        for pattern, replacement in safe_replacements.items():
-            text = re.sub(pattern, replacement, text)
-
-        # Handle potentially ambiguous operators only in mathematical contexts
-        # Look for patterns like: number operator number, or variable operator variable
-        math_context_patterns = {
-            # Plus/minus when surrounded by numbers or variables
-            r"(\d+|\w)\s*\+\s*(\d+|\w)": r"\1 plus \2",
-            r"(\d+|\w)\s*-\s*(\d+|\w)": r"\1 minus \2",
-            r"(\d+|\w)\s*\*\s*(\d+|\w)": r"\1 times \2",
-            r"(\d+|\w)\s*/\s*(\d+|\w)": r"\1 divided by \2",
-        }
-        for pattern, replacement in math_context_patterns.items():
-            text = re.sub(pattern, replacement, text)
-
-        return text
-
-    def _enhance_scientific_notation(self, text: str) -> str:
-        """
-        Enhance scientific notation and chemical formulas.
-
-        Args:
-            text: The text to enhance
-
-        Returns:
-            Text with enhanced scientific notation
-        """
-        # Enhance chemical formulas (H2O -> "H 2 O")
-        text = re.sub(r"([A-Z][a-z]?)(\d+)", r"\1 \2", text)
-
-        # Enhance scientific units
-        replacements = {
-            # SI units
-            r"m/s": "meters per second",
-            r"km/h": "kilometers per hour",
-            r"kg/m³": "kilograms per cubic meter",
-            r"mol/L": "moles per liter",
-            # Common units
-            r"°C": "degrees Celsius",
-            r"°F": "degrees Fahrenheit",
-            r"K\b": "Kelvin",
-        }
-
-        # Apply replacements
-        for pattern, replacement in replacements.items():
-            text = re.sub(pattern, replacement, text)
-
-        return text
-
     def _apply_pause_breaks(self, text: str) -> str:
         """Convert bracketed pause stage directions to ElevenLabs <break> tags.
 
@@ -282,7 +117,47 @@ class SpeechProcessor:
         - [Pause, ...] or [Pauses, ...] → <break time="1.0s" /> (general pause with description)
         - [Pauses at ...] is left unchanged
         """
+
+        def _pause_for_seconds_repl(match: re.Match) -> str:
+            raw = match.group(1).strip().lower()
+            raw = re.sub(r"[.?!]+$", "", raw).strip()
+
+            word_numbers = {
+                "zero": 0,
+                "one": 1,
+                "two": 2,
+                "three": 3,
+                "four": 4,
+                "five": 5,
+                "six": 6,
+                "seven": 7,
+                "eight": 8,
+                "nine": 9,
+                "ten": 10,
+            }
+
+            seconds_match = re.match(r"^(\d+(?:\.\d+)?)\s*seconds?$", raw)
+            if seconds_match:
+                seconds = float(seconds_match.group(1))
+                seconds = max(seconds, 0.0)
+                return f' <break time="{seconds:.1f}s" /> '
+
+            if raw in word_numbers:
+                seconds = float(word_numbers[raw])
+                return f' <break time="{seconds:.1f}s" /> '
+
+            # Fall back to a natural long pause when the duration isn't parseable.
+            return ' <break time="1.5s" /> '
+
         # Process comma variants first (more specific patterns)
+
+        # [Pauses for three seconds.] → dynamic break length
+        text = re.sub(
+            r"\[\s*pauses?\s+for\s+([^\]]+?)\s*\]",
+            _pause_for_seconds_repl,
+            text,
+            flags=re.IGNORECASE,
+        )
 
         # [Slight pause, ...] → 0.5s + keep remainder as bracketed comment
         text = re.sub(
@@ -369,7 +244,7 @@ class SpeechProcessor:
         )
 
         # Collapse any excess whitespace again after insertions
-        text = re.sub(r"\s+", " ", text)
+        text = re.sub(r"[ \t]+", " ", text)
         return text
 
     def _strip_pause_directions(self, text: str) -> str:
@@ -385,7 +260,7 @@ class SpeechProcessor:
             text,
             flags=re.IGNORECASE,
         )
-        text = re.sub(r"\s+", " ", text)
+        text = re.sub(r"[ \t]+", " ", text)
         return text
 
     def split_into_chunks(self, text: str, max_chunk_size: int = 4000) -> List[str]:

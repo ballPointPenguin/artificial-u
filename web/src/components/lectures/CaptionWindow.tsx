@@ -291,7 +291,7 @@ export const CaptionWindow: Component<CaptionWindowProps> = (props) => {
       ref={(el) => {
         cardRef = el
       }}
-      class={`relative w-full rounded-lg bg-surface border border-border/60 flex items-center justify-center p-6 sm:p-8 overflow-hidden ${
+      class={`relative min-h-0 w-full max-h-full rounded-lg bg-surface border border-border/60 flex items-center justify-center p-6 sm:p-8 overflow-hidden ${
         props.class ?? ''
       }`}
     >

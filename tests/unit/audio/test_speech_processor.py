@@ -17,38 +17,38 @@ class TestSpeechProcessor:
     def test_normalize_text_hyphenated_words(self, processor):
         """Test that hyphenated words are properly normalized."""
         # Test basic hyphenated words
-        assert processor.normalize_text("well-being") == "well being"
-        assert processor.normalize_text("state-of-the-art") == "state of the art"
-        assert processor.normalize_text("self-explanatory") == "self explanatory"
+        assert processor.normalize_text("well-being") == "well being."
+        assert processor.normalize_text("state-of-the-art") == "state of the art."
+        assert processor.normalize_text("self-explanatory") == "self explanatory."
 
         # Test complex hyphenated phrases
         result = processor.normalize_text("The state-of-the-art method")
-        assert result == "The state of the art method"
+        assert result == "The state of the art method."
 
     @pytest.mark.unit
     def test_normalize_text_prose_dashes(self, processor):
         """Test that prose dashes are removed while preserving mathematical expressions."""
         # Test basic prose dash removal
         result = processor.normalize_text("She paused - and took a sip")
-        assert result == "She paused and took a sip"
+        assert result == "She paused and took a sip."
 
         # Test multiple prose dashes
         input_text = "The idea - which was brilliant - changed everything"
         result = processor.normalize_text(input_text)
-        assert result == "The idea which was brilliant changed everything"
+        assert result == "The idea which was brilliant changed everything."
 
         # Test quote-style dashes
         input_text = "He said - quote - this is important"
         result = processor.normalize_text(input_text)
-        assert result == "He said quote this is important"
+        assert result == "He said quote this is important."
 
     @pytest.mark.unit
     def test_normalize_text_mathematical_preservation(self, processor):
         """Test that mathematical expressions are preserved during normalization."""
         # Test basic math expressions
-        assert processor.normalize_text("Calculate 5 - 3 = 2") == "Calculate 5 - 3 = 2"
-        assert processor.normalize_text("The score was 8 - 5") == "The score was 8 - 5"
-        assert processor.normalize_text("Result: 10 - 7 = 3") == "Result: 10 - 7 = 3"
+        assert processor.normalize_text("Calculate 5 - 3 = 2") == "Calculate 5 - 3 = 2."
+        assert processor.normalize_text("The score was 8 - 5") == "The score was 8 - 5."
+        assert processor.normalize_text("Result: 10 - 7 = 3") == "Result: 10 - 7 = 3."
 
     @pytest.mark.unit
     def test_normalize_text_em_and_en_dashes(self, processor):
@@ -56,24 +56,24 @@ class TestSpeechProcessor:
         # Test em dash removal
         input_text = "Real-time—or near real-time—processing"
         result = processor.normalize_text(input_text)
-        assert result == "Real time or near real time processing"
+        assert result == "Real time or near real time processing."
 
         # Test en dash removal
         input_text = "The range was 10–15 items"
         result = processor.normalize_text(input_text)
-        assert result == "The range was 10 15 items"
+        assert result == "The range was 10 15 items."
 
         # Test mixed dashes
         input_text = "Multi-level—both high–low processing"
         result = processor.normalize_text(input_text)
-        assert result == "Multi level both high low processing"
+        assert result == "Multi level both high low processing."
 
     @pytest.mark.unit
     def test_normalize_text_markdown_headers(self, processor):
         """Test that markdown headers are properly removed."""
-        assert processor.normalize_text("# Introduction") == "Introduction"
-        assert processor.normalize_text("## Section Title") == "Section Title"
-        assert processor.normalize_text("### Subsection") == "Subsection"
+        assert processor.normalize_text("# Introduction") == "Introduction."
+        assert processor.normalize_text("## Section Title") == "Section Title."
+        assert processor.normalize_text("### Subsection") == "Subsection."
 
         # Test multiline headers - whitespace normalization happens after header removal
         text_with_headers = """# Main Title
@@ -94,12 +94,30 @@ More content"""
         # Test multiple spaces from replacements
         input_text = "Text  with   multiple    spaces"
         result = processor.normalize_text(input_text)
-        assert result == "Text with multiple spaces"
+        assert result == "Text with multiple spaces."
 
         # Test mixed whitespace
         input_text = "Text\t\twith\n\n  mixed  \t whitespace"
         result = processor.normalize_text(input_text)
-        assert result == "Text with mixed whitespace"
+        assert result == "Text with.\n\n mixed whitespace."
+
+    @pytest.mark.unit
+    def test_normalize_text_dash_prefixed_letter_clusters(self, processor):
+        """Dash-prefixed letter clusters like -ER are expanded for TTS clarity."""
+        assert processor.normalize_text("Regular -ER Verbs") == "Regular E R Verbs."
+        assert processor.normalize_text("Past tense is -ed") == "Past tense is e d."
+
+    @pytest.mark.unit
+    def test_normalize_text_append_period_to_lines(self, processor):
+        """Lines without punctuation get a trailing period to improve TTS pausing."""
+        text = "Lecture 1\nToday we begin."
+        assert processor.normalize_text(text) == "Lecture 1.\nToday we begin."
+
+        text2 = "Intro\nNext line"
+        assert processor.normalize_text(text2) == "Intro.\nNext line."
+
+        text3 = "Already punctuated?\nFine!"
+        assert processor.normalize_text(text3) == "Already punctuated?\nFine!"
 
     @pytest.mark.unit
     def test_normalize_text_complex_scenarios(self, processor):
@@ -129,36 +147,6 @@ More content"""
         assert "5 - 3 = 2" in result
 
     @pytest.mark.unit
-    def test_enhance_speech_markup_includes_normalization(self, processor):
-        """Test that enhance_speech_markup includes normalization as first step."""
-        # Test that enhancement includes normalization
-        input_text = "The well-being study used state-of-the-art methods."
-        enhanced = processor.enhance_speech_markup(input_text)
-
-        # Should normalize hyphenated words
-        assert "well being" in enhanced
-        assert "state of the art" in enhanced
-        assert "well-being" not in enhanced
-        assert "state-of-the-art" not in enhanced
-
-    @pytest.mark.unit
-    def test_enhance_speech_markup_mathematical_context(self, processor):
-        """Test that mathematical expressions get proper 'minus' treatment in enhancement."""
-        # Test math expressions get enhanced to 'minus'
-        input_text = "Calculate 5 - 3 = 2 for the equation."
-        enhanced = processor.enhance_speech_markup(input_text)
-
-        # Should convert math dashes to 'minus'
-        assert "5 minus 3" in enhanced
-
-        # Test mixed context
-        input_text = "The well-being score went from 8 - 2 = 6."
-        enhanced = processor.enhance_speech_markup(input_text)
-
-        assert "well being" in enhanced  # Normalized hyphenated word
-        assert "8 minus 2" in enhanced  # Math expression enhanced
-
-    @pytest.mark.unit
     def test_edge_cases(self, processor):
         """Test edge cases and boundary conditions."""
         # Empty string
@@ -176,13 +164,13 @@ More content"""
         assert processor.normalize_text("  -  ") == ""
 
         # Single character words with dashes
-        assert processor.normalize_text("a-b") == "a b"
+        assert processor.normalize_text("a-b") == "a b."
 
         # Numbers with dashes (should preserve math context)
         # Single digits get normalized as hyphenated
-        assert processor.normalize_text("1-2") == "1 2"
+        assert processor.normalize_text("1-2") == "1 2."
         # Spaced math preserved
-        assert processor.normalize_text("1 - 2") == "1 - 2"
+        assert processor.normalize_text("1 - 2") == "1 - 2."
 
     @pytest.mark.unit
     def test_pause_stage_directions_basic(self, processor):

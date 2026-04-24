@@ -37,6 +37,7 @@ class JobService:
         self._topic_generator_service = None
         self._lecture_service = None
         self._lecture_generator_service = None
+        self._lecture_images_generator_service = None
 
     # ---- Public API ----
 
@@ -85,6 +86,7 @@ class JobService:
             "generate_lecture_summary": self._handle_generate_lecture_summary,
             "generate_lecture_audio": self._handle_generate_lecture_audio,
             "generate_lecture_timeline": self._handle_generate_lecture_timeline,
+            "generate_lecture_images": self._handle_generate_lecture_images,
             "generate_professor_image": self._handle_generate_professor_image,
             "generate_course_image": self._handle_generate_course_image,
             # Export tasks
@@ -298,6 +300,22 @@ class JobService:
         if lecture_id is None:
             raise ValueError("lecture_id is required")
         result = await service.generate_lecture_timeline(lecture_id)
+        return result
+
+    async def _handle_generate_lecture_images(self, payload: Dict[str, Any]) -> Dict[str, Any]:
+        service = self._lecture_images_generator_service_instance()
+        lecture_id = payload.get("lecture_id")
+        if lecture_id is None:
+            raise ValueError("lecture_id is required")
+        interval_sec = payload.get("interval_sec", 30)
+        aspect_ratio = payload.get("aspect_ratio", "1:1")
+        model_name_override = payload.get("model_name_override")
+        result = await service.generate_lecture_images(
+            lecture_id,
+            interval_sec=interval_sec,
+            aspect_ratio=aspect_ratio,
+            model_name_override=model_name_override,
+        )
         return result
 
     async def _handle_generate_professor_image(self, payload: Dict[str, Any]) -> Dict[str, Any]:
@@ -522,6 +540,23 @@ class JobService:
                 logger=self.logger,
             )
         return self._lecture_generator_service
+
+    def _lecture_images_generator_service_instance(self):
+        if self._lecture_images_generator_service is None:
+            from artificial_u.services.lecture_images_generator_service import (
+                LectureImagesGeneratorService,
+            )
+
+            self._lecture_images_generator_service = LectureImagesGeneratorService(
+                lecture_service=self._lecture_service_instance(),
+                course_service=self._course_service_instance(),
+                topic_service=self._topic_service_instance(),
+                professor_service=self._professor_service_instance(),
+                storage_service=self._storage_service_instance(),
+                image_service=self._image_service_instance(),
+                logger=self.logger,
+            )
+        return self._lecture_images_generator_service
 
     def _department_service_instance(self):
         if self._department_service is None:

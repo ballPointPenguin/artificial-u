@@ -166,6 +166,12 @@ export default function AdminDashboard() {
           >
             Settings
           </a>
+          <a
+            href="/jobs"
+            class="rounded-md border border-border bg-muted/30 px-4 py-2 text-sm font-medium transition-colors hover:bg-muted/60"
+          >
+            Jobs
+          </a>
           <Button
             variant="secondary"
             onClick={() => {

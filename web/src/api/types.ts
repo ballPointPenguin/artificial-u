@@ -124,6 +124,8 @@ export interface LectureBrief {
   audio_download_url?: string | null
   transcript_url?: string | null
   timeline_url?: string | null
+  /** Synced image slideshow timeline JSON when present */
+  images_timeline_url?: string | null
 }
 
 export interface CourseLecturesResponse {
@@ -226,6 +228,7 @@ export interface Lecture {
   audio_download_url?: string | null
   transcript_url: string | null
   timeline_url: string | null
+  images_timeline_url: string | null
   word_count: number | null
   duration: number | null
   created_by?: number | null
@@ -259,6 +262,7 @@ export interface LectureUpdate {
   summary?: string | null
   audio_url?: string | null
   transcript_url?: string | null
+  images_timeline_url?: string | null
   revision?: number | null
   word_count?: number | null
 }

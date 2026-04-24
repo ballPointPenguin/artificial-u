@@ -101,6 +101,23 @@ export const lectureService = {
     return httpClient.post(ENDPOINTS.lectures.enqueueGenerateTimeline(lectureId), undefined)
   },
 
+  /**
+   * Enqueue lecture images generation job (async). Returns a job stub with id.
+   */
+  enqueueGenerateLectureImages: (
+    lectureId: number
+  ): Promise<{
+    id: number
+    kind: string
+    status: string
+    attempts: number
+    max_attempts: number
+    priority?: number
+    run_after?: string
+  }> => {
+    return httpClient.post(ENDPOINTS.lectures.enqueueGenerateImages(lectureId), undefined)
+  },
+
   createLecture: (data: LectureCreate): Promise<Lecture> => {
     return httpClient.post<Lecture>(ENDPOINTS.lectures.list, data)
   },

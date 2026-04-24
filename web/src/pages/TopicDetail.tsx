@@ -10,11 +10,16 @@ import { TopicContentRenderer } from '../components/topics/TopicContentRenderer.
 import { TopicForm } from '../components/topics/TopicForm.jsx'
 import { Alert, Button, MetadataInfo, ShareButton } from '../components/ui'
 import { useTranslations } from '../i18n/index.js'
+import { useAudioPlayer } from '../utils/audio-player-context.jsx'
 import { createJobTracker, getJobMessage } from '../utils/job-management.js'
 
 const TopicDetail = () => {
   const params = useParams()
   const t = useTranslations()
+  const player = useAudioPlayer()
+
+  /** When Now Playing is open, use a single-column stack (like tablet) so the main column is not split with the docked player. */
+  const nowPlayingOpen = () => player.isExpanded()
 
   const [isEditing, setIsEditing] = createSignal(false)
   const [isSubmitting, setIsSubmitting] = createSignal(false)
@@ -354,9 +359,12 @@ const TopicDetail = () => {
                       </RequireRole>
                     }
                   >
-                    {/* Two-column layout for larger screens */}
-                    <div class="lg:grid lg:grid-cols-2 lg:gap-6">
-                      {/* Topic content - takes full width on mobile, left column on desktop */}
+                    <div
+                      classList={{
+                        'lg:grid lg:grid-cols-2 lg:gap-6': !nowPlayingOpen(),
+                        'flex flex-col gap-6': nowPlayingOpen(),
+                      }}
+                    >
                       <div class="lg:col-span-1">
                         {/* Topic Detail View */}
                         <div class="arcane-card">
@@ -408,8 +416,7 @@ const TopicDetail = () => {
                         </div>
                       </div>
 
-                      {/* Lecture Section - takes full width on mobile, right column on desktop */}
-                      <div class="lg:col-span-1 mt-6 lg:mt-0">
+                      <div class="lg:col-span-1" classList={{ 'mt-6 lg:mt-0': !nowPlayingOpen() }}>
                         <LectureSection
                           lecture={lecture}
                           courseId={courseId()}
