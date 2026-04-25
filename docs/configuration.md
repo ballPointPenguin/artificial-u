@@ -200,6 +200,13 @@ Configure logging level:
 LOG_LEVEL=INFO
 ```
 
+### Process diagnostics (optional)
+
+The API can emit periodic structured JSON logs for process-level metrics (memory, GC, open FDs, threads, and related counters) to help correlate behavior across Gunicorn workers. This is controlled by plain environment variables read in the FastAPI lifespan (not Pydantic settings).
+
+- **`DIAG_PROCESS_METRICS`**: Set to `1` to enable; **`0` or unset turns telemetry off** (default).
+- **`DIAG_PROCESS_METRICS_INTERVAL_SEC`**: Sampling interval in seconds when enabled (default `30`).
+
 ## Database Configuration
 
 Configure the PostgreSQL database connection:
@@ -234,6 +241,8 @@ TESTING=true
 | `OPENAI_API_KEY` | API key for OpenAI | None | No |
 | `CONTENT_LOGS_PATH` | (Deprecated) Path for content generation logs | `content_logs` | No |
 | `LOG_LEVEL` | Logging level | `INFO` | No |
+| `DIAG_PROCESS_METRICS` | Enable process-level diagnostic telemetry (`1` on; `0` or unset off) | `0` (off) | No |
+| `DIAG_PROCESS_METRICS_INTERVAL_SEC` | Telemetry interval in seconds when `DIAG_PROCESS_METRICS=1` | `30` | No |
 | `content_backend` | Backend for content generation | `anthropic` | No |
 | `content_model` | Model for chosen backend | Depends on backend | No |
 | `COURSE_GENERATION_MODEL` | Model for course generation | `gpt-5.4-nano` | No |

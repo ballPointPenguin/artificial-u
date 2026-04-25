@@ -218,6 +218,8 @@ class CdkStack(Stack):
         app_environment = {
             "AUTH0_ALG": "RS256",
             "CORS_ORIGINS": f"https://{domain_name},https://{site_domain}",
+            # Process telemetry (memory/GC/etc.); set to "1" only when diagnosing workers
+            "DIAG_PROCESS_METRICS": "0",
             "COURSE_GENERATION_MODEL": "gpt-5.4-nano",
             "DEPARTMENT_GENERATION_MODEL": "gpt-5.4-nano",
             "ENV": "production",
