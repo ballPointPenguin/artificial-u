@@ -14,7 +14,7 @@ interface TimelineData {
 }
 
 const fetchTimeline = async (url: string): Promise<TimelineData> => {
-  const response = await fetch(url)
+  const response = await fetch(url, { cache: 'no-store' })
   if (!response.ok) {
     throw new Error('Failed to fetch timeline')
   }
