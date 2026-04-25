@@ -21,17 +21,25 @@ class JobEventHub:
     def __init__(self) -> None:
         self._subscribers: Set[asyncio.Queue] = set()
         self._lock = asyncio.Lock()
+        self._dropped_events = 0
 
     async def subscriber_count(self) -> int:
         """Return current subscriber count (for telemetry)."""
         async with self._lock:
             return len(self._subscribers)
 
+    async def dropped_events_count(self) -> int:
+        """Total count of dropped events due to full subscriber queues."""
+        async with self._lock:
+            return int(self._dropped_events)
+
     async def publish(self, event: Dict[str, Any]) -> None:
         async with self._lock:
             for q in list(self._subscribers):
                 if not q.full():
                     q.put_nowait(event)
+                else:
+                    self._dropped_events += 1
 
     async def close(self) -> None:
         """

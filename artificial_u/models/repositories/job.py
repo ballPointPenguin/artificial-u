@@ -198,6 +198,49 @@ class JobRepository(BaseRepository):
             ).all()
             return [(r[0], r[1]) for r in rows]
 
+    def telemetry_summary(self) -> Dict[str, Any]:
+        """
+        Lightweight queue health snapshot for CloudWatch custom metrics.
+
+        Returns:
+          - counts by status
+          - avg_wait_seconds for queued jobs (now - created_at)
+          - failed_last_hour count
+        """
+        with self.get_session() as session:
+            counts_rows = session.execute(
+                select(JobModel.status, func.count()).group_by(JobModel.status)
+            ).all()
+            counts: Dict[str, int] = {str(s): int(c) for s, c in counts_rows}
+
+            avg_wait = session.execute(
+                select(func.avg(func.extract("epoch", func.now() - JobModel.created_at))).where(
+                    JobModel.status == "queued"
+                )
+            ).scalar()
+            try:
+                avg_wait_seconds = float(avg_wait) if avg_wait is not None else 0.0
+            except Exception:
+                avg_wait_seconds = 0.0
+
+            failed_last_hour = session.execute(
+                select(func.count())
+                .select_from(JobModel)
+                .where(
+                    and_(
+                        JobModel.status == "failed",
+                        JobModel.updated_at >= func.now() - text("interval '1 hour'"),
+                    )
+                )
+            ).scalar()
+            failed_last_hour_count = int(failed_last_hour or 0)
+
+            return {
+                "counts": counts,
+                "avg_wait_seconds": avg_wait_seconds,
+                "failed_last_hour": failed_last_hour_count,
+            }
+
     def sweep_stuck(self, *, visibility_timeout_seconds: int) -> int:
         with self.get_session() as session:
             cutoff = func.now() - text(f"make_interval(secs => {int(visibility_timeout_seconds)})")

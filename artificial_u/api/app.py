@@ -6,6 +6,11 @@ from contextlib import asynccontextmanager
 
 from fastapi import Depends, FastAPI
 
+from artificial_u.api.cloudwatch_metrics import (
+    cloudwatch_metrics_enabled,
+    cloudwatch_metrics_interval_sec,
+    cloudwatch_metrics_loop,
+)
 from artificial_u.api.config import get_settings
 from artificial_u.api.dependencies import get_repository_factory
 from artificial_u.api.events import JobEventHub
@@ -61,12 +66,17 @@ def create_application() -> FastAPI:
         app.state.worker = worker
 
         telemetry_task: asyncio.Task | None = None
+        cloudwatch_task: asyncio.Task | None = None
         if os.environ.get("DIAG_PROCESS_METRICS", "").strip() == "1":
             try:
                 interval = float(os.environ.get("DIAG_PROCESS_METRICS_INTERVAL_SEC", "30"))
             except ValueError:
                 interval = 30.0
             telemetry_task = asyncio.create_task(process_telemetry_loop(app, interval_sec=interval))
+        if cloudwatch_metrics_enabled():
+            cloudwatch_task = asyncio.create_task(
+                cloudwatch_metrics_loop(app, interval_sec=cloudwatch_metrics_interval_sec())
+            )
 
         # Increase default executor for blocking offloads
         loop = asyncio.get_running_loop()
@@ -77,6 +87,12 @@ def create_application() -> FastAPI:
         try:
             yield
         finally:
+            if cloudwatch_task and not cloudwatch_task.done():
+                cloudwatch_task.cancel()
+                try:
+                    await cloudwatch_task
+                except asyncio.CancelledError:
+                    pass
             if telemetry_task and not telemetry_task.done():
                 telemetry_task.cancel()
                 try:
