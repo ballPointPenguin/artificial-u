@@ -94,6 +94,7 @@ make test              # Run all tests
 make lint              # All linting checks
 make format            # Format code
 make run-api           # Start FastAPI server
+make run-api-no-reload # Start FastAPI server without auto-reload
 make services-up       # Start Docker services
 ```
 

@@ -218,6 +218,16 @@ class CdkStack(Stack):
         app_environment = {
             "AUTH0_ALG": "RS256",
             "CORS_ORIGINS": f"https://{domain_name},https://{site_domain}",
+            # Process telemetry (memory/GC/etc.); set to "1" only when diagnosing workers
+            "DIAG_PROCESS_METRICS": "0",
+            # CloudWatch custom metrics (queue health, SSE health, worker utilization).
+            # Enable only on a single task/process to avoid duplicates.
+            "DIAG_CLOUDWATCH_METRICS": "0",
+            "DIAG_CLOUDWATCH_METRICS_LEADER": "0",
+            "DIAG_CLOUDWATCH_METRICS_INTERVAL_SEC": "60",
+            "CLOUDWATCH_NAMESPACE": "ArtificialU",
+            # Tracemalloc drift tracing: baseline snapshot at startup + SIGUSR1 diff logs.
+            "DIAG_TRACEMALLOC": "0",
             "COURSE_GENERATION_MODEL": "gpt-5.4-nano",
             "DEPARTMENT_GENERATION_MODEL": "gpt-5.4-nano",
             "ENV": "production",
@@ -323,6 +333,22 @@ class CdkStack(Stack):
             ],
         )
         fargate_service.task_definition.add_to_task_role_policy(s3_policy)
+
+        # - Allow emitting CloudWatch custom metrics (PutMetricData)
+        # CloudWatch PutMetricData does not support resource-level permissions.
+        # Scope by namespace via a condition to limit blast radius.
+        cloudwatch_metrics_policy = iam.PolicyStatement(
+            actions=["cloudwatch:PutMetricData"],
+            resources=["*"],
+            conditions={
+                "StringEquals": {
+                    "cloudwatch:namespace": [
+                        "ArtificialU",
+                    ]
+                }
+            },
+        )
+        fargate_service.task_definition.add_to_task_role_policy(cloudwatch_metrics_policy)
 
         # --- Frontend Infrastructure ---
 

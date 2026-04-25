@@ -11,7 +11,7 @@ from fastapi.responses import HTMLResponse, Response
 from PIL import Image
 
 from artificial_u.api.config import Settings, get_settings
-from artificial_u.api.dependencies import get_repository_factory
+from artificial_u.api.dependencies import get_http_client, get_repository_factory
 from artificial_u.models.repositories import RepositoryFactory
 from artificial_u.services.storage_service import StorageService
 
@@ -61,7 +61,10 @@ def _top_crop_to_aspect(img: Image.Image, *, aspect_w: int, aspect_h: int) -> Im
 
 
 @router.get("/share/og-image")
-async def share_og_image(src: str = ""):
+async def share_og_image(
+    src: str = "",
+    http_client: httpx.AsyncClient = Depends(get_http_client),
+):
     """
     Generate a social-preview-friendly OG image from a stored square image:
     - Crops to 1200x630 aspect, preferring the top when losing height
@@ -83,10 +86,9 @@ async def share_og_image(src: str = ""):
         parsed = urlparse(src)
         if parsed.scheme in {"http", "https"}:
             try:
-                async with httpx.AsyncClient(timeout=10.0) as client:
-                    resp = await client.get(src)
-                    resp.raise_for_status()
-                    data = resp.content
+                resp = await http_client.get(src, timeout=10.0)
+                resp.raise_for_status()
+                data = resp.content
             except Exception:
                 data = None
 
@@ -99,10 +101,9 @@ async def share_og_image(src: str = ""):
             parsed = urlparse(fallback_src)
             if parsed.scheme in {"http", "https"}:
                 try:
-                    async with httpx.AsyncClient(timeout=10.0) as client:
-                        resp = await client.get(fallback_src)
-                        resp.raise_for_status()
-                        data = resp.content
+                    resp = await http_client.get(fallback_src, timeout=10.0)
+                    resp.raise_for_status()
+                    data = resp.content
                 except Exception:
                     data = None
 

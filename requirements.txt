@@ -136,6 +136,8 @@ protobuf==7.34.1
     #   google-api-core
     #   googleapis-common-protos
     #   proto-plus
+psutil==7.2.2
+    # via artificial_u (pyproject.toml)
 psycopg2-binary==2.9.12
     # via artificial_u (pyproject.toml)
 pyasn1==0.6.3

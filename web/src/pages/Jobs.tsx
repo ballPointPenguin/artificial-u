@@ -18,6 +18,20 @@ const STATUS_STYLES: Record<JobStatus, string> = {
   cancelled: 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-200',
 }
 
+function durationMsFromResult(r: unknown): number | null {
+  if (!r || typeof r !== 'object') return null
+  const o = r as { _job_telemetry?: { duration_ms?: number } }
+  const ms = o._job_telemetry?.duration_ms
+  return typeof ms === 'number' && !Number.isNaN(ms) ? ms : null
+}
+
+/** Display whole seconds for readability (from duration_ms). */
+function formatRunDurationSeconds(ms: number | null | undefined): string {
+  if (ms == null) return '-'
+  const sec = Math.round(ms / 1000)
+  return `${String(sec)}s`
+}
+
 export default function JobsPage() {
   const [statusFilter, setStatusFilter] = createSignal<JobStatus | undefined>(undefined)
   const [cancellingJobId, setCancellingJobId] = createSignal<number | null>(null)
@@ -26,7 +40,7 @@ export default function JobsPage() {
   const [jobsResource, { refetch, mutate }] = createResource(
     () => ({
       status: statusFilter(),
-      limit: 50,
+      limit: 100,
     }),
     listJobs
   )
@@ -48,10 +62,13 @@ export default function JobsPage() {
 
       // Update existing job
       const updatedJobs = [...jobs]
+      const fromEvent = event.result != null ? durationMsFromResult(event.result) : null
       updatedJobs[jobIndex] = {
         ...updatedJobs[jobIndex],
         status: event.status,
         last_error: event.last_error || updatedJobs[jobIndex].last_error,
+        result: event.result !== undefined ? event.result : updatedJobs[jobIndex].result,
+        duration_ms: fromEvent != null ? fromEvent : updatedJobs[jobIndex].duration_ms,
       }
 
       return updatedJobs
@@ -263,6 +280,12 @@ export default function JobsPage() {
                       scope="col"
                       class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider"
                     >
+                      Run time
+                    </th>
+                    <th
+                      scope="col"
+                      class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider"
+                    >
                       Params
                     </th>
                     <th
@@ -302,6 +325,16 @@ export default function JobsPage() {
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-muted">
                           {job.updated_at ? formatDate(new Date(job.updated_at)) : '-'}
                         </td>
+                        <td
+                          class="px-6 py-4 whitespace-nowrap text-sm text-muted"
+                          title={
+                            job.duration_ms != null ? `${String(job.duration_ms)} ms` : undefined
+                          }
+                        >
+                          {formatRunDurationSeconds(
+                            job.duration_ms ?? durationMsFromResult(job.result)
+                          )}
+                        </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-muted">
                           {extractParams(job)}
                         </td>
@@ -336,7 +369,7 @@ export default function JobsPage() {
               </table>
             </div>
             <div class="mt-4 text-sm text-muted">
-              Showing {jobsResource()?.length ?? 0} jobs (limit: 50)
+              Showing {jobsResource()?.length ?? 0} jobs (limit: 100)
             </div>
           </Show>
         </Show>

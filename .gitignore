@@ -55,6 +55,7 @@ htmlcov/
 content_logs/
 exports/
 lecture_texts/
+logs/
 
 # Backup files
 backups/*

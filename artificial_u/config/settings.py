@@ -161,7 +161,7 @@ class Settings(BaseSettings):
 
     # Async worker and rate limiting
     WORKER_POLL_IDLE_SEC: float = 0.75
-    WORKER_VISIBILITY_TIMEOUT_SEC: int = 600
+    WORKER_VISIBILITY_TIMEOUT_SEC: int = 2100
     WORKER_MAX_CONCURRENCY: int = 3
     OUTBOUND_RPS: int = 1
 
@@ -172,7 +172,7 @@ class Settings(BaseSettings):
     JOB_EXECUTION_TIMEOUT_SEC: int = 1800  # 30 minutes
 
     # SSE (Server-Sent Events) tuning
-    SSE_KEEPALIVE_INTERVAL_SEC: float = 0.2
+    SSE_KEEPALIVE_INTERVAL_SEC: float = 1.0
     SSE_PING_INTERVAL_SEC: int = 5
 
     # Configure Pydantic to use .env files

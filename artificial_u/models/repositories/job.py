@@ -156,31 +156,30 @@ class JobRepository(BaseRepository):
         *,
         last_error: str,
         delay_seconds: Optional[float] = None,
+        result: Optional[Dict[str, Any]] = None,
     ) -> None:
         with self.get_session() as session:
             if attempts >= max_attempts:
-                session.execute(
-                    update(JobModel)
-                    .where(JobModel.id == job_id)
-                    .values(
-                        status="failed",
-                        last_error=last_error[:2000],
-                        updated_at=func.now(),
-                    )
-                )
+                values: Dict[str, Any] = {
+                    "status": "failed",
+                    "last_error": last_error[:2000],
+                    "updated_at": func.now(),
+                }
+                if result is not None:
+                    values["result"] = result
+                session.execute(update(JobModel).where(JobModel.id == job_id).values(**values))
             else:
                 delay_seconds = delay_seconds or 0
                 next_time = func.now() + text(f"make_interval(secs => {int(delay_seconds)} )")
-                session.execute(
-                    update(JobModel)
-                    .where(JobModel.id == job_id)
-                    .values(
-                        status="queued",
-                        last_error=last_error[:2000],
-                        run_after=next_time,
-                        updated_at=func.now(),
-                    )
-                )
+                qvalues: Dict[str, Any] = {
+                    "status": "queued",
+                    "last_error": last_error[:2000],
+                    "run_after": next_time,
+                    "updated_at": func.now(),
+                }
+                if result is not None:
+                    qvalues["result"] = result
+                session.execute(update(JobModel).where(JobModel.id == job_id).values(**qvalues))
             session.commit()
 
     def mark_cancelled(self, job_id: int) -> None:
@@ -198,6 +197,49 @@ class JobRepository(BaseRepository):
                 select(JobModel.status, func.count()).group_by(JobModel.status)
             ).all()
             return [(r[0], r[1]) for r in rows]
+
+    def telemetry_summary(self) -> Dict[str, Any]:
+        """
+        Lightweight queue health snapshot for CloudWatch custom metrics.
+
+        Returns:
+          - counts by status
+          - avg_wait_seconds for queued jobs (now - created_at)
+          - failed_last_hour count
+        """
+        with self.get_session() as session:
+            counts_rows = session.execute(
+                select(JobModel.status, func.count()).group_by(JobModel.status)
+            ).all()
+            counts: Dict[str, int] = {str(s): int(c) for s, c in counts_rows}
+
+            avg_wait = session.execute(
+                select(func.avg(func.extract("epoch", func.now() - JobModel.created_at))).where(
+                    JobModel.status == "queued"
+                )
+            ).scalar()
+            try:
+                avg_wait_seconds = float(avg_wait) if avg_wait is not None else 0.0
+            except Exception:
+                avg_wait_seconds = 0.0
+
+            failed_last_hour = session.execute(
+                select(func.count())
+                .select_from(JobModel)
+                .where(
+                    and_(
+                        JobModel.status == "failed",
+                        JobModel.updated_at >= func.now() - text("interval '1 hour'"),
+                    )
+                )
+            ).scalar()
+            failed_last_hour_count = int(failed_last_hour or 0)
+
+            return {
+                "counts": counts,
+                "avg_wait_seconds": avg_wait_seconds,
+                "failed_last_hour": failed_last_hour_count,
+            }
 
     def sweep_stuck(self, *, visibility_timeout_seconds: int) -> int:
         with self.get_session() as session:

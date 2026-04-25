@@ -6,6 +6,11 @@ from contextlib import asynccontextmanager
 
 from fastapi import Depends, FastAPI
 
+from artificial_u.api.cloudwatch_metrics import (
+    cloudwatch_metrics_enabled,
+    cloudwatch_metrics_interval_sec,
+    cloudwatch_metrics_loop,
+)
 from artificial_u.api.config import get_settings
 from artificial_u.api.dependencies import get_repository_factory
 from artificial_u.api.events import JobEventHub
@@ -31,9 +36,16 @@ from artificial_u.api.routers.students import router as students_router
 from artificial_u.api.routers.topics import course_topics_router
 from artificial_u.api.routers.topics import router as topics_router
 from artificial_u.api.routers.voices import router as voice_router
+from artificial_u.api.telemetry import process_telemetry_loop
+from artificial_u.api.tracemalloc_diag import (
+    TracemallocDriftTracer,
+    install_tracemalloc_sigusr1_handler,
+    tracemalloc_enabled,
+)
 from artificial_u.api.utils.logging import setup_logging
 from artificial_u.api.worker import Worker
 from artificial_u.config.settings import Environment
+from artificial_u.services.http_client import close_shared_async_client
 
 
 def create_application() -> FastAPI:
@@ -56,15 +68,53 @@ def create_application() -> FastAPI:
         app.state.repository_factory = repository_factory
         # attach event hub to app state for routers and worker to use
         app.state.job_events = job_events
+        # attach worker for telemetry/introspection
+        app.state.worker = worker
+
+        telemetry_task: asyncio.Task | None = None
+        cloudwatch_task: asyncio.Task | None = None
+        tracer: TracemallocDriftTracer | None = None
+        if os.environ.get("DIAG_PROCESS_METRICS", "").strip() == "1":
+            try:
+                interval = float(os.environ.get("DIAG_PROCESS_METRICS_INTERVAL_SEC", "30"))
+            except ValueError:
+                interval = 30.0
+            telemetry_task = asyncio.create_task(process_telemetry_loop(app, interval_sec=interval))
+        if cloudwatch_metrics_enabled():
+            cloudwatch_task = asyncio.create_task(
+                cloudwatch_metrics_loop(app, interval_sec=cloudwatch_metrics_interval_sec())
+            )
+
         # Increase default executor for blocking offloads
         loop = asyncio.get_running_loop()
         if not hasattr(app.state, "default_executor"):
             app.state.default_executor = ThreadPoolExecutor(max_workers=8)
         loop.set_default_executor(app.state.default_executor)
         await worker.start()
+
+        if tracemalloc_enabled():
+            tracer = TracemallocDriftTracer(top_n=25, max_frames=25)
+            tracer.start()
+            # Capture baseline after worker start so imports + pools are stable.
+            tracer.set_baseline()
+            install_tracemalloc_sigusr1_handler(app, tracer)
+
         try:
             yield
         finally:
+            if cloudwatch_task and not cloudwatch_task.done():
+                cloudwatch_task.cancel()
+                try:
+                    await cloudwatch_task
+                except asyncio.CancelledError:
+                    pass
+            if telemetry_task and not telemetry_task.done():
+                telemetry_task.cancel()
+                try:
+                    await telemetry_task
+                except asyncio.CancelledError:
+                    pass
+
             # Stop worker first
             await worker.stop()
 
@@ -75,6 +125,13 @@ def create_application() -> FastAPI:
             except Exception as e:
                 logger = logging.getLogger(__name__)
                 logger.warning(f"Error closing SSE connections: {e}")
+
+            # Close shared outbound HTTP client.
+            try:
+                await close_shared_async_client()
+            except Exception as e:
+                logger = logging.getLogger(__name__)
+                logger.warning(f"Error closing shared HTTP client: {e}")
 
             # Dispose of database engines to close connections
             try:

@@ -383,6 +383,19 @@ class StorageService:
         """
         return await self.download_file(self.lectures_bucket, object_name)
 
+    async def object_exists(self, bucket: str, object_name: str) -> bool:
+        """
+        Check whether an object exists in storage without downloading it.
+        """
+        try:
+            await asyncio.to_thread(self.client.head_object, Bucket=bucket, Key=object_name)
+            return True
+        except ClientError as e:
+            if e.response["Error"]["Code"] in {"404", "NoSuchKey", "NotFound"}:
+                return False
+            self.logger.error(f"Error checking object existence: {str(e)}")
+            raise
+
     async def delete_file(self, bucket: str, object_name: str) -> bool:
         """
         Delete a file from storage.

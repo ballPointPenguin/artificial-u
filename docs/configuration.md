@@ -200,6 +200,31 @@ Configure logging level:
 LOG_LEVEL=INFO
 ```
 
+### Process diagnostics (optional)
+
+The API can emit periodic structured JSON logs for process-level metrics (memory, GC, open FDs, threads, and related counters) to help correlate behavior across Gunicorn workers. This is controlled by plain environment variables read in the FastAPI lifespan (not Pydantic settings).
+
+- **`DIAG_PROCESS_METRICS`**: Set to `1` to enable; **`0` or unset turns telemetry off** (default).
+- **`DIAG_PROCESS_METRICS_INTERVAL_SEC`**: Sampling interval in seconds when enabled (default `30`).
+
+### CloudWatch custom metrics (optional)
+
+The API can also emit CloudWatch custom metrics (queue health, SSE health, worker utilization) using the ECS task role. This is **off by default** and must be explicitly enabled.
+
+Important: because the API may run multiple Gunicorn workers per task, enable metrics emission only on a single “leader” process/task.
+
+- **`DIAG_CLOUDWATCH_METRICS`**: Set to `1` to enable metrics emission (default off).
+- **`DIAG_CLOUDWATCH_METRICS_LEADER`**: Set to `1` on exactly one task/process to avoid duplicate metric submissions.
+- **`DIAG_CLOUDWATCH_METRICS_INTERVAL_SEC`**: Emission interval in seconds when enabled (default `60`).
+- **`CLOUDWATCH_NAMESPACE`**: CloudWatch namespace to publish metrics under (default `ArtificialU`).
+
+### One-off memory drift tracing (optional)
+
+For one-off investigations of suspected memory growth, you can enable `tracemalloc` and capture allocation diffs vs a baseline snapshot. When enabled, the API takes a baseline snapshot on startup and logs a diff on `SIGUSR1` (top 25 deltas).
+
+- **`DIAG_TRACEMALLOC`**: Set to `1` to enable (default off).
+- Send `SIGUSR1` to the process (e.g. `kill -USR1 <pid>`) to log the diff.
+
 ## Database Configuration
 
 Configure the PostgreSQL database connection:
@@ -234,6 +259,13 @@ TESTING=true
 | `OPENAI_API_KEY` | API key for OpenAI | None | No |
 | `CONTENT_LOGS_PATH` | (Deprecated) Path for content generation logs | `content_logs` | No |
 | `LOG_LEVEL` | Logging level | `INFO` | No |
+| `DIAG_PROCESS_METRICS` | Enable process-level diagnostic telemetry (`1` on; `0` or unset off) | `0` (off) | No |
+| `DIAG_PROCESS_METRICS_INTERVAL_SEC` | Telemetry interval in seconds when `DIAG_PROCESS_METRICS=1` | `30` | No |
+| `DIAG_CLOUDWATCH_METRICS` | Enable CloudWatch custom metrics emission (`1` on; `0` or unset off) | `0` (off) | No |
+| `DIAG_CLOUDWATCH_METRICS_LEADER` | Emit metrics only when set to `1` (avoid duplicates) | `0` (off) | No |
+| `DIAG_CLOUDWATCH_METRICS_INTERVAL_SEC` | Emission interval in seconds when enabled | `60` | No |
+| `CLOUDWATCH_NAMESPACE` | CloudWatch metrics namespace | `ArtificialU` | No |
+| `DIAG_TRACEMALLOC` | Enable one-off tracemalloc baseline + SIGUSR1 diffs (`1` on; `0` or unset off) | `0` (off) | No |
 | `content_backend` | Backend for content generation | `anthropic` | No |
 | `content_model` | Model for chosen backend | Depends on backend | No |
 | `COURSE_GENERATION_MODEL` | Model for course generation | `gpt-5.4-nano` | No |

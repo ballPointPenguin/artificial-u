@@ -9,6 +9,7 @@ services are properly initialized and reused across requests.
 import logging
 from typing import Optional
 
+import httpx
 from fastapi import Depends
 from fastapi.security import HTTPAuthorizationCredentials
 
@@ -38,6 +39,7 @@ from artificial_u.services import (
     TopicService,
     VoiceService,
 )
+from artificial_u.services.http_client import get_shared_async_client
 from artificial_u.services.job_enqueue_service import JobEnqueueService
 
 
@@ -191,8 +193,18 @@ def get_storage_service() -> StorageService:
     )
 
 
+def get_http_client() -> httpx.AsyncClient:
+    """
+    Get the shared async HTTP client for outbound HTTP fetches.
+
+    Tests can override this dependency or pass a mock client directly to services.
+    """
+    return get_shared_async_client()
+
+
 def get_image_service(
     storage_service: StorageService = Depends(get_storage_service),
+    http_client: httpx.AsyncClient = Depends(get_http_client),
 ) -> ImageService:
     """
     Get an image service instance.
@@ -205,6 +217,7 @@ def get_image_service(
     """
     return ImageService(
         storage_service=storage_service,
+        http_client=http_client,
     )
 
 
@@ -341,7 +354,7 @@ def get_course_service(
     professor_generator_service = get_professor_generator_service(
         repository_factory,
         content_service,
-        get_image_service(get_storage_service()),
+        get_image_service(get_storage_service(), get_http_client()),
         get_job_enqueue_service(repository_factory),
     )
 

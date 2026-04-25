@@ -1,16 +1,7 @@
 import { A, useNavigate, useParams } from '@solidjs/router'
 import { Download, FileText, Headphones, Play, Upload } from 'lucide-solid'
-import {
-  type Component,
-  createMemo,
-  createResource,
-  createSignal,
-  onCleanup,
-  onMount,
-  Show,
-} from 'solid-js'
+import { type Component, createMemo, createResource, createSignal, Show } from 'solid-js'
 import { courseService } from '../api/services/course-service.js'
-import { type JobRow, listJobs } from '../api/services/jobs-service.js'
 import { lectureService } from '../api/services/lecture-service.js'
 import { topicService } from '../api/services/topic-service.js'
 import type { Lecture, LectureUpdate } from '../api/types.js'
@@ -27,7 +18,7 @@ import {
 } from '../components/ui'
 import { useTranslations } from '../i18n/index.js'
 import { useAudioPlayer } from '../utils/audio-player-context.jsx'
-import { getJobEventHub } from '../utils/job-events-hub.js'
+import { createJobTracker } from '../utils/job-management.js'
 
 // Lecture Detail View Component
 const LectureDetailView: Component<{
@@ -39,6 +30,7 @@ const LectureDetailView: Component<{
   isGeneratingAudio: boolean
   onUploadAudio: (file: File) => Promise<void>
   isUploadingAudio: boolean
+  isJobActive: boolean
   courseId: number
   topicTitle?: string
   courseCode?: string
@@ -51,6 +43,8 @@ const LectureDetailView: Component<{
 
   const [isGeneratingTimeline, setIsGeneratingTimeline] = createSignal(false)
   const [timelineError, setTimelineError] = createSignal('')
+  const [isGeneratingImages, setIsGeneratingImages] = createSignal(false)
+  const [imagesError, setImagesError] = createSignal('')
 
   const handleGenerateTimeline = async () => {
     setIsGeneratingTimeline(true)
@@ -61,6 +55,18 @@ const LectureDetailView: Component<{
       setTimelineError(error instanceof Error ? error.message : 'Failed to generate timeline')
     } finally {
       setIsGeneratingTimeline(false)
+    }
+  }
+
+  const handleGenerateImages = async () => {
+    setIsGeneratingImages(true)
+    setImagesError('')
+    try {
+      await lectureService.enqueueGenerateLectureImages(props.lecture.id)
+    } catch (error) {
+      setImagesError(error instanceof Error ? error.message : 'Failed to generate lecture images')
+    } finally {
+      setIsGeneratingImages(false)
     }
   }
 
@@ -173,13 +179,28 @@ const LectureDetailView: Component<{
                     size="sm"
                     class="min-h-[44px] sm:min-h-[32px] w-full sm:w-auto flex items-center justify-center whitespace-nowrap"
                     onClick={() => void handleGenerateTimeline()}
-                    disabled={isGeneratingTimeline()}
+                    disabled={isGeneratingTimeline() || props.isJobActive}
                   >
                     {isGeneratingTimeline()
                       ? 'Generating Timeline...'
                       : props.lecture.timeline_url
                         ? 'Regenerate Timeline'
                         : 'Generate Timeline'}
+                  </MagicButton>
+                </Show>
+                <Show when={props.lecture.timeline_url}>
+                  <MagicButton
+                    variant="primary"
+                    size="sm"
+                    class="min-h-[44px] sm:min-h-[32px] w-full sm:w-auto flex items-center justify-center whitespace-nowrap"
+                    onClick={() => void handleGenerateImages()}
+                    disabled={isGeneratingImages() || props.isJobActive}
+                  >
+                    {isGeneratingImages()
+                      ? 'Generating Images...'
+                      : props.lecture.images_timeline_url
+                        ? 'Regenerate Lecture Images'
+                        : 'Generate Lecture Images'}
                   </MagicButton>
                 </Show>
                 <label
@@ -259,6 +280,11 @@ const LectureDetailView: Component<{
           {timelineError()}
         </Alert>
       </Show>
+      <Show when={imagesError()}>
+        <Alert variant="danger" class="mb-4">
+          {imagesError()}
+        </Alert>
+      </Show>
 
       {/* Metadata Section */}
       <MetadataInfo
@@ -306,7 +332,6 @@ const LectureDetail = () => {
   const [audioTimeout, setAudioTimeout] = createSignal(false)
   const [isUploadingAudio, setIsUploadingAudio] = createSignal(false)
   const [uploadSuccess, setUploadSuccess] = createSignal(false)
-  const [anyJobActive, setAnyJobActive] = createSignal(false)
 
   // Parse IDs from URL params
   const courseId = createMemo(() => Number.parseInt(params.courseId ?? '', 10))
@@ -332,6 +357,26 @@ const LectureDetail = () => {
     () => (isValidIds() ? courseId() : null),
     (cid) => topicService.listTopicsByCourse(cid, 1, 100)
   )
+
+  const jobTracker = createJobTracker({
+    lectureId: () => (isValidIds() ? lectureId() : undefined),
+    kinds: [
+      'generate_lecture',
+      'generate_lecture_text_only',
+      'generate_lecture_audio',
+      'generate_lecture_timeline',
+      'generate_lecture_images',
+      'generate_lecture_slide',
+      'generate_lecture_summary',
+    ],
+    onJobComplete: () => {
+      setTimeout(() => {
+        void refetchLecture()
+      }, 100)
+    },
+  })
+
+  const anyJobActive = () => jobTracker.hasActiveJobs()
 
   const compareTopics = (
     a: { week: number; order: number; id: number },
@@ -440,43 +485,6 @@ const LectureDetail = () => {
       setIsUploadingAudio(false)
     }
   }
-
-  // Subscribe to job events for this lecture to disable actions while active
-  onMount(() => {
-    // Initial snapshot of any in-flight jobs for this lecture
-    void (async () => {
-      try {
-        const inflight: JobRow[] = await listJobs({
-          status: 'running',
-          lecture_id: lectureId(),
-        })
-        const queued: JobRow[] = await listJobs({
-          status: 'queued',
-          lecture_id: lectureId(),
-        })
-        setAnyJobActive([...inflight, ...queued].length > 0)
-      } catch {
-        // ignore
-      }
-    })()
-
-    const id = lectureId()
-    if (!Number.isNaN(id)) {
-      const hub = getJobEventHub()
-      const unsubscribe = hub.subscribe({ lectureId: id }, (ev) => {
-        const st = ev.status
-        if (st === 'queued' || st === 'running') {
-          setAnyJobActive(true)
-        }
-        if (st === 'done' || st === 'failed' || st === 'cancelled') {
-          setAnyJobActive(false)
-        }
-      })
-      onCleanup(() => {
-        unsubscribe()
-      })
-    }
-  })
 
   return (
     <div class="container mx-auto px-4 py-8">
@@ -649,6 +657,7 @@ const LectureDetail = () => {
                       isGeneratingAudio={isGeneratingAudio() || anyJobActive()}
                       onUploadAudio={handleUploadAudio}
                       isUploadingAudio={isUploadingAudio()}
+                      isJobActive={anyJobActive()}
                       courseId={courseId()}
                       topicTitle={topic()?.title}
                       courseCode={course()?.code}

@@ -151,34 +151,53 @@ export function createJobTracker(options: JobTrackerOptions) {
 
         jobDebug.log('subscription', 'Subscribing via JobEventHub', filter)
 
-        unsubscribe = hub.subscribe(filter, (event) => {
-          const { status } = event
+        unsubscribe = hub.subscribe(
+          filter,
+          (event) => {
+            const { status } = event
 
-          jobDebug.log('event', `Hub event: ${event.kind} #${String(event.id)} - ${status}`, event)
+            jobDebug.log(
+              'event',
+              `Hub event: ${event.kind} #${String(event.id)} - ${status}`,
+              event
+            )
 
-          // Update active job tracking
-          setActiveJobIds((prev) => {
-            const newIds = new Set(prev)
-            if (status === 'queued' || status === 'running') {
-              newIds.add(event.id)
-              options.onJobStart?.(event)
-            } else {
-              newIds.delete(event.id)
-              if (status === 'done') {
-                jobDebug.log(
-                  'state_change',
-                  `Job completed: ${event.kind} #${String(event.id)}`,
-                  event
-                )
-                options.onJobComplete?.(event)
-              } else if (status === 'failed') {
-                options.onJobFail?.(event)
-                setLastError(`Job ${event.kind} failed`)
+            // Update active job tracking
+            setActiveJobIds((prev) => {
+              const newIds = new Set(prev)
+              if (status === 'queued' || status === 'running') {
+                newIds.add(event.id)
+                options.onJobStart?.(event)
+              } else {
+                newIds.delete(event.id)
+                if (status === 'done') {
+                  jobDebug.log(
+                    'state_change',
+                    `Job completed: ${event.kind} #${String(event.id)}`,
+                    event
+                  )
+                  options.onJobComplete?.(event)
+                } else if (status === 'failed') {
+                  options.onJobFail?.(event)
+                  setLastError(`Job ${event.kind} failed`)
+                }
+              }
+              return newIds
+            })
+          },
+          (jobs) => {
+            const ids = new Set<number>()
+            for (const job of jobs) {
+              if (job.status === 'queued' || job.status === 'running') {
+                ids.add(job.id)
               }
             }
-            return newIds
-          })
-        })
+            jobDebug.log('state_change', 'Reconciled active jobs from SSE snapshot', {
+              activeJobIds: [...ids],
+            })
+            setActiveJobIds(ids)
+          }
+        )
       },
       { defer: false } // Run immediately, not deferred
     )
@@ -269,6 +288,20 @@ export function getJobMessage(
       done: 'Audio generated successfully!',
       failed: 'Audio generation failed',
       cancelled: 'Audio generation cancelled',
+    },
+    generate_lecture_images: {
+      queued: 'Lecture image planning queued...',
+      running: 'Planning lecture images...',
+      done: 'Lecture image generation queued!',
+      failed: 'Lecture image planning failed',
+      cancelled: 'Lecture image planning cancelled',
+    },
+    generate_lecture_slide: {
+      queued: 'Lecture image generation queued...',
+      running: 'Generating lecture image...',
+      done: 'Lecture image generated successfully!',
+      failed: 'Lecture image generation failed',
+      cancelled: 'Lecture image generation cancelled',
     },
     generate_lecture_summary: {
       queued: 'Summary generation queued...',

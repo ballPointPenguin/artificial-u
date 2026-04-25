@@ -6,10 +6,15 @@
 import { createSignal, onCleanup } from 'solid-js'
 import { createUrl } from '../api/client.js'
 import { ENDPOINTS } from '../api/config.js'
-import type { JobEvent } from '../api/services/jobs-service.js'
+import type { JobEvent, JobRow } from '../api/services/jobs-service.js'
 import { jobDebug } from './job-debug.js'
 
 export type JobEventListener = (event: JobEvent) => void
+type JobSnapshotListener = (jobs: Array<JobEvent | JobRow>) => void
+
+type JobSnapshotEvent = {
+  jobs?: Array<JobEvent | JobRow>
+}
 
 interface JobEventFilter {
   topicId?: number
@@ -20,7 +25,10 @@ interface JobEventFilter {
 
 class JobEventHub {
   private eventSource: EventSource | null = null
-  private listeners = new Map<symbol, { filter: JobEventFilter; callback: JobEventListener }>()
+  private listeners = new Map<
+    symbol,
+    { filter: JobEventFilter; callback: JobEventListener; onSnapshot?: JobSnapshotListener }
+  >()
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null
   private isConnecting = false
   private reconnectDelay = 1000 // Start with 1 second
@@ -107,6 +115,18 @@ class JobEventHub {
       // Keepalive - no action needed
     })
 
+    this.eventSource.addEventListener('snapshot', (ev) => {
+      try {
+        const me = ev as MessageEvent<string>
+        const data = JSON.parse(me.data) as JobSnapshotEvent
+        const jobs = data.jobs ?? []
+        jobDebug.log('event', `Received job snapshot (${String(jobs.length)} jobs)`, data)
+        this.distributeSnapshot(jobs)
+      } catch (err) {
+        jobDebug.log('error', 'Failed to parse job snapshot', err)
+      }
+    })
+
     this.eventSource.addEventListener('connected', () => {
       // Initial connection established - no action needed
       jobDebug.log('subscription', 'JobEventHub received connection confirmation', null)
@@ -146,7 +166,32 @@ class JobEventHub {
     }
   }
 
-  private matchesFilter(event: JobEvent, filter: JobEventFilter): boolean {
+  private distributeSnapshot(jobs: Array<JobEvent | JobRow>) {
+    for (const [, { filter, callback, onSnapshot }] of this.listeners) {
+      const matchingJobs = jobs.filter((job) => this.matchesFilter(job, filter))
+      if (onSnapshot) {
+        onSnapshot(matchingJobs)
+        continue
+      }
+
+      for (const job of matchingJobs) {
+        callback(this.toJobEvent(job))
+      }
+    }
+  }
+
+  private toJobEvent(job: JobEvent | JobRow): JobEvent {
+    return {
+      id: job.id,
+      kind: job.kind,
+      status: job.status,
+      payload: job.payload,
+      result: job.result,
+      last_error: 'last_error' in job ? (job.last_error ?? undefined) : undefined,
+    }
+  }
+
+  private matchesFilter(event: JobEvent | JobRow, filter: JobEventFilter): boolean {
     // Check kind filter
     if (filter.kinds && filter.kinds.length > 0) {
       if (!filter.kinds.includes(event.kind)) {
@@ -202,9 +247,13 @@ class JobEventHub {
     return matched
   }
 
-  subscribe(filter: JobEventFilter, callback: JobEventListener): () => void {
+  subscribe(
+    filter: JobEventFilter,
+    callback: JobEventListener,
+    onSnapshot?: JobSnapshotListener
+  ): () => void {
     const id = Symbol('listener')
-    this.listeners.set(id, { filter, callback })
+    this.listeners.set(id, { filter, callback, onSnapshot })
 
     jobDebug.log('subscription', 'Added listener', {
       filter,

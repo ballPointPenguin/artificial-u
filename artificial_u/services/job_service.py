@@ -87,6 +87,7 @@ class JobService:
             "generate_lecture_audio": self._handle_generate_lecture_audio,
             "generate_lecture_timeline": self._handle_generate_lecture_timeline,
             "generate_lecture_images": self._handle_generate_lecture_images,
+            "generate_lecture_slide": self._handle_generate_lecture_slide,
             "generate_professor_image": self._handle_generate_professor_image,
             "generate_course_image": self._handle_generate_course_image,
             # Export tasks
@@ -310,11 +311,48 @@ class JobService:
         interval_sec = payload.get("interval_sec", 30)
         aspect_ratio = payload.get("aspect_ratio", "1:1")
         model_name_override = payload.get("model_name_override")
-        result = await service.generate_lecture_images(
+        result = await service.plan_lecture_images(
             lecture_id,
             interval_sec=interval_sec,
             aspect_ratio=aspect_ratio,
             model_name_override=model_name_override,
+        )
+        slide_payloads = result.pop("slide_payloads", [])
+        slide_priority = int(payload.get("slide_priority", -10))
+        job_ids = []
+        for slide_payload in slide_payloads:
+            row = self.repository_factory.job.create(
+                kind="generate_lecture_slide",
+                payload=slide_payload,
+                priority=slide_priority,
+            )
+            job_ids.append(row.id)
+
+        result["enqueued"] = len(job_ids)
+        result["slide_job_ids"] = job_ids
+        return result
+
+    async def _handle_generate_lecture_slide(self, payload: Dict[str, Any]) -> Dict[str, Any]:
+        service = self._lecture_images_generator_service_instance()
+        lecture_id = payload.get("lecture_id")
+        slot_idx = payload.get("slot_idx")
+        object_key = payload.get("object_key")
+        if lecture_id is None:
+            raise ValueError("lecture_id is required")
+        if slot_idx is None:
+            raise ValueError("slot_idx is required")
+        if not object_key:
+            raise ValueError("object_key is required")
+
+        result = await service.generate_lecture_slide(
+            lecture_id,
+            slot_idx=int(slot_idx),
+            object_key=object_key,
+            batch_id=payload.get("batch_id"),
+            chunk_text=payload.get("chunk_text", ""),
+            previous_chunk_text=payload.get("previous_chunk_text"),
+            aspect_ratio=payload.get("aspect_ratio", "1:1"),
+            model_name_override=payload.get("model_name_override"),
         )
         return result
 
