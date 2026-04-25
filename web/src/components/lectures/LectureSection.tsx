@@ -61,6 +61,7 @@ export const LectureSection: Component<LectureSectionProps> = (props) => {
       'generate_lecture_audio',
       'generate_lecture_timeline',
       'generate_lecture_images',
+      'generate_lecture_slide',
       'generate_lecture_summary',
     ],
     onJobComplete: (event) => {
@@ -73,7 +74,10 @@ export const LectureSection: Component<LectureSectionProps> = (props) => {
         setAudioError('')
       } else if (event.kind === 'generate_lecture_timeline') {
         setTimelineError('')
-      } else if (event.kind === 'generate_lecture_images') {
+      } else if (
+        event.kind === 'generate_lecture_images' ||
+        event.kind === 'generate_lecture_slide'
+      ) {
         setImagesError('')
       }
 
@@ -94,7 +98,10 @@ export const LectureSection: Component<LectureSectionProps> = (props) => {
         setSummaryError(getJobMessage(event.kind, 'failed'))
       } else if (event.kind === 'generate_lecture_timeline') {
         setTimelineError(getJobMessage(event.kind, 'failed'))
-      } else if (event.kind === 'generate_lecture_images') {
+      } else if (
+        event.kind === 'generate_lecture_images' ||
+        event.kind === 'generate_lecture_slide'
+      ) {
         setImagesError(getJobMessage(event.kind, 'failed'))
       } else if (event.kind === 'generate_lecture_text_only') {
         // Handle text-only generation failures

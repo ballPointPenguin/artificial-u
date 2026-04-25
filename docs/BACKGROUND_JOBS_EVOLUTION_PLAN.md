@@ -29,35 +29,35 @@ Low-effort instrumentation that makes later decisions evidence-based instead of
 hunch-based. These are not blocked by anything and should land before the larger
 refactors.
 
-### 1.1 Process-level memory & GC telemetry
+### 1.1 Process-level memory & GC telemetry - DONE
 
 - Log structured JSON every 30–60s per process: `rss_mb`, `vms_mb`, `num_fds`, `num_threads`, `gc_counts`, `active_sse_streams`, `job_semaphore_in_use`.
 - Use `psutil.Process()` + `gc.get_stats()`; gate behind `DIAG_PROCESS_METRICS=1` env var.
 - Correlate via `pid` so you can see per-gunicorn-worker drift.
 
-### 1.2 Job lifecycle structured logging
+### 1.2 Job lifecycle structured logging - DONE
 
 - Ensure every reserve/start/done/fail log line carries `extra={"job_id", "kind", "attempt", "duration_ms", "worker_pid"}`.
 - Use CloudWatch Logs Insights to chart `avg(duration_ms) by kind`, `count() by status` by kind over time.
 
-### 1.3 CloudWatch custom metrics (emitted from the app)
+### 1.3 CloudWatch custom metrics (emitted from the app) - DONE
 
 - `jobs.queued`, `jobs.running`, `jobs.failed_last_hour`, `jobs.avg_wait_seconds` (sourced from `summary_counts` + timing deltas).
 - `sse.active_streams`, `sse.publish_dropped` (add a counter where `publish` hits a full queue).
 - Emit via `boto3` `PutMetricData` on a 60s tick from a single worker task (avoid duplicate publishes across processes by gating on `pid == lowest_pid` or just tagging by pid and summing in CloudWatch).
 
-### 1.4 CloudWatch alarms (informational, not paging)
+### 1.4 CloudWatch alarms (informational, not paging) - TODO External
 
 - Memory > 80% for 5 minutes on the Fargate task.
 - `jobs.queued > 10` sustained 15 minutes.
 - `jobs.failed_last_hour > 3`.
 
-### 1.5 One-off memory drift trace
+### 1.5 One-off memory drift trace - Code DONE, TODO Prod collection
 
 - Add a `DIAG_TRACEMALLOC=1` toggle that snapshots on worker start and again on SIGUSR1, diffs top allocations, and logs the top 25.
 - Run in prod for 24h during a quiet window to establish a baseline.
 
-### 1.6 ECS Container Insights review
+### 1.6 ECS Container Insights review - TODO External
 
 - Already enabled per the recent screenshots. Save a dashboard bookmark that pins CPU, memory, network, and our custom metrics on one page so the whole team sees the same picture.
 
@@ -74,7 +74,7 @@ refactors.
 Small, tactical changes that fix real bugs or avoid known foot-guns. Expected
 to be completed in a handful of PRs without architectural disruption.
 
-### 2.1 Fix the visibility-timeout / execution-timeout inversion (bug)
+### 2.1 Fix the visibility-timeout / execution-timeout inversion (bug) - Simplest DONE
 
 - Today: `WORKER_VISIBILITY_TIMEOUT_SEC=600` (10 min) but `JOB_EXECUTION_TIMEOUT_SEC=1800` (30 min). `sweep_stuck` will requeue a still-running image job after 10 min, letting a second worker pick it up concurrently and clobber S3 state.
 - Options:
@@ -82,7 +82,7 @@ to be completed in a handful of PRs without architectural disruption.
   - Better: add a `JobRepository.heartbeat(job_id)` that sets `updated_at = now()` and call it periodically from inside long-running handlers.
 - Pairs well with job splitting below, which naturally keeps individual tasks short enough that this doesn't matter.
 
-### 2.2 Split lecture-image job into per-slide jobs
+### 2.2 Split lecture-image job into per-slide jobs - DONE
 
 - Replace the single `generate_lecture_images` sequential loop in `artificial_u/services/lecture_images_generator_service.py` with:
   - `plan_lecture_images(lecture_id, ...)` — builds scaffold JSON, uploads initial timeline, enqueues N `generate_lecture_slide` jobs with a batch correlation key and low priority.
@@ -91,7 +91,7 @@ to be completed in a handful of PRs without architectural disruption.
 - Benefits: each task ~10–30s, trivially retryable, naturally parallelizable, no wasted work on restart, no visibility-timeout risk.
 - Schema note: we can encode the batch via `payload.batch_id` without a new table; reuse `priority` for slide jobs (e.g., priority `-10`).
 
-### 2.3 Per-slot idempotency
+### 2.3 Per-slot idempotency - DONE
 
 - Before calling the image provider, check whether `slot_{idx}.png` (or the timeline slot's `url`) already exists and skip. Cheap win even before splitting.
 - Lets retries cost $0 instead of $N.

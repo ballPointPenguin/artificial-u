@@ -270,6 +270,20 @@ export function getJobMessage(
       failed: 'Audio generation failed',
       cancelled: 'Audio generation cancelled',
     },
+    generate_lecture_images: {
+      queued: 'Lecture image planning queued...',
+      running: 'Planning lecture images...',
+      done: 'Lecture image generation queued!',
+      failed: 'Lecture image planning failed',
+      cancelled: 'Lecture image planning cancelled',
+    },
+    generate_lecture_slide: {
+      queued: 'Lecture image generation queued...',
+      running: 'Generating lecture image...',
+      done: 'Lecture image generated successfully!',
+      failed: 'Lecture image generation failed',
+      cancelled: 'Lecture image generation cancelled',
+    },
     generate_lecture_summary: {
       queued: 'Summary generation queued...',
       running: 'Generating lecture summary...',

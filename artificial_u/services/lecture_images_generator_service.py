@@ -1,5 +1,7 @@
+import asyncio
 import json
 import logging
+import uuid
 from typing import Any, Dict, List, Optional
 
 import httpx
@@ -18,6 +20,8 @@ class LectureImagesGeneratorService:
     UX; the slot-to-text mapping algorithm can be upgraded later without
     changing storage format.
     """
+
+    _timeline_locks: Dict[str, asyncio.Lock] = {}
 
     def __init__(
         self,
@@ -87,7 +91,71 @@ class LectureImagesGeneratorService:
 
         return chunks
 
-    async def generate_lecture_images(
+    def _timeline_lock(self, object_key: str) -> asyncio.Lock:
+        lock = self._timeline_locks.get(object_key)
+        if lock is None:
+            lock = asyncio.Lock()
+            self._timeline_locks[object_key] = lock
+        return lock
+
+    async def _load_images_timeline(self, object_key: str) -> Dict[str, Any]:
+        data, _ = await self.storage_service.download_lecture_file(object_key)
+        if not data:
+            raise RuntimeError(f"Lecture images timeline not found: {object_key}")
+        return json.loads(data.decode("utf-8"))
+
+    async def _upload_images_timeline(
+        self, object_key: str, images_timeline: Dict[str, Any]
+    ) -> Optional[str]:
+        timeline_bytes = json.dumps(images_timeline, ensure_ascii=False).encode("utf-8")
+        success, url = await self.storage_service.upload_timeline_file(
+            file_data=timeline_bytes,
+            object_name=object_key,
+            content_type="application/json",
+        )
+        if not success:
+            raise RuntimeError("Failed to upload lecture images timeline")
+        return url
+
+    def _slot_for_index(
+        self, images_timeline: Dict[str, Any], slot_idx: int
+    ) -> Optional[Dict[str, Any]]:
+        for slot in images_timeline.get("slots") or []:
+            if int(slot.get("index", -1)) == int(slot_idx):
+                return slot
+        return None
+
+    async def _update_slot(
+        self,
+        object_key: str,
+        slot_idx: int,
+        *,
+        batch_id: Optional[str],
+        status: str,
+        url: Optional[str] = None,
+        error: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        async with self._timeline_lock(object_key):
+            images_timeline = await self._load_images_timeline(object_key)
+            if batch_id and images_timeline.get("batch_id") != batch_id:
+                return images_timeline
+
+            slot = self._slot_for_index(images_timeline, slot_idx)
+            if slot is None:
+                raise ValueError(f"Slot {slot_idx} not found in lecture images timeline")
+
+            slot["status"] = status
+            if url is not None:
+                slot["url"] = url
+            if error is not None:
+                slot["error"] = error[:500]
+            elif "error" in slot:
+                slot.pop("error", None)
+
+            await self._upload_images_timeline(object_key, images_timeline)
+            return images_timeline
+
+    async def plan_lecture_images(
         self,
         lecture_id: int,
         *,
@@ -105,9 +173,6 @@ class LectureImagesGeneratorService:
 
         course = self.course_service.get_course(lecture.course_id)
         topic = self.topic_service.get_topic(lecture.topic_id)
-        professor = None
-        if getattr(course, "professor_id", None):
-            professor = self.professor_service.get_professor(course.professor_id)
 
         timeline = await self._fetch_timeline(lecture.timeline_url)
         duration = float(getattr(lecture, "duration", 0) or 0)
@@ -124,6 +189,7 @@ class LectureImagesGeneratorService:
         chunks = self._chunk_text(lecture.content, total)
 
         resolved_model_name = model_name_override or getattr(self.image_service, "model_name", None)
+        batch_id = str(uuid.uuid4())
 
         # Build scaffold json and upload it first.
         slots: List[Dict[str, Any]] = []
@@ -145,6 +211,7 @@ class LectureImagesGeneratorService:
 
         images_timeline = {
             "version": 1,
+            "batch_id": batch_id,
             "lecture_id": lecture_id,
             "aspect_ratio": aspect_ratio,
             "model": resolved_model_name,
@@ -161,13 +228,8 @@ class LectureImagesGeneratorService:
             lecture_order=order,
         )
 
-        timeline_bytes = json.dumps(images_timeline, ensure_ascii=False).encode("utf-8")
-        success, images_timeline_url = await self.storage_service.upload_timeline_file(
-            file_data=timeline_bytes,
-            object_name=object_key,
-            content_type="application/json",
-        )
-        if not success or not images_timeline_url:
+        images_timeline_url = await self._upload_images_timeline(object_key, images_timeline)
+        if not images_timeline_url:
             raise RuntimeError("Failed to upload lecture images timeline")
 
         # Persist URL immediately so UI can show placeholders.
@@ -176,50 +238,137 @@ class LectureImagesGeneratorService:
             update_data={"images_timeline_url": images_timeline_url},
         )
 
-        # Generate slides sequentially.
-        prev_slide_url: Optional[str] = None
-        done = 0
+        slide_payloads: List[Dict[str, Any]] = []
         for i in range(total):
-            slots[i]["status"] = "running"
-            timeline_bytes = json.dumps(images_timeline, ensure_ascii=False).encode("utf-8")
-            await self.storage_service.upload_timeline_file(
-                file_data=timeline_bytes,
-                object_name=object_key,
-                content_type="application/json",
-            )
-
-            slide_url = await self.image_service.generate_lecture_slide_image(
-                professor=professor or course,  # fallback; prompt builder tolerates missing attrs
-                course=course,
-                week_number=week,
-                lecture_order=order,
-                lecture_summary=getattr(lecture, "summary", None),
-                chunk_text=chunks[i],
-                previous_chunk_text=chunks[i - 1] if i > 0 else None,
-                previous_slide_url=prev_slide_url,
-                slot_idx=i,
-                aspect_ratio=aspect_ratio,
-                model_name_override=model_name_override,
-            )
-
-            if slide_url:
-                slots[i]["url"] = slide_url
-                slots[i]["status"] = "done"
-                prev_slide_url = slide_url
-                done += 1
-            else:
-                slots[i]["status"] = "failed"
-
-            timeline_bytes = json.dumps(images_timeline, ensure_ascii=False).encode("utf-8")
-            await self.storage_service.upload_timeline_file(
-                file_data=timeline_bytes,
-                object_name=object_key,
-                content_type="application/json",
+            slide_payloads.append(
+                {
+                    "lecture_id": lecture_id,
+                    "topic_id": getattr(lecture, "topic_id", None),
+                    "batch_id": batch_id,
+                    "slot_idx": i,
+                    "total": total,
+                    "object_key": object_key,
+                    "images_timeline_url": images_timeline_url,
+                    "aspect_ratio": aspect_ratio,
+                    "model_name_override": model_name_override,
+                    "chunk_text": chunks[i],
+                    "previous_chunk_text": chunks[i - 1] if i > 0 else None,
+                }
             )
 
         return {
             "lecture_id": lecture_id,
             "images_timeline_url": images_timeline_url,
+            "object_key": object_key,
+            "batch_id": batch_id,
             "total": total,
-            "done": done,
+            "planned": total,
+            "slide_payloads": slide_payloads,
+        }
+
+    async def generate_lecture_slide(
+        self,
+        lecture_id: int,
+        *,
+        slot_idx: int,
+        object_key: str,
+        batch_id: Optional[str],
+        chunk_text: str,
+        previous_chunk_text: Optional[str] = None,
+        aspect_ratio: str = "1:1",
+        model_name_override: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        lecture = self.lecture_service.get_lecture(lecture_id)
+        if not lecture:
+            raise ValueError(f"Lecture {lecture_id} not found")
+
+        course = self.course_service.get_course(lecture.course_id)
+        topic = self.topic_service.get_topic(lecture.topic_id)
+        professor_id = getattr(course, "professor_id", None)
+        if not professor_id:
+            raise ValueError(f"Course {course.id} has no professor for lecture image generation")
+        professor = self.professor_service.get_professor(professor_id)
+        if not professor:
+            raise ValueError(f"Professor {professor_id} not found for lecture image generation")
+
+        images_timeline = await self._load_images_timeline(object_key)
+        if batch_id and images_timeline.get("batch_id") != batch_id:
+            return {
+                "lecture_id": lecture_id,
+                "slot_idx": slot_idx,
+                "status": "skipped",
+                "reason": "stale_batch",
+            }
+
+        slot = self._slot_for_index(images_timeline, slot_idx)
+        if slot is None:
+            raise ValueError(f"Slot {slot_idx} not found in lecture images timeline")
+        if slot.get("url") and slot.get("status") == "done":
+            return {
+                "lecture_id": lecture_id,
+                "slot_idx": slot_idx,
+                "status": "skipped",
+                "reason": "already_done",
+                "url": slot.get("url"),
+            }
+
+        course_code = getattr(course, "code", str(getattr(course, "id", "course")))
+        week = int(getattr(topic, "week", 1))
+        order = int(getattr(topic, "order", 1))
+        image_key = self.storage_service.generate_lecture_image_key(
+            course_code=str(course_code),
+            week_number=week,
+            lecture_order=order,
+            slot_idx=slot_idx,
+        )
+
+        if await self.storage_service.object_exists(self.storage_service.images_bucket, image_key):
+            url = self.storage_service.get_file_url(self.storage_service.images_bucket, image_key)
+            await self._update_slot(object_key, slot_idx, batch_id=batch_id, status="done", url=url)
+            return {"lecture_id": lecture_id, "slot_idx": slot_idx, "status": "done", "url": url}
+
+        await self._update_slot(object_key, slot_idx, batch_id=batch_id, status="running")
+
+        latest_timeline = await self._load_images_timeline(object_key)
+        previous_slide_url = None
+        previous_slot = self._slot_for_index(latest_timeline, slot_idx - 1)
+        if previous_slot:
+            previous_slide_url = previous_slot.get("url")
+
+        slide_url = await self.image_service.generate_lecture_slide_image(
+            professor=professor,
+            course=course,
+            week_number=week,
+            lecture_order=order,
+            lecture_summary=getattr(lecture, "summary", None),
+            chunk_text=chunk_text,
+            previous_chunk_text=previous_chunk_text,
+            previous_slide_url=previous_slide_url,
+            slot_idx=slot_idx,
+            aspect_ratio=aspect_ratio,
+            model_name_override=model_name_override,
+        )
+
+        if slide_url:
+            await self._update_slot(
+                object_key, slot_idx, batch_id=batch_id, status="done", url=slide_url
+            )
+            return {
+                "lecture_id": lecture_id,
+                "slot_idx": slot_idx,
+                "status": "done",
+                "url": slide_url,
+            }
+
+        await self._update_slot(
+            object_key,
+            slot_idx,
+            batch_id=batch_id,
+            status="failed",
+            error="image_generation_returned_no_url",
+        )
+        return {
+            "lecture_id": lecture_id,
+            "slot_idx": slot_idx,
+            "status": "failed",
         }
