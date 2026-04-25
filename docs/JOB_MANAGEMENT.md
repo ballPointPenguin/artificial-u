@@ -203,7 +203,7 @@ class Settings(BaseSettings):
 
     # worker tuning
     WORKER_POLL_IDLE_SEC: float = 0.75        # sleep when no job reserved
-    WORKER_VISIBILITY_TIMEOUT_SEC: int = 600  # consider running jobs stuck after this
+    WORKER_VISIBILITY_TIMEOUT_SEC: int = 2100 # consider running jobs stuck after this
     WORKER_MAX_CONCURRENCY: int = 3           # local concurrency for job execution
 
     # rate limiting to external providers (simple global token bucket)
@@ -575,19 +575,19 @@ export default function JobStatus(props: JobStatusProps) {
   * `WORKER_POLL_IDLE_SEC`, `WORKER_VISIBILITY_TIMEOUT_SEC`, `WORKER_MAX_CONCURRENCY`
   * `OUTBOUND_RPS`
 
-2) Schema
+1) Schema
 
 * Create Alembic migration to add `jobs` table and indexes.
 
 * Add `JobModel` to `artificial_u/models/database.py`.
 
-3) Repository and service layer
+1) Repository and service layer
 
 * Add `JobRepository` with methods for enqueue, reserve (skip locked), mark done/failed, sweep.
 
 * Add `JobService` for dispatching to handlers and computing backoff with jitter.
 
-4) Worker
+1) Worker
 
 * Add a worker module (e.g., `artificial_u/api/worker.py`) and start it from `artificial_u/api/app.py`
 startup/lifespan. Keep references in `app.state` (limiter, semaphore, cancel handle).
@@ -600,7 +600,7 @@ startup/lifespan. Keep references in `app.state` (limiter, semaphore, cancel han
 
 * Graceful lifecycle: register shutdown to cancel the worker task(s) and wait for in-flight jobs to finish or requeue.
 
-5) API
+1) API
 
 * Add `jobs` router with endpoints for enqueue, get, list, summary; include it in `create_application()`
 with prefix `/api/v1`.
@@ -608,11 +608,11 @@ with prefix `/api/v1`.
 * For existing long-running routes (e.g., generate lecture/professor), consider adding alternate “enqueue”
 versions that return a job id immediately.
 
-6) Frontend
+1) Frontend
 
 * Add the `JobStatus` component and simple flows to display job progress.
 
-7) Tests
+1) Tests
 
 * Unit tests for `JobRepository` reservation semantics (including skip-locked) and backoff scheduling.
 

@@ -138,6 +138,54 @@ to be completed in a handful of PRs without architectural disruption.
 - Update `Worker.stop()` to wait up to N seconds for in-flight `_run_one` tasks to complete before cancelling.
 - Pairs with 2.2: short jobs finish in seconds, so graceful shutdown Just Works.
 
+### 2.10 Stream large media in `StorageService` (don't hold full files in memory)
+
+Confirmed by `tracemalloc` load-trace (single lecture run): the largest live allocation was ~24 MB at:
+
+- `artificial_u/services/storage_service.py:349` → `return file_obj.read(), content_type` (≈24 MB, count_diff=1)
+
+Local sizes during that run: lecture MP3 22.8 MiB, timeline JSON 464 KiB, lecture text 21.1 KiB. The MP3 explains the spike: the storage layer reads the entire object into memory.
+
+Actions:
+
+- Audit all read paths in `StorageService` that use `body.read()` / `file_obj.read()` and convert to streaming where the consumer does not need the full bytes.
+  - For S3/MinIO downloads: stream the response body in chunks (e.g., iterate `body.iter_chunks(...)`) directly into the next consumer (HTTP response, ffmpeg stdin, hash, length probe).
+  - For uploads: prefer `upload_fileobj` / multipart over loading bytes into a `bytes` buffer.
+- Avoid round-tripping audio bytes through Python just to compute metadata. Use HEAD/`get_object_attributes` for size/content-type and only `range`-fetch the bytes you need (e.g., first/last KBs for ID3, `ffprobe` over a streamed range).
+- For ffmpeg integration, prefer piping (`stdin`/`stdout`) or local temp files over loading the full MP3 into RAM.
+
+Expected impact:
+
+- Eliminates the dominant memory spike on the audio pipeline; flattens RSS during long lecture jobs.
+- Reduces peak GC pressure and makes Category 5.1 easier to answer with real data.
+
+### 2.11 Reuse boto3 clients/sessions
+
+`tracemalloc` load-trace also shows large counts of `botocore` allocations, which is a classic signature of constructing botocore clients/models repeatedly on hot paths.
+
+Actions:
+
+- Ensure a single `boto3.Session` and single S3 client per process; reuse them in `StorageService`.
+- Audit any place that calls `boto3.client(...)` or instantiates a storage service per request/job and refactor to reuse.
+
+Expected impact:
+
+- Significant reduction in allocation churn and CPU time during storage-heavy sequences; minor RSS improvement.
+
+### 2.12 Reduce JSON re-parse churn (timeline/alignment)
+
+`json/decoder.py:361` showed a large allocation count during the lecture-generation run. With the timeline being 464 KiB, this is consistent with repeated parsing or repeated decode/encode round-trips.
+
+Actions:
+
+- Parse provider JSON once and pass the parsed dict between steps; avoid re-fetch+re-parse from S3/MinIO within the same job.
+- Avoid `json.loads(json.dumps(...))` style round-trips on the hot path.
+- Only consider streaming JSON parsers (e.g., `ijson`) if profiling shows the alignment output is a dominant CPU/memory cost.
+
+Expected impact:
+
+- Trims per-job allocation count and reduces GC noise during long generation jobs.
+
 ---
 
 ## Category 3 — Medium-term (meaningful refactor; depends on near-term landing first)
@@ -236,6 +284,7 @@ depends on outcomes above.
 ### 5.1 Is memory actually leaking, or just steady-state heavy?
 
 - Answered by 1.1 + 1.5. If RSS climbs monotonically over days, track down; if it plateaus at 1.2 GiB, it's just Python + imports + thread pool + connection pools, and the answer is right-sizing (3.4), not leak-hunting.
+- **Initial finding (dev, idle vs single lecture run):** the biggest *new* allocation was the audio object being read fully into memory (`storage_service.py:349`, ≈24 MB). That matches the MinIO file sizes observed (MP3 22.8 MiB; timeline JSON 464 KiB; lecture text 21.1 KiB) and points to “spiky per-job allocations” more than a classic leak. Prioritize 2.10–2.12, then re-check 1.1/1.5 over a 24h prod window.
 
 ### 5.2 Do we need per-user cross-tab live state for any flow?
 
@@ -266,7 +315,7 @@ depends on outcomes above.
 ## Suggested sequencing (concrete)
 
 1. **Week 0–1 (diagnostics):** land 1.1, 1.2, 1.3 behind env flags. Start building a baseline memory/job dashboard in CloudWatch.
-2. **Week 1–2 (quick wins):** 2.1 (visibility timeout), 2.3 (slot idempotency), 2.4 (SSE hygiene), 2.6 (httpx reuse), 2.8 (gunicorn tuning). All small.
+2. **Week 1–2 (quick wins):** 2.1 (visibility timeout), 2.3 (slot idempotency), 2.4 (SSE hygiene), 2.6 (httpx reuse), 2.10 (stream large media), 2.11 (reuse boto3 clients), 2.12 (reduce JSON churn), 2.8 (gunicorn tuning). All small.
 3. **Week 2–3 (splitting + polling):** 2.2 (split lecture images) + 2.5 (swap user-waiting flows to polling) + 2.7 (priority lanes). This is the highest-impact batch.
 4. **Week 3+ (structural):** 3.1 (worker service in CDK), 2.9 (stopTimeout), 3.2 (LISTEN/NOTIFY for admin dashboard), 3.3 (heartbeating helper).
 5. **After data comes in:** 3.4 (right-sizing), 3.5 (frontend migration cleanup), 3.6 (workflow standardization).
