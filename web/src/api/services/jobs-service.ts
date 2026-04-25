@@ -13,6 +13,8 @@ export interface JobRow {
   run_after?: string
   last_error?: string | null
   result?: unknown
+  /** Wall-clock execution time of the last attempt, when available (from worker telemetry). */
+  duration_ms?: number | null
   payload?: unknown
   created_at?: string
   updated_at?: string

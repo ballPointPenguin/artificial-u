@@ -13,6 +13,39 @@ from artificial_u.models.repositories.factory import RepositoryFactory
 router = APIRouter(prefix="/jobs", tags=["jobs"])
 
 
+def _duration_ms_from_result(result: Any) -> Any:
+    if not result or not isinstance(result, dict):
+        return None
+    telem = result.get("_job_telemetry")
+    if not isinstance(telem, dict):
+        return None
+    d = telem.get("duration_ms")
+    if d is None:
+        return None
+    try:
+        return int(d)
+    except TypeError, ValueError:
+        return None
+
+
+def _job_row_response(r) -> dict:
+    return {
+        "id": r.id,
+        "kind": r.kind,
+        "status": r.status,
+        "attempts": r.attempts,
+        "max_attempts": r.max_attempts,
+        "priority": r.priority,
+        "run_after": r.run_after,
+        "created_at": r.created_at,
+        "updated_at": r.updated_at,
+        "last_error": r.last_error,
+        "payload": r.payload,
+        "result": r.result,
+        "duration_ms": _duration_ms_from_result(r.result),
+    }
+
+
 class EnqueueJob(BaseModel):
     kind: str
     payload: Dict[str, Any]
@@ -87,22 +120,7 @@ def list_jobs(
         topic_id=topic_id,
         course_id=course_id,
     )
-    return [
-        {
-            "id": r.id,
-            "kind": r.kind,
-            "status": r.status,
-            "attempts": r.attempts,
-            "max_attempts": r.max_attempts,
-            "priority": r.priority,
-            "run_after": r.run_after,
-            "created_at": r.created_at,
-            "updated_at": r.updated_at,
-            "last_error": r.last_error,
-            "payload": r.payload,
-        }
-        for r in rows
-    ]
+    return [_job_row_response(r) for r in rows]
 
 
 @router.get("/summary", dependencies=[Depends(require_auth)])
@@ -185,6 +203,7 @@ def get_job(
         "max_attempts": row.max_attempts,
         "last_error": row.last_error,
         "result": row.result,
+        "duration_ms": _duration_ms_from_result(row.result),
         "created_at": row.created_at,
         "updated_at": row.updated_at,
     }

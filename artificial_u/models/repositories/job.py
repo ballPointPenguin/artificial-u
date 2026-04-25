@@ -156,31 +156,30 @@ class JobRepository(BaseRepository):
         *,
         last_error: str,
         delay_seconds: Optional[float] = None,
+        result: Optional[Dict[str, Any]] = None,
     ) -> None:
         with self.get_session() as session:
             if attempts >= max_attempts:
-                session.execute(
-                    update(JobModel)
-                    .where(JobModel.id == job_id)
-                    .values(
-                        status="failed",
-                        last_error=last_error[:2000],
-                        updated_at=func.now(),
-                    )
-                )
+                values: Dict[str, Any] = {
+                    "status": "failed",
+                    "last_error": last_error[:2000],
+                    "updated_at": func.now(),
+                }
+                if result is not None:
+                    values["result"] = result
+                session.execute(update(JobModel).where(JobModel.id == job_id).values(**values))
             else:
                 delay_seconds = delay_seconds or 0
                 next_time = func.now() + text(f"make_interval(secs => {int(delay_seconds)} )")
-                session.execute(
-                    update(JobModel)
-                    .where(JobModel.id == job_id)
-                    .values(
-                        status="queued",
-                        last_error=last_error[:2000],
-                        run_after=next_time,
-                        updated_at=func.now(),
-                    )
-                )
+                qvalues: Dict[str, Any] = {
+                    "status": "queued",
+                    "last_error": last_error[:2000],
+                    "run_after": next_time,
+                    "updated_at": func.now(),
+                }
+                if result is not None:
+                    qvalues["result"] = result
+                session.execute(update(JobModel).where(JobModel.id == job_id).values(**qvalues))
             session.commit()
 
     def mark_cancelled(self, job_id: int) -> None:

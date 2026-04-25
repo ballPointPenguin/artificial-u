@@ -1,7 +1,8 @@
 import asyncio
 import logging
 import os
-from typing import Any, Awaitable, Callable, Dict
+import time
+from typing import Any, Awaitable, Callable, Dict, Optional
 
 from aiolimiter import AsyncLimiter  # type: ignore
 
@@ -11,6 +12,38 @@ from artificial_u.models.repositories.factory import RepositoryFactory
 from artificial_u.services.job_service import JobService
 
 Handler = Callable[[Dict[str, Any], RepositoryFactory], Awaitable[Dict[str, Any]]]
+
+
+def _job_log_extra(
+    *,
+    job_id: int,
+    kind: str,
+    attempt: int,
+    max_attempts: Optional[int] = None,
+    duration_ms: Optional[int] = None,
+) -> Dict[str, Any]:
+    """Structured fields for CloudWatch Logs Insights (task 1.2)."""
+    extra: Dict[str, Any] = {
+        "job_id": job_id,
+        "kind": kind,
+        "attempt": attempt,
+        "worker_pid": os.getpid(),
+    }
+    if max_attempts is not None:
+        extra["max_attempts"] = max_attempts
+    if duration_ms is not None:
+        extra["duration_ms"] = duration_ms
+    return extra
+
+
+def _telemetry_result(duration_ms: int) -> Dict[str, Any]:
+    return {"_job_telemetry": {"duration_ms": duration_ms, "worker_pid": os.getpid()}}
+
+
+def _with_job_telemetry(result: Dict[str, Any], duration_ms: int) -> Dict[str, Any]:
+    out = dict(result) if result else {}
+    out["_job_telemetry"] = {"duration_ms": duration_ms, "worker_pid": os.getpid()}
+    return out
 
 
 class Worker:
@@ -122,7 +155,16 @@ class Worker:
             if not row:
                 break
 
-            self.logger.info(f"Reserved job {row.id} (kind: {row.kind})")
+            self.logger.info(
+                "Job reserved",
+                extra=_job_log_extra(
+                    job_id=row.id,
+                    kind=row.kind,
+                    attempt=row.attempts,
+                    max_attempts=row.max_attempts,
+                    duration_ms=0,
+                ),
+            )
             tasks.append(asyncio.create_task(self._run_one(row.id)))
         return tasks
 
@@ -167,7 +209,10 @@ class Worker:
         repo = self.repository_factory.job
         row = await asyncio.to_thread(repo.get, job_id)
         if not row:
-            self.logger.warning(f"Job {job_id} not found when trying to process")
+            self.logger.warning(
+                "Job not found for processing",
+                extra={"job_id": job_id, "worker_pid": os.getpid()},
+            )
             return
 
         kind = row.kind
@@ -175,44 +220,87 @@ class Worker:
         attempts = row.attempts
         max_attempts = row.max_attempts
 
-        self.logger.info(
-            f"Starting job {job_id} (kind: {kind}, attempt: {attempts}/{max_attempts})"
-        )
-
         async with self.semaphore:
+            exec_t0 = time.perf_counter()
+
+            def execution_ms() -> int:
+                return int((time.perf_counter() - exec_t0) * 1000)
+
+            log_base = _job_log_extra(
+                job_id=job_id,
+                kind=kind,
+                attempt=attempts,
+                max_attempts=max_attempts,
+            )
+            self.logger.info(
+                "Job execution start",
+                extra={**log_base, "duration_ms": 0},
+            )
+
             # If the job was cancelled after reservation, honor cancellation
             if row.status == "cancelled":
-                self.logger.info(f"Job {job_id} was cancelled before execution")
+                self.logger.info(
+                    "Job cancelled before execution",
+                    extra={**log_base, "duration_ms": execution_ms()},
+                )
                 await self._publish_event(job_id, kind, "cancelled", payload)
                 return
             try:
-                result = await self._execute_job(job_id, kind, payload)
+                result = await self._execute_job(job_id, kind, payload, log_base)
             except asyncio.TimeoutError:
-                await self._handle_timeout(repo, job_id, kind, payload, attempts, max_attempts)
+                await self._handle_timeout(
+                    repo,
+                    job_id,
+                    kind,
+                    payload,
+                    attempts,
+                    max_attempts,
+                    duration_ms=execution_ms(),
+                )
                 return
             except Exception as e:  # noqa: BLE001
-                await self._handle_exception(repo, job_id, kind, payload, attempts, max_attempts, e)
+                await self._handle_exception(
+                    repo,
+                    job_id,
+                    kind,
+                    payload,
+                    attempts,
+                    max_attempts,
+                    e,
+                    duration_ms=execution_ms(),
+                )
                 return
+
+            duration_ms = execution_ms()
+            result = _with_job_telemetry(result, duration_ms)
 
             # Success path
             await asyncio.to_thread(repo.mark_done, job_id, result)
-            self.logger.info(f"Job {job_id} marked as done")
+            self.logger.info(
+                "Job done",
+                extra={**log_base, "duration_ms": duration_ms},
+            )
 
             # Check for follow-up action and enqueue next job if present
             await self._handle_follow_up(kind, payload)
 
             await self._publish_event(job_id, kind, "done", payload, result=result)
 
-    async def _execute_job(self, job_id: int, kind: str, payload: Dict[str, Any]) -> Dict[str, Any]:
+    async def _execute_job(
+        self,
+        job_id: int,
+        kind: str,
+        payload: Dict[str, Any],
+        log_base: Dict[str, Any],
+    ) -> Dict[str, Any]:
         """Run a single job under rate-limit, publish running, and return result."""
         async with self.limiter:
-            self.logger.debug(f"Dispatching job {job_id} to handler for kind: {kind}")
+            self.logger.debug("Dispatching job to handler", extra={**log_base, "job_id": job_id})
             await self._publish_event(job_id, kind, "running", payload)
             result = await asyncio.wait_for(
                 self.job_service.dispatch(kind, payload),
                 timeout=self.settings.JOB_EXECUTION_TIMEOUT_SEC,
             )
-            self.logger.info(f"Job {job_id} completed successfully")
             return result
 
     async def _handle_timeout(
@@ -223,12 +311,22 @@ class Worker:
         payload: Dict[str, Any],
         attempts: int,
         max_attempts: int,
+        *,
+        duration_ms: int,
     ) -> None:
         error_msg = (
             f"Job {job_id} timed out after {self.settings.JOB_EXECUTION_TIMEOUT_SEC} seconds"
         )
-        self.logger.error(error_msg)
+        extra = _job_log_extra(
+            job_id=job_id,
+            kind=kind,
+            attempt=attempts,
+            max_attempts=max_attempts,
+            duration_ms=duration_ms,
+        )
+        self.logger.error(error_msg, extra=extra)
         delay = self.job_service.compute_backoff_seconds(attempts)
+        telem = _telemetry_result(duration_ms)
         await asyncio.to_thread(
             repo.mark_failed_or_retry,
             job_id,
@@ -236,6 +334,7 @@ class Worker:
             max_attempts,
             last_error=error_msg,
             delay_seconds=delay,
+            result=telem,
         )
         await self._publish_event(
             job_id,
@@ -243,6 +342,7 @@ class Worker:
             "queued" if attempts < max_attempts else "failed",
             payload,
             last_error=error_msg,
+            result=telem,
         )
 
     async def _handle_exception(
@@ -254,21 +354,31 @@ class Worker:
         attempts: int,
         max_attempts: int,
         exc: Exception,
+        *,
+        duration_ms: int,
     ) -> None:
         error_msg = f"Job {job_id} failed: {str(exc)}"
-        self.logger.error(error_msg, exc_info=True)
+        extra = _job_log_extra(
+            job_id=job_id,
+            kind=kind,
+            attempt=attempts,
+            max_attempts=max_attempts,
+            duration_ms=duration_ms,
+        )
+        self.logger.error(error_msg, exc_info=True, extra=extra)
         delay = self.job_service.compute_backoff_seconds(attempts)
 
-        if attempts >= max_attempts:
-            self.logger.error(
-                f"Job {job_id} reached max attempts ({max_attempts}), marking as failed"
-            )
-        else:
-            next_attempt = attempts + 1
+        if attempts < max_attempts:
             self.logger.info(
-                f"Job {job_id} will retry in {delay:.2f}s (attempt {next_attempt}/{max_attempts})"
+                "Job will retry",
+                extra={
+                    **extra,
+                    "retry_in_sec": round(delay, 2),
+                    "next_attempt": attempts + 1,
+                },
             )
 
+        telem = _telemetry_result(duration_ms)
         await asyncio.to_thread(
             repo.mark_failed_or_retry,
             job_id,
@@ -276,6 +386,7 @@ class Worker:
             max_attempts,
             last_error=str(exc),
             delay_seconds=delay,
+            result=telem,
         )
         await self._publish_event(
             job_id,
@@ -283,6 +394,7 @@ class Worker:
             "queued" if attempts < max_attempts else "failed",
             payload,
             last_error=str(exc),
+            result=telem,
         )
 
     async def _publish_event(
