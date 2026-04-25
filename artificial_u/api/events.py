@@ -114,6 +114,7 @@ async def sse_stream(
     hub: JobEventHub,
     *,
     request: Optional[Request] = None,
+    initial_snapshot: Optional[Iterable[Dict[str, Any]]] = None,
     lecture_id: Optional[int] = None,
     topic_id: Optional[int] = None,
     kinds: Optional[Iterable[str]] = None,
@@ -129,19 +130,22 @@ async def sse_stream(
     events = hub.subscribe()
     loop = asyncio.get_event_loop()
     settings = get_settings()
-    keepalive_interval = float(getattr(settings, "SSE_KEEPALIVE_INTERVAL_SEC", 0.2))
+    keepalive_interval = float(getattr(settings, "SSE_KEEPALIVE_INTERVAL_SEC", 1.0))
     ping_interval = int(getattr(settings, "SSE_PING_INTERVAL_SEC", 5))
     next_heartbeat = loop.time() + ping_interval
 
+    # Start reading before emitting the snapshot so changes after snapshot collection
+    # are queued instead of falling through the connection gap.
+    event_queue: asyncio.Queue = asyncio.Queue()
+    reader_task = asyncio.create_task(_event_reader(events, event_queue))
+
     # Send initial connection message to establish SSE stream
     yield 'event: connected\ndata: {"message": "SSE stream connected"}\n\n'
+    if initial_snapshot is not None:
+        yield f"event: snapshot\ndata: {json.dumps({'jobs': list(initial_snapshot)}, default=str)}\n\n"
 
     iteration_count = 0
     logger.debug(f"SSE stream started for topic_id={topic_id}, lecture_id={lecture_id}")
-
-    # Create a task to read events without blocking the main loop
-    event_queue: asyncio.Queue = asyncio.Queue()
-    reader_task = asyncio.create_task(_event_reader(events, event_queue))
 
     try:
         while True:

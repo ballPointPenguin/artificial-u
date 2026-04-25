@@ -1,3 +1,4 @@
+import asyncio
 from typing import Any, Dict, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Request
@@ -44,6 +45,31 @@ def _job_row_response(r) -> dict:
         "result": r.result,
         "duration_ms": _duration_ms_from_result(r.result),
     }
+
+
+def _active_job_snapshot(
+    repo,
+    *,
+    lecture_id: Optional[int],
+    topic_id: Optional[int],
+    kinds: list[str],
+    limit_per_status: int = 100,
+) -> list[dict]:
+    kinds_set = set(kinds)
+    rows = []
+    for status in ("queued", "running"):
+        rows.extend(
+            repo.list(
+                status=status,
+                limit=limit_per_status,
+                lecture_id=lecture_id,
+                topic_id=topic_id,
+            )
+        )
+    if kinds_set:
+        rows = [row for row in rows if row.kind in kinds_set]
+    rows.sort(key=lambda row: row.created_at, reverse=True)
+    return [_job_row_response(row) for row in rows]
 
 
 class EnqueueJob(BaseModel):
@@ -137,6 +163,7 @@ async def jobs_stream(
     request: Request,
     lecture_id: Optional[int] = None,
     topic_id: Optional[int] = None,
+    repository_factory: RepositoryFactory = Depends(get_repository_factory),
 ):
     """SSE stream for job events.
 
@@ -163,6 +190,13 @@ async def jobs_stream(
     # Parse kinds robustly to avoid validation quirks
     kinds_list = request.query_params.getlist("kinds")
     hub: JobEventHub = request.app.state.job_events
+    snapshot = await asyncio.to_thread(
+        _active_job_snapshot,
+        repository_factory.job,
+        lecture_id=lecture_id,
+        topic_id=topic_id,
+        kinds=kinds_list,
+    )
 
     headers = {
         "Cache-Control": "no-cache, no-store, must-revalidate",
@@ -174,7 +208,8 @@ async def jobs_stream(
     # Pass the generator directly without wrapper
     generator = sse_stream(
         hub,
-        request=None,  # Don't pass request to avoid disconnect issues
+        request=request,
+        initial_snapshot=snapshot,
         lecture_id=lecture_id,
         topic_id=topic_id,
         kinds=kinds_list,

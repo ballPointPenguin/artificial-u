@@ -96,7 +96,7 @@ to be completed in a handful of PRs without architectural disruption.
 - Before calling the image provider, check whether `slot_{idx}.png` (or the timeline slot's `url`) already exists and skip. Cheap win even before splitting.
 - Lets retries cost $0 instead of $N.
 
-### 2.4 SSE hygiene (without rearchitecting it yet)
+### 2.4 SSE hygiene (without rearchitecting it yet) - DONE
 
 - Pass `request` back into `sse_stream` in `artificial_u/api/routers/jobs.py:159` so `is_disconnected()` actually fires.
 - Raise `SSE_KEEPALIVE_INTERVAL_SEC` from 0.2s to 1.0s; current rate is 5 ticks/sec/connection for no user benefit.

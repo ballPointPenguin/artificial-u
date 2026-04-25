@@ -40,7 +40,7 @@ export default function JobsPage() {
   const [jobsResource, { refetch, mutate }] = createResource(
     () => ({
       status: statusFilter(),
-      limit: 50,
+      limit: 100,
     }),
     listJobs
   )
@@ -369,7 +369,7 @@ export default function JobsPage() {
               </table>
             </div>
             <div class="mt-4 text-sm text-muted">
-              Showing {jobsResource()?.length ?? 0} jobs (limit: 50)
+              Showing {jobsResource()?.length ?? 0} jobs (limit: 100)
             </div>
           </Show>
         </Show>

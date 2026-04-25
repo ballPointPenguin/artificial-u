@@ -151,34 +151,53 @@ export function createJobTracker(options: JobTrackerOptions) {
 
         jobDebug.log('subscription', 'Subscribing via JobEventHub', filter)
 
-        unsubscribe = hub.subscribe(filter, (event) => {
-          const { status } = event
+        unsubscribe = hub.subscribe(
+          filter,
+          (event) => {
+            const { status } = event
 
-          jobDebug.log('event', `Hub event: ${event.kind} #${String(event.id)} - ${status}`, event)
+            jobDebug.log(
+              'event',
+              `Hub event: ${event.kind} #${String(event.id)} - ${status}`,
+              event
+            )
 
-          // Update active job tracking
-          setActiveJobIds((prev) => {
-            const newIds = new Set(prev)
-            if (status === 'queued' || status === 'running') {
-              newIds.add(event.id)
-              options.onJobStart?.(event)
-            } else {
-              newIds.delete(event.id)
-              if (status === 'done') {
-                jobDebug.log(
-                  'state_change',
-                  `Job completed: ${event.kind} #${String(event.id)}`,
-                  event
-                )
-                options.onJobComplete?.(event)
-              } else if (status === 'failed') {
-                options.onJobFail?.(event)
-                setLastError(`Job ${event.kind} failed`)
+            // Update active job tracking
+            setActiveJobIds((prev) => {
+              const newIds = new Set(prev)
+              if (status === 'queued' || status === 'running') {
+                newIds.add(event.id)
+                options.onJobStart?.(event)
+              } else {
+                newIds.delete(event.id)
+                if (status === 'done') {
+                  jobDebug.log(
+                    'state_change',
+                    `Job completed: ${event.kind} #${String(event.id)}`,
+                    event
+                  )
+                  options.onJobComplete?.(event)
+                } else if (status === 'failed') {
+                  options.onJobFail?.(event)
+                  setLastError(`Job ${event.kind} failed`)
+                }
+              }
+              return newIds
+            })
+          },
+          (jobs) => {
+            const ids = new Set<number>()
+            for (const job of jobs) {
+              if (job.status === 'queued' || job.status === 'running') {
+                ids.add(job.id)
               }
             }
-            return newIds
-          })
-        })
+            jobDebug.log('state_change', 'Reconciled active jobs from SSE snapshot', {
+              activeJobIds: [...ids],
+            })
+            setActiveJobIds(ids)
+          }
+        )
       },
       { defer: false } // Run immediately, not deferred
     )
