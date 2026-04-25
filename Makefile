@@ -151,6 +151,11 @@ run-api: ## Run the FastAPI application
 	@echo "$(GREEN)Starting FastAPI application...$(NC)"
 	@$(HATCH) run uvicorn $(PROJECT_NAME).api.app:app --reload --reload-delay 1.0 --reload-dir $(SRC_DIR) --reload-include "*.py" --host 0.0.0.0 --port $(FASTAPI_PORT)
 
+.PHONY: run-api-no-reload
+run-api-no-reload: ## Run the FastAPI application without auto-reload
+	@echo "$(GREEN)Starting FastAPI application (no reload)...$(NC)"
+	@$(HATCH) run uvicorn $(PROJECT_NAME).api.app:app --host 0.0.0.0 --port $(FASTAPI_PORT)
+
 .PHONY: run-worker
 run-worker: ## Run the background worker
 	@echo "$(GREEN)Starting background worker...$(NC)"

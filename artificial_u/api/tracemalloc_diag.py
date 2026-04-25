@@ -18,9 +18,10 @@ class TracemallocDriftTracer:
     - on SIGUSR1, take a new snapshot and log the top N allocation deltas vs baseline
     """
 
-    def __init__(self, *, top_n: int = 25, max_frames: int = 25) -> None:
+    def __init__(self, *, top_n: int = 25, max_frames: int = 25, traceback_top_n: int = 5) -> None:
         self.top_n = top_n
         self.max_frames = max_frames
+        self.traceback_top_n = traceback_top_n
         self._baseline: Optional[tracemalloc.Snapshot] = None
 
     def start(self) -> None:
@@ -58,6 +59,14 @@ class TracemallocDriftTracer:
                 stat.count_diff,
                 extra={"worker_pid": os.getpid()},
             )
+            if i <= self.traceback_top_n and stat.traceback:
+                tb = "".join(stat.traceback.format())
+                logger.info(
+                    "tracemalloc #%d traceback:\n%s",
+                    i,
+                    tb.rstrip(),
+                    extra={"worker_pid": os.getpid()},
+                )
 
 
 def tracemalloc_enabled() -> bool:
