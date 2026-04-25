@@ -16,6 +16,7 @@ from artificial_u.models.core import Course, Professor
 from artificial_u.prompts.course_image import format_course_image_prompt
 from artificial_u.prompts.lecture_image import format_lecture_slide_prompt
 from artificial_u.prompts.professor_image import format_professor_image_prompt
+from artificial_u.services.http_client import get_shared_async_client
 from artificial_u.services.storage_service import StorageService
 
 logger = logging.getLogger(__name__)
@@ -75,7 +76,11 @@ class ImageService:
     configurable storage backend (MinIO/S3).
     """
 
-    def __init__(self, storage_service: StorageService):
+    def __init__(
+        self,
+        storage_service: StorageService,
+        http_client: Optional[httpx.AsyncClient] = None,
+    ):
         """
         Initialize the image generation service.
 
@@ -83,6 +88,7 @@ class ImageService:
             storage_service: The storage service for persisting generated images
         """
         self.storage_service = storage_service
+        self.http_client = http_client or get_shared_async_client()
 
         # Get model name and determine backend from settings
         from artificial_u.config import get_settings
@@ -184,11 +190,10 @@ class ImageService:
         return model_name.startswith("gemini-")
 
     async def _fetch_bytes_and_mime(self, url: str) -> Tuple[bytes, str]:
-        async with httpx.AsyncClient() as client:
-            resp = await client.get(url, timeout=30.0)
-            resp.raise_for_status()
-            mime = resp.headers.get("content-type") or "application/octet-stream"
-            return resp.content, mime.split(";")[0].strip()
+        resp = await self.http_client.get(url, timeout=30.0)
+        resp.raise_for_status()
+        mime = resp.headers.get("content-type") or "application/octet-stream"
+        return resp.content, mime.split(";")[0].strip()
 
     async def _generate_gemini_image_via_content(  # noqa: C901
         self,
@@ -369,13 +374,12 @@ class ImageService:
         """Fetches image data from a URL."""
         try:
             logger.info(f"Fetching image from OpenAI URL: {url[:100]}...")
-            async with httpx.AsyncClient() as client:
-                image_response = await client.get(url, timeout=30.0)
-                image_response.raise_for_status()
+            image_response = await self.http_client.get(url, timeout=30.0)
+            image_response.raise_for_status()
 
-                image_bytes = image_response.content
-                logger.info(f"Successfully fetched image data ({len(image_bytes)} bytes).")
-                return image_bytes
+            image_bytes = image_response.content
+            logger.info(f"Successfully fetched image data ({len(image_bytes)} bytes).")
+            return image_bytes
 
         except httpx.RequestError as req_err:
             logger.error(f"Error fetching image from URL {url}: {req_err}")

@@ -6,6 +6,7 @@ from typing import Any, Dict, List, Optional
 
 import httpx
 
+from artificial_u.services.http_client import get_shared_async_client
 from artificial_u.services.image_service import ImageService
 from artificial_u.services.storage_service import StorageService
 
@@ -31,6 +32,7 @@ class LectureImagesGeneratorService:
         professor_service: Any,
         storage_service: Optional[StorageService] = None,
         image_service: Optional[ImageService] = None,
+        http_client: Optional[httpx.AsyncClient] = None,
         logger: Optional[logging.Logger] = None,
     ):
         self.lecture_service = lecture_service
@@ -38,14 +40,17 @@ class LectureImagesGeneratorService:
         self.topic_service = topic_service
         self.professor_service = professor_service
         self.storage_service = storage_service or StorageService(logger=logger)
-        self.image_service = image_service or ImageService(self.storage_service)
+        self.http_client = http_client or get_shared_async_client()
+        self.image_service = image_service or ImageService(
+            self.storage_service,
+            http_client=self.http_client,
+        )
         self.logger = logger or logging.getLogger(__name__)
 
     async def _fetch_timeline(self, url: str) -> Dict[str, Any]:
-        async with httpx.AsyncClient() as client:
-            resp = await client.get(url, timeout=30.0)
-            resp.raise_for_status()
-            return resp.json()
+        resp = await self.http_client.get(url, timeout=30.0)
+        resp.raise_for_status()
+        return resp.json()
 
     def _estimate_duration_from_timeline(self, timeline: Dict[str, Any]) -> float:
         events = timeline.get("events") or []

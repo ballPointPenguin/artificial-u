@@ -594,12 +594,13 @@ async def regenerate_professor(
     try:
         # Generate new professor
         from artificial_u.api.dependencies import (
+            get_http_client,
             get_image_service,
             get_job_enqueue_service,
             get_storage_service,
         )
 
-        image_service = get_image_service(get_storage_service())
+        image_service = get_image_service(get_storage_service(), get_http_client())
         job_enqueue_service = get_job_enqueue_service(repository_factory)
 
         professor_generator = ProfessorGeneratorService(

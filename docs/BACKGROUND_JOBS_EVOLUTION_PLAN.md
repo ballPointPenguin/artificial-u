@@ -110,7 +110,7 @@ to be completed in a handful of PRs without architectural disruption.
 - Remove SSE use from single-job pages to simplify client code and remove cross-worker event-loss.
 - Frontend: `web/src/utils/job-events-hub.ts` gets a sibling `useJobPolling(jobId)` hook; migrate call sites incrementally.
 
-### 2.6 Reuse httpx clients
+### 2.6 Reuse httpx clients - DONE
 
 - Replace `async with httpx.AsyncClient()` in:
   - `artificial_u/services/lecture_images_generator_service.py:41`

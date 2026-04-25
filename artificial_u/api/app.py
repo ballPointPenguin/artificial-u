@@ -45,6 +45,7 @@ from artificial_u.api.tracemalloc_diag import (
 from artificial_u.api.utils.logging import setup_logging
 from artificial_u.api.worker import Worker
 from artificial_u.config.settings import Environment
+from artificial_u.services.http_client import close_shared_async_client
 
 
 def create_application() -> FastAPI:
@@ -124,6 +125,13 @@ def create_application() -> FastAPI:
             except Exception as e:
                 logger = logging.getLogger(__name__)
                 logger.warning(f"Error closing SSE connections: {e}")
+
+            # Close shared outbound HTTP client.
+            try:
+                await close_shared_async_client()
+            except Exception as e:
+                logger = logging.getLogger(__name__)
+                logger.warning(f"Error closing shared HTTP client: {e}")
 
             # Dispose of database engines to close connections
             try:
