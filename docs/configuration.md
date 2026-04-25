@@ -218,6 +218,13 @@ Important: because the API may run multiple Gunicorn workers per task, enable me
 - **`DIAG_CLOUDWATCH_METRICS_INTERVAL_SEC`**: Emission interval in seconds when enabled (default `60`).
 - **`CLOUDWATCH_NAMESPACE`**: CloudWatch namespace to publish metrics under (default `ArtificialU`).
 
+### One-off memory drift tracing (optional)
+
+For one-off investigations of suspected memory growth, you can enable `tracemalloc` and capture allocation diffs vs a baseline snapshot. When enabled, the API takes a baseline snapshot on startup and logs a diff on `SIGUSR1` (top 25 deltas).
+
+- **`DIAG_TRACEMALLOC`**: Set to `1` to enable (default off).
+- Send `SIGUSR1` to the process (e.g. `kill -USR1 <pid>`) to log the diff.
+
 ## Database Configuration
 
 Configure the PostgreSQL database connection:
@@ -258,6 +265,7 @@ TESTING=true
 | `DIAG_CLOUDWATCH_METRICS_LEADER` | Emit metrics only when set to `1` (avoid duplicates) | `0` (off) | No |
 | `DIAG_CLOUDWATCH_METRICS_INTERVAL_SEC` | Emission interval in seconds when enabled | `60` | No |
 | `CLOUDWATCH_NAMESPACE` | CloudWatch metrics namespace | `ArtificialU` | No |
+| `DIAG_TRACEMALLOC` | Enable one-off tracemalloc baseline + SIGUSR1 diffs (`1` on; `0` or unset off) | `0` (off) | No |
 | `content_backend` | Backend for content generation | `anthropic` | No |
 | `content_model` | Model for chosen backend | Depends on backend | No |
 | `COURSE_GENERATION_MODEL` | Model for course generation | `gpt-5.4-nano` | No |

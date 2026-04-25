@@ -226,6 +226,8 @@ class CdkStack(Stack):
             "DIAG_CLOUDWATCH_METRICS_LEADER": "0",
             "DIAG_CLOUDWATCH_METRICS_INTERVAL_SEC": "60",
             "CLOUDWATCH_NAMESPACE": "ArtificialU",
+            # Tracemalloc drift tracing: baseline snapshot at startup + SIGUSR1 diff logs.
+            "DIAG_TRACEMALLOC": "0",
             "COURSE_GENERATION_MODEL": "gpt-5.4-nano",
             "DEPARTMENT_GENERATION_MODEL": "gpt-5.4-nano",
             "ENV": "production",

@@ -37,6 +37,11 @@ from artificial_u.api.routers.topics import course_topics_router
 from artificial_u.api.routers.topics import router as topics_router
 from artificial_u.api.routers.voices import router as voice_router
 from artificial_u.api.telemetry import process_telemetry_loop
+from artificial_u.api.tracemalloc_diag import (
+    TracemallocDriftTracer,
+    install_tracemalloc_sigusr1_handler,
+    tracemalloc_enabled,
+)
 from artificial_u.api.utils.logging import setup_logging
 from artificial_u.api.worker import Worker
 from artificial_u.config.settings import Environment
@@ -67,6 +72,7 @@ def create_application() -> FastAPI:
 
         telemetry_task: asyncio.Task | None = None
         cloudwatch_task: asyncio.Task | None = None
+        tracer: TracemallocDriftTracer | None = None
         if os.environ.get("DIAG_PROCESS_METRICS", "").strip() == "1":
             try:
                 interval = float(os.environ.get("DIAG_PROCESS_METRICS_INTERVAL_SEC", "30"))
@@ -84,6 +90,14 @@ def create_application() -> FastAPI:
             app.state.default_executor = ThreadPoolExecutor(max_workers=8)
         loop.set_default_executor(app.state.default_executor)
         await worker.start()
+
+        if tracemalloc_enabled():
+            tracer = TracemallocDriftTracer(top_n=25, max_frames=25)
+            tracer.start()
+            # Capture baseline after worker start so imports + pools are stable.
+            tracer.set_baseline()
+            install_tracemalloc_sigusr1_handler(app, tracer)
+
         try:
             yield
         finally:
