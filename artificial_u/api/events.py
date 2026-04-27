@@ -110,7 +110,7 @@ async def _event_reader(events: AsyncIterator[Dict[str, Any]], event_queue: asyn
         await event_queue.put(_STREAM_CLOSED)
 
 
-async def sse_stream(
+async def sse_stream(  # noqa: C901
     hub: JobEventHub,
     *,
     request: Optional[Request] = None,

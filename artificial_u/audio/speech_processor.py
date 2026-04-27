@@ -51,7 +51,18 @@ class SpeechProcessor:
                 stripped = core.rstrip(" \t")
                 if stripped and any(ch.isalnum() for ch in stripped):
                     last_char = stripped[-1]
-                    if last_char not in pause_punct:
+                    bracket_match = re.search(r"\[([^\[\]]*)\]$", stripped)
+                    if bracket_match:
+                        inner_text = bracket_match.group(1).rstrip(" \t")
+                        if inner_text and inner_text[-1] not in pause_punct:
+                            insert_at = bracket_match.start(1) + len(inner_text)
+                            core = (
+                                stripped[:insert_at]
+                                + "."
+                                + stripped[insert_at:]
+                                + core[len(stripped) :]
+                            )
+                    elif last_char not in pause_punct:
                         core = stripped + "." + core[len(stripped) :]
 
                 out_lines.append(core + line_ending)
@@ -73,9 +84,8 @@ class SpeechProcessor:
             flags=re.IGNORECASE,
         )
 
-        # Handle em dashes and en dashes more aggressively
-        # Remove em dashes completely (they're usually just long pauses)
-        normalized_text = normalized_text.replace("—", " ")
+        # Keep em dashes, but prevent them from colliding with adjacent words.
+        normalized_text = normalized_text.replace("—", " — ")
 
         # Remove en dashes when they appear between words
         normalized_text = normalized_text.replace("–", " ")

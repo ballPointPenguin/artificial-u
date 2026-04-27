@@ -56,7 +56,7 @@ Instructions:
    - Student interactions and questions (optional) that match the playful, conversational tone
    - Examples, analogies, and vivid anecdotes
    - Stage directions in [brackets] that add concrete, unambiguous sensory or physical details
-     (e.g., [clicks to next slide: Mona Lisa], [sound of chalk on board], [walking down the aisles])
+     (e.g., [Clicks to next slide: Mona Lisa.], [Draws a formula on the chalkboard.])
      rather than abstract cues about tone or structure.
    - Do NOT include voice-related stage directions (e.g., "voice shifting to narrative tone",
      "voice becoming more intense", "voice dropping to a whisper") because the text-to-speech

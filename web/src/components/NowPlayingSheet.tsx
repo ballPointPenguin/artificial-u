@@ -48,7 +48,7 @@ const NowPlayingSheetPanel: Component<{ view: 'docked' | 'overlay' }> = (props) 
       aria-modal={isDocked() ? false : 'true'}
       class={
         isDocked()
-          ? 'flex min-h-0 w-[min(38rem,45vw)] max-w-full shrink-0 self-start sticky top-0 max-h-dvh flex-col border-l border-border bg-background text-foreground shadow-2xl'
+          ? 'flex h-dvh min-h-0 w-[min(38rem,45vw)] max-w-full shrink-0 self-start sticky top-0 max-h-dvh flex-col border-l border-border bg-background text-foreground shadow-2xl'
           : 'fixed inset-0 z-50 flex min-h-0 flex-col bg-background text-foreground shadow-2xl'
       }
     >
@@ -108,7 +108,7 @@ const NowPlayingSheetPanel: Component<{ view: 'docked' | 'overlay' }> = (props) 
       </header>
 
       {/* Body: stage stays pinned, captions scroll within themselves */}
-      <div class="flex-1 flex flex-col min-h-0 overflow-hidden px-4 sm:px-6 py-4 gap-4 bg-background">
+      <div class="flex flex-1 basis-0 flex-col min-h-0 overflow-hidden px-4 sm:px-6 py-4 gap-4 bg-background">
         <Show
           when={track().imagesTimelineUrl}
           fallback={

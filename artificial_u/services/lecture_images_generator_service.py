@@ -1,6 +1,7 @@
 import asyncio
 import json
 import logging
+import re
 import uuid
 from typing import Any, Dict, List, Optional
 
@@ -15,14 +16,12 @@ class LectureImagesGeneratorService:
     """
     Generate synced lecture slideshow images (admin-triggered).
 
-    v1 intentionally uses a simple scheduling strategy: slots are distributed
-    evenly across the lecture duration (derived from the forced-alignment
-    timeline when available). This is good enough to iterate on prompting and
-    UX; the slot-to-text mapping algorithm can be upgraded later without
-    changing storage format.
+    v1 intentionally keeps a simple text chunking strategy, then best-effort
+    maps each chunk to the forced-alignment word timeline for slide timing.
     """
 
     _timeline_locks: Dict[str, asyncio.Lock] = {}
+    _token_re = re.compile(r"[a-z0-9]+(?:'[a-z0-9]+)?")
 
     def __init__(
         self,
@@ -95,6 +94,141 @@ class LectureImagesGeneratorService:
             chunks = head + [tail]
 
         return chunks
+
+    def _normalize_tokens(self, text: str) -> List[str]:
+        return self._token_re.findall((text or "").lower())
+
+    def _timeline_words(self, timeline: Dict[str, Any]) -> List[Dict[str, Any]]:
+        words: List[Dict[str, Any]] = []
+        for event in timeline.get("events") or []:
+            token = " ".join(self._normalize_tokens(str(event.get("content") or "")))
+            if not token:
+                continue
+            words.append(
+                {
+                    "token": token,
+                    "start": float(event.get("start") or 0.0),
+                    "end": float(event.get("end") or 0.0),
+                }
+            )
+        return words
+
+    def _sequence_matches_at(
+        self, timeline_words: List[Dict[str, Any]], start_idx: int, sequence: List[str]
+    ) -> bool:
+        if start_idx + len(sequence) > len(timeline_words):
+            return False
+        return all(
+            timeline_words[start_idx + offset]["token"] == token
+            for offset, token in enumerate(sequence)
+        )
+
+    def _find_chunk_start(
+        self,
+        chunk_tokens: List[str],
+        timeline_words: List[Dict[str, Any]],
+        cursor: int,
+        *,
+        min_prefix_words: int = 5,
+        max_prefix_words: int = 12,
+    ) -> Optional[Dict[str, Any]]:
+        if not chunk_tokens or not timeline_words:
+            return None
+
+        max_prefix = min(max_prefix_words, len(chunk_tokens))
+        min_prefix = min(min_prefix_words, max_prefix)
+        best_candidates: List[int] = []
+        best_prefix_len = min_prefix
+
+        for prefix_len in range(min_prefix, max_prefix + 1):
+            sequence = chunk_tokens[:prefix_len]
+            candidates = [
+                idx
+                for idx in range(cursor, len(timeline_words) - prefix_len + 1)
+                if self._sequence_matches_at(timeline_words, idx, sequence)
+            ]
+            if len(candidates) == 1:
+                return {"word_idx": candidates[0], "prefix_len": prefix_len}
+            if candidates:
+                best_candidates = candidates
+                best_prefix_len = prefix_len
+
+        if best_candidates:
+            # The lecture is processed in order, so the first remaining match is usually correct.
+            return {"word_idx": best_candidates[0], "prefix_len": best_prefix_len}
+
+        return None
+
+    def _even_slots(self, duration: float, total: int) -> List[Dict[str, float]]:
+        return [
+            {
+                "start": (duration * i) / total,
+                "end": (duration * (i + 1)) / total,
+            }
+            for i in range(total)
+        ]
+
+    def _timeline_informed_slots(  # noqa: C901
+        self, chunks: List[str], timeline: Dict[str, Any], duration: float
+    ) -> List[Dict[str, float]]:
+        total = len(chunks)
+        fallback_slots = self._even_slots(duration, total)
+        timeline_words = self._timeline_words(timeline)
+        if not timeline_words:
+            return fallback_slots
+
+        matched_starts: List[Optional[float]] = []
+        cursor = 0
+        for chunk in chunks:
+            match = self._find_chunk_start(self._normalize_tokens(chunk), timeline_words, cursor)
+            if not match:
+                matched_starts.append(None)
+                continue
+
+            word_idx = int(match["word_idx"])
+            matched_starts.append(float(timeline_words[word_idx]["start"]))
+            cursor = word_idx + int(match["prefix_len"])
+
+        matched_indices = [idx for idx, start in enumerate(matched_starts) if start is not None]
+        if not matched_indices:
+            return fallback_slots
+
+        starts: List[float] = [0.0] * total
+        for idx in matched_indices:
+            starts[idx] = float(matched_starts[idx] or 0.0)
+
+        first_matched_idx = matched_indices[0]
+        first_matched_start = starts[first_matched_idx]
+        for i in range(first_matched_idx):
+            starts[i] = (first_matched_start * i) / max(1, first_matched_idx)
+
+        for previous_idx, next_idx in zip(matched_indices, matched_indices[1:]):
+            previous_start = starts[previous_idx]
+            next_start = starts[next_idx]
+            span = max(1, next_idx - previous_idx)
+            for i in range(previous_idx + 1, next_idx):
+                ratio = (i - previous_idx) / span
+                starts[i] = previous_start + ((next_start - previous_start) * ratio)
+
+        last_matched_idx = matched_indices[-1]
+        last_matched_start = starts[last_matched_idx]
+        trailing_span = max(1, total - last_matched_idx)
+        for i in range(last_matched_idx + 1, total):
+            ratio = (i - last_matched_idx) / trailing_span
+            starts[i] = last_matched_start + ((duration - last_matched_start) * ratio)
+
+        slots: List[Dict[str, float]] = []
+        for i in range(total):
+            start = starts[i]
+            end = starts[i + 1] if i + 1 < total else duration
+            if end <= start:
+                end = fallback_slots[i]["end"]
+            if end <= start:
+                end = min(duration, start + 1.0)
+
+            slots.append({"start": start, "end": end})
+
+        return slots
 
     def _timeline_lock(self, object_key: str) -> asyncio.Lock:
         lock = self._timeline_locks.get(object_key)
@@ -192,6 +326,7 @@ class LectureImagesGeneratorService:
         total = max(min_images, min(max_images, total))
 
         chunks = self._chunk_text(lecture.content, total)
+        slot_times = self._timeline_informed_slots(chunks, timeline, duration)
 
         resolved_model_name = model_name_override or getattr(self.image_service, "model_name", None)
         batch_id = str(uuid.uuid4())
@@ -199,8 +334,8 @@ class LectureImagesGeneratorService:
         # Build scaffold json and upload it first.
         slots: List[Dict[str, Any]] = []
         for i in range(total):
-            start = (duration * i) / total
-            end = (duration * (i + 1)) / total
+            start = slot_times[i]["start"]
+            end = slot_times[i]["end"]
             preview = (chunks[i] or "").replace("\n", " ").strip()[:180]
             slots.append(
                 {

@@ -53,10 +53,15 @@ class TestSpeechProcessor:
     @pytest.mark.unit
     def test_normalize_text_em_and_en_dashes(self, processor):
         """Test that em dashes and en dashes are properly handled."""
-        # Test em dash removal
+        # Test em dash spacing without removal
         input_text = "Real-time—or near real-time—processing"
         result = processor.normalize_text(input_text)
-        assert result == "Real time or near real time processing."
+        assert result == "Real time — or near real time — processing."
+
+        # Test that already-spaced em dashes are preserved
+        input_text = "Some — thing"
+        result = processor.normalize_text(input_text)
+        assert result == "Some — thing."
 
         # Test en dash removal
         input_text = "The range was 10–15 items"
@@ -66,7 +71,7 @@ class TestSpeechProcessor:
         # Test mixed dashes
         input_text = "Multi-level—both high–low processing"
         result = processor.normalize_text(input_text)
-        assert result == "Multi level both high low processing."
+        assert result == "Multi level — both high low processing."
 
     @pytest.mark.unit
     def test_normalize_text_markdown_headers(self, processor):
@@ -119,6 +124,10 @@ More content"""
         text3 = "Already punctuated?\nFine!"
         assert processor.normalize_text(text3) == "Already punctuated?\nFine!"
 
+        assert processor.normalize_text("[clicks to next slide]") == "[clicks to next slide.]"
+        assert processor.normalize_text("[clicks to next slide?]") == "[clicks to next slide?]"
+        assert processor.normalize_text("[clicks to next slide,]") == "[clicks to next slide,]"
+
     @pytest.mark.unit
     def test_normalize_text_complex_scenarios(self, processor):
         """Test complex real-world scenarios combining multiple normalization rules."""
@@ -133,16 +142,16 @@ More content"""
         result = processor.normalize_text(input_text)
 
         # Check that all transformations occurred
-        # Header removed, hyphenated words normalized
-        assert "Machine Learning A State of the Art Overview" in result
+        # Header removed, em dash spaced, hyphenated words normalized
+        assert "Machine Learning — A State of the Art Overview" in result
         # Hyphenated word normalized
         assert "Well being research" in result
-        # Em dashes removed, hyphenated words normalized
-        assert "real time or near real time processing" in result
+        # Em dashes spaced, hyphenated words normalized
+        assert "real time — or near real time — processing" in result
         # Prose dash removed
         assert "y = mx + b where m represents" in result
-        # Em and en dashes removed, hyphenated words normalized
-        assert "Multi layer both deep shallow models" in result
+        # Em dashes spaced, en dashes removed, hyphenated words normalized
+        assert "Multi layer — both deep shallow models" in result
         # Mathematical expression preserved
         assert "5 - 3 = 2" in result
 

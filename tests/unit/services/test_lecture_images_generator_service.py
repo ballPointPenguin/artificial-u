@@ -81,6 +81,40 @@ def make_service(*, storage=None, image_service=None):
     return service, storage, lecture_service, image_service
 
 
+def words(prefix, count):
+    return " ".join(f"{prefix}{i}" for i in range(count))
+
+
+def timeline_events(tokens, *, start_at=0.0, step=0.5):
+    return [
+        {
+            "type": "word",
+            "content": token,
+            "start": start_at + (idx * step),
+            "end": start_at + ((idx + 1) * step),
+        }
+        for idx, token in enumerate(tokens)
+    ]
+
+
+def test_find_chunk_start_grows_prefix_for_repeated_phrase():
+    service, _, _, _ = make_service()
+    timeline = {
+        "events": timeline_events(
+            "common phrase repeated in lecture alpha filler common phrase repeated in lecture beta".split()
+        )
+    }
+    timeline_words = service._timeline_words(timeline)
+
+    match = service._find_chunk_start(
+        "common phrase repeated in lecture beta".split(),
+        timeline_words,
+        cursor=0,
+    )
+
+    assert match == {"word_idx": 7, "prefix_len": 6}
+
+
 @pytest.mark.asyncio
 async def test_plan_lecture_images_uploads_scaffold_and_returns_slide_payloads():
     service, storage, lecture_service, _ = make_service()
@@ -103,6 +137,53 @@ async def test_plan_lecture_images_uploads_scaffold_and_returns_slide_payloads()
         lecture_id=123,
         update_data={"images_timeline_url": result["images_timeline_url"]},
     )
+
+
+@pytest.mark.asyncio
+async def test_plan_lecture_images_uses_timeline_word_matches_for_slot_times():
+    service, storage, _, _ = make_service()
+    lecture = service.lecture_service.get_lecture.return_value
+    first_chunk = words("alpha", 85)
+    second_chunk = words("beta", 85)
+    lecture.content = f"{first_chunk}\n\n{second_chunk}"
+    lecture.duration = 120
+    service._fetch_timeline = AsyncMock(
+        return_value={
+            "events": timeline_events(["intro", "padding"], start_at=0.0)
+            + timeline_events(first_chunk.split(), start_at=12.0)
+            + timeline_events(["bridge"], start_at=60.0)
+            + timeline_events(second_chunk.split(), start_at=72.0)
+        }
+    )
+
+    result = await service.plan_lecture_images(123, interval_sec=60, min_images=2, max_images=2)
+
+    timeline = json.loads(storage.uploads[result["object_key"]].decode("utf-8"))
+    assert timeline["slots"][0]["start"] == 12.0
+    assert timeline["slots"][0]["end"] == 72.0
+    assert timeline["slots"][1]["start"] == 72.0
+    assert timeline["slots"][1]["end"] == 120.0
+
+
+@pytest.mark.asyncio
+async def test_plan_lecture_images_falls_back_to_even_times_for_unmatched_chunks():
+    service, storage, _, _ = make_service()
+    lecture = service.lecture_service.get_lecture.return_value
+    first_chunk = words("alpha", 85)
+    second_chunk = words("beta", 85)
+    lecture.content = f"{first_chunk}\n\n{second_chunk}"
+    lecture.duration = 120
+    service._fetch_timeline = AsyncMock(
+        return_value={"events": timeline_events(["unrelated", "words"], start_at=10.0)}
+    )
+
+    result = await service.plan_lecture_images(123, interval_sec=60, min_images=2, max_images=2)
+
+    timeline = json.loads(storage.uploads[result["object_key"]].decode("utf-8"))
+    assert timeline["slots"][0]["start"] == 0.0
+    assert timeline["slots"][0]["end"] == 60.0
+    assert timeline["slots"][1]["start"] == 60.0
+    assert timeline["slots"][1]["end"] == 120.0
 
 
 @pytest.mark.asyncio
@@ -133,3 +214,40 @@ async def test_generate_lecture_slide_reuses_existing_uploaded_image():
     timeline = json.loads(storage.uploads[object_key].decode("utf-8"))
     assert timeline["slots"][1]["status"] == "done"
     assert timeline["slots"][1]["url"] == result["url"]
+
+
+@pytest.mark.asyncio
+async def test_generate_lecture_slide_passes_previous_slide_url_to_next_prompt():
+    storage = FakeStorageService()
+    service, _, _, image_service = make_service(storage=storage)
+    first_url = "https://storage.example/slide-0.png"
+    second_url = "https://storage.example/slide-1.png"
+    image_service.generate_lecture_slide_image.side_effect = [first_url, second_url]
+
+    planned = await service.plan_lecture_images(123, interval_sec=60, min_images=2, max_images=2)
+    object_key = planned["object_key"]
+
+    await service.generate_lecture_slide(
+        123,
+        slot_idx=0,
+        object_key=object_key,
+        batch_id=planned["batch_id"],
+        chunk_text="First paragraph.",
+        aspect_ratio="1:1",
+        model_name_override=None,
+    )
+    result = await service.generate_lecture_slide(
+        123,
+        slot_idx=1,
+        object_key=object_key,
+        batch_id=planned["batch_id"],
+        chunk_text="Second paragraph.",
+        previous_chunk_text="First paragraph.",
+        aspect_ratio="1:1",
+        model_name_override=None,
+    )
+
+    assert result["status"] == "done"
+    assert result["url"] == second_url
+    second_call = image_service.generate_lecture_slide_image.await_args_list[1]
+    assert second_call.kwargs["previous_slide_url"] == first_url

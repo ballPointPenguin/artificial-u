@@ -71,6 +71,41 @@ class JobService:
         jitter = random.uniform(0, 0.25 * base)
         return base + jitter
 
+    def _build_lecture_slide_chain(
+        self, slide_payloads: list[Dict[str, Any]], *, slide_priority: int
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Build a linked list of slide payloads so each slide can enqueue its successor
+        only after its image URL has been written to the shared timeline.
+        """
+        next_payload: Optional[Dict[str, Any]] = None
+        for slide_payload in reversed(slide_payloads):
+            current = dict(slide_payload)
+            current["slide_priority"] = slide_priority
+            if next_payload is not None:
+                current["next_slide_payload"] = next_payload
+            next_payload = current
+
+        return next_payload
+
+    def _enqueue_next_lecture_slide(
+        self, payload: Dict[str, Any], result: Dict[str, Any]
+    ) -> Optional[int]:
+        next_slide_payload = payload.get("next_slide_payload")
+        if not next_slide_payload:
+            return None
+        if result.get("status") != "done" or not result.get("url"):
+            return None
+
+        row = self.repository_factory.job.create(
+            kind="generate_lecture_slide",
+            payload=next_slide_payload,
+            priority=int(
+                next_slide_payload.get("slide_priority", payload.get("slide_priority", -10))
+            ),
+        )
+        return row.id
+
     # ---- Handlers ----
 
     def _get_handler(self, kind: str):
@@ -319,16 +354,20 @@ class JobService:
         )
         slide_payloads = result.pop("slide_payloads", [])
         slide_priority = int(payload.get("slide_priority", -10))
+        first_slide_payload = self._build_lecture_slide_chain(
+            slide_payloads, slide_priority=slide_priority
+        )
         job_ids = []
-        for slide_payload in slide_payloads:
+        if first_slide_payload:
             row = self.repository_factory.job.create(
                 kind="generate_lecture_slide",
-                payload=slide_payload,
+                payload=first_slide_payload,
                 priority=slide_priority,
             )
             job_ids.append(row.id)
 
         result["enqueued"] = len(job_ids)
+        result["chain_remaining"] = max(0, len(slide_payloads) - len(job_ids))
         result["slide_job_ids"] = job_ids
         return result
 
@@ -354,6 +393,9 @@ class JobService:
             aspect_ratio=payload.get("aspect_ratio", "1:1"),
             model_name_override=payload.get("model_name_override"),
         )
+        next_job_id = self._enqueue_next_lecture_slide(payload, result)
+        if next_job_id is not None:
+            result["next_slide_job_id"] = next_job_id
         return result
 
     async def _handle_generate_professor_image(self, payload: Dict[str, Any]) -> Dict[str, Any]:

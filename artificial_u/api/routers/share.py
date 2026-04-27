@@ -61,7 +61,7 @@ def _top_crop_to_aspect(img: Image.Image, *, aspect_w: int, aspect_h: int) -> Im
 
 
 @router.get("/share/og-image")
-async def share_og_image(
+async def share_og_image(  # noqa: C901
     src: str = "",
     http_client: httpx.AsyncClient = Depends(get_http_client),
 ):
