@@ -11,6 +11,7 @@ from aws_cdk import aws_ecr_assets as ecr_assets
 from aws_cdk import aws_ecs as ecs
 from aws_cdk import aws_ecs_patterns as ecs_patterns
 from aws_cdk import aws_iam as iam
+from aws_cdk import aws_logs as logs
 from aws_cdk import aws_rds as rds
 from aws_cdk import aws_route53 as route53
 from aws_cdk import aws_route53_targets as route53_targets
@@ -219,11 +220,11 @@ class CdkStack(Stack):
             "AUTH0_ALG": "RS256",
             "CORS_ORIGINS": f"https://{domain_name},https://{site_domain}",
             # Process telemetry (memory/GC/etc.); set to "1" only when diagnosing workers
-            "DIAG_PROCESS_METRICS": "0",
+            "DIAG_PROCESS_METRICS": "1",
             # CloudWatch custom metrics (queue health, SSE health, worker utilization).
             # Enable only on a single task/process to avoid duplicates.
-            "DIAG_CLOUDWATCH_METRICS": "0",
-            "DIAG_CLOUDWATCH_METRICS_LEADER": "0",
+            "DIAG_CLOUDWATCH_METRICS": "1",
+            "DIAG_CLOUDWATCH_METRICS_LEADER": "1",
             "DIAG_CLOUDWATCH_METRICS_INTERVAL_SEC": "60",
             "CLOUDWATCH_NAMESPACE": "ArtificialU",
             # Tracemalloc drift tracing: baseline snapshot at startup + SIGUSR1 diff logs.
@@ -277,6 +278,10 @@ class CdkStack(Stack):
                 "container_port": 8000,
                 "secrets": app_secrets,
                 "environment": app_environment,
+                "log_driver": ecs.LogDrivers.aws_logs(
+                    stream_prefix="api",
+                    log_retention=logs.RetentionDays.ONE_MONTH,
+                ),
             },
             public_load_balancer=True,  # Must be public for CloudFront to reach it
             listener_port=80,
