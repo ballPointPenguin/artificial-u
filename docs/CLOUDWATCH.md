@@ -57,10 +57,23 @@ The worker logs every reservation/start/done/fail line through
 - `worker_pid` (int)
 - `retry_in_sec`, `next_attempt` (on retries only)
 
-When `DIAG_PROCESS_METRICS=1`, the API emits a JSON line every
-`DIAG_PROCESS_METRICS_INTERVAL_SEC` (default 30s) with: `rss_mb`, `vms_mb`,
-`num_fds`, `num_threads`, `gc_counts`, `active_sse_streams`,
-`job_semaphore_in_use`, `pid`.
+When `DIAG_PROCESS_METRICS=1`, [`artificial_u/api/telemetry.py`](../artificial_u/api/telemetry.py)
+emits one log line every `DIAG_PROCESS_METRICS_INTERVAL_SEC` (default 30s) of
+the form:
+
+```
+process_telemetry {"ts": "...", "pid": 7, "ppid": 1, "platform": "linux",
+  "python": "3.13.x", "rss_bytes": 524288000, "vms_bytes": 1234567890,
+  "num_threads": 17, "num_fds": 42, "gc_counts": [0, 0, 0],
+  "sse_subscribers": 0, "worker_semaphore_available": 4,
+  "worker_semaphore_in_use": 0}
+```
+
+Important: the JSON payload lives **inside** the outer log envelope's `message`
+field as a string — the keys are NOT promoted to top-level Logs Insights
+fields. Queries must use `parse message /.../` to extract values (see examples
+below). Also note the units: `rss_bytes` and `vms_bytes` are in bytes, not
+megabytes — divide by `1048576` for MB.
 
 ### IAM
 
@@ -91,13 +104,17 @@ Widgets:
 
 Only useful while `DIAG_PROCESS_METRICS=1`.
 
-Widgets:
+Widgets are all Logs Insights queries (these are not CloudWatch metrics — the
+fields live inside the `message` string and must be parsed out per query):
 
-- `rss_mb` per `pid` (one line per Gunicorn worker — watch for monotonic climb).
+- `rss_bytes` per `pid` (one line per Gunicorn worker — watch for monotonic climb). Divide by `1048576` for MB.
 - `num_fds` per `pid` (file-descriptor leaks show up here).
 - `num_threads` per `pid`.
-- `gc_counts` deltas.
-- `active_sse_streams` and `job_semaphore_in_use` (sanity-check correlation with HTTP load).
+- `gc_counts` (parse the array; track gen-2 collections especially).
+- `sse_subscribers` and `worker_semaphore_in_use` (sanity-check correlation with HTTP load).
+
+If any of these graduate to first-class CloudWatch metrics later, fold them
+into the Job-queue dashboard instead.
 
 Use this to settle the open question in §5.1 of the evolution plan ("is memory
 actually leaking?"). If RSS plateaus over 24h, it's steady-state heavy, not a
@@ -190,12 +207,28 @@ fields @timestamp, kind, duration_ms
 
 ### Per-worker memory drift (when `DIAG_PROCESS_METRICS=1`)
 
+The telemetry payload is embedded as JSON inside `message` ("process_telemetry
+{...}"), so values must be parsed out with regex. Bytes are converted to MB in
+the projection.
+
 ```
-fields @timestamp, pid, rss_mb, num_fds, num_threads
-| filter ispresent(rss_mb)
-| stats max(rss_mb) as peak_rss, max(num_fds) as peak_fds by bin(5m), pid
+filter logger = "artificial_u.api.telemetry" and message like /process_telemetry/
+| parse message /"pid":\s*(?<pid>\d+)/
+| parse message /"rss_bytes":\s*(?<rss_bytes>\d+)/
+| parse message /"num_fds":\s*(?<num_fds>\d+)/
+| parse message /"num_threads":\s*(?<num_threads>\d+)/
+| parse message /"sse_subscribers":\s*(?<sse_subscribers>\d+)/
+| parse message /"worker_semaphore_in_use":\s*(?<worker_inflight>\d+)/
+| stats max(rss_bytes / 1048576) as peak_rss_mb,
+        max(num_fds) as peak_fds,
+        max(num_threads) as peak_threads,
+        max(worker_inflight) as peak_inflight
+        by bin(5m), pid
 | sort @timestamp asc
 ```
+
+For a single-pid trend chart, drop the `pid` group-by and add
+`filter pid = "7"` (or whichever PID).
 
 ### Retry storms
 
