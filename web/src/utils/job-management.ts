@@ -296,6 +296,13 @@ export function getJobMessage(
       failed: 'Lecture image planning failed',
       cancelled: 'Lecture image planning cancelled',
     },
+    remap_lecture_images_timeline: {
+      queued: 'Lecture image timeline remap queued...',
+      running: 'Remapping lecture image timeline...',
+      done: 'Lecture image timeline remapped successfully!',
+      failed: 'Lecture image timeline remap failed',
+      cancelled: 'Lecture image timeline remap cancelled',
+    },
     generate_lecture_slide: {
       queued: 'Lecture image generation queued...',
       running: 'Generating lecture image...',

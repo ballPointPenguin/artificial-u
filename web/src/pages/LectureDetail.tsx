@@ -45,6 +45,12 @@ const LectureDetailView: Component<{
   const [timelineError, setTimelineError] = createSignal('')
   const [isGeneratingImages, setIsGeneratingImages] = createSignal(false)
   const [imagesError, setImagesError] = createSignal('')
+  const confirmRegeneration = (message: string) => window.confirm(message)
+  const uploadAudioDisabled = () =>
+    props.isUploadingAudio ||
+    props.isGeneratingAudio ||
+    props.isJobActive ||
+    Boolean(props.lecture.content)
 
   const handleGenerateTimeline = async () => {
     setIsGeneratingTimeline(true)
@@ -162,6 +168,14 @@ const LectureDetailView: Component<{
                 size="sm"
                 class="min-h-[44px] sm:min-h-[32px] w-full sm:w-auto flex items-center justify-center whitespace-nowrap"
                 onClick={() => {
+                  if (
+                    props.lecture.audio_url &&
+                    !confirmRegeneration(
+                      'Regenerate audio? This replaces the lecture audio and will regenerate the word timeline, then remap the existing lecture image timeline.'
+                    )
+                  ) {
+                    return
+                  }
                   void props.onGenerateAudio()
                 }}
                 disabled={props.isGeneratingAudio || props.isUploadingAudio}
@@ -178,7 +192,17 @@ const LectureDetailView: Component<{
                     variant="primary"
                     size="sm"
                     class="min-h-[44px] sm:min-h-[32px] w-full sm:w-auto flex items-center justify-center whitespace-nowrap"
-                    onClick={() => void handleGenerateTimeline()}
+                    onClick={() => {
+                      if (
+                        props.lecture.timeline_url &&
+                        !confirmRegeneration(
+                          'Regenerate timeline? This replaces the word timeline and will remap the existing lecture image timeline without regenerating images.'
+                        )
+                      ) {
+                        return
+                      }
+                      void handleGenerateTimeline()
+                    }}
                     disabled={isGeneratingTimeline() || props.isJobActive}
                   >
                     {isGeneratingTimeline()
@@ -193,7 +217,17 @@ const LectureDetailView: Component<{
                     variant="primary"
                     size="sm"
                     class="min-h-[44px] sm:min-h-[32px] w-full sm:w-auto flex items-center justify-center whitespace-nowrap"
-                    onClick={() => void handleGenerateImages()}
+                    onClick={() => {
+                      if (
+                        props.lecture.images_timeline_url &&
+                        !confirmRegeneration(
+                          'Regenerate lecture images? This will delete existing slide images where possible and create a new image timeline with newly generated images.'
+                        )
+                      ) {
+                        return
+                      }
+                      void handleGenerateImages()
+                    }}
                     disabled={isGeneratingImages() || props.isJobActive}
                   >
                     {isGeneratingImages()
@@ -207,9 +241,13 @@ const LectureDetailView: Component<{
                   for="audio-file-upload"
                   class="inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium rounded-md border border-mystic-600 bg-mystic-900/20 text-mystic-300 hover:bg-mystic-900/40 hover:border-mystic-500 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px] sm:min-h-[32px] w-full sm:w-auto"
                   classList={{
-                    'opacity-50 cursor-not-allowed':
-                      props.isUploadingAudio || props.isGeneratingAudio,
+                    'opacity-50 cursor-not-allowed': uploadAudioDisabled(),
                   }}
+                  title={
+                    props.lecture.content
+                      ? 'Upload is disabled once lecture text exists.'
+                      : undefined
+                  }
                 >
                   <Upload class="h-4 w-4" />
                   <span>
@@ -223,7 +261,7 @@ const LectureDetailView: Component<{
                   type="file"
                   accept="audio/mpeg,audio/mp3,.mp3"
                   class="hidden"
-                  disabled={props.isUploadingAudio || props.isGeneratingAudio}
+                  disabled={uploadAudioDisabled()}
                   onChange={(e) => {
                     const file = e.target.files?.[0]
                     if (file) {
@@ -365,6 +403,7 @@ const LectureDetail = () => {
       'generate_lecture_text_only',
       'generate_lecture_audio',
       'generate_lecture_timeline',
+      'remap_lecture_images_timeline',
       'generate_lecture_images',
       'generate_lecture_slide',
       'generate_lecture_summary',

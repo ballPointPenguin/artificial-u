@@ -3,13 +3,18 @@ import json
 import logging
 import re
 import uuid
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Set
 
 import httpx
 
 from artificial_u.services.http_client import get_shared_async_client
 from artificial_u.services.image_service import ImageService
 from artificial_u.services.storage_service import StorageService
+
+DEFAULT_LECTURE_IMAGE_INTERVAL_SEC = 30
+DEFAULT_LECTURE_IMAGE_MIN_IMAGES = 6
+DEFAULT_LECTURE_IMAGE_MAX_IMAGES = 40
+DEFAULT_LECTURE_IMAGE_ASPECT_RATIO = "1:1"
 
 
 class LectureImagesGeneratorService:
@@ -58,40 +63,85 @@ class LectureImagesGeneratorService:
         # timeline uses seconds (floats)
         return float(max((e.get("end") or 0.0) for e in events))
 
+    def _split_words_evenly(self, text: str, n: int) -> List[str]:
+        words = text.split()
+        if n <= 0:
+            return []
+        if not words:
+            return [""] * n
+
+        non_empty_chunks = min(n, len(words))
+        chunks = []
+        for i in range(non_empty_chunks):
+            start = (len(words) * i) // non_empty_chunks
+            end = (len(words) * (i + 1)) // non_empty_chunks
+            chunks.append(" ".join(words[start:end]).strip())
+
+        if len(chunks) < n:
+            chunks.extend([""] * (n - len(chunks)))
+        return chunks
+
+    def _allocate_chunks_for_short_paragraph_list(
+        self, word_counts: List[int], n: int
+    ) -> List[int]:
+        paragraph_count = len(word_counts)
+        allocations = [1] * paragraph_count
+        extras = max(0, n - paragraph_count)
+        total_words = sum(word_counts) or paragraph_count
+
+        weighted_extras = [(extras * (word_count or 1)) / total_words for word_count in word_counts]
+        floors = [int(extra) for extra in weighted_extras]
+        capacities = [max(1, word_count) - 1 for word_count in word_counts]
+
+        for i, floor in enumerate(floors):
+            add = min(floor, capacities[i])
+            allocations[i] += add
+            capacities[i] -= add
+
+        remaining = extras - sum(allocation - 1 for allocation in allocations)
+        remainders = sorted(
+            range(paragraph_count),
+            key=lambda i: weighted_extras[i] - floors[i],
+            reverse=True,
+        )
+        while remaining > 0 and any(capacity > 0 for capacity in capacities):
+            for i in remainders:
+                if remaining <= 0:
+                    break
+                if capacities[i] <= 0:
+                    continue
+                allocations[i] += 1
+                capacities[i] -= 1
+                remaining -= 1
+
+        return allocations
+
     def _chunk_text(self, text: str, n: int) -> List[str]:
-        # Paragraph-first chunking, then fallback to word chunking.
         paragraphs = [p.strip() for p in (text or "").split("\n\n") if p.strip()]
+        if n <= 0:
+            return []
         if not paragraphs:
             return [""] * n
 
-        total_words = sum(len(p.split()) for p in paragraphs) or 1
-        target_words = max(80, total_words // max(1, n))
+        paragraph_count = len(paragraphs)
+        if paragraph_count >= n:
+            chunks = []
+            for i in range(n):
+                start = (paragraph_count * i) // n
+                end = (paragraph_count * (i + 1)) // n
+                chunks.append("\n\n".join(paragraphs[start:end]).strip())
+            return chunks
 
+        word_counts = [len(paragraph.split()) for paragraph in paragraphs]
+        allocations = self._allocate_chunks_for_short_paragraph_list(word_counts, n)
         chunks: List[str] = []
-        buf: List[str] = []
-        buf_words = 0
+        for paragraph, chunk_count in zip(paragraphs, allocations):
+            chunks.extend(self._split_words_evenly(paragraph, chunk_count))
 
-        for p in paragraphs:
-            w = len(p.split())
-            if buf and buf_words + w > target_words and len(chunks) < n - 1:
-                chunks.append("\n\n".join(buf).strip())
-                buf = []
-                buf_words = 0
-
-            buf.append(p)
-            buf_words += w
-
-        if buf:
-            chunks.append("\n\n".join(buf).strip())
-
-        # Normalize length to exactly n.
         if len(chunks) < n:
             chunks.extend([""] * (n - len(chunks)))
         elif len(chunks) > n:
-            # Merge extras into the last chunk.
-            head = chunks[: n - 1]
-            tail = "\n\n".join(chunks[n - 1 :]).strip()
-            chunks = head + [tail]
+            chunks = chunks[: n - 1] + [" ".join(chunks[n - 1 :]).strip()]
 
         return chunks
 
@@ -264,6 +314,62 @@ class LectureImagesGeneratorService:
                 return slot
         return None
 
+    def _slot_urls_by_index(self, images_timeline: Optional[Dict[str, Any]]) -> Dict[int, str]:
+        if not images_timeline:
+            return {}
+
+        urls: Dict[int, str] = {}
+        for slot in images_timeline.get("slots") or []:
+            url = slot.get("url")
+            if not url:
+                continue
+            try:
+                urls[int(slot.get("index"))] = str(url)
+            except TypeError, ValueError:
+                continue
+        return urls
+
+    async def _delete_slide_urls(self, urls: List[str]) -> int:
+        deleted = 0
+        seen: Set[str] = set()
+        for url in urls:
+            if not url or url in seen:
+                continue
+            seen.add(url)
+            bucket, object_key = self.storage_service.parse_storage_url(url)
+            if not bucket or not object_key:
+                self.logger.warning(
+                    "Skipping unparseable lecture image URL during cleanup: %s", url
+                )
+                continue
+            if bucket != self.storage_service.images_bucket:
+                self.logger.warning(
+                    "Skipping lecture image cleanup outside images bucket: %s/%s",
+                    bucket,
+                    object_key,
+                )
+                continue
+            if await self.storage_service.delete_file(bucket, object_key):
+                deleted += 1
+        return deleted
+
+    async def _delete_images_timeline_url(self, url: Optional[str]) -> bool:
+        if not url:
+            return False
+
+        bucket, object_key = self.storage_service.parse_storage_url(url)
+        if not bucket or not object_key:
+            self.logger.warning("Skipping unparseable lecture images timeline URL: %s", url)
+            return False
+        if bucket != self.storage_service.lectures_bucket:
+            self.logger.warning(
+                "Skipping lecture images timeline cleanup outside lectures bucket: %s/%s",
+                bucket,
+                object_key,
+            )
+            return False
+        return await self.storage_service.delete_file(bucket, object_key)
+
     async def _update_slot(
         self,
         object_key: str,
@@ -294,15 +400,16 @@ class LectureImagesGeneratorService:
             await self._upload_images_timeline(object_key, images_timeline)
             return images_timeline
 
-    async def plan_lecture_images(
+    async def _build_images_timeline_plan(
         self,
         lecture_id: int,
         *,
-        interval_sec: int = 30,
-        min_images: int = 6,
-        max_images: int = 40,
-        aspect_ratio: str = "1:1",
-        model_name_override: Optional[str] = None,
+        interval_sec: int,
+        min_images: int,
+        max_images: int,
+        aspect_ratio: str,
+        model_name_override: Optional[str],
+        existing_urls_by_index: Optional[Dict[int, str]] = None,
     ) -> Dict[str, Any]:
         lecture = self.lecture_service.get_lecture(lecture_id)
         if not lecture.timeline_url:
@@ -330,21 +437,22 @@ class LectureImagesGeneratorService:
 
         resolved_model_name = model_name_override or getattr(self.image_service, "model_name", None)
         batch_id = str(uuid.uuid4())
+        existing_urls_by_index = existing_urls_by_index or {}
 
-        # Build scaffold json and upload it first.
         slots: List[Dict[str, Any]] = []
         for i in range(total):
             start = slot_times[i]["start"]
             end = slot_times[i]["end"]
             preview = (chunks[i] or "").replace("\n", " ").strip()[:180]
+            existing_url = existing_urls_by_index.get(i)
             slots.append(
                 {
                     "index": i,
                     "start": round(start, 3),
                     "end": round(end, 3),
                     "chunk_preview": preview,
-                    "url": None,
-                    "status": "pending",
+                    "url": existing_url,
+                    "status": "done" if existing_url else "pending",
                     "model": resolved_model_name,
                 }
             )
@@ -372,11 +480,46 @@ class LectureImagesGeneratorService:
         if not images_timeline_url:
             raise RuntimeError("Failed to upload lecture images timeline")
 
-        # Persist URL immediately so UI can show placeholders.
         self.lecture_service.update_lecture(
             lecture_id=lecture_id,
             update_data={"images_timeline_url": images_timeline_url},
         )
+
+        return {
+            "lecture": lecture,
+            "images_timeline_url": images_timeline_url,
+            "object_key": object_key,
+            "batch_id": batch_id,
+            "total": total,
+            "chunks": chunks,
+            "preserved_images": sum(1 for i in range(total) if existing_urls_by_index.get(i)),
+        }
+
+    async def plan_lecture_images(
+        self,
+        lecture_id: int,
+        *,
+        interval_sec: int = DEFAULT_LECTURE_IMAGE_INTERVAL_SEC,
+        min_images: int = DEFAULT_LECTURE_IMAGE_MIN_IMAGES,
+        max_images: int = DEFAULT_LECTURE_IMAGE_MAX_IMAGES,
+        aspect_ratio: str = DEFAULT_LECTURE_IMAGE_ASPECT_RATIO,
+        model_name_override: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        lecture = self.lecture_service.get_lecture(lecture_id)
+        deleted_images_timeline = await self._delete_images_timeline_url(
+            getattr(lecture, "images_timeline_url", None)
+        )
+        plan = await self._build_images_timeline_plan(
+            lecture_id,
+            interval_sec=interval_sec,
+            min_images=min_images,
+            max_images=max_images,
+            aspect_ratio=aspect_ratio,
+            model_name_override=model_name_override,
+        )
+        lecture = plan["lecture"]
+        total = plan["total"]
+        chunks = plan["chunks"]
 
         slide_payloads: List[Dict[str, Any]] = []
         for i in range(total):
@@ -384,11 +527,11 @@ class LectureImagesGeneratorService:
                 {
                     "lecture_id": lecture_id,
                     "topic_id": getattr(lecture, "topic_id", None),
-                    "batch_id": batch_id,
+                    "batch_id": plan["batch_id"],
                     "slot_idx": i,
                     "total": total,
-                    "object_key": object_key,
-                    "images_timeline_url": images_timeline_url,
+                    "object_key": plan["object_key"],
+                    "images_timeline_url": plan["images_timeline_url"],
                     "aspect_ratio": aspect_ratio,
                     "model_name_override": model_name_override,
                     "chunk_text": chunks[i],
@@ -398,13 +541,79 @@ class LectureImagesGeneratorService:
 
         return {
             "lecture_id": lecture_id,
-            "images_timeline_url": images_timeline_url,
-            "object_key": object_key,
-            "batch_id": batch_id,
+            "images_timeline_url": plan["images_timeline_url"],
+            "object_key": plan["object_key"],
+            "batch_id": plan["batch_id"],
             "total": total,
             "planned": total,
+            "deleted_images_timeline": deleted_images_timeline,
             "slide_payloads": slide_payloads,
         }
+
+    async def remap_lecture_images_timeline(
+        self,
+        lecture_id: int,
+        *,
+        interval_sec: int = DEFAULT_LECTURE_IMAGE_INTERVAL_SEC,
+        min_images: int = DEFAULT_LECTURE_IMAGE_MIN_IMAGES,
+        max_images: int = DEFAULT_LECTURE_IMAGE_MAX_IMAGES,
+        aspect_ratio: str = DEFAULT_LECTURE_IMAGE_ASPECT_RATIO,
+        model_name_override: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        lecture = self.lecture_service.get_lecture(lecture_id)
+        existing_timeline = None
+        existing_object_key = None
+        if getattr(lecture, "images_timeline_url", None):
+            _, existing_object_key = self.storage_service.parse_storage_url(
+                lecture.images_timeline_url
+            )
+            if existing_object_key:
+                try:
+                    existing_timeline = await self._load_images_timeline(existing_object_key)
+                except Exception as e:  # noqa: BLE001
+                    self.logger.warning(
+                        "Could not load existing image timeline for lecture %s: %s",
+                        lecture_id,
+                        e,
+                    )
+
+        existing_urls_by_index = self._slot_urls_by_index(existing_timeline)
+        deleted_images_timeline = await self._delete_images_timeline_url(
+            getattr(lecture, "images_timeline_url", None)
+        )
+        plan = await self._build_images_timeline_plan(
+            lecture_id,
+            interval_sec=interval_sec,
+            min_images=min_images,
+            max_images=max_images,
+            aspect_ratio=aspect_ratio,
+            model_name_override=model_name_override,
+            existing_urls_by_index=existing_urls_by_index,
+        )
+        return {
+            "lecture_id": lecture_id,
+            "images_timeline_url": plan["images_timeline_url"],
+            "object_key": plan["object_key"],
+            "batch_id": plan["batch_id"],
+            "total": plan["total"],
+            "remapped": plan["total"],
+            "preserved_images": plan["preserved_images"],
+            "deleted_images_timeline": deleted_images_timeline,
+        }
+
+    async def delete_existing_lecture_images(self, lecture_id: int) -> Dict[str, Any]:
+        lecture = self.lecture_service.get_lecture(lecture_id)
+        if not getattr(lecture, "images_timeline_url", None):
+            return {"lecture_id": lecture_id, "deleted": 0, "skipped": "no_images_timeline_url"}
+
+        _, object_key = self.storage_service.parse_storage_url(lecture.images_timeline_url)
+        if not object_key:
+            return {"lecture_id": lecture_id, "deleted": 0, "skipped": "unparseable_timeline_url"}
+
+        images_timeline = await self._load_images_timeline(object_key)
+        urls = list(self._slot_urls_by_index(images_timeline).values())
+        deleted = await self._delete_slide_urls(urls)
+        return {"lecture_id": lecture_id, "deleted": deleted}
 
     async def generate_lecture_slide(
         self,
@@ -415,7 +624,7 @@ class LectureImagesGeneratorService:
         batch_id: Optional[str],
         chunk_text: str,
         previous_chunk_text: Optional[str] = None,
-        aspect_ratio: str = "1:1",
+        aspect_ratio: str = DEFAULT_LECTURE_IMAGE_ASPECT_RATIO,
         model_name_override: Optional[str] = None,
     ) -> Dict[str, Any]:
         lecture = self.lecture_service.get_lecture(lecture_id)

@@ -514,6 +514,28 @@ class LectureGeneratorService:
                 f"Failed to download audio file from {bucket}/{object_key}"
             )
 
+        deleted_existing_timeline = False
+        if getattr(lecture, "timeline_url", None):
+            timeline_bucket, timeline_object_key = storage_service.parse_storage_url(
+                lecture.timeline_url
+            )
+            if timeline_bucket and timeline_object_key:
+                if timeline_bucket == storage_service.lectures_bucket:
+                    deleted_existing_timeline = await storage_service.delete_file(
+                        timeline_bucket, timeline_object_key
+                    )
+                else:
+                    self.logger.warning(
+                        "Skipping lecture timeline cleanup outside lectures bucket: %s/%s",
+                        timeline_bucket,
+                        timeline_object_key,
+                    )
+            else:
+                self.logger.warning(
+                    "Skipping unparseable lecture timeline URL during regeneration: %s",
+                    lecture.timeline_url,
+                )
+
         # 3. Generate and upload timeline
         timeline_url = None
         try:
@@ -543,6 +565,7 @@ class LectureGeneratorService:
             "lecture_id": updated.id,
             "topic_id": updated.topic_id,
             "timeline_url": updated.timeline_url,
+            "deleted_existing_timeline": deleted_existing_timeline,
         }
 
     # --- Helper Methods for Generation --- #

@@ -60,6 +60,7 @@ export const LectureSection: Component<LectureSectionProps> = (props) => {
       'generate_lecture_text_only',
       'generate_lecture_audio',
       'generate_lecture_timeline',
+      'remap_lecture_images_timeline',
       'generate_lecture_images',
       'generate_lecture_slide',
       'generate_lecture_summary',
@@ -74,6 +75,9 @@ export const LectureSection: Component<LectureSectionProps> = (props) => {
         setAudioError('')
       } else if (event.kind === 'generate_lecture_timeline') {
         setTimelineError('')
+      } else if (event.kind === 'remap_lecture_images_timeline') {
+        setTimelineError('')
+        setImagesError('')
       } else if (
         event.kind === 'generate_lecture_images' ||
         event.kind === 'generate_lecture_slide'
@@ -98,6 +102,8 @@ export const LectureSection: Component<LectureSectionProps> = (props) => {
         setSummaryError(getJobMessage(event.kind, 'failed'))
       } else if (event.kind === 'generate_lecture_timeline') {
         setTimelineError(getJobMessage(event.kind, 'failed'))
+      } else if (event.kind === 'remap_lecture_images_timeline') {
+        setImagesError(getJobMessage(event.kind, 'failed'))
       } else if (
         event.kind === 'generate_lecture_images' ||
         event.kind === 'generate_lecture_slide'
@@ -122,6 +128,11 @@ export const LectureSection: Component<LectureSectionProps> = (props) => {
     const generatingLecture = props.isGeneratingLecture
     return trackerActive || externalActive || generatingLecture
   }
+
+  const confirmRegeneration = (message: string) => window.confirm(message)
+
+  const uploadAudioDisabled = () =>
+    isUploadingAudio() || anyJobActive() || Boolean(props.lecture()?.content)
 
   const handleDeleteLecture = async () => {
     const lecture = props.lecture()
@@ -360,7 +371,17 @@ export const LectureSection: Component<LectureSectionProps> = (props) => {
                     variant="primary"
                     size="sm"
                     class="min-h-[44px] sm:min-h-[32px] w-full sm:w-auto flex items-center justify-center"
-                    onClick={() => void handleGenerateAudio()}
+                    onClick={() => {
+                      if (
+                        lectureData().audio_url &&
+                        !confirmRegeneration(
+                          'Regenerate audio? This replaces the lecture audio and will regenerate the word timeline, then remap the existing lecture image timeline.'
+                        )
+                      ) {
+                        return
+                      }
+                      void handleGenerateAudio()
+                    }}
                     disabled={isGeneratingAudio() || anyJobActive() || isUploadingAudio()}
                   >
                     {isGeneratingAudio()
@@ -375,7 +396,17 @@ export const LectureSection: Component<LectureSectionProps> = (props) => {
                         variant="primary"
                         size="sm"
                         class="min-h-[44px] sm:min-h-[32px] w-full sm:w-auto flex items-center justify-center"
-                        onClick={() => void handleGenerateTimeline()}
+                        onClick={() => {
+                          if (
+                            lectureData().timeline_url &&
+                            !confirmRegeneration(
+                              'Regenerate timeline? This replaces the word timeline and will remap the existing lecture image timeline without regenerating images.'
+                            )
+                          ) {
+                            return
+                          }
+                          void handleGenerateTimeline()
+                        }}
                         disabled={isGeneratingTimeline() || anyJobActive()}
                       >
                         {isGeneratingTimeline()
@@ -390,7 +421,17 @@ export const LectureSection: Component<LectureSectionProps> = (props) => {
                         variant="primary"
                         size="sm"
                         class="min-h-[44px] sm:min-h-[32px] w-full sm:w-auto flex items-center justify-center"
-                        onClick={() => void handleGenerateImages()}
+                        onClick={() => {
+                          if (
+                            lectureData().images_timeline_url &&
+                            !confirmRegeneration(
+                              'Regenerate lecture images? This will delete existing slide images where possible and create a new image timeline with newly generated images.'
+                            )
+                          ) {
+                            return
+                          }
+                          void handleGenerateImages()
+                        }}
                         disabled={isGeneratingImages() || anyJobActive()}
                       >
                         {isGeneratingImages()
@@ -404,8 +445,13 @@ export const LectureSection: Component<LectureSectionProps> = (props) => {
                       for={`audio-file-upload-${String(lectureData().id)}`}
                       class="inline-flex items-center justify-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md border border-mystic-600 bg-mystic-900/20 text-mystic-300 hover:bg-mystic-900/40 hover:border-mystic-500 transition-colors cursor-pointer min-h-[44px] sm:min-h-[32px] w-full sm:w-auto"
                       classList={{
-                        'opacity-50 cursor-not-allowed': isUploadingAudio() || anyJobActive(),
+                        'opacity-50 cursor-not-allowed': uploadAudioDisabled(),
                       }}
+                      title={
+                        lectureData().content
+                          ? 'Upload is disabled once lecture text exists.'
+                          : undefined
+                      }
                     >
                       <Upload class="h-4 w-4" />
                       <span>{isUploadingAudio() ? 'Uploading...' : 'Upload'}</span>
@@ -415,7 +461,7 @@ export const LectureSection: Component<LectureSectionProps> = (props) => {
                       type="file"
                       accept="audio/mpeg,audio/mp3,.mp3"
                       class="hidden"
-                      disabled={isUploadingAudio() || anyJobActive()}
+                      disabled={uploadAudioDisabled()}
                       onChange={(e) => {
                         const file = e.target.files?.[0]
                         if (file) {

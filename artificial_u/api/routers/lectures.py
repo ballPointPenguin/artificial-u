@@ -568,7 +568,10 @@ async def enqueue_generate_lecture_images(
             detail=f"Lecture {lecture_id} has no timeline_url (generate timeline first)",
         )
 
-    payload = {"lecture_id": lecture_id}
+    payload = {
+        "lecture_id": lecture_id,
+        "delete_existing_images": bool(getattr(lecture, "images_timeline_url", None)),
+    }
 
     row = repository_factory.job.create(
         kind="generate_lecture_images",

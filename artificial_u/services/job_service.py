@@ -2,6 +2,10 @@ import logging
 from typing import Any, Dict, Optional
 
 from artificial_u.models.repositories.factory import RepositoryFactory
+from artificial_u.services.lecture_images_generator_service import (
+    DEFAULT_LECTURE_IMAGE_ASPECT_RATIO,
+    DEFAULT_LECTURE_IMAGE_INTERVAL_SEC,
+)
 
 
 class JobService:
@@ -121,6 +125,7 @@ class JobService:
             "generate_lecture_summary": self._handle_generate_lecture_summary,
             "generate_lecture_audio": self._handle_generate_lecture_audio,
             "generate_lecture_timeline": self._handle_generate_lecture_timeline,
+            "remap_lecture_images_timeline": self._handle_remap_lecture_images_timeline,
             "generate_lecture_images": self._handle_generate_lecture_images,
             "generate_lecture_slide": self._handle_generate_lecture_slide,
             "generate_professor_image": self._handle_generate_professor_image,
@@ -336,6 +341,34 @@ class JobService:
         if lecture_id is None:
             raise ValueError("lecture_id is required")
         result = await service.generate_lecture_timeline(lecture_id)
+        lecture = self.repository_factory.lecture.get(lecture_id)
+        if payload.get("remap_images_timeline", True) and getattr(
+            lecture, "images_timeline_url", None
+        ):
+            row = self.repository_factory.job.create(
+                kind="remap_lecture_images_timeline",
+                payload={
+                    "lecture_id": lecture_id,
+                    "topic_id": payload.get("topic_id") or getattr(lecture, "topic_id", None),
+                },
+                priority=int(payload.get("priority", 0)),
+            )
+            result["remap_images_timeline_job_id"] = row.id
+        return result
+
+    async def _handle_remap_lecture_images_timeline(
+        self, payload: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        service = self._lecture_images_generator_service_instance()
+        lecture_id = payload.get("lecture_id")
+        if lecture_id is None:
+            raise ValueError("lecture_id is required")
+        result = await service.remap_lecture_images_timeline(
+            lecture_id,
+            interval_sec=payload.get("interval_sec", DEFAULT_LECTURE_IMAGE_INTERVAL_SEC),
+            aspect_ratio=payload.get("aspect_ratio", DEFAULT_LECTURE_IMAGE_ASPECT_RATIO),
+            model_name_override=payload.get("model_name_override"),
+        )
         return result
 
     async def _handle_generate_lecture_images(self, payload: Dict[str, Any]) -> Dict[str, Any]:
@@ -343,15 +376,20 @@ class JobService:
         lecture_id = payload.get("lecture_id")
         if lecture_id is None:
             raise ValueError("lecture_id is required")
-        interval_sec = payload.get("interval_sec", 30)
-        aspect_ratio = payload.get("aspect_ratio", "1:1")
+        interval_sec = payload.get("interval_sec", DEFAULT_LECTURE_IMAGE_INTERVAL_SEC)
+        aspect_ratio = payload.get("aspect_ratio", DEFAULT_LECTURE_IMAGE_ASPECT_RATIO)
         model_name_override = payload.get("model_name_override")
+        cleanup_result = None
+        if payload.get("delete_existing_images"):
+            cleanup_result = await service.delete_existing_lecture_images(lecture_id)
         result = await service.plan_lecture_images(
             lecture_id,
             interval_sec=interval_sec,
             aspect_ratio=aspect_ratio,
             model_name_override=model_name_override,
         )
+        if cleanup_result is not None:
+            result["deleted_existing_images"] = cleanup_result.get("deleted", 0)
         slide_payloads = result.pop("slide_payloads", [])
         slide_priority = int(payload.get("slide_priority", -10))
         first_slide_payload = self._build_lecture_slide_chain(
@@ -390,7 +428,7 @@ class JobService:
             batch_id=payload.get("batch_id"),
             chunk_text=payload.get("chunk_text", ""),
             previous_chunk_text=payload.get("previous_chunk_text"),
-            aspect_ratio=payload.get("aspect_ratio", "1:1"),
+            aspect_ratio=payload.get("aspect_ratio", DEFAULT_LECTURE_IMAGE_ASPECT_RATIO),
             model_name_override=payload.get("model_name_override"),
         )
         next_job_id = self._enqueue_next_lecture_slide(payload, result)

@@ -12,8 +12,10 @@ from artificial_u.services.lecture_images_generator_service import LectureImages
 class FakeStorageService:
     def __init__(self):
         self.images_bucket = "images"
+        self.lectures_bucket = "lectures"
         self.uploads = {}
         self.existing_objects = set()
+        self.deleted = []
 
     async def upload_timeline_file(self, file_data, object_name, content_type):
         self.uploads[object_name] = file_data
@@ -33,6 +35,22 @@ class FakeStorageService:
 
     def get_file_url(self, bucket, object_name):
         return f"https://storage.example/{bucket}/{object_name}"
+
+    def parse_storage_url(self, url):
+        prefix = "https://storage.example/"
+        if not url.startswith(prefix):
+            return None, None
+        path = url.removeprefix(prefix)
+        if path in self.uploads:
+            return self.lectures_bucket, path
+        bucket, object_name = path.split("/", 1)
+        return bucket, object_name
+
+    async def delete_file(self, bucket, object_name):
+        self.deleted.append((bucket, object_name))
+        if bucket == self.lectures_bucket:
+            self.uploads.pop(object_name, None)
+        return True
 
 
 def make_service(*, storage=None, image_service=None):
@@ -85,6 +103,10 @@ def words(prefix, count):
     return " ".join(f"{prefix}{i}" for i in range(count))
 
 
+def paragraphs(prefix, count):
+    return [f"{prefix} paragraph {i}" for i in range(count)]
+
+
 def timeline_events(tokens, *, start_at=0.0, step=0.5):
     return [
         {
@@ -115,6 +137,30 @@ def test_find_chunk_start_grows_prefix_for_repeated_phrase():
     assert match == {"word_idx": 7, "prefix_len": 6}
 
 
+def test_chunk_text_distributes_many_paragraphs_across_all_slots():
+    service, _, _, _ = make_service()
+    source_paragraphs = paragraphs("test", 60)
+
+    chunks = service._chunk_text("\n\n".join(source_paragraphs), 40)
+
+    assert len(chunks) == 40
+    assert chunks[0] == "test paragraph 0"
+    assert "test paragraph 59" in chunks[-1]
+    assert max(chunk.count("\n\n") + 1 for chunk in chunks if chunk) <= 2
+
+
+def test_chunk_text_splits_long_paragraphs_when_slots_exceed_paragraph_count():
+    service, _, _, _ = make_service()
+    source = "\n\n".join([words("alpha", 100), words("beta", 100)])
+
+    chunks = service._chunk_text(source, 6)
+
+    assert len(chunks) == 6
+    assert all(chunk for chunk in chunks)
+    assert chunks[0].startswith("alpha0")
+    assert chunks[-1].startswith("beta")
+
+
 @pytest.mark.asyncio
 async def test_plan_lecture_images_uploads_scaffold_and_returns_slide_payloads():
     service, storage, lecture_service, _ = make_service()
@@ -137,6 +183,20 @@ async def test_plan_lecture_images_uploads_scaffold_and_returns_slide_payloads()
         lecture_id=123,
         update_data={"images_timeline_url": result["images_timeline_url"]},
     )
+
+
+@pytest.mark.asyncio
+async def test_plan_lecture_images_deletes_existing_images_timeline_json():
+    service, storage, lecture_service, _ = make_service()
+    lecture = lecture_service.get_lecture.return_value
+    old_object_key = "TST100/TST100_2_3_images.json"
+    storage.uploads[old_object_key] = b'{"slots": []}'
+    lecture.images_timeline_url = f"https://storage.example/{old_object_key}"
+
+    result = await service.plan_lecture_images(123, interval_sec=60, min_images=2, max_images=2)
+
+    assert result["deleted_images_timeline"] is True
+    assert ("lectures", old_object_key) in storage.deleted
 
 
 @pytest.mark.asyncio
@@ -184,6 +244,59 @@ async def test_plan_lecture_images_falls_back_to_even_times_for_unmatched_chunks
     assert timeline["slots"][0]["end"] == 60.0
     assert timeline["slots"][1]["start"] == 60.0
     assert timeline["slots"][1]["end"] == 120.0
+
+
+@pytest.mark.asyncio
+async def test_remap_lecture_images_timeline_preserves_existing_urls_with_new_times():
+    service, storage, lecture_service, _ = make_service()
+    lecture = lecture_service.get_lecture.return_value
+    planned = await service.plan_lecture_images(123, interval_sec=60, min_images=2, max_images=2)
+    object_key = planned["object_key"]
+    lecture.images_timeline_url = planned["images_timeline_url"]
+
+    old_timeline = json.loads(storage.uploads[object_key].decode("utf-8"))
+    old_timeline["slots"][0]["url"] = "https://storage.example/images/slide-0.png"
+    old_timeline["slots"][0]["status"] = "done"
+    old_timeline["slots"][1]["url"] = "https://storage.example/images/slide-1.png"
+    old_timeline["slots"][1]["status"] = "done"
+    storage.uploads[object_key] = json.dumps(old_timeline).encode("utf-8")
+
+    result = await service.remap_lecture_images_timeline(
+        123, interval_sec=60, min_images=2, max_images=2
+    )
+
+    remapped = json.loads(storage.uploads[result["object_key"]].decode("utf-8"))
+    assert result["deleted_images_timeline"] is True
+    assert result["preserved_images"] == 2
+    assert ("lectures", object_key) in storage.deleted
+    assert [slot["status"] for slot in remapped["slots"]] == ["done", "done"]
+    assert [slot["url"] for slot in remapped["slots"]] == [
+        "https://storage.example/images/slide-0.png",
+        "https://storage.example/images/slide-1.png",
+    ]
+    lecture_service.update_lecture.assert_called_with(
+        lecture_id=123,
+        update_data={"images_timeline_url": result["images_timeline_url"]},
+    )
+
+
+@pytest.mark.asyncio
+async def test_delete_existing_lecture_images_deletes_urls_from_current_timeline():
+    service, storage, lecture_service, _ = make_service()
+    lecture = lecture_service.get_lecture.return_value
+    planned = await service.plan_lecture_images(123, interval_sec=60, min_images=2, max_images=2)
+    object_key = planned["object_key"]
+    lecture.images_timeline_url = planned["images_timeline_url"]
+
+    timeline = json.loads(storage.uploads[object_key].decode("utf-8"))
+    timeline["slots"][0]["url"] = "https://storage.example/images/slide-0.png"
+    timeline["slots"][1]["url"] = "https://storage.example/images/slide-1.png"
+    storage.uploads[object_key] = json.dumps(timeline).encode("utf-8")
+
+    result = await service.delete_existing_lecture_images(123)
+
+    assert result["deleted"] == 2
+    assert storage.deleted == [("images", "slide-0.png"), ("images", "slide-1.png")]
 
 
 @pytest.mark.asyncio
