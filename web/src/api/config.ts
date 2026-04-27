@@ -104,6 +104,7 @@ export const ENDPOINTS = {
     enqueueGenerateAudio: (id: number) => `/v1/lectures/${String(id)}/generate-audio/enqueue`,
     enqueueGenerateTimeline: (id: number) => `/v1/lectures/${String(id)}/generate-timeline/enqueue`,
     enqueueGenerateImages: (id: number) => `/v1/lectures/${String(id)}/generate-images/enqueue`,
+    enqueueResumeImages: (id: number) => `/v1/lectures/${String(id)}/resume-images/enqueue`,
     generateSummary: (id: number) => `/v1/lectures/${String(id)}/generate-summary`,
     clearSummary: (id: number) => `/v1/lectures/${String(id)}/summary`,
     uploadAudio: (id: number) => `/v1/lectures/${String(id)}/upload-audio`,

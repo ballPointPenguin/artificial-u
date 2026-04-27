@@ -50,7 +50,7 @@ const LectureDetailView: Component<{
     props.isUploadingAudio ||
     props.isGeneratingAudio ||
     props.isJobActive ||
-    Boolean(props.lecture.content)
+    Boolean(props.lecture.audio_url)
 
   const handleGenerateTimeline = async () => {
     setIsGeneratingTimeline(true)
@@ -71,6 +71,18 @@ const LectureDetailView: Component<{
       await lectureService.enqueueGenerateLectureImages(props.lecture.id)
     } catch (error) {
       setImagesError(error instanceof Error ? error.message : 'Failed to generate lecture images')
+    } finally {
+      setIsGeneratingImages(false)
+    }
+  }
+
+  const handleResumeImages = async () => {
+    setIsGeneratingImages(true)
+    setImagesError('')
+    try {
+      await lectureService.enqueueResumeLectureImages(props.lecture.id)
+    } catch (error) {
+      setImagesError(error instanceof Error ? error.message : 'Failed to resume lecture images')
     } finally {
       setIsGeneratingImages(false)
     }
@@ -237,6 +249,17 @@ const LectureDetailView: Component<{
                         : 'Generate Lecture Images'}
                   </MagicButton>
                 </Show>
+                <Show when={props.lecture.images_timeline_url}>
+                  <MagicButton
+                    variant="primary"
+                    size="sm"
+                    class="min-h-[44px] sm:min-h-[32px] w-full sm:w-auto flex items-center justify-center whitespace-nowrap"
+                    onClick={() => void handleResumeImages()}
+                    disabled={isGeneratingImages() || props.isJobActive}
+                  >
+                    Resume Image Generation
+                  </MagicButton>
+                </Show>
                 <label
                   for="audio-file-upload"
                   class="inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium rounded-md border border-mystic-600 bg-mystic-900/20 text-mystic-300 hover:bg-mystic-900/40 hover:border-mystic-500 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px] sm:min-h-[32px] w-full sm:w-auto"
@@ -244,8 +267,8 @@ const LectureDetailView: Component<{
                     'opacity-50 cursor-not-allowed': uploadAudioDisabled(),
                   }}
                   title={
-                    props.lecture.content
-                      ? 'Upload is disabled once lecture text exists.'
+                    props.lecture.audio_url
+                      ? 'Upload is disabled when lecture audio already exists. Use Regenerate Audio to replace it.'
                       : undefined
                   }
                 >
@@ -405,6 +428,7 @@ const LectureDetail = () => {
       'generate_lecture_timeline',
       'remap_lecture_images_timeline',
       'generate_lecture_images',
+      'resume_lecture_images',
       'generate_lecture_slide',
       'generate_lecture_summary',
     ],

@@ -300,6 +300,59 @@ async def test_delete_existing_lecture_images_deletes_urls_from_current_timeline
 
 
 @pytest.mark.asyncio
+async def test_resume_lecture_images_returns_only_unfinished_slide_payloads():
+    service, storage, lecture_service, _ = make_service()
+    lecture = lecture_service.get_lecture.return_value
+    lecture.content = "\n\n".join([words("alpha", 30), words("beta", 30), words("gamma", 30)])
+    planned = await service.plan_lecture_images(123, interval_sec=40, min_images=3, max_images=3)
+    object_key = planned["object_key"]
+    lecture.images_timeline_url = planned["images_timeline_url"]
+
+    timeline = json.loads(storage.uploads[object_key].decode("utf-8"))
+    timeline["slots"][0]["status"] = "done"
+    timeline["slots"][0]["url"] = "https://storage.example/images/slide-0.png"
+    timeline["slots"][1]["status"] = "pending"
+    timeline["slots"][2]["status"] = "failed"
+    storage.uploads[object_key] = json.dumps(timeline).encode("utf-8")
+
+    result = await service.resume_lecture_images(123)
+
+    assert result["total"] == 3
+    assert result["completed"] == 1
+    assert result["resume_planned"] == 2
+    assert [payload["slot_idx"] for payload in result["slide_payloads"]] == [1, 2]
+    assert result["slide_payloads"][0]["previous_chunk_text"] == result["slide_payloads"][0][
+        "chunk_text"
+    ].replace("beta", "alpha")
+
+
+@pytest.mark.asyncio
+async def test_resume_lecture_images_retries_failed_slots():
+    service, storage, lecture_service, _ = make_service()
+    lecture = lecture_service.get_lecture.return_value
+    lecture.content = "\n\n".join([words("alpha", 30), words("beta", 30), words("gamma", 30)])
+    planned = await service.plan_lecture_images(123, interval_sec=40, min_images=3, max_images=3)
+    object_key = planned["object_key"]
+    lecture.images_timeline_url = planned["images_timeline_url"]
+
+    timeline = json.loads(storage.uploads[object_key].decode("utf-8"))
+    timeline["slots"][0]["status"] = "done"
+    timeline["slots"][0]["url"] = "https://storage.example/images/slide-0.png"
+    timeline["slots"][1]["status"] = "failed"
+    timeline["slots"][1]["url"] = None
+    timeline["slots"][1]["error"] = "image_generation_returned_no_url"
+    timeline["slots"][2]["status"] = "done"
+    timeline["slots"][2]["url"] = "https://storage.example/images/slide-2.png"
+    storage.uploads[object_key] = json.dumps(timeline).encode("utf-8")
+
+    result = await service.resume_lecture_images(123)
+
+    assert result["completed"] == 2
+    assert result["resume_planned"] == 1
+    assert result["slide_payloads"][0]["slot_idx"] == 1
+
+
+@pytest.mark.asyncio
 async def test_generate_lecture_slide_reuses_existing_uploaded_image():
     storage = FakeStorageService()
     service, storage, _, image_service = make_service(storage=storage)
@@ -364,3 +417,36 @@ async def test_generate_lecture_slide_passes_previous_slide_url_to_next_prompt()
     assert result["url"] == second_url
     second_call = image_service.generate_lecture_slide_image.await_args_list[1]
     assert second_call.kwargs["previous_slide_url"] == first_url
+
+
+@pytest.mark.asyncio
+async def test_generate_lecture_slide_uses_nearest_previous_done_slide_url():
+    storage = FakeStorageService()
+    service, _, _, image_service = make_service(storage=storage)
+    first_url = "https://storage.example/slide-0.png"
+    third_url = "https://storage.example/slide-2.png"
+    image_service.generate_lecture_slide_image.return_value = third_url
+
+    planned = await service.plan_lecture_images(123, interval_sec=40, min_images=3, max_images=3)
+    object_key = planned["object_key"]
+    timeline = json.loads(storage.uploads[object_key].decode("utf-8"))
+    timeline["slots"][0]["status"] = "done"
+    timeline["slots"][0]["url"] = first_url
+    timeline["slots"][1]["status"] = "failed"
+    timeline["slots"][1]["url"] = None
+    storage.uploads[object_key] = json.dumps(timeline).encode("utf-8")
+
+    result = await service.generate_lecture_slide(
+        123,
+        slot_idx=2,
+        object_key=object_key,
+        batch_id=planned["batch_id"],
+        chunk_text="Third paragraph.",
+        previous_chunk_text="Second paragraph.",
+        aspect_ratio="1:1",
+        model_name_override=None,
+    )
+
+    assert result["status"] == "done"
+    call = image_service.generate_lecture_slide_image.await_args
+    assert call.kwargs["previous_slide_url"] == first_url

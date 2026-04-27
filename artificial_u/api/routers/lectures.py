@@ -589,6 +589,52 @@ async def enqueue_generate_lecture_images(
 
 
 @router.post(
+    "/{lecture_id}/resume-images/enqueue",
+    status_code=status.HTTP_202_ACCEPTED,
+    summary="Enqueue lecture images resume job",
+    description=(
+        "Enqueue an async job to resume an incomplete synced lecture slideshow image batch. "
+        "Requires an existing images_timeline_url. Admin only."
+    ),
+    responses={
+        404: {"description": "Lecture not found"},
+        400: {"description": "Lecture missing images timeline"},
+        403: {"description": "Admin access required"},
+    },
+    dependencies=[require_role("admin")],
+)
+async def enqueue_resume_lecture_images(
+    lecture_id: int = Path(..., description="The ID of the lecture image batch to resume"),
+    repository_factory: RepositoryFactory = Depends(get_repository_factory),
+):
+    lecture = repository_factory.lecture.get(lecture_id)
+    if not lecture:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"Lecture {lecture_id} not found"
+        )
+
+    if not lecture.images_timeline_url:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Lecture {lecture_id} has no images_timeline_url to resume",
+        )
+
+    row = repository_factory.job.create(
+        kind="resume_lecture_images",
+        payload={"lecture_id": lecture_id},
+    )
+    return {
+        "id": row.id,
+        "kind": row.kind,
+        "status": row.status,
+        "attempts": row.attempts,
+        "max_attempts": row.max_attempts,
+        "priority": row.priority,
+        "run_after": row.run_after,
+    }
+
+
+@router.post(
     "/{lecture_id}/upload-audio",
     response_model=Lecture,
     status_code=status.HTTP_200_OK,

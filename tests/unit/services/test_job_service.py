@@ -105,6 +105,38 @@ async def test_generate_lecture_images_deletes_existing_images_when_requested():
 
 
 @pytest.mark.asyncio
+async def test_resume_lecture_images_enqueues_only_unfinished_chained_slides():
+    repository_factory = FakeRepositoryFactory()
+    service = JobService(repository_factory=repository_factory, logger=MagicMock())
+    images_service = MagicMock()
+    images_service.resume_lecture_images = AsyncMock(
+        return_value={
+            "lecture_id": 123,
+            "total": 3,
+            "completed": 1,
+            "resume_planned": 2,
+            "slide_payloads": [
+                {"slot_idx": 1, "chunk_text": "second"},
+                {"slot_idx": 2, "chunk_text": "third"},
+            ],
+        }
+    )
+    service._lecture_images_generator_service_instance = MagicMock(return_value=images_service)
+
+    result = await service._handle_resume_lecture_images({"lecture_id": 123, "slide_priority": -20})
+
+    assert result["completed"] == 1
+    assert result["resume_planned"] == 2
+    assert result["enqueued"] == 1
+    assert result["chain_remaining"] == 1
+    created = repository_factory.job.created[0]
+    assert created["kind"] == "generate_lecture_slide"
+    assert created["priority"] == -20
+    assert created["payload"]["slot_idx"] == 1
+    assert created["payload"]["next_slide_payload"]["slot_idx"] == 2
+
+
+@pytest.mark.asyncio
 async def test_generate_lecture_timeline_enqueues_image_timeline_remap_when_images_exist():
     repository_factory = FakeRepositoryFactory()
     service = JobService(repository_factory=repository_factory, logger=MagicMock())
@@ -198,4 +230,34 @@ async def test_generate_lecture_slide_does_not_enqueue_next_slide_after_failure(
     )
 
     assert result["status"] == "failed"
+    assert repository_factory.job.created[0]["kind"] == "generate_lecture_slide"
+    assert repository_factory.job.created[0]["payload"]["slot_idx"] == 1
+
+
+@pytest.mark.asyncio
+async def test_generate_lecture_slide_does_not_continue_stale_batch():
+    repository_factory = FakeRepositoryFactory()
+    service = JobService(repository_factory=repository_factory, logger=MagicMock())
+    images_service = MagicMock()
+    images_service.generate_lecture_slide = AsyncMock(
+        return_value={
+            "lecture_id": 123,
+            "slot_idx": 0,
+            "status": "skipped",
+            "reason": "stale_batch",
+        }
+    )
+    service._lecture_images_generator_service_instance = MagicMock(return_value=images_service)
+
+    result = await service._handle_generate_lecture_slide(
+        {
+            "lecture_id": 123,
+            "slot_idx": 0,
+            "object_key": "TST100/images.json",
+            "chunk_text": "first",
+            "next_slide_payload": {"lecture_id": 123, "slot_idx": 1},
+        }
+    )
+
+    assert result["reason"] == "stale_batch"
     assert repository_factory.job.created == []

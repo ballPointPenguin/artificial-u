@@ -62,6 +62,7 @@ export const LectureSection: Component<LectureSectionProps> = (props) => {
       'generate_lecture_timeline',
       'remap_lecture_images_timeline',
       'generate_lecture_images',
+      'resume_lecture_images',
       'generate_lecture_slide',
       'generate_lecture_summary',
     ],
@@ -80,6 +81,7 @@ export const LectureSection: Component<LectureSectionProps> = (props) => {
         setImagesError('')
       } else if (
         event.kind === 'generate_lecture_images' ||
+        event.kind === 'resume_lecture_images' ||
         event.kind === 'generate_lecture_slide'
       ) {
         setImagesError('')
@@ -106,6 +108,7 @@ export const LectureSection: Component<LectureSectionProps> = (props) => {
         setImagesError(getJobMessage(event.kind, 'failed'))
       } else if (
         event.kind === 'generate_lecture_images' ||
+        event.kind === 'resume_lecture_images' ||
         event.kind === 'generate_lecture_slide'
       ) {
         setImagesError(getJobMessage(event.kind, 'failed'))
@@ -132,7 +135,7 @@ export const LectureSection: Component<LectureSectionProps> = (props) => {
   const confirmRegeneration = (message: string) => window.confirm(message)
 
   const uploadAudioDisabled = () =>
-    isUploadingAudio() || anyJobActive() || Boolean(props.lecture()?.content)
+    isUploadingAudio() || anyJobActive() || Boolean(props.lecture()?.audio_url)
 
   const handleDeleteLecture = async () => {
     const lecture = props.lecture()
@@ -293,6 +296,22 @@ export const LectureSection: Component<LectureSectionProps> = (props) => {
     }
   }
 
+  const handleResumeImages = async () => {
+    const lecture = props.lecture()
+    if (!lecture) return
+
+    setIsGeneratingImages(true)
+    setImagesError('')
+
+    try {
+      await lectureService.enqueueResumeLectureImages(lecture.id)
+    } catch (error) {
+      setImagesError(error instanceof Error ? error.message : 'Failed to resume lecture images')
+    } finally {
+      setIsGeneratingImages(false)
+    }
+  }
+
   return (
     <div class="arcane-card">
       <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between mb-4">
@@ -441,6 +460,17 @@ export const LectureSection: Component<LectureSectionProps> = (props) => {
                             : 'Generate Lecture Images'}
                       </MagicButton>
                     </Show>
+                    <Show when={lectureData().images_timeline_url}>
+                      <MagicButton
+                        variant="primary"
+                        size="sm"
+                        class="min-h-[44px] sm:min-h-[32px] w-full sm:w-auto flex items-center justify-center"
+                        onClick={() => void handleResumeImages()}
+                        disabled={isGeneratingImages() || anyJobActive()}
+                      >
+                        Resume Image Generation
+                      </MagicButton>
+                    </Show>
                     <label
                       for={`audio-file-upload-${String(lectureData().id)}`}
                       class="inline-flex items-center justify-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md border border-mystic-600 bg-mystic-900/20 text-mystic-300 hover:bg-mystic-900/40 hover:border-mystic-500 transition-colors cursor-pointer min-h-[44px] sm:min-h-[32px] w-full sm:w-auto"
@@ -448,8 +478,8 @@ export const LectureSection: Component<LectureSectionProps> = (props) => {
                         'opacity-50 cursor-not-allowed': uploadAudioDisabled(),
                       }}
                       title={
-                        lectureData().content
-                          ? 'Upload is disabled once lecture text exists.'
+                        lectureData().audio_url
+                          ? 'Upload is disabled when lecture audio already exists. Use Regenerate Audio to replace it.'
                           : undefined
                       }
                     >

@@ -325,9 +325,26 @@ class LectureImagesGeneratorService:
                 continue
             try:
                 urls[int(slot.get("index"))] = str(url)
-            except TypeError, ValueError:
+            except TypeError:
+                continue
+            except ValueError:
                 continue
         return urls
+
+    def _is_slot_done(self, slot: Dict[str, Any]) -> bool:
+        return bool(slot.get("url")) and slot.get("status") == "done"
+
+    def _is_slot_resumable(self, slot: Dict[str, Any]) -> bool:
+        return not self._is_slot_done(slot)
+
+    def _previous_done_slide_url(
+        self, images_timeline: Dict[str, Any], slot_idx: int
+    ) -> Optional[str]:
+        for idx in range(slot_idx - 1, -1, -1):
+            slot = self._slot_for_index(images_timeline, idx)
+            if slot and self._is_slot_done(slot):
+                return slot.get("url")
+        return None
 
     async def _delete_slide_urls(self, urls: List[str]) -> int:
         deleted = 0
@@ -601,6 +618,66 @@ class LectureImagesGeneratorService:
             "deleted_images_timeline": deleted_images_timeline,
         }
 
+    async def resume_lecture_images(
+        self,
+        lecture_id: int,
+        *,
+        aspect_ratio: str = DEFAULT_LECTURE_IMAGE_ASPECT_RATIO,
+        model_name_override: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        lecture = self.lecture_service.get_lecture(lecture_id)
+        if not getattr(lecture, "images_timeline_url", None):
+            raise ValueError("Lecture images_timeline_url is required before resuming images")
+        if not lecture.content:
+            raise ValueError("Lecture content is required before resuming lecture images")
+
+        _, object_key = self.storage_service.parse_storage_url(lecture.images_timeline_url)
+        if not object_key:
+            raise ValueError("Could not parse lecture images_timeline_url")
+
+        images_timeline = await self._load_images_timeline(object_key)
+        slots = images_timeline.get("slots") or []
+        total = len(slots)
+        if total <= 0:
+            raise ValueError("Lecture images timeline has no slots to resume")
+
+        chunks = self._chunk_text(lecture.content, total)
+        batch_id = images_timeline.get("batch_id") or str(uuid.uuid4())
+        if not images_timeline.get("batch_id"):
+            images_timeline["batch_id"] = batch_id
+            await self._upload_images_timeline(object_key, images_timeline)
+
+        slide_payloads: List[Dict[str, Any]] = []
+        for i, slot in enumerate(slots):
+            if not self._is_slot_resumable(slot):
+                continue
+            slide_payloads.append(
+                {
+                    "lecture_id": lecture_id,
+                    "topic_id": getattr(lecture, "topic_id", None),
+                    "batch_id": batch_id,
+                    "slot_idx": int(slot.get("index", i)),
+                    "total": total,
+                    "object_key": object_key,
+                    "images_timeline_url": lecture.images_timeline_url,
+                    "aspect_ratio": images_timeline.get("aspect_ratio") or aspect_ratio,
+                    "model_name_override": model_name_override,
+                    "chunk_text": chunks[i],
+                    "previous_chunk_text": chunks[i - 1] if i > 0 else None,
+                }
+            )
+
+        return {
+            "lecture_id": lecture_id,
+            "images_timeline_url": lecture.images_timeline_url,
+            "object_key": object_key,
+            "batch_id": batch_id,
+            "total": total,
+            "completed": total - len(slide_payloads),
+            "resume_planned": len(slide_payloads),
+            "slide_payloads": slide_payloads,
+        }
+
     async def delete_existing_lecture_images(self, lecture_id: int) -> Dict[str, Any]:
         lecture = self.lecture_service.get_lecture(lecture_id)
         if not getattr(lecture, "images_timeline_url", None):
@@ -679,10 +756,7 @@ class LectureImagesGeneratorService:
         await self._update_slot(object_key, slot_idx, batch_id=batch_id, status="running")
 
         latest_timeline = await self._load_images_timeline(object_key)
-        previous_slide_url = None
-        previous_slot = self._slot_for_index(latest_timeline, slot_idx - 1)
-        if previous_slot:
-            previous_slide_url = previous_slot.get("url")
+        previous_slide_url = self._previous_done_slide_url(latest_timeline, slot_idx)
 
         slide_url = await self.image_service.generate_lecture_slide_image(
             professor=professor,

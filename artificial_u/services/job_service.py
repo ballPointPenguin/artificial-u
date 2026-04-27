@@ -98,7 +98,9 @@ class JobService:
         next_slide_payload = payload.get("next_slide_payload")
         if not next_slide_payload:
             return None
-        if result.get("status") != "done" or not result.get("url"):
+        if result.get("reason") == "stale_batch":
+            return None
+        if result.get("status") not in {"done", "failed", "skipped"}:
             return None
 
         row = self.repository_factory.job.create(
@@ -127,6 +129,7 @@ class JobService:
             "generate_lecture_timeline": self._handle_generate_lecture_timeline,
             "remap_lecture_images_timeline": self._handle_remap_lecture_images_timeline,
             "generate_lecture_images": self._handle_generate_lecture_images,
+            "resume_lecture_images": self._handle_resume_lecture_images,
             "generate_lecture_slide": self._handle_generate_lecture_slide,
             "generate_professor_image": self._handle_generate_professor_image,
             "generate_course_image": self._handle_generate_course_image,
@@ -390,6 +393,36 @@ class JobService:
         )
         if cleanup_result is not None:
             result["deleted_existing_images"] = cleanup_result.get("deleted", 0)
+        slide_payloads = result.pop("slide_payloads", [])
+        slide_priority = int(payload.get("slide_priority", -10))
+        first_slide_payload = self._build_lecture_slide_chain(
+            slide_payloads, slide_priority=slide_priority
+        )
+        job_ids = []
+        if first_slide_payload:
+            row = self.repository_factory.job.create(
+                kind="generate_lecture_slide",
+                payload=first_slide_payload,
+                priority=slide_priority,
+            )
+            job_ids.append(row.id)
+
+        result["enqueued"] = len(job_ids)
+        result["chain_remaining"] = max(0, len(slide_payloads) - len(job_ids))
+        result["slide_job_ids"] = job_ids
+        return result
+
+    async def _handle_resume_lecture_images(self, payload: Dict[str, Any]) -> Dict[str, Any]:
+        service = self._lecture_images_generator_service_instance()
+        lecture_id = payload.get("lecture_id")
+        if lecture_id is None:
+            raise ValueError("lecture_id is required")
+
+        result = await service.resume_lecture_images(
+            lecture_id,
+            aspect_ratio=payload.get("aspect_ratio", DEFAULT_LECTURE_IMAGE_ASPECT_RATIO),
+            model_name_override=payload.get("model_name_override"),
+        )
         slide_payloads = result.pop("slide_payloads", [])
         slide_priority = int(payload.get("slide_priority", -10))
         first_slide_payload = self._build_lecture_slide_chain(

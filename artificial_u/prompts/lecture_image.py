@@ -99,9 +99,11 @@ def format_lecture_slide_prompt(  # noqa: C901
             "- The professor should feel like the same person as the reference image (if provided).",
             "- If a previous slide reference is provided, preserve visual continuity with it while "
             "adapting to the current lecture moment.",
-            "- The professor does not always need to be shown; some frames can be full-screen slides/visual aids only.",
+            "- Mix up the composition. While many frames show the professor, feel free to generate full-screen "
+            "visual aids (diagrams, close-ups of objects, slides) when appropriate for the current lecture moment.",
             "- Consider including visual aids relevant to the lecture moment (e.g., a digital slide, "
             "whiteboard, diagrams, instruments, lab apparatus, props).",
+            "- Pay close attention to anatomy. Avoid extra limbs on persons or disembodied hands.",
             f"Aspect Ratio: {aspect_ratio}",
         ]
     )
