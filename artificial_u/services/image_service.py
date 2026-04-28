@@ -10,6 +10,7 @@ import openai  # Added openai import
 from google.genai import types
 from google.genai.errors import ClientError, ServerError
 from google.genai.types import Modality
+from tenacity import AsyncRetrying, retry_if_exception, stop_after_attempt, wait_exponential
 
 from artificial_u.integrations import gemini_client, openai_client
 from artificial_u.models.core import Course, Professor
@@ -28,6 +29,19 @@ OPENAI_ASPECT_RATIO_TO_SIZE = {
     "16:9": "1792x1024",
     "9:16": "1024x1792",
 }
+
+_GEMINI_TRANSIENT_CODES = frozenset({429, 500, 502, 503, 504})
+
+
+def _is_gemini_transient_error(exc: BaseException) -> bool:
+    """True for Gemini ServerErrors that are transient and worth retrying."""
+    if not isinstance(exc, ServerError):
+        return False
+    status_code = getattr(exc, "status_code", None)
+    if status_code is None:
+        err_str = str(exc)
+        return any(str(c) in err_str for c in _GEMINI_TRANSIENT_CODES)
+    return status_code in _GEMINI_TRANSIENT_CODES
 
 
 class ImageGenerationErrorType(Enum):
@@ -464,13 +478,25 @@ class ImageService:
     ) -> List[bytes]:
         """Generate image with a specific backend."""
         if backend == "gemini":
-            return await self._generate_gemini_image(
-                model_name=model_name,
-                prompt=prompt,
-                aspect_ratio=aspect_ratio,
-                reference_image_urls=reference_image_urls,
-                image_size=image_size,
-            )
+            async for attempt in AsyncRetrying(
+                retry=retry_if_exception(_is_gemini_transient_error),
+                stop=stop_after_attempt(4),
+                wait=wait_exponential(multiplier=2, min=2, max=30),
+                reraise=True,
+                before_sleep=lambda rs: logger.warning(
+                    "Gemini transient error (attempt %d), retrying in %.1fs",
+                    rs.attempt_number,
+                    rs.next_action.sleep,
+                ),
+            ):
+                with attempt:
+                    return await self._generate_gemini_image(
+                        model_name=model_name,
+                        prompt=prompt,
+                        aspect_ratio=aspect_ratio,
+                        reference_image_urls=reference_image_urls,
+                        image_size=image_size,
+                    )
         elif backend == "openai":
             return await self._generate_openai_image(
                 model_name=model_name, prompt=prompt, aspect_ratio=aspect_ratio

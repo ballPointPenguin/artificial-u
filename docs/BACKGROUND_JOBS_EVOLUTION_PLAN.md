@@ -192,6 +192,30 @@ Expected impact:
 
 - Trims per-job allocation count and reduces GC noise during long generation jobs.
 
+### 2.13 Limit glibc malloc arena retention — DONE (2026-04-28)
+
+glibc's default `malloc` carves out one arena per CPU core (up to 8× cores). After a peak allocation each arena retains its mapped pages indefinitely, even when the memory is logically free. This is why RSS stays pinned at ~70% after the first wave of jobs, even at inflight=0.
+
+**Done (2026-04-28):**
+- Added `MALLOC_ARENA_MAX=2` to the ECS task environment in `cdk/cdk/cdk_stack.py`. Limits the allocator to two arenas regardless of core count.
+- Added `Worker._post_job_cleanup()` called at the end of every successful job: runs `gc.collect()` to sweep CPython cyclic garbage, then calls `ctypes.CDLL("libc.so.6").malloc_trim(0)` (Linux only, wrapped in `try/except`) to prompt glibc to release free pages back to the OS.
+- Imports added to `artificial_u/api/worker.py`: `ctypes`, `gc`, `sys`.
+
+Expected impact:
+- `MALLOC_ARENA_MAX=2` typically cuts steady-state RSS by 20–40% vs default on multi-threaded Python processes. Combined with `malloc_trim` after each job, RSS should return closer to baseline between batches.
+
+### 2.14 In-process retry for Gemini transient errors — DONE (2026-04-28)
+
+Google's `genai` SDK wraps requests with tenacity internally but only retries a narrow set of errors; HTTP 5xx `ServerError` responses (503 UNAVAILABLE, 500, 502, 504) propagate immediately. When a slide's image-generation handler receives a 503, it returns `status: "failed"` rather than raising an exception, so the job-level `compute_backoff_seconds` retry never fires. Slides hit by a transient 503 were permanently dead.
+
+**Done (2026-04-28):**
+- Added module-level `_is_gemini_transient_error(exc)` predicate in `artificial_u/services/image_service.py` — returns `True` for `ServerError` with status codes `{429, 500, 502, 503, 504}`.
+- Wrapped the `_generate_gemini_image(...)` call inside `_generate_with_backend` with `tenacity.AsyncRetrying`: `stop_after_attempt(4)`, `wait_exponential(multiplier=2, min=2, max=30)`, `reraise=True`. Logs a warning before each sleep.
+- `tenacity` was already in `requirements.txt` (9.1.4).
+
+Expected impact:
+- Transient 503/500 errors from Gemini are retried up to 3 more times (up to ~30 s back-off) before propagating. Slide batches that previously produced permanent failures during Google capacity events should now recover silently.
+
 ---
 
 ## Category 3 — Medium-term (meaningful refactor; depends on near-term landing first)
@@ -290,8 +314,10 @@ depends on outcomes above.
 ### 5.1 Is memory actually leaking, or just steady-state heavy?
 
 - **2026-04-28 prod data (memory-drift telemetry + OOM log):** Confirmed pattern is **spiky per-job allocation + glibc malloc retention**, not a monotonic leak. Workers hit 1.0–1.3 GB RSS during `generate_lecture_timeline` jobs (MP3 bytes twice in heap), then stay there even at inflight=0. Two workers × ~1 GB = OOM at 97% on a 2 GiB task.
-- **Root cause addressed:** §2.8 (gunicorn workers 2→1) removes the double-worker pressure immediately. §2.10 (streaming MP3 to temp file) removes the primary heap spike on timeline jobs. After these land, watch 24h drift to see if RSS plateaus at a safe level (expected ~500–700 MB with single worker).
-- If RSS still climbs after §2.10 lands, check remaining `download_file` callers; use `DIAG_TRACEMALLOC=1` on-demand to identify the next-largest allocation.
+- **Root cause addressed:** §2.8 (gunicorn workers 2→1) removes the double-worker pressure immediately. §2.10 (streaming MP3 to temp file) removes the primary heap spike on timeline jobs.
+- **Post-§2.10 observation:** After MP3 streaming landed, RSS stabilised at ~70% (~1.4 GB on a 2 GiB task) with no OOM kills. Confirmed as glibc arena retention, not a leak — memory was logically free but not returned to the OS.
+- **§2.13 response:** `MALLOC_ARENA_MAX=2` + `malloc_trim(0)` post-job address the retention directly. Expected steady-state to drop to ~50–60% (≈1.0–1.2 GB); watch 24h prod data post-deploy.
+- If RSS is still above 70% after §2.13 lands, audit remaining `download_file` callers and use `DIAG_TRACEMALLOC=1` on-demand.
 - **Initial finding (dev, idle vs single lecture run):** the biggest *new* allocation was the audio object being read fully into memory (`storage_service.py:349`, ≈24 MB). Prod data confirmed and amplified this.
 
 ### 5.2 Do we need per-user cross-tab live state for any flow?

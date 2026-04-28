@@ -1,6 +1,9 @@
 import asyncio
+import ctypes
+import gc
 import logging
 import os
+import sys
 import time
 from typing import Any, Awaitable, Callable, Dict, Optional
 
@@ -285,6 +288,18 @@ class Worker:
             await self._handle_follow_up(kind, payload)
 
             await self._publish_event(job_id, kind, "done", payload, result=result)
+
+            self._post_job_cleanup(kind)
+
+    def _post_job_cleanup(self, kind: str) -> None:
+        """Release glibc arenas and Python cyclic garbage after heavy jobs."""
+        gc.collect()
+        if sys.platform == "linux":
+            try:
+                ctypes.CDLL("libc.so.6").malloc_trim(0)
+            except Exception:
+                pass
+        self.logger.debug("Post-job cleanup done", extra={"kind": kind})
 
     async def _execute_job(
         self,
