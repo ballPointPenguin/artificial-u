@@ -11,7 +11,7 @@ from artificial_u.services.http_client import get_shared_async_client
 from artificial_u.services.image_service import ImageService
 from artificial_u.services.storage_service import StorageService
 
-DEFAULT_LECTURE_IMAGE_INTERVAL_SEC = 40
+DEFAULT_LECTURE_IMAGE_INTERVAL_SEC = 45
 DEFAULT_LECTURE_IMAGE_MIN_IMAGES = 6
 DEFAULT_LECTURE_IMAGE_MAX_IMAGES = 40
 DEFAULT_LECTURE_IMAGE_ASPECT_RATIO = "1:1"
@@ -336,6 +336,13 @@ class LectureImagesGeneratorService:
 
     def _is_slot_resumable(self, slot: Dict[str, Any]) -> bool:
         return not self._is_slot_done(slot)
+
+    def _first_done_slide_url(self, images_timeline: Dict[str, Any]) -> Optional[str]:
+        # Find the very first slide that is done
+        slot = self._slot_for_index(images_timeline, 0)
+        if slot and self._is_slot_done(slot):
+            return slot.get("url")
+        return None
 
     def _previous_done_slide_url(
         self, images_timeline: Dict[str, Any], slot_idx: int
@@ -756,6 +763,7 @@ class LectureImagesGeneratorService:
         await self._update_slot(object_key, slot_idx, batch_id=batch_id, status="running")
 
         latest_timeline = await self._load_images_timeline(object_key)
+        first_slide_url = self._first_done_slide_url(latest_timeline) if slot_idx > 0 else None
         previous_slide_url = self._previous_done_slide_url(latest_timeline, slot_idx)
 
         slide_url = await self.image_service.generate_lecture_slide_image(
@@ -766,6 +774,7 @@ class LectureImagesGeneratorService:
             lecture_summary=getattr(lecture, "summary", None),
             chunk_text=chunk_text,
             previous_chunk_text=previous_chunk_text,
+            first_slide_url=first_slide_url,
             previous_slide_url=previous_slide_url,
             slot_idx=slot_idx,
             aspect_ratio=aspect_ratio,

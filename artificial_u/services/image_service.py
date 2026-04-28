@@ -714,6 +714,7 @@ class ImageService:
         chunk_text: str,
         slot_idx: int,
         previous_chunk_text: Optional[str] = None,
+        first_slide_url: Optional[str] = None,
         previous_slide_url: Optional[str] = None,
         aspect_ratio: str = "1:1",
         model_name_override: Optional[str] = None,
@@ -738,6 +739,7 @@ class ImageService:
             chunk_text=chunk_text,
             previous_chunk_text=previous_chunk_text,
             professor_image_url=getattr(professor, "image_url", None),
+            first_slide_url=first_slide_url,
             previous_slide_url=previous_slide_url,
             aspect_ratio=aspect_ratio,
         )

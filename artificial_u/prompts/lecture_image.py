@@ -13,6 +13,7 @@ def format_lecture_slide_prompt(  # noqa: C901
     chunk_text: str,
     previous_chunk_text: Optional[str] = None,
     professor_image_url: Optional[str] = None,
+    first_slide_url: Optional[str] = None,
     previous_slide_url: Optional[str] = None,
     aspect_ratio: str = "1:1",
 ) -> Tuple[str, List[str]]:
@@ -37,7 +38,9 @@ def format_lecture_slide_prompt(  # noqa: C901
     refs: List[str] = []
     if professor_image_url:
         refs.append(professor_image_url)
-    if previous_slide_url:
+    if first_slide_url:
+        refs.append(first_slide_url)
+    if previous_slide_url and previous_slide_url != first_slide_url:
         refs.append(previous_slide_url)
 
     context_lines: List[str] = [
@@ -88,22 +91,27 @@ def format_lecture_slide_prompt(  # noqa: C901
     context_lines.extend(
         [
             "",
-            "Art Direction: Semi-realistic, highly polished digital art. Smooth textures, illustrative style "
-            "similar to Riot Games art, Hearthstone card art, or ArtStation trending.",
+            "Art Direction: Semi-realistic, highly polished digital art. Smooth textures, vivid colors, ",
+            "illustrative style similar to Riot Games art, Hearthstone card art, or ArtStation trending.",
             "Atmosphere: Subtle atmospheric lighting, a hint of wonder in the air, soft rim lighting.",
             "Background: Idealized academic setting (e.g., a lab or classroom) that feels cozy and slightly "
             "magical.",
-            "Details: High resolution, vivid colors, 8k, masterpiece.",
             "",
             "Composition Guidance:",
-            "- The professor should feel like the same person as the reference image (if provided).",
+            "- The professor should feel like the same person as the reference image (if present).",
             "- If a previous slide reference is provided, preserve visual continuity with it while "
             "adapting to the current lecture moment.",
             "- Mix up the composition. While many frames show the professor, feel free to generate full-screen "
             "visual aids (diagrams, close-ups of objects, slides) when appropriate for the current lecture moment.",
-            "- Consider including visual aids relevant to the lecture moment (e.g., a digital slide, "
+            "- CRITICAL FOR READABILITY: This image will be viewed on small screens at low resolution (512x512). "
+            "Do NOT put complex text, detailed charts, or dense information in the background behind the professor. "
+            "If the lecture moment requires showing detailed information, make the ENTIRE image a full-screen "
+            "visual aid with large, bold, highly legible elements.",
+            "- Keep background elements simple and uncluttered to avoid visual noise.",
+            "- Consider including simple visual aids relevant to the lecture moment (e.g., a digital slide, "
             "whiteboard, diagrams, instruments, lab apparatus, props).",
-            "- Pay close attention to anatomy. Avoid extra limbs on persons or disembodied hands.",
+            "- CRITICAL ANATOMY CHECK: The professor must have at most two arms and two hands. No floating hands, ",
+            "no third hand holding a book while two hands gesture.",
             f"Aspect Ratio: {aspect_ratio}",
         ]
     )
