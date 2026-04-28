@@ -1,5 +1,5 @@
 import { A } from '@solidjs/router'
-import { Download, FileText, Headphones, Pencil, Play, Trash2, Upload } from 'lucide-solid'
+import { Download, FileText, Film, Headphones, Pencil, Play, Trash2, Upload } from 'lucide-solid'
 import { type Component, createSignal, Show } from 'solid-js'
 import { lectureService } from '../../api/services/lecture-service.js'
 import type { Lecture } from '../../api/types.js'
@@ -332,7 +332,6 @@ export const LectureSection: Component<LectureSectionProps> = (props) => {
                         audioPlayer.playTrack({
                           url: lecture.audio_url,
                           title: lecture.title,
-                          subtitle: `Revision ${String(lecture.revision)}`,
                           timelineUrl: lecture.timeline_url ?? undefined,
                           imagesTimelineUrl: lecture.images_timeline_url ?? undefined,
                           courseId: props.courseId,
@@ -349,7 +348,12 @@ export const LectureSection: Component<LectureSectionProps> = (props) => {
                       when={lectureData().timeline_url}
                       fallback={<Headphones class="h-4 w-4" aria-hidden="true" />}
                     >
-                      <Play class="h-4 w-4" aria-hidden="true" />
+                      <Show
+                        when={lectureData().images_timeline_url}
+                        fallback={<Play class="h-4 w-4" aria-hidden="true" />}
+                      >
+                        <Film class="h-4 w-4" aria-hidden="true" />
+                      </Show>
                     </Show>
                     {lectureData().timeline_url ? t().lectureDetail.play : t().lectureDetail.listen}
                   </Button>
@@ -575,7 +579,6 @@ export const LectureSection: Component<LectureSectionProps> = (props) => {
           <div class="space-y-4">
             <div>
               <h4 class="text-lg font-medium text-parchment-200">{lectureData().title}</h4>
-              <p class="text-sm text-parchment-400">Revision {lectureData().revision}</p>
               <Show when={lectureData().word_count != null}>
                 <p class="text-sm text-parchment-400">
                   {lectureData().word_count?.toLocaleString()} words

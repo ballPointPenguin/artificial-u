@@ -14,6 +14,7 @@ export const es = {
     about: 'Acerca de',
     academics: 'Academia',
     professors: 'Profesores',
+    search: 'Buscar',
     courses: 'Cursos',
     profile: 'Perfil',
     jobs: 'Trabajos',

@@ -1,5 +1,5 @@
 import { A, useNavigate, useParams } from '@solidjs/router'
-import { Download, FileText, Headphones, LoaderCircle, Play } from 'lucide-solid'
+import { Download, FileText, Film, Headphones, LoaderCircle, Play } from 'lucide-solid'
 import { type Component, createResource, createSignal, For, Show } from 'solid-js'
 import { courseService } from '../api/services/course-service.js'
 import { topicService } from '../api/services/topic-service.js'
@@ -229,7 +229,12 @@ const TopicsList: Component<{
                                   when={lecture?.timeline_url}
                                   fallback={<Headphones class="h-4 w-4" />}
                                 >
-                                  <Play class="h-4 w-4" />
+                                  <Show
+                                    when={lecture?.images_timeline_url}
+                                    fallback={<Play class="h-4 w-4" />}
+                                  >
+                                    <Film class="h-4 w-4" />
+                                  </Show>
                                 </Show>
                               </button>
                               <a

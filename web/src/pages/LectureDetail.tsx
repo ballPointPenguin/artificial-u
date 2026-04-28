@@ -1,5 +1,5 @@
 import { A, useNavigate, useParams } from '@solidjs/router'
-import { Download, FileText, Headphones, Play, Upload } from 'lucide-solid'
+import { Download, FileText, Film, Headphones, Play, Upload } from 'lucide-solid'
 import { type Component, createMemo, createResource, createSignal, Show } from 'solid-js'
 import { courseService } from '../api/services/course-service.js'
 import { lectureService } from '../api/services/lecture-service.js'
@@ -112,9 +112,6 @@ const LectureDetailView: Component<{
           <h1 class="font-display text-3xl break-words text-parchment-100">
             {props.lecture.title}
           </h1>
-          <p class="text-parchment-300">
-            {t().lectureDetail.revision} {props.lecture.revision}
-          </p>
         </div>
 
         <div class="flex w-full shrink-0 flex-col sm:flex-row sm:flex-wrap items-center gap-3 sm:gap-2 sm:justify-end">
@@ -149,7 +146,12 @@ const LectureDetailView: Component<{
                 onClick={handleListen}
               >
                 <Show when={props.lecture.timeline_url} fallback={<Headphones class="h-4 w-4" />}>
-                  <Play class="h-4 w-4" />
+                  <Show
+                    when={props.lecture.images_timeline_url}
+                    fallback={<Play class="h-4 w-4" />}
+                  >
+                    <Film class="h-4 w-4" />
+                  </Show>
                 </Show>
                 <span>
                   {props.lecture.timeline_url ? t().lectureDetail.play : t().lectureDetail.listen}

@@ -57,7 +57,7 @@ refactors.
 - Add a `DIAG_TRACEMALLOC=1` toggle that snapshots on worker start and again on SIGUSR1, diffs top allocations, and logs the top 25.
 - Run in prod for 24h during a quiet window to establish a baseline.
 
-### 1.6 ECS Container Insights review - TODO External
+### 1.6 ECS Container Insights review - Done
 
 - Already enabled per the recent screenshots. Save a dashboard bookmark that pins CPU, memory, network, and our custom metrics on one page so the whole team sees the same picture.
 

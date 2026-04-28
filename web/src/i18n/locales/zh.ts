@@ -20,6 +20,7 @@ export const zh = {
     about: '关于我们',
     academics: '学术',
     professors: '教授',
+    search: '搜索',
     courses: '课程',
     profile: '个人资料',
     jobs: '任务', // Refers to "Tasks" (computing jobs)

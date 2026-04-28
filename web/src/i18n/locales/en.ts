@@ -13,6 +13,7 @@ export const en = {
     about: 'About',
     academics: 'Academics',
     professors: 'Professors',
+    search: 'Search',
     courses: 'Courses',
     profile: 'Profile',
     jobs: 'Jobs',

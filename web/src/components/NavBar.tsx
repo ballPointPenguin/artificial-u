@@ -46,6 +46,9 @@ export function NavBar() {
 
           {/* Desktop Navigation */}
           <div class="hidden md:flex items-center gap-7">
+            <A href="/search" class={linkClass}>
+              {t().nav.search}
+            </A>
             <A href="/courses" class={linkClass}>
               {t().nav.courses}
             </A>
@@ -133,6 +136,9 @@ export function NavBar() {
       <Show when={isMobileMenuOpen()}>
         <div class="md:hidden bg-background/95 backdrop-blur-sm border-t border-border/30">
           <div class="px-4 pt-2 pb-6 space-y-1">
+            <A href="/search" class={mobileLinkClass} onClick={toggleMobileMenu}>
+              {t().nav.search}
+            </A>
             <A href="/courses" class={mobileLinkClass} onClick={toggleMobileMenu}>
               {t().nav.courses}
             </A>
