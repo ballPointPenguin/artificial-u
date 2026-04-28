@@ -52,6 +52,8 @@ from artificial_u.api.models.faculties import (
 
 # Lecture model
 from artificial_u.api.models.lectures import (
+    AdminLectureListItem,
+    AdminLectureListResponse,
     Lecture,
     LectureBase,
     LectureCreate,
@@ -166,6 +168,8 @@ __all__ = [
     "Lecture",
     "LectureGenerate",
     "LectureListResponse",
+    "AdminLectureListItem",
+    "AdminLectureListResponse",
     # Topic model
     "TopicBase",
     "TopicCreate",

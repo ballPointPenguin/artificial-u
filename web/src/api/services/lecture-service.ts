@@ -4,6 +4,7 @@
 import { createUrl, httpClient } from '../client'
 import { ENDPOINTS, TIMEOUT_CONFIG } from '../config'
 import type {
+  AdminLectureListResponse,
   AudioRedirectResponse,
   Lecture,
   LectureCreate,
@@ -22,6 +23,15 @@ interface ListLecturesParams {
   search?: string
 }
 
+interface ListAdminLecturesParams {
+  page: number
+  size: number
+  courseId?: number
+  courseCode?: string
+  sortBy?: string
+  order?: 'asc' | 'desc'
+}
+
 export const lectureService = {
   listLectures: (params: ListLecturesParams): Promise<LectureList> => {
     const queryParams = new URLSearchParams({
@@ -34,6 +44,21 @@ export const lectureService = {
     if (params.search) queryParams.set('search', params.search)
 
     return httpClient.get<LectureList>(`${ENDPOINTS.lectures.list}?${queryParams.toString()}`)
+  },
+
+  listAdminLectures: (params: ListAdminLecturesParams): Promise<AdminLectureListResponse> => {
+    const queryParams = new URLSearchParams({
+      page: params.page.toString(),
+      size: params.size.toString(),
+    })
+    if (params.courseId) queryParams.set('course_id', params.courseId.toString())
+    if (params.courseCode) queryParams.set('course_code', params.courseCode)
+    if (params.sortBy) queryParams.set('sort_by', params.sortBy)
+    if (params.order) queryParams.set('order', params.order)
+
+    return httpClient.get<AdminLectureListResponse>(
+      `${ENDPOINTS.lectures.adminList}?${queryParams.toString()}`
+    )
   },
 
   getLecture: (lectureId: number): Promise<Lecture> => {

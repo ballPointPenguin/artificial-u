@@ -93,6 +93,7 @@ export const ENDPOINTS = {
   },
   lectures: {
     list: '/v1/lectures',
+    adminList: '/v1/lectures/admin',
     detail: (id: number) => `/v1/lectures/${String(id)}`,
     generate: '/v1/lectures/generate',
     enqueueGenerate: '/v1/lectures/generate/enqueue',

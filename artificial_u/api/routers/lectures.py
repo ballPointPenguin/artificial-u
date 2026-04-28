@@ -2,8 +2,11 @@
 Lecture router for handling lecture-related API endpoints.
 """
 
+import asyncio
+import json
 import logging
-from typing import List, Optional
+import math
+from typing import Any, Dict, List, Literal, Optional
 
 from fastapi import (
     APIRouter,
@@ -17,13 +20,17 @@ from fastapi import (
 )
 from fastapi.responses import JSONResponse, PlainTextResponse
 from pydantic import BaseModel, Field
+from sqlalchemy import asc, desc, func
 
 from artificial_u.api.dependencies import (
     ensure_student,
     get_lecture_api_service,
     get_repository_factory,
+    get_storage_service,
 )
 from artificial_u.api.models import (
+    AdminLectureListItem,
+    AdminLectureListResponse,
     Lecture,
     LectureCreate,
     LectureGenerate,
@@ -78,6 +85,177 @@ router = APIRouter(
     responses={404: {"description": "Not found"}},
     dependencies=[Depends(get_lecture_api_service)],
 )
+
+
+AdminLectureSortField = Literal[
+    "title",
+    "course_id",
+    "course_code",
+    "topic_id",
+    "lecture_id",
+    "voice_id",
+    "audio",
+    "timeline",
+    "images",
+    "image_slots",
+]
+SortOrder = Literal["asc", "desc"]
+
+
+def _apply_admin_lecture_filters(query, course_id: Optional[int], course_code: Optional[str]):
+    if course_id is not None:
+        query = query.filter(LectureModel.course_id == course_id)
+
+    if course_code:
+        query = query.filter(CourseModel.code.ilike(f"%{course_code.strip()}%"))
+
+    return query
+
+
+async def _get_image_slot_counts(
+    storage_service: StorageService,
+    images_timeline_url: Optional[str],
+) -> Dict[str, Optional[Any]]:
+    if not images_timeline_url:
+        return {
+            "image_slots_done": None,
+            "image_slots_total": None,
+            "image_slots_error": None,
+        }
+
+    bucket, object_key = storage_service.parse_storage_url(images_timeline_url)
+    if not bucket or not object_key:
+        return {
+            "image_slots_done": None,
+            "image_slots_total": None,
+            "image_slots_error": "unparseable_url",
+        }
+
+    file_data, _ = await storage_service.download_file(bucket, object_key)
+    if not file_data:
+        return {
+            "image_slots_done": None,
+            "image_slots_total": None,
+            "image_slots_error": "not_found",
+        }
+
+    try:
+        timeline = json.loads(file_data.decode("utf-8"))
+    except UnicodeDecodeError, json.JSONDecodeError:
+        return {
+            "image_slots_done": None,
+            "image_slots_total": None,
+            "image_slots_error": "invalid_json",
+        }
+
+    slots = timeline.get("slots")
+    if not isinstance(slots, list):
+        return {
+            "image_slots_done": None,
+            "image_slots_total": None,
+            "image_slots_error": "missing_slots",
+        }
+
+    done = sum(1 for slot in slots if isinstance(slot, dict) and slot.get("status") == "done")
+    return {
+        "image_slots_done": done,
+        "image_slots_total": len(slots),
+        "image_slots_error": None,
+    }
+
+
+@router.get(
+    "/admin",
+    response_model=AdminLectureListResponse,
+    summary="Admin list lectures",
+    description="Get a compact paginated list of all lectures with admin-only metadata.",
+    dependencies=[require_role("admin")],
+)
+async def list_admin_lectures(
+    page: int = Query(1, ge=1, description="Page number"),
+    size: int = Query(25, ge=1, le=100, description="Items per page"),
+    course_id: Optional[int] = Query(None, description="Filter by course ID"),
+    course_code: Optional[str] = Query(None, description="Filter by course code"),
+    sort_by: AdminLectureSortField = Query("lecture_id", description="Sort field"),
+    order: SortOrder = Query("desc", description="Sort order"),
+    repository_factory: RepositoryFactory = Depends(get_repository_factory),
+    storage_service: StorageService = Depends(get_storage_service),
+):
+    """Return all lecture rows for admin operations without the large content field."""
+    sort_columns = {
+        "title": LectureModel.title,
+        "course_id": LectureModel.course_id,
+        "course_code": CourseModel.code,
+        "topic_id": LectureModel.topic_id,
+        "lecture_id": LectureModel.id,
+        "voice_id": LectureModel.voice_id,
+        "audio": LectureModel.audio_url.isnot(None),
+        "timeline": LectureModel.timeline_url.isnot(None),
+        "images": LectureModel.images_timeline_url.isnot(None),
+        # Image slot counts are fetched after pagination; sort this by presence
+        # so the database can still perform the ordering cheaply.
+        "image_slots": LectureModel.images_timeline_url.isnot(None),
+    }
+
+    with repository_factory.lecture.get_session() as session:
+        total_query = session.query(func.count(LectureModel.id)).join(
+            CourseModel, LectureModel.course_id == CourseModel.id
+        )
+        total_query = _apply_admin_lecture_filters(total_query, course_id, course_code)
+        total = total_query.scalar() or 0
+
+        query = session.query(
+            LectureModel.id.label("id"),
+            LectureModel.title.label("title"),
+            LectureModel.course_id.label("course_id"),
+            CourseModel.code.label("course_code"),
+            LectureModel.topic_id.label("topic_id"),
+            LectureModel.voice_id.label("voice_id"),
+            LectureModel.audio_url.label("audio_url"),
+            LectureModel.timeline_url.label("timeline_url"),
+            LectureModel.images_timeline_url.label("images_timeline_url"),
+        ).join(CourseModel, LectureModel.course_id == CourseModel.id)
+        query = _apply_admin_lecture_filters(query, course_id, course_code)
+
+        sort_column = sort_columns[sort_by]
+        direction = asc if order == "asc" else desc
+        query = query.order_by(direction(sort_column), desc(LectureModel.id))
+
+        offset = (page - 1) * size
+        rows = query.offset(offset).limit(size).all()
+
+        items = [
+            AdminLectureListItem(
+                id=row.id,
+                title=row.title,
+                course_id=row.course_id,
+                course_code=row.course_code,
+                topic_id=row.topic_id,
+                voice_id=row.voice_id,
+                audio_url=row.audio_url,
+                timeline_url=row.timeline_url,
+                images_timeline_url=row.images_timeline_url,
+            )
+            for row in rows
+        ]
+
+    semaphore = asyncio.Semaphore(5)
+
+    async def enrich_item(item: AdminLectureListItem) -> AdminLectureListItem:
+        async with semaphore:
+            counts = await _get_image_slot_counts(storage_service, item.images_timeline_url)
+        return item.model_copy(update=counts)
+
+    enriched_items = await asyncio.gather(*(enrich_item(item) for item in items))
+    pages = math.ceil(total / size) if total else 1
+
+    return AdminLectureListResponse(
+        items=list(enriched_items),
+        total=total,
+        page=page,
+        size=size,
+        pages=pages,
+    )
 
 
 @router.get(

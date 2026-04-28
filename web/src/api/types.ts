@@ -229,6 +229,7 @@ export interface Lecture {
   transcript_url: string | null
   timeline_url: string | null
   images_timeline_url: string | null
+  voice_id?: number | null
   word_count: number | null
   duration: number | null
   created_by?: number | null
@@ -272,6 +273,29 @@ export interface LectureList {
   total: number
   page: number
   page_size: number
+}
+
+export interface AdminLectureListItem {
+  id: number
+  title: string
+  course_id: number
+  course_code: string | null
+  topic_id: number
+  voice_id: number | null
+  audio_url: string | null
+  timeline_url: string | null
+  images_timeline_url: string | null
+  image_slots_done: number | null
+  image_slots_total: number | null
+  image_slots_error: string | null
+}
+
+export interface AdminLectureListResponse {
+  items: AdminLectureListItem[]
+  total: number
+  page: number
+  size: number
+  pages: number
 }
 
 export interface LectureGenerateRequest {

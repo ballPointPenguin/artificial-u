@@ -30,6 +30,7 @@ class LectureBase(BaseModel):
         None,
         description="URL to image-slideshow timeline JSON for synced lecture images",
     )
+    voice_id: Optional[int] = Field(None, description="ID of the voice used for this lecture")
     word_count: Optional[int] = Field(
         None, description="Approximate number of words in the lecture content"
     )
@@ -96,6 +97,39 @@ class LectureListResponse(BaseModel):
     """Paginated list of lectures."""
 
     items: List[Lecture] = Field(..., description="List of lectures")
+    total: int = Field(..., description="Total number of matching lectures")
+    page: int = Field(..., description="Current page number")
+    size: int = Field(..., description="Number of items per page")
+    pages: int = Field(..., description="Total number of pages")
+
+
+class AdminLectureListItem(BaseModel):
+    """Compact lecture row for admin list views."""
+
+    id: int = Field(..., description="Lecture ID")
+    title: str = Field(..., description="Lecture title")
+    course_id: int = Field(..., description="Course ID")
+    course_code: Optional[str] = Field(None, description="Course code")
+    topic_id: int = Field(..., description="Topic ID")
+    voice_id: Optional[int] = Field(None, description="Voice ID")
+    audio_url: Optional[str] = Field(None, description="Audio URL if available")
+    timeline_url: Optional[str] = Field(None, description="Timeline URL if available")
+    images_timeline_url: Optional[str] = Field(None, description="Image timeline URL if available")
+    image_slots_done: Optional[int] = Field(
+        None, description="Number of completed image timeline slots"
+    )
+    image_slots_total: Optional[int] = Field(
+        None, description="Total number of image timeline slots"
+    )
+    image_slots_error: Optional[str] = Field(
+        None, description="Error encountered while reading image timeline metadata"
+    )
+
+
+class AdminLectureListResponse(BaseModel):
+    """Paginated compact admin lecture listing."""
+
+    items: List[AdminLectureListItem] = Field(..., description="List of lecture rows")
     total: int = Field(..., description="Total number of matching lectures")
     page: int = Field(..., description="Current page number")
     size: int = Field(..., description="Number of items per page")
