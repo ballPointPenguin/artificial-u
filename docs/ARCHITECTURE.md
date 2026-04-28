@@ -45,15 +45,37 @@ ArtificialU is an AI-powered educational content platform that generates univers
 
 ### Infrastructure
 
-- **Container Orchestration**: Docker Compose
-- **Development Database**: PostgreSQL in Docker
-- **Object Storage**: MinIO in Docker
-- **CI/CD**: GitHub Actions (planned)
-- **Deployment**: Ansible playbooks (planned)
+- **Local Orchestration**: Docker Compose for PostgreSQL and MinIO during development
+- **Production Infrastructure**: AWS CDK in Python
+- **Production Compute**: ECS on Fargate behind an internet-facing Application Load Balancer
+- **Production Delivery**: CloudFront with Route 53, ACM, AWS WAF, and S3-hosted frontend assets
+- **Production Database**: Amazon RDS PostgreSQL 17
+- **Production Storage**: Amazon S3 buckets for audio, lectures, images, exports, content logs, and frontend assets
+- **CI/CD**: GitHub Actions deployment workflow for the `prod` branch
 
 ## System Architecture
 
-The system follows a modern three-tier architecture with clear separation of concerns:
+In production, CloudFront is the public entry point for both the static web client and backend routes:
+
+```mermaid
+flowchart TB
+    browser["Web Client"] --> cf["CloudFront<br/>artificial-u.com / www"]
+    waf["AWS WAF<br/>managed rules + rate limit"] --> cf
+    cf -->|"SPA assets"| frontend["Private S3 Frontend Bucket"]
+    cf -->|"/api/* and /share/*"| alb["Public ALB"]
+
+    subgraph aws["AWS VPC"]
+        alb --> api["ECS Fargate<br/>FastAPI + in-process jobs"]
+        api --> db["RDS PostgreSQL 17"]
+        bastion["Bastion via SSM"] --> db
+    end
+
+    api --> media["S3 Media<br/>audio / lectures / images"]
+    api --> data["S3 Private Data<br/>exports / content logs"]
+    api --> external["External APIs<br/>Auth0, Anthropic, Gemini,<br/>OpenAI, ElevenLabs"]
+```
+
+The application itself follows a modern three-tier architecture with clear separation of concerns:
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -281,15 +303,16 @@ web/src/
   - Lecture content backups
   - Professor profile images
 - **Bucket Organization**:
-  - `artificial-u-audio`: Audio files
-  - `artificial-u-lectures`: Lecture documents
-  - `artificial-u-images`: Images and media
-  - `artificial-u-exports`: Course export archives
+  - Development uses MinIO-compatible local storage.
+  - Production uses CDK-managed S3 buckets for audio, lectures, images, exports, and content logs.
+  - The production audio, lectures, and images buckets are public-readable with CORS for the application domains.
+  - The exports and content logs buckets are private application buckets.
+  - A separate private frontend bucket stores the SolidJS build output for CloudFront.
 
 ### Job Processing System
 
 - **PostgreSQL-backed Queue**: Jobs table with status tracking
-- **Async Worker**: Background processing with concurrency control
+- **Async Worker**: Background processing with concurrency control. In the current CDK production stack, this runs in the API service process rather than as a separate ECS worker service.
 - **Rate Limiting**: API rate limit compliance (configurable RPS)
 - **Event Broadcasting**: Real-time status updates via SSE
 - **Job Types**:
@@ -442,8 +465,8 @@ ArtificialU is a modern, full-stack application built with a focus on:
 - **Clean Architecture**: Clear separation of concerns across layers
 - **Developer Experience**: Modern tooling and hot reload
 - **Type Safety**: End-to-end type checking
-- **Scalability**: Async processing and job queues
+- **Scalability**: Async processing, job queues, Fargate-based API hosting, and S3-backed object storage
 - **Extensibility**: Modular design for easy feature addition
 - **User Experience**: Responsive UI with real-time updates
 
-The architecture supports rapid iteration while maintaining code quality, making it suitable for both development and future production deployment.
+The architecture supports rapid iteration while maintaining code quality, with local Docker services for development and a CDK-managed AWS production deployment.

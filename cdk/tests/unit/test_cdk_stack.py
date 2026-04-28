@@ -14,7 +14,8 @@ def test_stack_synthesizes():
     template.resource_count_is("AWS::EC2::VPC", 1)
     template.resource_count_is("AWS::ECS::Cluster", 1)
     template.resource_count_is("AWS::RDS::DBInstance", 1)
-    template.resource_count_is("AWS::S3::Bucket", 5)  # 4 app buckets + 1 frontend bucket
+    template.resource_count_is("AWS::S3::Bucket", 6)  # 5 app buckets + 1 frontend bucket
     template.resource_count_is("AWS::CloudFront::Distribution", 1)
+    template.resource_count_is("AWS::WAFv2::WebACL", 1)
     template.resource_count_is("AWS::Route53::HostedZone", 1)
     template.resource_count_is("AWS::EC2::VpcEndpoint", 0)  # Verify we're using public endpoints
