@@ -8,6 +8,8 @@ to work with either local MinIO (development) or AWS S3 (production).
 import asyncio
 import io
 import logging
+import os
+import tempfile
 import uuid
 from typing import Any, Dict, List, Optional, Tuple
 from urllib.parse import urlencode, urlparse
@@ -357,6 +359,32 @@ class StorageService:
             return None, None
         except Exception as e:
             self.logger.error(f"Error downloading file: {str(e)}")
+            return None, None
+
+    def stream_to_tempfile_sync(
+        self, bucket: str, object_name: str
+    ) -> Tuple[Optional[str], Optional[str]]:
+        """Stream an S3 object to a temp file without loading it into memory.
+
+        Returns (temp_file_path, content_type). Caller is responsible for
+        deleting the temp file (os.unlink) when done.
+        """
+        try:
+            response = self.client.get_object(Bucket=bucket, Key=object_name)
+            content_type = response.get("ContentType", "application/octet-stream")
+            suffix = os.path.splitext(object_name)[-1] or ".bin"
+            fd, tmp_path = tempfile.mkstemp(suffix=suffix)
+            try:
+                with os.fdopen(fd, "wb") as f:
+                    for chunk in response["Body"].iter_chunks(chunk_size=1024 * 1024):
+                        f.write(chunk)
+            except Exception:
+                os.unlink(tmp_path)
+                raise
+            self.logger.info("Streamed %s/%s to tempfile %s", bucket, object_name, tmp_path)
+            return tmp_path, content_type
+        except Exception as e:
+            self.logger.error("Error streaming file to tempfile: %s", e)
             return None, None
 
     async def download_audio_file(self, object_name: str) -> Tuple[Optional[bytes], Optional[str]]:

@@ -499,7 +499,10 @@ class LectureGeneratorService:
         if not lecture.audio_url:
             raise ContentGenerationError("Lecture has no audio_url; cannot generate timeline")
 
-        # 2. Download the existing audio file from storage
+        # 2. Stream the existing audio file from storage to a temp file (avoids
+        # loading 20+ MB into Python heap, which malloc never returns to the OS).
+        import os
+
         from artificial_u.services.storage_service import StorageService
 
         storage_service = StorageService(logger=self.logger)
@@ -508,11 +511,11 @@ class LectureGeneratorService:
         if not bucket or not object_key:
             raise ContentGenerationError(f"Could not parse storage URL: {lecture.audio_url}")
 
-        audio_bytes, _ = await storage_service.download_file(bucket, object_key)
-        if not audio_bytes:
-            raise ContentGenerationError(
-                f"Failed to download audio file from {bucket}/{object_key}"
-            )
+        tmp_audio_path, _ = await asyncio.to_thread(
+            storage_service.stream_to_tempfile_sync, bucket, object_key
+        )
+        if not tmp_audio_path:
+            raise ContentGenerationError(f"Failed to stream audio file from {bucket}/{object_key}")
 
         deleted_existing_timeline = False
         if getattr(lecture, "timeline_url", None):
@@ -536,15 +539,20 @@ class LectureGeneratorService:
                     lecture.timeline_url,
                 )
 
-        # 3. Generate and upload timeline
+        # 3. Generate and upload timeline; always clean up the temp file
         timeline_url = None
         try:
             timeline_url = await self._generate_and_upload_timeline(
-                lecture, course, topic, audio_bytes
+                lecture, course, topic, tmp_audio_path
             )
         except Exception as e:
             self.logger.error(f"Failed to generate/upload timeline: {e}", exc_info=True)
             raise ContentGenerationError(f"Timeline generation failed: {e}")
+        finally:
+            try:
+                os.unlink(tmp_audio_path)
+            except OSError:
+                pass
 
         if not timeline_url:
             raise ContentGenerationError("Timeline generation returned no URL")
@@ -1004,9 +1012,13 @@ class LectureGeneratorService:
         return audio_url
 
     async def _generate_and_upload_timeline(
-        self, lecture, course, topic, audio_bytes: bytes
+        self, lecture, course, topic, audio_path: str
     ) -> Optional[str]:
-        """Perform forced alignment and upload the resulting timeline JSON."""
+        """Perform forced alignment and upload the resulting timeline JSON.
+
+        audio_path must be a local file path; the file is read-only here and
+        deletion is the caller's responsibility.
+        """
         import json
 
         from artificial_u.audio.speech_processor import SpeechProcessor
@@ -1032,7 +1044,7 @@ class LectureGeneratorService:
 
         self.logger.info(f"Starting forced alignment for lecture {lecture.id}")
         alignment_result = await asyncio.to_thread(
-            client.forced_alignment, audio_bytes, normalized_text
+            client.forced_alignment, audio_path, normalized_text
         )
 
         # Convert to generic timeline format

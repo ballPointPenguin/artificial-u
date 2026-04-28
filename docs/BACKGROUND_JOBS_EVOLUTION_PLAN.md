@@ -126,11 +126,12 @@ to be completed in a handful of PRs without architectural disruption.
   - Batch/slide jobs: priority `-10`.
 - Small jobs can jump ahead of a 30-slide image batch that's been split into 30 queued jobs.
 
-### 2.8 Tune Gunicorn for I/O-bound workload
+### 2.8 Tune Gunicorn for I/O-bound workload - DONE (stopgap)
 
-- Current: `--workers 2 --threads 8` on 1 vCPU / 2 GiB. Over-subscribed given most work is I/O.
-- Try: `--workers 2 --threads 4` or `--workers 1 --threads 16` and compare memory and latency via Category 1 metrics.
-- Parameter sweep is safe because changes are revert-in-one-deploy.
+- **2026-04-28**: Dropped `GUNICORN_WORKERS` from `2` to `1` in CDK (`cdk/cdk/cdk_stack.py`) after prod data showed two workers each plateauing at ~1 GB RSS → combined OOM-killed repeatedly at 97% memory. Single worker with 8 threads serves current traffic fine.
+- Previous: `--workers 2 --threads 8` on 1 vCPU / 2 GiB. Two workers × ~1 GB steady-state = no headroom for a single timeline job spike.
+- Proper fix: §3.1 (dedicated worker service). At that point we can right-size API small + worker bigger per §3.4.
+- Parameter sweep is safe; revert-in-one-deploy.
 
 ### 2.9 Raise ECS `stopTimeout` to give workers a chance to finish
 
@@ -138,7 +139,7 @@ to be completed in a handful of PRs without architectural disruption.
 - Update `Worker.stop()` to wait up to N seconds for in-flight `_run_one` tasks to complete before cancelling.
 - Pairs with 2.2: short jobs finish in seconds, so graceful shutdown Just Works.
 
-### 2.10 Stream large media in `StorageService` (don't hold full files in memory)
+### 2.10 Stream large media in `StorageService` (don't hold full files in memory) - PARTIAL DONE
 
 Confirmed by `tracemalloc` load-trace (single lecture run): the largest live allocation was ~24 MB at:
 
@@ -146,18 +147,23 @@ Confirmed by `tracemalloc` load-trace (single lecture run): the largest live all
 
 Local sizes during that run: lecture MP3 22.8 MiB, timeline JSON 464 KiB, lecture text 21.1 KiB. The MP3 explains the spike: the storage layer reads the entire object into memory.
 
-Actions:
+**2026-04-28 prod data confirmed and sharpened this.** Per-worker memory-drift telemetry showed workers peaking at 1.0–1.3 GB RSS on `generate_lecture_timeline` jobs, then staying pinned there even at inflight=0. Root cause: `generate_lecture_timeline` called `storage_service.download_file()` (loads full MP3 bytes into Python heap) → passed those bytes to `client.forced_alignment()` (httpx wraps them again in a multipart body). Two copies of ~22 MB, neither released back to OS due to glibc malloc retention.
 
-- Audit all read paths in `StorageService` that use `body.read()` / `file_obj.read()` and convert to streaming where the consumer does not need the full bytes.
-  - For S3/MinIO downloads: stream the response body in chunks (e.g., iterate `body.iter_chunks(...)`) directly into the next consumer (HTTP response, ffmpeg stdin, hash, length probe).
-  - For uploads: prefer `upload_fileobj` / multipart over loading bytes into a `bytes` buffer.
-- Avoid round-tripping audio bytes through Python just to compute metadata. Use HEAD/`get_object_attributes` for size/content-type and only `range`-fetch the bytes you need (e.g., first/last KBs for ID3, `ffprobe` over a streamed range).
-- For ffmpeg integration, prefer piping (`stdin`/`stdout`) or local temp files over loading the full MP3 into RAM.
+**Done (2026-04-28):**
+- Added `StorageService.stream_to_tempfile_sync()` — streams S3 body in 1 MB chunks to a temp file with no Python heap spike.
+- `generate_lecture_timeline` now calls `asyncio.to_thread(storage_service.stream_to_tempfile_sync, ...)` and passes the resulting path (not bytes) to `_generate_and_upload_timeline`. Temp file cleaned up in `finally` block.
+- `_generate_and_upload_timeline` signature changed from `audio_bytes: bytes` → `audio_path: str`.
+- `ElevenLabsClient.forced_alignment` signature changed from `audio_bytes: bytes` → `audio_path: str`. Opens the file in a `with` block; httpx streams it as multipart without an extra in-memory copy.
+
+**Still to do:**
+- Audit remaining `download_file` callers that return full bytes and convert where the consumer doesn't need the full buffer (e.g., audio serving HTTP responses, ID3 tagging).
+- For ffmpeg integration, prefer piping (`stdin`/`stdout`) or temp files over loading the full MP3 into RAM.
+- Avoid round-tripping audio bytes through Python just to compute metadata; use HEAD/`get_object_attributes` for size/content-type.
 
 Expected impact:
 
-- Eliminates the dominant memory spike on the audio pipeline; flattens RSS during long lecture jobs.
-- Reduces peak GC pressure and makes Category 5.1 easier to answer with real data.
+- Eliminates the dominant memory spike on the `generate_lecture_timeline` path. RSS during a timeline job should stay flat instead of spiking +22 MB and pinning.
+- Remaining `download_file` callers are smaller consumers; tackle them after observing 24h prod data.
 
 ### 2.11 Reuse boto3 clients/sessions - DONE
 
@@ -283,8 +289,10 @@ depends on outcomes above.
 
 ### 5.1 Is memory actually leaking, or just steady-state heavy?
 
-- Answered by 1.1 + 1.5. If RSS climbs monotonically over days, track down; if it plateaus at 1.2 GiB, it's just Python + imports + thread pool + connection pools, and the answer is right-sizing (3.4), not leak-hunting.
-- **Initial finding (dev, idle vs single lecture run):** the biggest *new* allocation was the audio object being read fully into memory (`storage_service.py:349`, ≈24 MB). That matches the MinIO file sizes observed (MP3 22.8 MiB; timeline JSON 464 KiB; lecture text 21.1 KiB) and points to “spiky per-job allocations” more than a classic leak. Prioritize 2.10–2.12, then re-check 1.1/1.5 over a 24h prod window.
+- **2026-04-28 prod data (memory-drift telemetry + OOM log):** Confirmed pattern is **spiky per-job allocation + glibc malloc retention**, not a monotonic leak. Workers hit 1.0–1.3 GB RSS during `generate_lecture_timeline` jobs (MP3 bytes twice in heap), then stay there even at inflight=0. Two workers × ~1 GB = OOM at 97% on a 2 GiB task.
+- **Root cause addressed:** §2.8 (gunicorn workers 2→1) removes the double-worker pressure immediately. §2.10 (streaming MP3 to temp file) removes the primary heap spike on timeline jobs. After these land, watch 24h drift to see if RSS plateaus at a safe level (expected ~500–700 MB with single worker).
+- If RSS still climbs after §2.10 lands, check remaining `download_file` callers; use `DIAG_TRACEMALLOC=1` on-demand to identify the next-largest allocation.
+- **Initial finding (dev, idle vs single lecture run):** the biggest *new* allocation was the audio object being read fully into memory (`storage_service.py:349`, ≈24 MB). Prod data confirmed and amplified this.
 
 ### 5.2 Do we need per-user cross-tab live state for any flow?
 

@@ -660,16 +660,13 @@ class ElevenLabsClient:
             raise
 
     def forced_alignment(
-        self, audio_bytes: bytes, text: str, filename: str = "audio.mp3"
+        self, audio_path: str, text: str, filename: str = "audio.mp3"
     ) -> Dict[str, Any]:
         """
         Force align an audio file to text.
 
-        Use this endpoint to get the timing information for each character and word
-        in an audio file based on a provided text transcript.
-
         Args:
-            audio_bytes: Audio data as bytes
+            audio_path: Path to a local audio file (not bytes — avoids loading 20+ MB into heap)
             text: The text to align with the audio
             filename: Filename to send in the multipart request
 
@@ -685,13 +682,14 @@ class ElevenLabsClient:
             "Accept": "application/json",
         }
 
-        files = {"file": (filename, audio_bytes, "audio/mpeg")}
         data = {"text": text}
 
         try:
             with httpx.Client(timeout=300) as http:  # Alignment can take a while for large files
                 self.logger.info(f"Starting forced alignment for text length {len(text)}")
-                resp = http.post(url, files=files, data=data, headers=headers)
+                with open(audio_path, "rb") as f:
+                    files = {"file": (filename, f, "audio/mpeg")}
+                    resp = http.post(url, files=files, data=data, headers=headers)
                 resp.raise_for_status()
                 result = resp.json()
                 self.logger.info("Forced alignment completed successfully")

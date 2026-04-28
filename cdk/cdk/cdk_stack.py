@@ -235,7 +235,7 @@ class CdkStack(Stack):
             "ENV": "production",
             "GUNICORN_THREADS": "8",
             "GUNICORN_TIMEOUT": "120",
-            "GUNICORN_WORKERS": "2",
+            "GUNICORN_WORKERS": "1",
             "IMAGE_GENERATION_MODEL": "gemini-3.1-flash-image-preview",
             "LECTURE_GENERATION_MODEL": "claude-opus-4-6",
             "LECTURE_SUMMARY_MODEL": "gpt-5.4-nano",
