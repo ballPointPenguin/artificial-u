@@ -3,7 +3,7 @@ import logging
 import os
 from typing import Any, Dict, Iterable, List, Optional
 
-import boto3
+from artificial_u.integrations.aws_clients import get_cloudwatch_client
 
 logger = logging.getLogger("artificial_u.api.cloudwatch_metrics")
 
@@ -56,7 +56,7 @@ async def cloudwatch_metrics_loop(app: Any, *, interval_sec: float) -> None:
     namespace = os.environ.get("CLOUDWATCH_NAMESPACE", "ArtificialU")
     region = os.environ.get("AWS_REGION") or os.environ.get("AWS_DEFAULT_REGION")
 
-    cw = boto3.client("cloudwatch", region_name=region)  # uses task role in ECS
+    cw = get_cloudwatch_client(region_name=region)  # uses task role in ECS
     dims = _default_dimensions()
 
     repo_factory = getattr(getattr(app, "state", None), "repository_factory", None)

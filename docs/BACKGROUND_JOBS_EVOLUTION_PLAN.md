@@ -159,13 +159,13 @@ Expected impact:
 - Eliminates the dominant memory spike on the audio pipeline; flattens RSS during long lecture jobs.
 - Reduces peak GC pressure and makes Category 5.1 easier to answer with real data.
 
-### 2.11 Reuse boto3 clients/sessions
+### 2.11 Reuse boto3 clients/sessions - DONE
 
 `tracemalloc` load-trace also shows large counts of `botocore` allocations, which is a classic signature of constructing botocore clients/models repeatedly on hot paths.
 
 Actions:
 
-- Ensure a single `boto3.Session` and single S3 client per process; reuse them in `StorageService`.
+- Ensure a single `boto3.Session` and single S3 client per process; reuse them in `StorageService`. Implemented via cached helpers in `artificial_u.integrations.aws_clients`.
 - Audit any place that calls `boto3.client(...)` or instantiates a storage service per request/job and refactor to reuse.
 
 Expected impact:

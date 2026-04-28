@@ -12,11 +12,10 @@ import uuid
 from typing import Any, Dict, List, Optional, Tuple
 from urllib.parse import urlencode, urlparse
 
-import boto3
-from botocore.client import Config
 from botocore.exceptions import ClientError
 
 from artificial_u.config import get_settings
+from artificial_u.integrations.aws_clients import get_s3_client
 
 
 class StorageService:
@@ -62,13 +61,12 @@ class StorageService:
         # Use local MinIO in development
         if storage_type == "minio":
             self.logger.info(f"Using MinIO at {self.settings.STORAGE_ENDPOINT_URL}")
-            return boto3.client(
-                "s3",
+            return get_s3_client(
                 endpoint_url=self.settings.STORAGE_ENDPOINT_URL,
                 aws_access_key_id=self.settings.STORAGE_ACCESS_KEY,
                 aws_secret_access_key=self.settings.STORAGE_SECRET_KEY,
-                config=Config(signature_version="s3v4"),
                 region_name=self.settings.STORAGE_REGION,
+                signature_version="s3v4",
             )
         # Use real AWS S3 in production
         else:
@@ -76,18 +74,22 @@ class StorageService:
             # Check if explicit credentials are provided
             if self.settings.STORAGE_ACCESS_KEY and self.settings.STORAGE_SECRET_KEY:
                 self.logger.info("Using explicit AWS credentials from environment")
-                return boto3.client(
-                    "s3",
+                return get_s3_client(
+                    endpoint_url=None,
                     aws_access_key_id=self.settings.STORAGE_ACCESS_KEY,
                     aws_secret_access_key=self.settings.STORAGE_SECRET_KEY,
                     region_name=self.settings.STORAGE_REGION,
+                    signature_version=None,
                 )
             else:
                 # Use IAM role credentials (for ECS tasks in production)
                 self.logger.info("Using IAM role credentials for S3 access")
-                return boto3.client(
-                    "s3",
+                return get_s3_client(
+                    endpoint_url=None,
+                    aws_access_key_id=None,
+                    aws_secret_access_key=None,
                     region_name=self.settings.STORAGE_REGION,
+                    signature_version=None,
                 )
 
     async def upload_file(
