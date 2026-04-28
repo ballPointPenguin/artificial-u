@@ -11,7 +11,7 @@ from artificial_u.services.http_client import get_shared_async_client
 from artificial_u.services.image_service import ImageService
 from artificial_u.services.storage_service import StorageService
 
-DEFAULT_LECTURE_IMAGE_INTERVAL_SEC = 30
+DEFAULT_LECTURE_IMAGE_INTERVAL_SEC = 40
 DEFAULT_LECTURE_IMAGE_MIN_IMAGES = 6
 DEFAULT_LECTURE_IMAGE_MAX_IMAGES = 40
 DEFAULT_LECTURE_IMAGE_ASPECT_RATIO = "1:1"

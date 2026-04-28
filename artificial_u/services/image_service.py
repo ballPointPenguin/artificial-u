@@ -202,6 +202,7 @@ class ImageService:
         prompt: str,
         aspect_ratio: str,
         reference_image_urls: Optional[List[str]] = None,
+        image_size: str = "1K",
     ) -> List[bytes]:
         """
         Generates image(s) using the Gemini generate_content API.
@@ -231,7 +232,10 @@ class ImageService:
                 contents=contents,
                 config=types.GenerateContentConfig(
                     response_modalities=[Modality.IMAGE],
-                    image_config=types.ImageConfig(aspect_ratio=aspect_ratio),
+                    image_config=types.ImageConfig(
+                        aspect_ratio=aspect_ratio,
+                        image_size=image_size,
+                    ),
                 ),
             )
 
@@ -259,7 +263,7 @@ class ImageService:
             raise  # Re-raise to allow retry logic to handle it
 
     async def _generate_gemini_image_via_images(
-        self, *, model_name: str, prompt: str, aspect_ratio: str
+        self, *, model_name: str, prompt: str, aspect_ratio: str, image_size: Optional[str] = None
     ) -> List[bytes]:
         """
         Generates image(s) using the Gemini generate_images API.
@@ -267,13 +271,17 @@ class ImageService:
         """
         try:
             # Use the async client for proper async operation
+            config_kwargs = {
+                "number_of_images": 1,  # Currently generating only 1 image
+                "aspect_ratio": aspect_ratio,
+            }
+            if image_size:
+                config_kwargs["image_size"] = image_size
+
             response = await gemini_client.aio.models.generate_images(
                 model=model_name,
                 prompt=prompt,
-                config=types.GenerateImagesConfig(
-                    number_of_images=1,  # Currently generating only 1 image
-                    aspect_ratio=aspect_ratio,
-                ),
+                config=types.GenerateImagesConfig(**config_kwargs),
             )
             if hasattr(response, "generated_images") and response.generated_images:
                 # Extract image bytes more safely
@@ -296,6 +304,7 @@ class ImageService:
         prompt: str,
         aspect_ratio: str,
         reference_image_urls: Optional[List[str]] = None,
+        image_size: str = "1K",
     ) -> List[bytes]:
         """
         Generates image(s) using the Google Gemini backend.
@@ -310,11 +319,17 @@ class ImageService:
                 prompt=prompt,
                 aspect_ratio=aspect_ratio,
                 reference_image_urls=reference_image_urls,
+                image_size=image_size,
             )
         else:
             logger.info(f"Using generate_images API for {model_name} (Imagen 4.x)")
+            # Imagen models only support 1K and 2K, so fallback to None (default) if 512 is requested
+            safe_image_size = None if image_size == "512" else image_size
             return await self._generate_gemini_image_via_images(
-                model_name=model_name, prompt=prompt, aspect_ratio=aspect_ratio
+                model_name=model_name,
+                prompt=prompt,
+                aspect_ratio=aspect_ratio,
+                image_size=safe_image_size,
             )
 
     async def _call_openai_api(
@@ -445,6 +460,7 @@ class ImageService:
         aspect_ratio: str,
         backend: str,
         reference_image_urls: Optional[List[str]] = None,
+        image_size: str = "1K",
     ) -> List[bytes]:
         """Generate image with a specific backend."""
         if backend == "gemini":
@@ -453,6 +469,7 @@ class ImageService:
                 prompt=prompt,
                 aspect_ratio=aspect_ratio,
                 reference_image_urls=reference_image_urls,
+                image_size=image_size,
             )
         elif backend == "openai":
             return await self._generate_openai_image(
@@ -472,6 +489,7 @@ class ImageService:
         *,
         reference_image_urls: Optional[List[str]] = None,
         model_name_override: Optional[str] = None,
+        image_size: str = "1K",
     ) -> ImageGenerationResult:
         """
         Generates an image based on the provided prompt using the configured AI model.
@@ -480,6 +498,8 @@ class ImageService:
             prompt: The text prompt to generate the image from
             aspect_ratio: The desired aspect ratio for the image (default: "1:1").
                           Supported values depend on the backend model.
+            image_size: The desired image size/resolution (default: "1K").
+                        Supported values depend on the backend model (e.g., "512", "1K", "2K", "4K").
 
         Returns:
             An ImageGenerationResult object containing either success with image keys
@@ -490,7 +510,7 @@ class ImageService:
 
         logger.info(
             f"Generating image via {backend} backend (model: {model_name}) "
-            f"with prompt: '{prompt[:100]}...' (aspect ratio: {aspect_ratio})"
+            f"with prompt: '{prompt[:100]}...' (aspect ratio: {aspect_ratio}, size: {image_size})"
         )
 
         # Try backend with retry logic
@@ -501,6 +521,7 @@ class ImageService:
                 aspect_ratio=aspect_ratio,
                 backend=backend,
                 reference_image_urls=reference_image_urls,
+                image_size=image_size,
             )
 
             if image_bytes_list:
@@ -696,6 +717,7 @@ class ImageService:
         previous_slide_url: Optional[str] = None,
         aspect_ratio: str = "1:1",
         model_name_override: Optional[str] = None,
+        image_size: str = "512",  # Default to 512 for lecture slides to save cost/time
     ) -> Optional[str]:
         """
         Generate and upload a single lecture slideshow image.
@@ -727,6 +749,7 @@ class ImageService:
                 aspect_ratio=aspect_ratio,
                 backend=backend,
                 reference_image_urls=refs if backend == "gemini" else None,
+                image_size=image_size,
             )
             if not image_bytes_list:
                 await self._log_image_prompt(prompt, aspect_ratio)
