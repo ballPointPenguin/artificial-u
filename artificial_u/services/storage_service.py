@@ -322,11 +322,11 @@ class StorageService:
             # Fall back to regular URL if presigned URL generation fails
             return self.get_file_url(bucket, object_name)
 
-    async def download_file(
+    def download_file_sync(
         self, bucket: str, object_name: str
     ) -> Tuple[Optional[bytes], Optional[str]]:
         """
-        Download a file from storage.
+        Download a file from storage synchronously.
 
         Args:
             bucket: Bucket name
@@ -339,14 +339,12 @@ class StorageService:
             # Create a file-like object to hold the downloaded content
             file_obj = io.BytesIO()
 
-            # Get content type (blocking)
-            response = await asyncio.to_thread(
-                self.client.head_object, Bucket=bucket, Key=object_name
-            )
+            # Get content type
+            response = self.client.head_object(Bucket=bucket, Key=object_name)
             content_type = response.get("ContentType", "application/octet-stream")
 
-            # Download file (blocking)
-            await asyncio.to_thread(self.client.download_fileobj, bucket, object_name, file_obj)
+            # Download file
+            self.client.download_fileobj(bucket, object_name, file_obj)
             file_obj.seek(0)
 
             self.logger.info(f"Downloaded file from {bucket}/{object_name}")
@@ -360,6 +358,21 @@ class StorageService:
         except Exception as e:
             self.logger.error(f"Error downloading file: {str(e)}")
             return None, None
+
+    async def download_file(
+        self, bucket: str, object_name: str
+    ) -> Tuple[Optional[bytes], Optional[str]]:
+        """
+        Download a file from storage.
+
+        Args:
+            bucket: Bucket name
+            object_name: Object key/name
+
+        Returns:
+            Tuple of (file_data, content_type)
+        """
+        return await asyncio.to_thread(self.download_file_sync, bucket, object_name)
 
     def stream_to_tempfile_sync(
         self, bucket: str, object_name: str
@@ -426,6 +439,25 @@ class StorageService:
             self.logger.error(f"Error checking object existence: {str(e)}")
             raise
 
+    def delete_file_sync(self, bucket: str, object_name: str) -> bool:
+        """
+        Delete a file from storage synchronously.
+
+        Args:
+            bucket: Bucket name
+            object_name: Object key/name
+
+        Returns:
+            Success flag
+        """
+        try:
+            self.client.delete_object(Bucket=bucket, Key=object_name)
+            self.logger.info(f"Deleted file from {bucket}/{object_name}")
+            return True
+        except Exception as e:
+            self.logger.error(f"Error deleting file: {str(e)}")
+            return False
+
     async def delete_file(self, bucket: str, object_name: str) -> bool:
         """
         Delete a file from storage.
@@ -437,13 +469,7 @@ class StorageService:
         Returns:
             Success flag
         """
-        try:
-            await asyncio.to_thread(self.client.delete_object, Bucket=bucket, Key=object_name)
-            self.logger.info(f"Deleted file from {bucket}/{object_name}")
-            return True
-        except Exception as e:
-            self.logger.error(f"Error deleting file: {str(e)}")
-            return False
+        return await asyncio.to_thread(self.delete_file_sync, bucket, object_name)
 
     async def list_files(
         self, bucket: str, prefix: Optional[str] = None, max_keys: int = 1000

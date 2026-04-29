@@ -7,6 +7,7 @@ from typing import Any, Dict, List, Optional
 
 from artificial_u.models.core import Topic
 from artificial_u.models.repositories.factory import RepositoryFactory
+from artificial_u.services.lecture_service import LectureService
 from artificial_u.utils import (
     DatabaseError,
 )
@@ -21,6 +22,7 @@ class TopicService:
     def __init__(
         self,
         repository_factory: RepositoryFactory,
+        lecture_service: Optional[LectureService] = None,
         logger=None,
     ):
         """
@@ -28,9 +30,11 @@ class TopicService:
 
         Args:
             repository_factory: Repository factory instance
+            lecture_service: Optional lecture service for cascading topic deletion
             logger: Optional logger instance
         """
         self.repository_factory = repository_factory
+        self.lecture_service = lecture_service
         self.logger = logger or logging.getLogger(__name__)
 
     # --- CRUD Methods --- #
@@ -212,9 +216,17 @@ class TopicService:
             self.logger.error(error_msg)
             raise DatabaseError(error_msg) from e
 
+    def _get_lecture_service(self) -> LectureService:
+        if self.lecture_service is None:
+            self.lecture_service = LectureService(
+                repository_factory=self.repository_factory,
+                logger=self.logger,
+            )
+        return self.lecture_service
+
     def delete_topic(self, topic_id: int) -> bool:
         """
-        Delete a topic.
+        Delete a topic and its lectures.
 
         Args:
             topic_id: ID of the topic to delete
@@ -226,9 +238,24 @@ class TopicService:
             DatabaseError: If there's an error deleting from the database
         """
         try:
+            lecture_service = self._get_lecture_service()
+            lectures = lecture_service.list_lectures(topic_id=topic_id)
+            for lecture in lectures:
+                if lecture.id is None:
+                    self.logger.warning(
+                        "Skipping lecture without ID during topic %s deletion",
+                        topic_id,
+                    )
+                    continue
+                lecture_service.delete_lecture(lecture.id)
+
             result = self.repository_factory.topic.delete(topic_id)
             if result:
-                self.logger.info(f"Topic {topic_id} deleted successfully")
+                self.logger.info(
+                    "Topic %s deleted successfully with %s lecture(s)",
+                    topic_id,
+                    len(lectures),
+                )
             return result
         except Exception as e:
             error_msg = f"Failed to delete topic: {str(e)}"
