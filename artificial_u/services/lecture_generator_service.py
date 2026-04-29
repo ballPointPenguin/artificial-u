@@ -75,6 +75,7 @@ class LectureGeneratorService:
         self.topic_service = topic_service
         self.job_enqueue_service = job_enqueue_service
         self.storage_service = storage_service
+        self.settings = get_settings()
         self.logger = logger or logging.getLogger(__name__)
 
         # Initialize preference service or create one
@@ -588,6 +589,10 @@ class LectureGeneratorService:
         all_course_topics_data: List[Dict[str, Any]],
     ) -> Dict[str, Any]:
         """Prepare arguments for the lecture generation prompt."""
+        word_count = partial_attributes.get("word_count")
+        if word_count is None:
+            word_count = self.settings.LECTURE_WORD_COUNT
+
         return {
             "course_data": course_data,
             "professor_data": professor_data,
@@ -595,7 +600,7 @@ class LectureGeneratorService:
             "existing_lectures": existing_lectures_data,
             "topics_data": all_course_topics_data,
             "freeform_prompt": partial_attributes.get("freeform_prompt"),
-            "word_count": partial_attributes.get("word_count", 3000),
+            "word_count": word_count,
         }
 
     async def _generate_and_parse_content(self, prompt_args: Dict[str, Any], model: str) -> str:

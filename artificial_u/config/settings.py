@@ -23,6 +23,8 @@ from artificial_u.config.defaults import (
     DEFAULT_DB_POOL_SIZE,
     DEFAULT_DB_POOL_TIMEOUT,
     DEFAULT_DB_URL,
+    DEFAULT_LECTURE_IMAGE_INTERVAL_SEC,
+    DEFAULT_LECTURE_WORD_COUNT,
     DEFAULT_LOG_LEVEL,
     DEFAULT_STORAGE_AUDIO_BUCKET,
     DEFAULT_STORAGE_CONTENT_LOGS_BUCKET,
@@ -138,6 +140,9 @@ class Settings(BaseSettings):
     TOPICS_GENERATION_MODEL: str = "gemini-3.1-flash-lite-preview"
     # Image generation model
     IMAGE_GENERATION_MODEL: str = "gemini-3.1-flash-image-preview"
+    # Lecture generation defaults
+    LECTURE_WORD_COUNT: int = DEFAULT_LECTURE_WORD_COUNT
+    LECTURE_IMAGE_INTERVAL_SEC: int = DEFAULT_LECTURE_IMAGE_INTERVAL_SEC
 
     # Text-to-speech settings
     tts_backend: str = DEFAULT_TTS_BACKEND  # "elevenlabs" or "mistral"
@@ -274,6 +279,8 @@ class Settings(BaseSettings):
             "storage_images_bucket": self.STORAGE_IMAGES_BUCKET,
             "storage_exports_bucket": self.STORAGE_EXPORTS_BUCKET,
             "storage_content_logs_bucket": self.STORAGE_CONTENT_LOGS_BUCKET,
+            "lecture_word_count": self.LECTURE_WORD_COUNT,
+            "lecture_image_interval_sec": self.LECTURE_IMAGE_INTERVAL_SEC,
             "coin_cost_course_generation": self.COIN_COST_COURSE_GENERATION,
             "coin_cost_lecture_generation": self.COIN_COST_LECTURE_GENERATION,
             "coin_cost_lecture_audio": self.COIN_COST_LECTURE_AUDIO,

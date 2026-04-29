@@ -7,11 +7,11 @@ from typing import Any, Dict, List, Optional, Set
 
 import httpx
 
+from artificial_u.config import get_settings
 from artificial_u.services.http_client import get_shared_async_client
 from artificial_u.services.image_service import ImageService
 from artificial_u.services.storage_service import StorageService
 
-DEFAULT_LECTURE_IMAGE_INTERVAL_SEC = 45
 DEFAULT_LECTURE_IMAGE_MIN_IMAGES = 6
 DEFAULT_LECTURE_IMAGE_MAX_IMAGES = 40
 DEFAULT_LECTURE_IMAGE_ASPECT_RATIO = "1:1"
@@ -49,7 +49,11 @@ class LectureImagesGeneratorService:
             self.storage_service,
             http_client=self.http_client,
         )
+        self.settings = get_settings()
         self.logger = logger or logging.getLogger(__name__)
+
+    def _default_interval_sec(self) -> int:
+        return self.settings.LECTURE_IMAGE_INTERVAL_SEC
 
     async def _fetch_timeline(self, url: str) -> Dict[str, Any]:
         resp = await self.http_client.get(url, timeout=30.0)
@@ -523,12 +527,13 @@ class LectureImagesGeneratorService:
         self,
         lecture_id: int,
         *,
-        interval_sec: int = DEFAULT_LECTURE_IMAGE_INTERVAL_SEC,
+        interval_sec: Optional[int] = None,
         min_images: int = DEFAULT_LECTURE_IMAGE_MIN_IMAGES,
         max_images: int = DEFAULT_LECTURE_IMAGE_MAX_IMAGES,
         aspect_ratio: str = DEFAULT_LECTURE_IMAGE_ASPECT_RATIO,
         model_name_override: Optional[str] = None,
     ) -> Dict[str, Any]:
+        interval_sec = interval_sec if interval_sec is not None else self._default_interval_sec()
         lecture = self.lecture_service.get_lecture(lecture_id)
         deleted_images_timeline = await self._delete_images_timeline_url(
             getattr(lecture, "images_timeline_url", None)
@@ -578,12 +583,13 @@ class LectureImagesGeneratorService:
         self,
         lecture_id: int,
         *,
-        interval_sec: int = DEFAULT_LECTURE_IMAGE_INTERVAL_SEC,
+        interval_sec: Optional[int] = None,
         min_images: int = DEFAULT_LECTURE_IMAGE_MIN_IMAGES,
         max_images: int = DEFAULT_LECTURE_IMAGE_MAX_IMAGES,
         aspect_ratio: str = DEFAULT_LECTURE_IMAGE_ASPECT_RATIO,
         model_name_override: Optional[str] = None,
     ) -> Dict[str, Any]:
+        interval_sec = interval_sec if interval_sec is not None else self._default_interval_sec()
         lecture = self.lecture_service.get_lecture(lecture_id)
         existing_timeline = None
         existing_object_key = None

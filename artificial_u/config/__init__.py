@@ -7,6 +7,7 @@ from artificial_u.config.defaults import (
     DEFAULT_CONTENT_BACKEND,
     DEFAULT_CONTENT_LOGS_PATH,
     DEFAULT_DB_URL,
+    DEFAULT_LECTURE_IMAGE_INTERVAL_SEC,
     DEFAULT_LECTURE_WORD_COUNT,
     DEFAULT_LOG_LEVEL,
     DEFAULT_STORAGE_AUDIO_BUCKET,
@@ -52,6 +53,7 @@ __all__ = [
     # TTS defaults
     "DEFAULT_TTS_BACKEND",
     # Course and lecture defaults
+    "DEFAULT_LECTURE_IMAGE_INTERVAL_SEC",
     "DEFAULT_LECTURE_WORD_COUNT",
     # System defaults
     "DEFAULT_LOG_LEVEL",

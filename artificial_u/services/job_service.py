@@ -1,10 +1,10 @@
 import logging
 from typing import Any, Dict, Optional
 
+from artificial_u.config import get_settings
 from artificial_u.models.repositories.factory import RepositoryFactory
 from artificial_u.services.lecture_images_generator_service import (
     DEFAULT_LECTURE_IMAGE_ASPECT_RATIO,
-    DEFAULT_LECTURE_IMAGE_INTERVAL_SEC,
 )
 
 
@@ -22,6 +22,7 @@ class JobService:
         logger: Optional[logging.Logger] = None,
     ):
         self.repository_factory = repository_factory
+        self.settings = get_settings()
         self.logger = logger or logging.getLogger(__name__)
 
         # Lazily initialized service instances
@@ -91,6 +92,12 @@ class JobService:
             next_payload = current
 
         return next_payload
+
+    def _lecture_image_interval_sec_from_payload(self, payload: Dict[str, Any]) -> int:
+        interval_sec = payload.get("interval_sec")
+        if interval_sec is not None:
+            return int(interval_sec)
+        return self.settings.LECTURE_IMAGE_INTERVAL_SEC
 
     def _enqueue_next_lecture_slide(
         self, payload: Dict[str, Any], result: Dict[str, Any]
@@ -368,7 +375,7 @@ class JobService:
             raise ValueError("lecture_id is required")
         result = await service.remap_lecture_images_timeline(
             lecture_id,
-            interval_sec=payload.get("interval_sec", DEFAULT_LECTURE_IMAGE_INTERVAL_SEC),
+            interval_sec=self._lecture_image_interval_sec_from_payload(payload),
             aspect_ratio=payload.get("aspect_ratio", DEFAULT_LECTURE_IMAGE_ASPECT_RATIO),
             model_name_override=payload.get("model_name_override"),
         )
@@ -379,7 +386,7 @@ class JobService:
         lecture_id = payload.get("lecture_id")
         if lecture_id is None:
             raise ValueError("lecture_id is required")
-        interval_sec = payload.get("interval_sec", DEFAULT_LECTURE_IMAGE_INTERVAL_SEC)
+        interval_sec = self._lecture_image_interval_sec_from_payload(payload)
         aspect_ratio = payload.get("aspect_ratio", DEFAULT_LECTURE_IMAGE_ASPECT_RATIO)
         model_name_override = payload.get("model_name_override")
         cleanup_result = None

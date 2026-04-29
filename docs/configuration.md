@@ -159,6 +159,18 @@ IMAGE_GENERATION_MODEL=gemini-3.1-flash-image-preview
 TTS_VOICE_MODEL=eleven_flash_v2_5
 ```
 
+## Lecture Defaults
+
+Lecture generation and lecture image planning have hard-coded defaults that can be overridden with primary environment variables:
+
+```python
+# Target word count for generated lectures (default: 3000)
+LECTURE_WORD_COUNT=3000
+
+# Approximate seconds between generated lecture images (default: 45)
+LECTURE_IMAGE_INTERVAL_SEC=45
+```
+
 ## Coin Costs for Generation Operations
 
 ArtificialU uses a virtual currency system ("coins") to control access to expensive AI generation operations. These costs can be configured via environment variables:
@@ -276,6 +288,8 @@ TESTING=true
 | `PROFESSOR_GENERATION_MODEL` | Model for professor generation | `gpt-5.4-nano` | No |
 | `IMAGE_GENERATION_MODEL` | Model for image generation | `gemini-3.1-flash-image-preview` | No |
 | `TTS_VOICE_MODEL` | Model for text-to-speech voice | `eleven_flash_v2_5` | No |
+| `LECTURE_WORD_COUNT` | Target word count for generated lectures | `3000` | No |
+| `LECTURE_IMAGE_INTERVAL_SEC` | Approximate seconds between generated lecture images | `45` | No |
 | `STORAGE_TYPE` | Storage type ("minio" or "s3") | `minio` | No |
 | `STORAGE_ENDPOINT_URL` | MinIO endpoint URL | `http://localhost:9000` | No |
 | `STORAGE_PUBLIC_URL` | Public URL for MinIO | `http://localhost:9000` | No |
