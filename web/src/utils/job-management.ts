@@ -3,215 +3,207 @@
  * and their states across components.
  */
 
-import { createEffect, createSignal, on, onCleanup } from 'solid-js'
+import { type Accessor, createEffect, createMemo, createSignal, on, onCleanup } from 'solid-js'
 import { TIMEOUT_CONFIG } from '../api/config.js'
-import { getJob, type JobEvent, type JobRow, listJobs } from '../api/services/jobs-service.js'
-import { useAuth } from '../auth/AuthProvider.js'
+import { getJob, type JobEvent, type JobRow, type JobStatus } from '../api/services/jobs-service.js'
 import { jobDebug } from './job-debug.js'
-import { getJobEventHub } from './job-events-hub.js'
+
+const DEFAULT_JOB_POLL_INTERVAL_MS = 2000
+const TERMINAL_JOB_STATUSES = new Set<JobStatus>(['done', 'failed', 'cancelled'])
+const ACTIVE_JOB_STATUSES = new Set<JobStatus>(['queued', 'running'])
 
 export interface JobTrackerOptions {
   topicId?: () => number | undefined
   lectureId?: () => number | undefined
   courseId?: () => number | undefined
   kinds?: string[]
+  pollIntervalMs?: number
   onJobComplete?: (event: JobEvent) => void
   onJobStart?: (event: JobEvent) => void
   onJobFail?: (event: JobEvent) => void
 }
 
+function toJobEvent(job: JobRow): JobEvent {
+  return {
+    id: job.id,
+    kind: job.kind,
+    status: job.status,
+    payload: job.payload,
+    result: job.result,
+    last_error: job.last_error ?? undefined,
+  }
+}
+
+function matchesJobKind(job: JobRow, kinds?: string[]): boolean {
+  return !kinds || kinds.includes(job.kind)
+}
+
 /**
- * Creates a reactive job tracker that monitors job status via SSE
- * and provides consolidated state management.
+ * Creates a reactive job tracker for jobs started by this page instance.
+ *
+ * Call `track(job.id)` after enqueueing a job. The tracker polls only those
+ * known job IDs and stops when each reaches a terminal state.
  */
 export function createJobTracker(options: JobTrackerOptions) {
-  const auth = useAuth()
-
   const [activeJobIds, setActiveJobIds] = createSignal<Set<number>>(new Set())
-  const [isInitializing, setIsInitializing] = createSignal(true)
+  const [isInitializing] = createSignal(false)
   const [lastError, setLastError] = createSignal<string | null>(null)
 
-  let unsubscribe: (() => void) | null = null
+  let pollTimers = new Map<number, ReturnType<typeof setTimeout>>()
+  let startedJobIds = new Set<number>()
+  let runId = 0
 
   // Computed signal for whether any jobs are active
   const hasActiveJobs = () => activeJobIds().size > 0
 
-  // Get initial values for SSE subscription (will be updated as dependencies change)
-  let initialTopicId = options.topicId?.()
-  let initialLectureId = options.lectureId?.()
-  let initialCourseId = options.courseId?.()
-
   // Debug logging
   jobDebug.log('subscription', 'JobTracker initializing', {
-    topicId: initialTopicId,
-    lectureId: initialLectureId,
-    courseId: initialCourseId,
+    topicId: options.topicId?.(),
+    lectureId: options.lectureId?.(),
+    courseId: options.courseId?.(),
     kinds: options.kinds,
   })
 
-  // Track reactive changes and restart SSE when dependencies change
+  const clearPollTimer = (jobId: number) => {
+    const timer = pollTimers.get(jobId)
+    if (timer) {
+      clearTimeout(timer)
+      pollTimers.delete(jobId)
+    }
+  }
+
+  const clearAllPollTimers = () => {
+    for (const timer of pollTimers.values()) {
+      clearTimeout(timer)
+    }
+    pollTimers = new Map<number, ReturnType<typeof setTimeout>>()
+  }
+
+  const removeActiveJob = (jobId: number) => {
+    setActiveJobIds((prev) => {
+      const next = new Set(prev)
+      next.delete(jobId)
+      return next
+    })
+  }
+
+  const stop = (jobId?: number) => {
+    if (jobId === undefined) {
+      runId += 1
+      clearAllPollTimers()
+      setActiveJobIds(new Set<number>())
+      startedJobIds = new Set<number>()
+      return
+    }
+
+    clearPollTimer(jobId)
+    removeActiveJob(jobId)
+    startedJobIds.delete(jobId)
+  }
+
+  const markActiveJob = (jobId: number) => {
+    setActiveJobIds((prev) => {
+      if (prev.has(jobId)) return prev
+      const next = new Set(prev)
+      next.add(jobId)
+      return next
+    })
+  }
+
+  const scheduleNextPoll = (jobId: number, poll: () => void) => {
+    clearPollTimer(jobId)
+    pollTimers.set(jobId, setTimeout(poll, options.pollIntervalMs ?? DEFAULT_JOB_POLL_INTERVAL_MS))
+  }
+
+  const handlePolledJob = (job: JobRow) => {
+    if (!matchesJobKind(job, options.kinds)) {
+      removeActiveJob(job.id)
+      return false
+    }
+
+    if (isActiveJobStatus(job.status)) {
+      markActiveJob(job.id)
+
+      if (!startedJobIds.has(job.id)) {
+        startedJobIds.add(job.id)
+        jobDebug.log('state_change', `Job active: ${job.kind} #${String(job.id)}`, {
+          id: job.id,
+          kind: job.kind,
+          status: job.status,
+        })
+        options.onJobStart?.(toJobEvent(job))
+      }
+
+      return true
+    }
+
+    removeActiveJob(job.id)
+    clearPollTimer(job.id)
+    startedJobIds.delete(job.id)
+
+    if (job.status === 'done') {
+      jobDebug.log('state_change', `Job completed: ${job.kind} #${String(job.id)}`, job)
+      options.onJobComplete?.(toJobEvent(job))
+    } else if (job.status === 'failed' || job.status === 'cancelled') {
+      setLastError(`Job ${job.kind} failed`)
+      options.onJobFail?.(toJobEvent(job))
+    }
+
+    return false
+  }
+
+  const track = (jobId: number) => {
+    const currentRunId = runId
+    markActiveJob(jobId)
+    setLastError(null)
+
+    const poll = () => {
+      void (async () => {
+        if (currentRunId !== runId) return
+
+        try {
+          const job = await getJob(jobId)
+          if (currentRunId !== runId) return
+          if (!activeJobIds().has(jobId)) return
+
+          const shouldContinue = handlePolledJob(job)
+          if (shouldContinue) {
+            scheduleNextPoll(jobId, poll)
+          }
+        } catch (error) {
+          if (currentRunId !== runId) return
+          jobDebug.log('error', `Failed to poll job ${String(jobId)}`, error)
+          setLastError('Failed to load job status')
+          scheduleNextPoll(jobId, poll)
+        }
+      })()
+    }
+
+    jobDebug.log('state_change', `Tracking job ${String(jobId)}`, null)
+    poll()
+  }
+
+  // Route/entity changes in a reused component instance should not keep old local jobs active.
   createEffect(
     on(
-      // Track these reactive values
-      () =>
-        [
-          auth.isAuthenticated(),
-          options.topicId?.(),
-          options.lectureId?.(),
-          options.courseId?.(),
-        ] as const,
-      async ([isAuthed, topicId, lectureId, courseId]) => {
-        // Clean up previous subscription
-        if (unsubscribe) {
-          jobDebug.log('subscription', 'Dependencies changed, unsubscribing previous SSE', {
-            topicId,
-            lectureId,
-            courseId,
-            wasTopicId: initialTopicId,
-            wasLectureId: initialLectureId,
-          })
-          unsubscribe()
-          unsubscribe = null
-        }
-
-        if (!isAuthed) {
-          jobDebug.log(
-            'subscription',
-            'Skipping job subscription because user is not authenticated',
-            null
-          )
-          setIsInitializing(false)
-          setActiveJobIds(new Set<number>())
-          setLastError(null)
-          return
-        }
-
-        // Update initial values for the new effect run
-        initialTopicId = topicId
-        initialLectureId = lectureId
-        initialCourseId = courseId
-
-        // Skip if no valid IDs
-        if (!topicId && !lectureId && !courseId) {
-          setIsInitializing(false)
-          setActiveJobIds(new Set<number>())
-          return
-        }
-
-        // Reset state for new entity
-        setIsInitializing(true)
-        setActiveJobIds(new Set<number>())
+      () => [options.topicId?.(), options.lectureId?.(), options.courseId?.()] as const,
+      () => {
+        stop()
         setLastError(null)
-
-        // Load initial job snapshot
-        try {
-          const [inflight, queued] = await Promise.all([
-            listJobs({
-              status: 'running',
-              topic_id: topicId,
-              lecture_id: lectureId,
-              course_id: courseId,
-            }),
-            listJobs({
-              status: 'queued',
-              topic_id: topicId,
-              lecture_id: lectureId,
-              course_id: courseId,
-            }),
-          ])
-
-          const ids = new Set<number>()
-          for (const job of [...inflight, ...queued]) {
-            // Filter by kinds if specified
-            if (!options.kinds || options.kinds.includes(job.kind)) {
-              ids.add(job.id)
-              jobDebug.log('state_change', `Found active job: ${job.kind} #${String(job.id)}`, {
-                id: job.id,
-                kind: job.kind,
-                status: job.status,
-              })
-            }
-          }
-          setActiveJobIds(ids)
-        } catch (error) {
-          jobDebug.log('error', 'Failed to initialize job tracker', error)
-          setLastError('Failed to load job status')
-        } finally {
-          setIsInitializing(false)
-        }
-
-        // Subscribe to job events via the hub
-        const hub = getJobEventHub()
-        const filter = {
-          topicId,
-          lectureId,
-          courseId,
-          kinds: options.kinds,
-        }
-
-        jobDebug.log('subscription', 'Subscribing via JobEventHub', filter)
-
-        unsubscribe = hub.subscribe(
-          filter,
-          (event) => {
-            const { status } = event
-
-            jobDebug.log(
-              'event',
-              `Hub event: ${event.kind} #${String(event.id)} - ${status}`,
-              event
-            )
-
-            // Update active job tracking
-            setActiveJobIds((prev) => {
-              const newIds = new Set(prev)
-              if (status === 'queued' || status === 'running') {
-                newIds.add(event.id)
-                options.onJobStart?.(event)
-              } else {
-                newIds.delete(event.id)
-                if (status === 'done') {
-                  jobDebug.log(
-                    'state_change',
-                    `Job completed: ${event.kind} #${String(event.id)}`,
-                    event
-                  )
-                  options.onJobComplete?.(event)
-                } else if (status === 'failed') {
-                  options.onJobFail?.(event)
-                  setLastError(`Job ${event.kind} failed`)
-                }
-              }
-              return newIds
-            })
-          },
-          (jobs) => {
-            const ids = new Set<number>()
-            for (const job of jobs) {
-              if (job.status === 'queued' || job.status === 'running') {
-                ids.add(job.id)
-              }
-            }
-            jobDebug.log('state_change', 'Reconciled active jobs from SSE snapshot', {
-              activeJobIds: [...ids],
-            })
-            setActiveJobIds(ids)
-          }
-        )
       },
-      { defer: false } // Run immediately, not deferred
+      { defer: true }
     )
   )
 
   // Cleanup on unmount
   onCleanup(() => {
-    jobDebug.log('subscription', 'Cleaning up SSE subscription', null)
-    if (unsubscribe) {
-      unsubscribe()
-    }
+    jobDebug.log('subscription', 'Cleaning up job polling', null)
+    stop()
   })
 
   return {
+    track,
+    stop,
     hasActiveJobs,
     activeJobIds,
     isInitializing,
@@ -339,6 +331,186 @@ export function getJobMessage(
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
+type MaybeAccessor<T> = T | Accessor<T>
+
+function resolveMaybeAccessor<T>(value: MaybeAccessor<T>): T {
+  return typeof value === 'function' ? (value as Accessor<T>)() : value
+}
+
+function isTerminalJobStatus(status: JobStatus): boolean {
+  return TERMINAL_JOB_STATUSES.has(status)
+}
+
+function isActiveJobStatus(status: JobStatus): boolean {
+  return ACTIVE_JOB_STATUSES.has(status)
+}
+
+function getJobFailureMessage(job: JobRow): string {
+  return job.last_error || `Job ${job.status}`
+}
+
+export interface JobPollingOptions {
+  pollIntervalMs?: number
+  timeoutMs?: number
+  enabled?: MaybeAccessor<boolean>
+  onJobComplete?: (job: JobRow) => void
+  onJobFail?: (job: JobRow) => void
+}
+
+/**
+ * Reactive SolidJS polling primitive for a single job.
+ *
+ * Polls immediately, then every 2s by default while the job remains queued/running.
+ * Polling stops automatically on terminal status, timeout, disabled state, or cleanup.
+ */
+export function createJobPolling(
+  jobId: MaybeAccessor<number | null | undefined>,
+  options: JobPollingOptions = {}
+) {
+  const [job, setJob] = createSignal<JobRow | null>(null)
+  const [isPolling, setIsPolling] = createSignal(false)
+  const [lastError, setLastError] = createSignal<string | null>(null)
+  const [timedOut, setTimedOut] = createSignal(false)
+
+  let timer: ReturnType<typeof setTimeout> | null = null
+  let runId = 0
+
+  const pollIntervalMs = () => options.pollIntervalMs ?? DEFAULT_JOB_POLL_INTERVAL_MS
+  const timeoutMs = () => options.timeoutMs ?? TIMEOUT_CONFIG.generation
+  const enabled = () =>
+    options.enabled === undefined ? true : resolveMaybeAccessor(options.enabled)
+
+  const clearTimer = () => {
+    if (timer) {
+      clearTimeout(timer)
+      timer = null
+    }
+  }
+
+  const stop = () => {
+    runId += 1
+    clearTimer()
+    setIsPolling(false)
+  }
+
+  const status = createMemo(() => job()?.status)
+  const isTerminal = createMemo(() => {
+    const currentStatus = status()
+    return currentStatus ? isTerminalJobStatus(currentStatus) : false
+  })
+
+  const scheduleNextPoll = (currentRunId: number, poll: () => void) => {
+    clearTimer()
+    timer = setTimeout(poll, pollIntervalMs())
+    jobDebug.log('state_change', `Scheduled next job poll for run ${String(currentRunId)}`, {
+      pollIntervalMs: pollIntervalMs(),
+    })
+  }
+
+  const startPolling = (currentJobId: number) => {
+    const currentRunId = runId + 1
+    runId = currentRunId
+    clearTimer()
+    setJob(null)
+    setLastError(null)
+    setTimedOut(false)
+    setIsPolling(true)
+
+    const deadline = Date.now() + timeoutMs()
+    const jobIdLabel = String(currentJobId)
+
+    const poll = () => {
+      void (async () => {
+        if (currentRunId !== runId) return
+
+        if (Date.now() > deadline) {
+          const seconds = Math.round(timeoutMs() / 1000).toString()
+          const timeoutMessage = `Job ${jobIdLabel} did not finish within ${seconds}s`
+          jobDebug.log('state_change', timeoutMessage, null)
+          setLastError(timeoutMessage)
+          setTimedOut(true)
+          setIsPolling(false)
+          return
+        }
+
+        try {
+          const nextJob = await getJob(currentJobId)
+          if (currentRunId !== runId) return
+
+          setJob(nextJob)
+          setLastError(null)
+
+          if (nextJob.status === 'done') {
+            jobDebug.log('state_change', `Job ${jobIdLabel} completed`, nextJob)
+            setIsPolling(false)
+            options.onJobComplete?.(nextJob)
+            return
+          }
+
+          if (nextJob.status === 'failed' || nextJob.status === 'cancelled') {
+            const reason = getJobFailureMessage(nextJob)
+            jobDebug.log('state_change', `Job ${jobIdLabel} ${nextJob.status}: ${reason}`, nextJob)
+            setLastError(reason)
+            setIsPolling(false)
+            options.onJobFail?.(nextJob)
+            return
+          }
+
+          if (isActiveJobStatus(nextJob.status)) {
+            scheduleNextPoll(currentRunId, poll)
+            return
+          }
+
+          setIsPolling(false)
+        } catch (error) {
+          if (currentRunId !== runId) return
+          const message = error instanceof Error ? error.message : 'Failed to poll job status'
+          jobDebug.log('error', `Failed to poll job ${jobIdLabel}`, error)
+          setLastError(message)
+          setIsPolling(false)
+        }
+      })()
+    }
+
+    jobDebug.log('state_change', `Started polling job ${jobIdLabel}`, {
+      pollIntervalMs: pollIntervalMs(),
+      timeoutMs: timeoutMs(),
+    })
+    poll()
+  }
+
+  createEffect(
+    on(
+      () => [resolveMaybeAccessor(jobId), enabled()] as const,
+      ([currentJobId, isEnabled]) => {
+        stop()
+
+        if (!isEnabled || currentJobId == null) {
+          setJob(null)
+          setLastError(null)
+          setTimedOut(false)
+          return
+        }
+
+        startPolling(currentJobId)
+      },
+      { defer: false }
+    )
+  )
+
+  onCleanup(stop)
+
+  return {
+    job,
+    status,
+    isPolling,
+    isTerminal,
+    timedOut,
+    lastError,
+    stop,
+  }
+}
+
 export interface WaitForJobOptions {
   pollIntervalMs?: number
   timeoutMs?: number
@@ -352,7 +524,7 @@ export async function waitForJobResult(
   jobId: number,
   options: WaitForJobOptions = {}
 ): Promise<JobRow> {
-  const pollIntervalMs = options.pollIntervalMs ?? 2000
+  const pollIntervalMs = options.pollIntervalMs ?? DEFAULT_JOB_POLL_INTERVAL_MS
   const timeoutMs = options.timeoutMs ?? TIMEOUT_CONFIG.generation
   const deadline = Date.now() + timeoutMs
   const jobIdLabel = String(jobId)
@@ -369,7 +541,7 @@ export async function waitForJobResult(
     }
 
     if (job.status === 'failed' || job.status === 'cancelled') {
-      const reason = job.last_error || `Job ${job.status}`
+      const reason = getJobFailureMessage(job)
       jobDebug.log('state_change', `Job ${jobIdLabel} ${job.status}: ${reason}`, job)
       throw new Error(reason)
     }

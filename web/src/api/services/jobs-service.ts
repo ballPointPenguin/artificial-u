@@ -48,7 +48,7 @@ export async function cancelJob(jobId: number): Promise<{ id: number; status: st
   return httpClient.post<{ id: number; status: string }>(endpoint, {})
 }
 
-// SSE subscription helper for job events
+// Shared event-shaped job payload used by SSE and polling callbacks.
 export type JobEvent = {
   id: number
   kind: string

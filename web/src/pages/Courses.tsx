@@ -11,7 +11,7 @@ import { Alert, Button, MagicButton } from '../components/ui'
 import type { SelectOption } from '../components/ui/Select.jsx'
 import Select from '../components/ui/Select.jsx'
 import { useTranslations } from '../i18n'
-import { getJobEventHub } from '../utils/job-events-hub.js'
+import { createJobPolling } from '../utils/job-management.js'
 
 type SortField =
   | 'code'
@@ -115,6 +115,7 @@ const Courses: Component = () => {
   const [showCreateForm, setShowCreateForm] = createSignal(false)
   const [submitting, setSubmitting] = createSignal(false)
   const [formError, setFormError] = createSignal('')
+  const [createCourseJobId, setCreateCourseJobId] = createSignal<number | null>(null)
   const [isGeneratingCourseImageId, setIsGeneratingCourseImageId] = createSignal<number | null>(
     null
   )
@@ -193,6 +194,31 @@ const Courses: Component = () => {
         includeHidden,
       })
   )
+
+  createJobPolling(() => createCourseJobId(), {
+    onJobComplete: (job) => {
+      setShowCreateForm(false)
+      setSubmitting(false)
+      setCreateCourseJobId(null)
+
+      const createdCourseId =
+        job.result && typeof job.result === 'object' && 'course_id' in job.result
+          ? Number((job.result as { course_id?: unknown }).course_id)
+          : Number.NaN
+
+      if (!Number.isNaN(createdCourseId)) {
+        navigate(`/courses/${String(createdCourseId)}`)
+        return
+      }
+
+      void refetch()
+    },
+    onJobFail: (job) => {
+      setFormError(job.last_error || t().courses.courseCreationFailed)
+      setSubmitting(false)
+      setCreateCourseJobId(null)
+    },
+  })
 
   const sortFieldOptions: SelectOption[] = [
     { value: 'updated_at', label: t().courses.lastUpdate },
@@ -359,6 +385,7 @@ const Courses: Component = () => {
   const handleSubmitCreate = async (formData: CourseFormData) => {
     setSubmitting(true)
     setFormError('')
+    setCreateCourseJobId(null)
 
     const createPayload: CourseCreate = {
       code: formData.code,
@@ -375,36 +402,11 @@ const Courses: Component = () => {
     try {
       // Enqueue smart course creation job
       const job = await courseService.enqueueCreateCourse(createPayload)
-
-      // Subscribe to SSE for create_course events and react when done/failed
-      const hub = getJobEventHub()
-      const unsubscribe = hub.subscribe({ kinds: ['create_course'] }, (ev) => {
-        if (ev.id !== job.id) return
-        if (ev.status === 'done') {
-          setShowCreateForm(false)
-          unsubscribe()
-          setSubmitting(false)
-
-          const createdCourseId =
-            ev.result && typeof ev.result === 'object' && 'course_id' in ev.result
-              ? Number((ev.result as { course_id?: unknown }).course_id)
-              : Number.NaN
-
-          if (!Number.isNaN(createdCourseId)) {
-            navigate(`/courses/${String(createdCourseId)}`)
-            return
-          }
-
-          void refetch()
-        } else if (ev.status === 'failed' || ev.status === 'cancelled') {
-          setFormError(ev.last_error || t().courses.courseCreationFailed)
-          unsubscribe()
-          setSubmitting(false)
-        }
-      })
+      setCreateCourseJobId(job.id)
     } catch (error) {
       setFormError(error instanceof Error ? error.message : t().courses.failedToEnqueue)
       setSubmitting(false)
+      setCreateCourseJobId(null)
     }
   }
 

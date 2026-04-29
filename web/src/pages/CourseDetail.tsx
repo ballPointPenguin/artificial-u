@@ -18,7 +18,6 @@ import type { CourseFormData } from '../components/courses/types.jsx'
 import { Alert, Button, MagicButton, MetadataInfo, ShareButton } from '../components/ui'
 import { useTranslations } from '../i18n'
 import { useAudioPlayer } from '../utils/audio-player-context.jsx'
-import { createJobTracker, getJobMessage } from '../utils/job-management.js'
 
 // Department Info Component
 const DepartmentInfo: Component<{
@@ -300,7 +299,6 @@ const CourseDetail: Component = () => {
   const [exportJobId, setExportJobId] = createSignal<number | null>(null)
   const [exportMessage, setExportMessage] = createSignal('')
   const [isPublishing, setIsPublishing] = createSignal(false)
-  const [topicGenMessage, setTopicGenMessage] = createSignal('')
   const [isGeneratingImage, setIsGeneratingImage] = createSignal(false)
   const [imageGenerationError, setImageGenerationError] = createSignal('')
 
@@ -323,40 +321,10 @@ const CourseDetail: Component = () => {
     () => (isValidId ? courseId : null),
     courseService.getCourseLectures
   )
-  const [topicsData, { refetch: refetchTopics }] = createResource(
+  const [topicsData] = createResource(
     () => (isValidId ? courseId : null),
     (id) => topicService.listTopicsByCourse(id, 1, 100)
   )
-
-  // Track topic generation jobs via SSE
-  const topicJobTracker = createJobTracker({
-    courseId: () => (isValidId ? courseId : undefined),
-    kinds: ['generate_topics_for_course'],
-    onJobStart: (event) => {
-      if (import.meta.env.DEV) {
-        console.log('[CourseDetail] Topic generation started:', event.id)
-      }
-      setTopicGenMessage(getJobMessage(event.kind, 'running'))
-    },
-    onJobComplete: (event) => {
-      if (import.meta.env.DEV) {
-        console.log('[CourseDetail] Topic generation completed:', event.id)
-      }
-      setTopicGenMessage(getJobMessage(event.kind, 'done'))
-      // Auto-refresh topics when job completes
-      setTimeout(() => {
-        void refetchTopics()
-        // Clear success message after a delay
-        setTimeout(() => setTopicGenMessage(''), 3000)
-      }, 100)
-    },
-    onJobFail: (event) => {
-      if (import.meta.env.DEV) {
-        console.log('[CourseDetail] Topic generation failed:', event.id, event.last_error)
-      }
-      setError(event.last_error || getJobMessage(event.kind, 'failed'))
-    },
-  })
 
   // Handler for course update form submission
   const handleUpdateCourse = async (formData: CourseFormData) => {
@@ -718,43 +686,13 @@ const CourseDetail: Component = () => {
                         <h2 class="text-2xl font-display text-parchment-100">
                           {t().courseDetail.courseTopics}
                         </h2>
-                        <Show when={topicJobTracker.hasActiveJobs()}>
-                          <div class="flex items-center gap-2 text-mystic-400 whitespace-nowrap">
-                            <LoaderCircle class="h-4 w-4 animate-spin" />
-                            <span class="text-sm font-serif">{t().common.generating}</span>
-                          </div>
-                        </Show>
                       </div>
-                      <Button
-                        variant="primary"
-                        disabled={topicJobTracker.hasActiveJobs()}
-                        class={`shrink-0 ${
-                          topicJobTracker.hasActiveJobs() ? 'opacity-50 cursor-not-allowed' : ''
-                        }`}
-                      >
-                        <A
-                          href={`/courses/${String(courseId)}/topics`}
-                          class={topicJobTracker.hasActiveJobs() ? 'pointer-events-none' : ''}
-                        >
+                      <Button variant="primary" class="shrink-0">
+                        <A href={`/courses/${String(courseId)}/topics`}>
                           {t().courseDetail.editTopics}
                         </A>
                       </Button>
                     </div>
-
-                    {/* Topic Generation Status Messages */}
-                    <Show when={topicGenMessage() && !topicJobTracker.hasActiveJobs()}>
-                      <Alert variant="success" class="mb-4">
-                        {topicGenMessage()}
-                      </Alert>
-                    </Show>
-                    <Show when={topicJobTracker.hasActiveJobs()}>
-                      <Alert variant="info" class="mb-4">
-                        <div class="flex items-center gap-2">
-                          <LoaderCircle class="h-4 w-4 animate-spin" />
-                          <span>{t().courseDetail.topicGenerationInProgress}</span>
-                        </div>
-                      </Alert>
-                    </Show>
 
                     <TopicsList
                       topicsData={topicsData}
@@ -762,7 +700,7 @@ const CourseDetail: Component = () => {
                       courseId={courseId}
                       courseCode={course().code}
                       loading={topicsData.loading}
-                      isGenerating={topicJobTracker.hasActiveJobs()}
+                      isGenerating={false}
                     />
                   </div>
                 </Show>

@@ -36,7 +36,7 @@ export function CourseTopicsList(props: CourseTopicsListProps) {
   const [editingTopic, setEditingTopic] = createSignal<Topic | null>(null)
   const [formError, setFormError] = createSignal<APIError | null>(null)
   const [isSubmitting, setIsSubmitting] = createSignal(false)
-  // Use job tracker for reactive job state management
+  // Track only topic generation jobs started from this page instance.
   const jobTracker = createJobTracker({
     courseId: () => props.courseId,
     kinds: ['generate_topics_for_course'],
@@ -54,18 +54,6 @@ export function CourseTopicsList(props: CourseTopicsListProps) {
   })
 
   const [currentJob, setCurrentJob] = createSignal<{ id: number } | null>(null)
-
-  // Check for existing topic generation jobs on mount
-  createEffect(() => {
-    if (props.courseId && !jobTracker.isInitializing()) {
-      // Look for any running topic generation jobs for this course
-      const activeJobIds = Array.from(jobTracker.activeJobIds())
-      if (activeJobIds.length > 0) {
-        // For simplicity, just track the first active job
-        setCurrentJob({ id: activeJobIds[0] })
-      }
-    }
-  })
 
   createEffect(
     on(
@@ -167,6 +155,7 @@ export function CourseTopicsList(props: CourseTopicsListProps) {
         course_id: props.courseId,
       })
       setCurrentJob({ id: job.id })
+      jobTracker.track(job.id)
       console.log('Enqueued topic generation job:', job.id)
     } catch (err) {
       console.error('Failed to enqueue topic generation:', err)

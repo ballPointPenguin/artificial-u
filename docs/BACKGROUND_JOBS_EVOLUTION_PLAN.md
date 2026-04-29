@@ -103,12 +103,19 @@ to be completed in a handful of PRs without architectural disruption.
 - Replace `put_nowait` silent drop in `JobEventHub.publish` with a counter that increments `sse.publish_dropped` metric, so dropped events are observable.
 - When the client connects, emit a snapshot of the current job status so the UI can reconcile even if earlier events were missed.
 
-### 2.5 Swap user-waits-for-result flows from SSE → polling
+### 2.5 Swap user-waits-for-result flows from SSE → polling - DONE
 
-- For "user clicks generate, sees progress, waits for done" UX on a single job, switch to polling `GET /jobs/{id}` every 2s while status is `queued`/`running`, stop on terminal state.
-- Keep SSE subscription only for admin dashboards (`/api/v1/jobs/stream`).
+- For "user clicks generate, sees progress, waits for done" UX on known jobs, poll `GET /jobs/{id}` every 2s while status is `queued`/`running`, stop on terminal state.
+- Keep SSE subscription only for the admin jobs dashboard (`web/src/pages/Jobs.tsx` via `/api/v1/jobs/stream`).
 - Remove SSE use from single-job pages to simplify client code and remove cross-worker event-loss.
-- Frontend: `web/src/utils/job-events-hub.ts` gets a sibling `useJobPolling(jobId)` hook; migrate call sites incrementally.
+- Frontend implementation:
+  - `web/src/utils/job-management.ts` now exposes `createJobPolling(jobId, options)` for single known-job flows.
+  - `waitForJobResult(jobId)` shares the same polling defaults/error semantics for promise-style flows.
+  - `createJobTracker()` is now explicit/local: components call `track(job.id)` after enqueueing jobs in the current browser tab session. It does not perform always-on entity polling.
+  - `web/src/pages/Courses.tsx` uses `createJobPolling()` for create-course completion.
+  - `web/src/pages/TopicDetail.tsx`, `web/src/pages/LectureDetail.tsx`, `web/src/components/lectures/LectureSection.tsx`, and `web/src/components/topics/CourseTopicsList.tsx` use local known-job tracking.
+  - `web/src/pages/CourseDetail.tsx` no longer starts idle job polling for topic generation awareness.
+- Cross-page continuity for downstream/child jobs is deferred to §3.5 and §3.6. The current short-term implementation intentionally avoids broad eager polling when the backend does not return child job IDs.
 
 ### 2.6 Reuse httpx clients - DONE
 
@@ -262,6 +269,9 @@ delivery gap properly:
 - Finish the client-side migration from SSE to polling for all non-admin flows.
 - Remove `job-events-hub.ts` from single-page flows; keep for the admin dashboard.
 - Document in `web/STYLE_GUIDE.md` (or a job-handling guide) which pattern to pick for new features.
+- Current polling migration intentionally tracks only known jobs initiated by the current browser tab/session. This avoids always-on page polling, but it means SPA navigation can lose awareness of downstream jobs unless the primary job result exposes them.
+- Medium-term improvement: add a tab-session job handoff registry in `web/src/utils/job-management.ts` for jobs started in this tab. It should survive SPA navigation, expire on TTL or terminal state, and disappear on hard refresh/new tab.
+- Avoid reintroducing broad eager polling as a substitute for missing backend contracts. If a page needs continuity after navigation, prefer tracking exact job IDs from the initiating flow; use short-lived, scoped `listJobs()` fallback only when exact IDs are unavailable.
 
 ### 3.6 Standardize follow-up chaining
 
@@ -269,6 +279,10 @@ delivery gap properly:
   - Each workflow row has an ordered list of steps; worker enqueues the next step on completion.
   - Or adopt an existing library (`arq` groups, `taskiq` workflows) if we decide to switch queues.
 - Only worth doing if follow-up semantics start accreting more branching logic.
+- Course creation currently demonstrates the contract gap: `create_course` returns `course_id`, but related image/topic jobs may be enqueued by different backend layers (`CourseService._save_course`, `JobService._handle_create_course`, or enqueue helpers) without returning child job IDs to the client.
+- Standardize follow-up enqueueing so any handler that creates downstream jobs can return a predictable `child_jobs`/`follow_up_jobs` structure in the parent job result, e.g. `{ id, kind, entity_type, entity_id }`.
+- Keep client handoff semantics bounded: the frontend should not need to infer all possible downstream jobs for an entity. The backend should either return child IDs explicitly or expose a workflow/run identifier that the client can poll.
+- Decide whether related jobs should be represented as parent/child rows, a workflow/run table, or structured job result metadata before adding more chained flows.
 
 ---
 

@@ -3,7 +3,6 @@
  * Maintains a single connection and distributes events to subscribers.
  */
 
-import { createSignal, onCleanup } from 'solid-js'
 import { createUrl } from '../api/client.js'
 import { ENDPOINTS } from '../api/config.js'
 import type { JobEvent, JobRow } from '../api/services/jobs-service.js'
@@ -300,32 +299,4 @@ export function getJobEventHub(): JobEventHub {
     hubInstance = new JobEventHub()
   }
   return hubInstance
-}
-
-// Helper hook for SolidJS components
-export function createJobEventSubscription(
-  filter: () => JobEventFilter,
-  onEvent: JobEventListener
-) {
-  const [isSubscribed, setIsSubscribed] = createSignal(false)
-  let unsubscribe: (() => void) | null = null
-
-  // Subscribe on mount
-  const hub = getJobEventHub()
-  const currentFilter = filter()
-
-  // Only subscribe if we have valid IDs to filter on
-  if (currentFilter.topicId || currentFilter.lectureId || currentFilter.courseId) {
-    unsubscribe = hub.subscribe(currentFilter, onEvent)
-    setIsSubscribed(true)
-  }
-
-  // Cleanup on unmount
-  onCleanup(() => {
-    if (unsubscribe) {
-      unsubscribe()
-    }
-  })
-
-  return isSubscribed
 }

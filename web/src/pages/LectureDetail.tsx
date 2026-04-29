@@ -31,6 +31,7 @@ const LectureDetailView: Component<{
   onUploadAudio: (file: File) => Promise<void>
   isUploadingAudio: boolean
   isJobActive: boolean
+  onTrackJob: (jobId: number) => void
   courseId: number
   topicTitle?: string
   courseCode?: string
@@ -56,7 +57,8 @@ const LectureDetailView: Component<{
     setIsGeneratingTimeline(true)
     setTimelineError('')
     try {
-      await lectureService.enqueueGenerateLectureTimeline(props.lecture.id)
+      const job = await lectureService.enqueueGenerateLectureTimeline(props.lecture.id)
+      props.onTrackJob(job.id)
     } catch (error) {
       setTimelineError(error instanceof Error ? error.message : 'Failed to generate timeline')
     } finally {
@@ -68,7 +70,8 @@ const LectureDetailView: Component<{
     setIsGeneratingImages(true)
     setImagesError('')
     try {
-      await lectureService.enqueueGenerateLectureImages(props.lecture.id)
+      const job = await lectureService.enqueueGenerateLectureImages(props.lecture.id)
+      props.onTrackJob(job.id)
     } catch (error) {
       setImagesError(error instanceof Error ? error.message : 'Failed to generate lecture images')
     } finally {
@@ -80,7 +83,8 @@ const LectureDetailView: Component<{
     setIsGeneratingImages(true)
     setImagesError('')
     try {
-      await lectureService.enqueueResumeLectureImages(props.lecture.id)
+      const job = await lectureService.enqueueResumeLectureImages(props.lecture.id)
+      props.onTrackJob(job.id)
     } catch (error) {
       setImagesError(error instanceof Error ? error.message : 'Failed to resume lecture images')
     } finally {
@@ -723,6 +727,7 @@ const LectureDetail = () => {
                       onUploadAudio={handleUploadAudio}
                       isUploadingAudio={isUploadingAudio()}
                       isJobActive={anyJobActive()}
+                      onTrackJob={jobTracker.track}
                       courseId={courseId()}
                       topicTitle={topic()?.title}
                       courseCode={course()?.code}

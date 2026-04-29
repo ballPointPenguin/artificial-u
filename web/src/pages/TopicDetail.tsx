@@ -82,7 +82,7 @@ const TopicDetail = () => {
 
   const lectureId = createMemo(() => lecture()?.id)
 
-  // Track jobs for this topic - pass reactive accessor
+  // Track jobs started from this topic page instance.
   const jobTracker = createJobTracker({
     topicId: () => (isValidIds() ? topicId() : undefined),
     lectureId: () => lectureId(),
@@ -102,7 +102,7 @@ const TopicDetail = () => {
         setIsGeneratingLecture(false)
 
         // Refresh lecture data when generation completes
-        // Use setTimeout to ensure state updates happen after SSE processing
+        // Let the polling state settle before refetching dependent lecture data.
         setTimeout(() => {
           void refetchLecture()
         }, 100)
@@ -193,6 +193,8 @@ const TopicDetail = () => {
         console.log('[TopicDetail] Enqueued lecture generation job:', job.id)
       }
 
+      jobTracker.track(job.id)
+
       // Note: Don't set isGeneratingLecture to false here - wait for job completion
       // The jobTracker will handle clearing it when the job completes
     } catch (error) {
@@ -225,6 +227,8 @@ const TopicDetail = () => {
       if (import.meta.env.DEV) {
         console.log('[TopicDetail] Enqueued lecture text generation job:', job.id)
       }
+
+      jobTracker.track(job.id)
 
       // Note: Don't set isGeneratingLecture to false here - wait for job completion
       // The jobTracker will handle clearing it when the job completes

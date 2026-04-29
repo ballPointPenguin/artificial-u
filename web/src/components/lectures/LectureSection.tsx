@@ -50,8 +50,7 @@ export const LectureSection: Component<LectureSectionProps> = (props) => {
   const [isGeneratingImages, setIsGeneratingImages] = createSignal(false)
   const [imagesError, setImagesError] = createSignal('')
 
-  // Track jobs for this topic AND lecture (lecture ID will be undefined initially,
-  // then change when created)
+  // Track jobs started from this lecture section instance.
   const jobTracker = createJobTracker({
     topicId: () => props.topicId,
     lectureId: () => props.lecture()?.id, // This will reactively update when lecture is created
@@ -88,7 +87,7 @@ export const LectureSection: Component<LectureSectionProps> = (props) => {
       }
 
       // Always refresh lecture data when any lecture-related job completes
-      // Use setTimeout to ensure state updates happen after SSE processing
+      // Let the polling state settle before refreshing lecture data.
       setTimeout(() => {
         props.onLectureUpdated?.()
       }, 100)
@@ -165,7 +164,8 @@ export const LectureSection: Component<LectureSectionProps> = (props) => {
     setAudioTimeout(false)
 
     try {
-      await lectureService.enqueueGenerateLectureAudio(lecture.id)
+      const job = await lectureService.enqueueGenerateLectureAudio(lecture.id)
+      jobTracker.track(job.id)
     } catch (error) {
       setAudioError(error instanceof Error ? error.message : 'Failed to generate audio')
     } finally {
@@ -272,7 +272,8 @@ export const LectureSection: Component<LectureSectionProps> = (props) => {
     setTimelineError('')
 
     try {
-      await lectureService.enqueueGenerateLectureTimeline(lecture.id)
+      const job = await lectureService.enqueueGenerateLectureTimeline(lecture.id)
+      jobTracker.track(job.id)
     } catch (error) {
       setTimelineError(error instanceof Error ? error.message : 'Failed to generate timeline')
     } finally {
@@ -288,7 +289,8 @@ export const LectureSection: Component<LectureSectionProps> = (props) => {
     setImagesError('')
 
     try {
-      await lectureService.enqueueGenerateLectureImages(lecture.id)
+      const job = await lectureService.enqueueGenerateLectureImages(lecture.id)
+      jobTracker.track(job.id)
     } catch (error) {
       setImagesError(error instanceof Error ? error.message : 'Failed to generate lecture images')
     } finally {
@@ -304,7 +306,8 @@ export const LectureSection: Component<LectureSectionProps> = (props) => {
     setImagesError('')
 
     try {
-      await lectureService.enqueueResumeLectureImages(lecture.id)
+      const job = await lectureService.enqueueResumeLectureImages(lecture.id)
+      jobTracker.track(job.id)
     } catch (error) {
       setImagesError(error instanceof Error ? error.message : 'Failed to resume lecture images')
     } finally {
