@@ -86,11 +86,13 @@ const TopicDetail = () => {
   const jobTracker = createJobTracker({
     topicId: () => (isValidIds() ? topicId() : undefined),
     lectureId: () => lectureId(),
+    trackChildren: true,
     kinds: [
       'generate_lecture',
       'generate_lecture_text_only',
       'generate_lecture_audio',
       'generate_lecture_summary',
+      'generate_lecture_timeline',
     ],
     onJobComplete: (event) => {
       if (import.meta.env.DEV) {
@@ -108,9 +110,10 @@ const TopicDetail = () => {
         }, 100)
       } else if (
         event.kind === 'generate_lecture_audio' ||
-        event.kind === 'generate_lecture_summary'
+        event.kind === 'generate_lecture_summary' ||
+        event.kind === 'generate_lecture_timeline'
       ) {
-        // Also refresh for audio/summary completion
+        // Refresh for audio/summary/timeline completion
         setTimeout(() => {
           void refetchLecture()
         }, 100)

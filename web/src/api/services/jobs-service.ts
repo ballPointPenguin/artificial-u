@@ -16,6 +16,7 @@ export interface JobRow {
   /** Wall-clock execution time of the last attempt, when available (from worker telemetry). */
   duration_ms?: number | null
   payload?: unknown
+  parent_job_id?: number | null
   created_at?: string
   updated_at?: string
 }
@@ -31,6 +32,7 @@ export async function listJobs(params?: {
   lecture_id?: number
   topic_id?: number
   course_id?: number
+  parent_id?: number
 }): Promise<JobRow[]> {
   const qs = new URLSearchParams()
   if (params?.status) qs.set('status', params.status)
@@ -39,8 +41,13 @@ export async function listJobs(params?: {
   if (params?.lecture_id != null) qs.set('lecture_id', String(params.lecture_id))
   if (params?.topic_id != null) qs.set('topic_id', String(params.topic_id))
   if (params?.course_id != null) qs.set('course_id', String(params.course_id))
+  if (params?.parent_id != null) qs.set('parent_id', String(params.parent_id))
   const endpoint = `${ENDPOINTS.jobs.list}${qs.toString() ? `?${qs.toString()}` : ''}`
   return httpClient.get<JobRow[]>(endpoint)
+}
+
+export async function listJobChildren(parentJobId: number): Promise<JobRow[]> {
+  return httpClient.get<JobRow[]>(`${ENDPOINTS.jobs.detail(parentJobId)}/children`)
 }
 
 export async function cancelJob(jobId: number): Promise<{ id: number; status: string }> {

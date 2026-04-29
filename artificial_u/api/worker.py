@@ -313,7 +313,7 @@ class Worker:
             self.logger.debug("Dispatching job to handler", extra={**log_base, "job_id": job_id})
             await self._publish_event(job_id, kind, "running", payload)
             result = await asyncio.wait_for(
-                self.job_service.dispatch(kind, payload),
+                self.job_service.dispatch(kind, payload, parent_job_id=job_id),
                 timeout=self.settings.JOB_EXECUTION_TIMEOUT_SEC,
             )
             return result

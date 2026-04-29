@@ -66,6 +66,7 @@ class CourseService:
         description: Optional[str] = None,
         created_by: Optional[int] = None,
         created_with: Optional[str] = None,
+        parent_job_id: Optional[int] = None,
     ) -> Tuple[Course, Professor]:
         """
         Create a new course with optional smart selection for department/professor.
@@ -117,7 +118,7 @@ class CourseService:
         course.created_with = created_with
 
         # Save course
-        return self._save_course(course, professor, code)
+        return self._save_course(course, professor, code, parent_job_id=parent_job_id)
 
     async def _resolve_department_id(
         self, department_id: Optional[int], course_attributes: dict
@@ -184,7 +185,9 @@ class CourseService:
             lectures_per_week=lectures_per_week,
         )
 
-    def _save_course(self, course: Course, professor, code: str) -> Tuple[Course, Any]:
+    def _save_course(
+        self, course: Course, professor, code: str, *, parent_job_id: Optional[int] = None
+    ) -> Tuple[Course, Any]:
         """Save course to database with error handling."""
         try:
             created_course = self.repository_factory.course.create(course)
@@ -192,7 +195,9 @@ class CourseService:
             if self.job_enqueue_service:
                 try:
                     if not getattr(created_course, "image_url", None):
-                        self.job_enqueue_service.enqueue_course_image_generation(created_course.id)
+                        self.job_enqueue_service.enqueue_course_image_generation(
+                            created_course.id, parent_job_id=parent_job_id
+                        )
                     else:
                         self.logger.debug(
                             "Skipping course image job on create: course %s already has image",

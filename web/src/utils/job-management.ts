@@ -5,7 +5,13 @@
 
 import { type Accessor, createEffect, createMemo, createSignal, on, onCleanup } from 'solid-js'
 import { TIMEOUT_CONFIG } from '../api/config.js'
-import { getJob, type JobEvent, type JobRow, type JobStatus } from '../api/services/jobs-service.js'
+import {
+  getJob,
+  type JobEvent,
+  type JobRow,
+  type JobStatus,
+  listJobChildren,
+} from '../api/services/jobs-service.js'
 import { jobDebug } from './job-debug.js'
 
 const DEFAULT_JOB_POLL_INTERVAL_MS = 2000
@@ -18,6 +24,8 @@ export interface JobTrackerOptions {
   courseId?: () => number | undefined
   kinds?: string[]
   pollIntervalMs?: number
+  /** When true, automatically track child jobs when a parent job completes. */
+  trackChildren?: boolean
   onJobComplete?: (event: JobEvent) => void
   onJobStart?: (event: JobEvent) => void
   onJobFail?: (event: JobEvent) => void
@@ -89,6 +97,9 @@ export function createJobTracker(options: JobTrackerOptions) {
 
   const stop = (jobId?: number) => {
     if (jobId === undefined) {
+      console.log(
+        `[job-chain] stop() ALL called, runId ${String(runId)} → ${String(runId + 1)}, activeIds=${JSON.stringify([...activeJobIds()])}`
+      )
       runId += 1
       clearAllPollTimers()
       setActiveJobIds(new Set<number>())
@@ -115,11 +126,74 @@ export function createJobTracker(options: JobTrackerOptions) {
     pollTimers.set(jobId, setTimeout(poll, options.pollIntervalMs ?? DEFAULT_JOB_POLL_INTERVAL_MS))
   }
 
+  const trackJobChildren = (job: JobRow) => {
+    void (async () => {
+      try {
+        console.log(
+          `[job-chain] trackJobChildren: job=${job.kind}#${String(job.id)} parent_job_id=${String(job.parent_job_id)} runId=${String(runId)}`
+        )
+
+        // Direct children of the completing job
+        const children = await listJobChildren(job.id)
+        console.log(
+          `[job-chain] children of #${String(job.id)}:`,
+          children.map((c) => `${c.kind}#${String(c.id)}(${c.status})`)
+        )
+        for (const child of children) {
+          if (!TERMINAL_JOB_STATUSES.has(child.status)) {
+            jobDebug.log(
+              'state_change',
+              `Auto-tracking child job ${child.kind} #${String(child.id)}`,
+              { parentId: job.id }
+            )
+            console.log(
+              `[job-chain] tracking child #${String(child.id)} (${child.kind}) runId=${String(runId)}`
+            )
+            track(child.id)
+          }
+        }
+
+        // Siblings: if this job has a parent, also check parent's children.
+        // Handles sequential chains (e.g. lecture slides) where each slide's
+        // successor is a sibling (same parent_job_id), not a child.
+        if (job.parent_job_id != null) {
+          const siblings = await listJobChildren(job.parent_job_id)
+          console.log(
+            `[job-chain] siblings of parent#${String(job.parent_job_id)}:`,
+            siblings.map((s) => `${s.kind}#${String(s.id)}(${s.status})`)
+          )
+          for (const sibling of siblings) {
+            if (!TERMINAL_JOB_STATUSES.has(sibling.status) && sibling.id !== job.id) {
+              jobDebug.log(
+                'state_change',
+                `Auto-tracking sibling job ${sibling.kind} #${String(sibling.id)}`,
+                { parentId: job.parent_job_id }
+              )
+              console.log(
+                `[job-chain] tracking sibling #${String(sibling.id)} (${sibling.kind}) runId=${String(runId)}`
+              )
+              track(sibling.id)
+            }
+          }
+        }
+      } catch (err) {
+        console.warn('[job-chain] trackJobChildren error:', err)
+        // Non-fatal: child tracking is best-effort
+      }
+    })()
+  }
+
   const handlePolledJob = (job: JobRow) => {
     if (!matchesJobKind(job, options.kinds)) {
+      console.log(
+        `[job-chain] handlePolledJob: #${String(job.id)} (${job.kind}) FILTERED OUT by kinds`
+      )
       removeActiveJob(job.id)
       return false
     }
+    console.log(
+      `[job-chain] handlePolledJob: #${String(job.id)} (${job.kind}) status=${job.status} activeIds=${JSON.stringify([...activeJobIds()])} runId=${String(runId)}`
+    )
 
     if (isActiveJobStatus(job.status)) {
       markActiveJob(job.id)
@@ -143,6 +217,9 @@ export function createJobTracker(options: JobTrackerOptions) {
 
     if (job.status === 'done') {
       jobDebug.log('state_change', `Job completed: ${job.kind} #${String(job.id)}`, job)
+      if (options.trackChildren) {
+        trackJobChildren(job)
+      }
       options.onJobComplete?.(toJobEvent(job))
     } else if (job.status === 'failed' || job.status === 'cancelled') {
       setLastError(`Job ${job.kind} failed`)
@@ -154,17 +231,33 @@ export function createJobTracker(options: JobTrackerOptions) {
 
   const track = (jobId: number) => {
     const currentRunId = runId
+    console.log(`[job-chain] track called: #${String(jobId)} currentRunId=${String(currentRunId)}`)
     markActiveJob(jobId)
     setLastError(null)
 
     const poll = () => {
       void (async () => {
-        if (currentRunId !== runId) return
+        if (currentRunId !== runId) {
+          console.log(
+            `[job-chain] poll aborted (stale runId): job#${String(jobId)} currentRunId=${String(currentRunId)} runId=${String(runId)}`
+          )
+          return
+        }
 
         try {
           const job = await getJob(jobId)
-          if (currentRunId !== runId) return
-          if (!activeJobIds().has(jobId)) return
+          if (currentRunId !== runId) {
+            console.log(
+              `[job-chain] poll result discarded (stale runId after fetch): job#${String(jobId)}`
+            )
+            return
+          }
+          if (!activeJobIds().has(jobId)) {
+            console.log(
+              `[job-chain] poll result discarded (not in activeJobIds): job#${String(jobId)} activeIds=${JSON.stringify([...activeJobIds()])}`
+            )
+            return
+          }
 
           const shouldContinue = handlePolledJob(job)
           if (shouldContinue) {
@@ -183,13 +276,27 @@ export function createJobTracker(options: JobTrackerOptions) {
     poll()
   }
 
-  // Route/entity changes in a reused component instance should not keep old local jobs active.
+  // Stop only when navigating to a different entity (ID changed from one defined value to another).
+  // Do NOT stop when an ID first becomes defined — that's new data arriving (e.g. lecture created),
+  // not navigation, and killing the tracker here would drop child-job polling.
   createEffect(
     on(
       () => [options.topicId?.(), options.lectureId?.(), options.courseId?.()] as const,
-      () => {
-        stop()
-        setLastError(null)
+      ([newTopicId, newLectureId, newCourseId], prev) => {
+        const [prevTopicId, prevLectureId, prevCourseId] = prev ?? [undefined, undefined, undefined]
+        const navigated = (p: number | undefined, n: number | undefined) =>
+          p != null && n != null && p !== n
+        if (
+          navigated(prevTopicId, newTopicId) ||
+          navigated(prevLectureId, newLectureId) ||
+          navigated(prevCourseId, newCourseId)
+        ) {
+          console.log(
+            `[job-chain] entity navigation detected (prev=[${String(prevTopicId)},${String(prevLectureId)},${String(prevCourseId)}] → next=[${String(newTopicId)},${String(newLectureId)},${String(newCourseId)}]), stopping tracker`
+          )
+          stop()
+          setLastError(null)
+        }
       },
       { defer: true }
     )

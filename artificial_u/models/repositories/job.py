@@ -24,6 +24,7 @@ class JobRepository(BaseRepository):
         priority: int = 0,
         run_after: Optional[dt.datetime] = None,
         max_attempts: int = 2,
+        parent_job_id: Optional[int] = None,
     ) -> JobModel:
         run_after = run_after or self._now()
         with self.get_session() as session:
@@ -34,6 +35,7 @@ class JobRepository(BaseRepository):
                 priority=priority,
                 run_after=run_after,
                 max_attempts=max_attempts,
+                parent_job_id=parent_job_id,
             )
             session.add(job)
             session.commit()
@@ -53,6 +55,7 @@ class JobRepository(BaseRepository):
         lecture_id: Optional[int] = None,
         topic_id: Optional[int] = None,
         course_id: Optional[int] = None,
+        parent_id: Optional[int] = None,
     ) -> List[JobModel]:
         with self.get_session() as session:
             stmt = select(JobModel)
@@ -60,6 +63,8 @@ class JobRepository(BaseRepository):
                 stmt = stmt.where(JobModel.status == status)
             if kind:
                 stmt = stmt.where(JobModel.kind == kind)
+            if parent_id is not None:
+                stmt = stmt.where(JobModel.parent_job_id == parent_id)
 
             # JSONB payload filters (best-effort on Postgres)
             if lecture_id is not None:

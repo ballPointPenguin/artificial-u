@@ -53,7 +53,8 @@ export const LectureSection: Component<LectureSectionProps> = (props) => {
   // Track jobs started from this lecture section instance.
   const jobTracker = createJobTracker({
     topicId: () => props.topicId,
-    lectureId: () => props.lecture()?.id, // This will reactively update when lecture is created
+    lectureId: () => props.lecture()?.id,
+    trackChildren: true,
     kinds: [
       'generate_lecture',
       'generate_lecture_text_only',

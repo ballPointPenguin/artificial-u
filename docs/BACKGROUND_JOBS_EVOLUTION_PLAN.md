@@ -264,25 +264,66 @@ delivery gap properly:
   - Worker: `cpu=512, memory=2048` with `--workers 1`, runs the async worker loop + thread pool.
 - Concrete numbers come from Category 1 data, not guesses.
 
-### 3.5 Progressive SSE/polling migration on the frontend
+### 3.5 Progressive SSE/polling migration on the frontend — MOSTLY DONE
 
-- Finish the client-side migration from SSE to polling for all non-admin flows.
-- Remove `job-events-hub.ts` from single-page flows; keep for the admin dashboard.
-- Document in `web/STYLE_GUIDE.md` (or a job-handling guide) which pattern to pick for new features.
-- Current polling migration intentionally tracks only known jobs initiated by the current browser tab/session. This avoids always-on page polling, but it means SPA navigation can lose awareness of downstream jobs unless the primary job result exposes them.
-- Medium-term improvement: add a tab-session job handoff registry in `web/src/utils/job-management.ts` for jobs started in this tab. It should survive SPA navigation, expire on TTL or terminal state, and disappear on hard refresh/new tab.
-- Avoid reintroducing broad eager polling as a substitute for missing backend contracts. If a page needs continuity after navigation, prefer tracking exact job IDs from the initiating flow; use short-lived, scoped `listJobs()` fallback only when exact IDs are unavailable.
+- SSE removed from all single-job flows. `job-events-hub.ts` is gone; SSE kept only for the admin jobs dashboard (`/api/v1/jobs/stream`).
+- `createJobTracker` (explicit local tracking) and `createJobPolling` (single known-job reactive primitive) cover all non-admin flows. `waitForJobResult` for promise-style generation flows.
+- §3.6 child-chaining closes the most critical "job spawns children" gaps (lecture generation, image generation) without broad polling.
 
-### 3.6 Standardize follow-up chaining
+**Remaining gap — SPA navigation handoff:**
+The tracker lives inside the component that initiated the job. When the user navigates away (e.g., Courses → CourseDetail after triggering course creation), the tracker is torn down and children of the original job (course image, topics) are never tracked. On CourseDetail, the tracker starts fresh with no knowledge of the in-flight parent.
 
-- The follow-up chain in `artificial_u/api/worker.py:_handle_follow_up` is powerful but bespoke. Consider replacing with a small "workflow" abstraction:
-  - Each workflow row has an ordered list of steps; worker enqueues the next step on completion.
-  - Or adopt an existing library (`arq` groups, `taskiq` workflows) if we decide to switch queues.
-- Only worth doing if follow-up semantics start accreting more branching logic.
-- Course creation currently demonstrates the contract gap: `create_course` returns `course_id`, but related image/topic jobs may be enqueued by different backend layers (`CourseService._save_course`, `JobService._handle_create_course`, or enqueue helpers) without returning child job IDs to the client.
-- Standardize follow-up enqueueing so any handler that creates downstream jobs can return a predictable `child_jobs`/`follow_up_jobs` structure in the parent job result, e.g. `{ id, kind, entity_type, entity_id }`.
-- Keep client handoff semantics bounded: the frontend should not need to infer all possible downstream jobs for an entity. The backend should either return child IDs explicitly or expose a workflow/run identifier that the client can poll.
-- Decide whether related jobs should be represented as parent/child rows, a workflow/run table, or structured job result metadata before adding more chained flows.
+Options (deferred):
+- **Session registry**: a module-level `Map<jobId, TrackerState>` in `job-management.ts` that survives SPA navigation, expires on TTL or terminal state, is cleared on hard refresh. New page instances check the registry on mount and adopt any in-flight jobs.
+- **Scoped fallback polling**: on page load, call `GET /jobs?parent_id={just-created-course-id}&status=queued,running` with a short TTL. Only fires if the session registry has no record. Avoids always-on polling while recovering from the navigation gap.
+- Avoid reintroducing broad eager polling as a substitute for exact job IDs.
+
+### 3.6 Standardize follow-up chaining — DONE (2026-04-29)
+
+**Approach chosen:** `parent_job_id` column on the jobs table (nullable FK, self-referential). Preferred over threading child IDs through return values because it decouples the tracking concern from service return signatures and makes the tree queryable at any time.
+
+**Backend (2026-04-29):**
+
+- **Migration** (`alembic/versions/d7e8f9a0b1c2`): added `parent_job_id INTEGER REFERENCES jobs(id)` + `idx_jobs_parent_job_id`.
+- **`JobModel`** (`artificial_u/models/database.py`): added `parent_job_id` column.
+- **`JobRepository.create()`** (`artificial_u/models/repositories/job.py`): added `parent_job_id` param; `list()` now filters by `parent_id`.
+- **`JobEnqueueService`** (`artificial_u/services/job_enqueue_service.py`): all `enqueue_*` methods now return `int` (job ID, or `None` in test mode) and accept `parent_job_id` keyword arg.
+- **`CourseService.create_course()` / `_save_course()`** (`artificial_u/services/course_service.py`): threads `parent_job_id` through so the course image job gets parented correctly even though it's enqueued inside the domain service.
+- **`LectureGeneratorService`** (`artificial_u/services/lecture_generator_service.py`): `generate_and_save_lecture` and `generate_lecture_audio` both accept `parent_job_id` and pass it through to `_enqueue_background_jobs_for_lecture` → summary/audio/timeline enqueue calls. Without this, `generate_lecture` children were unparented and invisible to the frontend.
+- **`JobService.dispatch()`** (`artificial_u/services/job_service.py`): added `parent_job_id` param, passes it to every handler. All handlers updated with `parent_job_id=None` kwarg; handlers that enqueue children pass it through. `_handle_create_course` now returns `topics_job_id` in its result. Slide chain: `_build_lecture_slide_chain` embeds `chain_parent_job_id` in each payload; `_enqueue_next_lecture_slide` reads it and sets `parent_job_id` on next-slide rows, so all slides point to the `generate_lecture_images` job.
+- **Worker** (`artificial_u/api/worker.py`): `_execute_job` passes `parent_job_id=job_id` to `dispatch()`, so every job's children are automatically linked.
+- **Jobs router** (`artificial_u/api/routers/jobs.py`): `parent_job_id` exposed in all job response shapes; `GET /jobs?parent_id={id}` supported; new `GET /jobs/{id}/children` endpoint returns direct children.
+
+**Frontend (2026-04-29):**
+
+- **`jobs-service.ts`**: `JobRow` gains `parent_job_id?: number | null`; `listJobChildren(parentJobId)` function added; `listJobs` accepts `parent_id` param.
+- **`job-management.ts`** — `createJobTracker` gains `trackChildren?: boolean` option. When a tracked job completes, `trackJobChildren` fires (fire-and-forget):
+  1. Fetches `/jobs/{id}/children` — auto-tracks any non-terminal direct children.
+  2. If the completing job has a `parent_job_id`, also fetches `/jobs/{parent}/children` to find non-terminal *siblings* — this is what drives the slide chain, where each slide enqueues the next as a sibling (same parent), not a child.
+- **Entity-navigation guard**: the `createEffect` that calls `stop()` on entity ID changes was previously firing when `lectureId` transitioned from `undefined` to a real ID (new lecture just created) or when the `lecture()` prop briefly refreshed after a job completed. Fixed to only stop when an existing defined ID changes to a *different* defined ID — i.e., genuine SPA navigation, not data arrival.
+- **`TopicDetail.tsx`**: added `generate_lecture_timeline` to the `kinds` list (it was filtered out, breaking the audio → timeline chain); added `generate_lecture_timeline` to `onJobComplete` so `refetchLecture()` fires when the timeline finishes (gates the "Generate Lecture Images" button).
+- **`trackChildren: true`** wired into `TopicDetail`, `LectureDetail`, and `LectureSection` trackers.
+
+**Verified job trees (live testing):**
+```
+generate_lecture (id=N)                      ← tracked by TopicDetail
+  ├── generate_lecture_summary (parent=N)    ← auto-tracked as child
+  └── generate_lecture_audio   (parent=N)    ← auto-tracked as child
+        └── generate_lecture_timeline        ← auto-tracked as child of audio
+
+generate_lecture_images (id=M)              ← tracked by LectureSection
+  ├── generate_lecture_slide slot 0 (parent=M)   ← auto-tracked as child
+  ├── generate_lecture_slide slot 1 (parent=M)   ← auto-tracked as sibling
+  ├── ...
+  └── generate_lecture_slide slot N-1 (parent=M) ← auto-tracked as sibling
+```
+Frontend follows the full tree to completion; UI updates (audio player, timeline gate, image gallery) appear without manual refresh.
+
+**Still to do / open decisions:**
+- Remove the `[job-chain]` debug `console.log` statements from `job-management.ts` once behavior is confirmed stable in production.
+- Wire `trackChildren: true` into the course creation page / quickstart flow (SPA navigation gap means the tracker is often gone by the time children are enqueued — see §3.5).
+- `generate_topics_for_course` enqueues individual lecture jobs inside `topic_generator_service`; those could be parented to the topics job if the service accepts `parent_job_id`. Deferred — requires threading into the generator service layer.
+- Workflow library abstraction (`arq` groups etc.) — still not worth it until branching logic accretes.
 
 ---
 
