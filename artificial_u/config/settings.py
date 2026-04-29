@@ -131,7 +131,7 @@ class Settings(BaseSettings):
     # Department generation model
     DEPARTMENT_GENERATION_MODEL: str = "gpt-5.4-nano"
     # Lecture generation model
-    LECTURE_GENERATION_MODEL: str = "claude-opus-4-6"
+    LECTURE_GENERATION_MODEL: str = "claude-sonnet-4-6"
     # Lecture summary generation model
     LECTURE_SUMMARY_MODEL: str = "gpt-5.4-nano"
     # Professor generation model
@@ -215,7 +215,7 @@ class Settings(BaseSettings):
             elif backend == "gemini":
                 return "gemini-3.1-flash-lite-preview"
             elif backend == "anthropic":
-                return "claude-opus-4-6"
+                return "claude-sonnet-4-6"
             else:
                 return "gpt-5.4-nano"
         return v
