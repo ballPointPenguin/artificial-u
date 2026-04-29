@@ -3,9 +3,11 @@ import { type Component, createResource, For, Show } from 'solid-js'
 import { lectureService } from '../../api/services/lecture-service'
 import type { AdminLectureListItem } from '../../api/types'
 import { Button } from '../../components/ui'
+import { formatDate } from '../../utils/formatDate'
 
 type SortField =
   | 'title'
+  | 'revision'
   | 'course_id'
   | 'course_code'
   | 'topic_id'
@@ -14,10 +16,13 @@ type SortField =
   | 'audio'
   | 'timeline'
   | 'images'
+  | 'created_at'
+  | 'updated_at'
 type SortOrder = 'asc' | 'desc'
 
 const VALID_SORT_FIELDS: readonly SortField[] = [
   'title',
+  'revision',
   'course_id',
   'course_code',
   'topic_id',
@@ -26,6 +31,8 @@ const VALID_SORT_FIELDS: readonly SortField[] = [
   'audio',
   'timeline',
   'images',
+  'created_at',
+  'updated_at',
 ]
 
 const DEFAULT_SORT_FIELD: SortField = 'lecture_id'
@@ -35,6 +42,12 @@ const TITLE_LENGTH = 40
 
 const truncateTitle = (title: string): string =>
   title.length > TITLE_LENGTH ? `${title.slice(0, TITLE_LENGTH)}…` : title
+
+const formatTimestamp = (timestamp: unknown): string => {
+  if (typeof timestamp !== 'string' || !timestamp) return '-'
+  const date = new Date(timestamp)
+  return Number.isNaN(date.getTime()) ? '-' : formatDate(date)
+}
 
 const YesNoBadge: Component<{ value: boolean }> = (props) => (
   <span
@@ -296,6 +309,7 @@ export default function AdminLectures() {
                 <thead>
                   <tr class="border-b border-parchment-700/60">
                     <SortableHeader field="title" label="Title" />
+                    <SortableHeader field="revision" label="Revision" />
                     <SortableHeader field="course_id" label="Course ID" />
                     <SortableHeader field="course_code" label="Code" />
                     <SortableHeader field="topic_id" label="Topic ID" />
@@ -304,6 +318,8 @@ export default function AdminLectures() {
                     <SortableHeader field="audio" label="Audio" />
                     <SortableHeader field="timeline" label="Timeline" />
                     <SortableHeader field="images" label="Images" />
+                    <SortableHeader field="created_at" label="Created" />
+                    <SortableHeader field="updated_at" label="Updated" />
                   </tr>
                 </thead>
                 <tbody>
@@ -318,6 +334,9 @@ export default function AdminLectures() {
                           >
                             {truncateTitle(lecture.title)}
                           </A>
+                        </td>
+                        <td class="px-3 py-4 whitespace-nowrap text-sm">
+                          {lecture.revision ?? '-'}
                         </td>
                         <td class="px-3 py-4 whitespace-nowrap text-sm">{lecture.course_id}</td>
                         <td class="px-3 py-4 whitespace-nowrap text-sm">
@@ -339,6 +358,12 @@ export default function AdminLectures() {
                           title={lecture.image_slots_error ?? undefined}
                         >
                           {imageStatus(lecture)}
+                        </td>
+                        <td class="px-3 py-4 whitespace-nowrap text-sm text-muted">
+                          {formatTimestamp(lecture.created_at)}
+                        </td>
+                        <td class="px-3 py-4 whitespace-nowrap text-sm text-muted">
+                          {formatTimestamp(lecture.updated_at)}
                         </td>
                       </tr>
                     )}

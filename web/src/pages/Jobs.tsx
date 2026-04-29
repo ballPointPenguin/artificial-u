@@ -7,7 +7,7 @@ import {
   listJobs,
 } from '../api/services/jobs-service'
 import { Button } from '../components/ui'
-import { formatDate } from '../utils/formatDate'
+import { formatLocalDateTimeISO } from '../utils/formatDate'
 import { getJobEventHub } from '../utils/job-events-hub'
 
 const STATUS_STYLES: Record<JobStatus, string> = {
@@ -274,12 +274,6 @@ export default function JobsPage() {
                       scope="col"
                       class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider"
                     >
-                      Updated
-                    </th>
-                    <th
-                      scope="col"
-                      class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider"
-                    >
                       Run time
                     </th>
                     <th
@@ -320,10 +314,7 @@ export default function JobsPage() {
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm">{job.priority ?? 0}</td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-muted">
-                          {job.created_at ? formatDate(new Date(job.created_at)) : '-'}
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-muted">
-                          {job.updated_at ? formatDate(new Date(job.updated_at)) : '-'}
+                          {job.created_at ? formatLocalDateTimeISO(job.created_at) : '-'}
                         </td>
                         <td
                           class="px-6 py-4 whitespace-nowrap text-sm text-muted"

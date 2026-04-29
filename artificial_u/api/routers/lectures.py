@@ -89,6 +89,7 @@ router = APIRouter(
 
 AdminLectureSortField = Literal[
     "title",
+    "revision",
     "course_id",
     "course_code",
     "topic_id",
@@ -98,6 +99,8 @@ AdminLectureSortField = Literal[
     "timeline",
     "images",
     "image_slots",
+    "created_at",
+    "updated_at",
 ]
 SortOrder = Literal["asc", "desc"]
 
@@ -184,6 +187,7 @@ async def list_admin_lectures(
     """Return all lecture rows for admin operations without the large content field."""
     sort_columns = {
         "title": LectureModel.title,
+        "revision": LectureModel.revision,
         "course_id": LectureModel.course_id,
         "course_code": CourseModel.code,
         "topic_id": LectureModel.topic_id,
@@ -195,6 +199,8 @@ async def list_admin_lectures(
         # Image slot counts are fetched after pagination; sort this by presence
         # so the database can still perform the ordering cheaply.
         "image_slots": LectureModel.images_timeline_url.isnot(None),
+        "created_at": LectureModel.created_at,
+        "updated_at": LectureModel.updated_at,
     }
 
     with repository_factory.lecture.get_session() as session:
@@ -206,6 +212,7 @@ async def list_admin_lectures(
 
         query = session.query(
             LectureModel.id.label("id"),
+            LectureModel.revision.label("revision"),
             LectureModel.title.label("title"),
             LectureModel.course_id.label("course_id"),
             CourseModel.code.label("course_code"),
@@ -214,6 +221,8 @@ async def list_admin_lectures(
             LectureModel.audio_url.label("audio_url"),
             LectureModel.timeline_url.label("timeline_url"),
             LectureModel.images_timeline_url.label("images_timeline_url"),
+            LectureModel.created_at.label("created_at"),
+            LectureModel.updated_at.label("updated_at"),
         ).join(CourseModel, LectureModel.course_id == CourseModel.id)
         query = _apply_admin_lecture_filters(query, course_id, course_code)
 
@@ -227,6 +236,7 @@ async def list_admin_lectures(
         items = [
             AdminLectureListItem(
                 id=row.id,
+                revision=row.revision,
                 title=row.title,
                 course_id=row.course_id,
                 course_code=row.course_code,
@@ -235,6 +245,8 @@ async def list_admin_lectures(
                 audio_url=row.audio_url,
                 timeline_url=row.timeline_url,
                 images_timeline_url=row.images_timeline_url,
+                created_at=row.created_at,
+                updated_at=row.updated_at,
             )
             for row in rows
         ]

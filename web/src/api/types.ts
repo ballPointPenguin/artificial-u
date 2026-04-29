@@ -277,6 +277,7 @@ export interface LectureList {
 
 export interface AdminLectureListItem {
   id: number
+  revision: number | null
   title: string
   course_id: number
   course_code: string | null
@@ -288,6 +289,8 @@ export interface AdminLectureListItem {
   image_slots_done: number | null
   image_slots_total: number | null
   image_slots_error: string | null
+  created_at: string | null
+  updated_at: string | null
 }
 
 export interface AdminLectureListResponse {

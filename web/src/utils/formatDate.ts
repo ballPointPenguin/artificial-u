@@ -35,3 +35,19 @@ export function formatDateSimple(date: Date | string): string {
     day: 'numeric',
   })
 }
+
+/**
+ * Format a date as a local ISO-like timestamp without timezone.
+ * Example: "2026-04-28T17:42:09"
+ */
+export function formatLocalDateTimeISO(date: Date | string): string {
+  const dateObj = typeof date === 'string' ? new Date(date) : date
+  if (Number.isNaN(dateObj.getTime())) return '-'
+
+  const pad = (value: number) => String(value).padStart(2, '0')
+
+  return [
+    `${String(dateObj.getFullYear())}-${pad(dateObj.getMonth() + 1)}-${pad(dateObj.getDate())}`,
+    `${pad(dateObj.getHours())}:${pad(dateObj.getMinutes())}:${pad(dateObj.getSeconds())}`,
+  ].join('T')
+}

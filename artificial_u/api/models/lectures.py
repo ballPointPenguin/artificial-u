@@ -107,6 +107,7 @@ class AdminLectureListItem(BaseModel):
     """Compact lecture row for admin list views."""
 
     id: int = Field(..., description="Lecture ID")
+    revision: Optional[int] = Field(None, description="Lecture revision")
     title: str = Field(..., description="Lecture title")
     course_id: int = Field(..., description="Course ID")
     course_code: Optional[str] = Field(None, description="Course code")
@@ -124,6 +125,8 @@ class AdminLectureListItem(BaseModel):
     image_slots_error: Optional[str] = Field(
         None, description="Error encountered while reading image timeline metadata"
     )
+    created_at: Optional[datetime] = Field(None, description="Timestamp when lecture was created")
+    updated_at: Optional[datetime] = Field(None, description="Timestamp when lecture was updated")
 
 
 class AdminLectureListResponse(BaseModel):
