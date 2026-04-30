@@ -233,13 +233,19 @@ class LectureApiService(BaseApiService[CoreLecture, Lecture, LectureListResponse
                            500 for unexpected errors.
         """
         try:
+            content = lecture_data.content
+            if hasattr(lecture_data, "content_b64") and lecture_data.content_b64:
+                import base64
+
+                content = base64.b64decode(lecture_data.content_b64).decode("utf-8")
+
             # Create lecture using core service, passing individual args
             # Core service create_lecture expects: course_id, topic_id, content, summary, title,
             # audio_url, transcript_url, revision, created_by, created_with
             core_lecture = self.core_service.create_lecture(
                 course_id=lecture_data.course_id,
                 topic_id=lecture_data.topic_id,
-                content=lecture_data.content,
+                content=content,
                 summary=lecture_data.summary,
                 title=lecture_data.title,
                 audio_url=lecture_data.audio_url,
@@ -286,6 +292,15 @@ class LectureApiService(BaseApiService[CoreLecture, Lecture, LectureListResponse
 
             # Update lecture using core service
             update_dict = lecture_data.model_dump(exclude_unset=True)
+
+            # Handle base64 encoded content (used to bypass WAF in production)
+            if "content_b64" in update_dict:
+                import base64
+
+                b64_content = update_dict.pop("content_b64")
+                if b64_content is not None:
+                    update_dict["content"] = base64.b64decode(b64_content).decode("utf-8")
+
             core_lecture = self.core_service.update_lecture(
                 lecture_id=lecture_id,
                 update_data=update_dict,

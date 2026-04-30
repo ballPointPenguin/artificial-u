@@ -25,7 +25,7 @@ export const studentService = {
    * Update current student profile
    */
   updateCurrentStudent: (data: StudentUpdate): Promise<Student> => {
-    return httpClient.patch<Student>(ENDPOINTS.students.me, data)
+    return httpClient.put<Student>(ENDPOINTS.students.me, data)
   },
 
   /**
@@ -49,7 +49,7 @@ export const studentService = {
    * Update student role (Admin only)
    */
   updateStudentRole: (id: number, role: 'viewer' | 'creator' | 'admin'): Promise<Student> => {
-    return httpClient.patch<Student>(ENDPOINTS.students.updateRole(id), {
+    return httpClient.put<Student>(ENDPOINTS.students.updateRole(id), {
       role,
     })
   },

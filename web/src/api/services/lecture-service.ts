@@ -165,7 +165,8 @@ export const lectureService = {
   },
 
   updateLecture: (lectureId: number, data: LectureUpdate): Promise<Lecture> => {
-    return httpClient.patch<Lecture>(ENDPOINTS.lectures.detail(lectureId), data)
+    // Use PUT instead of PATCH to avoid AWS API Gateway/CloudFront method restrictions
+    return httpClient.put<Lecture>(ENDPOINTS.lectures.detail(lectureId), data)
   },
 
   deleteLecture: (lectureId: number): Promise<null> => {
