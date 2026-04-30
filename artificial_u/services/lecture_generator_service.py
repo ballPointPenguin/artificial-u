@@ -1031,7 +1031,6 @@ class LectureGeneratorService:
         """
         import json
 
-        from artificial_u.audio.speech_processor import SpeechProcessor
         from artificial_u.config import get_settings
         from artificial_u.integrations import elevenlabs
         from artificial_u.services.storage_service import StorageService
@@ -1041,20 +1040,15 @@ class LectureGeneratorService:
             self.logger.warning("No ElevenLabs API key, skipping forced alignment")
             return None
 
-        # Normalize text for alignment using the human-readable lecture content
-        # (not the SSML-laced TTS transcript). Passing supports_ssml=False strips
-        # stage directions like "[Pause]" / "[pauses for emphasis]" entirely
-        # instead of rewriting them as `<break time="…s" />`, which would leak
-        # markup tokens into the resulting word timeline and into the captions UI.
-        # Actual audio silences are skipped naturally by forced alignment.
-        speech_processor = SpeechProcessor(logger=self.logger)
-        normalized_text = speech_processor.normalize_text(lecture.content, supports_ssml=False)
-
         client = elevenlabs.ElevenLabsClient(api_key=settings.ELEVENLABS_API_KEY)
 
+        # Send raw lecture.content to forced alignment so that the resulting
+        # word timeline (and captions) reflect the original, human-readable text.
+        # The alignment service handles punctuation and stage directions naturally.
+        # Normalization is only applied to the TTS audio path (not here).
         self.logger.info(f"Starting forced alignment for lecture {lecture.id}")
         alignment_result = await asyncio.to_thread(
-            client.forced_alignment, audio_path, normalized_text
+            client.forced_alignment, audio_path, lecture.content
         )
 
         # Convert to generic timeline format
