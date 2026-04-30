@@ -35,7 +35,6 @@ export const LectureSection: Component<LectureSectionProps> = (props) => {
   const [deleteError, setDeleteError] = createSignal('')
   const [isGeneratingAudio, setIsGeneratingAudio] = createSignal(false)
   const [audioError, setAudioError] = createSignal('')
-  const [audioTimeout, setAudioTimeout] = createSignal(false)
   const [isUploadingAudio, setIsUploadingAudio] = createSignal(false)
   const [uploadSuccess, setUploadSuccess] = createSignal(false)
   const [isGeneratingSummary, setIsGeneratingSummary] = createSignal(false)
@@ -162,7 +161,6 @@ export const LectureSection: Component<LectureSectionProps> = (props) => {
 
     setIsGeneratingAudio(true)
     setAudioError('')
-    setAudioTimeout(false)
 
     try {
       const job = await lectureService.enqueueGenerateLectureAudio(lecture.id)
@@ -543,12 +541,6 @@ export const LectureSection: Component<LectureSectionProps> = (props) => {
       <Show when={audioError()}>
         <Alert variant="danger" class="mb-4">
           {audioError()}
-        </Alert>
-      </Show>
-      <Show when={audioTimeout()}>
-        <Alert variant="warning" class="mb-4">
-          The audio generation request timed out. It may still complete in the background. Try
-          refreshing in a bit.
         </Alert>
       </Show>
       <Show when={uploadSuccess()}>

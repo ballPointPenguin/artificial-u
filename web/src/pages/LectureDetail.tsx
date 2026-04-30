@@ -396,7 +396,6 @@ const LectureDetail = () => {
   const [deleteError, setDeleteError] = createSignal('')
   const [isGeneratingAudio, setIsGeneratingAudio] = createSignal(false)
   const [audioError, setAudioError] = createSignal('')
-  const [audioTimeout, setAudioTimeout] = createSignal(false)
   const [isUploadingAudio, setIsUploadingAudio] = createSignal(false)
   const [uploadSuccess, setUploadSuccess] = createSignal(false)
 
@@ -511,11 +510,10 @@ const LectureDetail = () => {
 
     setIsGeneratingAudio(true)
     setAudioError('')
-    setAudioTimeout(false)
 
     try {
-      await lectureService.generateLectureAudio(lectureId(), () => setAudioTimeout(true))
-      await refetchLecture()
+      const job = await lectureService.enqueueGenerateLectureAudio(lectureId())
+      jobTracker.track(job.id)
     } catch (error) {
       setAudioError(error instanceof Error ? error.message : 'Failed to generate audio')
     } finally {
@@ -685,11 +683,6 @@ const LectureDetail = () => {
                   <Show when={audioError()}>
                     <Alert variant="danger" class="mb-4">
                       {audioError()}
-                    </Alert>
-                  </Show>
-                  <Show when={audioTimeout()}>
-                    <Alert variant="warning" class="mb-4">
-                      {t().lectureDetail.audioGenerationTimeout}
                     </Alert>
                   </Show>
                   <Show when={uploadSuccess()}>

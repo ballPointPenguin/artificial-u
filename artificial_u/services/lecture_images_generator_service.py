@@ -56,6 +56,14 @@ class LectureImagesGeneratorService:
         return self.settings.LECTURE_IMAGE_INTERVAL_SEC
 
     async def _fetch_timeline(self, url: str) -> Dict[str, Any]:
+        bucket, object_key = self.storage_service.parse_storage_url(url)
+        if bucket and object_key:
+            data, _ = await self.storage_service.download_file(bucket, object_key)
+            if data is None:
+                raise RuntimeError(
+                    f"Failed to download timeline from storage: {bucket}/{object_key}"
+                )
+            return json.loads(data.decode("utf-8"))
         resp = await self.http_client.get(url, timeout=30.0)
         resp.raise_for_status()
         return resp.json()
