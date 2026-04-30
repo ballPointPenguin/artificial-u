@@ -112,12 +112,6 @@ async def add_featured(
     return _to_response(item)
 
 
-@router.put(
-    "/{featured_id}/order",
-    response_model=FeaturedItemResponse,
-    summary="Update featured item order (PUT) (Admin only)",
-    dependencies=[require_role("admin")],
-)
 @router.patch(
     "/{featured_id}/order",
     response_model=FeaturedItemResponse,

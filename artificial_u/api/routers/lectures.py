@@ -496,17 +496,6 @@ async def create_lecture(
     return lecture
 
 
-@router.put(
-    "/{lecture_id}",
-    response_model=Lecture,
-    summary="Update lecture (PUT)",
-    description="Update an existing lecture using PUT. Only the creator or an admin can modify a lecture.",
-    responses={
-        404: {"description": "Lecture not found"},
-        403: {"description": "Forbidden - user doesn't own this lecture"},
-    },
-    dependencies=[require_role("creator")],
-)
 @router.patch(
     "/{lecture_id}",
     response_model=Lecture,

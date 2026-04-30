@@ -24,7 +24,7 @@ export const featuredService = {
   },
 
   updateOrder: (id: number, display_order: number): Promise<FeaturedItem> => {
-    return httpClient.put<FeaturedItem>(ENDPOINTS.featured.order(id), { display_order })
+    return httpClient.patch<FeaturedItem>(ENDPOINTS.featured.order(id), { display_order })
   },
 
   removeFeatured: (id: number): Promise<null> => {

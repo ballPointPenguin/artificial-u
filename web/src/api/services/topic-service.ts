@@ -29,7 +29,7 @@ export const topicService = {
   },
 
   updateTopic: (topicId: number, data: TopicUpdate): Promise<Topic> => {
-    return httpClient.put<Topic>(ENDPOINTS.topics.detail(topicId), data)
+    return httpClient.patch<Topic>(ENDPOINTS.topics.detail(topicId), data)
   },
   deleteTopic: (topicId: number): Promise<undefined> => {
     return httpClient.delete(ENDPOINTS.topics.detail(topicId))

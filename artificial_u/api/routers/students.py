@@ -49,13 +49,6 @@ def get_current_student_profile(student=Depends(ensure_student)):
     )
 
 
-@router.put(
-    "/me",
-    response_model=StudentResponse,
-    summary="Update current student profile (PUT)",
-    description="Update the profile information for the currently authenticated student.",
-    dependencies=[Depends(require_auth)],
-)
 @router.patch(
     "/me",
     response_model=StudentResponse,
@@ -194,13 +187,6 @@ def list_students(
     )
 
 
-@router.put(
-    "/{student_id}/role",
-    response_model=StudentResponse,
-    summary="Update student role (PUT) (Admin only)",
-    description="Update a student's role using PUT. Requires admin role.",
-    dependencies=[require_role("admin")],
-)
 @router.patch(
     "/{student_id}/role",
     response_model=StudentResponse,

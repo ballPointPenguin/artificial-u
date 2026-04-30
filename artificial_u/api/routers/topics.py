@@ -80,17 +80,6 @@ def list_topics_by_course(
     return topic_service.list_topics_by_course(course_id=course_id, page=page, size=size)
 
 
-@router.put(
-    "/{topic_id}",
-    response_model=Topic,
-    summary="Update topic (PUT)",
-    description="Update an existing topic using PUT. Only the creator or an admin can modify a topic.",
-    responses={
-        404: {"description": "Topic not found"},
-        403: {"description": "Forbidden - user doesn't own this topic"},
-    },
-    dependencies=[require_role("creator")],
-)
 @router.patch(
     "/{topic_id}",
     response_model=Topic,

@@ -48,9 +48,7 @@ class LectureBase(BaseModel):
 class LectureCreate(LectureBase):
     """Model for creating a new lecture."""
 
-    content_b64: Optional[str] = Field(
-        None, description="Base64 encoded lecture content text (to bypass WAF)"
-    )
+    pass
 
 
 class LectureUpdate(BaseModel):
@@ -63,9 +61,6 @@ class LectureUpdate(BaseModel):
         None, description="Updated ID of the topic this lecture is associated with"
     )
     content: Optional[str] = Field(None, description="Updated lecture content text")
-    content_b64: Optional[str] = Field(
-        None, description="Base64 encoded updated lecture content text (to bypass WAF)"
-    )
     summary: Optional[str] = Field(None, description="Updated summary of the lecture content")
     title: Optional[str] = Field(None, description="Updated title of the lecture")
     audio_url: Optional[str] = Field(None, description="Updated audio URL")

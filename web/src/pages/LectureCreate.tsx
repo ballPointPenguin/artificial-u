@@ -31,23 +31,8 @@ const LectureCreatePage = () => {
     setError('')
 
     try {
-      // Encode content to base64 to bypass WAF blocking HTML/markdown characters in production
-      const payload = { ...formData }
-      if (payload.content !== undefined) {
-        // UTF-8 safe base64 encoding
-        payload.content_b64 = btoa(
-          encodeURIComponent(payload.content).replace(
-            /%([0-9A-F]{2})/g,
-            (_match: string, p1: string) => String.fromCharCode(Number.parseInt(p1, 16))
-          )
-        )
-        // We still need to send content as empty string if it's required by the base model,
-        // but we'll use a placeholder since the backend will replace it with the decoded b64 content.
-        payload.content = 'B64_ENCODED'
-      }
-
       // Since we're creating a new lecture, we know it's LectureCreate type
-      const newLecture = await lectureService.createLecture(payload as LectureCreate)
+      const newLecture = await lectureService.createLecture(formData as LectureCreate)
       // Navigate to the newly created lecture
       navigate(`/courses/${String(courseId)}/lectures/${String(newLecture.id)}`)
     } catch (error) {

@@ -248,7 +248,6 @@ export interface LectureCreate {
   topic_id: number
   title: string
   content: string
-  content_b64?: string
   summary?: string | null
   audio_url?: string | null
   transcript_url?: string | null
@@ -261,7 +260,6 @@ export interface LectureUpdate {
   topic_id?: number
   title?: string
   content?: string
-  content_b64?: string
   summary?: string | null
   audio_url?: string | null
   transcript_url?: string | null
