@@ -18,6 +18,23 @@ import type { CourseFormData } from '../components/courses/types.jsx'
 import { Alert, Button, MagicButton, MetadataInfo, ShareButton } from '../components/ui'
 import { useTranslations } from '../i18n'
 import { useAudioPlayer } from '../utils/audio-player-context.jsx'
+import { adoptJobHandoff } from '../utils/job-management.js'
+
+const COURSE_CREATION_HANDOFF_KINDS = [
+  'create_course',
+  'generate_course_image',
+  'generate_topics_for_course',
+  'generate_topic_for_course_slot',
+]
+
+const TOPIC_GENERATION_JOB_KINDS = new Set([
+  'generate_topics_for_course',
+  'generate_topic_for_course_slot',
+])
+
+function isTopicGenerationJob(kind: string): boolean {
+  return TOPIC_GENERATION_JOB_KINDS.has(kind)
+}
 
 // Department Info Component
 const DepartmentInfo: Component<{
@@ -305,7 +322,7 @@ const CourseDetail: Component = () => {
   // Check if courseId is a valid number before creating resources
   const isValidId = !Number.isNaN(courseId)
 
-  const [courseData, { refetch }] = createResource(
+  const [courseData, { refetch: refetchCourse }] = createResource(
     () => (isValidId ? courseId : null), // Pass null if ID is invalid
     courseService.getCourse
   )
@@ -321,10 +338,73 @@ const CourseDetail: Component = () => {
     () => (isValidId ? courseId : null),
     courseService.getCourseLectures
   )
-  const [topicsData] = createResource(
+  const [topicsData, { refetch: refetchTopics }] = createResource(
     () => (isValidId ? courseId : null),
     (id) => topicService.listTopicsByCourse(id, 1, 100)
   )
+
+  const [activeImageJobIds, setActiveImageJobIds] = createSignal<Set<number>>(new Set())
+  const [activeTopicJobIds, setActiveTopicJobIds] = createSignal<Set<number>>(new Set())
+
+  const markActiveJob = (setter: typeof setActiveImageJobIds, jobId: number) => {
+    setter((prev) => {
+      if (prev.has(jobId)) return prev
+      const next = new Set(prev)
+      next.add(jobId)
+      return next
+    })
+  }
+
+  const clearActiveJob = (setter: typeof setActiveImageJobIds, jobId: number) => {
+    setter((prev) => {
+      if (!prev.has(jobId)) return prev
+      const next = new Set(prev)
+      next.delete(jobId)
+      return next
+    })
+  }
+
+  const hasActiveImageJobs = () => activeImageJobIds().size > 0
+  const hasActiveTopicJobs = () => activeTopicJobIds().size > 0
+
+  adoptJobHandoff({
+    entity: () => (isValidId ? { type: 'course', id: courseId } : null),
+    kinds: COURSE_CREATION_HANDOFF_KINDS,
+    fallback: () => {
+      const course = courseData()
+      const topics = topicsData()
+      if (!isValidId || courseData.loading || topicsData.loading || !course || !topics) {
+        return false
+      }
+      return !course.image_url || topics.items.length === 0
+    },
+    onJobStart: (event) => {
+      if (event.kind === 'generate_course_image') {
+        markActiveJob(setActiveImageJobIds, event.id)
+      }
+      if (isTopicGenerationJob(event.kind)) {
+        markActiveJob(setActiveTopicJobIds, event.id)
+      }
+    },
+    onJobComplete: (event) => {
+      if (event.kind === 'generate_course_image') {
+        clearActiveJob(setActiveImageJobIds, event.id)
+        void refetchCourse()
+      }
+      if (isTopicGenerationJob(event.kind)) {
+        clearActiveJob(setActiveTopicJobIds, event.id)
+        void refetchTopics()
+      }
+    },
+    onJobFail: (event) => {
+      if (event.kind === 'generate_course_image') {
+        clearActiveJob(setActiveImageJobIds, event.id)
+      }
+      if (isTopicGenerationJob(event.kind)) {
+        clearActiveJob(setActiveTopicJobIds, event.id)
+      }
+    },
+  })
 
   // Handler for course update form submission
   const handleUpdateCourse = async (formData: CourseFormData) => {
@@ -349,7 +429,7 @@ const CourseDetail: Component = () => {
     try {
       await courseService.updateCourse(courseId, updatePayload)
       setIsEditing(false)
-      void refetch()
+      void refetchCourse()
     } catch (err) {
       setError(err instanceof Error ? err.message : t().courseDetail.failedToUpdate)
     } finally {
@@ -414,7 +494,7 @@ const CourseDetail: Component = () => {
     setError('')
     try {
       await courseService.generateCourseImage(courseId)
-      void refetch()
+      void refetchCourse()
     } catch (err: unknown) {
       setImageGenerationError(
         err instanceof Error ? err.message : 'Failed to generate course image'
@@ -433,7 +513,7 @@ const CourseDetail: Component = () => {
     void courseService
       .publishCourse(courseId)
       .then(() => {
-        void refetch()
+        void refetchCourse()
       })
       .catch((err: unknown) => {
         setError(err instanceof Error ? err.message : t().courseDetail.failedToPublish)
@@ -492,7 +572,7 @@ const CourseDetail: Component = () => {
                         <MagicButton
                           variant="ghost"
                           onClick={() => void handleGenerateCourseImage()}
-                          isLoading={isGeneratingImage()}
+                          isLoading={isGeneratingImage() || hasActiveImageJobs()}
                           loadingText={t().common.generating}
                         >
                           {course().image_url ? 'Regenerate Image' : 'Generate Image'}
@@ -700,7 +780,7 @@ const CourseDetail: Component = () => {
                       courseId={courseId}
                       courseCode={course().code}
                       loading={topicsData.loading}
-                      isGenerating={false}
+                      isGenerating={hasActiveTopicJobs()}
                     />
                   </div>
                 </Show>

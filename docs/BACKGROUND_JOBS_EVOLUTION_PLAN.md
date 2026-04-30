@@ -264,19 +264,120 @@ delivery gap properly:
   - Worker: `cpu=512, memory=2048` with `--workers 1`, runs the async worker loop + thread pool.
 - Concrete numbers come from Category 1 data, not guesses.
 
-### 3.5 Progressive SSE/polling migration on the frontend — MOSTLY DONE
+### 3.5 Progressive SSE/polling migration on the frontend — COURSE HANDOFF DONE
 
 - SSE removed from all single-job flows. `job-events-hub.ts` is gone; SSE kept only for the admin jobs dashboard (`/api/v1/jobs/stream`).
 - `createJobTracker` (explicit local tracking) and `createJobPolling` (single known-job reactive primitive) cover all non-admin flows. `waitForJobResult` for promise-style generation flows.
 - §3.6 child-chaining closes the most critical "job spawns children" gaps (lecture generation, image generation) without broad polling.
+- New Course Creation now preserves same-tab SPA continuity from `Courses.tsx` to `CourseDetail.tsx`: the client registers a course-scoped handoff before navigation, the detail page adopts it, discovers active child jobs, and refreshes the course image/topics when jobs complete.
 
-**Remaining gap — SPA navigation handoff:**
-The tracker lives inside the component that initiated the job. When the user navigates away (e.g., Courses → CourseDetail after triggering course creation), the tracker is torn down and children of the original job (course image, topics) are never tracked. On CourseDetail, the tracker starts fresh with no knowledge of the in-flight parent.
+**Completed — limited SPA navigation handoff for New Course Creation:**
 
-Options (deferred):
-- **Session registry**: a module-level `Map<jobId, TrackerState>` in `job-management.ts` that survives SPA navigation, expires on TTL or terminal state, is cleared on hard refresh. New page instances check the registry on mount and adopt any in-flight jobs.
-- **Scoped fallback polling**: on page load, call `GET /jobs?parent_id={just-created-course-id}&status=queued,running` with a short TTL. Only fires if the session registry has no record. Avoids always-on polling while recovering from the navigation gap.
-- Avoid reintroducing broad eager polling as a substitute for exact job IDs.
+The polling primitives are intentionally page-local. That is fine while the user
+stays put, but it loses continuity when the initiating page navigates away. The
+important case is New Course Creation:
+
+1. `Courses.tsx` enqueues `create_course` and polls that known job.
+2. The backend creates the course, then enqueues follow-up jobs for the new
+   course (`generate_course_image`, `generate_topics_for_course`, and any topic
+   slot children).
+3. `Courses.tsx` receives the completed `create_course` job and navigates to
+   `/courses/{course_id}`.
+4. The `Courses.tsx` polling primitive is cleaned up on unmount, so
+   `CourseDetail.tsx` has no in-memory awareness of the parent or follow-up jobs.
+   Backend work succeeds, but the detail page does not refresh image/topics.
+
+Implemented with a session-scoped handoff registry + page adoption.
+
+Keep the scope deliberately narrow: continuity across same-tab SPA navigation,
+not hard refresh, cross-tab, or multi-device sync.
+
+- Added a module-level registry in `web/src/utils/job-management.ts`:
+  `Map<string, JobHandoff>`, cleared naturally on hard refresh and pruned on TTL
+  or terminal state. Use entity-scoped keys like `course:{courseId}` rather than
+  only `job:{jobId}` so the destination route can adopt without knowing every
+  child ID up front.
+- When `Courses.tsx` sees `create_course` complete, it parses:
+  - `course_id` from `job.result.course_id`
+  - `topics_job_id` from `job.result.topics_job_id` when present
+  - the parent `create_course` job ID from `job.id`
+- Before calling `navigate('/courses/{id}')`, it registers a handoff:
+  ```ts
+  registerJobHandoff({
+    entity: { type: 'course', id: courseId },
+    parentJobIds: [createCourseJobId],
+    jobIds: [topicsJobId].filter(Boolean),
+    kinds: [
+      'create_course',
+      'generate_course_image',
+      'generate_topics_for_course',
+      'generate_topic_for_course_slot',
+    ],
+    expiresAt: Date.now() + 10 * 60_000,
+  })
+  ```
+- On `CourseDetail.tsx` mount, the page calls an adoption helper for the current course:
+  `adoptJobHandoff({ entity: { type: 'course', id: courseId }, ...callbacks })`.
+  The helper:
+  - track known `jobIds`
+  - query `GET /jobs/{parent}/children` once for each known parent and track
+    active direct children
+  - with `trackChildren: true`, continue discovering any slot-child chain as
+    each parent/sibling completes
+  - prunes handoffs by TTL; follow-up work can remove handoffs eagerly once
+    there are no active jobs left
+- In `CourseDetail.tsx`, completion callbacks refresh only affected
+  resources:
+  - `generate_course_image` done → `refetchCourse()`
+  - `generate_topics_for_course` done → `refetchTopics()`
+  - `generate_topic_for_course_slot` done → `refetchTopics()` (or throttle/debounce
+    to avoid one request per slot if topics are generated in a fast burst)
+  - `create_course` done can be ignored on the detail page except for child
+    discovery, because the course page is already loaded.
+
+**Scoped fallback when registry has no record — implemented:**
+
+Use this only on the destination page and only for likely-stale placeholders
+(e.g., course has no image or topics are empty). It should run for a short window
+after mount, then stop.
+
+- Query active jobs for the course, not all user jobs:
+  - `GET /jobs?course_id={courseId}&status=queued`
+  - `GET /jobs?course_id={courseId}&status=running`
+- Filter to relevant kinds:
+  `generate_course_image`, `generate_topics_for_course`,
+  `generate_topic_for_course_slot`.
+- Track any returned IDs with the same `createJobTracker` path and
+  `trackChildren: true`.
+- This recovers from small race windows, direct deep links after course creation
+  in the same tab, or a missing `topics_job_id`, without broad eager polling.
+
+**Backend contract verified for course creation:**
+
+- `create_course` result includes `course_id` and includes
+  `topics_job_id` when topic generation is enqueued.
+- `generate_course_image`, `generate_topics_for_course`, and
+  `generate_topic_for_course_slot` payloads include `course_id`, so
+  `GET /jobs?course_id={id}` can recover active work.
+- Child topic-slot jobs are discoverable through the active course/job filters
+  used by the handoff adoption path.
+
+**Non-goals for this phase:**
+
+- No always-on polling in `CourseDetail.tsx`.
+- No cross-tab or hard-refresh recovery beyond the scoped fallback above.
+- No return to SSE for course detail pages.
+
+**Still to do: identify other SPA handoff cases.**
+
+- Audit the web client for other flows where a component starts a known job and
+  then navigates before downstream jobs complete.
+- For each confirmed case, either wire it into `registerJobHandoff` /
+  `adoptJobHandoff` with an entity-scoped key or explicitly document why local
+  tracking is sufficient.
+- Likely candidates to review: quickstart finalization → course detail,
+  topic-to-lecture creation flows, and any admin/detail transitions that enqueue
+  jobs before route changes.
 
 ### 3.6 Standardize follow-up chaining — DONE (2026-04-29)
 

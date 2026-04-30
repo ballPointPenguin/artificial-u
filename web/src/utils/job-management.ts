@@ -11,12 +11,14 @@ import {
   type JobRow,
   type JobStatus,
   listJobChildren,
+  listJobs,
 } from '../api/services/jobs-service.js'
 import { jobDebug } from './job-debug.js'
 
 const DEFAULT_JOB_POLL_INTERVAL_MS = 2000
 const TERMINAL_JOB_STATUSES = new Set<JobStatus>(['done', 'failed', 'cancelled'])
 const ACTIVE_JOB_STATUSES = new Set<JobStatus>(['queued', 'running'])
+const DEFAULT_JOB_HANDOFF_TTL_MS = 10 * 60_000
 
 export interface JobTrackerOptions {
   topicId?: () => number | undefined
@@ -29,6 +31,79 @@ export interface JobTrackerOptions {
   onJobComplete?: (event: JobEvent) => void
   onJobStart?: (event: JobEvent) => void
   onJobFail?: (event: JobEvent) => void
+}
+
+export interface JobHandoffEntity {
+  type: 'course'
+  id: number
+}
+
+export interface JobHandoff {
+  entity: JobHandoffEntity
+  parentJobIds?: number[]
+  jobIds?: number[]
+  kinds?: string[]
+  expiresAt?: number
+}
+
+export interface JobHandoffAdoptionOptions {
+  entity: MaybeAccessor<JobHandoffEntity | null | undefined>
+  kinds?: string[]
+  pollIntervalMs?: number
+  fallback?: MaybeAccessor<boolean>
+  onJobComplete?: (event: JobEvent) => void
+  onJobStart?: (event: JobEvent) => void
+  onJobFail?: (event: JobEvent) => void
+}
+
+const jobHandoffs = new Map<string, Required<JobHandoff>>()
+const fallbackAttemptKeys = new Set<string>()
+
+function uniqueNumbers(values: Array<number | null | undefined>): number[] {
+  return [...new Set(values.filter((value): value is number => typeof value === 'number'))]
+}
+
+function handoffKey(entity: JobHandoffEntity): string {
+  return `${entity.type}:${String(entity.id)}`
+}
+
+function normalizeJobHandoff(handoff: JobHandoff): Required<JobHandoff> {
+  return {
+    entity: handoff.entity,
+    parentJobIds: uniqueNumbers(handoff.parentJobIds ?? []),
+    jobIds: uniqueNumbers(handoff.jobIds ?? []),
+    kinds: [...new Set(handoff.kinds ?? [])],
+    expiresAt: handoff.expiresAt ?? Date.now() + DEFAULT_JOB_HANDOFF_TTL_MS,
+  }
+}
+
+function pruneJobHandoffs(now = Date.now()) {
+  for (const [key, handoff] of jobHandoffs.entries()) {
+    if (handoff.expiresAt <= now) {
+      jobHandoffs.delete(key)
+      fallbackAttemptKeys.delete(key)
+    }
+  }
+}
+
+export function registerJobHandoff(handoff: JobHandoff) {
+  pruneJobHandoffs()
+  const key = handoffKey(handoff.entity)
+  const existing = jobHandoffs.get(key)
+  const next = normalizeJobHandoff(handoff)
+
+  if (!existing) {
+    jobHandoffs.set(key, next)
+    return
+  }
+
+  jobHandoffs.set(key, {
+    entity: next.entity,
+    parentJobIds: uniqueNumbers([...existing.parentJobIds, ...next.parentJobIds]),
+    jobIds: uniqueNumbers([...existing.jobIds, ...next.jobIds]),
+    kinds: [...new Set([...existing.kinds, ...next.kinds])],
+    expiresAt: Math.max(existing.expiresAt, next.expiresAt),
+  })
 }
 
 function toJobEvent(job: JobRow): JobEvent {
@@ -317,6 +392,101 @@ export function createJobTracker(options: JobTrackerOptions) {
     lastError,
     clearError: () => setLastError(null),
   }
+}
+
+export function adoptJobHandoff(options: JobHandoffAdoptionOptions) {
+  const trackedJobIds = new Set<number>()
+
+  const entity = () => resolveMaybeAccessor(options.entity)
+  const fallbackEnabled = () =>
+    options.fallback === undefined ? false : resolveMaybeAccessor(options.fallback)
+
+  const tracker = createJobTracker({
+    courseId: () => {
+      const currentEntity = entity()
+      return currentEntity?.type === 'course' ? currentEntity.id : undefined
+    },
+    kinds: options.kinds,
+    pollIntervalMs: options.pollIntervalMs,
+    trackChildren: true,
+    onJobStart: options.onJobStart,
+    onJobComplete: options.onJobComplete,
+    onJobFail: options.onJobFail,
+  })
+
+  const trackOnce = (jobId: number | null | undefined) => {
+    if (jobId == null || trackedJobIds.has(jobId)) return
+    trackedJobIds.add(jobId)
+    tracker.track(jobId)
+  }
+
+  const discoverChildren = async (parentJobIds: number[]) => {
+    await Promise.all(
+      parentJobIds.map(async (parentJobId) => {
+        try {
+          const children = await listJobChildren(parentJobId)
+          for (const child of children) {
+            if (matchesJobKind(child, options.kinds)) {
+              trackOnce(child.id)
+            }
+          }
+        } catch (error) {
+          jobDebug.log('error', `Failed to adopt child jobs for ${String(parentJobId)}`, error)
+        }
+      })
+    )
+  }
+
+  const adoptRegisteredHandoff = async (currentEntity: JobHandoffEntity): Promise<boolean> => {
+    pruneJobHandoffs()
+    const key = handoffKey(currentEntity)
+    const handoff = jobHandoffs.get(key)
+    if (!handoff) return false
+
+    for (const jobId of handoff.parentJobIds) trackOnce(jobId)
+    for (const jobId of handoff.jobIds) trackOnce(jobId)
+    await discoverChildren(handoff.parentJobIds)
+    return true
+  }
+
+  const discoverActiveCourseJobs = async (currentEntity: JobHandoffEntity) => {
+    try {
+      const [queued, running] = await Promise.all([
+        listJobs({ course_id: currentEntity.id, status: 'queued', limit: 100 }),
+        listJobs({ course_id: currentEntity.id, status: 'running', limit: 100 }),
+      ])
+      const activeJobs = [...queued, ...running].filter((job) => matchesJobKind(job, options.kinds))
+      for (const job of activeJobs) trackOnce(job.id)
+      await discoverChildren(activeJobs.map((job) => job.id))
+    } catch (error) {
+      jobDebug.log(
+        'error',
+        `Failed to discover active jobs for course ${String(currentEntity.id)}`,
+        error
+      )
+    }
+  }
+
+  createEffect(
+    on(
+      () => [entity(), fallbackEnabled()] as const,
+      ([currentEntity, shouldFallback]) => {
+        if (!currentEntity) return
+        const key = handoffKey(currentEntity)
+
+        void (async () => {
+          const adopted = await adoptRegisteredHandoff(currentEntity)
+          if (adopted || !shouldFallback || fallbackAttemptKeys.has(key)) return
+
+          fallbackAttemptKeys.add(key)
+          await discoverActiveCourseJobs(currentEntity)
+        })()
+      },
+      { defer: false }
+    )
+  )
+
+  return tracker
 }
 
 /**
