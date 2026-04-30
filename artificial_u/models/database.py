@@ -226,12 +226,14 @@ class JobModel(Base):
     max_attempts = Column(Integer, nullable=False, default=5)
     last_error = Column(Text, nullable=True)
     result = Column(JSONB, nullable=True)
+    parent_job_id = Column(Integer, ForeignKey("jobs.id"), nullable=True)
     created_at = Column(DateTime, nullable=False, default=datetime.now)
     updated_at = Column(DateTime, nullable=False, default=datetime.now)
 
     __table_args__ = (
         Index("idx_jobs_status_priority_runafter", "status", "priority", "run_after"),
         Index("idx_jobs_status_updatedat", "status", "updated_at"),
+        Index("idx_jobs_parent_job_id", "parent_job_id"),
     )
 
 

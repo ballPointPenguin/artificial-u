@@ -10,7 +10,16 @@ class FakeJobRepository:
     def __init__(self):
         self.created = []
 
-    def create(self, *, kind, payload, priority=0, run_after=None, max_attempts=2):
+    def create(
+        self,
+        *,
+        kind,
+        payload,
+        priority=0,
+        run_after=None,
+        max_attempts=2,
+        parent_job_id=None,
+    ):
         row = SimpleNamespace(id=len(self.created) + 1)
         self.created.append(
             {
@@ -19,6 +28,7 @@ class FakeJobRepository:
                 "priority": priority,
                 "run_after": run_after,
                 "max_attempts": max_attempts,
+                "parent_job_id": parent_job_id,
             }
         )
         return row

@@ -11,7 +11,7 @@ import { Alert, Button, MagicButton } from '../components/ui'
 import type { SelectOption } from '../components/ui/Select.jsx'
 import Select from '../components/ui/Select.jsx'
 import { useTranslations } from '../i18n'
-import { createJobPolling } from '../utils/job-management.js'
+import { createJobPolling, registerJobHandoff } from '../utils/job-management.js'
 
 type SortField =
   | 'code'
@@ -205,8 +205,24 @@ const Courses: Component = () => {
         job.result && typeof job.result === 'object' && 'course_id' in job.result
           ? Number((job.result as { course_id?: unknown }).course_id)
           : Number.NaN
+      const topicsJobId =
+        job.result && typeof job.result === 'object' && 'topics_job_id' in job.result
+          ? Number((job.result as { topics_job_id?: unknown }).topics_job_id)
+          : Number.NaN
 
-      if (!Number.isNaN(createdCourseId)) {
+      if (Number.isFinite(createdCourseId)) {
+        registerJobHandoff({
+          entity: { type: 'course', id: createdCourseId },
+          parentJobIds: [job.id],
+          jobIds: Number.isFinite(topicsJobId) ? [topicsJobId] : [],
+          kinds: [
+            'create_course',
+            'generate_course_image',
+            'generate_topics_for_course',
+            'generate_topic_for_course_slot',
+          ],
+          expiresAt: Date.now() + 10 * 60_000,
+        })
         navigate(`/courses/${String(createdCourseId)}`)
         return
       }

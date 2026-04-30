@@ -195,6 +195,7 @@ class LectureGeneratorService:
     async def generate_and_save_lecture(
         self,
         partial_attributes: Optional[Dict[str, Any]] = None,
+        parent_job_id: Optional[int] = None,
     ) -> Lecture:
         """
         Generate lecture content using AI and save it as a complete lecture record.
@@ -223,7 +224,7 @@ class LectureGeneratorService:
         saved_lecture = await self._upload_and_update_transcript(saved_lecture, generated_dict)
 
         # Enqueue background processing jobs
-        self._enqueue_background_jobs_for_lecture(saved_lecture)
+        self._enqueue_background_jobs_for_lecture(saved_lecture, parent_job_id=parent_job_id)
 
         self.logger.info(
             f"Successfully generated and saved lecture {saved_lecture.id} "
@@ -333,7 +334,9 @@ class LectureGeneratorService:
             )
         return saved_lecture
 
-    def _enqueue_background_jobs_for_lecture(self, saved_lecture: Lecture) -> None:
+    def _enqueue_background_jobs_for_lecture(
+        self, saved_lecture: Lecture, parent_job_id: Optional[int] = None
+    ) -> None:
         """Enqueue background processing jobs for a lecture."""
         if get_settings().testing:
             return
@@ -348,7 +351,7 @@ class LectureGeneratorService:
         # Enqueue summary generation job
         try:
             self.job_enqueue_service.enqueue_lecture_summary_generation(
-                saved_lecture.id, topic_id=saved_lecture.topic_id
+                saved_lecture.id, topic_id=saved_lecture.topic_id, parent_job_id=parent_job_id
             )
         except Exception as e:
             self.logger.error(
@@ -360,7 +363,7 @@ class LectureGeneratorService:
         # Enqueue audio generation job (can run in parallel to summary)
         try:
             self.job_enqueue_service.enqueue_lecture_audio_generation(
-                saved_lecture.id, topic_id=saved_lecture.topic_id
+                saved_lecture.id, topic_id=saved_lecture.topic_id, parent_job_id=parent_job_id
             )
         except Exception as e:
             self.logger.error(
@@ -424,7 +427,9 @@ class LectureGeneratorService:
 
         return {"lecture_id": updated.id, "topic_id": updated.topic_id, "summary": updated.summary}
 
-    async def generate_lecture_audio(self, lecture_id: int) -> Dict[str, Any]:
+    async def generate_lecture_audio(
+        self, lecture_id: int, parent_job_id: Optional[int] = None
+    ) -> Dict[str, Any]:
         """Generate and store audio for the given lecture, updating audio_url and voice_id."""
         # 1. Fetch required entities
         lecture, course, topic, professor = self._fetch_entities_for_audio(lecture_id)
@@ -474,7 +479,7 @@ class LectureGeneratorService:
         # summary/audio are enqueued after content generation.
         try:
             self.job_enqueue_service.enqueue_lecture_timeline_generation(
-                updated.id, topic_id=updated.topic_id
+                updated.id, topic_id=updated.topic_id, parent_job_id=parent_job_id
             )
         except Exception as e:
             self.logger.error(

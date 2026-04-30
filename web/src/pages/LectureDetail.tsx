@@ -427,6 +427,7 @@ const LectureDetail = () => {
 
   const jobTracker = createJobTracker({
     lectureId: () => (isValidIds() ? lectureId() : undefined),
+    trackChildren: true,
     kinds: [
       'generate_lecture',
       'generate_lecture_text_only',

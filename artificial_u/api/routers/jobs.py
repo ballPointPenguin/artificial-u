@@ -44,6 +44,7 @@ def _job_row_response(r) -> dict:
         "payload": r.payload,
         "result": r.result,
         "duration_ms": _duration_ms_from_result(r.result),
+        "parent_job_id": getattr(r, "parent_job_id", None),
     }
 
 
@@ -135,6 +136,7 @@ def list_jobs(
     lecture_id: Optional[int] = None,
     topic_id: Optional[int] = None,
     course_id: Optional[int] = None,
+    parent_id: Optional[int] = None,
     repository_factory: RepositoryFactory = Depends(get_repository_factory),
 ):
     repo = repository_factory.job
@@ -145,6 +147,7 @@ def list_jobs(
         lecture_id=lecture_id,
         topic_id=topic_id,
         course_id=course_id,
+        parent_id=parent_id,
     )
     return [_job_row_response(r) for r in rows]
 
@@ -227,21 +230,19 @@ def get_job(
     row = repo.get(job_id)
     if not row:
         raise HTTPException(404, "job not found")
-    return {
-        "id": row.id,
-        "kind": row.kind,
-        "payload": row.payload,
-        "status": row.status,
-        "priority": row.priority,
-        "run_after": row.run_after,
-        "attempts": row.attempts,
-        "max_attempts": row.max_attempts,
-        "last_error": row.last_error,
-        "result": row.result,
-        "duration_ms": _duration_ms_from_result(row.result),
-        "created_at": row.created_at,
-        "updated_at": row.updated_at,
-    }
+    return _job_row_response(row)
+
+
+@router.get("/{job_id}/children", dependencies=[Depends(require_auth)])
+def get_job_children(
+    job_id: int,
+    repository_factory: RepositoryFactory = Depends(get_repository_factory),
+):
+    repo = repository_factory.job
+    if not repo.get(job_id):
+        raise HTTPException(404, "job not found")
+    rows = repo.list(parent_id=job_id, limit=200)
+    return [_job_row_response(r) for r in rows]
 
 
 @router.post("/{job_id}/cancel", dependencies=[Depends(require_auth)])

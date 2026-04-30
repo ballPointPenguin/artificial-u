@@ -6,6 +6,7 @@ avoiding duplication across different domain services.
 """
 
 import logging
+from typing import Optional
 
 from artificial_u.config import get_settings
 from artificial_u.models.repositories.factory import RepositoryFactory
@@ -20,42 +21,29 @@ class JobEnqueueService:
         repository_factory: RepositoryFactory,
         logger=None,
     ):
-        """
-        Initialize the job enqueue service.
-
-        Args:
-            repository_factory: Repository factory instance
-            logger: Optional logger instance
-        """
         self.repository_factory = repository_factory
         self.logger = logger or logging.getLogger(__name__)
 
     def enqueue_professor_image_generation(
-        self, professor_id: int, aspect_ratio: str = "1:1"
-    ) -> None:
-        """
-        Enqueue a background job to generate an image for the professor.
-
-        Args:
-            professor_id: The ID of the professor
-            aspect_ratio: The desired aspect ratio for the image
-
-        Raises:
-            DatabaseError: If job enqueueing fails
-        """
+        self,
+        professor_id: int,
+        aspect_ratio: str = "1:1",
+        *,
+        parent_job_id: Optional[int] = None,
+    ) -> int:
+        """Enqueue a background job to generate an image for the professor."""
         try:
-            job_repo = self.repository_factory.job
-            job = job_repo.create(
+            job = self.repository_factory.job.create(
                 kind="generate_professor_image",
-                payload={
-                    "professor_id": professor_id,
-                    "aspect_ratio": aspect_ratio,
-                },
+                payload={"professor_id": professor_id, "aspect_ratio": aspect_ratio},
+                parent_job_id=parent_job_id,
             )
-            job_id = job.id
             self.logger.info(
-                f"Enqueued professor image generation job {job_id} for professor {professor_id}"
+                "Enqueued professor image generation job %d for professor %d",
+                job.id,
+                professor_id,
             )
+            return job.id
         except Exception as e:
             error_msg = (
                 f"Failed to enqueue professor image generation job "
@@ -64,169 +52,160 @@ class JobEnqueueService:
             self.logger.error(error_msg, exc_info=True)
             raise DatabaseError(error_msg) from e
 
-    def enqueue_course_image_generation(self, course_id: int, aspect_ratio: str = "1:1") -> None:
-        """
-        Enqueue a background job to generate album art for a course.
-
-        Args:
-            course_id: The ID of the course
-            aspect_ratio: The desired aspect ratio for the image
-
-        Raises:
-            DatabaseError: If job enqueueing fails
-        """
+    def enqueue_course_image_generation(
+        self,
+        course_id: int,
+        aspect_ratio: str = "1:1",
+        *,
+        parent_job_id: Optional[int] = None,
+    ) -> int:
+        """Enqueue a background job to generate album art for a course."""
         try:
-            job_repo = self.repository_factory.job
-            job = job_repo.create(
+            job = self.repository_factory.job.create(
                 kind="generate_course_image",
-                payload={
-                    "course_id": course_id,
-                    "aspect_ratio": aspect_ratio,
-                },
+                payload={"course_id": course_id, "aspect_ratio": aspect_ratio},
+                parent_job_id=parent_job_id,
             )
-            job_id = job.id
             self.logger.info(
-                f"Enqueued course image generation job {job_id} for course {course_id}"
+                "Enqueued course image generation job %d for course %d", job.id, course_id
             )
+            return job.id
         except Exception as e:
             error_msg = f"Failed to enqueue course image generation job for course {course_id}: {e}"
             self.logger.error(error_msg, exc_info=True)
             raise DatabaseError(error_msg) from e
 
     def enqueue_lecture_summary_generation(
-        self, lecture_id: int, *, topic_id: int | None = None
-    ) -> None:
-        """
-        Enqueue a background job to generate a lecture summary.
-
-        Args:
-            lecture_id: The ID of the lecture
-
-        Raises:
-            DatabaseError: If job enqueueing fails
-        """
+        self,
+        lecture_id: int,
+        *,
+        topic_id: Optional[int] = None,
+        parent_job_id: Optional[int] = None,
+    ) -> Optional[int]:
+        """Enqueue a background job to generate a lecture summary."""
         if get_settings().testing:
             self.logger.debug("Skipping lecture summary job enqueue: running in test mode")
-            return
+            return None
 
         try:
-            job_repo = self.repository_factory.job
-            payload = {"lecture_id": lecture_id}
+            payload: dict = {"lecture_id": lecture_id}
             if topic_id is not None:
                 payload["topic_id"] = topic_id
-            job = job_repo.create(kind="generate_lecture_summary", payload=payload)
-            job_id = job.id
-            self.logger.info(f"Enqueued lecture summary job {job_id} for lecture {lecture_id}")
+            job = self.repository_factory.job.create(
+                kind="generate_lecture_summary",
+                payload=payload,
+                parent_job_id=parent_job_id,
+            )
+            self.logger.info("Enqueued lecture summary job %d for lecture %d", job.id, lecture_id)
+            return job.id
         except Exception as e:
             error_msg = f"Failed to enqueue lecture summary job for lecture {lecture_id}: {e}"
             self.logger.error(error_msg, exc_info=True)
             raise DatabaseError(error_msg) from e
 
     def enqueue_lecture_audio_generation(
-        self, lecture_id: int, *, topic_id: int | None = None
-    ) -> None:
-        """
-        Enqueue a background job to generate lecture audio.
-
-        Args:
-            lecture_id: The ID of the lecture
-
-        Raises:
-            DatabaseError: If job enqueueing fails
-        """
+        self,
+        lecture_id: int,
+        *,
+        topic_id: Optional[int] = None,
+        parent_job_id: Optional[int] = None,
+    ) -> Optional[int]:
+        """Enqueue a background job to generate lecture audio."""
         if get_settings().testing:
             self.logger.debug("Skipping lecture audio job enqueue: running in test mode")
-            return
+            return None
 
         try:
-            job_repo = self.repository_factory.job
-            payload = {"lecture_id": lecture_id}
+            payload: dict = {"lecture_id": lecture_id}
             if topic_id is not None:
                 payload["topic_id"] = topic_id
-            job = job_repo.create(kind="generate_lecture_audio", payload=payload)
-            job_id = job.id
-            self.logger.info(f"Enqueued lecture audio job {job_id} for lecture {lecture_id}")
+            job = self.repository_factory.job.create(
+                kind="generate_lecture_audio",
+                payload=payload,
+                parent_job_id=parent_job_id,
+            )
+            self.logger.info("Enqueued lecture audio job %d for lecture %d", job.id, lecture_id)
+            return job.id
         except Exception as e:
             error_msg = f"Failed to enqueue lecture audio job for lecture {lecture_id}: {e}"
             self.logger.error(error_msg, exc_info=True)
             raise DatabaseError(error_msg) from e
 
     def enqueue_lecture_timeline_generation(
-        self, lecture_id: int, *, topic_id: int | None = None
-    ) -> None:
-        """
-        Enqueue a background job to generate a lecture timeline (forced alignment).
-
-        Args:
-            lecture_id: The ID of the lecture
-
-        Raises:
-            DatabaseError: If job enqueueing fails
-        """
+        self,
+        lecture_id: int,
+        *,
+        topic_id: Optional[int] = None,
+        parent_job_id: Optional[int] = None,
+    ) -> Optional[int]:
+        """Enqueue a background job to generate a lecture timeline (forced alignment)."""
         if get_settings().testing:
             self.logger.debug("Skipping lecture timeline job enqueue: running in test mode")
-            return
+            return None
 
         try:
-            job_repo = self.repository_factory.job
-            payload = {"lecture_id": lecture_id}
+            payload: dict = {"lecture_id": lecture_id}
             if topic_id is not None:
                 payload["topic_id"] = topic_id
-            job = job_repo.create(kind="generate_lecture_timeline", payload=payload)
-            job_id = job.id
-            self.logger.info(f"Enqueued lecture timeline job {job_id} for lecture {lecture_id}")
+            job = self.repository_factory.job.create(
+                kind="generate_lecture_timeline",
+                payload=payload,
+                parent_job_id=parent_job_id,
+            )
+            self.logger.info("Enqueued lecture timeline job %d for lecture %d", job.id, lecture_id)
+            return job.id
         except Exception as e:
             error_msg = f"Failed to enqueue lecture timeline job for lecture {lecture_id}: {e}"
             self.logger.error(error_msg, exc_info=True)
             raise DatabaseError(error_msg) from e
 
-    def enqueue_lecture_images_generation(self, lecture_id: int) -> None:
-        """
-        Enqueue a background job to generate a lecture images timeline + slide images.
-
-        Admin-only in the API layer.
-        """
+    def enqueue_lecture_images_generation(
+        self,
+        lecture_id: int,
+        *,
+        parent_job_id: Optional[int] = None,
+    ) -> Optional[int]:
+        """Enqueue a background job to generate a lecture images timeline + slide images."""
         if get_settings().testing:
             self.logger.debug("Skipping lecture images job enqueue: running in test mode")
-            return
+            return None
 
         try:
-            job_repo = self.repository_factory.job
-            payload = {"lecture_id": lecture_id}
-            job = job_repo.create(kind="generate_lecture_images", payload=payload)
-            job_id = job.id
-            self.logger.info(f"Enqueued lecture images job {job_id} for lecture {lecture_id}")
+            job = self.repository_factory.job.create(
+                kind="generate_lecture_images",
+                payload={"lecture_id": lecture_id},
+                parent_job_id=parent_job_id,
+            )
+            self.logger.info("Enqueued lecture images job %d for lecture %d", job.id, lecture_id)
+            return job.id
         except Exception as e:
             error_msg = f"Failed to enqueue lecture images job for lecture {lecture_id}: {e}"
             self.logger.error(error_msg, exc_info=True)
             raise DatabaseError(error_msg) from e
 
-    def enqueue_topics_generation(self, course_id: int, created_by: int = None) -> None:
-        """
-        Enqueue a background job to generate topics for a course.
-
-        Args:
-            course_id: The ID of the course
-            created_by: Optional student ID who triggered the generation
-
-        Raises:
-            DatabaseError: If job enqueueing fails
-        """
+    def enqueue_topics_generation(
+        self,
+        course_id: int,
+        created_by: Optional[int] = None,
+        *,
+        parent_job_id: Optional[int] = None,
+    ) -> Optional[int]:
+        """Enqueue a background job to generate topics for a course."""
         if get_settings().testing:
             self.logger.debug("Skipping topics generation job enqueue: running in test mode")
-            return
+            return None
 
         try:
-            job_repo = self.repository_factory.job
-            payload = {"course_id": course_id}
+            payload: dict = {"course_id": course_id}
             if created_by is not None:
                 payload["created_by"] = created_by
-            job = job_repo.create(
+            job = self.repository_factory.job.create(
                 kind="generate_topics_for_course",
                 payload=payload,
+                parent_job_id=parent_job_id,
             )
-            job_id = job.id
-            self.logger.info(f"Enqueued topics generation job {job_id} for course {course_id}")
+            self.logger.info("Enqueued topics generation job %d for course %d", job.id, course_id)
+            return job.id
         except Exception as e:
             error_msg = f"Failed to enqueue topics generation job for course {course_id}: {e}"
             self.logger.error(error_msg, exc_info=True)

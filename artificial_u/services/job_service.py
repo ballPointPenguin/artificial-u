@@ -46,7 +46,12 @@ class JobService:
 
     # ---- Public API ----
 
-    async def dispatch(self, kind: str, payload: Dict[str, Any]) -> Dict[str, Any]:
+    async def dispatch(
+        self,
+        kind: str,
+        payload: Dict[str, Any],
+        parent_job_id: Optional[int] = None,
+    ) -> Dict[str, Any]:
         """
         Route a job by kind to the appropriate handler. Returns a JSON-serializable result.
         """
@@ -61,7 +66,7 @@ class JobService:
 
         self.logger.debug(f"Found handler for kind '{kind}', executing...")
         try:
-            result = await handler(payload)
+            result = await handler(payload, parent_job_id=parent_job_id)
             self.logger.info(f"Job kind '{kind}' completed successfully")
             return result
         except Exception as e:
@@ -77,7 +82,11 @@ class JobService:
         return base + jitter
 
     def _build_lecture_slide_chain(
-        self, slide_payloads: list[Dict[str, Any]], *, slide_priority: int
+        self,
+        slide_payloads: list[Dict[str, Any]],
+        *,
+        slide_priority: int,
+        chain_parent_job_id: Optional[int] = None,
     ) -> Optional[Dict[str, Any]]:
         """
         Build a linked list of slide payloads so each slide can enqueue its successor
@@ -87,6 +96,8 @@ class JobService:
         for slide_payload in reversed(slide_payloads):
             current = dict(slide_payload)
             current["slide_priority"] = slide_priority
+            if chain_parent_job_id is not None:
+                current["chain_parent_job_id"] = chain_parent_job_id
             if next_payload is not None:
                 current["next_slide_payload"] = next_payload
             next_payload = current
@@ -110,12 +121,14 @@ class JobService:
         if result.get("status") not in {"done", "failed", "skipped"}:
             return None
 
+        chain_parent_job_id = payload.get("chain_parent_job_id")
         row = self.repository_factory.job.create(
             kind="generate_lecture_slide",
             payload=next_slide_payload,
             priority=int(
                 next_slide_payload.get("slide_priority", payload.get("slide_priority", -10))
             ),
+            parent_job_id=chain_parent_job_id,
         )
         return row.id
 
@@ -146,13 +159,17 @@ class JobService:
             "quickstart_start": self._handle_quickstart_start,
         }.get(kind)
 
-    async def _handle_generate_course(self, payload: Dict[str, Any]) -> Dict[str, Any]:
+    async def _handle_generate_course(
+        self, payload: Dict[str, Any], parent_job_id: Optional[int] = None
+    ) -> Dict[str, Any]:
         service = self._course_generator_service_instance()
         partial = payload.get("partial_attributes") or {}
         result = await service.generate_course(partial)
         return {"generated_course": result}
 
-    async def _handle_create_course(self, payload: Dict[str, Any]) -> Dict[str, Any]:
+    async def _handle_create_course(
+        self, payload: Dict[str, Any], parent_job_id: Optional[int] = None
+    ) -> Dict[str, Any]:
         """Create a course using smart department/professor selection/generation.
 
         Expects payload with fields matching CourseService.create_course signature.
@@ -186,24 +203,32 @@ class JobService:
             description=description,
             created_by=created_by,
             created_with=created_with,
+            parent_job_id=parent_job_id,
         )
 
         # After successful course creation, enqueue topic generation
+        topics_job_id = None
         try:
             job_enqueue_service = self._job_enqueue_service_instance()
-            job_enqueue_service.enqueue_topics_generation(course.id, created_by=created_by)
+            topics_job_id = job_enqueue_service.enqueue_topics_generation(
+                course.id, created_by=created_by, parent_job_id=parent_job_id
+            )
             self.logger.info(f"Enqueued topic generation for course {course.id}")
         except Exception as e:
             self.logger.warning(f"Failed to enqueue topic generation for course {course.id}: {e}")
-            # Don't fail the course creation if topic generation enqueue fails
 
-        return {
+        result: Dict[str, Any] = {
             "course_id": course.id,
             "department_id": course.department_id,
             "professor_id": professor.id,
         }
+        if topics_job_id is not None:
+            result["topics_job_id"] = topics_job_id
+        return result
 
-    async def _handle_generate_department(self, payload: Dict[str, Any]) -> Dict[str, Any]:
+    async def _handle_generate_department(
+        self, payload: Dict[str, Any], parent_job_id: Optional[int] = None
+    ) -> Dict[str, Any]:
         service = self._department_generator_service_instance()
         partial = payload.get("partial_attributes") or {}
         freeform = payload.get("freeform_prompt")
@@ -213,18 +238,21 @@ class JobService:
         )
         return {"generated_department": result}
 
-    async def _handle_generate_professor(self, payload: Dict[str, Any]) -> Dict[str, Any]:
+    async def _handle_generate_professor(
+        self, payload: Dict[str, Any], parent_job_id: Optional[int] = None
+    ) -> Dict[str, Any]:
         service = self._professor_generator_service_instance()
         partial = dict(payload.get("partial_attributes") or {})
         freeform_prompt = payload.get("freeform_prompt")
         if freeform_prompt:
-            # Align with synchronous API behavior by threading the prompt through the generator
             partial["freeform_prompt"] = freeform_prompt
 
         result = await service.generate_professor(partial)
         return {"generated_professor": result}
 
-    async def _handle_generate_topics_for_course(self, payload: Dict[str, Any]) -> Dict[str, Any]:
+    async def _handle_generate_topics_for_course(
+        self, payload: Dict[str, Any], parent_job_id: Optional[int] = None
+    ) -> Dict[str, Any]:
         service = self._topic_generator_service_instance()
         course_id = payload.get("course_id")
         freeform = payload.get("freeform_prompt")
@@ -232,7 +260,6 @@ class JobService:
         if course_id is None:
             raise ValueError("course_id is required")
         topics = await service.generate_topics_for_course(course_id, freeform, created_by)
-        # Convert Topic models to minimal dicts
         return {
             "created_topics": [
                 {
@@ -246,7 +273,9 @@ class JobService:
             ]
         }
 
-    async def _handle_generate_lecture(self, payload: Dict[str, Any]) -> Dict[str, Any]:
+    async def _handle_generate_lecture(
+        self, payload: Dict[str, Any], parent_job_id: Optional[int] = None
+    ) -> Dict[str, Any]:
         service = self._lecture_generator_service_instance()
         partial = payload.get("partial_attributes") or {}
         self.logger.info(f"Generating and saving lecture with partial attributes: {partial}")
@@ -272,6 +301,7 @@ class JobService:
                     kind="generate_lecture_summary",
                     payload=summary_payload,
                     priority=payload.get("priority", 0),
+                    parent_job_id=parent_job_id,
                 )
             except Exception as e:  # noqa: BLE001
                 self.logger.error(
@@ -288,9 +318,9 @@ class JobService:
                     kind="generate_lecture_audio",
                     payload={"lecture_id": saved_lecture.id, "topic_id": saved_lecture.topic_id},
                     priority=payload.get("priority", 0),
+                    parent_job_id=parent_job_id,
                 )
             except Exception as e:  # noqa: BLE001
-                # Don't fail the batch chain if audio enqueue fails.
                 self.logger.warning(
                     "Failed to enqueue audio generation for lecture %s: %s",
                     saved_lecture.id,
@@ -299,7 +329,9 @@ class JobService:
                 )
         else:
             # Use the complete workflow for non-batch jobs.
-            saved_lecture = await service.generate_and_save_lecture(partial)
+            saved_lecture = await service.generate_and_save_lecture(
+                partial, parent_job_id=parent_job_id
+            )
 
         self.logger.info(f"Generate and save lecture completed: {saved_lecture.id}")
         return {
@@ -310,7 +342,9 @@ class JobService:
             "transcript_url": saved_lecture.transcript_url,
         }
 
-    async def _handle_generate_lecture_text_only(self, payload: Dict[str, Any]) -> Dict[str, Any]:
+    async def _handle_generate_lecture_text_only(
+        self, payload: Dict[str, Any], parent_job_id: Optional[int] = None
+    ) -> Dict[str, Any]:
         service = self._lecture_generator_service_instance()
         partial = payload.get("partial_attributes") or {}
         self.logger.info(
@@ -329,7 +363,9 @@ class JobService:
             "transcript_url": saved_lecture.transcript_url,
         }
 
-    async def _handle_generate_lecture_summary(self, payload: Dict[str, Any]) -> Dict[str, Any]:
+    async def _handle_generate_lecture_summary(
+        self, payload: Dict[str, Any], parent_job_id: Optional[int] = None
+    ) -> Dict[str, Any]:
         service = self._lecture_generator_service_instance()
         lecture_id = payload.get("lecture_id")
         if lecture_id is None:
@@ -337,15 +373,19 @@ class JobService:
         result = await service.generate_lecture_summary(lecture_id)
         return result
 
-    async def _handle_generate_lecture_audio(self, payload: Dict[str, Any]) -> Dict[str, Any]:
+    async def _handle_generate_lecture_audio(
+        self, payload: Dict[str, Any], parent_job_id: Optional[int] = None
+    ) -> Dict[str, Any]:
         service = self._lecture_generator_service_instance()
         lecture_id = payload.get("lecture_id")
         if lecture_id is None:
             raise ValueError("lecture_id is required")
-        result = await service.generate_lecture_audio(lecture_id)
+        result = await service.generate_lecture_audio(lecture_id, parent_job_id=parent_job_id)
         return result
 
-    async def _handle_generate_lecture_timeline(self, payload: Dict[str, Any]) -> Dict[str, Any]:
+    async def _handle_generate_lecture_timeline(
+        self, payload: Dict[str, Any], parent_job_id: Optional[int] = None
+    ) -> Dict[str, Any]:
         service = self._lecture_generator_service_instance()
         lecture_id = payload.get("lecture_id")
         if lecture_id is None:
@@ -362,12 +402,13 @@ class JobService:
                     "topic_id": payload.get("topic_id") or getattr(lecture, "topic_id", None),
                 },
                 priority=int(payload.get("priority", 0)),
+                parent_job_id=parent_job_id,
             )
             result["remap_images_timeline_job_id"] = row.id
         return result
 
     async def _handle_remap_lecture_images_timeline(
-        self, payload: Dict[str, Any]
+        self, payload: Dict[str, Any], parent_job_id: Optional[int] = None
     ) -> Dict[str, Any]:
         service = self._lecture_images_generator_service_instance()
         lecture_id = payload.get("lecture_id")
@@ -381,7 +422,9 @@ class JobService:
         )
         return result
 
-    async def _handle_generate_lecture_images(self, payload: Dict[str, Any]) -> Dict[str, Any]:
+    async def _handle_generate_lecture_images(
+        self, payload: Dict[str, Any], parent_job_id: Optional[int] = None
+    ) -> Dict[str, Any]:
         service = self._lecture_images_generator_service_instance()
         lecture_id = payload.get("lecture_id")
         if lecture_id is None:
@@ -403,7 +446,9 @@ class JobService:
         slide_payloads = result.pop("slide_payloads", [])
         slide_priority = int(payload.get("slide_priority", -10))
         first_slide_payload = self._build_lecture_slide_chain(
-            slide_payloads, slide_priority=slide_priority
+            slide_payloads,
+            slide_priority=slide_priority,
+            chain_parent_job_id=parent_job_id,
         )
         job_ids = []
         if first_slide_payload:
@@ -411,6 +456,7 @@ class JobService:
                 kind="generate_lecture_slide",
                 payload=first_slide_payload,
                 priority=slide_priority,
+                parent_job_id=parent_job_id,
             )
             job_ids.append(row.id)
 
@@ -419,7 +465,9 @@ class JobService:
         result["slide_job_ids"] = job_ids
         return result
 
-    async def _handle_resume_lecture_images(self, payload: Dict[str, Any]) -> Dict[str, Any]:
+    async def _handle_resume_lecture_images(
+        self, payload: Dict[str, Any], parent_job_id: Optional[int] = None
+    ) -> Dict[str, Any]:
         service = self._lecture_images_generator_service_instance()
         lecture_id = payload.get("lecture_id")
         if lecture_id is None:
@@ -433,7 +481,9 @@ class JobService:
         slide_payloads = result.pop("slide_payloads", [])
         slide_priority = int(payload.get("slide_priority", -10))
         first_slide_payload = self._build_lecture_slide_chain(
-            slide_payloads, slide_priority=slide_priority
+            slide_payloads,
+            slide_priority=slide_priority,
+            chain_parent_job_id=parent_job_id,
         )
         job_ids = []
         if first_slide_payload:
@@ -441,6 +491,7 @@ class JobService:
                 kind="generate_lecture_slide",
                 payload=first_slide_payload,
                 priority=slide_priority,
+                parent_job_id=parent_job_id,
             )
             job_ids.append(row.id)
 
@@ -449,7 +500,9 @@ class JobService:
         result["slide_job_ids"] = job_ids
         return result
 
-    async def _handle_generate_lecture_slide(self, payload: Dict[str, Any]) -> Dict[str, Any]:
+    async def _handle_generate_lecture_slide(
+        self, payload: Dict[str, Any], parent_job_id: Optional[int] = None
+    ) -> Dict[str, Any]:
         service = self._lecture_images_generator_service_instance()
         lecture_id = payload.get("lecture_id")
         slot_idx = payload.get("slot_idx")
@@ -476,7 +529,9 @@ class JobService:
             result["next_slide_job_id"] = next_job_id
         return result
 
-    async def _handle_generate_professor_image(self, payload: Dict[str, Any]) -> Dict[str, Any]:
+    async def _handle_generate_professor_image(
+        self, payload: Dict[str, Any], parent_job_id: Optional[int] = None
+    ) -> Dict[str, Any]:
         service = self._professor_generator_service_instance()
         professor_id = payload.get("professor_id")
         aspect_ratio = payload.get("aspect_ratio", "1:1")
@@ -487,7 +542,9 @@ class JobService:
         )
         return {"professor_id": updated.id, "image_url": getattr(updated, "image_url", None)}
 
-    async def _handle_generate_course_image(self, payload: Dict[str, Any]) -> Dict[str, Any]:
+    async def _handle_generate_course_image(
+        self, payload: Dict[str, Any], parent_job_id: Optional[int] = None
+    ) -> Dict[str, Any]:
         service = self._course_generator_service_instance()
         course_id = payload.get("course_id")
         aspect_ratio = payload.get("aspect_ratio", "1:1")
@@ -498,7 +555,9 @@ class JobService:
         )
         return {"course_id": updated.id, "image_url": getattr(updated, "image_url", None)}
 
-    async def _handle_export_course(self, payload: Dict[str, Any]) -> Dict[str, Any]:
+    async def _handle_export_course(
+        self, payload: Dict[str, Any], parent_job_id: Optional[int] = None
+    ) -> Dict[str, Any]:
         """Export a course with all related data and assets."""
         service = self._course_export_service_instance()
         course_id = payload.get("course_id")
@@ -507,7 +566,9 @@ class JobService:
         result = await service.export_course(course_id)
         return result
 
-    async def _handle_quickstart_start(self, payload: Dict[str, Any]) -> Dict[str, Any]:
+    async def _handle_quickstart_start(
+        self, payload: Dict[str, Any], parent_job_id: Optional[int] = None
+    ) -> Dict[str, Any]:
         """Start the quickstart course creation flow.
 
         Generates course data from user query and creates the course with smart
@@ -543,13 +604,14 @@ class JobService:
             title=generated_data.get("title") or "Quickstart Course",
             code=generated_data.get("code") or "QS001",
             level=generated_data.get("level") or "Undergraduate",
-            weeks=12,  # Quickstart courses use consistent 12 weeks
+            weeks=12,
             lectures_per_week=1,
-            department_id=None,  # Smart selection will handle this
-            professor_id=None,  # Smart selection will handle this
+            department_id=None,
+            professor_id=None,
             description=generated_data.get("description") or query,
             created_by=created_by,
             created_with=generated_data.get("created_with"),
+            parent_job_id=parent_job_id,
         )
 
         # Step 3: Set course to hidden status (will be published after user approval)
