@@ -252,13 +252,7 @@ export const PersistentAudioPlayer: Component = () => {
                     '--media-text-color': '#f5f5dc',
                   }}
                 >
-                  <audio
-                    ref={setAudioEl}
-                    slot="media"
-                    src={track().url}
-                    preload="metadata"
-                    crossOrigin="anonymous"
-                  />
+                  <audio ref={setAudioEl} slot="media" preload="metadata" />
                   <media-control-bar class="flex flex-wrap items-center gap-x-1 sm:gap-x-2 gap-y-2 w-full">
                     <media-play-button class="text-parchment-100 hover:text-mystic-300 shrink-0" />
                     <media-seek-backward-button
