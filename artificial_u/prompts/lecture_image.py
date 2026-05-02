@@ -97,6 +97,17 @@ def format_lecture_slide_prompt(  # noqa: C901
             "Background: Idealized academic setting (e.g., a lab or classroom) that feels cozy and slightly "
             "magical.",
             "",
+            "Cultural Sensitivity:",
+            "- Do NOT depict the face or physical form of Prophet Muhammad or other figures whose personal "
+            "depiction is religiously prohibited (e.g., in Islamic aniconism). Use calligraphy, architecture, "
+            "maps, timelines, or symbolic imagery instead.",
+            "- For other sacred or revered figures (religious founders, deities, saints), prefer symbolic or "
+            "contextual imagery over literal portraiture unless the lecture clearly calls for it.",
+            "- When illustrating topics involving slavery, colonialism, or historical oppression, depict with "
+            "dignity and historical gravity — not sensationalism or caricature.",
+            "- Violence and conflict may be shown with appropriate gravitas for college-level academic content, "
+            "but avoid gratuitous gore.",
+            "",
             "Composition Guidance:",
             "- The professor should feel like the same person as the reference image (if present).",
             "- If a previous slide reference is provided, preserve visual continuity with it while "
