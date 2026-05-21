@@ -81,7 +81,7 @@ class CourseConnectionModel(Base):
     connected_course_id = Column(
         Integer, ForeignKey("courses.id", ondelete="CASCADE"), primary_key=True
     )
-    created_at = Column(DateTime, nullable=False, default=datetime.now)
+    created_at = Column(DateTime, nullable=False, server_default=text("now()"))
 
     course = relationship(
         "CourseModel", foreign_keys=[course_id], back_populates="connections_as_source"

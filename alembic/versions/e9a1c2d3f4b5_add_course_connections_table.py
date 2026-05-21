@@ -21,7 +21,7 @@ def upgrade() -> None:
         "course_connections",
         sa.Column("course_id", sa.Integer(), nullable=False),
         sa.Column("connected_course_id", sa.Integer(), nullable=False),
-        sa.Column("created_at", sa.DateTime(), nullable=False),
+        sa.Column("created_at", sa.DateTime(), nullable=False, server_default=sa.func.now()),
         sa.ForeignKeyConstraint(["course_id"], ["courses.id"], ondelete="CASCADE"),
         sa.ForeignKeyConstraint(["connected_course_id"], ["courses.id"], ondelete="CASCADE"),
         sa.PrimaryKeyConstraint("course_id", "connected_course_id"),
