@@ -6,6 +6,7 @@ from datetime import datetime
 
 from sqlalchemy import (
     Boolean,
+    CheckConstraint,
     Column,
     DateTime,
     ForeignKey,
@@ -53,6 +54,47 @@ class CourseModel(Base):
     lectures = relationship("LectureModel", back_populates="course")
     topics = relationship("TopicModel", back_populates="course")
     student = relationship("StudentModel", foreign_keys=[created_by])
+    connections_as_source = relationship(
+        "CourseConnectionModel",
+        foreign_keys="CourseConnectionModel.course_id",
+        back_populates="course",
+        cascade="all, delete-orphan",
+    )
+    connections_as_target = relationship(
+        "CourseConnectionModel",
+        foreign_keys="CourseConnectionModel.connected_course_id",
+        back_populates="connected_course",
+        cascade="all, delete-orphan",
+    )
+
+    @property
+    def connected_course_ids(self) -> list[int]:
+        source_ids = [connection.connected_course_id for connection in self.connections_as_source]
+        target_ids = [connection.course_id for connection in self.connections_as_target]
+        return sorted(set(source_ids + target_ids))
+
+
+class CourseConnectionModel(Base):
+    __tablename__ = "course_connections"
+
+    course_id = Column(Integer, ForeignKey("courses.id", ondelete="CASCADE"), primary_key=True)
+    connected_course_id = Column(
+        Integer, ForeignKey("courses.id", ondelete="CASCADE"), primary_key=True
+    )
+    created_at = Column(DateTime, nullable=False, default=datetime.now)
+
+    course = relationship(
+        "CourseModel", foreign_keys=[course_id], back_populates="connections_as_source"
+    )
+    connected_course = relationship(
+        "CourseModel",
+        foreign_keys=[connected_course_id],
+        back_populates="connections_as_target",
+    )
+
+    __table_args__ = (
+        CheckConstraint("course_id < connected_course_id", name="ck_course_connections_ordering"),
+    )
 
 
 class FacultyModel(Base):
