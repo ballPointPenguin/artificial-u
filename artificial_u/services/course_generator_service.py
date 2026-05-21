@@ -145,6 +145,7 @@ class CourseGeneratorService:
             from artificial_u.models.database import CourseModel
 
             valid_course_keys = {c.name for c in CourseModel.__table__.columns}
+            valid_course_keys.add("connected_course_ids")
             final_course_data = {
                 k: v for k, v in final_course_data.items() if k in valid_course_keys
             }

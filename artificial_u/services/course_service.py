@@ -66,6 +66,7 @@ class CourseService:
         description: Optional[str] = None,
         created_by: Optional[int] = None,
         created_with: Optional[str] = None,
+        connected_course_ids: Optional[List[int]] = None,
         parent_job_id: Optional[int] = None,
     ) -> Tuple[Course, Professor]:
         """
@@ -118,7 +119,16 @@ class CourseService:
         course.created_with = created_with
 
         # Save course
-        return self._save_course(course, professor, code, parent_job_id=parent_job_id)
+        created_course, created_professor = self._save_course(
+            course, professor, code, parent_job_id=parent_job_id
+        )
+
+        if connected_course_ids is not None:
+            created_course = self.repository_factory.course.set_connected_courses(
+                created_course.id, connected_course_ids
+            )
+
+        return created_course, created_professor
 
     async def _resolve_department_id(
         self, department_id: Optional[int], course_attributes: dict
@@ -340,8 +350,19 @@ class CourseService:
             CourseNotFoundError: If course not found
             DatabaseError: If there's an error updating the database
         """
+        update_data = dict(update_data)
+
         # Get existing course model
         course = self.get_course(course_id)
+
+        connection_update_requested = False
+        requested_connected_course_ids: List[int] = []
+        if "connected_course_ids" in update_data:
+            connected_course_ids = update_data.pop("connected_course_ids")
+            if connected_course_ids is not None:
+                connection_update_requested = True
+                requested_connected_course_ids = connected_course_ids
+
         # Update fields (simple approach)
         for key, value in update_data.items():
             if hasattr(course, key):
@@ -352,6 +373,10 @@ class CourseService:
         # Save changes using repository
         try:
             updated_course = self.repository_factory.course.update(course)
+            if connection_update_requested:
+                updated_course = self.repository_factory.course.set_connected_courses(
+                    course_id, requested_connected_course_ids
+                )
             return updated_course
         except Exception as e:
             error_msg = f"Failed to update course {course_id}: {str(e)}"

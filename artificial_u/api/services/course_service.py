@@ -353,6 +353,7 @@ class CourseApiService(BaseApiService[CoreCourse, CourseResponse, CoursesListRes
                 lectures_per_week=course_data.lectures_per_week,
                 created_by=created_by,
                 created_with=created_with,
+                connected_course_ids=course_data.connected_course_ids,
             )
             # After successful course creation, enqueue topic generation
             try:
@@ -771,6 +772,8 @@ class CourseApiService(BaseApiService[CoreCourse, CourseResponse, CoursesListRes
             partial_attrs = generation_data.partial_attributes or {}  # Start with partial attrs
             if generation_data.freeform_prompt:  # Add prompt if provided
                 partial_attrs["freeform_prompt"] = generation_data.freeform_prompt
+            if generation_data.connected_course_ids is not None:
+                partial_attrs["connected_course_ids"] = generation_data.connected_course_ids
 
             # Call the generator service to generate the course content dictionary
             generated_dict = await self.generator_service.generate_course(

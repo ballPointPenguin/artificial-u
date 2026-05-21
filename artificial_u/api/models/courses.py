@@ -35,6 +35,13 @@ class CourseBase(BaseModel):
         description="Total number of weeks in the course (1-50)",
     )
     topics: Optional[List[Dict[str, Any]]] = Field(None, description="List of course topics")
+    connected_course_ids: Optional[List[int]] = Field(
+        None,
+        description=(
+            "Optional list of course IDs connected to this course. "
+            "Connections are treated as undirected/symmetric."
+        ),
+    )
     status: Literal["hidden", "published"] = Field(
         default="hidden", description="Course visibility status"
     )
@@ -81,6 +88,13 @@ class CourseUpdate(BaseModel):
     )
     status: Optional[Literal["hidden", "published"]] = Field(
         None, description="Updated course visibility status"
+    )
+    connected_course_ids: Optional[List[int]] = Field(
+        None,
+        description=(
+            "Optional canonical list of connected course IDs. "
+            "If explicitly provided as an empty list, existing connections are removed."
+        ),
     )
 
 
@@ -195,6 +209,13 @@ class CourseGenerate(BaseModel):
     freeform_prompt: Optional[str] = Field(
         None, description="Optional freeform text prompt for additional guidance."
     )
+    connected_course_ids: Optional[List[int]] = Field(
+        None,
+        description=(
+            "Optional connected course IDs to include as generation context "
+            "and pass through in generated output."
+        ),
+    )
 
 
 # Model for the response of a generated course, allowing partial data
@@ -228,6 +249,9 @@ class GeneratedCourseData(BaseModel):
         description="Generated total weeks (1-50)",
     )
     topics: Optional[List[Dict[str, Any]]] = Field(None, description="Generated course topics")
+    connected_course_ids: Optional[List[int]] = Field(
+        None, description="Generated or user-provided connected course IDs"
+    )
     created_with: Optional[str] = Field(None, description="Name of LLM used for generation")
 
     class Config:
