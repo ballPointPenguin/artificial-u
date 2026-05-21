@@ -212,6 +212,8 @@ def test_list_courses(client: TestClient, mock_api_service):
     assert data["total"] == len(sample_courses_base)
     assert len(data["items"]) == len(sample_courses_base)
     assert data["items"][0]["code"] == sample_courses_base[0].code
+    assert "connected_course_ids" in data["items"][0]
+    assert data["items"][0]["connected_course_ids"] == []
     # Verify timestamp fields are present
     assert "created_at" in data["items"][0]
     assert "updated_at" in data["items"][0]
@@ -335,6 +337,8 @@ def test_get_course(client: TestClient, mock_api_service):
     data = response.json()
     assert data["id"] == 1
     assert data["code"] == sample_courses_base[0].code
+    assert "connected_course_ids" in data
+    assert data["connected_course_ids"] == []
     # Verify timestamp fields are present
     assert "created_at" in data
     assert "updated_at" in data

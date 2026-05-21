@@ -138,6 +138,9 @@ class CourseResponse(CourseBase):
     # Override to make these required in responses (should be populated after creation)
     department_id: int = Field(..., description="ID of the department offering the course")
     professor_id: int = Field(..., description="ID of the professor teaching the course")
+    connected_course_ids: List[int] = Field(
+        default_factory=list, description="Connected course IDs for this course"
+    )
     created_by: Optional[int] = Field(None, description="Student ID who created the course")
     created_with: Optional[str] = Field(None, description="Name of LLM used, if any")
     student: Optional[StudentBrief] = Field(None, description="Student who created the course")

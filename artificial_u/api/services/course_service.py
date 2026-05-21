@@ -141,6 +141,7 @@ class CourseApiService(BaseApiService[CoreCourse, CourseResponse, CoursesListRes
         student_brief = self._build_student_brief(course.student)
 
         course_data = course.model_dump()
+        course_data["connected_course_ids"] = course_data.get("connected_course_ids") or []
         course_data["professor"] = professor_brief.model_dump() if professor_brief else None
         course_data["department"] = department_brief.model_dump() if department_brief else None
         course_data["student"] = student_brief.model_dump() if student_brief else None
