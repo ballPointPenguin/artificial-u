@@ -350,6 +350,7 @@ class CourseService:
             CourseNotFoundError: If course not found
             DatabaseError: If there's an error updating the database
         """
+        # Create a mutable copy so we can consume connection-specific fields safely.
         update_data = dict(update_data)
 
         # Get existing course model

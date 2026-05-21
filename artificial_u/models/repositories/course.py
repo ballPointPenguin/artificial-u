@@ -76,7 +76,7 @@ class CourseRepository(BaseRepository):
             created_at=db_course.created_at,
             updated_at=db_course.updated_at,
             student=course_student,
-            connected_course_ids=list(getattr(db_course, "connected_course_ids", []) or []),
+            connected_course_ids=list(db_course.connected_course_ids),
             lectures_with_audio_count=0,
             topics_count=0,
         )
@@ -184,10 +184,10 @@ class CourseRepository(BaseRepository):
             if not db_course:
                 raise ValueError(f"Course with ID {course_id} not found")
 
+            if course_id in (connected_course_ids or []):
+                raise ValueError("A course cannot be connected to itself")
+
             normalized_ids = sorted(set(connected_course_ids or []))
-            for connected_id in normalized_ids:
-                if connected_id == course_id:
-                    raise ValueError("A course cannot be connected to itself")
 
             if normalized_ids:
                 existing_ids = {
@@ -196,9 +196,7 @@ class CourseRepository(BaseRepository):
                     .filter(CourseModel.id.in_(normalized_ids))
                     .all()
                 }
-                missing_ids = [
-                    connected_id for connected_id in normalized_ids if connected_id not in existing_ids
-                ]
+                missing_ids = sorted(set(normalized_ids) - existing_ids)
                 if missing_ids:
                     raise ValueError(f"Connected course IDs not found: {missing_ids}")
 

@@ -156,7 +156,7 @@ class CourseGeneratorService:
             )
             return final_course_data
 
-        except DatabaseError, ContentGenerationError:
+        except (DatabaseError, ContentGenerationError):
             # Let specific errors propagate up
             raise
         except ValueError as e:
