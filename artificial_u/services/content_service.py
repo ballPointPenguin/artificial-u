@@ -510,8 +510,24 @@ class ContentService:
             if hasattr(response, "text") and response.text is not None:
                 response_text = response.text
             elif hasattr(response, "candidates") and response.candidates:
-                self.logger.warning("No text content found in Gemini response parts")
-                response_text = ""
+                # Fallback: manually extract text from the first candidate's parts,
+                # skipping any thinking/reasoning parts (part.thought=True).
+                candidate = response.candidates[0]
+                if hasattr(candidate, "content") and candidate.content:
+                    parts = getattr(candidate.content, "parts", None) or []
+                    text_parts = [
+                        p.text
+                        for p in parts
+                        if hasattr(p, "text") and p.text and not getattr(p, "thought", False)
+                    ]
+                    if text_parts:
+                        response_text = "".join(text_parts)
+                    else:
+                        self.logger.warning("No text content found in Gemini response parts")
+                        response_text = ""
+                else:
+                    self.logger.warning("No content found in Gemini response candidate")
+                    response_text = ""
             else:
                 self.logger.warning("No candidates found in Gemini response")
                 response_text = ""
