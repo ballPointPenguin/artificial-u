@@ -4,13 +4,13 @@ import { Button, Card, FormField, Input } from '../components/ui'
 
 /** Well-known model identifiers shown as quick-pick suggestions. */
 const SUGGESTED_MODELS = [
-  'claude-opus-4-7',
+  'claude-opus-4-8',
   'claude-opus-4-6',
   'claude-sonnet-4-6',
   'claude-haiku-4-5',
   'gpt-5.5',
   'gpt-5.4-nano',
-  'gemini-3.1-flash-lite-preview',
+  'gemini-3.5-flash',
   'gemini-3.1-pro-preview',
 ]
 

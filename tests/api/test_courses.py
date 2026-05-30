@@ -175,7 +175,7 @@ def mock_api_service(monkeypatch):
             return None
         data = base.model_dump()
         data["image_url"] = "https://example.com/album.png"
-        data["image_created_with"] = "gemini-3.1-flash-image-preview"
+        data["image_created_with"] = "gemini-3.1-flash-image"
         return CourseResponse(**data)
 
     mock_service["generate_course_image"].side_effect = _mock_generate_course_image
@@ -580,7 +580,7 @@ def test_generate_course_image(client: TestClient, mock_api_service):
     assert response.status_code == 200
     data = response.json()
     assert data["image_url"] == "https://example.com/album.png"
-    assert data["image_created_with"] == "gemini-3.1-flash-image-preview"
+    assert data["image_created_with"] == "gemini-3.1-flash-image"
     mock_api_service["generate_course_image"].assert_called_once_with(1, 1, "admin")
 
     mock_api_service["generate_course_image"].reset_mock()

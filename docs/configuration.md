@@ -148,10 +148,10 @@ LECTURE_GENERATION_MODEL=claude-sonnet-4-6
 PROFESSOR_GENERATION_MODEL=gpt-5.4-nano
 
 # Topics generation model
-TOPICS_GENERATION_MODEL=gemini-3.1-flash-lite-preview
+TOPICS_GENERATION_MODEL=gemini-3.5-flash
 
 # Image generation model
-IMAGE_GENERATION_MODEL=gemini-3.1-flash-image-preview
+IMAGE_GENERATION_MODEL=gemini-3.1-flash-image
 
 # Text-to-speech voice model (ElevenLabs)
 # Must be supported by the selected voice's verified languages
@@ -284,9 +284,9 @@ TESTING=true
 | `DEPARTMENT_GENERATION_MODEL` | Model for department generation | `gpt-5.4-nano` | No |
 | `LECTURE_GENERATION_MODEL` | Model for lecture generation | `claude-sonnet-4-6` | No |
 | `LECTURE_SUMMARY_MODEL` | Model for lecture summary generation | `gpt-5.4-nano` | No |
-| `TOPICS_GENERATION_MODEL` | Model for topics generation | `gemini-3.1-flash-lite-preview` | No |
+| `TOPICS_GENERATION_MODEL` | Model for topics generation | `gemini-3.5-flash` | No |
 | `PROFESSOR_GENERATION_MODEL` | Model for professor generation | `gpt-5.4-nano` | No |
-| `IMAGE_GENERATION_MODEL` | Model for image generation | `gemini-3.1-flash-image-preview` | No |
+| `IMAGE_GENERATION_MODEL` | Model for image generation | `gemini-3.1-flash-image` | No |
 | `TTS_VOICE_MODEL` | Model for text-to-speech voice | `eleven_flash_v2_5` | No |
 | `LECTURE_WORD_COUNT` | Target word count for generated lectures | `3000` | No |
 | `LECTURE_IMAGE_INTERVAL_SEC` | Approximate seconds between generated lecture images | `45` | No |

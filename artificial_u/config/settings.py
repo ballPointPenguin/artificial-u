@@ -137,9 +137,9 @@ class Settings(BaseSettings):
     # Professor generation model
     PROFESSOR_GENERATION_MODEL: str = "gpt-5.4-nano"
     # Topics generation model
-    TOPICS_GENERATION_MODEL: str = "gemini-3.1-flash-lite-preview"
+    TOPICS_GENERATION_MODEL: str = "gemini-3.5-flash"
     # Image generation model
-    IMAGE_GENERATION_MODEL: str = "gemini-3.1-flash-image-preview"
+    IMAGE_GENERATION_MODEL: str = "gemini-3.1-flash-image"
     # Lecture generation defaults
     LECTURE_WORD_COUNT: int = DEFAULT_LECTURE_WORD_COUNT
     LECTURE_IMAGE_INTERVAL_SEC: int = DEFAULT_LECTURE_IMAGE_INTERVAL_SEC
@@ -213,7 +213,7 @@ class Settings(BaseSettings):
             if backend == "openai":
                 return "gpt-5.4-nano"
             elif backend == "gemini":
-                return "gemini-3.1-flash-lite-preview"
+                return "gemini-3.5-flash"
             elif backend == "anthropic":
                 return "claude-sonnet-4-6"
             else:

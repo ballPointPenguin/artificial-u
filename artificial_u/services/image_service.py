@@ -10,7 +10,12 @@ import openai  # Added openai import
 from google.genai import types
 from google.genai.errors import ClientError, ServerError
 from google.genai.types import Modality
-from tenacity import AsyncRetrying, retry_if_exception, stop_after_attempt, wait_exponential
+from tenacity import (
+    AsyncRetrying,
+    retry_if_exception,
+    stop_after_attempt,
+    wait_exponential,
+)
 
 from artificial_u.integrations import gemini_client, openai_client
 from artificial_u.models.core import Course, Professor
@@ -220,7 +225,7 @@ class ImageService:
     ) -> List[bytes]:
         """
         Generates image(s) using the Gemini generate_content API.
-        Used for gemini-3-pro-image-preview (Nano Banana Pro) and similar models.
+        Used for gemini-3-pro-image (Nano Banana Pro) and similar models.
         """
         try:
             contents: object
