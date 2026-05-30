@@ -74,6 +74,7 @@ Course Information:
 {{course_xml}}
 
 {{prior_topics_context}}
+{{related_courses_topics_context}}
 
 {{freeform_prompt_text}}
 
@@ -91,6 +92,7 @@ Wrap your answer in <output> tags, providing only the single <topic> element.
         "target_order",
         "target_slot_index",
         "prior_topics_context",
+        "related_courses_topics_context",
         "freeform_prompt_text",
     ],
 )
@@ -102,6 +104,7 @@ def get_next_topic_prompt(
     target_week: int,
     target_order: int,
     prior_topics_xml: Optional[str] = None,
+    related_courses_topics_context: Optional[str] = None,
     freeform_prompt: Optional[str] = None,
 ) -> str:
     """Generate the prompt for a single canonical course topic slot."""
@@ -122,6 +125,7 @@ def get_next_topic_prompt(
             "Build naturally from them. Avoid duplicates, unnecessary recaps, and premature "
             "end-of-course framing.\n"
         )
+    related_courses_context = related_courses_topics_context or ""
 
     try:
         return NEXT_TOPIC_PROMPT.format(
@@ -133,6 +137,7 @@ def get_next_topic_prompt(
             target_order=target_order,
             target_slot_index=target_slot_index,
             prior_topics_context=prior_topics_context,
+            related_courses_topics_context=related_courses_context,
             freeform_prompt_text=freeform_prompt_text,
         )
     except ValueError as e:
