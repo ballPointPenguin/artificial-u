@@ -18,6 +18,16 @@ DEFAULT_TEMPERATURE = 0.3
 DEFAULT_MAX_TOKENS = 4096  # Increased from 1024 to allow for longer responses like topic lists
 
 
+def _is_gemini_3_plus(model: str) -> bool:
+    """Return True for Gemini 3.x (and newer) reasoning models.
+
+    These models treat thinking tokens as part of max_output_tokens and expect a
+    default temperature of 1.0, unlike earlier Gemini generations.
+    """
+    match = re.match(r"gemini-(\d+)", model or "")
+    return bool(match) and int(match.group(1)) >= 3
+
+
 class ContentService:
     """
     Service for generating text content using various AI models/backends.
@@ -154,6 +164,7 @@ class ContentService:
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
         prefill: Optional[str] = None,
+        thinking_level: Optional[str] = None,
     ) -> str:
         """
         Generates text based on the provided prompt using the specified or default model.
@@ -168,6 +179,8 @@ class ContentService:
             (model-dependent, default varies).
             prefill: Optional assistant message prefill content (Anthropic only).
             Claude will continue from where this prefill text ends.
+            thinking_level: Optional reasoning effort for Gemini 3+ models
+            ('minimal', 'low', 'medium', 'high'). Ignored by other backends/models.
 
         Returns:
             The generated text content as a string.
@@ -211,6 +224,7 @@ class ContentService:
                 max_tokens,
                 prefill,
                 backend=backend,
+                thinking_level=thinking_level,
             )
         except Exception as e:
             self.logger.error(
@@ -474,7 +488,15 @@ class ContentService:
         return ""
 
     async def _generate_gemini(
-        self, prompt, model, system_prompt, temperature, max_tokens, prefill, **kwargs
+        self,
+        prompt,
+        model,
+        system_prompt,
+        temperature,
+        max_tokens,
+        prefill,
+        thinking_level=None,
+        **kwargs,
     ):
         self.logger.info(f"Generating text with Gemini model: {model}")
         if prefill:
@@ -485,11 +507,32 @@ class ContentService:
             # Build the content list with proper Part structure
             contents = [types.Part.from_text(text=prompt)]
 
+            # Gemini 3.x are reasoning models: "thinking" tokens are billed against
+            # max_output_tokens, and Google recommends keeping temperature at the
+            # default of 1.0 (lower values can trigger looping / degraded reasoning,
+            # which in turn burns the output budget and truncates the response).
+            is_gemini_3_plus = _is_gemini_3_plus(model)
+
+            if temperature is not None:
+                effective_temperature = temperature
+            elif is_gemini_3_plus:
+                effective_temperature = 1.0
+            else:
+                effective_temperature = DEFAULT_TEMPERATURE
+
             # Create generation config with all parameters including system_instruction
             config_params = {
-                "temperature": temperature if temperature is not None else DEFAULT_TEMPERATURE,
+                "temperature": effective_temperature,
                 "max_output_tokens": max_tokens if max_tokens is not None else DEFAULT_MAX_TOKENS,
             }
+
+            # Control reasoning effort on models that support it (Gemini 3+). Using a
+            # lower thinking level reserves more of the output budget for the visible
+            # response and reduces the risk of MAX_TOKENS truncation.
+            if thinking_level and is_gemini_3_plus:
+                config_params["thinking_config"] = types.ThinkingConfig(
+                    thinking_level=thinking_level
+                )
 
             # Add system instruction to config if provided
             if system_prompt:
@@ -504,27 +547,30 @@ class ContentService:
                 config=generation_config,
             )
 
-            # Handle response parsing more robustly
-            if hasattr(response, "candidates") and response.candidates:
+            # Handle response parsing robustly. Reasoning models may split the answer
+            # across multiple parts and include separate "thought" parts, so we
+            # concatenate every visible (non-thought) text part rather than only
+            # reading the first one.
+            response_text = ""
+            if getattr(response, "candidates", None):
                 candidate = response.candidates[0]
-                if hasattr(candidate, "content") and candidate.content:
-                    if hasattr(candidate.content, "parts") and candidate.content.parts:
-                        # Extract text from the first part
-                        first_part = candidate.content.parts[0]
-                        if hasattr(first_part, "text") and first_part.text:
-                            response_text = first_part.text
-                        else:
-                            self.logger.warning("No text found in response part")
-                            response_text = ""
-                    else:
-                        self.logger.warning("No parts found in response content")
-                        response_text = ""
-                else:
-                    self.logger.warning("No content found in response candidate")
-                    response_text = ""
+                content = getattr(candidate, "content", None)
+                parts = getattr(content, "parts", None) if content else None
+                if parts:
+                    response_text = "".join(
+                        part.text
+                        for part in parts
+                        if getattr(part, "text", None) and not getattr(part, "thought", False)
+                    )
+                if not response_text:
+                    # An empty body with a MAX_TOKENS finish reason means the budget
+                    # was exhausted (often by thinking). Surface it to aid debugging.
+                    finish_reason = getattr(candidate, "finish_reason", None)
+                    self.logger.warning(
+                        f"No visible text in Gemini response (finish_reason={finish_reason})"
+                    )
             else:
                 self.logger.warning("No candidates found in Gemini response")
-                response_text = ""
         except (google_exceptions.GoogleAPICallError, Exception) as e:
             # Let the retry logic handle this
             raise e

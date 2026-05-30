@@ -239,7 +239,12 @@ class TopicGeneratorService:
             model=settings.TOPICS_GENERATION_MODEL,
             prompt=topic_prompt,
             system_prompt=system_prompt,
-            max_tokens=2048,
+            # Gemini 3.x reasoning models spend "thinking" tokens out of this same
+            # budget, so a tight cap (e.g. 2048) gets exhausted before the XML
+            # finishes, truncating the response. Give generous headroom and keep
+            # the reasoning effort modest for this structured-output task.
+            max_tokens=8192,
+            thinking_level="low",
         )
         generated_topic_xml = self._extract_generated_topic_xml(raw_response)
 
