@@ -139,7 +139,7 @@ class ProfessorSelectorService:
             else:
                 raise ContentGenerationError(f"Unknown action in AI decision: {decision['action']}")
 
-        except DatabaseError, ContentGenerationError:
+        except (DatabaseError, ContentGenerationError):
             # Re-raise specific errors
             raise
         except Exception as e:

@@ -504,24 +504,14 @@ class ContentService:
                 config=generation_config,
             )
 
-            # Handle response parsing more robustly
-            if hasattr(response, "candidates") and response.candidates:
-                candidate = response.candidates[0]
-                if hasattr(candidate, "content") and candidate.content:
-                    if hasattr(candidate.content, "parts") and candidate.content.parts:
-                        # Extract text from the first part
-                        first_part = candidate.content.parts[0]
-                        if hasattr(first_part, "text") and first_part.text:
-                            response_text = first_part.text
-                        else:
-                            self.logger.warning("No text found in response part")
-                            response_text = ""
-                    else:
-                        self.logger.warning("No parts found in response content")
-                        response_text = ""
-                else:
-                    self.logger.warning("No content found in response candidate")
-                    response_text = ""
+            # Use response.text which correctly handles multi-part responses including
+            # thinking/reasoning parts (part.thought=True) returned by models like
+            # gemini-2.5-flash; it skips thought parts and concatenates only response text.
+            if hasattr(response, "text") and response.text is not None:
+                response_text = response.text
+            elif hasattr(response, "candidates") and response.candidates:
+                self.logger.warning("No text content found in Gemini response parts")
+                response_text = ""
             else:
                 self.logger.warning("No candidates found in Gemini response")
                 response_text = ""
