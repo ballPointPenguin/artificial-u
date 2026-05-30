@@ -1,5 +1,5 @@
 import type { Component } from 'solid-js'
-import { createEffect, createResource, createSignal, Show } from 'solid-js'
+import { createEffect, createMemo, createResource, createSignal, Show } from 'solid-js'
 import { courseService } from '../../api/services/course-service.js'
 import { departmentService } from '../../api/services/department-service.js'
 import { professorService } from '../../api/services/professor-service.js'
@@ -17,6 +17,7 @@ import {
 } from '../ui'
 import type { SelectOption } from '../ui/Select.js'
 import type { CourseFormData } from './types.js'
+import ConnectedCoursesSelect from './ConnectedCoursesSelect.jsx'
 
 interface CourseFormProps {
   course?: Course // For editing
@@ -32,6 +33,7 @@ const CourseForm: Component<CourseFormProps> = (props) => {
     code: '',
     title: '',
     department_id: null,
+    connected_course_ids: [],
     level: null,
     professor_id: null,
     description: '',
@@ -53,6 +55,7 @@ const CourseForm: Component<CourseFormProps> = (props) => {
         code: c.code || '',
         title: c.title || '',
         department_id: c.department_id,
+        connected_course_ids: c.connected_course_ids || [],
         level: c.level || '',
         professor_id: c.professor_id,
         description: c.description || '',
@@ -134,6 +137,33 @@ const CourseForm: Component<CourseFormProps> = (props) => {
       }
     }
   )
+
+  const [departmentCoursesResource] = createResource(
+    () => formData().department_id,
+    async (departmentId) => {
+      if (!departmentId) return [] as Course[]
+      const response = await courseService.listCourses({
+        page: 1,
+        size: 100,
+        departmentId,
+      })
+      return response.items.filter((course) => course.id !== props.course?.id)
+    }
+  )
+
+  const visibleConnectedCourseIds = createMemo(() => {
+    const availableIds = new Set((departmentCoursesResource() || []).map((course) => course.id))
+    return formData().connected_course_ids.filter((id) => availableIds.has(id))
+  })
+
+  const handleConnectedCoursesChange = (selectedIds: number[]) => {
+    const availableIds = new Set((departmentCoursesResource() || []).map((course) => course.id))
+    const preservedHiddenIds = formData().connected_course_ids.filter((id) => !availableIds.has(id))
+    setFormData((prev) => ({
+      ...prev,
+      connected_course_ids: [...preservedHiddenIds, ...selectedIds],
+    }))
+  }
 
   const handleInputChange = (fieldName: keyof CourseFormData, value: string | number | null) => {
     setFormData((prev) => ({ ...prev, [fieldName]: value }))
@@ -217,6 +247,7 @@ const CourseForm: Component<CourseFormProps> = (props) => {
         lectures_per_week: generated.lectures_per_week,
         total_weeks: generated.total_weeks,
         created_with: generated.created_with || prev.created_with,
+        ...(props.course ? {} : { connected_course_ids: [] }),
       }))
     } catch (err) {
       setGenerateError(err instanceof Error ? err.message : 'Failed to generate course details')
@@ -230,6 +261,7 @@ const CourseForm: Component<CourseFormProps> = (props) => {
       code: '',
       title: '',
       department_id: null,
+      connected_course_ids: [],
       level: null,
       professor_id: null,
       description: '',
@@ -287,12 +319,30 @@ const CourseForm: Component<CourseFormProps> = (props) => {
                 v === NULL_OPTION_VALUE || v === null || v === '' ? null : Number(v)
               handleInputChange('department_id', departmentId)
               // Clear professor selection when department changes to avoid mismatch
-              setFormData((prev) => ({ ...prev, professor_id: null }))
+              setFormData((prev) => ({
+                ...prev,
+                professor_id: null,
+                ...(props.course ? {} : { connected_course_ids: [] }),
+              }))
             }}
             placeholder="-- Select Department (Optional) --"
             disabled={departmentsResource.loading || isDisabled()}
           />
         </FormField>
+        {formData().department_id !== null ? (
+          <FormField
+            label="Connected Courses"
+            name="connected_course_ids"
+            helperText="Only courses from the selected department are shown."
+          >
+            <ConnectedCoursesSelect
+              courses={departmentCoursesResource() || []}
+              value={visibleConnectedCourseIds()}
+              onChange={handleConnectedCoursesChange}
+              disabled={departmentCoursesResource.loading || isDisabled()}
+            />
+          </FormField>
+        ) : null}
         <FormField
           label="Professor"
           name="professor_id"

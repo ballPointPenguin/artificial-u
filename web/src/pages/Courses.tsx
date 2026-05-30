@@ -407,6 +407,7 @@ const Courses: Component = () => {
       code: formData.code,
       title: formData.title,
       department_id: formData.department_id ?? undefined,
+      connected_course_ids: formData.connected_course_ids,
       level: formData.level ?? undefined,
       professor_id: formData.professor_id ?? undefined,
       description: formData.description,
