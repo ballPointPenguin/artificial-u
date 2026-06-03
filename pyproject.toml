@@ -84,6 +84,9 @@ artificial_u = "artificial_u.cli:cli"
 [tool.hatch.envs.default]
 python = "3.14"
 features = ["dev"]
+dependencies = [
+    "pip~=26.0.1",
+]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

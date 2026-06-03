@@ -6,9 +6,9 @@ This file provides guidance to Codex (Codex.ai/code) when working with code in t
 
 ArtificialU is an AI-powered educational content platform that generates university lectures with distinct professor personalities and converts them to audio using text-to-speech. The system features:
 
-- **Backend**: Python 3.13+ with FastAPI, PostgreSQL, SQLAlchemy
+- **Backend**: Python 3.14 (3.13+ supported) with FastAPI, PostgreSQL, SQLAlchemy
 - **Frontend**: SolidJS with TypeScript, TailwindCSS v4, Auth0
-- **AI Integration**: Anthropic Codex, Google Gemini, OpenAI
+- **AI Integration**: Anthropic Claude, Google Gemini, OpenAI
 - **TTS Services**: ElevenLabs
 - **Storage**: MinIO (dev) / S3 (prod)
 - **Job Processing**: Custom async worker with PostgreSQL-backed queue
@@ -225,10 +225,42 @@ hatch run pytest -m integration
 
 **Python:**
 
+- Target runtime is Python 3.14 (hatch default env and CI both pin `3.14`); `requires-python` allows 3.13+
 - Line length: 100 characters (black, isort, flake8)
 - Type hints encouraged (mypy runs on `artificial_u/` directory)
 - Black formatting with isort for imports
 - Pre-commit hooks run black, isort, flake8
+
+### ALWAYS run checks before opening a PR
+
+CI (`.github/workflows/test-quick.yml` and `web-quality.yml`) will fail a PR on
+formatting/linting issues, so run the equivalent checks locally first. Before
+committing or opening a PR, run **one** of the following from the repo root:
+
+```bash
+# Preferred: run the same hooks CI/pre-commit enforces across all files
+make pre-commit            # = hatch run pre-commit run --all-files
+
+# Or run the linters directly (mirrors the CI "Run linting checks" step)
+make lint                  # black --check + isort --check-only + flake8
+
+# To auto-fix formatting before re-checking
+make format                # black + isort over artificial_u and tests
+```
+
+If you don't have `make`, the underlying commands are:
+
+```bash
+hatch run black artificial_u tests
+hatch run isort artificial_u tests
+hatch run flake8 artificial_u
+```
+
+For frontend changes, also run the web checks from `web/`:
+
+```bash
+cd web && pnpm lint && pnpm lint:css && pnpm exec biome ci . && pnpm build
+```
 
 **TypeScript:**
 
@@ -303,7 +335,7 @@ When adding features:
 
 Required in `.env` file:
 
-- `ANTHROPIC_API_KEY`: Anthropic Codex API key
+- `ANTHROPIC_API_KEY`: Anthropic Claude API key
 - `ELEVENLABS_API_KEY`: ElevenLabs TTS API key
 - `MISTRAL_API_KEY`: Mistral API key (TTS when using Mistral backend)
 - `DATABASE_URL`: PostgreSQL connection string
@@ -321,6 +353,8 @@ Frontend requires `.env.local` in `web/` directory with Auth0 and API URL config
 - **Test database**: Integration tests fail without test database setup
 - **Hatch environment**: Always use `hatch run` or activate `hatch shell` first
 - **Long-running commands**: Development servers (API, frontend) don't terminate automatically
+- **Python version**: Use Python 3.14 to match the hatch env and CI; mismatched versions can cause black/formatting drift
+- **Skipping pre-commit before a PR**: Run `make pre-commit` (or `make lint`/`make format`) before pushing so CI doesn't fail on black, isort, or flake8
 
 ## Additional Documentation
 

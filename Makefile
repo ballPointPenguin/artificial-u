@@ -54,7 +54,9 @@ deps-upgrade: ## Upgrade and compile requirements files
 .PHONY: deps-sync
 deps-sync: ## Sync environment with requirements-dev.txt
 	@echo "$(GREEN)Syncing development dependencies...$(NC)"
+	@$(HATCH) run python -m pip install "pip<26.1"
 	@$(HATCH) run pip-sync requirements-dev.txt
+	@$(HATCH) run python -m pip install -e ".[dev]"
 	@echo "$(GREEN)Dependencies synced!$(NC)"
 
 # Code Quality
