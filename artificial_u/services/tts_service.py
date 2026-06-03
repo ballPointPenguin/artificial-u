@@ -19,6 +19,13 @@ from artificial_u.models.core import Lecture, Professor
 from artificial_u.utils import AudioProcessingError
 
 
+ELEVENLABS_MODEL_PREFERENCE = [
+    "eleven_flash_v2_5",
+    "eleven_v3",
+    "eleven_multilingual_v2",
+]
+
+
 class TTSService:
     """Service for text-to-speech conversion with pluggable backends."""
 
@@ -286,12 +293,11 @@ class TTSService:
             else:
                 raise ValueError("No voice ID specified or found for professor")
 
-        # ElevenLabs-specific validation
-        if self.backend.backend_name == "elevenlabs":
-            self._validate_voice_model_support(
+        # Resolve the best model this voice supports
+        if self.backend.backend_name == "elevenlabs" and model_id is None:
+            model_id = self._resolve_model_for_voice(
                 professor=professor,
                 el_voice_id=effective_voice_id,
-                model_id=model_id or self.settings.TTS_VOICE_MODEL,
             )
 
         try:
@@ -305,20 +311,23 @@ class TTSService:
 
         return audio_data
 
-    def _validate_voice_model_support(
-        self, professor: Professor, el_voice_id: Optional[str], model_id: str
-    ) -> None:
-        """Raise if the selected ElevenLabs voice does not support the configured model."""
+    def _resolve_model_for_voice(
+        self, professor: Professor, el_voice_id: Optional[str]
+    ) -> str:
+        """Return the best ElevenLabs model supported by this voice.
+
+        Checks verified_languages from the DB record (or the ElevenLabs API as
+        a fallback) and returns the first match from ELEVENLABS_MODEL_PREFERENCE.
+        Falls back to TTS_VOICE_MODEL when no model info is available.
+        """
         try:
             voice_info = (
                 self.repository_factory.voice.get(professor.voice_id)
                 if professor.voice_id and self.repository_factory
                 else None
             )
-            if not voice_info and el_voice_id:
-                # Fetch minimal details from ElevenLabs API
-                if hasattr(self.backend, "client"):
-                    voice_info = self.backend.client.get_el_voice(el_voice_id)
+            if not voice_info and el_voice_id and hasattr(self.backend, "client"):
+                voice_info = self.backend.client.get_el_voice(el_voice_id)
 
             verified = None
             if voice_info and isinstance(voice_info, dict):
@@ -327,18 +336,31 @@ class TTSService:
                 verified = voice_info.model_dump().get("verified_languages")
 
             if verified and isinstance(verified, list):
-                model_ids = {item.get("model_id") for item in verified if isinstance(item, dict)}
-                if model_ids and model_id not in model_ids:
-                    supported = ", ".join(sorted(m for m in model_ids if m))
-                    msg = (
-                        f"Voice does not support model '{model_id}'. "
-                        f"Supported models: {supported}"
+                supported = {item.get("model_id") for item in verified if isinstance(item, dict)}
+                supported.discard(None)
+                if supported:
+                    for model in ELEVENLABS_MODEL_PREFERENCE:
+                        if model in supported:
+                            if model != self.settings.TTS_VOICE_MODEL:
+                                self.logger.info(
+                                    "Voice supports %s (not %s); using %s",
+                                    model,
+                                    self.settings.TTS_VOICE_MODEL,
+                                    model,
+                                )
+                            return model
+                    # No preferred model supported — use whatever the voice does support
+                    fallback = next(iter(supported))
+                    self.logger.warning(
+                        "Voice does not support any preferred model %s; falling back to %s",
+                        ELEVENLABS_MODEL_PREFERENCE,
+                        fallback,
                     )
-                    raise AudioProcessingError(msg)
-        except AudioProcessingError:
-            raise
-        except Exception:
-            return
+                    return fallback
+        except Exception as e:
+            self.logger.debug("Could not resolve voice model info: %s", e)
+
+        return self.settings.TTS_VOICE_MODEL
 
     def play_audio(self, audio_source: Union[bytes, str]) -> None:
         """Play audio data or a file."""
