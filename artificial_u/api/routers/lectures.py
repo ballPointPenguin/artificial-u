@@ -144,7 +144,7 @@ async def _get_image_slot_counts(
 
     try:
         timeline = json.loads(file_data.decode("utf-8"))
-    except (UnicodeDecodeError, json.JSONDecodeError):
+    except UnicodeDecodeError, json.JSONDecodeError:
         return {
             "image_slots_done": None,
             "image_slots_total": None,

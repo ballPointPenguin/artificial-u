@@ -18,7 +18,6 @@ from artificial_u.integrations.tts.base import TTSBackend
 from artificial_u.models.core import Lecture, Professor
 from artificial_u.utils import AudioProcessingError
 
-
 ELEVENLABS_MODEL_PREFERENCE = [
     "eleven_flash_v2_5",
     "eleven_v3",
@@ -311,9 +310,7 @@ class TTSService:
 
         return audio_data
 
-    def _resolve_model_for_voice(
-        self, professor: Professor, el_voice_id: Optional[str]
-    ) -> str:
+    def _resolve_model_for_voice(self, professor: Professor, el_voice_id: Optional[str]) -> str:
         """Return the best ElevenLabs model supported by this voice.
 
         Checks verified_languages from the DB record (or the ElevenLabs API as

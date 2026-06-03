@@ -25,7 +25,7 @@ def _duration_ms_from_result(result: Any) -> Any:
         return None
     try:
         return int(d)
-    except (TypeError, ValueError):
+    except TypeError, ValueError:
         return None
 
 
