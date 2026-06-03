@@ -36,9 +36,6 @@ class MistralTTSBackend:
     def default_voice_settings(self) -> Dict[str, Any]:
         return {}
 
-    def supports_ssml(self) -> bool:
-        return False
-
     def text_to_speech(
         self,
         text: str,

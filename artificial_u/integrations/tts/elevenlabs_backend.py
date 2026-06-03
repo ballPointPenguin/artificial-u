@@ -40,9 +40,6 @@ class ElevenLabsTTSBackend:
     def default_voice_settings(self) -> Dict[str, Any]:
         return self.DEFAULT_VOICE_SETTINGS.copy()
 
-    def supports_ssml(self) -> bool:
-        return True
-
     def text_to_speech(
         self,
         text: str,

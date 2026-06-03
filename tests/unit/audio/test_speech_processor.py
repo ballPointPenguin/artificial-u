@@ -302,3 +302,115 @@ More content"""
         assert not processor.is_valid_chunk("   ")  # Only whitespace
         assert not processor.is_valid_chunk("No")  # Too short (< 3 words)
         assert not processor.is_valid_chunk("!!!")  # No alphanumeric characters
+
+
+class TestSpeechProcessorMistral:
+    """Per-backend processing for the Mistral (non-markup) path."""
+
+    @pytest.fixture
+    def processor(self):
+        return SpeechProcessor()
+
+    @pytest.mark.unit
+    def test_mistral_strips_pause_directions(self, processor):
+        """Mistral path removes pause brackets entirely, no SSML/markup added."""
+        out = processor.normalize_text(
+            "Please consider this. [Pause] Now continue.", backend_name="mistral"
+        )
+        assert "<break" not in out
+        assert "[Pause]" not in out
+        assert "[pause]" not in out
+        assert "Please consider this." in out and "Now continue." in out
+
+    @pytest.mark.unit
+    def test_mistral_keeps_non_pause_brackets(self, processor):
+        """Non-pause stage directions are left intact for Mistral."""
+        out = processor.normalize_text("He speaks. [walks to the front]", backend_name="mistral")
+        assert "<soft>" not in out
+        assert "[walks to the front" in out
+
+    @pytest.mark.unit
+    def test_unknown_backend_defaults_to_clean_prose(self, processor):
+        """Unknown backends fall back to clean prose (pause directions stripped)."""
+        out = processor.normalize_text(
+            "Please consider this. [Pause] Now continue.", backend_name="totally-new"
+        )
+        assert "<break" not in out and "[pause]" not in out and "[Pause]" not in out
+
+
+class TestSpeechProcessorXai:
+    """Per-backend processing for the xAI (Grok) path."""
+
+    @pytest.fixture
+    def processor(self):
+        return SpeechProcessor()
+
+    @pytest.mark.unit
+    def test_pause_maps_to_pause_tag(self, processor):
+        out = processor.normalize_text(
+            "Please consider this. [Pause] Now continue.", backend_name="xai"
+        )
+        assert "[pause]" in out
+        assert "<break" not in out
+
+    @pytest.mark.unit
+    def test_slight_pause_maps_to_pause_tag(self, processor):
+        out = processor.normalize_text(
+            "This is tricky. [Slight pause] But manageable.", backend_name="xai"
+        )
+        assert "[pause]" in out
+
+    @pytest.mark.unit
+    def test_pause_for_maps_to_long_pause(self, processor):
+        out = processor.normalize_text("Intro. [Pause for emphasis] Outro.", backend_name="xai")
+        assert "[long-pause]" in out
+
+    @pytest.mark.unit
+    def test_duration_pause_maps_to_long_pause(self, processor):
+        out = processor.normalize_text(
+            "She considers. [Pauses for three seconds] Responds.", backend_name="xai"
+        )
+        assert "[long-pause]" in out
+
+    @pytest.mark.unit
+    def test_stage_direction_wrapped_in_soft(self, processor):
+        out = processor.normalize_text(
+            "He speaks. [walks to the front of the classroom]", backend_name="xai"
+        )
+        assert "<soft>walks to the front of the classroom</soft>" in out
+        # No stray period inserted inside the wrap by line normalization.
+        inner = out.split("<soft>")[1].split("</soft>")[0]
+        assert not inner.endswith(".")
+
+    @pytest.mark.unit
+    def test_comma_variant_keeps_remainder_as_soft(self, processor):
+        out = processor.normalize_text(
+            "Now continue. [Slight pause, then resumes] OK.", backend_name="xai"
+        )
+        assert "[pause]" in out
+        assert "<soft>then resumes</soft>" in out
+
+    @pytest.mark.unit
+    def test_pause_tags_not_wrapped_in_soft(self, processor):
+        """Emitted [pause]/[long-pause] tags must never be wrapped in <soft>."""
+        out = processor.normalize_text("A. [Pause] B. [Pause for effect] C.", backend_name="xai")
+        assert "<soft>pause</soft>" not in out
+        assert "<soft>long-pause</soft>" not in out
+
+    @pytest.mark.unit
+    def test_pauses_at_remains_for_xai(self, processor):
+        out = processor.normalize_text(
+            "He turns. [Pauses at the door] Then exits.", backend_name="xai"
+        )
+        # Not a pause tag; treated as a stage direction wrapped in <soft>.
+        assert "<soft>Pauses at the door</soft>" in out
+
+    @pytest.mark.unit
+    def test_chunking_does_not_split_soft_span(self, processor):
+        """A <soft> span produced for xAI should survive chunking intact."""
+        text = processor.normalize_text(
+            "He speaks. [walks slowly to the front of the classroom]", backend_name="xai"
+        )
+        chunks = processor.split_into_chunks(text, max_chunk_size=4000)
+        joined = "".join(chunks)
+        assert "<soft>walks slowly to the front of the classroom</soft>" in joined
