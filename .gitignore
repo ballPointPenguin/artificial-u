@@ -30,6 +30,10 @@ wheels/
 env/
 ENV/
 venv/
+.venv/
+
+# uv (generated when uv is used as a runner, not the primary package manager)
+uv.lock
 
 # IDE
 .idea/

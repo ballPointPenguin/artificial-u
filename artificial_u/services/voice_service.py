@@ -429,28 +429,15 @@ class VoiceService:
         selection_strategy: str = "top_random",
     ) -> Dict[str, Any]:
         """
-        Select an appropriate voice for a professor and update the professor record.
-
-        Uses ElevenLabs-specific voice matching logic. For professors with a
-        non-ElevenLabs tts_backend, this is a no-op and returns an empty dict.
+        Select an appropriate ElevenLabs voice for a professor and update the professor record.
 
         Args:
             professor: Professor for whom to select voice
             selection_strategy: Strategy for voice selection ('top', 'top_random', 'weighted')
 
         Returns:
-            Selected voice data including both el_voice_id and db voice record id,
-            or empty dict if the professor uses a non-ElevenLabs backend.
+            Selected voice data including both el_voice_id and db voice record id.
         """
-        # Voice mapper only works with ElevenLabs voices
-        if getattr(professor, "tts_backend", None) and professor.tts_backend != "elevenlabs":
-            self.logger.info(
-                "Skipping automatic voice selection for professor %s "
-                "(tts_backend=%s, not elevenlabs)",
-                professor.name,
-                professor.tts_backend,
-            )
-            return {}
 
         self.logger.info(
             f"=== Starting voice selection for professor: "
@@ -527,7 +514,9 @@ class VoiceService:
             self.logger.debug(
                 f"Step 9: Updating professor {professor.id} with voice ID {voice_db.id}"
             )
-            self.repository_factory.professor.update_field(professor.id, voice_id=voice_db.id)
+            self.repository_factory.professor.update_field(
+                professor.id, voice_id=voice_db.id, tts_backend="elevenlabs"
+            )
             self.logger.info(f"Updated professor {professor.id} with voice ID {voice_db.id}")
         else:
             # For new professors without IDs, update the object in memory
