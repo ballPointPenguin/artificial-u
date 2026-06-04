@@ -7,6 +7,7 @@ import xml.etree.ElementTree as ET
 import pytest
 
 from artificial_u.models.converters import (
+    connected_courses_to_xml,
     course_model_to_dict,
     courses_to_xml,
     department_model_to_dict,
@@ -427,6 +428,31 @@ def test_courses_to_xml():
     # Check second course
     assert course_elems[1].find("code").text == "CS201"
     assert course_elems[1].find("title").text == "Data Structures"
+
+
+@pytest.mark.unit
+def test_connected_courses_to_xml():
+    """Test converting connected courses to XML with extended fields."""
+    assert connected_courses_to_xml([]) == "<no_connected_courses />"
+
+    xml_str = connected_courses_to_xml(
+        [
+            {
+                "code": "FRNCH101",
+                "title": "Beginning French I",
+                "description": "Intro French",
+                "level": "Undergraduate",
+                "lectures_per_week": 2,
+                "total_weeks": 12,
+            },
+        ]
+    )
+    root = ET.fromstring(xml_str)
+    assert root.tag == "connected_courses"
+    course = root.find("course")
+    assert course.find("code").text == "FRNCH101"
+    assert course.find("description").text == "Intro French"
+    assert course.find("total_weeks").text == "12"
 
 
 @pytest.mark.unit

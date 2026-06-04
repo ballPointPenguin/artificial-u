@@ -84,6 +84,7 @@ class TopicGeneratorService:
         try:
             course_model = self.course_service.get_course(course_id)
             course_data = course_model_to_dict(course_model)
+            related_courses_topics_context = self._build_related_courses_topics_context(course_data)
             topic_slots = self._build_topic_slots(course_data)
             existing_topics = sorted(
                 self.topic_service.list_topics_by_course(course_id),
@@ -110,6 +111,7 @@ class TopicGeneratorService:
                     course_data=course_data,
                     freeform_prompt=freeform_prompt,
                     prior_topics_context=prior_topics_context,
+                    related_courses_topics_context=related_courses_topics_context,
                     target_week=week,
                     target_order=order,
                 )
@@ -152,6 +154,7 @@ class TopicGeneratorService:
         """Generate a single unsaved topic draft for a canonical course slot."""
         course_model = self.course_service.get_course(course_id)
         course_data = course_model_to_dict(course_model)
+        related_courses_topics_context = self._build_related_courses_topics_context(course_data)
         self._validate_topic_slot(course_data, week, order)
 
         existing_topics = sorted(
@@ -168,6 +171,7 @@ class TopicGeneratorService:
             course_data=course_data,
             freeform_prompt=freeform_prompt,
             prior_topics_context=prior_topics_context,
+            related_courses_topics_context=related_courses_topics_context,
             target_week=week,
             target_order=order,
         )
@@ -211,11 +215,50 @@ class TopicGeneratorService:
             "content": topic.content,
         }
 
+    def _build_related_courses_topics_context(self, course_data: Dict[str, Any]) -> str:
+        connected_course_ids = course_data.get("connected_course_ids") or []
+        if not connected_course_ids:
+            return ""
+
+        related_sections: List[str] = []
+        for connected_course_id in connected_course_ids:
+            try:
+                connected_course = self.course_service.get_course(connected_course_id)
+            except Exception as e:
+                self.logger.warning(
+                    "Skipping related course %s for topic prompt context: %s",
+                    connected_course_id,
+                    e,
+                )
+                continue
+
+            connected_topics = sorted(
+                self.topic_service.list_topics_by_course(connected_course_id),
+                key=self._topic_sort_key,
+            )
+            if not connected_topics:
+                continue
+
+            connected_topics_xml = topics_to_xml(
+                [self._topic_model_to_prompt_dict(topic) for topic in connected_topics]
+            )
+            related_sections.append(
+                "Related course topics (for continuity and to avoid repetition):\n"
+                f"Related course: {connected_course.title}\n"
+                f"{connected_topics_xml}"
+            )
+
+        if not related_sections:
+            return ""
+
+        return "\n\n".join(related_sections) + "\n"
+
     async def _generate_topic_for_slot(
         self,
         course_data: Dict[str, Any],
         freeform_prompt: Optional[str],
         prior_topics_context: List[Dict[str, Any]],
+        related_courses_topics_context: str,
         target_week: int,
         target_order: int,
     ) -> Dict[str, Any]:
@@ -227,6 +270,7 @@ class TopicGeneratorService:
             target_order=target_order,
             freeform_prompt=freeform_prompt,
             prior_topics_xml=prior_topics_xml,
+            related_courses_topics_context=related_courses_topics_context,
         )
         system_prompt = get_system_prompt("topics")
         settings = get_settings()

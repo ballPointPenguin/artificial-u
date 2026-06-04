@@ -7,7 +7,13 @@ from artificial_u.models.core import Course, Topic
 from artificial_u.services.topic_generator_service import TopicGeneratorService
 
 
-def _build_service(existing_topics=None):
+def _build_service(
+    existing_topics=None,
+    *,
+    connected_course_ids=None,
+    related_courses=None,
+    topics_by_course_id=None,
+):
     repository_factory = MagicMock()
     repository_factory.topic.get_by_course_week_order.return_value = None
 
@@ -23,17 +29,33 @@ def _build_service(existing_topics=None):
     repository_factory.topic.create.side_effect = create_topic
 
     topic_service = MagicMock()
-    topic_service.list_topics_by_course.return_value = existing_topics or []
+    topic_lookup = dict(topics_by_course_id or {})
+    topic_lookup.setdefault(1, existing_topics or [])
+
+    def list_topics_by_course(course_id: int):
+        return topic_lookup.get(course_id, [])
+
+    topic_service.list_topics_by_course.side_effect = list_topics_by_course
 
     course_service = MagicMock()
-    course_service.get_course.return_value = Course(
+    main_course = Course(
         id=1,
         code="ATM200",
         title="Atmospheric Science",
         description="Study of the atmosphere",
         lectures_per_week=2,
         total_weeks=2,
+        connected_course_ids=connected_course_ids or [],
     )
+    course_lookup = {1: main_course}
+    if related_courses:
+        for course in related_courses:
+            course_lookup[course.id] = course
+
+    def get_course_by_id(course_id: int):
+        return course_lookup[course_id]
+
+    course_service.get_course.side_effect = get_course_by_id
 
     content_service = MagicMock()
     content_service.generate_text = AsyncMock()
@@ -128,3 +150,40 @@ async def test_generate_topics_for_course_reuses_existing_slots_and_normalizes_p
 
     first_generated_prompt = content_service.generate_text.await_args_list[0].kwargs["prompt"]
     assert "Atmospheric Structure" in first_generated_prompt
+
+
+@pytest.mark.asyncio
+async def test_generate_topic_for_course_slot_includes_related_course_topics_context(monkeypatch):
+    monkeypatch.setattr(
+        "artificial_u.services.topic_generator_service.get_settings",
+        lambda: SimpleNamespace(TOPICS_GENERATION_MODEL="test-topics-model"),
+    )
+
+    related_course = Course(
+        id=2,
+        code="ATM250",
+        title="Advanced Atmospheric Dynamics",
+        lectures_per_week=1,
+        total_weeks=1,
+    )
+    related_topics = [
+        Topic(
+            title="Geostrophic Balance",
+            course_id=2,
+            week=1,
+            order=1,
+        )
+    ]
+    service, _, content_service, _ = _build_service(
+        connected_course_ids=[2],
+        related_courses=[related_course],
+        topics_by_course_id={2: related_topics},
+    )
+    content_service.generate_text.return_value = "<output><topic><title>Baroclinic Instability</title><week>1</week><order>1</order></topic></output>"
+
+    await service.generate_topic_for_course_slot(course_id=1, week=1, order=1, created_by=7)
+
+    prompt = content_service.generate_text.await_args.kwargs["prompt"]
+    assert "Related course topics" in prompt
+    assert "Related course: Advanced Atmospheric Dynamics" in prompt
+    assert "Geostrophic Balance" in prompt

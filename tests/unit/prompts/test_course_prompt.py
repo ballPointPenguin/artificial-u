@@ -90,6 +90,34 @@ def test_course_prompt_with_freeform():
 
 
 @pytest.mark.unit
+def test_course_prompt_with_connected_courses():
+    """Test course prompt includes connected courses XML section."""
+    connected_courses = [
+        {
+            "code": "FRNCH101",
+            "title": "Beginning French I",
+            "description": "Introductory French language course.",
+            "level": "Undergraduate",
+            "lectures_per_week": 2,
+            "total_weeks": 12,
+        },
+    ]
+
+    prompt = get_course_prompt(
+        department_data={"name": "French", "code": "FRNCH"},
+        professor_data={"name": "Claire Martin"},
+        existing_courses=[],
+        partial_course_attrs={"title": "Intermediate French I"},
+        connected_courses=connected_courses,
+    )
+
+    assert "<connected_courses>" in prompt
+    assert "FRNCH101" in prompt
+    assert "Beginning French I" in prompt
+    assert "Introductory French language course." in prompt
+
+
+@pytest.mark.unit
 def test_course_prompt_minimal():
     """Test course prompt generation with minimal data."""
     department_data = {
@@ -118,3 +146,4 @@ def test_course_prompt_minimal():
     assert "[GENERATE]" in prompt
     assert "<course>" in prompt
     assert "<no_existing_courses />" in prompt
+    assert "<no_connected_courses />" in prompt

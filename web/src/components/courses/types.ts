@@ -3,6 +3,7 @@ export interface CourseFormData {
   code: string
   title: string
   department_id: number | null // Will be number for submission, null if not selected
+  connected_course_ids: number[]
   level: string | null // Will be "Undergraduate", "Graduate", or null for AI determination
   professor_id: number | null // Will be number for submission, null if not selected
   description: string

@@ -163,7 +163,10 @@ class JobService:
         self, payload: Dict[str, Any], parent_job_id: Optional[int] = None
     ) -> Dict[str, Any]:
         service = self._course_generator_service_instance()
-        partial = payload.get("partial_attributes") or {}
+        partial = dict(payload.get("partial_attributes") or {})
+        connected_course_ids = payload.get("connected_course_ids")
+        if connected_course_ids is not None:
+            partial["connected_course_ids"] = connected_course_ids
         result = await service.generate_course(partial)
         return {"generated_course": result}
 
@@ -188,6 +191,7 @@ class JobService:
         description = payload.get("description")
         created_by = payload.get("created_by")
         created_with = payload.get("created_with")
+        connected_course_ids = payload.get("connected_course_ids")
 
         if not title or not code or not level:
             raise ValueError("title, code, and level are required to create a course")
@@ -203,6 +207,7 @@ class JobService:
             description=description,
             created_by=created_by,
             created_with=created_with,
+            connected_course_ids=connected_course_ids,
             parent_job_id=parent_job_id,
         )
 

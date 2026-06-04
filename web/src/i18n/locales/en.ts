@@ -278,6 +278,11 @@ export const en = {
     noCoursesFound: 'No courses found',
     courseCreationFailed: 'Course creation failed',
     failedToEnqueue: 'Failed to enqueue course creation',
+    form: {
+      connectedCourses: 'Connected Courses',
+      connectedCoursesHelper: 'Only courses from the selected department are shown.',
+      noCoursesInDepartment: 'No courses found in this department.',
+    },
   },
 
   // Professors page

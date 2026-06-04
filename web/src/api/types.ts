@@ -39,6 +39,7 @@ export interface Course {
   description: string
   lectures_per_week: number
   total_weeks: number
+  connected_course_ids: number[]
   status: CourseStatus
   created_by?: number | null
   created_with?: string | null
@@ -91,6 +92,7 @@ export interface CourseCreate {
   lectures_per_week?: number
   total_weeks?: number
   created_with?: string | null
+  connected_course_ids?: number[]
 }
 
 export interface CourseUpdate {
@@ -103,6 +105,7 @@ export interface CourseUpdate {
   lectures_per_week?: number
   total_weeks?: number
   status?: CourseStatus
+  connected_course_ids?: number[]
 }
 
 export interface CoursesListResponse {
@@ -137,6 +140,7 @@ export interface CourseLecturesResponse {
 export interface CourseGenerateRequest {
   partial_attributes?: Record<string, unknown>
   freeform_prompt?: string
+  connected_course_ids?: number[]
 }
 
 // Department types

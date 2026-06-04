@@ -1,11 +1,12 @@
 from typing import List, Optional, Tuple
 
-from sqlalchemy import func
+from sqlalchemy import func, or_
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import joinedload
 
 from artificial_u.models.core import Course, Student
 from artificial_u.models.database import (
+    CourseConnectionModel,
     CourseModel,
     DepartmentModel,
     LectureModel,
@@ -75,6 +76,7 @@ class CourseRepository(BaseRepository):
             created_at=db_course.created_at,
             updated_at=db_course.updated_at,
             student=course_student,
+            connected_course_ids=list(db_course.connected_course_ids),
             lectures_with_audio_count=0,
             topics_count=0,
         )
@@ -175,6 +177,48 @@ class CourseRepository(BaseRepository):
             session.delete(db_course)
             session.commit()
             return True
+
+    def set_connected_courses(self, course_id: int, connected_course_ids: List[int]) -> Course:
+        with self.get_session() as session:
+            db_course = session.query(self.model).filter_by(id=course_id).first()
+            if not db_course:
+                raise ValueError(f"Course with ID {course_id} not found")
+
+            if course_id in (connected_course_ids or []):
+                raise ValueError("A course cannot be connected to itself")
+
+            normalized_ids = sorted(set(connected_course_ids or []))
+
+            if normalized_ids:
+                existing_ids = {
+                    row[0]
+                    for row in session.query(CourseModel.id)
+                    .filter(CourseModel.id.in_(normalized_ids))
+                    .all()
+                }
+                missing_ids = sorted(set(normalized_ids) - existing_ids)
+                if missing_ids:
+                    raise ValueError(f"Connected course IDs not found: {missing_ids}")
+
+            session.query(CourseConnectionModel).filter(
+                or_(
+                    CourseConnectionModel.course_id == course_id,
+                    CourseConnectionModel.connected_course_id == course_id,
+                )
+            ).delete(synchronize_session=False)
+
+            for connected_id in normalized_ids:
+                source_id, target_id = sorted((course_id, connected_id))
+                session.add(
+                    CourseConnectionModel(
+                        course_id=source_id,
+                        connected_course_id=target_id,
+                    )
+                )
+
+            session.commit()
+            session.refresh(db_course)
+            return self._convert_course(db_course)
 
     def list_and_count(
         self,

@@ -25,3 +25,11 @@ repos:
     rev: 8.0.1
     hooks:
       - id: isort
+
+  # Syntax/parser target must match pyproject.toml [tool.ruff] (py314).
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.15.16
+    hooks:
+      - id: ruff-check
+        args: [--config, pyproject.toml]
+        exclude: ^(alembic/|scripts/|web/)

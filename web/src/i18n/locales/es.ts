@@ -279,6 +279,11 @@ export const es = {
     noCoursesFound: 'No se encontraron cursos',
     courseCreationFailed: 'Falló la creación del curso',
     failedToEnqueue: 'Falló al poner en cola la creación del curso',
+    form: {
+      connectedCourses: 'Cursos Conectados',
+      connectedCoursesHelper: 'Solo se muestran cursos del departamento seleccionado.',
+      noCoursesInDepartment: 'No se encontraron cursos en este departamento.',
+    },
   },
 
   // Professors page

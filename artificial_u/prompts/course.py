@@ -4,6 +4,7 @@ from typing import Any, Dict, List, Optional
 
 # Import converters instead of defining formatters here
 from artificial_u.models.converters import (
+    connected_courses_to_xml,
     courses_to_xml,
     department_to_xml,
     partial_course_to_xml,
@@ -63,6 +64,9 @@ Guidelines:
 Existing courses (for context and to avoid repetition):
 {{existing_courses_xml}}
 
+Connected courses (explicitly linked prerequisites or sequence partners — align with these):
+{{connected_courses_xml}}
+
 Department Information:
 {{department_xml}}
 
@@ -85,6 +89,7 @@ Wrap your answer in <output> tags, providing only the <course> element.
 """,
     required_vars=[
         "existing_courses_xml",
+        "connected_courses_xml",
         "department_xml",
         "professor_xml",
         "partial_course_xml",
@@ -99,6 +104,7 @@ def get_course_prompt(
     professor_data: Dict[str, Any],
     partial_course_attrs: Dict[str, Any],
     freeform_prompt: Optional[str] = None,
+    connected_courses: Optional[List[Dict[str, Any]]] = None,
 ) -> str:
     """Generate a course prompt using centralized converters.
 
@@ -108,12 +114,14 @@ def get_course_prompt(
         professor_data: Dictionary of professor attributes.
         partial_course_attrs: Dictionary of known/partial course attributes.
         freeform_prompt: Optional freeform text context.
+        connected_courses: Courses explicitly linked for sequence/continuity context.
 
     Returns:
         Formatted prompt string.
     """
     # Use converters to generate XML sections
     existing_courses_xml_str = courses_to_xml(existing_courses)
+    connected_courses_xml_str = connected_courses_to_xml(connected_courses or [])
     department_xml_str = department_to_xml(department_data, missing_marker="[unspecified]")
     professor_xml_str = professor_to_xml(professor_data, missing_marker="[unspecified]")
     partial_course_xml_str = partial_course_to_xml(partial_course_attrs)
@@ -127,6 +135,7 @@ def get_course_prompt(
     try:
         return COURSE_PROMPT.format(
             existing_courses_xml=existing_courses_xml_str,
+            connected_courses_xml=connected_courses_xml_str,
             department_xml=department_xml_str,
             professor_xml=professor_xml_str,
             partial_course_xml=partial_course_xml_str,

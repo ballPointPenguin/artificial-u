@@ -6,6 +6,7 @@ import type { Course, CourseCreate } from '../api/types.js'
 import { useAuth } from '../auth/AuthProvider'
 import { RequireRole } from '../auth/RequireRole'
 import CourseForm from '../components/courses/CourseForm.jsx'
+import CourseStatusBadge from '../components/courses/CourseStatusBadge.jsx'
 import type { CourseFormData } from '../components/courses/types.jsx'
 import { Alert, Button, MagicButton } from '../components/ui'
 import type { SelectOption } from '../components/ui/Select.jsx'
@@ -407,6 +408,7 @@ const Courses: Component = () => {
       code: formData.code,
       title: formData.title,
       department_id: formData.department_id ?? undefined,
+      connected_course_ids: formData.connected_course_ids,
       level: formData.level ?? undefined,
       professor_id: formData.professor_id ?? undefined,
       description: formData.description,
@@ -687,18 +689,7 @@ const Courses: Component = () => {
                         </A>
                       </td>
                       <td class="py-3 px-3 align-middle">
-                        <span
-                          class={`inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-full whitespace-nowrap ${
-                            course.status === 'published'
-                              ? 'bg-green-500/20 text-green-300 border border-green-400/30'
-                              : 'bg-amber-500/20 text-amber-300 border border-amber-400/30'
-                          }`}
-                        >
-                          <span class="text-[10px]">
-                            {course.status === 'published' ? '✓' : '●'}
-                          </span>
-                          <span>{course.status === 'published' ? 'Published' : 'Hidden'}</span>
-                        </span>
+                        <CourseStatusBadge status={course.status} />
                       </td>
                       <td class="py-3 px-3 align-middle text-parchment-100 whitespace-nowrap">
                         {getProfessorName(course)}
@@ -733,20 +724,7 @@ const Courses: Component = () => {
                           <p class="text-xs font-serif uppercase tracking-wide text-parchment-400">
                             {course.code}
                           </p>
-                          <span
-                            class={`inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[9px] font-medium rounded-full whitespace-nowrap ${
-                              course.status === 'published'
-                                ? 'bg-green-500/20 text-green-300 border border-green-400/30'
-                                : 'bg-amber-500/20 text-amber-300 border border-amber-400/30'
-                            }`}
-                          >
-                            <span class="text-[8px]">
-                              {course.status === 'published' ? '✓' : '●'}
-                            </span>
-                            <span class="uppercase tracking-tight">
-                              {course.status === 'published' ? 'Published' : 'Hidden'}
-                            </span>
-                          </span>
+                          <CourseStatusBadge status={course.status} size="sm" />
                         </div>
                       </div>
                       <div class="shrink-0 text-xs font-serif text-parchment-400 text-right whitespace-nowrap">

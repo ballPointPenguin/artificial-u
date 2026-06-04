@@ -136,6 +136,16 @@ ensure_newline_before_comments = true
 skip = [".git", "venv", ".venv", ".mypy_cache", "__pycache__", "web"]
 known_first_party = ["artificial_u"]
 
+[tool.ruff]
+# Match hatch/CI (3.14): bracketless multi-exception `except` is valid on 3.14+ only.
+target-version = "py314"
+line-length = 100
+extend-exclude = ["alembic", "scripts", "web"]
+
+[tool.ruff.lint]
+# IDE/local syntax checks only; CI still uses flake8/black/isort via pre-commit.
+select = []
+
 [tool.mypy]
 python_version = "3.14"
 warn_return_any = true

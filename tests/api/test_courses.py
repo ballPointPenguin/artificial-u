@@ -212,6 +212,8 @@ def test_list_courses(client: TestClient, mock_api_service):
     assert data["total"] == len(sample_courses_base)
     assert len(data["items"]) == len(sample_courses_base)
     assert data["items"][0]["code"] == sample_courses_base[0].code
+    assert "connected_course_ids" in data["items"][0]
+    assert data["items"][0]["connected_course_ids"] == []
     # Verify timestamp fields are present
     assert "created_at" in data["items"][0]
     assert "updated_at" in data["items"][0]
@@ -335,6 +337,8 @@ def test_get_course(client: TestClient, mock_api_service):
     data = response.json()
     assert data["id"] == 1
     assert data["code"] == sample_courses_base[0].code
+    assert "connected_course_ids" in data
+    assert data["connected_course_ids"] == []
     # Verify timestamp fields are present
     assert "created_at" in data
     assert "updated_at" in data
@@ -382,6 +386,7 @@ def test_create_course(client: TestClient, mock_api_service):
         "lectures_per_week": 1,
         "total_weeks": 10,
         "topics": [],
+        "connected_course_ids": [1, 2],
     }
 
     response = client.post("/api/v1/courses", json=new_course_data)
@@ -408,6 +413,7 @@ def test_create_course(client: TestClient, mock_api_service):
         "created_with": None,
         "image_url": None,
         "image_created_with": None,
+        "connected_course_ids": [1, 2],
         "created_at": None,
         "updated_at": None,
         "status": "hidden",
@@ -418,7 +424,7 @@ def test_create_course(client: TestClient, mock_api_service):
 @pytest.mark.unit
 def test_update_course(client: TestClient, mock_api_service):
     """Test updating an existing course."""
-    update_data = {"title": "Updated Course Title"}
+    update_data = {"title": "Updated Course Title", "connected_course_ids": []}
     course_id_to_update = 2
 
     response = client.put(f"/api/v1/courses/{course_id_to_update}", json=update_data)
@@ -535,6 +541,7 @@ def test_generate_course_partial_data(client: TestClient, mock_api_service: Magi
     generation_request_data = {
         "partial_attributes": {"title": "AI Generated Course"},
         "freeform_prompt": "Make it introductory and about astrophysics.",
+        "connected_course_ids": [1, 3],
     }
 
     # Mock service to return partial data that is valid for GeneratedCourseData
@@ -571,6 +578,7 @@ def test_generate_course_partial_data(client: TestClient, mock_api_service: Magi
     assert isinstance(called_with_arg, CourseGenerate)
     assert called_with_arg.partial_attributes == generation_request_data["partial_attributes"]
     assert called_with_arg.freeform_prompt == generation_request_data["freeform_prompt"]
+    assert called_with_arg.connected_course_ids == generation_request_data["connected_course_ids"]
 
 
 @pytest.mark.unit

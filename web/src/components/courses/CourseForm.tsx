@@ -1,9 +1,11 @@
 import type { Component } from 'solid-js'
-import { createEffect, createResource, createSignal, Show } from 'solid-js'
+import { createEffect, createMemo, createResource, createSignal, Show } from 'solid-js'
 import { courseService } from '../../api/services/course-service.js'
 import { departmentService } from '../../api/services/department-service.js'
 import { professorService } from '../../api/services/professor-service.js'
 import type { Course, CourseGenerateRequest, Department, Professor } from '../../api/types.js'
+import { useAuth } from '../../auth/AuthProvider.js'
+import { useTranslations } from '../../i18n'
 import {
   Alert,
   Button,
@@ -16,6 +18,7 @@ import {
   Textarea,
 } from '../ui'
 import type { SelectOption } from '../ui/Select.js'
+import ConnectedCoursesSelect from './ConnectedCoursesSelect.jsx'
 import type { CourseFormData } from './types.js'
 
 interface CourseFormProps {
@@ -28,10 +31,14 @@ interface CourseFormProps {
 }
 
 const CourseForm: Component<CourseFormProps> = (props) => {
+  const auth = useAuth()
+  const t = useTranslations()
+
   const [formData, setFormData] = createSignal<CourseFormData>({
     code: '',
     title: '',
     department_id: null,
+    connected_course_ids: [],
     level: null,
     professor_id: null,
     description: '',
@@ -53,6 +60,7 @@ const CourseForm: Component<CourseFormProps> = (props) => {
         code: c.code || '',
         title: c.title || '',
         department_id: c.department_id,
+        connected_course_ids: c.connected_course_ids,
         level: c.level || '',
         professor_id: c.professor_id,
         description: c.description || '',
@@ -135,6 +143,40 @@ const CourseForm: Component<CourseFormProps> = (props) => {
     }
   )
 
+  const [departmentCoursesResource] = createResource(
+    () => ({
+      departmentId: formData().department_id,
+      // Refetch once auth is ready so include_hidden uses the JWT student context
+      authReady: !auth.isLoading(),
+      excludeCourseId: props.course?.id,
+    }),
+    async ({ departmentId, excludeCourseId }) => {
+      if (!departmentId) return [] as Course[]
+      const response = await courseService.listCourses({
+        page: 1,
+        size: 100,
+        departmentId,
+        // Published plus own hidden courses (or all hidden for admins); see API visibility rules
+        includeHidden: true,
+      })
+      return response.items.filter((course) => course.id !== excludeCourseId)
+    }
+  )
+
+  const visibleConnectedCourseIds = createMemo(() => {
+    const availableIds = new Set((departmentCoursesResource() || []).map((course) => course.id))
+    return formData().connected_course_ids.filter((id) => availableIds.has(id))
+  })
+
+  const handleConnectedCoursesChange = (selectedIds: number[]) => {
+    const availableIds = new Set((departmentCoursesResource() || []).map((course) => course.id))
+    const preservedHiddenIds = formData().connected_course_ids.filter((id) => !availableIds.has(id))
+    setFormData((prev) => ({
+      ...prev,
+      connected_course_ids: [...preservedHiddenIds, ...selectedIds],
+    }))
+  }
+
   const handleInputChange = (fieldName: keyof CourseFormData, value: string | number | null) => {
     setFormData((prev) => ({ ...prev, [fieldName]: value }))
 
@@ -197,6 +239,9 @@ const CourseForm: Component<CourseFormProps> = (props) => {
         // Let description etc. be generated if not filled
       },
       ...(currentData.freeform_prompt && { freeform_prompt: currentData.freeform_prompt }),
+      ...(currentData.connected_course_ids.length > 0 && {
+        connected_course_ids: currentData.connected_course_ids,
+      }),
     }
 
     // Remove partial_attributes if it's empty
@@ -217,6 +262,9 @@ const CourseForm: Component<CourseFormProps> = (props) => {
         lectures_per_week: generated.lectures_per_week,
         total_weeks: generated.total_weeks,
         created_with: generated.created_with || prev.created_with,
+        connected_course_ids: Array.isArray(generated.connected_course_ids)
+          ? generated.connected_course_ids
+          : prev.connected_course_ids,
       }))
     } catch (err) {
       setGenerateError(err instanceof Error ? err.message : 'Failed to generate course details')
@@ -230,6 +278,7 @@ const CourseForm: Component<CourseFormProps> = (props) => {
       code: '',
       title: '',
       department_id: null,
+      connected_course_ids: [],
       level: null,
       professor_id: null,
       description: '',
@@ -287,12 +336,30 @@ const CourseForm: Component<CourseFormProps> = (props) => {
                 v === NULL_OPTION_VALUE || v === null || v === '' ? null : Number(v)
               handleInputChange('department_id', departmentId)
               // Clear professor selection when department changes to avoid mismatch
-              setFormData((prev) => ({ ...prev, professor_id: null }))
+              setFormData((prev) => ({
+                ...prev,
+                professor_id: null,
+                ...(props.course ? {} : { connected_course_ids: [] }),
+              }))
             }}
             placeholder="-- Select Department (Optional) --"
             disabled={departmentsResource.loading || isDisabled()}
           />
         </FormField>
+        {formData().department_id !== null ? (
+          <FormField
+            label={t().courses.form.connectedCourses}
+            name="connected_course_ids"
+            helperText={t().courses.form.connectedCoursesHelper}
+          >
+            <ConnectedCoursesSelect
+              courses={departmentCoursesResource() || []}
+              value={visibleConnectedCourseIds()}
+              onChange={handleConnectedCoursesChange}
+              disabled={departmentCoursesResource.loading || isDisabled()}
+            />
+          </FormField>
+        ) : null}
         <FormField
           label="Professor"
           name="professor_id"

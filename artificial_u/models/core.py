@@ -218,6 +218,7 @@ class Course(BaseModel):
     professor: Optional["Professor"] = None
     department: Optional["Department"] = None
     student: Optional["Student"] = None
+    connected_course_ids: List[int] = Field(default_factory=list)
     # Audio/Topic Counts
     lectures_with_audio_count: Optional[int] = 0
     topics_count: Optional[int] = 0

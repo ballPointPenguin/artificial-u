@@ -279,6 +279,11 @@ export const fr = {
     noCoursesFound: 'Aucun cours trouvé',
     courseCreationFailed: 'Échec de la création du cours',
     failedToEnqueue: "Échec de la mise en file d'attente",
+    form: {
+      connectedCourses: 'Cours Associés',
+      connectedCoursesHelper: 'Seuls les cours du département sélectionné sont affichés.',
+      noCoursesInDepartment: 'Aucun cours trouvé dans ce département.',
+    },
   },
 
   // Professors page

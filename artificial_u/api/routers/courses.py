@@ -455,6 +455,7 @@ async def enqueue_generate_course(
     payload = {
         "partial_attributes": generation_data.partial_attributes or {},
         "freeform_prompt": generation_data.freeform_prompt,
+        "connected_course_ids": generation_data.connected_course_ids,
     }
     row = repository_factory.job.create(
         kind="generate_course",
@@ -498,6 +499,7 @@ async def enqueue_create_course(
         "description": course_data.description,
         "lectures_per_week": course_data.lectures_per_week,
         "total_weeks": course_data.total_weeks,
+        "connected_course_ids": course_data.connected_course_ids,
         "created_by": student.id,
         "created_with": course_data.created_with,
     }
