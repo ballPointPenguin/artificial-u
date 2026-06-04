@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 """
-Seed xAI (Grok) voices into the voices table (idempotent).
+Seed xAI (Grok) voices into the voices table from the live API (idempotent).
 
-xAI offers a small, fixed set of built-in voices and (for non-enterprise
-accounts) no voice cloning/creation and no public list-voices endpoint. We
-therefore seed a curated static catalog. Voices that already exist (matched by
-tts_backend + external_id) are skipped.
+Fetches the actual voice catalog from the xAI Voices API and upserts records
+into the local database. Voices that already exist (matched by tts_backend +
+external_id) are skipped.
 
-The professor voice view lists xAI voices via GET /api/v1/voices?tts_backend=xai,
-so this script must be run once per environment for the xAI tab to populate.
+NOTE: Seeding is optional. The frontend lists xAI voices on-demand via
+GET /api/v1/voices/xai/catalog, so new voices appear automatically without
+running this script. Seeding is useful if you prefer a pre-populated DB.
 """
 
 import argparse
@@ -36,7 +36,7 @@ def seed_xai_voices(
     logger: logging.Logger | None = None,
 ) -> tuple[int, int]:
     """
-    Seed xAI voices from the static catalog. Idempotent.
+    Seed xAI voices from the live API. Idempotent.
 
     Returns:
         Tuple of (created_count, skipped_count)
@@ -44,8 +44,13 @@ def seed_xai_voices(
     if logger is None:
         logger = logging.getLogger(__name__)
 
-    raw_voices = XAIVoiceManager(logger=logger).list_voices()
-    logger.info("Loaded %d xAI voices from the static catalog", len(raw_voices))
+    api_key = os.environ.get("XAI_API_KEY")
+    if not api_key:
+        logger.error("XAI_API_KEY is not set — cannot fetch voice catalog")
+        sys.exit(1)
+
+    raw_voices = XAIVoiceManager(api_key=api_key, logger=logger).list_voices()
+    logger.info("Fetched %d voices from xAI API", len(raw_voices))
 
     effective_url = db_url or os.environ.get("DATABASE_URL")
     repo = VoiceRepository(db_url=effective_url)
@@ -74,9 +79,8 @@ def seed_xai_voices(
             external_id=external_id,
             name=v.get("name") or external_id,
             gender=v.get("gender"),
-            language=v.get("language") or "en",
+            language=v.get("language"),
             category="preset",
-            description=v.get("description"),
         )
 
         repo.create(voice)
@@ -87,7 +91,7 @@ def seed_xai_voices(
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Seed xAI (Grok) voices from the static catalog")
+    parser = argparse.ArgumentParser(description="Seed xAI (Grok) voices from the live API")
     parser.add_argument("--db-url", help="Database URL (default: DATABASE_URL env var)")
     parser.add_argument(
         "--dry-run", action="store_true", help="Report changes without applying them"

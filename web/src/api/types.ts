@@ -544,6 +544,19 @@ export interface MistralVoiceCatalog {
   total: number
 }
 
+// xAI voice catalog (on-demand from xAI API, not stored in DB)
+export interface XaiCatalogVoice {
+  id: string
+  name: string
+  language: string | null
+  gender: string | null
+}
+
+export interface XaiVoiceCatalog {
+  items: XaiCatalogVoice[]
+  total: number
+}
+
 // Voice cloning
 export interface VoiceCloneToMistralRequest {
   professor_id: number

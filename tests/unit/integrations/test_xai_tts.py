@@ -122,3 +122,82 @@ def test_factory_creates_xai_backend(patch_httpx):
 def test_factory_rejects_unknown_backend():
     with pytest.raises(ValueError):
         create_tts_backend(backend_name="not-a-backend", api_key="key")
+
+
+# ---------------------------------------------------------------------------
+# Voice manager (live catalog from GET /tts/voices)
+# ---------------------------------------------------------------------------
+
+
+class _FakeVoicesResponse:
+    def __init__(self, payload):
+        self._payload = payload
+
+    def raise_for_status(self):
+        return None
+
+    def json(self):
+        return self._payload
+
+
+class _FakeVoicesClient:
+    """Stand-in for httpx.Client that returns a canned voices payload."""
+
+    payload = {
+        "voices": [
+            {"voice_id": "eve", "name": "Eve", "language": "multilingual"},
+            {"voice_id": "ara", "name": "Ara", "language": "multilingual"},
+            {"voice_id": "camille", "name": "Camille", "language": "fr", "gender": "female"},
+            {"voice_id": "xia", "name": "Xia", "language": "zh", "gender": "female"},
+        ]
+    }
+    last_call = {}
+
+    def __init__(self, *args, **kwargs):
+        pass
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args):
+        return False
+
+    def get(self, url, headers=None):
+        _FakeVoicesClient.last_call = {"url": url, "headers": headers}
+        return _FakeVoicesResponse(self.payload)
+
+
+@pytest.fixture
+def patch_voices_httpx(monkeypatch):
+    _FakeVoicesClient.last_call = {}
+    monkeypatch.setattr(
+        "artificial_u.integrations.xai.voice_manager.httpx.Client", _FakeVoicesClient
+    )
+    return _FakeVoicesClient
+
+
+@pytest.mark.unit
+def test_voice_manager_lists_all_voices(patch_voices_httpx):
+    from artificial_u.integrations.xai.voice_manager import XAIVoiceManager
+
+    mgr = XAIVoiceManager(api_key="key", base_url="https://api.x.ai/v1")
+    voices = mgr.list_voices()
+
+    assert patch_voices_httpx.last_call["url"] == "https://api.x.ai/v1/tts/voices"
+    assert patch_voices_httpx.last_call["headers"]["Authorization"] == "Bearer key"
+    # voice_id is normalized to id; language-specific voices included
+    ids = {v["id"] for v in voices}
+    assert ids == {"eve", "ara", "camille", "xia"}
+    camille = next(v for v in voices if v["id"] == "camille")
+    assert camille["name"] == "Camille"
+    assert camille["language"] == "fr"
+    assert camille["gender"] == "female"
+
+
+@pytest.mark.unit
+def test_voice_manager_get_voice(patch_voices_httpx):
+    from artificial_u.integrations.xai.voice_manager import XAIVoiceManager
+
+    mgr = XAIVoiceManager(api_key="key", base_url="https://api.x.ai/v1")
+    assert mgr.get_voice("xia")["language"] == "zh"
+    assert mgr.get_voice("nonexistent") is None

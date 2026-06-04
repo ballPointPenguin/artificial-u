@@ -341,6 +341,74 @@ async def list_mistral_catalog(
 
 
 # ---------------------------------------------------------------------------
+# xAI voice catalog (on-demand from the xAI API)
+# ---------------------------------------------------------------------------
+
+
+class XaiVoiceCatalogItem(BaseModel):
+    """A voice from the xAI API, mapped into a shape the frontend can use."""
+
+    id: str = Field(..., description="xAI voice id (e.g. 'eve', 'camille')")
+    name: str = Field(..., description="Display name")
+    language: Optional[str] = None
+    gender: Optional[str] = None
+
+
+class XaiVoiceCatalogResponse(BaseModel):
+    items: list[XaiVoiceCatalogItem]
+    total: int
+
+
+@router.get(
+    "/xai/catalog",
+    response_model=XaiVoiceCatalogResponse,
+    dependencies=[Depends(require_auth)],
+)
+async def list_xai_catalog(
+    language: Optional[str] = Query(None, description="Filter by language prefix (e.g. 'fr')"),
+    gender: Optional[str] = Query(None, description="Filter by gender"),
+):
+    """
+    List voices directly from the xAI Voices API.
+
+    These are **not** stored in our database. The frontend uses the xAI voice
+    ``id`` as the ``voice_id`` when previewing or assigning. The catalog is read
+    fresh each time so newly added xAI voices appear automatically.
+    """
+    try:
+        from artificial_u.integrations.xai.voice_manager import XAIVoiceManager
+
+        mgr = XAIVoiceManager()
+        raw_voices = mgr.list_voices()
+    except Exception as e:
+        logger.error("Failed to fetch xAI voice catalog: %s", e)
+        raise HTTPException(status_code=502, detail=f"xAI API error: {e}")
+
+    items: list[XaiVoiceCatalogItem] = []
+    for v in raw_voices:
+        if not v.get("id"):
+            continue
+        # Optional client-side filters
+        if language:
+            lang = v.get("language") or ""
+            if not str(lang).startswith(language):
+                continue
+        if gender and v.get("gender") != gender:
+            continue
+
+        items.append(
+            XaiVoiceCatalogItem(
+                id=v["id"],
+                name=v.get("name") or v["id"],
+                language=v.get("language"),
+                gender=v.get("gender"),
+            )
+        )
+
+    return XaiVoiceCatalogResponse(items=items, total=len(items))
+
+
+# ---------------------------------------------------------------------------
 # Voice preview (TTS sample generation)
 # ---------------------------------------------------------------------------
 

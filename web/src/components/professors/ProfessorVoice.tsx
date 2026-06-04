@@ -14,12 +14,12 @@ import {
   generateVoiceDesignPreviews,
   getVoice,
   listMistralCatalog,
-  listVoices,
+  listXaiCatalog,
   manualAssignVoice,
   previewVoice,
   saveDesignedVoice,
 } from '../../api/services/voice-service.js'
-import type { MistralCatalogVoice, Voice, VoiceDesignPreview } from '../../api/types.js'
+import type { MistralCatalogVoice, VoiceDesignPreview, XaiCatalogVoice } from '../../api/types.js'
 import { RequireRole } from '../../auth/RequireRole'
 import { Alert, Badge, Button, LoadingSpinner } from '../ui'
 
@@ -124,7 +124,7 @@ const VoiceCard: Component<{
 // Voice card for xAI voices (DB-backed Voice records)
 // ---------------------------------------------------------------------------
 const XaiVoiceCard: Component<{
-  voice: Voice
+  voice: XaiCatalogVoice
   isSelected: boolean
   isPreviewing: boolean
   onSelect: () => void
@@ -157,12 +157,7 @@ const XaiVoiceCard: Component<{
     >
       <div class="flex items-start justify-between gap-2">
         <div class="min-w-0 flex-1">
-          <p class="font-semibold text-foreground truncate">
-            {props.voice.name ?? props.voice.external_id}
-          </p>
-          <Show when={props.voice.description}>
-            <p class="text-xs text-muted mt-0.5 truncate">{props.voice.description}</p>
-          </Show>
+          <p class="font-semibold text-foreground truncate">{props.voice.name}</p>
           <div class="flex flex-wrap gap-1.5 mt-1.5">
             <For each={attrs()}>
               {(attr) => (
@@ -256,16 +251,16 @@ const ProfessorVoice: Component = () => {
     return mistralCatalog()?.items.find((v) => v.id === id) ?? null
   })
 
-  // ---- xAI voices (DB-backed; seeded via scripts/seed_xai_voices.py) ----
-  const [xaiVoices] = createResource(
+  // ---- xAI voices (on-demand from the xAI API; read fresh each time) ----
+  const [xaiCatalog] = createResource(
     () => (selectedBackend() === 'xai' ? true : null),
-    async (enabled) => (enabled ? listVoices({ tts_backend: 'xai', limit: 50 }) : undefined)
+    async (enabled) => (enabled ? listXaiCatalog() : undefined)
   )
   const [selectedXaiId, setSelectedXaiId] = createSignal<string | null>(null)
   const selectedXaiVoice = createMemo(() => {
     const id = selectedXaiId()
     if (!id) return null
-    return xaiVoices()?.items.find((v) => v.external_id === id) ?? null
+    return xaiCatalog()?.items.find((v) => v.id === id) ?? null
   })
 
   // ---- Audio preview ----
@@ -288,13 +283,12 @@ const ProfessorVoice: Component = () => {
     }
   }
 
-  const handleXaiPreview = async (voice: Voice) => {
-    if (!voice.external_id) return
-    setIsPreviewingId(voice.external_id)
+  const handleXaiPreview = async (voice: XaiCatalogVoice) => {
+    setIsPreviewingId(voice.id)
     setPreviewAudioUri(null)
     try {
       const resp = await previewVoice({
-        voice_id: voice.external_id,
+        voice_id: voice.id,
         tts_backend: 'xai',
       })
       setPreviewAudioUri(resp.audio_data_uri)
@@ -332,11 +326,11 @@ const ProfessorVoice: Component = () => {
       ttsBackend = 'elevenlabs'
     } else if (backend === 'xai') {
       const voice = selectedXaiVoice()
-      if (!voice?.external_id) {
+      if (!voice) {
         setAssignError('Please select a voice first.')
         return
       }
-      externalId = voice.external_id
+      externalId = voice.id
       ttsBackend = 'xai'
     } else {
       const voice = selectedMistralVoice()
@@ -872,24 +866,23 @@ const ProfessorVoice: Component = () => {
                 </Show>
               </div>
 
-              <Show when={!xaiVoices.loading} fallback={<LoadingSpinner />}>
+              <Show when={!xaiCatalog.loading} fallback={<LoadingSpinner />}>
                 <Show
-                  when={(xaiVoices()?.items.length ?? 0) > 0}
+                  when={(xaiCatalog()?.items.length ?? 0) > 0}
                   fallback={
                     <p class="text-muted text-sm">
-                      No xAI voices found. Run <code>scripts/seed_xai_voices.py</code> to populate
-                      them.
+                      No xAI voices found. Check that XAI_API_KEY is configured.
                     </p>
                   }
                 >
                   <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                    <For each={xaiVoices()?.items ?? []}>
+                    <For each={xaiCatalog()?.items ?? []}>
                       {(voice) => (
                         <XaiVoiceCard
                           voice={voice}
-                          isSelected={selectedXaiId() === voice.external_id}
-                          isPreviewing={isPreviewingId() === voice.external_id}
-                          onSelect={() => setSelectedXaiId(voice.external_id)}
+                          isSelected={selectedXaiId() === voice.id}
+                          isPreviewing={isPreviewingId() === voice.id}
+                          onSelect={() => setSelectedXaiId(voice.id)}
                           onPreview={() => {
                             void handleXaiPreview(voice)
                           }}
