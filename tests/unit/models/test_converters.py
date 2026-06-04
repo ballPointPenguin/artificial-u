@@ -1045,3 +1045,32 @@ def test_parse_lecture_xml_with_entities():
     assert result["title"] == "Functions & Algorithms"
     assert "x > 0" in result["content"]
     assert "a < b" in result["content"]
+
+
+@pytest.mark.unit
+def test_parse_topic_xml_with_html_entities():
+    """Test parsing topic XML with HTML entities like &ndash;, &mdash;, &ldquo;, &rdquo;."""
+    topic_xml = (
+        "<topic>\n"
+        "  <title>The Dual-Track System and &ldquo;Growing Out of the Plan&rdquo;</title>\n"
+        "  <week>2</week>\n"
+        "  <order>2</order>\n"
+        "  <content>\n"
+        "    <lecture>Market Creation within the Command Structure: "
+        "The Dual-Track Pricing Mechanism</lecture>\n"
+        "    <readings>\n"
+        "      <reading>Naughton, Barry. Growing Out of the Plan: "
+        "Chinese Economic Reform, 1978&ndash;1993. Cambridge University Press.</reading>\n"
+        "    </readings>\n"
+        "  </content>\n"
+        "</topic>"
+    )
+    result = parse_topic_xml(topic_xml)
+    assert result["title"] == "The Dual-Track System and “Growing Out of the Plan”"
+    assert result["week"] == 2
+    assert result["order"] == 2
+    expected_reading = (
+        "Naughton, Barry. Growing Out of the Plan: "
+        "Chinese Economic Reform, 1978–1993. Cambridge University Press."
+    )
+    assert result["content"]["readings"] == [expected_reading]

@@ -628,11 +628,10 @@ def _repair_topics_xml(xml_str: str) -> str:
     def escape_xml_content(match):
         """Escape special characters in XML text content."""
         content = match.group(1)
-        # Only escape if it contains problematic characters
-        if any(c in content for c in ["&", "<", ">", '"', "'"]):
-            # Don't double-escape already escaped content
-            if not re.search(r"&[a-zA-Z]+;|&#\d+;", content):
-                content = html.escape(content, quote=False)
+        # Unescape any HTML/XML entities to get raw text (e.g. &ndash; -> –, &amp; -> &)
+        content = html.unescape(content)
+        # Re-escape only characters that are special in XML text content (&, <, >)
+        content = html.escape(content, quote=False)
         return f">{content}<"
 
     # Escape content between XML tags (but not the tags themselves)
