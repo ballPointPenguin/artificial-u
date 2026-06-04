@@ -39,7 +39,3 @@ class TTSBackend(Protocol):
     def default_voice_settings(self) -> Dict[str, Any]:
         """Return default voice settings for this backend."""
         ...
-
-    def supports_ssml(self) -> bool:
-        """Whether this backend supports SSML-like markup (e.g., <break> tags)."""
-        ...

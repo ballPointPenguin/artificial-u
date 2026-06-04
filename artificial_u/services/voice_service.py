@@ -721,6 +721,20 @@ class VoiceService:
                             voice.language = str(lang_list[0])
                 except Exception as e:
                     self.logger.warning("Could not enrich Mistral voice metadata: %s", e)
+            elif tts_backend == "xai":
+                try:
+                    from artificial_u.integrations.xai.voice_manager import (
+                        XAIVoiceManager,
+                    )
+
+                    info = XAIVoiceManager().get_voice(external_id)
+                    if info:
+                        voice.name = info.get("name") or external_id
+                        voice.gender = info.get("gender")
+                        voice.language = info.get("language")
+                        voice.category = "preset"
+                except Exception as e:
+                    self.logger.warning("Could not enrich xAI voice metadata: %s", e)
 
             voice = self.repository_factory.voice.upsert(voice)
             self.logger.info(

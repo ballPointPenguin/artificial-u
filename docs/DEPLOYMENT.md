@@ -144,6 +144,7 @@ Create the following SSM Parameters of type `String`:
 - `/artificial-u/prod/ANTHROPIC_API_KEY`
 - `/artificial-u/prod/ELEVENLABS_API_KEY`
 - `/artificial-u/prod/MISTRAL_API_KEY`
+- `/artificial-u/prod/XAI_API_KEY`
 - `/artificial-u/prod/GOOGLE_API_KEY`
 - `/artificial-u/prod/OPENAI_API_KEY`
 - `/artificial-u/prod/AUTH0_DOMAIN`

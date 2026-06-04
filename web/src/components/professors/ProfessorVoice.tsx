@@ -14,20 +14,32 @@ import {
   generateVoiceDesignPreviews,
   getVoice,
   listMistralCatalog,
+  listXaiCatalog,
   manualAssignVoice,
   previewVoice,
   saveDesignedVoice,
 } from '../../api/services/voice-service.js'
-import type { MistralCatalogVoice, VoiceDesignPreview } from '../../api/types.js'
+import type { MistralCatalogVoice, VoiceDesignPreview, XaiCatalogVoice } from '../../api/types.js'
 import { RequireRole } from '../../auth/RequireRole'
 import { Alert, Badge, Button, LoadingSpinner } from '../ui'
 
-type TtsBackendKey = 'elevenlabs' | 'mistral'
+type TtsBackendKey = 'elevenlabs' | 'mistral' | 'xai'
 
 const BACKEND_OPTIONS: Array<{ value: TtsBackendKey; label: string }> = [
   { value: 'elevenlabs', label: 'ElevenLabs' },
   { value: 'mistral', label: 'Voxtral (Mistral)' },
+  { value: 'xai', label: 'xAI (Grok)' },
 ]
+
+/** Display-friendly name for a TTS backend. */
+const backendLabel = (backend: string | null | undefined): string => {
+  const map: Record<string, string> = {
+    elevenlabs: 'ElevenLabs',
+    mistral: 'Voxtral',
+    xai: 'xAI (Grok)',
+  }
+  return (backend && map[backend]) ?? 'ElevenLabs'
+}
 
 const EXCLUDED_MISTRAL_EMOTIONS = new Set(['sad', 'angry', 'shameful', 'jealousy', 'frustrated'])
 
@@ -109,6 +121,70 @@ const VoiceCard: Component<{
 }
 
 // ---------------------------------------------------------------------------
+// Voice card for xAI voices (DB-backed Voice records)
+// ---------------------------------------------------------------------------
+const XaiVoiceCard: Component<{
+  voice: XaiCatalogVoice
+  isSelected: boolean
+  isPreviewing: boolean
+  onSelect: () => void
+  onPreview: () => void
+}> = (props) => {
+  const attrs = createMemo(() => {
+    const v = props.voice
+    const items: Array<{ label: string; value: string }> = []
+    if (v.gender) items.push({ label: 'Gender', value: genderLabel(v.gender) })
+    if (v.language) items.push({ label: 'Lang', value: v.language })
+    return items
+  })
+
+  return (
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={() => {
+        props.onSelect()
+      }}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault()
+          props.onSelect()
+        }
+      }}
+      class={`arcane-card-sm p-4 text-left w-full transition-colors cursor-pointer ${
+        props.isSelected ? 'ring-2 ring-accent bg-accent/10' : 'hover:bg-surface-hover'
+      }`}
+    >
+      <div class="flex items-start justify-between gap-2">
+        <div class="min-w-0 flex-1">
+          <p class="font-semibold text-foreground truncate">{props.voice.name}</p>
+          <div class="flex flex-wrap gap-1.5 mt-1.5">
+            <For each={attrs()}>
+              {(attr) => (
+                <Badge variant="outline">
+                  <span class="text-muted mr-1">{attr.label}:</span> {attr.value}
+                </Badge>
+              )}
+            </For>
+          </div>
+        </div>
+        <button
+          type="button"
+          class="shrink-0 text-xs px-2 py-1 rounded bg-surface hover:bg-accent/20 text-accent transition-colors"
+          onClick={(e) => {
+            e.stopPropagation()
+            props.onPreview()
+          }}
+          disabled={props.isPreviewing}
+        >
+          {props.isPreviewing ? '...' : '▶ Preview'}
+        </button>
+      </div>
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
 // Main component
 // ---------------------------------------------------------------------------
 const ProfessorVoice: Component = () => {
@@ -140,7 +216,12 @@ const ProfessorVoice: Component = () => {
     const voice = currentVoice()
     if (!backendInitialized && voice) {
       backendInitialized = true
-      setSelectedBackend(voice.tts_backend === 'mistral' ? 'mistral' : 'elevenlabs')
+      const backend = voice.tts_backend
+      if (backend === 'mistral' || backend === 'xai') {
+        setSelectedBackend(backend)
+      } else {
+        setSelectedBackend('elevenlabs')
+      }
     }
   })
 
@@ -170,6 +251,18 @@ const ProfessorVoice: Component = () => {
     return mistralCatalog()?.items.find((v) => v.id === id) ?? null
   })
 
+  // ---- xAI voices (on-demand from the xAI API; read fresh each time) ----
+  const [xaiCatalog] = createResource(
+    () => (selectedBackend() === 'xai' ? true : null),
+    async (enabled) => (enabled ? listXaiCatalog() : undefined)
+  )
+  const [selectedXaiId, setSelectedXaiId] = createSignal<string | null>(null)
+  const selectedXaiVoice = createMemo(() => {
+    const id = selectedXaiId()
+    if (!id) return null
+    return xaiCatalog()?.items.find((v) => v.id === id) ?? null
+  })
+
   // ---- Audio preview ----
   const [previewAudioUri, setPreviewAudioUri] = createSignal<string | null>(null)
   const [isPreviewingId, setIsPreviewingId] = createSignal<string | null>(null)
@@ -181,6 +274,22 @@ const ProfessorVoice: Component = () => {
       const resp = await previewVoice({
         voice_id: voice.id,
         tts_backend: 'mistral',
+      })
+      setPreviewAudioUri(resp.audio_data_uri)
+    } catch (e) {
+      console.error('Preview failed', e)
+    } finally {
+      setIsPreviewingId(null)
+    }
+  }
+
+  const handleXaiPreview = async (voice: XaiCatalogVoice) => {
+    setIsPreviewingId(voice.id)
+    setPreviewAudioUri(null)
+    try {
+      const resp = await previewVoice({
+        voice_id: voice.id,
+        tts_backend: 'xai',
       })
       setPreviewAudioUri(resp.audio_data_uri)
     } catch (e) {
@@ -215,6 +324,14 @@ const ProfessorVoice: Component = () => {
       }
       externalId = id
       ttsBackend = 'elevenlabs'
+    } else if (backend === 'xai') {
+      const voice = selectedXaiVoice()
+      if (!voice) {
+        setAssignError('Please select a voice first.')
+        return
+      }
+      externalId = voice.id
+      ttsBackend = 'xai'
     } else {
       const voice = selectedMistralVoice()
       if (!voice) {
@@ -362,6 +479,7 @@ const ProfessorVoice: Component = () => {
   const switchBackend = (b: TtsBackendKey) => {
     setSelectedBackend(b)
     setSelectedMistralId(null)
+    setSelectedXaiId(null)
     setPreviewAudioUri(null)
     setAssignError('')
     setAssignSuccess('')
@@ -388,9 +506,7 @@ const ProfessorVoice: Component = () => {
             {(voice) => (
               <>
                 <div class="flex flex-wrap items-center gap-2 text-sm">
-                  <Badge variant="secondary">
-                    {voice().tts_backend === 'elevenlabs' ? 'ElevenLabs' : 'Voxtral'}
-                  </Badge>
+                  <Badge variant="secondary">{backendLabel(voice().tts_backend)}</Badge>
                   <span class="text-foreground font-medium">
                     {voice().name ?? voice().external_id ?? voice().el_voice_id}
                   </span>
@@ -697,6 +813,78 @@ const ProfessorVoice: Component = () => {
                           onSelect={() => setSelectedMistralId(voice.id)}
                           onPreview={() => {
                             void handlePreview(voice)
+                          }}
+                        />
+                      )}
+                    </For>
+                  </div>
+                </Show>
+              </Show>
+
+              {/* Audio player for preview */}
+              <Show when={previewAudioUri()}>
+                <div class="mt-4 p-3 bg-surface rounded-lg">
+                  <p class="text-xs text-muted mb-2">Voice Preview</p>
+                  <audio
+                    controls
+                    autoplay
+                    class="w-full max-w-md"
+                    src={previewAudioUri() ?? ''}
+                    aria-label="Voice preview audio"
+                  >
+                    <track
+                      kind="captions"
+                      src="data:text/vtt;charset=utf-8,WEBVTT%0A%0A"
+                      srclang="en"
+                      label="English captions"
+                      default
+                    />
+                    Your browser does not support the audio element.
+                  </audio>
+                </div>
+              </Show>
+            </div>
+          </Show>
+
+          {/* xAI: voice browsing grid (DB-backed; seeded voices) */}
+          <Show when={selectedBackend() === 'xai'}>
+            <div class="space-y-4">
+              <div class="flex items-center justify-between">
+                <p class="text-sm text-muted">
+                  Browse xAI (Grok) voices and preview them before assigning.
+                </p>
+                <Show when={selectedXaiVoice()}>
+                  <Button
+                    variant="primary"
+                    onClick={() => void handleAssign()}
+                    disabled={isAssigning()}
+                  >
+                    {isAssigning()
+                      ? 'Assigning...'
+                      : `Assign "${selectedXaiVoice()?.name ?? 'voice'}"`}
+                  </Button>
+                </Show>
+              </div>
+
+              <Show when={!xaiCatalog.loading} fallback={<LoadingSpinner />}>
+                <Show
+                  when={(xaiCatalog()?.items.length ?? 0) > 0}
+                  fallback={
+                    <p class="text-muted text-sm">
+                      No xAI voices found. Check that XAI_API_KEY is configured.
+                    </p>
+                  }
+                >
+                  <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                    <For each={xaiCatalog()?.items ?? []}>
+                      {(voice) => (
+                        <XaiVoiceCard
+                          voice={voice}
+                          isSelected={selectedXaiId() === voice.id}
+                          isPreviewing={isPreviewingId() === voice.id}
+                          onSelect={() => setSelectedXaiId(voice.id)}
+                          onPreview={() => {
+                            void handleXaiPreview(voice)
                           }}
                         />
                       )}

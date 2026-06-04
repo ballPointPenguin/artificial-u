@@ -127,6 +127,7 @@ jobs:
           ANTHROPIC_API_KEY=test_anthropic_key
           ELEVENLABS_API_KEY=test_elevenlabs_key
           MISTRAL_API_KEY=test_mistral_key
+          XAI_API_KEY=test_xai_key
           GOOGLE_API_KEY=test_google_key
           OPENAI_API_KEY=test_openai_key
 

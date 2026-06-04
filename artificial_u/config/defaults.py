@@ -20,6 +20,8 @@ DEFAULT_CONTENT_LOGS_PATH = "content_logs"
 
 # TTS defaults
 DEFAULT_TTS_BACKEND = "elevenlabs"
+DEFAULT_XAI_TTS_BASE_URL = "https://api.x.ai/v1"
+DEFAULT_XAI_TTS_LANGUAGE = "en"
 
 # Storage defaults (MinIO/S3)
 DEFAULT_STORAGE_TYPE = "minio"  # "minio" or "s3"

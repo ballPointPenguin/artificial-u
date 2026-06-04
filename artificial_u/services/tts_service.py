@@ -78,6 +78,7 @@ class TTSService:
         text: str,
         voice_id: str,
         chunk_size: int = 4000,
+        language: Optional[str] = None,
         # Legacy kwargs preserved for backward compatibility
         el_voice_id: Optional[str] = None,
         model_id: Optional[str] = None,
@@ -90,6 +91,8 @@ class TTSService:
             text: Text to convert.
             voice_id: Provider-specific voice identifier.
             chunk_size: Maximum size of text chunks.
+            language: Optional output language (BCP-47). Passed to backends that
+                accept one (e.g. xAI); ignored by others.
             el_voice_id: Legacy alias for voice_id.
             model_id: Optional model override (passed to backend).
             voice_settings: Optional voice settings (passed to backend).
@@ -102,11 +105,10 @@ class TTSService:
         if not effective_voice_id:
             raise ValueError("voice_id is required")
 
-        # Normalize text, skipping SSML if backend doesn't support it
-        if self.backend.supports_ssml():
-            normalized_text = self.speech_processor.normalize_text(text)
-        else:
-            normalized_text = self.speech_processor.normalize_text(text, supports_ssml=False)
+        # Normalize text using the explicit per-backend processing path.
+        normalized_text = self.speech_processor.normalize_text(
+            text, backend_name=self.backend.backend_name
+        )
 
         # Split text into chunks if necessary
         chunks = self.speech_processor.split_into_chunks(normalized_text, max_chunk_size=chunk_size)
@@ -126,6 +128,10 @@ class TTSService:
             backend_kwargs["model_id"] = model_id
         if voice_settings:
             backend_kwargs["voice_settings"] = voice_settings
+        if language:
+            # Backends that don't accept a language kwarg ignore it (they read
+            # only their own keys from **kwargs).
+            backend_kwargs["language"] = language
 
         for i, chunk in enumerate(chunks):
             chunk_len = len(chunk)
@@ -259,6 +265,7 @@ class TTSService:
         voice_id: Optional[str] = None,
         el_voice_id: Optional[str] = None,
         model_id: Optional[str] = None,
+        language: Optional[str] = None,
     ) -> bytes:
         """
         Generate audio for a lecture.
@@ -269,6 +276,8 @@ class TTSService:
             voice_id: Provider-specific voice identifier.
             el_voice_id: Legacy alias for voice_id (ElevenLabs voice ID).
             model_id: Optional model override.
+            language: Optional output language (BCP-47); passed to backends
+                that accept one (e.g. xAI).
 
         Returns:
             Audio data as bytes.
@@ -304,6 +313,7 @@ class TTSService:
                 text=lecture.content,
                 voice_id=effective_voice_id,
                 model_id=model_id,
+                language=language,
             )
         except Exception as e:
             raise AudioProcessingError(f"Failed to generate lecture audio: {e}")

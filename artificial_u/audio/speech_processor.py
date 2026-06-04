@@ -25,19 +25,50 @@ class SpeechProcessor:
         """
         self.logger = logger or logging.getLogger(__name__)
 
-    def normalize_text(self, text: str, supports_ssml: bool = True) -> str:
+    def normalize_text(self, text: str, backend_name: str = "elevenlabs") -> str:
         """
-        Normalize text for TTS without aggressive markup.
-        This is a light-touch normalization focused on common issues.
+        Normalize text for TTS using an explicit per-backend processing path.
+
+        Applies shared light-touch normalization, then dispatches to the
+        backend-specific handler for pause / stage-direction markup. There is
+        no "generic" path: each backend gets explicit treatment.
 
         Args:
-            text: The text to normalize
-            supports_ssml: Whether the TTS backend supports SSML-like tags
-                (e.g., <break> tags). Defaults to True for ElevenLabs
-                compatibility. Set to False for backends like Mistral.
+            text: The text to normalize.
+            backend_name: TTS backend the text is destined for
+                ("elevenlabs", "mistral", "xai"). Unknown backends fall back to
+                clean prose (pause directions stripped, no markup).
 
         Returns:
-            Normalized text suitable for TTS
+            Normalized text suitable for the given TTS backend.
+        """
+        normalized_text = self._normalize_common(text)
+
+        if backend_name == "elevenlabs":
+            # SSML-capable: convert pause directions to <break> tags.
+            normalized_text = self._convert_pauses(normalized_text, mode="ssml")
+        elif backend_name == "xai":
+            # xAI markup: [pause]/[long-pause] tags + <soft> stage directions.
+            normalized_text = self._process_xai(normalized_text)
+        elif backend_name == "mistral":
+            # No markup support: strip bracketed pause directions entirely.
+            normalized_text = self._strip_pause_directions(normalized_text)
+        else:
+            self.logger.debug(
+                "Unknown TTS backend %r; defaulting to clean-prose processing",
+                backend_name,
+            )
+            normalized_text = self._strip_pause_directions(normalized_text)
+
+        return normalized_text.strip()
+
+    def _normalize_common(self, text: str) -> str:
+        """
+        Backend-agnostic light-touch normalization shared by all backends.
+
+        Handles hyphenation, dashes (preserving math), markdown headers,
+        whitespace, and appending periods to unpunctuated lines. Does NOT
+        touch pause / stage-direction markup — that is backend-specific.
         """
 
         def _append_period_to_unpunctuated_lines(s: str) -> str:
@@ -104,31 +135,32 @@ class SpeechProcessor:
         # Remove markdown title prefixes
         normalized_text = re.sub(r"^#+\s+", "", normalized_text, flags=re.MULTILINE)
 
-        # Apply pause conversions for bracketed stage directions
-        if supports_ssml:
-            # Convert to <break> SSML tags (ElevenLabs and other SSML-capable backends)
-            normalized_text = self._apply_pause_breaks(normalized_text)
-        else:
-            # For non-SSML backends, strip stage direction brackets entirely
-            normalized_text = self._strip_pause_directions(normalized_text)
+        return normalized_text
 
-        return normalized_text.strip()
+    def _convert_pauses(self, text: str, mode: str = "ssml") -> str:
+        """Convert bracketed pause stage directions to backend-specific markup.
 
-    def _apply_pause_breaks(self, text: str) -> str:
-        """Convert bracketed pause stage directions to ElevenLabs <break> tags.
+        ``mode="ssml"`` renders ElevenLabs ``<break time="Xs" />`` tags;
+        ``mode="xai"`` renders xAI ``[pause]`` / ``[long-pause]`` inline tags
+        (short pauses ≤1.0s → ``[pause]``; longer / duration pauses → ``[long-pause]``).
 
         Rules (case-insensitive):
-        - [Pause] → <break time="1.0s" />
-        - [Slight pause] → <break time="0.5s" />
-        - [Slight pause for ...] → <break time="1.0s" /> (special case)
-        - [Pause for ...] (e.g., emphasis/effect/a moment) → <break time="1.5s" />
-        - [Brief pause ...] → <break time="0.5s" />
-        - [Pauses thoughtfully] → <break time="1.5s" />
-        - [Pause, ...] or [Pauses, ...] → <break time="1.0s" /> (general pause with description)
+        - [Pause] → 1.0s break / [pause]
+        - [Slight pause] → 0.5s break / [pause]
+        - [Slight pause for ...] → 1.0s break / [pause] (special case)
+        - [Pause for ...] (e.g., emphasis/effect/a moment) → 1.5s break / [long-pause]
+        - [Brief pause ...] → 0.5s break / [pause]
+        - [Pauses thoughtfully] → 1.5s break / [long-pause]
+        - [Pause, ...] or [Pauses, ...] → 1.0s break / [pause] (general pause with description)
+        - [Pauses for N seconds] → dynamic break / [long-pause]
         - [Pauses at ...] is left unchanged
         """
 
+        is_xai = mode == "xai"
+
         def _pause_for_seconds_repl(match: re.Match) -> str:
+            if is_xai:
+                return " [long-pause] "
             raw = match.group(1).strip().lower()
             raw = re.sub(r"[.?!]+$", "", raw).strip()
 
@@ -169,26 +201,26 @@ class SpeechProcessor:
             flags=re.IGNORECASE,
         )
 
-        # [Slight pause, ...] → 0.5s + keep remainder as bracketed comment
+        # [Slight pause, ...] → short + keep remainder as bracketed comment
         text = re.sub(
             r"\[\s*slight\s+pause\s*,\s*([^\]]+)\]",
-            r' <break time="0.5s" /> [\1] ',
+            (r" [pause] [\1] " if is_xai else r' <break time="0.5s" /> [\1] '),
             text,
             flags=re.IGNORECASE,
         )
 
-        # [Brief pause, ...] → 0.5s + keep remainder as bracketed comment
+        # [Brief pause, ...] → short + keep remainder as bracketed comment
         text = re.sub(
             r"\[\s*brief\s+pause\s*,\s*([^\]]+)\]",
-            r' <break time="0.5s" /> [\1] ',
+            (r" [pause] [\1] " if is_xai else r' <break time="0.5s" /> [\1] '),
             text,
             flags=re.IGNORECASE,
         )
 
-        # [Pause, ...] or [Pauses, ...] → 1.0s (target comma variants)
+        # [Pause, ...] or [Pauses, ...] → short (target comma variants)
         text = re.sub(
             r"\[\s*pauses?\s*,[^\]]*\]",
-            ' <break time="1.0s" /> ',
+            (" [pause] " if is_xai else ' <break time="1.0s" /> '),
             text,
             flags=re.IGNORECASE,
         )
@@ -198,7 +230,7 @@ class SpeechProcessor:
         # Exact [Slight pause]
         text = re.sub(
             r"\[\s*slight\s+pause\s*\]",
-            ' <break time="0.5s" /> ',
+            (" [pause] " if is_xai else ' <break time="0.5s" /> '),
             text,
             flags=re.IGNORECASE,
         )
@@ -206,54 +238,80 @@ class SpeechProcessor:
         # Exact [Pause]
         text = re.sub(
             r"\[\s*pause\s*\]",
-            ' <break time="1.0s" /> ',
+            (" [pause] " if is_xai else ' <break time="1.0s" /> '),
             text,
             flags=re.IGNORECASE,
         )
 
-        # [Pauses thoughtfully] → 1.5s
+        # [Pauses thoughtfully] → long
         text = re.sub(
             r"\[\s*pauses\s+thoughtfully\s*\]",
-            ' <break time="1.5s" /> ',
+            (" [long-pause] " if is_xai else ' <break time="1.5s" /> '),
             text,
             flags=re.IGNORECASE,
         )
 
         # Process more general patterns last
 
-        # [Slight pause for X...] → 1.0s (special case for "slight pause for")
+        # [Slight pause for X...] → short (special case for "slight pause for")
         text = re.sub(
             r"\[\s*slight\s+pause\s+for\s+[^\]]+\]",
-            ' <break time="1.0s" /> ',
+            (" [pause] " if is_xai else ' <break time="1.0s" /> '),
             text,
             flags=re.IGNORECASE,
         )
 
-        # [Pause for X...] (emphasis, effect, a moment, etc.) → 1.5s
+        # [Pause for X...] (emphasis, effect, a moment, etc.) → long
         text = re.sub(
             r"\[\s*pause\s+for\s+[^\]]+\]",
-            ' <break time="1.5s" /> ',
+            (" [long-pause] " if is_xai else ' <break time="1.5s" /> '),
             text,
             flags=re.IGNORECASE,
         )
 
-        # [Slight pause ...] → 0.5s (general case, after comma variant)
+        # [Slight pause ...] → short (general case, after comma variant)
         text = re.sub(
             r"\[\s*slight\s+pause[^\]]*\]",
-            ' <break time="0.5s" /> ',
+            (" [pause] " if is_xai else ' <break time="0.5s" /> '),
             text,
             flags=re.IGNORECASE,
         )
 
-        # [Brief pause ...] → 0.5s (general case, after comma variant)
+        # [Brief pause ...] → short (general case, after comma variant)
         text = re.sub(
             r"\[\s*brief\s+pause[^\]]*\]",
-            ' <break time="0.5s" /> ',
+            (" [pause] " if is_xai else ' <break time="0.5s" /> '),
             text,
             flags=re.IGNORECASE,
         )
 
         # Collapse any excess whitespace again after insertions
+        text = re.sub(r"[ \t]+", " ", text)
+        return text
+
+    def _process_xai(self, text: str) -> str:
+        """Process text for xAI Grok markup.
+
+        Converts pause stage directions to ``[pause]`` / ``[long-pause]`` inline
+        tags, then wraps any remaining bracketed stage directions (e.g.
+        ``[walks to the front]``) in ``<soft>...</soft>``. A single trailing
+        period inserted by common normalization is dropped from inside the wrap.
+        """
+        text = self._convert_pauses(text, mode="xai")
+
+        def _wrap_soft(match: re.Match) -> str:
+            inner = match.group(1).rstrip()
+            # Drop a single trailing period added by line normalization.
+            if inner.endswith(".") and not inner.endswith(".."):
+                inner = inner[:-1].rstrip()
+            return f"<soft>{inner}</soft>"
+
+        # Wrap remaining bracketed directions, but never the [pause]/[long-pause] tags.
+        text = re.sub(
+            r"\[(?!pause\]|long-pause\])([^\[\]]+)\]",
+            _wrap_soft,
+            text,
+        )
         text = re.sub(r"[ \t]+", " ", text)
         return text
 

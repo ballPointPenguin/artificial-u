@@ -25,6 +25,9 @@ def test_environment_variables_are_set():
         os.environ.get("MISTRAL_API_KEY") == "test_mistral_key"
     ), "Mistral API key not set to test value"
 
+    # Verify xAI API key
+    assert os.environ.get("XAI_API_KEY") == "test_xai_key", "xAI API key not set to test value"
+
     # Verify Google API key
     assert (
         os.environ.get("GOOGLE_API_KEY") == "test_google_key"

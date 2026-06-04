@@ -17,7 +17,7 @@ def create_tts_backend(
     """Create a TTS backend instance.
 
     Args:
-        backend_name: Backend to use ("elevenlabs", "mistral").
+        backend_name: Backend to use ("elevenlabs", "mistral", "xai").
             Defaults to settings.tts_backend.
         api_key: Optional API key override.
         logger: Optional logger.
@@ -45,7 +45,15 @@ def create_tts_backend(
             api_key=api_key or settings.MISTRAL_API_KEY,
             logger=logger,
         )
+    elif backend_name == "xai":
+        from artificial_u.integrations.tts.xai_backend import XAITTSBackend
+
+        return XAITTSBackend(
+            api_key=api_key or settings.XAI_API_KEY,
+            logger=logger,
+        )
     else:
         raise ValueError(
-            f"Unknown TTS backend: '{backend_name}'. " "Supported backends: 'elevenlabs', 'mistral'"
+            f"Unknown TTS backend: '{backend_name}'. "
+            "Supported backends: 'elevenlabs', 'mistral', 'xai'"
         )

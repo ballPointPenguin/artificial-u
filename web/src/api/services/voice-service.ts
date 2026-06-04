@@ -14,6 +14,7 @@ import type {
   VoiceListParams,
   VoicePreviewRequest,
   VoicePreviewResponse,
+  XaiVoiceCatalog,
 } from '../types'
 
 /**
@@ -111,6 +112,28 @@ export const listMistralCatalog = async (
   const qs = params.toString()
   const url = qs ? `${ENDPOINTS.voices.mistralCatalog}?${qs}` : ENDPOINTS.voices.mistralCatalog
   return httpClient.get<MistralVoiceCatalog>(url)
+}
+
+/**
+ * List xAI voices on-demand from the xAI API (not stored in DB).
+ *
+ * The catalog is read fresh each time, so newly added xAI voices appear
+ * automatically.
+ *
+ * @param language - Optional language prefix filter (e.g. "fr").
+ * @param gender - Optional gender filter.
+ * @returns Promise<XaiVoiceCatalog>
+ */
+export const listXaiCatalog = async (
+  language?: string,
+  gender?: string
+): Promise<XaiVoiceCatalog> => {
+  const params = new URLSearchParams()
+  if (language) params.set('language', language)
+  if (gender) params.set('gender', gender)
+  const qs = params.toString()
+  const url = qs ? `${ENDPOINTS.voices.xaiCatalog}?${qs}` : ENDPOINTS.voices.xaiCatalog
+  return httpClient.get<XaiVoiceCatalog>(url)
 }
 
 /**

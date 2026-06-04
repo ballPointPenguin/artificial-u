@@ -50,5 +50,7 @@ def verify_test_environment():
         assert settings.OPENAI_API_KEY == "test_openai_key", "Using incorrect OpenAI key"
     if settings.MISTRAL_API_KEY:
         assert settings.MISTRAL_API_KEY == "test_mistral_key", "Using incorrect Mistral key"
+    if settings.XAI_API_KEY:
+        assert settings.XAI_API_KEY == "test_xai_key", "Using incorrect xAI key"
 
     yield

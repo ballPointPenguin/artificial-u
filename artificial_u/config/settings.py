@@ -36,6 +36,8 @@ from artificial_u.config.defaults import (
     DEFAULT_STORAGE_REGION,
     DEFAULT_STORAGE_TYPE,
     DEFAULT_TTS_BACKEND,
+    DEFAULT_XAI_TTS_BASE_URL,
+    DEFAULT_XAI_TTS_LANGUAGE,
 )
 
 
@@ -96,6 +98,7 @@ class Settings(BaseSettings):
     ELEVENLABS_API_KEY: Optional[str] = None
     GOOGLE_API_KEY: Optional[str] = None
     OPENAI_API_KEY: Optional[str] = None
+    XAI_API_KEY: Optional[str] = None
 
     # Auth0 (API resource protection)
     AUTH0_DOMAIN: Optional[str] = None
@@ -145,13 +148,17 @@ class Settings(BaseSettings):
     LECTURE_IMAGE_INTERVAL_SEC: int = DEFAULT_LECTURE_IMAGE_INTERVAL_SEC
 
     # Text-to-speech settings
-    tts_backend: str = DEFAULT_TTS_BACKEND  # "elevenlabs" or "mistral"
+    tts_backend: str = DEFAULT_TTS_BACKEND  # "elevenlabs", "mistral", or "xai"
     # ElevenLabs voice model. Example values: "eleven_flash_v2_5", "eleven_multilingual_v2"
     TTS_VOICE_MODEL: str = "eleven_flash_v2_5"
     # Mistral TTS model
     TTS_MISTRAL_MODEL: str = "voxtral-mini-tts-2603"
     # Mistral API key (optional, required only if tts_backend="mistral")
     MISTRAL_API_KEY: Optional[str] = None
+    # xAI (Grok) TTS settings (used only if tts_backend="xai")
+    XAI_TTS_BASE_URL: str = DEFAULT_XAI_TTS_BASE_URL
+    # Default output language (BCP-47 code) for backends that accept one (e.g. xAI)
+    XAI_TTS_LANGUAGE: str = DEFAULT_XAI_TTS_LANGUAGE
 
     # Coin costs for generation operations (can be tuned via environment variables)
     COIN_COST_COURSE_GENERATION: int = 1
@@ -268,6 +275,7 @@ class Settings(BaseSettings):
             "tts_backend": self.tts_backend,
             "elevenlabs_api_key": self.ELEVENLABS_API_KEY,
             "mistral_api_key": self.MISTRAL_API_KEY,
+            "xai_api_key": self.XAI_API_KEY,
             "google_api_key": self.GOOGLE_API_KEY,
             "openai_api_key": self.OPENAI_API_KEY,
             "storage_type": self.STORAGE_TYPE,

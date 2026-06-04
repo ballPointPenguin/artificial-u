@@ -69,6 +69,7 @@ const backendDisplayName = (backend: string): string => {
   const names: Record<string, string> = {
     elevenlabs: 'ElevenLabs',
     mistral: 'Mistral',
+    xai: 'xAI (Grok)',
   }
   return names[backend] ?? backend
 }

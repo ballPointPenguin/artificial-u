@@ -188,6 +188,11 @@ class CdkStack(Stack):
                     self, "MistralApiKey", "/artificial-u/prod/MISTRAL_API_KEY"
                 )
             ),
+            "XAI_API_KEY": ecs.Secret.from_ssm_parameter(
+                ssm.StringParameter.from_string_parameter_name(
+                    self, "XaiApiKey", "/artificial-u/prod/XAI_API_KEY"
+                )
+            ),
             "GOOGLE_API_KEY": ecs.Secret.from_ssm_parameter(
                 ssm.StringParameter.from_string_parameter_name(
                     self, "GoogleApiKey", "/artificial-u/prod/GOOGLE_API_KEY"
