@@ -21,7 +21,7 @@ ArtificialU combines the Anthropic Claude API for generating educational content
 
 ## Prerequisites
 
-- Python 3.13+
+- Python 3.14+
 - Anthropic API key
 - ElevenLabs API key
 - [Hatch](https://hatch.pypa.io/latest/) (for environment management)

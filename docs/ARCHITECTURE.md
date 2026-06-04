@@ -10,7 +10,7 @@ ArtificialU is an AI-powered educational content platform that generates univers
 
 ### Backend
 
-- **Runtime**: Python 3.13+
+- **Runtime**: Python 3.14
 - **Web Framework**: FastAPI (async REST API)
 - **Database**: PostgreSQL 17
 - **ORM**: SQLAlchemy 2.0

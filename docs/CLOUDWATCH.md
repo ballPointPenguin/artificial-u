@@ -63,7 +63,7 @@ the form:
 
 ```
 process_telemetry {"ts": "...", "pid": 7, "ppid": 1, "platform": "linux",
-  "python": "3.13.x", "rss_bytes": 524288000, "vms_bytes": 1234567890,
+  "python": "3.14.x", "rss_bytes": 524288000, "vms_bytes": 1234567890,
   "num_threads": 17, "num_fds": 42, "gc_counts": [0, 0, 0],
   "sse_subscribers": 0, "worker_semaphore_available": 4,
   "worker_semaphore_in_use": 0}

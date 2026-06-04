@@ -7,7 +7,7 @@ name = "artificial_u"
 version = "0.2.0"
 description = "AI-powered educational content platform"
 readme = "README.md"
-requires-python = ">=3.13"
+requires-python = ">=3.14"
 license = {text = "AGPL-3.0"}
 authors = [
     {name = "Bennie Rosas", email = "ben@aliencyb.org"},
@@ -17,7 +17,6 @@ classifiers = [
     "Intended Audience :: Education",
     "License :: OSI Approved :: GNU Affero General Public License v3",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.13",
     "Programming Language :: Python :: 3.14",
     "Topic :: Education",
 ]

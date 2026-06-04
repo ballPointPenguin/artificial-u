@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ArtificialU is an AI-powered educational content platform that generates university lectures with distinct professor personalities and converts them to audio using text-to-speech. The system features:
 
-- **Backend**: Python 3.14 (3.13+ supported) with FastAPI, PostgreSQL, SQLAlchemy
+- **Backend**: Python 3.14 with FastAPI, PostgreSQL, SQLAlchemy
 - **Frontend**: SolidJS with TypeScript, TailwindCSS v4, Auth0
 - **AI Integration**: Anthropic Claude, Google Gemini, OpenAI
 - **TTS Services**: ElevenLabs
@@ -225,7 +225,7 @@ hatch run pytest -m integration
 
 **Python:**
 
-- Target runtime is Python 3.14 (hatch default env and CI both pin `3.14`); `requires-python` allows 3.13+
+- Python 3.14 only (`requires-python`, hatch env, CI, and CDK deployment)
 - Line length: 100 characters (black, isort, flake8)
 - Type hints encouraged (mypy runs on `artificial_u/` directory)
 - Black formatting with isort for imports
@@ -354,7 +354,7 @@ Frontend requires `.env.local` in `web/` directory with Auth0 and API URL config
 - **Test database**: Integration tests fail without test database setup
 - **Hatch environment**: Always use `hatch run` or activate `hatch shell` first
 - **Long-running commands**: Development servers (API, frontend) don't terminate automatically
-- **Python version**: Use Python 3.14 to match the hatch env and CI; mismatched versions can cause black/formatting drift
+- **Python version**: Use 3.14 only; other versions fail on syntax (e.g. bracketless `except`) and can drift Black/Ruff formatting
 - **Skipping pre-commit before a PR**: Run `make pre-commit` (or `make lint`/`make format`) before pushing so CI doesn't fail on black, isort, or flake8
 
 ## Additional Documentation

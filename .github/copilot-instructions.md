@@ -10,7 +10,7 @@ ArtificialU is an AI-powered educational content platform that generates univers
 
 **Backend:**
 
-- Python 3.13+ with FastAPI
+- Python 3.14 with FastAPI
 - PostgreSQL with SQLAlchemy ORM
 - Hatch for environment management
 - AI: Anthropic Claude, Google Gemini, OpenAI
