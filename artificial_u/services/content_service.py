@@ -16,6 +16,10 @@ from artificial_u.utils.exceptions import ContentGenerationError
 # TODO: Make these configurable
 DEFAULT_TEMPERATURE = 0.3
 DEFAULT_MAX_TOKENS = 4096  # Increased from 1024 to allow for longer responses like topic lists
+# Effort controls overall token spend on supported Claude models (Opus 4.5+, Sonnet 4.6+).
+# "medium" balances cost against the verbosity needed for long-form lecture text; "high"
+# (the API default) is overkill for content generation, while "low" biases toward brevity.
+DEFAULT_ANTHROPIC_EFFORT = "medium"
 
 
 def _is_gemini_3_plus(model: str) -> bool:
@@ -165,6 +169,7 @@ class ContentService:
         max_tokens: Optional[int] = None,
         prefill: Optional[str] = None,
         thinking_level: Optional[str] = None,
+        effort: Optional[str] = None,
     ) -> str:
         """
         Generates text based on the provided prompt using the specified or default model.
@@ -181,6 +186,9 @@ class ContentService:
             Claude will continue from where this prefill text ends.
             thinking_level: Optional reasoning effort for Gemini 3+ models
             ('minimal', 'low', 'medium', 'high'). Ignored by other backends/models.
+            effort: Optional effort level for Anthropic models that support it
+            ('low', 'medium', 'high', 'xhigh', 'max'). Controls overall token spend.
+            Defaults to 'medium' for supported Claude models. Ignored by other backends.
 
         Returns:
             The generated text content as a string.
@@ -225,6 +233,7 @@ class ContentService:
                 prefill,
                 backend=backend,
                 thinking_level=thinking_level,
+                effort=effort,
             )
         except Exception as e:
             self.logger.error(
@@ -246,6 +255,7 @@ class ContentService:
         response: str,
         backend: str,
         prefill: str | None = None,
+        effort: str | None = None,
     ) -> None:
         """Log the content generation details to storage.
 
@@ -270,6 +280,7 @@ class ContentService:
                 "settings": {
                     "temperature": temperature,
                     "max_tokens": max_tokens,
+                    "effort": effort,
                 },
             },
             "content": {
@@ -301,36 +312,70 @@ class ContentService:
         except Exception as e:
             self.logger.error(f"Failed to save content log {filename}: {str(e)}")
 
+    @staticmethod
+    def _parse_claude_version(model: str) -> Optional[tuple[int, int]]:
+        """Parse the (major, minor) version from a Claude model name.
+
+        Handles new-style names like ``claude-{tier}-{major}-{minor}[-date]``.
+        Returns ``None`` for old-style (``claude-3-*``) or unrecognized patterns.
+        """
+        match = re.match(r"claude-\w+-(\d+)-(\d+)", model)
+        if not match:
+            return None
+        major = int(match.group(1))
+        minor_or_date = match.group(2)
+        # If the second number is a date (8+ digits like 20250514), minor is 0
+        minor = 0 if len(minor_or_date) >= 8 else int(minor_or_date)
+        return (major, minor)
+
     def _is_prefill_supported(self, model: str) -> bool:
         """Check if a Claude model supports assistant message prefill.
 
         Claude 4.6+ models return a 400 error when prefill is used.
-        This detects the model version from the name pattern:
-        claude-{tier}-{major}-{minor}[-date]
         """
-        # Match new-style model names: claude-{tier}-{major}-{minor}...
-        match = re.match(r"claude-\w+-(\d+)-(\d+)", model)
-        if match:
-            major = int(match.group(1))
-            minor_or_date = match.group(2)
-            # If the second number is a date (8+ digits like 20250514), minor is 0
-            if len(minor_or_date) >= 8:
-                minor = 0
-            else:
-                minor = int(minor_or_date)
-            return (major, minor) < (4, 6)
-        # Old-style models (claude-3-*, etc.) and unrecognized patterns: prefill is supported
-        return True
+        version = self._parse_claude_version(model)
+        if version is None:
+            # Old-style models (claude-3-*, etc.) and unrecognized patterns
+            return True
+        return version < (4, 6)
 
-    async def _generate_anthropic(
+    def _supports_sampling_params(self, model: str) -> bool:
+        """Check if a Claude model accepts sampling params (temperature/top_p/top_k).
+
+        Claude 4.7+ models (including Opus 4.8) return a 400 error when
+        ``temperature``, ``top_p``, or ``top_k`` are set to non-default values.
+        Use prompting to guide behavior on these models instead.
+        """
+        version = self._parse_claude_version(model)
+        if version is None:
+            # Old-style models (claude-3-*, etc.) and unrecognized patterns
+            return True
+        return version < (4, 7)
+
+    def _supports_effort(self, model: str) -> bool:
+        """Check if a Claude model accepts the ``output_config.effort`` parameter.
+
+        Supported on Claude Opus 4.5+ and Sonnet 4.6+. Older models (claude-3-*,
+        etc.) do not support it, so effort is omitted for them.
+        """
+        version = self._parse_claude_version(model)
+        if version is None:
+            return False
+        return version >= (4, 5)
+
+    async def _generate_anthropic(  # noqa: C901
         self, prompt, model, system_prompt, temperature, max_tokens, prefill, **kwargs
     ):
         self.logger.info(f"Generating text with Anthropic model: {model}")
+        effort = kwargs.get("effort")
 
         # Check if model supports prefill (Claude 4.6+ does not)
         use_prefill = bool(prefill) and self._is_prefill_supported(model)
         if prefill and not use_prefill:
             self.logger.info(f"Prefill not supported for model {model} (Claude 4.6+), skipping.")
+
+        # Claude 4.7+ (incl. Opus 4.8) reject temperature/top_p/top_k with a 400 error.
+        use_sampling_params = self._supports_sampling_params(model)
 
         try:
             messages = [{"role": "user", "content": prompt}]
@@ -338,13 +383,35 @@ class ContentService:
             if use_prefill:
                 messages.append({"role": "assistant", "content": prefill})
 
-            response = await anthropic_client.messages.create(
-                model=model,
-                max_tokens=max_tokens if max_tokens is not None else DEFAULT_MAX_TOKENS,
-                messages=messages,
-                system=system_prompt,
-                temperature=temperature if temperature is not None else DEFAULT_TEMPERATURE,
-            )
+            request_params = {
+                "model": model,
+                "max_tokens": max_tokens if max_tokens is not None else DEFAULT_MAX_TOKENS,
+                "messages": messages,
+                "system": system_prompt,
+            }
+
+            if use_sampling_params:
+                request_params["temperature"] = (
+                    temperature if temperature is not None else DEFAULT_TEMPERATURE
+                )
+            else:
+                self.logger.info(
+                    f"Sampling params (temperature) not supported for model {model} "
+                    "(Claude 4.7+), skipping."
+                )
+
+            # Effort controls overall token spend on supported models; default to medium
+            # for content generation rather than the API default of "high".
+            effective_effort = None
+            if self._supports_effort(model):
+                effective_effort = effort or DEFAULT_ANTHROPIC_EFFORT
+                request_params["output_config"] = {"effort": effective_effort}
+            elif effort:
+                self.logger.info(
+                    f"Effort not supported for model {model}, skipping (requested: {effort})."
+                )
+
+            response = await anthropic_client.messages.create(**request_params)
         except anthropic.APIError as e:
             # Let the retry logic handle this
             raise e
@@ -380,6 +447,7 @@ class ContentService:
             response=response_text,
             backend="anthropic",
             prefill=prefill,
+            effort=effective_effort,
         )
 
         return response_text
