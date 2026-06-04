@@ -31,6 +31,7 @@ def _build_service(
     topic_service = MagicMock()
     topic_lookup = dict(topics_by_course_id or {})
     topic_lookup.setdefault(1, existing_topics or [])
+
     def list_topics_by_course(course_id: int):
         return topic_lookup.get(course_id, [])
 
@@ -178,9 +179,7 @@ async def test_generate_topic_for_course_slot_includes_related_course_topics_con
         related_courses=[related_course],
         topics_by_course_id={2: related_topics},
     )
-    content_service.generate_text.return_value = (
-        "<output><topic><title>Baroclinic Instability</title><week>1</week><order>1</order></topic></output>"
-    )
+    content_service.generate_text.return_value = "<output><topic><title>Baroclinic Instability</title><week>1</week><order>1</order></topic></output>"
 
     await service.generate_topic_for_course_slot(course_id=1, week=1, order=1, created_by=7)
 

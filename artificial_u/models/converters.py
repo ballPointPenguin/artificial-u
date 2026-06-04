@@ -302,6 +302,35 @@ def courses_to_xml(courses: List[Dict[str, Any]]) -> str:
     return "\n".join(lines)
 
 
+def connected_courses_to_xml(courses: List[Dict[str, Any]]) -> str:
+    """Format explicitly connected courses (dicts) as XML for generation context."""
+    if not courses:
+        return "<no_connected_courses />"
+
+    lines = ["<connected_courses>"]
+    for course in courses:
+        lines.append("  <course>")
+        lines.append(f"    <code>{escape_xml(course.get('code', ''))}</code>")
+        lines.append(f"    <title>{escape_xml(course.get('title', ''))}</title>")
+        description = course.get("description")
+        if description:
+            lines.append(f"    <description>{escape_xml(str(description))}</description>")
+        level = course.get("level")
+        if level:
+            lines.append(f"    <level>{escape_xml(str(level))}</level>")
+        lectures_per_week = course.get("lectures_per_week")
+        if lectures_per_week is not None:
+            lines.append(
+                f"    <lectures_per_week>{escape_xml(str(lectures_per_week))}</lectures_per_week>"
+            )
+        total_weeks = course.get("total_weeks")
+        if total_weeks is not None:
+            lines.append(f"    <total_weeks>{escape_xml(str(total_weeks))}</total_weeks>")
+        lines.append("  </course>")
+    lines.append("</connected_courses>")
+    return "\n".join(lines)
+
+
 def topic_to_xml(topic: Dict[str, Any]) -> str:
     """Format a topic (dict) as XML for context."""
 

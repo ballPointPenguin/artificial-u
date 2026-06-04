@@ -98,7 +98,27 @@ class CourseGeneratorService:
                 existing_courses_dicts,
             ) = await self._process_models_for_generation(initial_partial_attributes)
 
+            connected_course_dicts = await self._get_connected_courses(
+                initial_partial_attributes.get("connected_course_ids")
+            )
+            connected_ids = {
+                course.get("id")
+                for course in connected_course_dicts
+                if course.get("id") is not None
+            }
+            if connected_ids:
+                existing_courses_dicts = [
+                    course
+                    for course in existing_courses_dicts
+                    if course.get("id") not in connected_ids
+                ]
+
             # 2. Prepare prompt arguments directly using models and initial attributes
+            prompt_attrs = {
+                key: value
+                for key, value in initial_partial_attributes.items()
+                if key not in {"connected_course_ids", "freeform_prompt"}
+            }
             prompt_args = {
                 # Convert models to dicts for XML generation within get_course_prompt
                 "department_data": (
@@ -113,7 +133,8 @@ class CourseGeneratorService:
                     professor_model_to_dict(professor_model) if professor_model else {}
                 ),
                 "existing_courses": existing_courses_dicts,
-                "partial_course_attrs": initial_partial_attributes,  # Pass original partials
+                "connected_courses": connected_course_dicts,
+                "partial_course_attrs": prompt_attrs,
                 "freeform_prompt": initial_partial_attributes.get("freeform_prompt"),
             }
 
@@ -156,7 +177,7 @@ class CourseGeneratorService:
             )
             return final_course_data
 
-        except (DatabaseError, ContentGenerationError):
+        except DatabaseError, ContentGenerationError:
             # Let specific errors propagate up
             raise
         except ValueError as e:
@@ -293,6 +314,27 @@ class CourseGeneratorService:
             raise DatabaseError(
                 f"Error fetching department {department_id} from repository."
             ) from e
+
+    async def _get_connected_courses(
+        self, connected_course_ids: Optional[List[int]]
+    ) -> List[Dict[str, Any]]:
+        """Fetch connected courses by ID for prompt context."""
+        if not connected_course_ids:
+            return []
+
+        connected_dicts: List[Dict[str, Any]] = []
+        for course_id in connected_course_ids:
+            try:
+                course = self.repository_factory.course.get(course_id)
+                if course:
+                    connected_dicts.append(course_model_to_dict(course))
+            except Exception as e:
+                self.logger.warning(
+                    "Skipping connected course %s for generation prompt: %s",
+                    course_id,
+                    e,
+                )
+        return connected_dicts
 
     async def _get_existing_courses(self, department: Optional[Department]) -> List[Course]:
         """Fetches existing courses for a given department using the repository.

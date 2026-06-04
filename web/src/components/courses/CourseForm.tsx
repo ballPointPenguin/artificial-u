@@ -4,6 +4,8 @@ import { courseService } from '../../api/services/course-service.js'
 import { departmentService } from '../../api/services/department-service.js'
 import { professorService } from '../../api/services/professor-service.js'
 import type { Course, CourseGenerateRequest, Department, Professor } from '../../api/types.js'
+import { useAuth } from '../../auth/AuthProvider.js'
+import { useTranslations } from '../../i18n'
 import {
   Alert,
   Button,
@@ -16,8 +18,8 @@ import {
   Textarea,
 } from '../ui'
 import type { SelectOption } from '../ui/Select.js'
-import type { CourseFormData } from './types.js'
 import ConnectedCoursesSelect from './ConnectedCoursesSelect.jsx'
+import type { CourseFormData } from './types.js'
 
 interface CourseFormProps {
   course?: Course // For editing
@@ -29,6 +31,9 @@ interface CourseFormProps {
 }
 
 const CourseForm: Component<CourseFormProps> = (props) => {
+  const auth = useAuth()
+  const t = useTranslations()
+
   const [formData, setFormData] = createSignal<CourseFormData>({
     code: '',
     title: '',
@@ -55,7 +60,7 @@ const CourseForm: Component<CourseFormProps> = (props) => {
         code: c.code || '',
         title: c.title || '',
         department_id: c.department_id,
-        connected_course_ids: c.connected_course_ids || [],
+        connected_course_ids: c.connected_course_ids,
         level: c.level || '',
         professor_id: c.professor_id,
         description: c.description || '',
@@ -139,15 +144,22 @@ const CourseForm: Component<CourseFormProps> = (props) => {
   )
 
   const [departmentCoursesResource] = createResource(
-    () => formData().department_id,
-    async (departmentId) => {
+    () => ({
+      departmentId: formData().department_id,
+      // Refetch once auth is ready so include_hidden uses the JWT student context
+      authReady: !auth.isLoading(),
+      excludeCourseId: props.course?.id,
+    }),
+    async ({ departmentId, excludeCourseId }) => {
       if (!departmentId) return [] as Course[]
       const response = await courseService.listCourses({
         page: 1,
         size: 100,
         departmentId,
+        // Published plus own hidden courses (or all hidden for admins); see API visibility rules
+        includeHidden: true,
       })
-      return response.items.filter((course) => course.id !== props.course?.id)
+      return response.items.filter((course) => course.id !== excludeCourseId)
     }
   )
 
@@ -227,6 +239,9 @@ const CourseForm: Component<CourseFormProps> = (props) => {
         // Let description etc. be generated if not filled
       },
       ...(currentData.freeform_prompt && { freeform_prompt: currentData.freeform_prompt }),
+      ...(currentData.connected_course_ids.length > 0 && {
+        connected_course_ids: currentData.connected_course_ids,
+      }),
     }
 
     // Remove partial_attributes if it's empty
@@ -247,7 +262,9 @@ const CourseForm: Component<CourseFormProps> = (props) => {
         lectures_per_week: generated.lectures_per_week,
         total_weeks: generated.total_weeks,
         created_with: generated.created_with || prev.created_with,
-        ...(props.course ? {} : { connected_course_ids: [] }),
+        connected_course_ids: Array.isArray(generated.connected_course_ids)
+          ? generated.connected_course_ids
+          : prev.connected_course_ids,
       }))
     } catch (err) {
       setGenerateError(err instanceof Error ? err.message : 'Failed to generate course details')
@@ -331,9 +348,9 @@ const CourseForm: Component<CourseFormProps> = (props) => {
         </FormField>
         {formData().department_id !== null ? (
           <FormField
-            label="Connected Courses"
+            label={t().courses.form.connectedCourses}
             name="connected_course_ids"
-            helperText="Only courses from the selected department are shown."
+            helperText={t().courses.form.connectedCoursesHelper}
           >
             <ConnectedCoursesSelect
               courses={departmentCoursesResource() || []}

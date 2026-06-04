@@ -14,6 +14,7 @@ import type {
 import { useAuth } from '../auth/AuthProvider'
 import { RequireRole } from '../auth/RequireRole'
 import CourseForm from '../components/courses/CourseForm.jsx'
+import CourseStatusBadge from '../components/courses/CourseStatusBadge.jsx'
 import type { CourseFormData } from '../components/courses/types.jsx'
 import { Alert, Button, MagicButton, MetadataInfo, ShareButton } from '../components/ui'
 import { useTranslations } from '../i18n'
@@ -694,20 +695,7 @@ const CourseDetail: Component = () => {
                         <h1 class="text-3xl font-display text-parchment-100">
                           {course().code}: {course().title}
                         </h1>
-                        <span
-                          class={`inline-flex items-center gap-1.5 px-3 py-1 text-sm font-medium rounded-full whitespace-nowrap self-start ${
-                            course().status === 'published'
-                              ? 'bg-green-500/20 text-green-300 border border-green-400/30'
-                              : 'bg-amber-500/20 text-amber-300 border border-amber-400/30'
-                          }`}
-                        >
-                          <span class="text-xs">{course().status === 'published' ? '✓' : '●'}</span>
-                          <span>
-                            {course().status === 'published'
-                              ? t().courseDetail.published
-                              : t().courseDetail.hidden}
-                          </span>
-                        </span>
+                        <CourseStatusBadge status={course().status} size="lg" class="self-start" />
                       </div>
                       <p class="text-base italic text-parchment-200 font-serif">
                         {course().description}

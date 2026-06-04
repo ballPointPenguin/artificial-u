@@ -140,6 +140,7 @@ export interface CourseLecturesResponse {
 export interface CourseGenerateRequest {
   partial_attributes?: Record<string, unknown>
   freeform_prompt?: string
+  connected_course_ids?: number[]
 }
 
 // Department types

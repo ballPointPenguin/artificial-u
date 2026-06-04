@@ -278,6 +278,11 @@ export const zh = {
     noCoursesFound: '未找到课程',
     courseCreationFailed: '课程创建失败',
     failedToEnqueue: '课程创建任务入队失败',
+    form: {
+      connectedCourses: '关联课程',
+      connectedCoursesHelper: '仅显示所选系下的课程。',
+      noCoursesInDepartment: '该系下未找到课程。',
+    },
   },
 
   // Professors page
