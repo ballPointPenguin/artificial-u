@@ -36,6 +36,7 @@ class UniversitySystem:
         anthropic_api_key: Optional[str] = None,
         elevenlabs_api_key: Optional[str] = None,
         mistral_api_key: Optional[str] = None,
+        xai_api_key: Optional[str] = None,
         google_api_key: Optional[str] = None,
         openai_api_key: Optional[str] = None,
         db_url: Optional[str] = None,
@@ -53,6 +54,7 @@ class UniversitySystem:
             anthropic_api_key: API key for Anthropic
             elevenlabs_api_key: API key for ElevenLabs
             mistral_api_key: API key for Mistral (TTS when using Mistral backend)
+            xai_api_key: API key for xAI (TTS when using xAI backend)
             google_api_key: API key for Google
             openai_api_key: API key for OpenAI
             db_url: PostgreSQL database URL
@@ -71,6 +73,7 @@ class UniversitySystem:
             anthropic_api_key,
             elevenlabs_api_key,
             mistral_api_key,
+            xai_api_key,
             google_api_key,
             openai_api_key,
         )
@@ -98,6 +101,7 @@ class UniversitySystem:
         anthropic_api_key: Optional[str],
         elevenlabs_api_key: Optional[str],
         mistral_api_key: Optional[str],
+        xai_api_key: Optional[str],
         google_api_key: Optional[str],
         openai_api_key: Optional[str],
     ):
@@ -108,6 +112,8 @@ class UniversitySystem:
             self.settings.ELEVENLABS_API_KEY = elevenlabs_api_key
         if mistral_api_key:
             self.settings.MISTRAL_API_KEY = mistral_api_key
+        if xai_api_key:
+            self.settings.XAI_API_KEY = xai_api_key
         if google_api_key:
             self.settings.GOOGLE_API_KEY = google_api_key
         if openai_api_key:

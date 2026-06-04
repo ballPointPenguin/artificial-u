@@ -267,6 +267,7 @@ TESTING=true
 | `ANTHROPIC_API_KEY` | API key for Anthropic | None | No |
 | `ELEVENLABS_API_KEY` | API key for ElevenLabs | None | No |
 | `MISTRAL_API_KEY` | API key for Mistral (TTS when using Mistral backend) | None | No |
+| `XAI_API_KEY` | API key for xAI (TTS when using xAI/Grok backend) | None | No |
 | `GOOGLE_API_KEY` | API key for Google | None | No |
 | `OPENAI_API_KEY` | API key for OpenAI | None | No |
 | `CONTENT_LOGS_PATH` | (Deprecated) Path for content generation logs | `content_logs` | No |
@@ -288,6 +289,8 @@ TESTING=true
 | `PROFESSOR_GENERATION_MODEL` | Model for professor generation | `gpt-5.4-nano` | No |
 | `IMAGE_GENERATION_MODEL` | Model for image generation | `gemini-3.1-flash-image` | No |
 | `TTS_VOICE_MODEL` | Model for text-to-speech voice | `eleven_flash_v2_5` | No |
+| `XAI_TTS_BASE_URL` | Base URL for the xAI TTS API | `https://api.x.ai/v1` | No |
+| `XAI_TTS_LANGUAGE` | Default output language (BCP-47) for the xAI backend | `en` | No |
 | `LECTURE_WORD_COUNT` | Target word count for generated lectures | `3000` | No |
 | `LECTURE_IMAGE_INTERVAL_SEC` | Approximate seconds between generated lecture images | `45` | No |
 | `STORAGE_TYPE` | Storage type ("minio" or "s3") | `minio` | No |

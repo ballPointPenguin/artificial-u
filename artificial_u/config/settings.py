@@ -275,6 +275,7 @@ class Settings(BaseSettings):
             "tts_backend": self.tts_backend,
             "elevenlabs_api_key": self.ELEVENLABS_API_KEY,
             "mistral_api_key": self.MISTRAL_API_KEY,
+            "xai_api_key": self.XAI_API_KEY,
             "google_api_key": self.GOOGLE_API_KEY,
             "openai_api_key": self.OPENAI_API_KEY,
             "storage_type": self.STORAGE_TYPE,

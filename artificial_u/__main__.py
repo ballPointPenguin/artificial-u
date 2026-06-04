@@ -29,6 +29,8 @@ def check_api_keys():
         optional_missing.append("ELEVENLABS_API_KEY")
     if not os.environ.get("MISTRAL_API_KEY"):
         optional_missing.append("MISTRAL_API_KEY")
+    if not os.environ.get("XAI_API_KEY"):
+        optional_missing.append("XAI_API_KEY")
     if not os.environ.get("GOOGLE_API_KEY"):
         optional_missing.append("GOOGLE_API_KEY")
     if not os.environ.get("OPENAI_API_KEY"):
