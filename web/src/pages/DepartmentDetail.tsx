@@ -164,6 +164,7 @@ const DepartmentDetail = () => {
         code: formData.get('code') as string,
         faculty_id: facultyIdStr ? Number.parseInt(facultyIdStr, 10) : null,
         description: formData.get('description') as string,
+        language: department()?.language ?? null,
       }
 
       await departmentService.updateDepartment(id, updatedDepartmentData)

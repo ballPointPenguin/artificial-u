@@ -90,6 +90,7 @@ const DepartmentsPage = () => {
         code: formData.get('code') as string,
         faculty_id: facultyIdStr ? Number.parseInt(facultyIdStr, 10) : null,
         description: formData.get('description') as string,
+        language: contentLanguage(),
       }
 
       await departmentService.createDepartment(newDepartment)
