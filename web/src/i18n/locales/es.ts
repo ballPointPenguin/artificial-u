@@ -1,6 +1,6 @@
 /**
  * Spanish translations
- * Created by Google Gemini 3 Pro (thinking)
+ * Created with Google Gemini
  */
 export const es = {
   // Site branding
@@ -702,22 +702,22 @@ export const es = {
     notNow: 'Ahora no',
   },
 
-  // Pricing page (untranslated — English placeholder)
+  // Pricing page
   pricing: {
-    title: 'Pricing',
-    tagline: 'We\u2019re working on a simple, fair pricing model.',
+    title: 'Precios',
+    tagline: 'Estamos trabajando en un modelo de precios simple y justo.',
     taglineDetail:
-      'The goal is to cover the cost of running the platform \u2014 AI generation and text-to-speech aren\u2019t free. We\u2019re figuring out what makes sense.',
-    currentStatus: 'Current Status',
+      'El objetivo es cubrir el costo de funcionamiento de la plataforma: la generación de IA y la síntesis de voz no son gratuitas. Estamos descifrando qué tiene más sentido.',
+    currentStatus: 'Estado Actual',
     currentStatusDetail:
-      'ArtificialU is free to use right now, with per-account limits on how many lectures and audio files you can generate. You receive 50 coins when you sign up.',
+      'ArtificialU es de uso gratuito en este momento, con límites por cuenta sobre cuántas lecciones y archivos de audio puedes generar. Recibes 50 monedas al registrarte.',
     coinsExplained:
-      'Coins are the internal currency for generation. Each AI lecture costs a small number of coins; audio conversion costs a few more. When you run out, generation is paused \u2014 but browsing and listening to existing content is always free.',
-    wantMore: 'Want More Coins?',
+      'Las monedas son la divisa interna para la generación. Cada lección de IA cuesta una pequeña cantidad de monedas; la conversión de audio cuesta unas pocas más. Cuando te quedas sin monedas, la generación se pausa, pero explorar y escuchar el contenido existente siempre es gratis.',
+    wantMore: '¿Quieres más monedas?',
     wantMoreDetail:
-      'Just email me. I\u2019m happy to top up your account while pricing is still being figured out.',
+      'Simplemente envíame un correo electrónico. Con gusto recargaré tu cuenta mientras seguimos definiendo el modelo de precios.',
     contactCta: 'ben@aliencyb.org',
-    stayTuned: 'Stay tuned \u2014 a proper pricing page is coming.',
+    stayTuned: 'Mantente atento: pronto llegará una página de precios formal.',
   },
 
   // Quickstart Wizard

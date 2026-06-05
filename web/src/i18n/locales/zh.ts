@@ -1,6 +1,6 @@
 /**
  * Chinese (Simplified) translations
- * Created with Google Gemini 3 Pro (thinking mode)
+ * Created with Google Gemini
  */
 export const zh = {
   /**
@@ -688,22 +688,21 @@ export const zh = {
     notNow: '暂不',
   },
 
-  // Pricing page (untranslated — English placeholder)
+  // Pricing page
   pricing: {
-    title: 'Pricing',
-    tagline: 'We\u2019re working on a simple, fair pricing model.',
+    title: '价格方案',
+    tagline: '我们正在制定一个简单、公平的价格模型。',
     taglineDetail:
-      'The goal is to cover the cost of running the platform \u2014 AI generation and text-to-speech aren\u2019t free. We\u2019re figuring out what makes sense.',
-    currentStatus: 'Current Status',
+      '我们的目标是覆盖平台的运营成本——毕竟 AI 内容生成和语音合成服务并不是免费的。目前我们正在探索最合理的方案。',
+    currentStatus: '当前状态',
     currentStatusDetail:
-      'ArtificialU is free to use right now, with per-account limits on how many lectures and audio files you can generate. You receive 50 coins when you sign up.',
+      '目前人工智能大学可免费使用，但每个账户对生成的讲座数及音频文件数设有一定限制。注册时您将获得 50 个代币。',
     coinsExplained:
-      'Coins are the internal currency for generation. Each AI lecture costs a small number of coins; audio conversion costs a few more. When you run out, generation is paused \u2014 but browsing and listening to existing content is always free.',
-    wantMore: 'Want More Coins?',
-    wantMoreDetail:
-      'Just email me. I\u2019m happy to top up your account while pricing is still being figured out.',
+      '代币是平台内用于内容生成的虚拟货币。生成一篇 AI 讲座会消耗少量代币，将其转换为语音会再消耗一些。当下您的代币耗尽时，生成功能将被暂停，但您依然可以随时免费浏览并收听已有的课程内容。',
+    wantMore: '需要更多代币？',
+    wantMoreDetail: '只需给我发封电子邮件。在最终价格方案确定前，我很乐意为您手动充值账户代币。',
     contactCta: 'ben@aliencyb.org',
-    stayTuned: 'Stay tuned \u2014 a proper pricing page is coming.',
+    stayTuned: '敬请期待——正式的价格方案页面即将推出。',
   },
 
   // Quickstart Wizard

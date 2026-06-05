@@ -1,6 +1,6 @@
 /**
  * French translations
- * Created with Google Gemini 3 Pro (thinking mode)
+ * Created with Google Gemini
  */
 export const fr = {
   // Site branding
@@ -702,22 +702,22 @@ export const fr = {
     notNow: 'Pas maintenant',
   },
 
-  // Pricing page (untranslated — English placeholder)
+  // Pricing page
   pricing: {
-    title: 'Pricing',
-    tagline: 'We\u2019re working on a simple, fair pricing model.',
+    title: 'Tarifs',
+    tagline: 'Nous travaillons sur un modèle de tarification simple et équitable.',
     taglineDetail:
-      'The goal is to cover the cost of running the platform \u2014 AI generation and text-to-speech aren\u2019t free. We\u2019re figuring out what makes sense.',
-    currentStatus: 'Current Status',
+      "L'objectif est de couvrir les coûts de fonctionnement de la plateforme — la génération par l'IA et la synthèse vocale ne sont pas gratuites. Nous réfléchissons à ce qui serait le plus logique.",
+    currentStatus: 'Statut Actuel',
     currentStatusDetail:
-      'ArtificialU is free to use right now, with per-account limits on how many lectures and audio files you can generate. You receive 50 coins when you sign up.',
+      "L'utilisation d'ArtificialU est actuellement gratuite, avec des limites par compte sur le nombre de conférences et de fichiers audio que vous pouvez générer. Vous recevez 50 pièces lors de votre inscription.",
     coinsExplained:
-      'Coins are the internal currency for generation. Each AI lecture costs a small number of coins; audio conversion costs a few more. When you run out, generation is paused \u2014 but browsing and listening to existing content is always free.',
-    wantMore: 'Want More Coins?',
+      "Les pièces sont la monnaie interne pour la génération. Chaque conférence IA coûte un petit nombre de pièces ; la conversion audio en coûte quelques-unes de plus. Lorsque vous n'avez plus de pièces, la génération est suspendue — mais l'exploration et l'écoute du contenu existant restent toujours gratuites.",
+    wantMore: 'Vous voulez plus de pièces ?',
     wantMoreDetail:
-      'Just email me. I\u2019m happy to top up your account while pricing is still being figured out.',
+      'Envoyez-moi simplement un e-mail. Je serai ravi de recharger votre compte pendant que nous continuons de définir notre structure de tarifs.',
     contactCta: 'ben@aliencyb.org',
-    stayTuned: 'Stay tuned \u2014 a proper pricing page is coming.',
+    stayTuned: "Restez à l'écoute — une véritable page de tarifs arrive bientôt.",
   },
 
   // Quickstart Wizard
