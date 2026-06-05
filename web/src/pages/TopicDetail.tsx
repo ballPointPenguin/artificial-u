@@ -400,6 +400,7 @@ const TopicDetail = () => {
                           </div>
 
                           <MetadataInfo
+                            type="topic"
                             createdBy={topicData.student}
                             createdWith={topicData.created_with}
                             createdAt={topicData.created_at}

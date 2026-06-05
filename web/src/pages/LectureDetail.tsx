@@ -347,6 +347,7 @@ const LectureDetailView: Component<{
 
       {/* Metadata Section */}
       <MetadataInfo
+        type="lecture"
         createdBy={props.lecture.student}
         createdWith={props.lecture.created_with}
         createdAt={props.lecture.created_at}

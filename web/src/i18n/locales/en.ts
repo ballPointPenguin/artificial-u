@@ -697,6 +697,20 @@ export const en = {
     notNow: 'Not Now',
   },
 
+  // Metadata component
+  metadata: {
+    createdBy: 'Created By',
+    createdWith: 'Created with',
+    createdOn: 'Created on',
+    type: 'Asset Type',
+    types: {
+      course: 'Course',
+      lecture: 'Lecture',
+      professor: 'Professor',
+      topic: 'Topic',
+    },
+  },
+
   // Pricing page
   pricing: {
     title: 'Pricing',

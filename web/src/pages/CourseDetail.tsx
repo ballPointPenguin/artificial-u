@@ -705,6 +705,7 @@ const CourseDetail: Component = () => {
 
                   {/* Metadata Section */}
                   <MetadataInfo
+                    type="course"
                     createdBy={course().student}
                     createdWith={course().created_with}
                     createdAt={course().created_at}

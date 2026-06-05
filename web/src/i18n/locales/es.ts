@@ -702,6 +702,20 @@ export const es = {
     notNow: 'Ahora no',
   },
 
+  // Metadata component
+  metadata: {
+    createdBy: 'Creado por',
+    createdWith: 'Creado con',
+    createdOn: 'Creado el',
+    type: 'Tipo de recurso',
+    types: {
+      course: 'Curso',
+      lecture: 'Lección',
+      professor: 'Profesor',
+      topic: 'Tema',
+    },
+  },
+
   // Pricing page
   pricing: {
     title: 'Precios',

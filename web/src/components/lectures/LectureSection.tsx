@@ -643,6 +643,7 @@ export const LectureSection: Component<LectureSectionProps> = (props) => {
             {/* Metadata Section */}
             <div class="pt-3 mt-3 border-t border-parchment-800/30">
               <MetadataInfo
+                type="lecture"
                 createdBy={lectureData().student}
                 createdWith={lectureData().created_with}
                 createdAt={lectureData().created_at}

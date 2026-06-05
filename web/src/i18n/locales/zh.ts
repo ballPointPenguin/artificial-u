@@ -688,6 +688,20 @@ export const zh = {
     notNow: '暂不',
   },
 
+  // Metadata component
+  metadata: {
+    createdBy: '创建者',
+    createdWith: '生成模型',
+    createdOn: '创建日期',
+    type: '资源类型',
+    types: {
+      course: '课程',
+      lecture: '讲座',
+      professor: '教授',
+      topic: '主题',
+    },
+  },
+
   // Pricing page
   pricing: {
     title: '价格方案',

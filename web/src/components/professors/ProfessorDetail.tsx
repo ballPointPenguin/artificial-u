@@ -455,6 +455,7 @@ export default function ProfessorDetail() {
                   {/* Metadata Section */}
                   <div class="pt-3 mt-3 border-t border-parchment-800/30">
                     <MetadataInfo
+                      type="professor"
                       createdBy={professorResource()?.student}
                       createdWith={professorResource()?.created_with}
                       createdAt={professorResource()?.created_at}
