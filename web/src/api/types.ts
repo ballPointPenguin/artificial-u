@@ -598,6 +598,7 @@ export interface VoicePreviewRequest {
   voice_id: string
   tts_backend?: string
   text?: string
+  language?: string
 }
 
 export interface VoicePreviewResponse {

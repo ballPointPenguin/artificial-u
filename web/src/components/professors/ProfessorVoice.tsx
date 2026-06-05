@@ -21,7 +21,7 @@ import {
 } from '../../api/services/voice-service.js'
 import type { MistralCatalogVoice, VoiceDesignPreview, XaiCatalogVoice } from '../../api/types.js'
 import { RequireRole } from '../../auth/RequireRole'
-import { useTranslations } from '../../i18n'
+import { useLocale, useTranslations } from '../../i18n'
 import { Alert, Badge, Button, LoadingSpinner } from '../ui'
 
 type TtsBackendKey = 'elevenlabs' | 'mistral' | 'xai'
@@ -193,6 +193,7 @@ const XaiVoiceCard: Component<{
 // ---------------------------------------------------------------------------
 const ProfessorVoice: Component = () => {
   const t = useTranslations()
+  const { currentLocale } = useLocale()
   const params = useParams<{ id: string }>()
   const professorId = createMemo(() => {
     const id = Number.parseInt(params.id, 10)
@@ -279,6 +280,7 @@ const ProfessorVoice: Component = () => {
       const resp = await previewVoice({
         voice_id: voice.id,
         tts_backend: 'mistral',
+        language: currentLocale(),
       })
       setPreviewAudioUri(resp.audio_data_uri)
     } catch (e) {
@@ -295,6 +297,7 @@ const ProfessorVoice: Component = () => {
       const resp = await previewVoice({
         voice_id: voice.id,
         tts_backend: 'xai',
+        language: currentLocale(),
       })
       setPreviewAudioUri(resp.audio_data_uri)
     } catch (e) {
@@ -398,7 +401,11 @@ const ProfessorVoice: Component = () => {
     setIsPreviewingCurrentVoice(true)
     setCurrentMistralPreviewUri(null)
     try {
-      const resp = await previewVoice({ voice_id: voice.external_id, tts_backend: 'mistral' })
+      const resp = await previewVoice({
+        voice_id: voice.external_id,
+        tts_backend: 'mistral',
+        language: currentLocale(),
+      })
       setCurrentMistralPreviewUri(resp.audio_data_uri)
     } catch (e) {
       console.error('Current voice preview failed', e)
@@ -445,7 +452,7 @@ const ProfessorVoice: Component = () => {
     setPreviewNames({})
     setIsGeneratingPreviews(true)
     try {
-      const result = await generateVoiceDesignPreviews(pId)
+      const result = await generateVoiceDesignPreviews(pId, currentLocale())
       setDesignPreviews(result.previews)
       // Seed default names: "Prof. Name — Voice 1", etc.
       const profName = professor()?.name ?? 'Professor'

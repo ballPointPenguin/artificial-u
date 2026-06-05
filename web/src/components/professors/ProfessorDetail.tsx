@@ -55,7 +55,7 @@ const ProfessorCourses: Component<{
                     </A>
                     <div class="text-xs text-muted mt-1">
                       <span>
-                        {t().courseDetail.level || t().professorDetail.fields.level}: {course.level}
+                        {t().courseDetail.level}: {course.level}
                       </span>
                     </div>
                   </li>
@@ -437,13 +437,15 @@ export default function ProfessorDetail() {
                       <Show
                         when={!departmentResource.loading && departmentResource()}
                         fallback={
-                          <span class="text-muted italic">{t().departmentDetail.loading}</span>
+                          <span class="text-muted italic">
+                            {t().departmentDetail.loadingDepartment}
+                          </span>
                         }
                       >
                         <Show
                           when={!departmentResource.error && departmentResource()}
                           fallback={
-                            <span class="text-danger">{t().departmentDetail.errorLoading}</span>
+                            <span class="text-danger">{t().departmentDetail.failedToLoad}</span>
                           }
                         >
                           {(dept) => <span class="text-muted">{dept().name}</span>}

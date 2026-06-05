@@ -13,6 +13,44 @@ from artificial_u.integrations import elevenlabs
 from artificial_u.models.core import Professor, Voice
 from artificial_u.models.repositories import RepositoryFactory
 
+LOCALIZED_PREVIEW_TEXTS = {
+    "en": (
+        "Welcome to Artificial University. "
+        "Today we'll explore how ideas take shape and transform our understanding of the world."
+    ),
+    "fr": (
+        "Bienvenue à l'Université Artificielle. "
+        "Aujourd'hui, nous allons explorer comment les idées prennent forme "
+        "et transforment notre compréhension du monde."
+    ),
+    "es": (
+        "Bienvenido a la Universidad Artificial. "
+        "Hoy exploraremos cómo toman forma las ideas y transforman nuestra comprensión del mundo."
+    ),
+    "zh": ("欢迎来到人工智能大学。今天我们将探讨思想是如何形成的，并改变我们对世界的理解。"),
+}
+
+LOCALIZED_DESIGN_PREVIEW_TEXTS = {
+    "en": (
+        "Welcome to Artificial University. "
+        "Today we will explore ideas that challenge our assumptions "
+        "and deepen our understanding of the world around us."
+    ),
+    "fr": (
+        "Bienvenue à l'Université Artificielle. "
+        "Aujourd'hui, nous allons explorer des idées qui remettent en question nos hypothèses "
+        "et approfondissent notre compréhension du monde qui nous entoure."
+    ),
+    "es": (
+        "Bienvenido a la Universidad Artificial. "
+        "Hoy exploraremos ideas que desafían nuestras suposiciones "
+        "y profundizan nuestra comprensión del mundo que nos rodea."
+    ),
+    "zh": (
+        "欢迎来到人工智能大学。今天我们将探讨那些挑战我们假设的思想，并加深我们对周围世界的理解。"
+    ),
+}
+
 
 class VoiceService:
     """Service for managing voice selection and assignment."""
@@ -755,7 +793,9 @@ class VoiceService:
     # Voice Design
     # ---------------------------------------------------------------------------
 
-    def generate_voice_design_previews(self, professor_id: int) -> List[Dict[str, Any]]:
+    def generate_voice_design_previews(
+        self, professor_id: int, language: Optional[str] = None
+    ) -> List[Dict[str, Any]]:
         """Generate ElevenLabs Voice Design previews for a professor.
 
         Builds a voice prompt from professor attributes and calls the
@@ -763,6 +803,7 @@ class VoiceService:
 
         Args:
             professor_id: Database ID of the professor.
+            language: Optional language/locale of the user.
 
         Returns:
             List of preview dicts, each with ``generated_voice_id``,
@@ -783,7 +824,12 @@ class VoiceService:
             prompt,
         )
 
-        previews = self.client.generate_voice_previews(voice_description=prompt)
+        lang = language or "en"
+        text = LOCALIZED_DESIGN_PREVIEW_TEXTS.get(
+            lang.lower()[:2], LOCALIZED_DESIGN_PREVIEW_TEXTS["en"]
+        )
+
+        previews = self.client.generate_voice_previews(voice_description=prompt, text=text)
 
         # Attach the prompt so the caller can pass it back when saving
         return [{**p, "voice_description": prompt} for p in previews]

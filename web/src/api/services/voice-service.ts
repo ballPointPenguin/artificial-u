@@ -154,10 +154,12 @@ export const previewVoice = async (request: VoicePreviewRequest): Promise<VoiceP
  * (base64 MP3) along with their temporary generated_voice_id values.
  */
 export const generateVoiceDesignPreviews = async (
-  professorId: number
+  professorId: number,
+  language?: string
 ): Promise<VoiceDesignPreviewsResponse> => {
   return httpClient.post<VoiceDesignPreviewsResponse>(ENDPOINTS.voices.designPreviews, {
     professor_id: professorId,
+    language,
   })
 }
 
