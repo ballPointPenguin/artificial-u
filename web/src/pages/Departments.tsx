@@ -35,7 +35,9 @@ const DepartmentsPage = () => {
   const [formError, setFormError] = createSignal('')
 
   // Fetch all faculties
-  const [faculties] = createResource(() => facultyService.listFaculties())
+  const [faculties] = createResource(() =>
+    facultyService.listFaculties({ language: contentLanguage() })
+  )
 
   // Create faculty options for the dropdown
   const facultyOptions = (): SelectOption[] => {

@@ -23,7 +23,9 @@ export default function ProfessorsPage() {
   const [formError, setFormError] = createSignal('')
 
   // Fetch all faculties
-  const [faculties] = createResource(() => facultyService.listFaculties())
+  const [faculties] = createResource(() =>
+    facultyService.listFaculties({ language: contentLanguage() })
+  )
 
   // Fetch departments, filtered by selected faculty if one is selected
   const [departments] = createResource(

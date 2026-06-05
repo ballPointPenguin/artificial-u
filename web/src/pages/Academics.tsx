@@ -57,7 +57,9 @@ const AcademicsPage = () => {
   const [selectedFacultyId, setSelectedFacultyId] = createSignal<number | null>(null)
 
   // Fetch all faculties
-  const [faculties] = createResource(() => facultyService.listFaculties())
+  const [faculties] = createResource(() =>
+    facultyService.listFaculties({ language: contentLanguage() })
+  )
 
   // Set first faculty as selected by default when faculties load
   createEffect(() => {
