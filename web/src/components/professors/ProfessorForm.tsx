@@ -8,7 +8,7 @@ import type {
   ProfessorCreate,
   ProfessorGenerateRequest,
 } from '../../api/types.js'
-import { useTranslations } from '../../i18n'
+import { useContentLanguage, useTranslations } from '../../i18n'
 import { waitForJobResult } from '../../utils/job-management.js'
 import type { SelectOption } from '../ui'
 import {
@@ -50,6 +50,7 @@ interface ProfessorFormProps {
 
 const ProfessorForm: Component<ProfessorFormProps> = (props) => {
   const t = useTranslations()
+  const { contentLanguage } = useContentLanguage()
   const [formData, setFormData] = createSignal<ProfessorFormData>({
     name: '',
     title: '',
@@ -89,9 +90,13 @@ const ProfessorForm: Component<ProfessorFormProps> = (props) => {
     })
   })
 
-  const [departmentsResource] = createResource(async () => {
+  const [departmentsResource] = createResource(contentLanguage, async (lang) => {
     try {
-      const response = await departmentService.listDepartments({ page: 1, size: 100 })
+      const response = await departmentService.listDepartments({
+        page: 1,
+        size: 100,
+        language: lang,
+      })
       return response.items.map(
         (dept: Department): SelectOption => ({
           value: dept.id,
