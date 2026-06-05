@@ -233,6 +233,9 @@ export const es = {
     update: 'Actualizar',
     clear: 'Limpiar',
     generate: 'Generar',
+    generateImage: 'Generar imagen',
+    regenerateImage: 'Regenerar imagen',
+    failedToGenerateImage: 'Error al generar la imagen',
     creating: 'Creando...',
   },
 
@@ -520,6 +523,8 @@ export const es = {
     lecturesPerWeek: 'Lecciones por semana',
     totalWeeks: 'Semanas totales',
     editTopics: 'Editar Temas',
+    topicsForCourse: 'Temas de {code}: {title}',
+    manageTopicsDescription: 'Administra los temas y la estructura del contenido de este curso.',
     topicGenerationInProgress:
       'Generación de temas en progreso. La página se actualizará automáticamente cuando se complete.',
   },
@@ -591,6 +596,38 @@ export const es = {
     audioGenerationTimeout:
       'La solicitud de generación de audio ha excedido el tiempo de espera. Puede que se complete en segundo plano. Intenta actualizar en un momento.',
     audioUploadSuccess: '¡Archivo de audio subido con éxito!',
+    view: 'Ver',
+    generatingTimeline: 'Generando cronología...',
+    regenerateTimeline: 'Regenerar cronología',
+    generateTimeline: 'Generar cronología',
+    generatingImages: 'Generando imágenes...',
+    regenerateImages: 'Regenerar imágenes de la lección',
+    generateImages: 'Generar imágenes de la lección',
+    resumeImages: 'Reanudar generación de imágenes',
+    uploadDisabledTooltip:
+      'La subida está deshabilitada cuando ya existe el audio de la lección. Usa Regenerar Audio para reemplazarlo.',
+    confirmRegenerateAudio:
+      '¿Regenerar audio? Esto reemplaza el audio de la lección y regenerará la cronología de palabras, luego volverá a mapear la cronología de imágenes existente.',
+    confirmRegenerateTimeline:
+      '¿Regenerar cronología? Esto reemplaza la cronología de palabras y volverá a mapear la cronología de imágenes de la lección existente sin regenerar las imágenes.',
+    confirmRegenerateImages:
+      '¿Regenerar imágenes de la lección? Esto eliminará las imágenes de diapositivas existentes cuando sea posible y creará una nueva cronología de imágenes con imágenes recién generadas.',
+    generatingSummary: 'Generando resumen...',
+    regeneratingSummary: 'Regenerando resumen...',
+    regenerateSummary: 'Regenerar resumen',
+    generateSummary: 'Generar resumen',
+    clearSummary: 'Limpiar resumen',
+    clearSummaryConfirm: '¿Estás seguro de que deseas limpiar el resumen de la lección "{title}"?',
+    clearSummaryUndo: 'El resumen será eliminado, pero podrás regenerarlo más tarde.',
+    editSummaryHeading: 'Editar resumen de la lección',
+    editSummaryDescription:
+      'Edita el resumen de esta lección. Los cambios se guardarán inmediatamente.',
+    editSummaryPlaceholder: 'Ingresa el resumen de la lección...',
+    words: 'palabras',
+    upload: 'Subir',
+    noLectureCreated: 'Aún no se ha creado ninguna lección para este tema.',
+    generationTimeout:
+      'La solicitud de generación tardó más de lo esperado y expiró. Esto puede ocurrir con la generación de contenido complejo. Por favor, inténtalo de nuevo.',
   },
 
   // Topic Detail page

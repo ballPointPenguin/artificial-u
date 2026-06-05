@@ -370,7 +370,7 @@ export const LectureSection: Component<LectureSectionProps> = (props) => {
                       class="min-h-[44px] sm:min-h-[32px] w-full flex items-center justify-center gap-2"
                     >
                       <Download class="h-4 w-4" aria-hidden="true" />
-                      Download
+                      {t().lectureDetail.download}
                     </Button>
                   </a>
                 </Show>
@@ -384,7 +384,7 @@ export const LectureSection: Component<LectureSectionProps> = (props) => {
                     class="min-h-[44px] sm:min-h-[32px] w-full flex items-center justify-center gap-2"
                   >
                     <FileText class="h-4 w-4" aria-hidden="true" />
-                    View
+                    {t().lectureDetail.view}
                   </Button>
                 </A>
               </div>
@@ -399,9 +399,7 @@ export const LectureSection: Component<LectureSectionProps> = (props) => {
                     onClick={() => {
                       if (
                         lectureData().audio_url &&
-                        !confirmRegeneration(
-                          'Regenerate audio? This replaces the lecture audio and will regenerate the word timeline, then remap the existing lecture image timeline.'
-                        )
+                        !confirmRegeneration(t().lectureDetail.confirmRegenerateAudio)
                       ) {
                         return
                       }
@@ -410,10 +408,10 @@ export const LectureSection: Component<LectureSectionProps> = (props) => {
                     disabled={isGeneratingAudio() || anyJobActive() || isUploadingAudio()}
                   >
                     {isGeneratingAudio()
-                      ? 'Generating Audio...'
+                      ? t().lectureDetail.generatingAudio
                       : lectureData().audio_url
-                        ? 'Regenerate Audio'
-                        : 'Generate Audio'}
+                        ? t().lectureDetail.regenerateAudio
+                        : t().lectureDetail.generateAudio}
                   </MagicButton>
                   <RequireRole minRole="admin">
                     <Show when={lectureData().audio_url}>
@@ -424,9 +422,7 @@ export const LectureSection: Component<LectureSectionProps> = (props) => {
                         onClick={() => {
                           if (
                             lectureData().timeline_url &&
-                            !confirmRegeneration(
-                              'Regenerate timeline? This replaces the word timeline and will remap the existing lecture image timeline without regenerating images.'
-                            )
+                            !confirmRegeneration(t().lectureDetail.confirmRegenerateTimeline)
                           ) {
                             return
                           }
@@ -435,10 +431,10 @@ export const LectureSection: Component<LectureSectionProps> = (props) => {
                         disabled={isGeneratingTimeline() || anyJobActive()}
                       >
                         {isGeneratingTimeline()
-                          ? 'Generating Timeline...'
+                          ? t().lectureDetail.generatingTimeline
                           : lectureData().timeline_url
-                            ? 'Regenerate Timeline'
-                            : 'Generate Timeline'}
+                            ? t().lectureDetail.regenerateTimeline
+                            : t().lectureDetail.generateTimeline}
                       </MagicButton>
                     </Show>
                     <Show when={lectureData().timeline_url}>
@@ -449,9 +445,7 @@ export const LectureSection: Component<LectureSectionProps> = (props) => {
                         onClick={() => {
                           if (
                             lectureData().images_timeline_url &&
-                            !confirmRegeneration(
-                              'Regenerate lecture images? This will delete existing slide images where possible and create a new image timeline with newly generated images.'
-                            )
+                            !confirmRegeneration(t().lectureDetail.confirmRegenerateImages)
                           ) {
                             return
                           }
@@ -460,10 +454,10 @@ export const LectureSection: Component<LectureSectionProps> = (props) => {
                         disabled={isGeneratingImages() || anyJobActive()}
                       >
                         {isGeneratingImages()
-                          ? 'Generating Images...'
+                          ? t().lectureDetail.generatingImages
                           : lectureData().images_timeline_url
-                            ? 'Regenerate Lecture Images'
-                            : 'Generate Lecture Images'}
+                            ? t().lectureDetail.regenerateImages
+                            : t().lectureDetail.generateImages}
                       </MagicButton>
                     </Show>
                     <Show when={lectureData().images_timeline_url}>
@@ -474,7 +468,7 @@ export const LectureSection: Component<LectureSectionProps> = (props) => {
                         onClick={() => void handleResumeImages()}
                         disabled={isGeneratingImages() || anyJobActive()}
                       >
-                        Resume Image Generation
+                        {t().lectureDetail.resumeImages}
                       </MagicButton>
                     </Show>
                     <label
@@ -485,12 +479,16 @@ export const LectureSection: Component<LectureSectionProps> = (props) => {
                       }}
                       title={
                         lectureData().audio_url
-                          ? 'Upload is disabled when lecture audio already exists. Use Regenerate Audio to replace it.'
+                          ? t().lectureDetail.uploadDisabledTooltip
                           : undefined
                       }
                     >
                       <Upload class="h-4 w-4" />
-                      <span>{isUploadingAudio() ? 'Uploading...' : 'Upload'}</span>
+                      <span>
+                        {isUploadingAudio()
+                          ? t().lectureDetail.uploading
+                          : t().lectureDetail.upload}
+                      </span>
                     </label>
                     <input
                       id={`audio-file-upload-${String(lectureData().id)}`}
@@ -516,7 +514,7 @@ export const LectureSection: Component<LectureSectionProps> = (props) => {
                     disabled={isDeleting()}
                   >
                     <Trash2 class="h-4 w-4" aria-hidden="true" />
-                    {isDeleting() ? 'Deleting...' : 'Delete'}
+                    {isDeleting() ? t().lectureDetail.deleting : t().lectureDetail.delete}
                   </Button>
                 </div>
               </RequireRole>
@@ -545,7 +543,7 @@ export const LectureSection: Component<LectureSectionProps> = (props) => {
       </Show>
       <Show when={uploadSuccess()}>
         <Alert variant="success" class="mb-4">
-          Audio file uploaded successfully!
+          {t().lectureDetail.audioUploadSuccess}
         </Alert>
       </Show>
 
@@ -577,7 +575,7 @@ export const LectureSection: Component<LectureSectionProps> = (props) => {
               <h4 class="text-lg font-medium text-parchment-200">{lectureData().title}</h4>
               <Show when={lectureData().word_count != null}>
                 <p class="text-sm text-parchment-400">
-                  {lectureData().word_count?.toLocaleString()} words
+                  {lectureData().word_count?.toLocaleString()} {t().lectureDetail.words}
                 </p>
               </Show>
               <Show when={lectureData().summary}>
@@ -594,7 +592,7 @@ export const LectureSection: Component<LectureSectionProps> = (props) => {
                         disabled={anyJobActive()}
                       >
                         <Pencil size={14} class="mr-1" />
-                        Edit
+                        {t().common.edit}
                       </Button>
                       <Button
                         variant="outline"
@@ -602,7 +600,9 @@ export const LectureSection: Component<LectureSectionProps> = (props) => {
                         onClick={() => void handleGenerateSummary()}
                         disabled={isGeneratingSummary() || anyJobActive()}
                       >
-                        {isGeneratingSummary() ? 'Regenerating...' : 'Regenerate'}
+                        {isGeneratingSummary()
+                          ? t().lectureDetail.regeneratingSummary
+                          : t().lectureDetail.regenerateSummary}
                       </Button>
                       <Button
                         variant="outline"
@@ -611,7 +611,7 @@ export const LectureSection: Component<LectureSectionProps> = (props) => {
                         disabled={anyJobActive()}
                       >
                         <Trash2 size={14} class="mr-1" />
-                        Clear
+                        {t().common.clear}
                       </Button>
                     </div>
                   </RequireRole>
@@ -626,7 +626,9 @@ export const LectureSection: Component<LectureSectionProps> = (props) => {
                       onClick={() => void handleGenerateSummary()}
                       disabled={isGeneratingSummary() || anyJobActive()}
                     >
-                      {isGeneratingSummary() ? 'Generating Summary...' : 'Generate Summary'}
+                      {isGeneratingSummary()
+                        ? t().lectureDetail.generatingSummary
+                        : t().lectureDetail.generateSummary}
                     </MagicButton>
                   </div>
                 </RequireRole>
@@ -652,9 +654,7 @@ export const LectureSection: Component<LectureSectionProps> = (props) => {
 
       <Show when={!props.lecture()}>
         <div class="text-center py-8">
-          <p class="text-parchment-400 font-serif mb-6">
-            No lecture has been created for this topic yet.
-          </p>
+          <p class="text-parchment-400 font-serif mb-6">{t().lectureDetail.noLectureCreated}</p>
           <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
             <RequireRole minRole="creator">
               <Show when={props.onGenerateLectureText}>
@@ -689,10 +689,7 @@ export const LectureSection: Component<LectureSectionProps> = (props) => {
       {/* Timeout message */}
       <Show when={props.generationTimeout}>
         <Alert variant="warning" class="mt-4">
-          <p class="text-sm">
-            The generation request took longer than expected and timed out. This can happen with
-            complex content generation. Please try again.
-          </p>
+          <p class="text-sm">{t().lectureDetail.generationTimeout}</p>
         </Alert>
       </Show>
 
@@ -701,14 +698,16 @@ export const LectureSection: Component<LectureSectionProps> = (props) => {
         {(lectureData) => (
           <ConfirmationModal
             isOpen={showDeleteModal()}
-            title="Delete Lecture"
+            title={t().lectureDetail.deleteLecture}
             message={
               <div>
-                <p>Are you sure you want to delete the lecture "{lectureData().title}"?</p>
-                <p class="mt-2 text-sm text-muted">This action cannot be undone.</p>
+                <p>
+                  {t().lectureDetail.confirmDeleteMessage.replace('{title}', lectureData().title)}
+                </p>
+                <p class="mt-2 text-sm text-muted">{t().lectureDetail.confirmDeleteUndo}</p>
               </div>
             }
-            confirmText="Delete"
+            confirmText={t().lectureDetail.confirmDelete}
             onConfirm={() => void handleDeleteLecture()}
             onCancel={() => setShowDeleteModal(false)}
             isConfirming={isDeleting()}
@@ -734,16 +733,16 @@ export const LectureSection: Component<LectureSectionProps> = (props) => {
         {(lectureData) => (
           <ConfirmationModal
             isOpen={showClearSummaryModal()}
-            title="Clear Summary"
+            title={t().lectureDetail.clearSummary}
             message={
               <div>
-                <p>Are you sure you want to clear the summary for "{lectureData().title}"?</p>
-                <p class="mt-2 text-sm text-muted">
-                  The summary will be removed, but you can regenerate it later.
+                <p>
+                  {t().lectureDetail.clearSummaryConfirm.replace('{title}', lectureData().title)}
                 </p>
+                <p class="mt-2 text-sm text-muted">{t().lectureDetail.clearSummaryUndo}</p>
               </div>
             }
-            confirmText="Clear"
+            confirmText={t().common.clear}
             onConfirm={() => void handleClearSummary()}
             onCancel={() => setShowClearSummaryModal(false)}
             isConfirming={isClearingSummary()}

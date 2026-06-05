@@ -188,9 +188,7 @@ const LectureDetailView: Component<{
                 onClick={() => {
                   if (
                     props.lecture.audio_url &&
-                    !confirmRegeneration(
-                      'Regenerate audio? This replaces the lecture audio and will regenerate the word timeline, then remap the existing lecture image timeline.'
-                    )
+                    !confirmRegeneration(t().lectureDetail.confirmRegenerateAudio)
                   ) {
                     return
                   }
@@ -213,9 +211,7 @@ const LectureDetailView: Component<{
                     onClick={() => {
                       if (
                         props.lecture.timeline_url &&
-                        !confirmRegeneration(
-                          'Regenerate timeline? This replaces the word timeline and will remap the existing lecture image timeline without regenerating images.'
-                        )
+                        !confirmRegeneration(t().lectureDetail.confirmRegenerateTimeline)
                       ) {
                         return
                       }
@@ -224,10 +220,10 @@ const LectureDetailView: Component<{
                     disabled={isGeneratingTimeline() || props.isJobActive}
                   >
                     {isGeneratingTimeline()
-                      ? 'Generating Timeline...'
+                      ? t().lectureDetail.generatingTimeline
                       : props.lecture.timeline_url
-                        ? 'Regenerate Timeline'
-                        : 'Generate Timeline'}
+                        ? t().lectureDetail.regenerateTimeline
+                        : t().lectureDetail.generateTimeline}
                   </MagicButton>
                 </Show>
                 <Show when={props.lecture.timeline_url}>
@@ -238,9 +234,7 @@ const LectureDetailView: Component<{
                     onClick={() => {
                       if (
                         props.lecture.images_timeline_url &&
-                        !confirmRegeneration(
-                          'Regenerate lecture images? This will delete existing slide images where possible and create a new image timeline with newly generated images.'
-                        )
+                        !confirmRegeneration(t().lectureDetail.confirmRegenerateImages)
                       ) {
                         return
                       }
@@ -249,10 +243,10 @@ const LectureDetailView: Component<{
                     disabled={isGeneratingImages() || props.isJobActive}
                   >
                     {isGeneratingImages()
-                      ? 'Generating Images...'
+                      ? t().lectureDetail.generatingImages
                       : props.lecture.images_timeline_url
-                        ? 'Regenerate Lecture Images'
-                        : 'Generate Lecture Images'}
+                        ? t().lectureDetail.regenerateImages
+                        : t().lectureDetail.generateImages}
                   </MagicButton>
                 </Show>
                 <Show when={props.lecture.images_timeline_url}>
@@ -263,7 +257,7 @@ const LectureDetailView: Component<{
                     onClick={() => void handleResumeImages()}
                     disabled={isGeneratingImages() || props.isJobActive}
                   >
-                    Resume Image Generation
+                    {t().lectureDetail.resumeImages}
                   </MagicButton>
                 </Show>
                 <label
@@ -273,9 +267,7 @@ const LectureDetailView: Component<{
                     'opacity-50 cursor-not-allowed': uploadAudioDisabled(),
                   }}
                   title={
-                    props.lecture.audio_url
-                      ? 'Upload is disabled when lecture audio already exists. Use Regenerate Audio to replace it.'
-                      : undefined
+                    props.lecture.audio_url ? t().lectureDetail.uploadDisabledTooltip : undefined
                   }
                 >
                   <Upload class="h-4 w-4" />
@@ -498,7 +490,7 @@ const LectureDetail = () => {
         navigate(`/courses/${String(courseId())}`)
       }
     } catch (error) {
-      setDeleteError(error instanceof Error ? error.message : 'Failed to delete lecture')
+      setDeleteError(error instanceof Error ? error.message : t().lectureDetail.failedToDelete)
       setShowDeleteModal(false)
     } finally {
       setIsDeleting(false)
@@ -515,7 +507,9 @@ const LectureDetail = () => {
       const job = await lectureService.enqueueGenerateLectureAudio(lectureId())
       jobTracker.track(job.id)
     } catch (error) {
-      setAudioError(error instanceof Error ? error.message : 'Failed to generate audio')
+      setAudioError(
+        error instanceof Error ? error.message : t().lectureDetail.failedToGenerateAudio
+      )
     } finally {
       setIsGeneratingAudio(false)
     }
@@ -526,14 +520,14 @@ const LectureDetail = () => {
 
     // Validate file type
     if (!file.type.startsWith('audio/')) {
-      setAudioError('Please select an audio file (MP3 recommended)')
+      setAudioError(t().lectureDetail.pleaseSelectAudioFile)
       return
     }
 
     // Validate file size (max 50MB)
     const maxSize = 50 * 1024 * 1024 // 50MB
     if (file.size > maxSize) {
-      setAudioError('File size must be less than 50MB')
+      setAudioError(t().lectureDetail.fileSizeLimit)
       return
     }
 
@@ -548,7 +542,7 @@ const LectureDetail = () => {
       // Clear success message after 3 seconds
       setTimeout(() => setUploadSuccess(false), 3000)
     } catch (error) {
-      setAudioError(error instanceof Error ? error.message : 'Failed to upload audio')
+      setAudioError(error instanceof Error ? error.message : t().lectureDetail.failedToUploadAudio)
     } finally {
       setIsUploadingAudio(false)
     }
@@ -558,18 +552,24 @@ const LectureDetail = () => {
     <div class="container mx-auto px-4 py-8">
       <Show
         when={isValidIds()}
-        fallback={<div class="text-parchment-100">Invalid Lecture ID.</div>}
+        fallback={<div class="text-parchment-100">{t().lectureDetail.invalidLectureId}</div>}
       >
         <Show
           when={!lecture.loading}
-          fallback={<div class="text-center py-8 text-parchment-300">Loading lecture...</div>}
+          fallback={
+            <div class="text-center py-8 text-parchment-300">
+              {t().lectureDetail.loadingLecture}
+            </div>
+          }
         >
           <Show
             when={!lecture.error}
             fallback={
               <div class="bg-red-900/20 border border-red-500 text-red-300 px-4 py-3 rounded">
-                Error:{' '}
-                {lecture.error instanceof Error ? lecture.error.message : 'Failed to load lecture'}
+                {t().common.error}:{' '}
+                {lecture.error instanceof Error
+                  ? lecture.error.message
+                  : t().lectureDetail.errorLoading}
               </div>
             }
           >

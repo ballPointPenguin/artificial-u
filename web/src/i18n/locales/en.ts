@@ -232,6 +232,9 @@ export const en = {
     update: 'Update',
     clear: 'Clear',
     generate: 'Generate',
+    generateImage: 'Generate Image',
+    regenerateImage: 'Regenerate Image',
+    failedToGenerateImage: 'Failed to generate image',
     creating: 'Creating...',
   },
 
@@ -518,6 +521,8 @@ export const en = {
     lecturesPerWeek: 'Lectures per week',
     totalWeeks: 'Total weeks',
     editTopics: 'Edit Topics',
+    topicsForCourse: 'Topics for {code}: {title}',
+    manageTopicsDescription: 'Manage the topics and content structure for this course.',
     topicGenerationInProgress:
       'Topic generation in progress. The page will update automatically when complete.',
   },
@@ -572,6 +577,37 @@ export const en = {
     topicContext: 'Topic: Week {week} · Lecture {order} — {title}',
     confirmDeleteMessage: 'Are you sure you want to delete the lecture "{title}"?',
     confirmDeleteUndo: 'This action cannot be undone.',
+    view: 'View',
+    generatingTimeline: 'Generating Timeline...',
+    regenerateTimeline: 'Regenerate Timeline',
+    generateTimeline: 'Generate Timeline',
+    generatingImages: 'Generating Images...',
+    regenerateImages: 'Regenerate Lecture Images',
+    generateImages: 'Generate Lecture Images',
+    resumeImages: 'Resume Image Generation',
+    uploadDisabledTooltip:
+      'Upload is disabled when lecture audio already exists. Use Regenerate Audio to replace it.',
+    confirmRegenerateAudio:
+      'Regenerate audio? This replaces the lecture audio and will regenerate the word timeline, then remap the existing lecture image timeline.',
+    confirmRegenerateTimeline:
+      'Regenerate timeline? This replaces the word timeline and will remap the existing lecture image timeline without regenerating images.',
+    confirmRegenerateImages:
+      'Regenerate lecture images? This will delete existing slide images where possible and create a new image timeline with newly generated images.',
+    generatingSummary: 'Generating Summary...',
+    regeneratingSummary: 'Regenerating Summary...',
+    regenerateSummary: 'Regenerate Summary',
+    generateSummary: 'Generate Summary',
+    clearSummary: 'Clear Summary',
+    clearSummaryConfirm: 'Are you sure you want to clear the summary for "{title}"?',
+    clearSummaryUndo: 'The summary will be removed, but you can regenerate it later.',
+    editSummaryHeading: 'Edit Lecture Summary',
+    editSummaryDescription: 'Edit the summary for this lecture. Changes will be saved immediately.',
+    editSummaryPlaceholder: 'Enter lecture summary...',
+    words: 'words',
+    upload: 'Upload',
+    noLectureCreated: 'No lecture has been created for this topic yet.',
+    generationTimeout:
+      'The generation request took longer than expected and timed out. This can happen with complex content generation. Please try again.',
     form: {
       editHeading: 'Edit Lecture',
       createHeading: 'Create New Lecture',

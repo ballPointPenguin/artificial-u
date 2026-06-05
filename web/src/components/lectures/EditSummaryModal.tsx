@@ -1,5 +1,6 @@
 import * as Dialog from '@kobalte/core/dialog'
 import { createEffect, createSignal } from 'solid-js'
+import { useTranslations } from '../../i18n'
 import { Button } from '../ui/Button'
 
 interface EditSummaryModalProps {
@@ -11,6 +12,7 @@ interface EditSummaryModalProps {
 }
 
 const EditSummaryModal = (props: EditSummaryModalProps) => {
+  const t = useTranslations()
   const [editedSummary, setEditedSummary] = createSignal(props.initialSummary)
 
   const handleOpenChange = (isOpen: boolean) => {
@@ -38,10 +40,10 @@ const EditSummaryModal = (props: EditSummaryModalProps) => {
           <Dialog.Content class="arcane-card relative max-w-2xl w-full shadow-xl rounded-lg">
             <div class="p-6">
               <Dialog.Title class="text-lg font-display font-semibold mb-3 text-primary">
-                Edit Lecture Summary
+                {t().lectureDetail.editSummaryHeading}
               </Dialog.Title>
               <Dialog.Description class="mb-4 text-muted font-serif">
-                Edit the summary for this lecture. Changes will be saved immediately.
+                {t().lectureDetail.editSummaryDescription}
               </Dialog.Description>
 
               <div class="mb-6">
@@ -49,7 +51,7 @@ const EditSummaryModal = (props: EditSummaryModalProps) => {
                   value={editedSummary()}
                   onInput={(e) => setEditedSummary(e.currentTarget.value)}
                   class="w-full h-64 p-3 bg-surface border border-primary/20 rounded font-serif text-foreground resize-y focus:outline-none focus:ring-2 focus:ring-primary/50"
-                  placeholder="Enter lecture summary..."
+                  placeholder={t().lectureDetail.editSummaryPlaceholder}
                   disabled={props.isSaving}
                 />
               </div>
@@ -63,14 +65,14 @@ const EditSummaryModal = (props: EditSummaryModalProps) => {
                   ].join(' ')}
                   disabled={props.isSaving}
                 >
-                  Cancel
+                  {t().common.cancel}
                 </Dialog.CloseButton>
                 <Button
                   onClick={() => void handleSave()}
                   disabled={props.isSaving}
                   variant="primary"
                 >
-                  {props.isSaving ? 'Saving...' : 'Save Changes'}
+                  {props.isSaving ? t().common.saving : t().lectureDetail.form.saveChanges}
                 </Button>
               </div>
             </div>

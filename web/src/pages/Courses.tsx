@@ -456,7 +456,7 @@ const Courses: Component = () => {
         }
       })
     } catch (error) {
-      setCourseImageError(error instanceof Error ? error.message : 'Failed to generate image')
+      setCourseImageError(error instanceof Error ? error.message : t().common.failedToGenerateImage)
     } finally {
       setIsGeneratingCourseImageId(null)
     }
@@ -508,12 +508,12 @@ const Courses: Component = () => {
               size="sm"
               iconOnly
               class={`${boxClass()} p-0 flex items-center justify-center`}
-              aria-label="Generate course image"
-              title="Generate course image"
+              aria-label={t().common.generateImage}
+              title={t().common.generateImage}
               disabled={isLoading()}
               onClick={() => void handleGenerateCourseImage(courseId())}
             >
-              Generate Image
+              {t().common.generateImage}
             </MagicButton>
           </Show>
         }

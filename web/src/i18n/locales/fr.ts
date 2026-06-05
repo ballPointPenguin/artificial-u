@@ -233,6 +233,9 @@ export const fr = {
     update: 'Mettre à jour',
     clear: 'Effacer',
     generate: 'Générer',
+    generateImage: "Générer l'image",
+    regenerateImage: "Régénérer l'image",
+    failedToGenerateImage: "Échec de la génération de l'image",
     creating: 'Création...',
   },
 
@@ -520,6 +523,8 @@ export const fr = {
     lecturesPerWeek: 'Conférences par semaine',
     totalWeeks: 'Semaines totales',
     editTopics: 'Modifier les sujets',
+    topicsForCourse: 'Sujets de {code} : {title}',
+    manageTopicsDescription: 'Gérer les sujets et la structure du contenu de ce cours.',
     topicGenerationInProgress:
       'Génération de sujets en cours. La page se mettra à jour automatiquement une fois terminée.',
   },
@@ -574,6 +579,38 @@ export const fr = {
     topicContext: 'Sujet : Semaine {week} · Conférence {order} — {title}',
     confirmDeleteMessage: 'Êtes-vous sûr de vouloir supprimer la conférence "{title}" ?',
     confirmDeleteUndo: 'Cette action est irréversible.',
+    view: 'Voir',
+    generatingTimeline: 'Génération de la chronologie...',
+    regenerateTimeline: 'Régénérer la chronologie',
+    generateTimeline: 'Générer la chronologie',
+    generatingImages: 'Génération des images...',
+    regenerateImages: 'Régénérer les images de la conférence',
+    generateImages: 'Générer les images de la conférence',
+    resumeImages: "Reprendre la génération d'images",
+    uploadDisabledTooltip:
+      "Le téléversement est désactivé lorsque l'audio de la conférence existe déjà. Utilisez Régénérer l'Audio pour le remplacer.",
+    confirmRegenerateAudio:
+      "Régénérer l'audio ? Cela remplace l'audio de la conférence et régénérera la chronologie des mots, puis remappera la chronologie des images existante.",
+    confirmRegenerateTimeline:
+      'Régénérer la chronologie ? Cela remplace la chronologie des mots et remappera la chronologie des images de la conférence existante sans régénérer les images.',
+    confirmRegenerateImages:
+      "Régénérer les images de la conférence ? Cela supprimera les images de diapositives existantes si possible et créera une nouvelle chronologie d'images avec des images fraîchement générées.",
+    generatingSummary: 'Génération du résumé...',
+    regeneratingSummary: 'Régénération du résumé...',
+    regenerateSummary: 'Régénérer le résumé',
+    generateSummary: 'Générer le résumé',
+    clearSummary: 'Effacer le résumé',
+    clearSummaryConfirm: 'Êtes-vous sûr de vouloir effacer le résumé de la conférence "{title}" ?',
+    clearSummaryUndo: 'Le résumé sera supprimé, mais vous pourrez le régénérer plus tard.',
+    editSummaryHeading: 'Modifier le résumé de la conférence',
+    editSummaryDescription:
+      'Modifier le résumé de cette conférence. Les modifications seront enregistrées immédiatement.',
+    editSummaryPlaceholder: 'Entrer le résumé de la conférence...',
+    words: 'mots',
+    upload: 'Téléverser',
+    noLectureCreated: "Aucune conférence n'a encore été créée pour ce sujet.",
+    generationTimeout:
+      'La demande de génération a pris plus de temps que prévu et a expiré. Cela peut se produire avec la génération de contenu complexe. Veuillez réessayer.',
     form: {
       editHeading: 'Modifier la conférence',
       createHeading: 'Créer une nouvelle conférence',
