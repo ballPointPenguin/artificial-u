@@ -121,15 +121,14 @@ const CourseForm: Component<CourseFormProps> = (props) => {
     }
   })
 
-  // Fetch professors for Select, filtered by department and language when selected
+  // Fetch professors for Select, filtered by department when selected
   const [professorsResource] = createResource(
-    () => ({ departmentId: formData().department_id, lang: contentLanguage() }),
-    async ({ departmentId, lang }) => {
+    () => formData().department_id,
+    async (departmentId) => {
       try {
         const response = await professorService.listProfessors({
           page: 1,
           size: 100,
-          language: lang,
           ...(departmentId ? { departmentId } : {}),
         })
         const professorOptions = response.items.map((prof: Professor) => ({
