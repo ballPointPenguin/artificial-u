@@ -357,6 +357,7 @@ class CourseApiService(BaseApiService[CoreCourse, CourseResponse, CoursesListRes
                 created_by=created_by,
                 created_with=created_with,
                 connected_course_ids=course_data.connected_course_ids,
+                language=course_data.language,
             )
             # After successful course creation, enqueue topic generation
             try:

@@ -418,6 +418,7 @@ const Courses: Component = () => {
       lectures_per_week: formData.lectures_per_week ?? undefined,
       total_weeks: formData.total_weeks ?? undefined,
       created_with: formData.created_with ?? undefined,
+      language: contentLanguage(),
     }
 
     try {

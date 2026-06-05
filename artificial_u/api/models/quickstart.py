@@ -29,6 +29,10 @@ class QuickstartStartRequest(BaseModel):
         max_length=1000,
         description="User's description of what they want to learn",
     )
+    language: Optional[str] = Field(
+        None,
+        description="Language code (e.g., 'en', 'fr')",
+    )
 
 
 class IntroAudioRequest(BaseModel):

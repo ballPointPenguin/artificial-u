@@ -179,6 +179,7 @@ async def start_quickstart(
             description=generated_data.description or request.query,
             created_by=student.id,
             created_with=generated_data.created_with,
+            language=request.language,
         )
 
         # Set course to hidden status (will be published after user approval)
@@ -234,6 +235,7 @@ async def enqueue_start_quickstart(
     payload = {
         "query": request.query,
         "created_by": student.id,
+        "language": request.language,
     }
     row = repository_factory.job.create(kind="quickstart_start", payload=payload)
     return {

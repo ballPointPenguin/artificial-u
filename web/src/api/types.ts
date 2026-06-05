@@ -93,6 +93,7 @@ export interface CourseCreate {
   total_weeks?: number
   created_with?: string | null
   connected_course_ids?: number[]
+  language?: string | null
 }
 
 export interface CourseUpdate {
@@ -673,6 +674,7 @@ export interface QuickstartMatchResponse {
 
 export interface QuickstartStartRequest {
   query: string
+  language?: string | null
 }
 
 export interface QuickstartStartResponse {

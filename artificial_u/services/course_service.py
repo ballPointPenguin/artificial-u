@@ -68,6 +68,7 @@ class CourseService:
         created_with: Optional[str] = None,
         connected_course_ids: Optional[List[int]] = None,
         parent_job_id: Optional[int] = None,
+        language: Optional[str] = None,
     ) -> Tuple[Course, Professor]:
         """
         Create a new course with optional smart selection for department/professor.
@@ -81,6 +82,11 @@ class CourseService:
             department_id: ID of existing department (will be selected if not provided)
             professor_id: ID of existing professor (will be selected if not provided)
             description: Course description
+            created_by: Student ID who created the course
+            created_with: LLM name
+            connected_course_ids: List of connected course IDs
+            parent_job_id: Optional parent job ID
+            language: Optional language/locale of the course
 
         Returns:
             Tuple: (Course, Professor) - The created course and its professor
@@ -98,7 +104,7 @@ class CourseService:
         # Resolve department and professor IDs (with smart selection if needed)
         resolved_department_id = await self._resolve_department_id(department_id, course_attributes)
         resolved_professor_id = await self._resolve_professor_id(
-            professor_id, course_attributes, resolved_department_id, created_by
+            professor_id, course_attributes, resolved_department_id, created_by, language=language
         )
 
         # Get professor and create course
@@ -112,6 +118,7 @@ class CourseService:
             resolved_department_id,
             professor.id,
             description,
+            language=language,
         )
 
         # Set attribution fields if provided
@@ -146,6 +153,7 @@ class CourseService:
         course_attributes: dict,
         department_id: int,
         created_by: Optional[int] = None,
+        language: Optional[str] = None,
     ) -> int:
         """Resolve professor ID using smart selection if needed."""
         if professor_id:
@@ -153,7 +161,7 @@ class CourseService:
 
         self.logger.info("Professor ID not provided, using smart selection")
         return await self.professor_selector_service.resolve_professor(
-            course_attributes, department_id, created_by
+            course_attributes, department_id, created_by, language=language
         )
 
     def _get_professor(self, professor_id: int):
@@ -182,6 +190,7 @@ class CourseService:
         department_id: int,
         professor_id: int,
         description: Optional[str],
+        language: Optional[str] = None,
     ) -> Course:
         """Create Course model with given attributes."""
         return Course(
@@ -193,6 +202,7 @@ class CourseService:
             description=description,
             total_weeks=weeks,
             lectures_per_week=lectures_per_week,
+            language=language,
         )
 
     def _save_course(

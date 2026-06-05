@@ -504,6 +504,7 @@ async def enqueue_create_course(
         "connected_course_ids": course_data.connected_course_ids,
         "created_by": student.id,
         "created_with": course_data.created_with,
+        "language": course_data.language,
     }
     row = repository_factory.job.create(
         kind="create_course",
