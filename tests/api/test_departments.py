@@ -242,7 +242,7 @@ def test_list_departments(client: TestClient, mock_api_service):  # Use mock_api
 
     # Assert that the mocked service method was called correctly
     mock_api_service["get_departments"].assert_called_once_with(
-        page=1, size=10, faculty_id=None, name=None  # Default parameters
+        page=1, size=10, faculty_id=None, name=None, language="en"
     )
 
 
@@ -266,7 +266,7 @@ def test_filter_departments_by_faculty(client: TestClient, mock_api_service):
         assert item["faculty_id"] == faculty_id_filter
 
     mock_api_service["get_departments"].assert_called_once_with(
-        page=1, size=10, faculty_id=faculty_id_filter, name=None
+        page=1, size=10, faculty_id=faculty_id_filter, name=None, language="en"
     )
 
 
@@ -289,7 +289,7 @@ def test_filter_departments_by_name(client: TestClient, mock_api_service):
     assert name_filter in data["items"][0]["name"]
 
     mock_api_service["get_departments"].assert_called_once_with(
-        page=1, size=10, faculty_id=None, name=name_filter
+        page=1, size=10, faculty_id=None, name=name_filter, language="en"
     )
 
 
@@ -351,6 +351,7 @@ def test_create_department(client: TestClient, mock_api_service):
         "code": "ND1",
         "faculty_id": 1,
         "description": "A brand new department",
+        "language": None,
     }
     # Mock configured to return ID 4 with faculty_name enriched
     expected_response_data = {
@@ -379,6 +380,7 @@ def test_update_department(client: TestClient, mock_api_service):
         "code": "UD1",
         "faculty_id": 2,
         "description": "An updated department description",
+        "language": None,
     }
     # Mock configured to return updated data for ID 1 with faculty_name enriched
     expected_response_data = {

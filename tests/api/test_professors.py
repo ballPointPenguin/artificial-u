@@ -196,7 +196,13 @@ def test_list_professors(client: TestClient, mock_api_service):
     assert data["items"][0]["name"] == sample_professors_base[0].name
 
     mock_api_service["get_professors"].assert_called_once_with(
-        page=1, size=10, department_id=None, faculty_id=None, name=None, specialization=None
+        page=1,
+        size=10,
+        department_id=None,
+        faculty_id=None,
+        name=None,
+        specialization=None,
+        language="en",
     )
 
 
@@ -215,7 +221,13 @@ def test_list_professors_with_filters(client: TestClient, mock_api_service):
     assert data["total"] == len(filtered_professors)
 
     mock_api_service["get_professors"].assert_called_once_with(
-        page=1, size=10, department_id=1, faculty_id=None, name="Test", specialization=None
+        page=1,
+        size=10,
+        department_id=1,
+        faculty_id=None,
+        name="Test",
+        specialization=None,
+        language="en",
     )
 
 
@@ -235,7 +247,13 @@ def test_list_professors_with_faculty_filter(client: TestClient, mock_api_servic
     assert data["total"] == len(faculty_4_professors)
 
     mock_api_service["get_professors"].assert_called_once_with(
-        page=1, size=10, department_id=None, faculty_id=4, name=None, specialization=None
+        page=1,
+        size=10,
+        department_id=None,
+        faculty_id=4,
+        name=None,
+        specialization=None,
+        language="en",
     )
 
 
@@ -295,6 +313,7 @@ def test_create_professor(client: TestClient, mock_api_service):
     expected_with_attribution = {
         **new_professor_data,
         "tts_backend": None,
+        "language": None,
         "image_created_with": None,
         "created_by": None,
         "created_with": None,

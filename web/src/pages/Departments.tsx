@@ -6,7 +6,7 @@ import type { Department, DepartmentCreate } from '../api/types.js'
 import { RequireRole } from '../auth/RequireRole'
 import DepartmentForm from '../components/departments/DepartmentForm.js'
 import { Button, Input, Select, type SelectOption } from '../components/ui'
-import { useTranslations } from '../i18n'
+import { useContentLanguage, useTranslations } from '../i18n'
 
 const DepartmentCard = (props: { department: Department }) => {
   return (
@@ -26,6 +26,7 @@ const DepartmentCard = (props: { department: Department }) => {
 
 const DepartmentsPage = () => {
   const t = useTranslations()
+  const { contentLanguage } = useContentLanguage()
   const [searchQuery, setSearchQuery] = createSignal('')
   const [selectedFacultyId, setSelectedFacultyId] = createSignal<number | null>(null)
   const [page, setPage] = createSignal(1)
@@ -56,6 +57,7 @@ const DepartmentsPage = () => {
       size: 20,
       name: searchQuery() || undefined,
       faculty_id: facultyId || undefined,
+      language: contentLanguage(),
     }
   }, departmentService.listDepartments)
 

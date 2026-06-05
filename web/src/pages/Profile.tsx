@@ -2,10 +2,11 @@ import { createSignal, onMount, Show } from 'solid-js'
 import { studentService } from '../api/services'
 import type { Student, StudentUpdate } from '../api/types'
 import { Button, Card, FormField, Input } from '../components/ui'
-import { useTranslations } from '../i18n'
+import { type ContentLanguage, useContentLanguage, useTranslations } from '../i18n'
 
 const Profile = () => {
   const t = useTranslations()
+  const { contentLanguageOverride, setContentLanguage } = useContentLanguage()
   const [student, setStudent] = createSignal<Student | null>(null)
   const [isLoading, setIsLoading] = createSignal(true)
   const [isEditing, setIsEditing] = createSignal(false)
@@ -239,6 +240,23 @@ const Profile = () => {
             </div>
           </Card>
         </div>
+
+        <Card class="bg-muted mt-6">
+          <h3 class="text-xl font-semibold mb-1">{t().profile.contentLanguage}</h3>
+          <p class="text-sm opacity-70 mb-4">{t().profile.contentLanguageDesc}</p>
+          <select
+            class="w-full rounded-md border border-border bg-surface px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+            value={contentLanguageOverride() ?? 'auto'}
+            onChange={(e) => {
+              const val = e.currentTarget.value
+              setContentLanguage(val === 'auto' ? null : (val as ContentLanguage))
+            }}
+          >
+            <option value="auto">{t().profile.contentLanguageAuto}</option>
+            <option value="en">{t().profile.contentLanguageEn}</option>
+            <option value="fr">{t().profile.contentLanguageFr}</option>
+          </select>
+        </Card>
       </Show>
     </div>
   )

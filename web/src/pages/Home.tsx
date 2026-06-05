@@ -6,7 +6,6 @@ import { featuredService } from '../api/services/featured-service.js'
 import { lectureService } from '../api/services/lecture-service.js'
 import { professorService } from '../api/services/professor-service.js'
 import type {
-  Course,
   Department,
   FeaturedItem,
   PlatformStats,
@@ -15,10 +14,11 @@ import type {
 } from '../api/types.js'
 import { FeaturedLectureCarousel } from '../components/FeaturedLectureCarousel.jsx'
 import { Button } from '../components/ui'
-import { useTranslations } from '../i18n'
+import { useContentLanguage, useTranslations } from '../i18n'
 
 const Home = () => {
   const t = useTranslations()
+  const { contentLanguage } = useContentLanguage()
   const navigate = useNavigate()
   const [searchQuery, setSearchQuery] = createSignal('')
 
@@ -34,72 +34,85 @@ const Home = () => {
   const [stats] = createResource<PlatformStats>(() => featuredService.getStats())
 
   // Fetch featured lectures (for hero carousel) — enriched via /recent?ids=...
-  const [heroLectures] = createResource<RecentLecture[]>(async () => {
-    const items: FeaturedItem[] = await featuredService.listFeatured({
-      item_type: 'lecture',
-      language: 'en',
-    })
-    if (items.length === 0) return []
+  const [heroLectures] = createResource(
+    () => contentLanguage(),
+    async (lang) => {
+      const items: FeaturedItem[] = await featuredService.listFeatured({
+        item_type: 'lecture',
+        language: lang,
+      })
+      if (items.length === 0) return [] as RecentLecture[]
 
-    // Fetch enriched data for the specific featured lecture IDs
-    const ids = items.map((i) => i.item_id)
-    const enriched = await lectureService.getRecentLectures(ids)
+      // Fetch enriched data for the specific featured lecture IDs
+      const ids = items.map((i) => i.item_id)
+      const enriched = await lectureService.getRecentLectures(ids)
 
-    // Re-order to match the admin-configured display_order
-    const byId = new Map(enriched.map((l) => [l.id, l]))
-    return ids.map((id) => byId.get(id)).filter((l): l is RecentLecture => l != null)
-  })
+      // Re-order to match the admin-configured display_order
+      const byId = new Map(enriched.map((l) => [l.id, l]))
+      return ids.map((id) => byId.get(id)).filter((l): l is RecentLecture => l != null)
+    }
+  )
 
   // Fetch recently added published courses (for the grid section)
-  const [recentCourses] = createResource<Course[]>(async () => {
-    const result = await courseService.listCourses({
-      page: 1,
-      size: 8,
-      sortBy: 'created_at',
-      order: 'desc',
-    })
-    return result.items.filter((c) => c.status === 'published').slice(0, 4)
-  })
+  const [recentCourses] = createResource(
+    () => contentLanguage(),
+    async (lang) => {
+      const result = await courseService.listCourses({
+        page: 1,
+        size: 8,
+        sortBy: 'created_at',
+        order: 'desc',
+        language: lang,
+      })
+      return result.items.filter((c) => c.status === 'published').slice(0, 4)
+    }
+  )
 
   // Fetch featured professors
-  const [featuredProfessors] = createResource<Professor[]>(async () => {
-    const items: FeaturedItem[] = await featuredService.listFeatured({
-      item_type: 'professor',
-      language: 'en',
-    })
-    if (items.length === 0) return []
-
-    const professors = await Promise.all(
-      items.map(async (item) => {
-        try {
-          return await professorService.getProfessor(item.item_id)
-        } catch {
-          return null
-        }
+  const [featuredProfessors] = createResource(
+    () => contentLanguage(),
+    async (lang) => {
+      const items: FeaturedItem[] = await featuredService.listFeatured({
+        item_type: 'professor',
+        language: lang,
       })
-    )
-    return professors.filter((p): p is Professor => p !== null)
-  })
+      if (items.length === 0) return [] as Professor[]
+
+      const professors = await Promise.all(
+        items.map(async (item) => {
+          try {
+            return await professorService.getProfessor(item.item_id)
+          } catch {
+            return null
+          }
+        })
+      )
+      return professors.filter((p): p is Professor => p !== null)
+    }
+  )
 
   // Fetch featured departments
-  const [featuredDepartments] = createResource<Department[]>(async () => {
-    const items: FeaturedItem[] = await featuredService.listFeatured({
-      item_type: 'department',
-      language: 'en',
-    })
-    if (items.length === 0) return []
-
-    const departments = await Promise.all(
-      items.map(async (item) => {
-        try {
-          return await departmentService.getDepartment(item.item_id)
-        } catch {
-          return null
-        }
+  const [featuredDepartments] = createResource(
+    () => contentLanguage(),
+    async (lang) => {
+      const items: FeaturedItem[] = await featuredService.listFeatured({
+        item_type: 'department',
+        language: lang,
       })
-    )
-    return departments.filter((d): d is Department => d !== null)
-  })
+      if (items.length === 0) return [] as Department[]
+
+      const departments = await Promise.all(
+        items.map(async (item) => {
+          try {
+            return await departmentService.getDepartment(item.item_id)
+          } catch {
+            return null
+          }
+        })
+      )
+      return departments.filter((d): d is Department => d !== null)
+    }
+  )
 
   return (
     <div>

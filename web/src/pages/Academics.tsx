@@ -3,7 +3,7 @@ import { createEffect, createResource, createSignal, For, Show } from 'solid-js'
 import { departmentService } from '../api/services/department-service.js'
 import { facultyService } from '../api/services/faculty-service.js'
 import type { Department, Faculty } from '../api/types.js'
-import { useTranslations } from '../i18n'
+import { useContentLanguage, useTranslations } from '../i18n'
 
 const DepartmentCard = (props: { department: Department }) => {
   return (
@@ -53,6 +53,7 @@ const FacultyCard = (props: { faculty: Faculty; isSelected: boolean; onClick: ()
 
 const AcademicsPage = () => {
   const t = useTranslations()
+  const { contentLanguage } = useContentLanguage()
   const [selectedFacultyId, setSelectedFacultyId] = createSignal<number | null>(null)
 
   // Fetch all faculties
@@ -75,6 +76,7 @@ const AcademicsPage = () => {
         page: 1,
         size: 100, // Get all departments for the faculty
         faculty_id: facultyId,
+        language: contentLanguage(),
       }
     },
     async (params) => {

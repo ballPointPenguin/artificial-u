@@ -8,10 +8,11 @@ import { RequireRole } from '../auth/RequireRole'
 import ProfessorForm, { type ProfessorFormData } from '../components/professors/ProfessorForm.js'
 import ProfessorListItem from '../components/professors/ProfessorListItem.js'
 import { Button, Input, Select, type SelectOption } from '../components/ui'
-import { useTranslations } from '../i18n'
+import { useContentLanguage, useTranslations } from '../i18n'
 
 export default function ProfessorsPage() {
   const t = useTranslations()
+  const { contentLanguage } = useContentLanguage()
   const navigate = useNavigate()
   const [searchQuery, setSearchQuery] = createSignal('')
   const [selectedFacultyId, setSelectedFacultyId] = createSignal<number | null>(null)
@@ -30,6 +31,7 @@ export default function ProfessorsPage() {
       page: 1,
       size: 100, // Get all departments for dropdown
       faculty_id: selectedFacultyId() || undefined,
+      language: contentLanguage(),
     }),
     departmentService.listDepartments
   )
@@ -68,6 +70,7 @@ export default function ProfessorsPage() {
       name: searchQuery() || undefined,
       facultyId: selectedFacultyId() || undefined,
       departmentId: selectedDepartmentId() || undefined,
+      language: contentLanguage(),
     }),
     professorService.listProfessors
   )

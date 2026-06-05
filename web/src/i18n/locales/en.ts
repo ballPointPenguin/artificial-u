@@ -341,6 +341,12 @@ export const en = {
       creator: 'Enrolled',
       admin: 'Admin',
     },
+    contentLanguage: 'Content Language',
+    contentLanguageDesc:
+      'Choose which language\'s content to browse. "Auto" follows your UI language when supported.',
+    contentLanguageAuto: 'Auto (follow UI)',
+    contentLanguageEn: 'English',
+    contentLanguageFr: 'Français',
   },
 
   // Admin Dashboard

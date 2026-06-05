@@ -39,6 +39,7 @@ class TestProfessorRepository:
         mock_prof.age = 35
         mock_prof.voice_id = 1
         mock_prof.tts_backend = None
+        mock_prof.language = None
         mock_prof.image_url = "https://example.com/smith.jpg"
         mock_prof.image_created_with = None
         mock_prof.created_by = None
@@ -159,6 +160,7 @@ class TestProfessorRepository:
         mock_prof1.age = 35
         mock_prof1.voice_id = 1
         mock_prof1.tts_backend = None
+        mock_prof1.language = None
         mock_prof1.image_url = "https://example.com/smith.jpg"
         mock_prof1.image_created_with = None
         mock_prof1.created_by = None
@@ -179,6 +181,7 @@ class TestProfessorRepository:
         mock_prof2.age = 45
         mock_prof2.voice_id = 2
         mock_prof2.tts_backend = None
+        mock_prof2.language = None
         mock_prof2.image_url = "https://example.com/doe.jpg"
         mock_prof2.image_created_with = None
         mock_prof2.created_by = None
@@ -221,6 +224,7 @@ class TestProfessorRepository:
         mock_prof.age = 35
         mock_prof.voice_id = 1
         mock_prof.tts_backend = None
+        mock_prof.language = None
         mock_prof.created_by = None
         mock_prof.created_with = None
 

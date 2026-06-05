@@ -72,6 +72,7 @@ async def list_courses(
             "published courses."
         ),
     ),
+    language: str = Query("en", description="Content language sandbox (e.g., 'en', 'fr')"),
     course_service: CourseApiService = Depends(get_course_api_service),
     student: Optional[Student] = Depends(optional_student),
 ):
@@ -98,6 +99,7 @@ async def list_courses(
         student_id=student_id,
         student_role=student_role,
         include_hidden=include_hidden,
+        language=language,
     )
 
 

@@ -43,6 +43,7 @@ async def list_departments(
     size: int = Query(10, ge=1, le=100, description="Items per page"),
     faculty_id: Optional[int] = Query(None, description="Filter by faculty ID"),
     name: Optional[str] = Query(None, description="Filter by name (partial match)"),
+    language: str = Query("en", description="Content language sandbox (e.g., 'en', 'fr')"),
     department_service: DepartmentApiService = Depends(get_department_api_service),
 ):
     """
@@ -52,12 +53,14 @@ async def list_departments(
     - **size**: Number of items per page (1-100)
     - **faculty_id**: Filter by faculty ID
     - **name**: Filter by department name (partial match)
+    - **language**: Content language sandbox (default: 'en')
     """
     return department_service.get_departments(
         page=page,
         size=size,
         faculty_id=faculty_id,
         name=name,
+        language=language,
     )
 
 

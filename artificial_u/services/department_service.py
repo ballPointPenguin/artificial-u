@@ -49,6 +49,7 @@ class DepartmentService:
         code: str,
         faculty_id: Optional[int] = None,
         description: Optional[str] = None,
+        language: Optional[str] = None,
     ) -> Department:
         """
         Create a new department.
@@ -73,6 +74,7 @@ class DepartmentService:
             code=code,
             faculty_id=faculty_id,
             description=description or f"The {name} department.",
+            language=language,
         )
 
         # Save to database
@@ -125,7 +127,11 @@ class DepartmentService:
             raise DepartmentNotFoundError(error_msg)
         return department
 
-    def list_departments(self, faculty_id: Optional[int] = None) -> List[Department]:
+    def list_departments(
+        self,
+        faculty_id: Optional[int] = None,
+        language: Optional[str] = None,
+    ) -> List[Department]:
         """
         List all departments with optional faculty_id filter.
 
@@ -139,7 +145,9 @@ class DepartmentService:
             DatabaseError: If there's an error retrieving from the database
         """
         try:
-            departments = self.repository_factory.department.list(faculty_id)
+            departments = self.repository_factory.department.list(
+                faculty_id=faculty_id, language=language
+            )
             self.logger.debug(f"Found {len(departments)} departments")
             return departments
         except Exception as e:

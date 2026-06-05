@@ -10,6 +10,23 @@ import { zh } from './locales/zh'
 export type LocaleCode = 'en' | 'es' | 'fr' | 'zh'
 
 /**
+ * Content language codes — languages for which generated content exists.
+ * Distinct from the UI locale: a user can browse in Spanish but read English content.
+ */
+export type ContentLanguage = 'en' | 'fr'
+
+export const SUPPORTED_CONTENT_LANGUAGES: readonly ContentLanguage[] = ['en', 'fr']
+
+const CONTENT_LANGUAGE_STORAGE_KEY = 'au-content-language'
+
+/** Map a UI locale to the closest supported content language, falling back to 'en'. */
+function toContentLanguage(locale: LocaleCode): ContentLanguage {
+  return (SUPPORTED_CONTENT_LANGUAGES as readonly string[]).includes(locale)
+    ? (locale as ContentLanguage)
+    : 'en'
+}
+
+/**
  * Dictionary of all available locales
  */
 const locales: Record<LocaleCode, Locale> = {
@@ -26,6 +43,10 @@ const I18nContext = createContext<{
   t: () => Locale
   currentLocale: () => LocaleCode
   setLocale: (locale: LocaleCode) => void
+  contentLanguage: () => ContentLanguage
+  contentLanguageOverride: () => ContentLanguage | null
+  /** Pass null to clear the override and auto-follow the UI locale. */
+  setContentLanguage: (lang: ContentLanguage | null) => void
 }>()
 
 const LOCALE_STORAGE_KEY = 'au-locale'
@@ -61,16 +82,45 @@ export const I18nProvider: ParentComponent = (props) => {
   // Create reactive dictionary based on current locale
   const t = createMemo(() => locales[currentLocale()])
 
+  // Content language: explicit override takes precedence; otherwise follow the UI locale.
+  const getInitialContentLanguageOverride = (): ContentLanguage | null => {
+    if (typeof window === 'undefined') return null
+    const stored = localStorage.getItem(CONTENT_LANGUAGE_STORAGE_KEY)
+    return stored && (SUPPORTED_CONTENT_LANGUAGES as readonly string[]).includes(stored)
+      ? (stored as ContentLanguage)
+      : null
+  }
+
+  const [contentLanguageOverride, setContentLanguageOverrideSignal] =
+    createSignal<ContentLanguage | null>(getInitialContentLanguageOverride())
+
+  const contentLanguage = createMemo<ContentLanguage>(
+    () => contentLanguageOverride() ?? toContentLanguage(currentLocale())
+  )
+
+  const setContentLanguage = (lang: ContentLanguage | null) => {
+    setContentLanguageOverrideSignal(lang)
+    if (typeof window !== 'undefined') {
+      if (lang === null) {
+        localStorage.removeItem(CONTENT_LANGUAGE_STORAGE_KEY)
+      } else {
+        localStorage.setItem(CONTENT_LANGUAGE_STORAGE_KEY, lang)
+      }
+    }
+  }
+
   const contextValue = {
     t, // Return the memo directly for reactivity
     currentLocale,
     setLocale: (locale: LocaleCode) => {
       setCurrentLocale(locale)
-      // Persist to localStorage
       if (typeof window !== 'undefined') {
         localStorage.setItem(LOCALE_STORAGE_KEY, locale)
       }
     },
+    contentLanguage,
+    contentLanguageOverride,
+    setContentLanguage,
   }
 
   return <I18nContext.Provider value={contextValue}>{props.children}</I18nContext.Provider>
@@ -119,4 +169,30 @@ export function useI18n() {
     throw new Error('useI18n must be used within I18nProvider')
   }
   return context
+}
+
+/**
+ * Hook to access and override the content language.
+ *
+ * The content language defaults to the UI locale when that locale has a matching
+ * content sandbox (e.g. 'fr' UI → 'fr' content). For unsupported UI locales
+ * (e.g. 'es', 'zh') it falls back to 'en'. Users can explicitly pin a content
+ * language from their profile to decouple it from the UI locale.
+ *
+ * @example
+ * const { contentLanguage, setContentLanguage } = useContentLanguage()
+ * // contentLanguage() → 'en' | 'fr'
+ * // setContentLanguage('fr')   — explicit override
+ * // setContentLanguage(null)   — clear override, auto-follow UI locale again
+ */
+export function useContentLanguage() {
+  const context = useContext(I18nContext)
+  if (!context) {
+    throw new Error('useContentLanguage must be used within I18nProvider')
+  }
+  return {
+    contentLanguage: context.contentLanguage,
+    contentLanguageOverride: context.contentLanguageOverride,
+    setContentLanguage: context.setContentLanguage,
+  }
 }

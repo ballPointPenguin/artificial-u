@@ -2,7 +2,7 @@
 Faculty router for handling faculty-related API endpoints.
 """
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 
 from artificial_u.api.dependencies import get_repository_factory
 from artificial_u.api.models.faculties import FacultiesListResponse
@@ -43,12 +43,13 @@ def get_faculty_api_service(
     description="Get a list of all faculties.",
 )
 async def list_faculties(
+    language: str = Query("en", description="Content language sandbox (e.g., 'en', 'fr')"),
     faculty_service: FacultyApiService = Depends(get_faculty_api_service),
 ):
     """
-    Get a list of all faculties.
+    Get a list of faculties for the given language sandbox.
 
     Returns:
-        List of all faculties
+        List of faculties for the requested language
     """
-    return faculty_service.list_faculties()
+    return faculty_service.list_faculties(language=language)

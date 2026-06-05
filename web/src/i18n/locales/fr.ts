@@ -342,6 +342,12 @@ export const fr = {
       creator: 'Inscrit',
       admin: 'Admin',
     },
+    contentLanguage: 'Langue du contenu',
+    contentLanguageDesc:
+      "Choisissez la langue dans laquelle vous souhaitez parcourir le contenu. « Auto » suit votre langue d'interface si elle est disponible.",
+    contentLanguageAuto: "Auto (suivre l'interface)",
+    contentLanguageEn: 'English',
+    contentLanguageFr: 'Français',
   },
 
   // Admin Dashboard

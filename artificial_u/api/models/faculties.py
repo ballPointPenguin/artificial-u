@@ -14,6 +14,7 @@ class FacultyResponse(BaseModel):
     id: int = Field(..., description="Unique faculty identifier")
     name: str = Field(..., description="Faculty name")
     description: Optional[str] = Field(None, description="Faculty description")
+    language: Optional[str] = Field(None, description="Language code (e.g., 'en', 'fr')")
 
     class Config:
         from_attributes = True

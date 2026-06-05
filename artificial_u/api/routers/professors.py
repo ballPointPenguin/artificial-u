@@ -51,6 +51,7 @@ async def list_professors(
     specialization: Optional[str] = Query(
         None, description="Filter by specialization (partial match)"
     ),
+    language: str = Query("en", description="Content language sandbox (e.g., 'en', 'fr')"),
     service: ProfessorApiService = Depends(get_professor_api_service),
 ):
     """
@@ -62,6 +63,7 @@ async def list_professors(
     - **faculty_id**: Filter by faculty ID (through department relationship)
     - **name**: Filter by professor name (partial match)
     - **specialization**: Filter by specialization (partial match)
+    - **language**: Content language sandbox (default: 'en')
     """
     return service.get_professors(
         page=page,
@@ -70,6 +72,7 @@ async def list_professors(
         faculty_id=faculty_id,
         name=name,
         specialization=specialization,
+        language=language,
     )
 
 

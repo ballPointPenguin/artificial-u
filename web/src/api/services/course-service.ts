@@ -25,6 +25,7 @@ interface ListCoursesParams {
   sortBy?: string
   order?: 'asc' | 'desc'
   includeHidden?: boolean
+  language?: string
 }
 
 export const courseService = {
@@ -41,6 +42,7 @@ export const courseService = {
     if (params.sortBy) queryParams.set('sort_by', params.sortBy)
     if (params.order) queryParams.set('order', params.order)
     if (params.includeHidden) queryParams.set('include_hidden', 'true')
+    if (params.language) queryParams.set('language', params.language)
     return httpClient.get<CoursesListResponse>(
       `${ENDPOINTS.courses.list}?${queryParams.toString()}`
     )

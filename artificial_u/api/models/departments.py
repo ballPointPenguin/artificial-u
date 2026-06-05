@@ -17,6 +17,7 @@ class DepartmentBase(BaseModel):
         None, description="ID of the faculty this department belongs to"
     )
     description: Optional[str] = Field(None, description="Department description and overview")
+    language: Optional[str] = Field(None, description="Language code (e.g., 'en', 'fr')")
 
 
 # Department creation model

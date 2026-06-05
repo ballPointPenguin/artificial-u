@@ -164,6 +164,7 @@ class Professor(BaseModel):
     tts_backend: Optional[str] = (
         None  # Override TTS backend for this professor (None = system default)
     )
+    language: Optional[str] = None
     # Attribution
     created_by: Optional[int] = None
     created_with: Optional[str] = None

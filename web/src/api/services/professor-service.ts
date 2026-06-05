@@ -20,6 +20,7 @@ interface ListProfessorsParams {
   facultyId?: number
   name?: string
   specialization?: string
+  language?: string
 }
 
 export const professorService = {
@@ -32,6 +33,7 @@ export const professorService = {
     if (params.departmentId) queryParams.set('department_id', params.departmentId.toString())
     if (params.name) queryParams.set('name', params.name)
     if (params.specialization) queryParams.set('specialization', params.specialization)
+    if (params.language) queryParams.set('language', params.language)
     return httpClient.get<ProfessorsListResponse>(
       `${ENDPOINTS.professors.list}?${queryParams.toString()}`
     )

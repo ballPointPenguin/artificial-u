@@ -11,7 +11,7 @@ import type { CourseFormData } from '../components/courses/types.jsx'
 import { Alert, Button, MagicButton } from '../components/ui'
 import type { SelectOption } from '../components/ui/Select.jsx'
 import Select from '../components/ui/Select.jsx'
-import { useTranslations } from '../i18n'
+import { useContentLanguage, useTranslations } from '../i18n'
 import { createJobPolling, registerJobHandoff } from '../utils/job-management.js'
 
 type SortField =
@@ -45,6 +45,7 @@ const DEFAULT_SORT_ORDER: SortOrder = 'desc'
 
 const Courses: Component = () => {
   const t = useTranslations()
+  const { contentLanguage } = useContentLanguage()
   const auth = useAuth()
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
@@ -157,7 +158,7 @@ const Courses: Component = () => {
 
   // Fetch departments for filter dropdown
   const [departmentsData] = createResource(() =>
-    departmentService.listDepartments({ page: 1, size: 100 })
+    departmentService.listDepartments({ page: 1, size: 100, language: contentLanguage() })
   )
 
   // Department options for Select component
@@ -183,8 +184,9 @@ const Courses: Component = () => {
       departmentId: departmentFilter(),
       createdBy: myCoursesOnly() ? auth.student()?.id : undefined,
       includeHidden: showHidden(),
+      language: contentLanguage(),
     }),
-    ({ page, size, sortBy, order, departmentId, createdBy, includeHidden }) =>
+    ({ page, size, sortBy, order, departmentId, createdBy, includeHidden, language }) =>
       courseService.listCourses({
         page,
         size,
@@ -193,6 +195,7 @@ const Courses: Component = () => {
         departmentId: departmentId || undefined,
         createdBy,
         includeHidden,
+        language,
       })
   )
 

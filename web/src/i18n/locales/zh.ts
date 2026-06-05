@@ -341,6 +341,11 @@ export const zh = {
       creator: '在校生', // "Enrolled Student"
       admin: '管理员',
     },
+    contentLanguage: '内容语言',
+    contentLanguageDesc: '选择您希望浏览的内容语言。"自动"表示在支持的情况下跟随界面语言。',
+    contentLanguageAuto: '自动（跟随界面）',
+    contentLanguageEn: 'English',
+    contentLanguageFr: 'Français',
   },
 
   // Admin Dashboard

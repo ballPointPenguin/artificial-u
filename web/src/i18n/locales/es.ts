@@ -342,6 +342,12 @@ export const es = {
       creator: 'Inscrito',
       admin: 'Admin',
     },
+    contentLanguage: 'Idioma del contenido',
+    contentLanguageDesc:
+      'Elige el idioma del contenido que deseas explorar. "Auto" sigue el idioma de la interfaz si está disponible.',
+    contentLanguageAuto: 'Auto (seguir interfaz)',
+    contentLanguageEn: 'English',
+    contentLanguageFr: 'Français',
   },
 
   // Admin Dashboard

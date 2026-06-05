@@ -20,6 +20,7 @@ class DepartmentRepository(BaseRepository):
                 code=department.code,
                 faculty_id=department.faculty_id,
                 description=department.description,
+                language=department.language,
             )
 
             session.add(db_department)
@@ -45,6 +46,7 @@ class DepartmentRepository(BaseRepository):
                 code=db_department.code,
                 faculty_id=db_department.faculty_id,
                 description=db_department.description,
+                language=db_department.language,
                 created_at=db_department.created_at,
                 updated_at=db_department.updated_at,
             )
@@ -63,17 +65,24 @@ class DepartmentRepository(BaseRepository):
                 code=db_department.code,
                 faculty_id=db_department.faculty_id,
                 description=db_department.description,
+                language=db_department.language,
                 created_at=db_department.created_at,
                 updated_at=db_department.updated_at,
             )
 
-    def list(self, faculty_id: Optional[int] = None) -> List[Department]:
-        """List departments with optional faculty_id filter."""
+    def list(
+        self,
+        faculty_id: Optional[int] = None,
+        language: Optional[str] = None,
+    ) -> List[Department]:
+        """List departments with optional faculty_id and language filters."""
         with self.get_session() as session:
             query = session.query(DepartmentModel)
 
             if faculty_id:
                 query = query.filter_by(faculty_id=faculty_id)
+            if language is not None:
+                query = query.filter_by(language=language)
 
             db_departments = query.all()
 
@@ -84,6 +93,7 @@ class DepartmentRepository(BaseRepository):
                     code=d.code,
                     faculty_id=d.faculty_id,
                     description=d.description,
+                    language=d.language,
                     created_at=d.created_at,
                     updated_at=d.updated_at,
                 )
@@ -103,6 +113,7 @@ class DepartmentRepository(BaseRepository):
             db_department.code = department.code
             db_department.faculty_id = department.faculty_id
             db_department.description = department.description
+            db_department.language = department.language
 
             session.commit()
             session.refresh(db_department)

@@ -234,6 +234,7 @@ class CourseRepository(BaseRepository):
         status: Optional[str] = None,
         include_own_hidden: bool = False,
         requesting_student_id: Optional[int] = None,
+        language: Optional[str] = None,
     ) -> Tuple[List[Course], int]:
         """
         List courses with advanced filtering, sorting, pagination, and counts.
@@ -293,6 +294,8 @@ class CourseRepository(BaseRepository):
                 query = query.filter(CourseModel.title.ilike(f"%{title}%"))
             if created_by:
                 query = query.filter(CourseModel.created_by == created_by)
+            if language is not None:
+                query = query.filter(CourseModel.language == language)
 
             # Status filtering with special handling for own hidden courses
             if status:
