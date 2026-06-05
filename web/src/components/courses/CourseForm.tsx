@@ -121,14 +121,21 @@ const CourseForm: Component<CourseFormProps> = (props) => {
     }
   })
 
-  // Fetch professors for Select, filtered by department when selected
+  // Fetch professors for Select, filtered by department and language.
+  // A combined string key is used so both signals trigger refetch without
+  // causing the infinite-loop that object sources produce (new ref each render).
   const [professorsResource] = createResource(
-    () => formData().department_id,
-    async (departmentId) => {
+    () => `${formData().department_id ?? ''}_${contentLanguage()}`,
+    async (key) => {
+      const sepIdx = key.lastIndexOf('_')
+      const lang = key.slice(sepIdx + 1)
+      const deptIdStr = key.slice(0, sepIdx)
+      const departmentId = deptIdStr ? Number(deptIdStr) : null
       try {
         const response = await professorService.listProfessors({
           page: 1,
           size: 100,
+          language: lang,
           ...(departmentId ? { departmentId } : {}),
         })
         const professorOptions = response.items.map((prof: Professor) => ({
