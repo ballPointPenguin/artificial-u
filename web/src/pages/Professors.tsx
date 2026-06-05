@@ -116,6 +116,7 @@ export default function ProfessorsPage() {
         background: formData.background || '',
         personality: formData.personality || '',
         image_url: formData.image_url || '',
+        language: contentLanguage(),
       }
 
       const created = await professorService.createProfessor(newProfessor)

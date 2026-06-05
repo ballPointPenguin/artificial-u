@@ -270,6 +270,7 @@ export default function ProfessorDetail() {
         background: formData.background || '',
         personality: formData.personality || '',
         teaching_style: formData.teaching_style || '',
+        language: professorResource()?.language ?? null,
       }
 
       await professorService.updateProfessor(id, updatedProfessor)
