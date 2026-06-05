@@ -5,7 +5,7 @@ import { departmentService } from '../../api/services/department-service.js'
 import { professorService } from '../../api/services/professor-service.js'
 import type { Course, CourseGenerateRequest, Department, Professor } from '../../api/types.js'
 import { useAuth } from '../../auth/AuthProvider.js'
-import { useTranslations } from '../../i18n'
+import { useContentLanguage, useTranslations } from '../../i18n'
 import {
   Alert,
   Button,
@@ -33,6 +33,7 @@ interface CourseFormProps {
 const CourseForm: Component<CourseFormProps> = (props) => {
   const auth = useAuth()
   const t = useTranslations()
+  const { contentLanguage } = useContentLanguage()
 
   const [formData, setFormData] = createSignal<CourseFormData>({
     code: '',
@@ -97,9 +98,13 @@ const CourseForm: Component<CourseFormProps> = (props) => {
   ]
 
   // Fetch departments for Select
-  const [departmentsResource] = createResource(async () => {
+  const [departmentsResource] = createResource(contentLanguage, async (lang) => {
     try {
-      const response = await departmentService.listDepartments({ page: 1, size: 100 })
+      const response = await departmentService.listDepartments({
+        page: 1,
+        size: 100,
+        language: lang,
+      })
       const departmentOptions = response.items.map((dept: Department) => ({
         value: dept.id,
         label: `${dept.name} (${dept.code})`,
@@ -116,14 +121,15 @@ const CourseForm: Component<CourseFormProps> = (props) => {
     }
   })
 
-  // Fetch professors for Select, filtered by department when selected
+  // Fetch professors for Select, filtered by department and language when selected
   const [professorsResource] = createResource(
-    () => formData().department_id,
-    async (departmentId) => {
+    () => ({ departmentId: formData().department_id, lang: contentLanguage() }),
+    async ({ departmentId, lang }) => {
       try {
         const response = await professorService.listProfessors({
           page: 1,
           size: 100,
+          language: lang,
           ...(departmentId ? { departmentId } : {}),
         })
         const professorOptions = response.items.map((prof: Professor) => ({
