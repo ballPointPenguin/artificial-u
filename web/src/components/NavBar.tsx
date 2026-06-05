@@ -53,7 +53,7 @@ export function NavBar() {
               {t().nav.courses}
             </A>
             <A href="/academics" class={linkClass}>
-              Departments
+              {t().nav.departments}
             </A>
             <Show when={auth.isAuthenticated()}>
               <A href="/profile" class={linkClass}>
@@ -143,7 +143,7 @@ export function NavBar() {
               {t().nav.courses}
             </A>
             <A href="/academics" class={mobileLinkClass} onClick={toggleMobileMenu}>
-              Departments
+              {t().nav.departments}
             </A>
             <Show when={auth.isAuthenticated()}>
               <A href="/profile" class={mobileLinkClass} onClick={toggleMobileMenu}>

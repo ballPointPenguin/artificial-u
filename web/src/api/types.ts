@@ -93,6 +93,7 @@ export interface CourseCreate {
   total_weeks?: number
   created_with?: string | null
   connected_course_ids?: number[]
+  language?: string | null
 }
 
 export interface CourseUpdate {
@@ -151,6 +152,7 @@ export interface Department {
   faculty_id: number | null
   faculty_name: string | null
   description: string | null
+  language: string | null
 }
 
 export interface DepartmentCreate {
@@ -158,6 +160,7 @@ export interface DepartmentCreate {
   code: string
   faculty_id?: number | null
   description?: string | null
+  language?: string | null
 }
 
 export interface DepartmentUpdate {
@@ -165,6 +168,7 @@ export interface DepartmentUpdate {
   code: string
   faculty_id?: number | null
   description?: string | null
+  language?: string | null
 }
 
 export interface DepartmentsListResponse {
@@ -179,6 +183,7 @@ export interface DepartmentGenerateRequest {
   partial_attributes?: Record<string, unknown>
   freeform_prompt?: string
   department_id?: number
+  language?: string
 }
 
 // Department nested endpoints response types
@@ -332,6 +337,7 @@ export interface Professor {
   image_created_with?: string | null
   voice_id?: number | null
   tts_backend?: string | null
+  language?: string | null
   created_by?: number | null
   created_with?: string | null
   created_at?: string | null
@@ -357,6 +363,7 @@ export interface ProfessorCreate {
   age?: number | null
   image_url?: string | null
   voice_id?: number | null
+  language?: string | null
 }
 
 export interface ProfessorUpdate {
@@ -373,6 +380,7 @@ export interface ProfessorUpdate {
   age?: number | null
   image_url?: string | null
   voice_id?: number | null
+  language?: string | null
 }
 
 export interface ProfessorsListResponse {
@@ -591,6 +599,7 @@ export interface VoicePreviewRequest {
   voice_id: string
   tts_backend?: string
   text?: string
+  language?: string
 }
 
 export interface VoicePreviewResponse {
@@ -665,6 +674,7 @@ export interface QuickstartMatchResponse {
 
 export interface QuickstartStartRequest {
   query: string
+  language?: string | null
 }
 
 export interface QuickstartStartResponse {

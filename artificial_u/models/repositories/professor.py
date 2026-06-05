@@ -34,6 +34,7 @@ class ProfessorRepository(BaseRepository):
                 department_id=professor.department_id,
                 voice_id=professor.voice_id,
                 tts_backend=professor.tts_backend,
+                language=professor.language,
                 created_by=professor.created_by,
                 created_with=professor.created_with,
             )
@@ -84,6 +85,7 @@ class ProfessorRepository(BaseRepository):
                 department_id=db_professor.department_id,
                 voice_id=db_professor.voice_id,
                 tts_backend=db_professor.tts_backend,
+                language=db_professor.language,
                 created_by=db_professor.created_by,
                 created_with=db_professor.created_with,
                 created_at=db_professor.created_at,
@@ -91,10 +93,13 @@ class ProfessorRepository(BaseRepository):
                 student=student_dict,
             )
 
-    def list(self) -> List[Professor]:
-        """List all professors."""
+    def list(self, language: Optional[str] = None) -> List[Professor]:
+        """List professors with optional language filter."""
         with self.get_session() as session:
-            db_professors = session.query(ProfessorModel).all()
+            query = session.query(ProfessorModel)
+            if language is not None:
+                query = query.filter_by(language=language)
+            db_professors = query.all()
 
             return [
                 Professor(
@@ -114,6 +119,7 @@ class ProfessorRepository(BaseRepository):
                     department_id=p.department_id,
                     voice_id=p.voice_id,
                     tts_backend=p.tts_backend,
+                    language=p.language,
                     created_by=p.created_by,
                     created_with=p.created_with,
                 )
@@ -144,6 +150,7 @@ class ProfessorRepository(BaseRepository):
             db_professor.department_id = professor.department_id
             db_professor.voice_id = professor.voice_id
             db_professor.tts_backend = professor.tts_backend
+            db_professor.language = professor.language
 
             session.commit()
             session.refresh(db_professor)
@@ -256,6 +263,7 @@ class ProfessorRepository(BaseRepository):
                         "department_id": getattr(p, "department_id", None),
                         "voice_id": getattr(p, "voice_id", None),
                         "tts_backend": getattr(p, "tts_backend", None),
+                        "language": getattr(p, "language", None),
                         "created_by": getattr(p, "created_by", None),
                         "created_with": getattr(p, "created_with", None),
                         "created_at": getattr(p, "created_at", None),
@@ -299,6 +307,7 @@ class ProfessorRepository(BaseRepository):
                         "department_id": getattr(p, "department_id", None),
                         "voice_id": getattr(p, "voice_id", None),
                         "tts_backend": getattr(p, "tts_backend", None),
+                        "language": getattr(p, "language", None),
                         "created_by": getattr(p, "created_by", None),
                         "created_with": getattr(p, "created_with", None),
                         "created_at": getattr(p, "created_at", None),

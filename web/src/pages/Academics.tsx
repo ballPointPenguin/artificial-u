@@ -3,18 +3,18 @@ import { createEffect, createResource, createSignal, For, Show } from 'solid-js'
 import { departmentService } from '../api/services/department-service.js'
 import { facultyService } from '../api/services/faculty-service.js'
 import type { Department, Faculty } from '../api/types.js'
-import { useTranslations } from '../i18n'
+import { useContentLanguage, useTranslations } from '../i18n'
 
 const DepartmentCard = (props: { department: Department }) => {
   return (
     <A
       href={`/departments/${String(props.department.id)}`}
-      class="arcane-card h-full flex flex-col hover:shadow-arcane hover:scale-105 hover:border-primary/50 transition-all duration-300 cursor-pointer group"
+      class="arcane-card h-full flex flex-col overflow-hidden hover:shadow-arcane hover:scale-105 hover:border-primary/50 transition-all duration-300 cursor-pointer group"
     >
-      <h3 class="text-xl font-semibold mb-2 text-parchment-100 group-hover:text-primary transition-colors duration-300">
+      <h3 class="text-xl font-semibold mb-2 text-parchment-100 line-clamp-2 shrink-0 group-hover:text-primary transition-colors duration-300">
         {props.department.name}
       </h3>
-      <p class="text-parchment-300 mb-4 line-clamp-3 flex-grow group-hover:text-parchment-200 transition-colors duration-300">
+      <p class="text-sm text-parchment-300 line-clamp-2 min-h-0 group-hover:text-parchment-200 transition-colors duration-300">
         {props.department.description}
       </p>
     </A>
@@ -53,10 +53,13 @@ const FacultyCard = (props: { faculty: Faculty; isSelected: boolean; onClick: ()
 
 const AcademicsPage = () => {
   const t = useTranslations()
+  const { contentLanguage } = useContentLanguage()
   const [selectedFacultyId, setSelectedFacultyId] = createSignal<number | null>(null)
 
   // Fetch all faculties
-  const [faculties] = createResource(() => facultyService.listFaculties())
+  const [faculties] = createResource(() =>
+    facultyService.listFaculties({ language: contentLanguage() })
+  )
 
   // Set first faculty as selected by default when faculties load
   createEffect(() => {
@@ -75,6 +78,7 @@ const AcademicsPage = () => {
         page: 1,
         size: 100, // Get all departments for the faculty
         faculty_id: facultyId,
+        language: contentLanguage(),
       }
     },
     async (params) => {

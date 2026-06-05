@@ -71,6 +71,15 @@ class LectureService:
         Raises:
             DatabaseError: If there's an error saving to the database
         """
+        # Get course language if available to keep lecture in sync
+        language = None
+        try:
+            course = self.repository_factory.course.get(course_id)
+            if course:
+                language = course.language
+        except Exception as ce:
+            self.logger.warning(f"Failed to fetch course language for lecture creation: {ce}")
+
         # Create lecture object
         lecture = Lecture(
             course_id=course_id,
@@ -83,6 +92,7 @@ class LectureService:
             transcript_url=transcript_url,
             created_by=created_by,
             created_with=created_with,
+            language=language,
         )
 
         try:

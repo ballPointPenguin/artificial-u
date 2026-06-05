@@ -94,6 +94,7 @@ class ProfessorApiService(BaseApiService[CoreProfessor, ProfessorResponse, Profe
         faculty_id: Optional[int] = None,
         name: Optional[str] = None,
         specialization: Optional[str] = None,
+        language: Optional[str] = None,
     ) -> ProfessorsListResponse:
         """
         Get a paginated list of professors with optional filtering.
@@ -119,6 +120,8 @@ class ProfessorApiService(BaseApiService[CoreProfessor, ProfessorResponse, Profe
             filters["name"] = name
         if specialization:
             filters["specialization"] = specialization
+        if language is not None:
+            filters["language"] = language
 
         # Call core service directly with filters
         # (not using _standard_list_operation because it doesn't forward filters properly)

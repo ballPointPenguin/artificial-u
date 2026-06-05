@@ -232,6 +232,7 @@ def test_list_courses(client: TestClient, mock_api_service):
         student_id=None,
         student_role=None,
         include_hidden=False,
+        language="en",
     )
 
 
@@ -262,6 +263,7 @@ def test_list_courses_with_filters(client: TestClient, mock_api_service):
         student_id=None,
         student_role=None,
         include_hidden=False,
+        language="en",
     )
 
 
@@ -291,6 +293,7 @@ def test_list_courses_with_sorting(client: TestClient, mock_api_service):
         student_id=None,
         student_role=None,
         include_hidden=False,
+        language="en",
     )
 
 
@@ -325,6 +328,7 @@ def test_list_courses_filter_by_created_by(client: TestClient, mock_api_service)
         student_id=None,
         student_role=None,
         include_hidden=False,
+        language="en",
     )
 
 
@@ -409,6 +413,7 @@ def test_create_course(client: TestClient, mock_api_service):
     # CourseCreate includes created_by, created_with, created_at, updated_at, status fields by default
     expected_course_data = {
         **new_course_data,
+        "language": None,
         "created_by": None,
         "created_with": None,
         "image_url": None,

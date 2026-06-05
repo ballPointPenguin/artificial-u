@@ -14,6 +14,7 @@ from artificial_u.api.dependencies import get_voice_service
 from artificial_u.api.models.voice import (
     ManualVoiceAssignmentRequest,
     VoiceCloneToMistralRequest,
+    VoiceDesignPreview,
     VoiceDesignPreviewsResponse,
     VoiceDesignSaveRequest,
     VoiceListResponse,
@@ -21,7 +22,7 @@ from artificial_u.api.models.voice import (
 )
 from artificial_u.api.security.auth0 import require_auth
 from artificial_u.integrations.tts import TTSBackend, create_tts_backend
-from artificial_u.services.voice_service import VoiceService
+from artificial_u.services.voice_service import LOCALIZED_PREVIEW_TEXTS, VoiceService
 
 logger = logging.getLogger(__name__)
 
@@ -83,6 +84,7 @@ async def manual_assign_voice(
 )
 async def generate_voice_design_previews(
     professor_id: int = Body(..., embed=True),
+    language: Optional[str] = Body(None, embed=True),
     voice_service: VoiceService = Depends(get_voice_service),
 ):
     """Generate Voice Design audio previews for a professor.
@@ -95,8 +97,8 @@ async def generate_voice_design_previews(
     ``POST /design/save`` with the chosen ``generated_voice_id``.
     """
     try:
-        previews = voice_service.generate_voice_design_previews(professor_id)
-        return VoiceDesignPreviewsResponse(previews=previews)
+        previews = voice_service.generate_voice_design_previews(professor_id, language=language)
+        return VoiceDesignPreviewsResponse(previews=[VoiceDesignPreview(**p) for p in previews])
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
@@ -426,17 +428,15 @@ class VoicePreviewRequest(BaseModel):
         ...,
         description="Voice identifier (preset name or external ID).",
     )
+    language: Optional[str] = Field(
+        None,
+        description="Optional language prefix of the user ('en', 'fr', 'es', 'zh').",
+    )
 
 
 class VoicePreviewResponse(BaseModel):
     audio_data_uri: str = Field(..., description="Base64-encoded data URI (audio/mpeg).")
     text: str = Field(..., description="The text that was spoken.")
-
-
-DEFAULT_PREVIEW_TEXT = (
-    "Welcome to Artificial University. "
-    "Today we'll explore how ideas take shape and transform our understanding of the world."
-)
 
 
 @router.post("/preview", response_model=VoicePreviewResponse, dependencies=[Depends(require_auth)])
@@ -449,7 +449,11 @@ async def preview_voice(
     Returns the audio as a base64 data-URI string so the frontend can play
     it directly without storing a file.
     """
-    text = request.text or DEFAULT_PREVIEW_TEXT
+    if request.text:
+        text = request.text
+    else:
+        lang = request.language or "en"
+        text = LOCALIZED_PREVIEW_TEXTS.get(lang.lower()[:2], LOCALIZED_PREVIEW_TEXTS["en"])
 
     try:
         backend: TTSBackend = create_tts_backend(

@@ -106,6 +106,7 @@ class DepartmentApiService(
         size: int = 10,
         faculty_id: Optional[int] = None,
         name: Optional[str] = None,
+        language: Optional[str] = None,
     ) -> DepartmentsListResponse:
         """
         Get a paginated list of departments with optional filtering.
@@ -121,7 +122,9 @@ class DepartmentApiService(
         """
         try:
             # Get all departments from core service
-            all_departments = self.core_service.list_departments(faculty_id=faculty_id)
+            all_departments = self.core_service.list_departments(
+                faculty_id=faculty_id, language=language
+            )
 
             # Apply name filter if provided
             if name:
@@ -208,6 +211,7 @@ class DepartmentApiService(
                 code=department_data.code,
                 faculty_id=department_data.faculty_id,
                 description=department_data.description,
+                language=department_data.language,
             )
 
             # Enrich with faculty_name
@@ -357,6 +361,7 @@ class DepartmentApiService(
         partial_attrs = attrs.get("partial_attributes", {})
         freeform_prompt = attrs.get("freeform_prompt")
         department_id = attrs.get("department_id")
+        language = attrs.get("language", "en")
 
         # Add freeform_prompt to partial_attrs if present (core service expects it there)
         if freeform_prompt:
@@ -373,6 +378,7 @@ class DepartmentApiService(
             # Call generator service with the extracted partial attributes
             generated_dict = await self.generator_service.generate_department(
                 partial_attributes=partial_attrs,
+                language=language,
             )
 
             # Convert the dictionary to the API response model

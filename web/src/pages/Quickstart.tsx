@@ -62,7 +62,7 @@ const clearState = () => {
 }
 
 const Quickstart: Component = () => {
-  const { t } = useI18n()
+  const { t, contentLanguage } = useI18n()
   const navigate = useNavigate()
   const [state, setState] = createSignal<QuickstartState>(getInitialState())
   const [isLoading, setIsLoading] = createSignal(false)
@@ -92,7 +92,10 @@ const Quickstart: Component = () => {
 
     try {
       // Enqueue the quickstart job (avoids CloudFront timeout)
-      const job = await quickstartService.enqueueStart({ query })
+      const job = await quickstartService.enqueueStart({
+        query,
+        language: contentLanguage(),
+      })
 
       // Poll for job completion
       const completedJob = await waitForJobResult(job.id)

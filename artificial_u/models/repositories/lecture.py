@@ -23,6 +23,37 @@ class LectureRepository(BaseRepository):
         words = [word for word in content.strip().split() if word]
         return len(words)
 
+    @staticmethod
+    def _to_model(
+        db_lecture: LectureModel, student_dict: Optional[Dict[str, Any]] = None
+    ) -> Lecture:
+        language = getattr(db_lecture, "language", None)
+        if language is not None and not isinstance(language, str):
+            language = None
+
+        return Lecture(
+            id=db_lecture.id,
+            revision=db_lecture.revision,
+            content=db_lecture.content,
+            summary=db_lecture.summary,
+            title=db_lecture.title,
+            audio_url=db_lecture.audio_url,
+            transcript_url=db_lecture.transcript_url,
+            timeline_url=db_lecture.timeline_url,
+            images_timeline_url=getattr(db_lecture, "images_timeline_url", None),
+            language=language,
+            course_id=db_lecture.course_id,
+            topic_id=db_lecture.topic_id,
+            voice_id=getattr(db_lecture, "voice_id", None),
+            word_count=db_lecture.word_count,
+            duration=db_lecture.duration,
+            created_by=db_lecture.created_by,
+            created_with=db_lecture.created_with,
+            created_at=db_lecture.created_at,
+            updated_at=db_lecture.updated_at,
+            student=student_dict,
+        )
+
     def create(self, lecture: Lecture) -> Lecture:
         """Create a new lecture."""
         with self.get_session() as session:
@@ -46,6 +77,7 @@ class LectureRepository(BaseRepository):
                 transcript_url=lecture.transcript_url,
                 timeline_url=lecture.timeline_url,
                 images_timeline_url=lecture.images_timeline_url,
+                language=lecture.language,
                 course_id=lecture.course_id,
                 topic_id=lecture.topic_id,
                 word_count=word_count,
@@ -91,26 +123,7 @@ class LectureRepository(BaseRepository):
                     "email": db_lecture.student.email,
                 }
 
-            return Lecture(
-                id=db_lecture.id,
-                revision=db_lecture.revision,
-                content=db_lecture.content,
-                summary=db_lecture.summary,
-                title=db_lecture.title,
-                audio_url=db_lecture.audio_url,
-                transcript_url=db_lecture.transcript_url,
-                timeline_url=db_lecture.timeline_url,
-                images_timeline_url=getattr(db_lecture, "images_timeline_url", None),
-                course_id=db_lecture.course_id,
-                topic_id=db_lecture.topic_id,
-                word_count=db_lecture.word_count,
-                duration=db_lecture.duration,
-                created_by=db_lecture.created_by,
-                created_with=db_lecture.created_with,
-                created_at=db_lecture.created_at,
-                updated_at=db_lecture.updated_at,
-                student=student_dict,
-            )
+            return self._to_model(db_lecture, student_dict)
 
     def get_content(self, lecture_id: int) -> Optional[str]:
         """
@@ -180,28 +193,7 @@ class LectureRepository(BaseRepository):
                         "email": lecture.student.email,
                     }
 
-                results.append(
-                    Lecture(
-                        id=lecture.id,
-                        revision=lecture.revision,
-                        content=lecture.content,
-                        summary=lecture.summary,
-                        title=lecture.title,
-                        audio_url=lecture.audio_url,
-                        transcript_url=lecture.transcript_url,
-                        timeline_url=lecture.timeline_url,
-                        images_timeline_url=getattr(lecture, "images_timeline_url", None),
-                        course_id=lecture.course_id,
-                        topic_id=lecture.topic_id,
-                        word_count=lecture.word_count,
-                        duration=lecture.duration,
-                        created_by=lecture.created_by,
-                        created_with=lecture.created_with,
-                        created_at=lecture.created_at,
-                        updated_at=lecture.updated_at,
-                        student=student_dict,
-                    )
-                )
+                results.append(self._to_model(lecture, student_dict))
 
             return results
 
@@ -246,28 +238,7 @@ class LectureRepository(BaseRepository):
                     "email": db_lecture.student.email,
                 }
 
-            return [
-                Lecture(
-                    id=db_lecture.id,
-                    revision=db_lecture.revision,
-                    content=db_lecture.content,
-                    summary=db_lecture.summary,
-                    title=db_lecture.title,
-                    audio_url=db_lecture.audio_url,
-                    transcript_url=db_lecture.transcript_url,
-                    timeline_url=db_lecture.timeline_url,
-                    images_timeline_url=db_lecture.images_timeline_url,
-                    course_id=db_lecture.course_id,
-                    topic_id=db_lecture.topic_id,
-                    word_count=db_lecture.word_count,
-                    duration=db_lecture.duration,
-                    created_by=db_lecture.created_by,
-                    created_with=db_lecture.created_with,
-                    created_at=db_lecture.created_at,
-                    updated_at=db_lecture.updated_at,
-                    student=student_dict,
-                )
-            ]
+            return [self._to_model(db_lecture, student_dict)]
 
     def count(
         self,
@@ -407,28 +378,7 @@ class LectureRepository(BaseRepository):
                         "email": lecture.student.email,
                     }
 
-                results.append(
-                    Lecture(
-                        id=lecture.id,
-                        revision=lecture.revision,
-                        content=lecture.content,
-                        summary=lecture.summary,
-                        title=lecture.title,
-                        audio_url=lecture.audio_url,
-                        transcript_url=lecture.transcript_url,
-                        timeline_url=lecture.timeline_url,
-                        images_timeline_url=lecture.images_timeline_url,
-                        course_id=lecture.course_id,
-                        topic_id=lecture.topic_id,
-                        word_count=lecture.word_count,
-                        duration=lecture.duration,
-                        created_by=lecture.created_by,
-                        created_with=lecture.created_with,
-                        created_at=lecture.created_at,
-                        updated_at=lecture.updated_at,
-                        student=student_dict,
-                    )
-                )
+                results.append(self._to_model(lecture, student_dict))
 
             return results
 
@@ -573,6 +523,7 @@ class LectureRepository(BaseRepository):
                 "course_id",
                 "timeline_url",
                 "images_timeline_url",
+                "language",
                 "topic_id",
                 "voice_id",
                 "duration",
@@ -590,26 +541,7 @@ class LectureRepository(BaseRepository):
             session.commit()
             session.refresh(db_lecture)
 
-            return Lecture(
-                id=db_lecture.id,
-                revision=db_lecture.revision,
-                content=db_lecture.content,
-                summary=db_lecture.summary,
-                title=db_lecture.title,
-                audio_url=db_lecture.audio_url,
-                transcript_url=db_lecture.transcript_url,
-                timeline_url=db_lecture.timeline_url,
-                images_timeline_url=db_lecture.images_timeline_url,
-                course_id=db_lecture.course_id,
-                topic_id=db_lecture.topic_id,
-                voice_id=db_lecture.voice_id,
-                word_count=db_lecture.word_count,
-                duration=db_lecture.duration,
-                created_by=db_lecture.created_by,
-                created_with=db_lecture.created_with,
-                created_at=db_lecture.created_at,
-                updated_at=db_lecture.updated_at,
-            )
+            return self._to_model(db_lecture)
 
     def delete(self, lecture_id: int) -> bool:
         """

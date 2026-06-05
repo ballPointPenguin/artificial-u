@@ -1,6 +1,6 @@
 /**
  * Spanish translations
- * Created by Google Gemini 3 Pro (thinking)
+ * Created with Google Gemini
  */
 export const es = {
   // Site branding
@@ -13,6 +13,7 @@ export const es = {
   nav: {
     about: 'Acerca de',
     academics: 'Academia',
+    departments: 'Departamentos',
     professors: 'Profesores',
     search: 'Buscar',
     courses: 'Cursos',
@@ -201,6 +202,7 @@ export const es = {
     edit: 'Editar',
     create: 'Crear',
     close: 'Cerrar',
+    preview: 'Vista previa',
     confirm: 'Confirmar',
     back: 'Atrás',
     next: 'Siguiente',
@@ -230,6 +232,13 @@ export const es = {
     of: 'de',
     ascending: 'Ascendente',
     descending: 'Descendente',
+    update: 'Actualizar',
+    clear: 'Limpiar',
+    generate: 'Generar',
+    generateImage: 'Generar imagen',
+    regenerateImage: 'Regenerar imagen',
+    failedToGenerateImage: 'Error al generar la imagen',
+    creating: 'Creando...',
   },
 
   // Academics page
@@ -283,6 +292,38 @@ export const es = {
       connectedCourses: 'Cursos Conectados',
       connectedCoursesHelper: 'Solo se muestran cursos del departamento seleccionado.',
       noCoursesInDepartment: 'No se encontraron cursos en este departamento.',
+      codeLabel: 'Código del curso',
+      titleLabel: 'Título del curso',
+      departmentLabel: 'Departamento',
+      professorLabel: 'Profesor',
+      levelLabel: 'Nivel del curso',
+      lecturesPerWeekLabel: 'Clases por semana (opcional)',
+      totalWeeksLabel: 'Total de semanas (opcional)',
+      descriptionLabel: 'Descripción',
+      aiPromptLabel: 'Indicación de generación IA (opcional)',
+      departmentPlaceholder: '-- Seleccionar departamento (opcional) --',
+      professorPlaceholder: '-- Seleccionar profesor (opcional) --',
+      levelPlaceholder: '-- Seleccionar nivel (opcional) --',
+      levelUndergraduate: 'Licenciatura',
+      levelGraduate: 'Posgrado',
+      aiDeterminesDepartment: 'La IA determinará un departamento',
+      aiDeterminesProfessor: 'La IA determinará un profesor',
+      aiDeterminesLevel: 'La IA determinará el nivel',
+      lecturesPerWeekHelper: 'Número de clases por semana (1–5)',
+      totalWeeksHelper: 'Número total de semanas (1–50)',
+      aiPromptHelper:
+        'Proporcione una indicación libre para guiar la generación IA de temas, descripción detallada, etc.',
+      codeRequired: 'El código del curso es obligatorio.',
+      titleRequired: 'El título del curso es obligatorio.',
+      descriptionRequired: 'La descripción es obligatoria.',
+      lecturesPerWeekRange: 'Las clases por semana deben estar entre 1 y 5 si se especifican.',
+      totalWeeksRange: 'El total de semanas debe estar entre 1 y 50 si se especifica.',
+      failedToLoadDepartments: 'Error al cargar departamentos',
+      failedToLoadProfessors: 'Error al cargar profesores',
+      failedToGenerate: 'Error al generar los detalles del curso',
+      generateDetails: 'Generar detalles',
+      updateCourse: 'Actualizar curso',
+      saveCourse: 'Guardar curso',
     },
   },
 
@@ -300,6 +341,123 @@ export const es = {
     errorLoading: 'Error al cargar profesores',
     noProfessorsFound: 'No se encontraron profesores',
     failedToCreate: 'Falló la creación del profesor',
+    form: {
+      nameLabel: 'Nombre del profesor',
+      titleLabel: 'Título',
+      departmentLabel: 'Departamento',
+      specializationLabel: 'Especialización',
+      descriptionLabel: 'Descripción',
+      backgroundLabel: 'Trayectoria',
+      personalityLabel: 'Personalidad',
+      teachingStyleLabel: 'Estilo de enseñanza',
+      genderLabel: 'Género',
+      accentLabel: 'Acento',
+      ageLabel: 'Edad',
+      aiPromptLabel: 'Indicación de generación IA (opcional)',
+      departmentPlaceholder: '-- Seleccionar departamento --',
+      departmentHelper: 'Afiliación departamental.',
+      specializationHelper: 'Campo principal de especialización.',
+      aiPromptHelper:
+        'Proporcione una indicación libre para guiar la generación IA de personalidad, trayectoria, estilo de enseñanza, etc.',
+      nameRequired: 'El nombre del profesor es obligatorio',
+      titleRequired: 'El título es obligatorio',
+      agePositive: 'La edad debe ser un número positivo.',
+      failedToGenerate: 'Error al generar el perfil del profesor',
+    },
+  },
+
+  // Professor Detail page/component
+  professorDetail: {
+    backToProfessors: '← Volver a Profesores',
+    backToProfessor: '← Volver al Profesor',
+    coursesTaught: 'Cursos Impartidos',
+    loadingCourses: 'Cargando cursos...',
+    errorLoadingCourses: 'Error al cargar cursos:',
+    noCoursesTaught: 'Este profesor no está impartiendo ningún curso actualmente.',
+    voiceProfile: 'Perfil de Voz',
+    voiceSelectionAndPreview: 'Selección y Vista Previa de Voz',
+    loadingVoice: 'Cargando detalles de la voz...',
+    errorLoadingVoice: 'Error al cargar detalles de la voz:',
+    loadingProfessor: 'Cargando detalles del profesor...',
+    errorLoadingProfessor: 'Error al cargar el profesor:',
+    editHeading: 'Editar Profesor',
+    failedToUpdate: 'Error al actualizar el profesor',
+    failedToDelete: 'Error al eliminar el profesor',
+    errorGeneratingImage: 'Error al generar la imagen:',
+    fields: {
+      title: 'Título',
+      department: 'Departamento',
+      specialization: 'Especialización',
+      gender: 'Género',
+      accent: 'Acento',
+      age: 'Edad',
+      description: 'Descripción',
+      background: 'Trayectoria',
+      teachingStyle: 'Estilo de enseñanza',
+      personality: 'Personalidad',
+    },
+    genders: {
+      male: 'Masculino',
+      female: 'Femenino',
+      neutral: 'Neutro',
+    },
+    backend: 'Backend',
+    name: 'Nombre',
+    elevenlabsId: 'ID de ElevenLabs',
+    invalidId: 'El ID del profesor falta o no es válido',
+    imageGeneratedWith: 'Imagen generada con {engine}',
+    confirmDeleteTitle: 'Eliminar Profesor',
+    confirmDeleteMessage: '¿Está seguro de que desea eliminar a este profesor?',
+    confirmDeleteUndo: 'Esta acción no se puede deshacer.',
+  },
+
+  // Professor Voice page/component
+  professorVoice: {
+    voiceSelectionTitle: 'Selección de Voz — {name}',
+    currentVoice: 'Voz Actual',
+    showAllEmotions:
+      'Mostrar todos los tonos emocionales (incluyendo triste/enojado/frustrado/etc.)',
+    browseMistral: 'Explore las voces de Voxtral y escúchelas antes de asignarlas.',
+    noMistralVoices:
+      'No se encontraron voces de Mistral. Verifique que MISTRAL_API_KEY esté configurada.',
+    browseXai: 'Explore las voces de xAI (Grok) y escúchelas antes de asignarlas.',
+    noXaiVoices: 'No se encontraron voces de xAI. Verifique que XAI_API_KEY esté configurada.',
+    voicePreview: 'Vista Previa de Voz',
+    assignVoiceId: 'Pegue un ID de voz de ElevenLabs existente para asignarlo a este profesor.',
+    assignButton: 'Asignar',
+    assignSpecificVoice: 'Asignar "{name}"',
+    assigning: 'Asignando...',
+    tryAnotherVoice: 'Probar otra voz',
+    autoPickDescription:
+      'Elija automáticamente una voz de ElevenLabs que coincida con los atributos de este profesor (género, acento, edad).',
+    reassignVoice: 'Reasignar Voz',
+    reassigning: 'Reasignando...',
+    generateNewVoice: 'Generar una Nueva Voz',
+    experimental: 'Experimental',
+    customVoiceDescription:
+      'Cree una voz de ElevenLabs personalizada a partir de los atributos de este profesor. Escuche las opciones y elija su favorita.',
+    generateOptions: 'Generar Opciones',
+    generating: 'Generando...',
+    useThisVoice: 'Usar Esta Voz',
+    saving: 'Guardando...',
+    cloneToMistral: 'Clonar a Mistral',
+    cloneDescription:
+      'Clone esta voz en su biblioteca de Mistral y cambie al profesor a Voxtral TTS.',
+    cloning: 'Clonando...',
+    successAssigned: 'Voz asignada con éxito ({backend}: {id}).',
+    successReassigned: 'Voz reasignada con éxito.',
+    successCloned: 'Voz clonada a Mistral con éxito.',
+    successSavedDesigned: 'Nueva voz guardada y asignada con éxito.',
+    errorEnterId: 'Por favor, ingrese un ID de voz de ElevenLabs.',
+    errorSelectVoice: 'Por favor, seleccione una voz primero.',
+    errorNoIdentifier: 'No se encontró ningún identificador de voz.',
+    errorAssignFailed: 'La asignación falló.',
+    errorReassignFailed: 'La reasignación falló.',
+    errorCloneFailed: 'La clonación falló.',
+    errorGeneratePreviewsFailed: 'Error al generar vistas previas de voz.',
+    errorSaveVoiceFailed: 'Error al guardar la voz.',
+    styleLabel: 'Estilo',
+    langLabel: 'Idioma',
   },
 
   // Departments page
@@ -314,6 +472,21 @@ export const es = {
     errorLoading: 'Error al cargar departamentos',
     noDepartmentsFound: 'No se encontraron departamentos',
     failedToCreate: 'Falló la creación del departamento',
+    form: {
+      nameLabel: 'Nombre del departamento',
+      codeLabel: 'Código del departamento',
+      facultyLabel: 'Facultad',
+      descriptionLabel: 'Descripción',
+      codeHelperText: 'Debe tener entre 2 y 10 caracteres.',
+      facultyPlaceholder: 'Seleccionar una facultad',
+      facultyLoading: 'Cargando facultades...',
+      nameRequired: 'El nombre del departamento es obligatorio',
+      codeRequired: 'El código del departamento es obligatorio',
+      codeLengthError: 'El código debe tener entre 2 y 10 caracteres',
+      facultyRequired: 'La facultad es obligatoria',
+      descriptionRequired: 'La descripción es obligatoria',
+      failedToGenerate: 'Error al generar el departamento',
+    },
   },
 
   // Profile page
@@ -342,6 +515,12 @@ export const es = {
       creator: 'Inscrito',
       admin: 'Admin',
     },
+    contentLanguage: 'Idioma del contenido',
+    contentLanguageDesc:
+      'Elige el idioma del contenido que deseas explorar. "Auto" sigue el idioma de la interfaz si está disponible.',
+    contentLanguageAuto: 'Auto (seguir interfaz)',
+    contentLanguageEn: 'English',
+    contentLanguageFr: 'Français',
   },
 
   // Admin Dashboard
@@ -440,6 +619,8 @@ export const es = {
     lecturesPerWeek: 'Lecciones por semana',
     totalWeeks: 'Semanas totales',
     editTopics: 'Editar Temas',
+    topicsForCourse: 'Temas de {code}: {title}',
+    manageTopicsDescription: 'Administra los temas y la estructura del contenido de este curso.',
     topicGenerationInProgress:
       'Generación de temas en progreso. La página se actualizará automáticamente cuando se complete.',
   },
@@ -461,10 +642,31 @@ export const es = {
     failedToDelete: 'Error al eliminar departamento',
     invalidDepartmentId: 'ID de departamento inválido',
     level: 'Nivel',
+    backToAcademics: 'Volver a Académico',
+    loadingDepartment: 'Cargando información del departamento...',
+    description: 'Descripción',
+    code: 'Código del departamento',
+    faculty: 'Facultad',
+    confirmDeleteMessage: '¿Estás seguro de que quieres eliminar este departamento?',
+    confirmDeleteUndo: 'Esta acción no se puede deshacer.',
   },
 
   // Lecture Detail page
   lectureDetail: {
+    form: {
+      editHeading: 'Editar lección',
+      createHeading: 'Crear nueva lección',
+      titleLabel: 'Título',
+      contentLabel: 'Contenido',
+      titlePlaceholder: 'Ingresa el título de la lección',
+      contentPlaceholder: 'Ingresa el contenido de la lección...',
+      contentHelper:
+        'Ingresa el contenido de la lección. Este será el texto principal de la lección.',
+      saveChanges: 'Guardar cambios',
+      createLecture: 'Crear lección',
+      saving: 'Guardando...',
+      creating: 'Creando...',
+    },
     generatingAudio: 'Generando Audio...',
     regenerateAudio: 'Regenerar Audio',
     generateAudio: 'Generar Audio',
@@ -497,10 +699,62 @@ export const es = {
     audioGenerationTimeout:
       'La solicitud de generación de audio ha excedido el tiempo de espera. Puede que se complete en segundo plano. Intenta actualizar en un momento.',
     audioUploadSuccess: '¡Archivo de audio subido con éxito!',
+    view: 'Ver',
+    generatingTimeline: 'Generando cronología...',
+    regenerateTimeline: 'Regenerar cronología',
+    generateTimeline: 'Generar cronología',
+    generatingImages: 'Generando imágenes...',
+    regenerateImages: 'Regenerar imágenes de la lección',
+    generateImages: 'Generar imágenes de la lección',
+    resumeImages: 'Reanudar generación de imágenes',
+    uploadDisabledTooltip:
+      'La subida está deshabilitada cuando ya existe el audio de la lección. Usa Regenerar Audio para reemplazarlo.',
+    confirmRegenerateAudio:
+      '¿Regenerar audio? Esto reemplaza el audio de la lección y regenerará la cronología de palabras, luego volverá a mapear la cronología de imágenes existente.',
+    confirmRegenerateTimeline:
+      '¿Regenerar cronología? Esto reemplaza la cronología de palabras y volverá a mapear la cronología de imágenes de la lección existente sin regenerar las imágenes.',
+    confirmRegenerateImages:
+      '¿Regenerar imágenes de la lección? Esto eliminará las imágenes de diapositivas existentes cuando sea posible y creará una nueva cronología de imágenes con imágenes recién generadas.',
+    generatingSummary: 'Generando resumen...',
+    regeneratingSummary: 'Regenerando resumen...',
+    regenerateSummary: 'Regenerar resumen',
+    generateSummary: 'Generar resumen',
+    clearSummary: 'Limpiar resumen',
+    clearSummaryConfirm: '¿Estás seguro de que deseas limpiar el resumen de la lección "{title}"?',
+    clearSummaryUndo: 'El resumen será eliminado, pero podrás regenerarlo más tarde.',
+    editSummaryHeading: 'Editar resumen de la lección',
+    editSummaryDescription:
+      'Edita el resumen de esta lección. Los cambios se guardarán inmediatamente.',
+    editSummaryPlaceholder: 'Ingresa el resumen de la lección...',
+    words: 'palabras',
+    upload: 'Subir',
+    noLectureCreated: 'Aún no se ha creado ninguna lección para este tema.',
+    generationTimeout:
+      'La solicitud de generación tardó más de lo esperado y expiró. Esto puede ocurrir con la generación de contenido complejo. Por favor, inténtalo de nuevo.',
   },
 
   // Topic Detail page
   topicDetail: {
+    form: {
+      editHeading: 'Editar tema',
+      createHeading: 'Crear nuevo tema',
+      titleLabel: 'Título',
+      weekLabel: 'Número de semana',
+      orderLabel: 'Orden en la semana',
+      contentLabel: 'Contenido (JSON)',
+      aiPromptLabel: 'Indicación de generación IA (opcional)',
+      titlePlaceholder: 'Ingresa el título del tema',
+      weekPlaceholder: 'Ingresa el número de semana',
+      orderPlaceholder: 'Ingresa el orden dentro de la semana',
+      contentHelper:
+        'Ingresa el contenido JSON del tema. Ejemplo: texto de lección, arreglo de lecturas, arreglo de objetivos, etc.',
+      aiPromptHelper: 'Proporciona una indicación libre para guiar la generación IA de este tema.',
+      invalidJsonError: 'Formato JSON inválido',
+      weekOrderRequired: 'La semana y el orden deben ser números válidos antes de generar.',
+      failedToGenerate: 'Error al generar el tema',
+      updateLabel: 'Actualizar',
+      createLabel: 'Crear tema',
+    },
     generateLectureText: 'Generar texto de la lección',
     generateLectureWithAudio: 'Generar lección con audio',
     generating: 'Generando...',
@@ -551,22 +805,36 @@ export const es = {
     notNow: 'Ahora no',
   },
 
-  // Pricing page (untranslated — English placeholder)
+  // Metadata component
+  metadata: {
+    createdBy: 'Creado por',
+    createdWith: 'Creado con',
+    createdOn: 'Creado el',
+    type: 'Tipo de recurso',
+    types: {
+      course: 'Curso',
+      lecture: 'Lección',
+      professor: 'Profesor',
+      topic: 'Tema',
+    },
+  },
+
+  // Pricing page
   pricing: {
-    title: 'Pricing',
-    tagline: 'We\u2019re working on a simple, fair pricing model.',
+    title: 'Precios',
+    tagline: 'Estamos trabajando en un modelo de precios simple y justo.',
     taglineDetail:
-      'The goal is to cover the cost of running the platform \u2014 AI generation and text-to-speech aren\u2019t free. We\u2019re figuring out what makes sense.',
-    currentStatus: 'Current Status',
+      'El objetivo es cubrir el costo de funcionamiento de la plataforma: la generación de IA y la síntesis de voz no son gratuitas. Estamos descifrando qué tiene más sentido.',
+    currentStatus: 'Estado Actual',
     currentStatusDetail:
-      'ArtificialU is free to use right now, with per-account limits on how many lectures and audio files you can generate. You receive 50 coins when you sign up.',
+      'ArtificialU es de uso gratuito en este momento, con límites por cuenta sobre cuántas lecciones y archivos de audio puedes generar. Recibes 50 monedas al registrarte.',
     coinsExplained:
-      'Coins are the internal currency for generation. Each AI lecture costs a small number of coins; audio conversion costs a few more. When you run out, generation is paused \u2014 but browsing and listening to existing content is always free.',
-    wantMore: 'Want More Coins?',
+      'Las monedas son la divisa interna para la generación. Cada lección de IA cuesta una pequeña cantidad de monedas; la conversión de audio cuesta unas pocas más. Cuando te quedas sin monedas, la generación se pausa, pero explorar y escuchar el contenido existente siempre es gratis.',
+    wantMore: '¿Quieres más monedas?',
     wantMoreDetail:
-      'Just email me. I\u2019m happy to top up your account while pricing is still being figured out.',
+      'Simplemente envíame un correo electrónico. Con gusto recargaré tu cuenta mientras seguimos definiendo el modelo de precios.',
     contactCta: 'ben@aliencyb.org',
-    stayTuned: 'Stay tuned \u2014 a proper pricing page is coming.',
+    stayTuned: 'Mantente atento: pronto llegará una página de precios formal.',
   },
 
   // Quickstart Wizard

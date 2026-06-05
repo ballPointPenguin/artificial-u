@@ -29,6 +29,7 @@ class TestDepartmentRepository:
         mock_dept.code = "CS"
         mock_dept.faculty_id = 1
         mock_dept.description = "Study of computers"
+        mock_dept.language = None
         mock_dept.created_at = None
         mock_dept.updated_at = None
         return mock_dept
@@ -118,6 +119,7 @@ class TestDepartmentRepository:
         mock_dept1.code = "CS"
         mock_dept1.faculty_id = 1
         mock_dept1.description = "Study of computers"
+        mock_dept1.language = None
         mock_dept1.created_at = None
         mock_dept1.updated_at = None
 
@@ -127,6 +129,7 @@ class TestDepartmentRepository:
         mock_dept2.code = "MATH"
         mock_dept2.faculty_id = 2
         mock_dept2.description = "Study of numbers"
+        mock_dept2.language = None
         mock_dept2.created_at = None
         mock_dept2.updated_at = None
 
@@ -153,6 +156,7 @@ class TestDepartmentRepository:
         mock_dept.code = "CS"
         mock_dept.faculty_id = 1
         mock_dept.description = "Study of computers"
+        mock_dept.language = None
         mock_dept.created_at = None
         mock_dept.updated_at = None
 

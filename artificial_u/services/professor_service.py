@@ -206,9 +206,10 @@ class ProfessorService:
         Returns:
             List[Professor]: List of professor objects
         """
-        # Get all professors from repository
+        # Get all professors from repository (language filter applied at DB level)
+        language_filter = (filters or {}).get("language")
         try:
-            professors = self.repository_factory.professor.list()
+            professors = self.repository_factory.professor.list(language=language_filter)
         except Exception as e:
             self.logger.error(f"Failed to list professors from repository: {e}", exc_info=True)
             raise DatabaseError("Failed to retrieve professors.") from e
@@ -219,7 +220,12 @@ class ProfessorService:
             faculty_id = filters.get("faculty_id")
             if faculty_id is not None:
                 try:
-                    professors = self.repository_factory.professor.list_by_faculty(faculty_id)
+                    # Re-apply language filter since list_by_faculty bypasses the DB-level filter
+                    professors = [
+                        p
+                        for p in self.repository_factory.professor.list_by_faculty(faculty_id)
+                        if language_filter is None or p.language == language_filter
+                    ]
                 except Exception as e:
                     self.logger.error(
                         f"Failed to filter professors by faculty_id {faculty_id}: {e}",

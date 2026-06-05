@@ -58,6 +58,10 @@ class CourseRepository(BaseRepository):
         if student_obj is not None and isinstance(getattr(student_obj, "id", None), int):
             course_student = self._convert_student(student_obj)
 
+        language = getattr(db_course, "language", None)
+        if language is not None and not isinstance(language, str):
+            language = None
+
         return Course(
             id=db_course.id,
             code=db_course.code,
@@ -66,6 +70,7 @@ class CourseRepository(BaseRepository):
             lectures_per_week=db_course.lectures_per_week,
             level=db_course.level,
             total_weeks=db_course.total_weeks,
+            language=language,
             status=db_course.status,
             department_id=db_course.department_id,
             professor_id=db_course.professor_id,
@@ -94,6 +99,7 @@ class CourseRepository(BaseRepository):
                 lectures_per_week=course.lectures_per_week,
                 level=course.level,
                 total_weeks=course.total_weeks,
+                language=course.language,
                 status=course.status,
                 department_id=course.department_id,
                 professor_id=course.professor_id,
@@ -152,6 +158,7 @@ class CourseRepository(BaseRepository):
             db_course.lectures_per_week = course.lectures_per_week
             db_course.level = course.level
             db_course.total_weeks = course.total_weeks
+            db_course.language = course.language
             db_course.status = course.status
             db_course.department_id = course.department_id
             db_course.professor_id = course.professor_id
@@ -234,6 +241,7 @@ class CourseRepository(BaseRepository):
         status: Optional[str] = None,
         include_own_hidden: bool = False,
         requesting_student_id: Optional[int] = None,
+        language: Optional[str] = None,
     ) -> Tuple[List[Course], int]:
         """
         List courses with advanced filtering, sorting, pagination, and counts.
@@ -293,6 +301,8 @@ class CourseRepository(BaseRepository):
                 query = query.filter(CourseModel.title.ilike(f"%{title}%"))
             if created_by:
                 query = query.filter(CourseModel.created_by == created_by)
+            if language is not None:
+                query = query.filter(CourseModel.language == language)
 
             # Status filtering with special handling for own hidden courses
             if status:

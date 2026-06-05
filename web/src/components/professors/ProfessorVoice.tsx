@@ -21,6 +21,7 @@ import {
 } from '../../api/services/voice-service.js'
 import type { MistralCatalogVoice, VoiceDesignPreview, XaiCatalogVoice } from '../../api/types.js'
 import { RequireRole } from '../../auth/RequireRole'
+import { useLocale, useTranslations } from '../../i18n'
 import { Alert, Badge, Button, LoadingSpinner } from '../ui'
 
 type TtsBackendKey = 'elevenlabs' | 'mistral' | 'xai'
@@ -43,13 +44,6 @@ const backendLabel = (backend: string | null | undefined): string => {
 
 const EXCLUDED_MISTRAL_EMOTIONS = new Set(['sad', 'angry', 'shameful', 'jealousy', 'frustrated'])
 
-/** Display-friendly name for a gender value. */
-const genderLabel = (g: string | null | undefined): string => {
-  if (!g) return ''
-  const map: Record<string, string> = { male: 'Male', female: 'Female', neutral: 'Neutral' }
-  return map[g.toLowerCase()] ?? g
-}
-
 // ---------------------------------------------------------------------------
 // Voice card shown in the browsing grid
 // ---------------------------------------------------------------------------
@@ -60,16 +54,21 @@ const VoiceCard: Component<{
   onSelect: () => void
   onPreview: () => void
 }> = (props) => {
+  const t = useTranslations()
   const attrs = createMemo(() => {
     const v = props.voice
     const items: Array<{ label: string; value: string }> = []
-    if (v.gender) items.push({ label: 'Gender', value: genderLabel(v.gender) })
+    if (v.gender) {
+      const genderKey = v.gender.toLowerCase() as 'male' | 'female' | 'neutral'
+      const localizedGender = t().professorDetail.genders[genderKey] || v.gender
+      items.push({ label: t().professorDetail.fields.gender, value: localizedGender })
+    }
     if (v.tags?.length) {
       const emotion = v.tags[v.tags.length - 1]
-      if (emotion) items.push({ label: 'Style', value: emotion })
+      if (emotion) items.push({ label: t().professorVoice.styleLabel || 'Style', value: emotion })
     }
     if (v.languages?.length) {
-      items.push({ label: 'Lang', value: v.languages.join(', ') })
+      items.push({ label: t().professorVoice.langLabel || 'Lang', value: v.languages.join(', ') })
     }
     return items
   })
@@ -113,7 +112,7 @@ const VoiceCard: Component<{
           }}
           disabled={props.isPreviewing}
         >
-          {props.isPreviewing ? '...' : '▶ Preview'}
+          {props.isPreviewing ? '...' : `▶ ${t().common.preview}`}
         </button>
       </div>
     </div>
@@ -130,11 +129,16 @@ const XaiVoiceCard: Component<{
   onSelect: () => void
   onPreview: () => void
 }> = (props) => {
+  const t = useTranslations()
   const attrs = createMemo(() => {
     const v = props.voice
     const items: Array<{ label: string; value: string }> = []
-    if (v.gender) items.push({ label: 'Gender', value: genderLabel(v.gender) })
-    if (v.language) items.push({ label: 'Lang', value: v.language })
+    if (v.gender) {
+      const genderKey = v.gender.toLowerCase() as 'male' | 'female' | 'neutral'
+      const localizedGender = t().professorDetail.genders[genderKey] || v.gender
+      items.push({ label: t().professorDetail.fields.gender, value: localizedGender })
+    }
+    if (v.language) items.push({ label: t().professorVoice.langLabel || 'Lang', value: v.language })
     return items
   })
 
@@ -177,7 +181,7 @@ const XaiVoiceCard: Component<{
           }}
           disabled={props.isPreviewing}
         >
-          {props.isPreviewing ? '...' : '▶ Preview'}
+          {props.isPreviewing ? '...' : `▶ ${t().common.preview}`}
         </button>
       </div>
     </div>
@@ -188,6 +192,8 @@ const XaiVoiceCard: Component<{
 // Main component
 // ---------------------------------------------------------------------------
 const ProfessorVoice: Component = () => {
+  const t = useTranslations()
+  const { currentLocale } = useLocale()
   const params = useParams<{ id: string }>()
   const professorId = createMemo(() => {
     const id = Number.parseInt(params.id, 10)
@@ -274,6 +280,7 @@ const ProfessorVoice: Component = () => {
       const resp = await previewVoice({
         voice_id: voice.id,
         tts_backend: 'mistral',
+        language: currentLocale(),
       })
       setPreviewAudioUri(resp.audio_data_uri)
     } catch (e) {
@@ -290,6 +297,7 @@ const ProfessorVoice: Component = () => {
       const resp = await previewVoice({
         voice_id: voice.id,
         tts_backend: 'xai',
+        language: currentLocale(),
       })
       setPreviewAudioUri(resp.audio_data_uri)
     } catch (e) {
@@ -319,7 +327,7 @@ const ProfessorVoice: Component = () => {
     if (backend === 'elevenlabs') {
       const id = elVoiceId().trim()
       if (!id) {
-        setAssignError('Please enter an ElevenLabs voice ID.')
+        setAssignError(t().professorVoice.errorEnterId)
         return
       }
       externalId = id
@@ -327,7 +335,7 @@ const ProfessorVoice: Component = () => {
     } else if (backend === 'xai') {
       const voice = selectedXaiVoice()
       if (!voice) {
-        setAssignError('Please select a voice first.')
+        setAssignError(t().professorVoice.errorSelectVoice)
         return
       }
       externalId = voice.id
@@ -335,7 +343,7 @@ const ProfessorVoice: Component = () => {
     } else {
       const voice = selectedMistralVoice()
       if (!voice) {
-        setAssignError('Please select a voice first.')
+        setAssignError(t().professorVoice.errorSelectVoice)
         return
       }
       externalId = voice.id
@@ -343,7 +351,7 @@ const ProfessorVoice: Component = () => {
     }
 
     if (!externalId) {
-      setAssignError('No voice identifier found.')
+      setAssignError(t().professorVoice.errorNoIdentifier)
       return
     }
 
@@ -353,10 +361,14 @@ const ProfessorVoice: Component = () => {
         external_id: externalId,
         tts_backend: ttsBackend,
       })
-      setAssignSuccess(`Voice assigned successfully (${ttsBackend}: ${externalId}).`)
+      setAssignSuccess(
+        t()
+          .professorVoice.successAssigned.replace('{backend}', ttsBackend)
+          .replace('{id}', externalId)
+      )
       void refetchProfessor()
     } catch (e) {
-      setAssignError(e instanceof Error ? e.message : 'Assignment failed.')
+      setAssignError(e instanceof Error ? e.message : t().professorVoice.errorAssignFailed)
     } finally {
       setIsAssigning(false)
     }
@@ -370,10 +382,10 @@ const ProfessorVoice: Component = () => {
     setIsReassigning(true)
     try {
       await professorService.assignVoiceToProfessor(pId)
-      setAssignSuccess('Voice reassigned successfully.')
+      setAssignSuccess(t().professorVoice.successReassigned)
       void refetchProfessor()
     } catch (e) {
-      setAssignError(e instanceof Error ? e.message : 'Reassignment failed.')
+      setAssignError(e instanceof Error ? e.message : t().professorVoice.errorReassignFailed)
     } finally {
       setIsReassigning(false)
     }
@@ -389,7 +401,11 @@ const ProfessorVoice: Component = () => {
     setIsPreviewingCurrentVoice(true)
     setCurrentMistralPreviewUri(null)
     try {
-      const resp = await previewVoice({ voice_id: voice.external_id, tts_backend: 'mistral' })
+      const resp = await previewVoice({
+        voice_id: voice.external_id,
+        tts_backend: 'mistral',
+        language: currentLocale(),
+      })
       setCurrentMistralPreviewUri(resp.audio_data_uri)
     } catch (e) {
       console.error('Current voice preview failed', e)
@@ -411,10 +427,10 @@ const ProfessorVoice: Component = () => {
     setIsCloningToMistral(true)
     try {
       await cloneVoiceToMistral({ professor_id: pId })
-      setAssignSuccess('Voice cloned to Mistral successfully.')
+      setAssignSuccess(t().professorVoice.successCloned)
       void refetchProfessor()
     } catch (e) {
-      setCloneError(e instanceof Error ? e.message : 'Cloning failed.')
+      setCloneError(e instanceof Error ? e.message : t().professorVoice.errorCloneFailed)
     } finally {
       setIsCloningToMistral(false)
     }
@@ -436,7 +452,7 @@ const ProfessorVoice: Component = () => {
     setPreviewNames({})
     setIsGeneratingPreviews(true)
     try {
-      const result = await generateVoiceDesignPreviews(pId)
+      const result = await generateVoiceDesignPreviews(pId, currentLocale())
       setDesignPreviews(result.previews)
       // Seed default names: "Prof. Name — Voice 1", etc.
       const profName = professor()?.name ?? 'Professor'
@@ -446,7 +462,9 @@ const ProfessorVoice: Component = () => {
       })
       setPreviewNames(names)
     } catch (e) {
-      setDesignError(e instanceof Error ? e.message : 'Failed to generate voice previews.')
+      setDesignError(
+        e instanceof Error ? e.message : t().professorVoice.errorGeneratePreviewsFailed
+      )
     } finally {
       setIsGeneratingPreviews(false)
     }
@@ -466,10 +484,10 @@ const ProfessorVoice: Component = () => {
       })
       setDesignPreviews([])
       setPreviewNames({})
-      setAssignSuccess('New voice saved and assigned successfully.')
+      setAssignSuccess(t().professorVoice.successSavedDesigned)
       void refetchProfessor()
     } catch (e) {
-      setDesignError(e instanceof Error ? e.message : 'Failed to save voice.')
+      setDesignError(e instanceof Error ? e.message : t().professorVoice.errorSaveVoiceFailed)
     } finally {
       setIsSavingId(null)
     }
@@ -492,7 +510,7 @@ const ProfessorVoice: Component = () => {
         <Show when={professor()} fallback={<LoadingSpinner />}>
           {(prof) => (
             <h1 class="text-3xl font-display text-parchment-100 text-shadow-golden">
-              Voice Selection — {prof().name}
+              {t().professorVoice.voiceSelectionTitle.replace('{name}', prof().name)}
             </h1>
           )}
         </Show>
@@ -501,8 +519,11 @@ const ProfessorVoice: Component = () => {
       {/* Current voice summary */}
       <Show when={professor()?.voice_id}>
         <div class="arcane-card p-4 space-y-3">
-          <h2 class="text-lg font-display text-parchment-100">Current Voice</h2>
-          <Show when={currentVoice()} fallback={<p class="text-muted text-sm">Loading...</p>}>
+          <h2 class="text-lg font-display text-parchment-100">{t().professorVoice.currentVoice}</h2>
+          <Show
+            when={currentVoice()}
+            fallback={<p class="text-muted text-sm">{t().common.loading}</p>}
+          >
             {(voice) => (
               <>
                 <div class="flex flex-wrap items-center gap-2 text-sm">
@@ -511,7 +532,11 @@ const ProfessorVoice: Component = () => {
                     {voice().name ?? voice().external_id ?? voice().el_voice_id}
                   </span>
                   <Show when={voice().gender}>
-                    <Badge variant="outline">{genderLabel(voice().gender)}</Badge>
+                    <Badge variant="outline">
+                      {t().professorDetail.genders[
+                        voice().gender!.toLowerCase() as 'male' | 'female' | 'neutral'
+                      ] || voice().gender}
+                    </Badge>
                   </Show>
                   <Show when={voice().descriptive}>
                     <Badge variant="outline">{voice().descriptive}</Badge>
@@ -523,7 +548,7 @@ const ProfessorVoice: Component = () => {
                       onClick={() => void handlePreviewCurrentVoice()}
                       disabled={isPreviewingCurrentVoice()}
                     >
-                      {isPreviewingCurrentVoice() ? '…' : '▶ Preview'}
+                      {isPreviewingCurrentVoice() ? '…' : `▶ ${t().common.preview || 'Preview'}`}
                     </button>
                   </Show>
                 </div>
@@ -582,7 +607,9 @@ const ProfessorVoice: Component = () => {
                 when={currentVoice()?.tts_backend === 'elevenlabs' && currentVoice()?.preview_url}
               >
                 <div class="space-y-2">
-                  <p class="text-sm font-medium text-foreground">Current voice preview</p>
+                  <p class="text-sm font-medium text-foreground">
+                    {t().professorVoice.voicePreview}
+                  </p>
                   <audio
                     controls
                     class="w-full max-w-sm"
@@ -602,9 +629,7 @@ const ProfessorVoice: Component = () => {
               </Show>
 
               <div class="space-y-4">
-                <p class="text-sm text-muted">
-                  Paste an existing ElevenLabs voice ID to assign it to this professor.
-                </p>
+                <p class="text-sm text-muted">{t().professorVoice.assignVoiceId}</p>
                 <div class="flex items-center gap-3">
                   <input
                     type="text"
@@ -614,32 +639,33 @@ const ProfessorVoice: Component = () => {
                     onInput={(e: InputEvent & { currentTarget: HTMLInputElement }) =>
                       setElVoiceId(e.currentTarget.value)
                     }
-                    aria-label="ElevenLabs Voice ID"
+                    aria-label={t().professorDetail.elevenlabsId}
                   />
                   <Button
                     variant="primary"
                     onClick={() => void handleAssign()}
                     disabled={!elVoiceId().trim() || isAssigning()}
                   >
-                    {isAssigning() ? 'Assigning...' : 'Assign'}
+                    {isAssigning() ? t().professorVoice.assigning : t().professorVoice.assignButton}
                   </Button>
                 </div>
               </div>
 
               <div class="border-t border-parchment-800/30 pt-5 space-y-3">
                 <div>
-                  <p class="text-sm font-medium text-foreground">Try another voice</p>
-                  <p class="text-xs text-muted mt-0.5">
-                    Automatically pick a matching ElevenLabs voice based on this professor's
-                    attributes (gender, accent, age).
+                  <p class="text-sm font-medium text-foreground">
+                    {t().professorVoice.tryAnotherVoice}
                   </p>
+                  <p class="text-xs text-muted mt-0.5">{t().professorVoice.autoPickDescription}</p>
                 </div>
                 <Button
                   variant="secondary"
                   onClick={() => void handleReassignVoice()}
                   disabled={isReassigning()}
                 >
-                  {isReassigning() ? 'Reassigning...' : 'Reassign Voice'}
+                  {isReassigning()
+                    ? t().professorVoice.reassigning
+                    : t().professorVoice.reassignVoice}
                 </Button>
               </div>
 
@@ -648,12 +674,13 @@ const ProfessorVoice: Component = () => {
                 <div class="flex items-start justify-between gap-3">
                   <div>
                     <p class="text-sm font-medium text-foreground">
-                      Generate a New Voice{' '}
-                      <span class="text-xs font-normal text-accent ml-1">[Experimental]</span>
+                      {t().professorVoice.generateNewVoice}{' '}
+                      <span class="text-xs font-normal text-accent ml-1">
+                        [{t().professorVoice.experimental}]
+                      </span>
                     </p>
                     <p class="text-xs text-muted mt-0.5">
-                      Create a custom ElevenLabs voice from this professor's attributes. Listen to
-                      the options and choose your favourite.
+                      {t().professorVoice.customVoiceDescription}
                     </p>
                   </div>
                   <Button
@@ -665,10 +692,10 @@ const ProfessorVoice: Component = () => {
                     {isGeneratingPreviews() ? (
                       <span class="flex items-center gap-2">
                         <LoadingSpinner size="sm" />
-                        Generating…
+                        {t().professorVoice.generating}
                       </span>
                     ) : (
-                      'Generate Options'
+                      t().professorVoice.generateOptions
                     )}
                   </Button>
                 </div>
@@ -688,7 +715,7 @@ const ProfessorVoice: Component = () => {
                               class="arcane-input flex-1 text-sm"
                               value={
                                 previewNames()[preview.generated_voice_id] ??
-                                `Voice ${String(i() + 1)}`
+                                `${professor()?.name || t().professorDetail.name} — Voice ${String(i() + 1)}`
                               }
                               onInput={(e: InputEvent & { currentTarget: HTMLInputElement }) =>
                                 setPreviewNames((prev) => ({
@@ -706,8 +733,8 @@ const ProfessorVoice: Component = () => {
                               class="shrink-0"
                             >
                               {isSavingId() === preview.generated_voice_id
-                                ? 'Saving…'
-                                : 'Use This Voice'}
+                                ? t().professorVoice.saving
+                                : t().professorVoice.useThisVoice}
                             </Button>
                           </div>
                           <audio
@@ -739,11 +766,10 @@ const ProfessorVoice: Component = () => {
                 <div class="border-t border-parchment-800/30 pt-5 flex flex-col gap-2">
                   <div class="flex items-start justify-between gap-3">
                     <div>
-                      <p class="text-sm font-medium text-foreground">Clone to Mistral</p>
-                      <p class="text-xs text-muted mt-0.5">
-                        Clone this voice into your Mistral library and switch the professor to
-                        Voxtral TTS.
+                      <p class="text-sm font-medium text-foreground">
+                        {t().professorVoice.cloneToMistral}
                       </p>
+                      <p class="text-xs text-muted mt-0.5">{t().professorVoice.cloneDescription}</p>
                     </div>
                     <Button
                       variant="secondary"
@@ -751,7 +777,9 @@ const ProfessorVoice: Component = () => {
                       disabled={isCloningToMistral()}
                       class="shrink-0"
                     >
-                      {isCloningToMistral() ? 'Cloning…' : 'Clone to Mistral'}
+                      {isCloningToMistral()
+                        ? t().professorVoice.cloning
+                        : t().professorVoice.cloneToMistral}
                     </Button>
                   </div>
                   <Show when={cloneError()}>
@@ -768,9 +796,7 @@ const ProfessorVoice: Component = () => {
           <Show when={selectedBackend() === 'mistral'}>
             <div class="space-y-4">
               <div class="flex items-center justify-between">
-                <p class="text-sm text-muted">
-                  Browse Voxtral voices and preview them before assigning.
-                </p>
+                <p class="text-sm text-muted">{t().professorVoice.browseMistral}</p>
                 <Show when={selectedMistralVoice()}>
                   <Button
                     variant="primary"
@@ -778,8 +804,11 @@ const ProfessorVoice: Component = () => {
                     disabled={isAssigning()}
                   >
                     {isAssigning()
-                      ? 'Assigning...'
-                      : `Assign "${selectedMistralVoice()?.name ?? 'voice'}"`}
+                      ? t().professorVoice.assigning
+                      : t().professorVoice.assignSpecificVoice.replace(
+                          '{name}',
+                          selectedMistralVoice()?.name || ''
+                        )}
                   </Button>
                 </Show>
               </div>
@@ -787,11 +816,7 @@ const ProfessorVoice: Component = () => {
               <Show when={!mistralCatalog.loading} fallback={<LoadingSpinner />}>
                 <Show
                   when={filteredMistralVoices().length > 0}
-                  fallback={
-                    <p class="text-muted text-sm">
-                      No Mistral voices found. Check that MISTRAL_API_KEY is configured.
-                    </p>
-                  }
+                  fallback={<p class="text-muted text-sm">{t().professorVoice.noMistralVoices}</p>}
                 >
                   <label class="flex items-center gap-2 text-xs text-muted">
                     <input
@@ -801,7 +826,7 @@ const ProfessorVoice: Component = () => {
                         setShowAllMistralEmotions(e.currentTarget.checked)
                       }
                     />
-                    Show all emotional tones (including sad/angry/frustrated/etc.)
+                    {t().professorVoice.showAllEmotions}
                   </label>
                   <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                     <For each={filteredMistralVoices()}>
@@ -824,7 +849,7 @@ const ProfessorVoice: Component = () => {
               {/* Audio player for preview */}
               <Show when={previewAudioUri()}>
                 <div class="mt-4 p-3 bg-surface rounded-lg">
-                  <p class="text-xs text-muted mb-2">Voice Preview</p>
+                  <p class="text-xs text-muted mb-2">{t().professorVoice.voicePreview}</p>
                   <audio
                     controls
                     autoplay
@@ -850,9 +875,7 @@ const ProfessorVoice: Component = () => {
           <Show when={selectedBackend() === 'xai'}>
             <div class="space-y-4">
               <div class="flex items-center justify-between">
-                <p class="text-sm text-muted">
-                  Browse xAI (Grok) voices and preview them before assigning.
-                </p>
+                <p class="text-sm text-muted">{t().professorVoice.browseXai}</p>
                 <Show when={selectedXaiVoice()}>
                   <Button
                     variant="primary"
@@ -860,8 +883,11 @@ const ProfessorVoice: Component = () => {
                     disabled={isAssigning()}
                   >
                     {isAssigning()
-                      ? 'Assigning...'
-                      : `Assign "${selectedXaiVoice()?.name ?? 'voice'}"`}
+                      ? t().professorVoice.assigning
+                      : t().professorVoice.assignSpecificVoice.replace(
+                          '{name}',
+                          selectedXaiVoice()?.name || ''
+                        )}
                   </Button>
                 </Show>
               </div>
@@ -869,11 +895,7 @@ const ProfessorVoice: Component = () => {
               <Show when={!xaiCatalog.loading} fallback={<LoadingSpinner />}>
                 <Show
                   when={(xaiCatalog()?.items.length ?? 0) > 0}
-                  fallback={
-                    <p class="text-muted text-sm">
-                      No xAI voices found. Check that XAI_API_KEY is configured.
-                    </p>
-                  }
+                  fallback={<p class="text-muted text-sm">{t().professorVoice.noXaiVoices}</p>}
                 >
                   <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                     <For each={xaiCatalog()?.items ?? []}>
@@ -896,7 +918,7 @@ const ProfessorVoice: Component = () => {
               {/* Audio player for preview */}
               <Show when={previewAudioUri()}>
                 <div class="mt-4 p-3 bg-surface rounded-lg">
-                  <p class="text-xs text-muted mb-2">Voice Preview</p>
+                  <p class="text-xs text-muted mb-2">{t().professorVoice.voicePreview}</p>
                   <audio
                     controls
                     autoplay

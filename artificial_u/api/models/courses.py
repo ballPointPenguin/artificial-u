@@ -45,6 +45,7 @@ class CourseBase(BaseModel):
     status: Literal["hidden", "published"] = Field(
         default="hidden", description="Course visibility status"
     )
+    language: Optional[str] = Field(None, description="Language code (e.g., 'en', 'fr')")
     # Attribution (not required for create)
     created_by: Optional[int] = Field(None, description="Student ID who created the course")
     created_with: Optional[str] = Field(None, description="Name of LLM used, if any")

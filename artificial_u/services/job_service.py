@@ -192,6 +192,7 @@ class JobService:
         created_by = payload.get("created_by")
         created_with = payload.get("created_with")
         connected_course_ids = payload.get("connected_course_ids")
+        language = payload.get("language")
 
         if not title or not code or not level:
             raise ValueError("title, code, and level are required to create a course")
@@ -209,6 +210,7 @@ class JobService:
             created_with=created_with,
             connected_course_ids=connected_course_ids,
             parent_job_id=parent_job_id,
+            language=language,
         )
 
         # After successful course creation, enqueue topic generation
@@ -589,6 +591,7 @@ class JobService:
         """
         query = payload.get("query")
         created_by = payload.get("created_by")
+        language = payload.get("language")
 
         if not query:
             raise ValueError("query is required for quickstart_start")
@@ -617,6 +620,7 @@ class JobService:
             created_by=created_by,
             created_with=generated_data.get("created_with"),
             parent_job_id=parent_job_id,
+            language=language,
         )
 
         # Step 3: Set course to hidden status (will be published after user approval)

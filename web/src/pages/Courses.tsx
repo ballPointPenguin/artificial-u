@@ -11,7 +11,7 @@ import type { CourseFormData } from '../components/courses/types.jsx'
 import { Alert, Button, MagicButton } from '../components/ui'
 import type { SelectOption } from '../components/ui/Select.jsx'
 import Select from '../components/ui/Select.jsx'
-import { useTranslations } from '../i18n'
+import { useContentLanguage, useTranslations } from '../i18n'
 import { createJobPolling, registerJobHandoff } from '../utils/job-management.js'
 
 type SortField =
@@ -45,6 +45,7 @@ const DEFAULT_SORT_ORDER: SortOrder = 'desc'
 
 const Courses: Component = () => {
   const t = useTranslations()
+  const { contentLanguage } = useContentLanguage()
   const auth = useAuth()
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
@@ -157,7 +158,7 @@ const Courses: Component = () => {
 
   // Fetch departments for filter dropdown
   const [departmentsData] = createResource(() =>
-    departmentService.listDepartments({ page: 1, size: 100 })
+    departmentService.listDepartments({ page: 1, size: 100, language: contentLanguage() })
   )
 
   // Department options for Select component
@@ -183,8 +184,9 @@ const Courses: Component = () => {
       departmentId: departmentFilter(),
       createdBy: myCoursesOnly() ? auth.student()?.id : undefined,
       includeHidden: showHidden(),
+      language: contentLanguage(),
     }),
-    ({ page, size, sortBy, order, departmentId, createdBy, includeHidden }) =>
+    ({ page, size, sortBy, order, departmentId, createdBy, includeHidden, language }) =>
       courseService.listCourses({
         page,
         size,
@@ -193,6 +195,7 @@ const Courses: Component = () => {
         departmentId: departmentId || undefined,
         createdBy,
         includeHidden,
+        language,
       })
   )
 
@@ -415,6 +418,7 @@ const Courses: Component = () => {
       lectures_per_week: formData.lectures_per_week ?? undefined,
       total_weeks: formData.total_weeks ?? undefined,
       created_with: formData.created_with ?? undefined,
+      language: contentLanguage(),
     }
 
     try {
@@ -453,7 +457,7 @@ const Courses: Component = () => {
         }
       })
     } catch (error) {
-      setCourseImageError(error instanceof Error ? error.message : 'Failed to generate image')
+      setCourseImageError(error instanceof Error ? error.message : t().common.failedToGenerateImage)
     } finally {
       setIsGeneratingCourseImageId(null)
     }
@@ -505,12 +509,12 @@ const Courses: Component = () => {
               size="sm"
               iconOnly
               class={`${boxClass()} p-0 flex items-center justify-center`}
-              aria-label="Generate course image"
-              title="Generate course image"
+              aria-label={t().common.generateImage}
+              title={t().common.generateImage}
               disabled={isLoading()}
               onClick={() => void handleGenerateCourseImage(courseId())}
             >
-              Generate Image
+              {t().common.generateImage}
             </MagicButton>
           </Show>
         }

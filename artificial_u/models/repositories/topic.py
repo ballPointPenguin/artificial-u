@@ -28,12 +28,17 @@ class TopicRepository(BaseRepository):
                 updated_at=db_topic.student.updated_at,
             )
 
+        language = getattr(db_topic, "language", None)
+        if language is not None and not isinstance(language, str):
+            language = None
+
         return Topic(
             id=db_topic.id,
             title=db_topic.title,
             order=db_topic.order,
             week=db_topic.week,
             course_id=db_topic.course_id,
+            language=language,
             content=db_topic.content,
             created_by=db_topic.created_by,
             created_with=db_topic.created_with,
@@ -50,6 +55,7 @@ class TopicRepository(BaseRepository):
                 order=topic.order,
                 week=topic.week,
                 course_id=topic.course_id,
+                language=topic.language,
                 content=topic.content,
                 created_by=topic.created_by,
                 created_with=topic.created_with,
@@ -81,6 +87,7 @@ class TopicRepository(BaseRepository):
                     order=topic.order,
                     week=topic.week,
                     course_id=topic.course_id,
+                    language=topic.language,
                     content=topic.content,
                     created_by=topic.created_by,
                     created_with=topic.created_with,
@@ -164,6 +171,7 @@ class TopicRepository(BaseRepository):
             db_topic.order = topic.order
             db_topic.week = topic.week
             db_topic.course_id = topic.course_id
+            db_topic.language = topic.language
             db_topic.content = topic.content
 
             session.commit()

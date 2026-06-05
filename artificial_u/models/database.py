@@ -176,6 +176,7 @@ class ProfessorModel(Base):
     department_id = Column(Integer, ForeignKey("departments.id"), nullable=True)
     voice_id = Column(Integer, ForeignKey("voices.id"), nullable=True)
     tts_backend = Column(String(50), nullable=True)  # Per-professor TTS backend override
+    language = Column(String, nullable=True)
     # Attribution fields
     created_by = Column(Integer, ForeignKey("students.id"), nullable=True)
     created_with = Column(String, nullable=True)

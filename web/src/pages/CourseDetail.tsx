@@ -498,9 +498,7 @@ const CourseDetail: Component = () => {
       await courseService.generateCourseImage(courseId)
       void refetchCourse()
     } catch (err: unknown) {
-      setImageGenerationError(
-        err instanceof Error ? err.message : 'Failed to generate course image'
-      )
+      setImageGenerationError(err instanceof Error ? err.message : t().common.failedToGenerateImage)
     } finally {
       setIsGeneratingImage(false)
     }
@@ -577,7 +575,9 @@ const CourseDetail: Component = () => {
                           isLoading={isGeneratingImage() || hasActiveImageJobs()}
                           loadingText={t().common.generating}
                         >
-                          {course().image_url ? 'Regenerate Image' : 'Generate Image'}
+                          {course().image_url
+                            ? t().common.regenerateImage
+                            : t().common.generateImage}
                         </MagicButton>
                         <Button variant="primary" onClick={() => setIsEditing(true)}>
                           {t().courseDetail.editCourse}
@@ -705,6 +705,7 @@ const CourseDetail: Component = () => {
 
                   {/* Metadata Section */}
                   <MetadataInfo
+                    type="course"
                     createdBy={course().student}
                     createdWith={course().created_with}
                     createdAt={course().created_at}

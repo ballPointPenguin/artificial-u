@@ -6,18 +6,18 @@ import type { Department, DepartmentCreate } from '../api/types.js'
 import { RequireRole } from '../auth/RequireRole'
 import DepartmentForm from '../components/departments/DepartmentForm.js'
 import { Button, Input, Select, type SelectOption } from '../components/ui'
-import { useTranslations } from '../i18n'
+import { useContentLanguage, useTranslations } from '../i18n'
 
 const DepartmentCard = (props: { department: Department }) => {
   return (
     <A
       href={`/departments/${String(props.department.id)}`}
-      class="arcane-card h-full flex flex-col hover:shadow-arcane hover:scale-105 hover:border-primary/50 transition-all duration-300 cursor-pointer group"
+      class="arcane-card h-full flex flex-col overflow-hidden hover:shadow-arcane hover:scale-105 hover:border-primary/50 transition-all duration-300 cursor-pointer group"
     >
-      <h3 class="text-xl font-semibold mb-2 text-parchment-100 group-hover:text-primary transition-colors duration-300">
+      <h3 class="text-xl font-semibold mb-2 text-parchment-100 line-clamp-2 shrink-0 group-hover:text-primary transition-colors duration-300">
         {props.department.name}
       </h3>
-      <p class="text-parchment-300 mb-4 line-clamp-3 flex-grow group-hover:text-parchment-200 transition-colors duration-300">
+      <p class="text-sm text-parchment-300 line-clamp-2 min-h-0 group-hover:text-parchment-200 transition-colors duration-300">
         {props.department.description}
       </p>
     </A>
@@ -26,6 +26,7 @@ const DepartmentCard = (props: { department: Department }) => {
 
 const DepartmentsPage = () => {
   const t = useTranslations()
+  const { contentLanguage } = useContentLanguage()
   const [searchQuery, setSearchQuery] = createSignal('')
   const [selectedFacultyId, setSelectedFacultyId] = createSignal<number | null>(null)
   const [page, setPage] = createSignal(1)
@@ -34,7 +35,9 @@ const DepartmentsPage = () => {
   const [formError, setFormError] = createSignal('')
 
   // Fetch all faculties
-  const [faculties] = createResource(() => facultyService.listFaculties())
+  const [faculties] = createResource(() =>
+    facultyService.listFaculties({ language: contentLanguage() })
+  )
 
   // Create faculty options for the dropdown
   const facultyOptions = (): SelectOption[] => {
@@ -56,6 +59,7 @@ const DepartmentsPage = () => {
       size: 20,
       name: searchQuery() || undefined,
       faculty_id: facultyId || undefined,
+      language: contentLanguage(),
     }
   }, departmentService.listDepartments)
 
@@ -86,6 +90,7 @@ const DepartmentsPage = () => {
         code: formData.get('code') as string,
         faculty_id: facultyIdStr ? Number.parseInt(facultyIdStr, 10) : null,
         description: formData.get('description') as string,
+        language: contentLanguage(),
       }
 
       await departmentService.createDepartment(newDepartment)

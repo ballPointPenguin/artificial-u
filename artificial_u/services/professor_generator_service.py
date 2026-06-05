@@ -14,10 +14,6 @@ from artificial_u.config import get_settings
 from artificial_u.models.converters import extract_xml_content
 from artificial_u.models.core import Professor
 from artificial_u.models.repositories.factory import RepositoryFactory
-from artificial_u.prompts import (
-    get_professor_prompt,
-    get_system_prompt,
-)
 from artificial_u.services.content_service import ContentService
 from artificial_u.services.image_service import ImageService
 from artificial_u.utils import (
@@ -90,15 +86,24 @@ class ProfessorGeneratorService:
         except DatabaseError as e:
             raise e
 
+        # Determine language for prompts
+        language = partial_attributes.get("language") or "en"
+        lang = "en"
+        if language and isinstance(language, str):
+            lang_prefix = language.lower()[:2]
+            if lang_prefix in ("en", "fr"):
+                lang = lang_prefix
+
         # --- 2. Prepare Prompt --- #
         prompt = self._prepare_professor_generation_prompt(
             department_name=resolved_dept_name,
             partial_attributes=partial_attributes,
+            language=lang,
         )
 
         # --- 3. Call AI and Parse --- #
         try:
-            generated_attrs = await self._call_ai_and_parse(prompt)
+            generated_attrs = await self._call_ai_and_parse(prompt, language=lang)
         except GenerationError as e:
             # Propagate generation/parsing errors
             raise e
@@ -202,12 +207,13 @@ class ProfessorGeneratorService:
 
     # --- Helper Methods --- #
 
-    async def _call_ai_and_parse(self, prompt: str) -> Dict[str, Any]:
+    async def _call_ai_and_parse(self, prompt: str, language: str = "en") -> Dict[str, Any]:
         """
         Calls the AI content service with the given prompt and parses the XML response.
 
         Args:
             prompt: The prompt string for the AI.
+            language: The language for system prompts.
 
         Returns:
             A dictionary of attributes parsed from the AI response.
@@ -218,10 +224,13 @@ class ProfessorGeneratorService:
         settings = get_settings()
 
         try:
+            from artificial_u.prompts import get_prompts_for_language
+
+            prompt_module = get_prompts_for_language(language)
             generated_content = await self.content_service.generate_text(
                 prompt=prompt,
                 model=settings.PROFESSOR_GENERATION_MODEL,
-                system_prompt=get_system_prompt("professor"),
+                system_prompt=prompt_module.get_system_prompt("professor"),
             )
         except Exception as e:
             self.logger.error(f"ContentService generation call failed: {e}", exc_info=True)
@@ -289,6 +298,7 @@ class ProfessorGeneratorService:
         self,
         department_name: Optional[str],
         partial_attributes: dict,
+        language: str = "en",
     ) -> str:
         """Prepares the prompt string for professor generation."""
         # Fetch existing professors for context to avoid duplicates
@@ -314,8 +324,12 @@ class ProfessorGeneratorService:
         if freeform_prompt:
             self.logger.debug(f"Freeform prompt: {freeform_prompt}")
 
+        from artificial_u.prompts import get_prompts_for_language
+
+        prompt_module = get_prompts_for_language(language)
+
         # Pass potentially None values to the prompt function
-        return get_professor_prompt(
+        return prompt_module.get_professor_prompt(
             existing_professors=existing_profs_data,
             partial_attributes=combined_attrs,
             freeform_prompt=freeform_prompt,

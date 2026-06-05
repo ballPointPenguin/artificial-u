@@ -7,7 +7,7 @@ delegate to ProfessorGeneratorService to create a new one.
 """
 
 import logging
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 from artificial_u.config import get_settings
 from artificial_u.models.converters import (
@@ -51,7 +51,11 @@ class ProfessorSelectorService:
         self.logger = logger or logging.getLogger(__name__)
 
     async def resolve_professor(
-        self, course_attributes: Dict[str, Any], department_id: int, created_by: int = None
+        self,
+        course_attributes: Dict[str, Any],
+        department_id: int,
+        created_by: Optional[int] = None,
+        language: Optional[str] = None,
     ) -> int:
         """
         Resolve professor for a course by selecting existing or generating new.
@@ -59,6 +63,8 @@ class ProfessorSelectorService:
         Args:
             course_attributes: Dictionary containing course details
             department_id: ID of the department for this course
+            created_by: ID of student creator
+            language: Optional language/locale of the professor
 
         Returns:
             int: Professor ID (either selected from existing or newly generated)
@@ -130,6 +136,7 @@ class ProfessorSelectorService:
                     teaching_style=professor_attrs["teaching_style"],
                     created_by=created_by,
                     created_with=professor_attrs.get("created_with"),
+                    language=language,
                 )
 
                 created_professor = self.professor_service.create_professor(professor)

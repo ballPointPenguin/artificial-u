@@ -17,8 +17,7 @@ from artificial_u.models.converters import (
 )
 from artificial_u.models.repositories.factory import RepositoryFactory
 from artificial_u.prompts import (
-    get_department_prompt,
-    get_system_prompt,
+    get_prompts_for_language,
 )
 from artificial_u.services.content_service import ContentService
 from artificial_u.utils import (
@@ -57,6 +56,7 @@ class DepartmentGeneratorService:
         self,
         partial_attributes: Optional[Dict] = None,
         freeform_prompt: Optional[str] = None,
+        language: Optional[str] = None,
     ) -> dict:
         """
         Generate a department using AI based on provided partial attributes.
@@ -74,14 +74,18 @@ class DepartmentGeneratorService:
             DatabaseError: If there's an error accessing the database
         """
         partial_attributes = partial_attributes or {}
+        language = language or "en"
         self.logger.info(
-            f"Generating department with partial attributes: {list(partial_attributes.keys())}"
+            f"Generating department with partial attributes: {list(partial_attributes.keys())}, "
+            f"language: {language}"
         )
 
         try:
-            # Prepare existing data for context
-            existing_departments_dicts = self._prepare_existing_departments_data(partial_attributes)
-            existing_faculties_dicts = self._prepare_existing_faculties_data()
+            # Prepare existing data for context (filtered by language)
+            existing_departments_dicts = self._prepare_existing_departments_data(
+                partial_attributes, language
+            )
+            existing_faculties_dicts = self._prepare_existing_faculties_data(language)
 
             # Normalize freeform prompt and enrich partial attributes
             freeform_prompt = self._normalize_freeform_prompt(partial_attributes, freeform_prompt)
@@ -93,6 +97,7 @@ class DepartmentGeneratorService:
                 existing_faculties_dicts,
                 partial_attributes,
                 freeform_prompt,
+                language,
             )
 
             # Convert faculty name to faculty_id
@@ -113,19 +118,22 @@ class DepartmentGeneratorService:
 
     # --- Helper Methods for Generation --- #
 
-    def _prepare_existing_departments_data(self, partial_attributes: Dict) -> List[Dict]:
+    def _prepare_existing_departments_data(
+        self, partial_attributes: Dict, language: str = "en"
+    ) -> List[Dict]:
         """Prepare existing departments data for prompt context.
 
-        Fetches all departments, filters out the current one if editing,
+        Fetches departments filtered by language, filters out the current one if editing,
         and enriches them with faculty information.
 
         Args:
             partial_attributes: Dictionary that may contain department_id
+            language: Language code to filter context data
 
         Returns:
             List of enriched department dictionaries
         """
-        existing_departments_models = self.repository_factory.department.list()
+        existing_departments_models = self.repository_factory.department.list(language=language)
 
         # Filter out the current department being edited from existing departments
         department_id = partial_attributes.get("department_id")
@@ -146,13 +154,16 @@ class DepartmentGeneratorService:
 
         return existing_departments_dicts
 
-    def _prepare_existing_faculties_data(self) -> List[Dict]:
+    def _prepare_existing_faculties_data(self, language: str = "en") -> List[Dict]:
         """Prepare existing faculties data for prompt context.
+
+        Args:
+            language: Language code to filter context data
 
         Returns:
             List of faculty dictionaries with id, name, and description
         """
-        existing_faculties_models = self.repository_factory.faculty.list()
+        existing_faculties_models = self.repository_factory.faculty.list(language=language)
         existing_faculties_dicts = [
             {"id": f.id, "name": f.name, "description": f.description}
             for f in existing_faculties_models
@@ -203,6 +214,7 @@ class DepartmentGeneratorService:
         existing_faculties_dicts: List[Dict],
         partial_attributes: Dict,
         freeform_prompt: Optional[str],
+        language: str = "en",
     ) -> Dict:
         """Generate department content and parse the XML response.
 
@@ -211,6 +223,7 @@ class DepartmentGeneratorService:
             existing_faculties_dicts: List of existing faculty dictionaries
             partial_attributes: Dictionary of partial attributes for generation
             freeform_prompt: Optional freeform guidance text
+            language: Language code for prompt selection
 
         Returns:
             Dictionary of parsed department attributes
@@ -218,8 +231,9 @@ class DepartmentGeneratorService:
         Raises:
             ContentGenerationError: If generation or parsing fails
         """
-        # Get the prompt using the helper function
-        prompt = get_department_prompt(
+        # Get the prompt using the language-appropriate module
+        prompts_module = get_prompts_for_language(language)
+        prompt = prompts_module.get_department_prompt(
             existing_departments=existing_departments_dicts,
             existing_faculties=existing_faculties_dicts,
             partial_attributes=partial_attributes,
@@ -233,7 +247,7 @@ class DepartmentGeneratorService:
         response = await self.content_service.generate_text(
             prompt=prompt,
             model=settings.DEPARTMENT_GENERATION_MODEL,
-            system_prompt=get_system_prompt("department"),
+            system_prompt=prompts_module.get_system_prompt("department"),
         )
         self.logger.info("Received response from content service.")
 

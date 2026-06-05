@@ -2,6 +2,8 @@
 Faculty service for handling business logic related to faculties.
 """
 
+from typing import Optional
+
 from artificial_u.api.models.faculties import FacultiesListResponse, FacultyResponse
 from artificial_u.models.repositories import RepositoryFactory
 
@@ -24,16 +26,16 @@ class FacultyApiService:
         self.repository_factory = repository_factory
         self.logger = logger
 
-    def list_faculties(self) -> FacultiesListResponse:
+    def list_faculties(self, language: Optional[str] = None) -> FacultiesListResponse:
         """
-        Get a list of all faculties.
+        Get a list of faculties, optionally filtered by language.
 
         Returns:
-            FacultiesListResponse with all faculties
+            FacultiesListResponse with matching faculties
         """
         try:
-            # Get all faculties from repository
-            faculties = self.repository_factory.faculty.list()
+            # Get faculties from repository, filtered by language if provided
+            faculties = self.repository_factory.faculty.list(language=language)
 
             # Convert to response models
             faculty_responses = [
@@ -41,6 +43,7 @@ class FacultyApiService:
                     id=f.id,
                     name=f.name,
                     description=f.description,
+                    language=f.language,
                 )
                 for f in faculties
             ]
