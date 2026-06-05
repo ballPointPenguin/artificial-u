@@ -2,6 +2,7 @@ import { createEffect, createResource, createSignal, type JSX, Show } from 'soli
 import { departmentService } from '../../api/services/department-service.js'
 import { facultyService } from '../../api/services/faculty-service.js'
 import type { Department, DepartmentGenerateRequest } from '../../api/types.js'
+import { useContentLanguage } from '../../i18n'
 import {
   Alert,
   Button,
@@ -32,6 +33,7 @@ interface DepartmentFormProps {
 }
 
 const DepartmentForm = (props: DepartmentFormProps) => {
+  const { contentLanguage } = useContentLanguage()
   const [validationErrors, setValidationErrors] = createSignal<Record<string, string>>({})
   const [isGenerating, setIsGenerating] = createSignal(false)
   const [generateError, setGenerateError] = createSignal<string | null>(null)
@@ -43,7 +45,9 @@ const DepartmentForm = (props: DepartmentFormProps) => {
   })
 
   // Load faculties for the dropdown
-  const [faculties] = createResource(() => facultyService.listFaculties())
+  const [faculties] = createResource(() =>
+    facultyService.listFaculties({ language: contentLanguage() })
+  )
 
   // Keep formData in sync with props.department (for edit mode)
   createEffect(() => {
