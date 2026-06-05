@@ -125,7 +125,7 @@ const CourseForm: Component<CourseFormProps> = (props) => {
   // A combined string key is used so both signals trigger refetch without
   // causing the infinite-loop that object sources produce (new ref each render).
   const [professorsResource] = createResource(
-    () => `${formData().department_id ?? ''}_${contentLanguage()}`,
+    () => `${String(formData().department_id ?? '')}_${contentLanguage()}`,
     async (key) => {
       const sepIdx = key.lastIndexOf('_')
       const lang = key.slice(sepIdx + 1)

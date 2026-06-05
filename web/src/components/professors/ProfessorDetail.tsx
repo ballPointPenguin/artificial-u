@@ -11,6 +11,7 @@ import type {
 } from '../../api/types.js'
 import { useAuth } from '../../auth/AuthProvider'
 import { RequireRole } from '../../auth/RequireRole'
+import { useTranslations } from '../../i18n'
 import { Alert, Button, ConfirmationModal, LoadingSpinner, MagicButton, MetadataInfo } from '../ui'
 import ProfessorForm, { type ProfessorFormData } from './ProfessorForm.js'
 
@@ -20,27 +21,29 @@ const ProfessorCourses: Component<{
   loading: boolean
   error: unknown
 }> = (props) => {
+  const t = useTranslations()
   const courses = () => props.coursesResource()?.courses
   return (
     <div class="mt-8">
       <h2 class="text-2xl font-display text-parchment-100 mb-4 text-shadow-golden">
-        Courses Taught
+        {t().professorDetail.coursesTaught}
       </h2>
-      <Show when={!props.loading} fallback={<p class="text-muted">Loading courses...</p>}>
+      <Show
+        when={!props.loading}
+        fallback={<p class="text-muted">{t().professorDetail.loadingCourses}</p>}
+      >
         <Show
           when={!props.error}
           fallback={
             <Alert variant="danger">
-              Error loading courses:{' '}
-              {props.error instanceof Error ? props.error.message : 'Unknown error'}
+              {t().professorDetail.errorLoadingCourses}{' '}
+              {props.error instanceof Error ? props.error.message : t().common.unknownError}
             </Alert>
           }
         >
           <Show
             when={Array.isArray(courses()) && (courses()?.length ?? 0) > 0}
-            fallback={
-              <p class="text-muted">This professor is not currently teaching any courses.</p>
-            }
+            fallback={<p class="text-muted">{t().professorDetail.noCoursesTaught}</p>}
           >
             <ul class="space-y-2">
               <For each={courses() ?? []}>
@@ -51,7 +54,9 @@ const ProfessorCourses: Component<{
                       {course.title}
                     </A>
                     <div class="text-xs text-muted mt-1">
-                      <span>Level: {course.level}</span>
+                      <span>
+                        {t().courseDetail.level || t().professorDetail.fields.level}: {course.level}
+                      </span>
                     </div>
                   </li>
                 )}
@@ -79,15 +84,23 @@ const VoiceProfileSection: Component<{
   professorResource: Resource<Professor | undefined>
   voiceResource: Resource<Voice | undefined>
 }> = (props) => {
+  const t = useTranslations()
   /** Optional voice attributes shown only when non-empty. */
   const optionalAttrs = (): Array<{ label: string; value: string }> => {
     const voice = props.voiceResource()
     if (!voice) return []
     const candidates: Array<{ label: string; value: string | null | undefined }> = [
-      { label: 'Accent', value: voice.accent },
-      { label: 'Gender', value: voice.gender },
-      { label: 'Age', value: voice.age },
-      { label: 'Descriptive', value: voice.descriptive },
+      { label: t().professorDetail.fields.accent, value: voice.accent },
+      {
+        label: t().professorDetail.fields.gender,
+        value: voice.gender
+          ? t().professorDetail.genders[
+              voice.gender.toLowerCase() as 'male' | 'female' | 'neutral'
+            ] || voice.gender
+          : voice.gender,
+      },
+      { label: t().professorDetail.fields.age, value: voice.age },
+      { label: t().professorVoice.styleLabel || 'Style', value: voice.descriptive },
       { label: 'Use Case', value: voice.use_case },
     ]
     return candidates.filter((a): a is { label: string; value: string } => Boolean(a.value))
@@ -95,7 +108,9 @@ const VoiceProfileSection: Component<{
 
   return (
     <>
-      <h3 class="text-lg font-display text-parchment-100 mb-3 text-shadow-golden">Voice Profile</h3>
+      <h3 class="text-lg font-display text-parchment-100 mb-3 text-shadow-golden">
+        {t().professorDetail.voiceProfile}
+      </h3>
       <div class="bg-surface rounded-lg p-4 space-y-2">
         <Show when={props.professorResource()?.voice_id}>
           <Show when={!props.voiceResource.loading && props.voiceResource()}>
@@ -103,7 +118,9 @@ const VoiceProfileSection: Component<{
               <>
                 {/* TTS Backend badge */}
                 <p class="text-sm text-muted">
-                  <strong class="font-semibold text-foreground">Backend:</strong>{' '}
+                  <strong class="font-semibold text-foreground">
+                    {t().professorDetail.backend}:
+                  </strong>{' '}
                   <span class="inline-block px-2 py-0.5 rounded text-xs font-medium bg-accent/20 text-accent">
                     {backendDisplayName(voice().tts_backend)}
                   </span>
@@ -112,14 +129,19 @@ const VoiceProfileSection: Component<{
                 {/* Voice name — always shown when present */}
                 <Show when={voice().name}>
                   <p class="text-sm text-muted">
-                    <strong class="font-semibold text-foreground">Name:</strong> {voice().name}
+                    <strong class="font-semibold text-foreground">
+                      {t().professorDetail.name}:
+                    </strong>{' '}
+                    {voice().name}
                   </p>
                 </Show>
 
                 {/* ElevenLabs link — only for elevenlabs backend */}
                 <Show when={voice().tts_backend === 'elevenlabs' && voice().el_voice_id}>
                   <p class="text-sm text-muted">
-                    <strong class="font-semibold text-foreground">ElevenLabs ID:</strong>{' '}
+                    <strong class="font-semibold text-foreground">
+                      {t().professorDetail.elevenlabsId}:
+                    </strong>{' '}
                     <a
                       href={`https://elevenlabs.io/app/voice-library?voiceId=${voice().el_voice_id ?? ''}`}
                       target="_blank"
@@ -162,15 +184,15 @@ const VoiceProfileSection: Component<{
           </Show>
 
           <Show when={props.voiceResource.loading}>
-            <p class="text-sm text-muted italic">Loading voice details...</p>
+            <p class="text-sm text-muted italic">{t().professorDetail.loadingVoice}</p>
           </Show>
 
           <Show when={props.voiceResource.error as unknown}>
             <p class="text-sm text-danger">
-              Error loading voice details:{' '}
+              {t().professorDetail.errorLoadingVoice}{' '}
               {props.voiceResource.error instanceof Error
                 ? props.voiceResource.error.message
-                : 'Unknown error'}
+                : t().common.unknownError}
             </p>
           </Show>
         </Show>
@@ -183,7 +205,7 @@ const VoiceProfileSection: Component<{
                 href={`/professors/${String(props.professorResource()?.id ?? '')}/voice`}
                 class="text-sm text-accent hover:text-accent/80 underline"
               >
-                Voice Selection &amp; Preview &rarr;
+                {t().professorDetail.voiceSelectionAndPreview} &rarr;
               </A>
             </div>
           </RequireRole>
@@ -194,6 +216,7 @@ const VoiceProfileSection: Component<{
 }
 
 export default function ProfessorDetail() {
+  const t = useTranslations()
   const params = useParams()
   const navigate = useNavigate()
   const auth = useAuth()
@@ -208,7 +231,7 @@ export default function ProfessorDetail() {
     () => {
       const id = Number.parseInt(params.id ?? '', 10)
       if (Number.isNaN(id)) {
-        throw new Error('Professor ID is missing or invalid')
+        throw new Error(t().professorDetail.invalidId)
       }
       return id
     },
@@ -262,7 +285,7 @@ export default function ProfessorDetail() {
     try {
       const id = Number.parseInt(params.id ?? '', 10)
       if (Number.isNaN(id)) {
-        throw new Error('Invalid professor ID')
+        throw new Error(t().professorDetail.invalidId)
       }
 
       const updatedProfessor = {
@@ -277,7 +300,7 @@ export default function ProfessorDetail() {
       setIsEditing(false)
       void refetchProfessor()
     } catch (error) {
-      setError(error instanceof Error ? error.message : 'Failed to update professor')
+      setError(error instanceof Error ? error.message : t().professorDetail.failedToUpdate)
     } finally {
       setIsSubmitting(false)
     }
@@ -290,13 +313,13 @@ export default function ProfessorDetail() {
     try {
       const id = Number.parseInt(params.id ?? '', 10)
       if (Number.isNaN(id)) {
-        throw new Error('Invalid professor ID')
+        throw new Error(t().professorDetail.invalidId)
       }
 
       await professorService.deleteProfessor(id)
       navigate('/professors')
     } catch (error) {
-      setError(error instanceof Error ? error.message : 'Failed to delete professor')
+      setError(error instanceof Error ? error.message : t().professorDetail.failedToDelete)
       setIsDeleting(false)
     } finally {
       setIsSubmitting(false)
@@ -312,13 +335,13 @@ export default function ProfessorDetail() {
     try {
       const id = Number.parseInt(params.id ?? '', 10)
       if (Number.isNaN(id)) {
-        throw new Error('Invalid professor ID')
+        throw new Error(t().professorDetail.invalidId)
       }
 
       await professorService.generateProfessorImage(id)
       void refetchProfessor()
     } catch (error) {
-      setGenerationError(error instanceof Error ? error.message : 'Failed to generate image')
+      setGenerationError(error instanceof Error ? error.message : t().common.failedToGenerateImage)
     } finally {
       setIsGeneratingImage(false)
     }
@@ -328,20 +351,23 @@ export default function ProfessorDetail() {
     <div class="arcane-card p-8">
       <Show
         when={!professorResource.loading}
-        fallback={<p class="text-muted">Loading professor details...</p>}
+        fallback={<p class="text-muted">{t().professorDetail.loadingProfessor}</p>}
       >
         <Show
           when={!professorResource.error}
           fallback={
             <Alert variant="danger" class="mb-4">
-              <p>Error loading professor: {getErrorMessage(professorResource.error)}</p>
+              <p>
+                {t().professorDetail.errorLoadingProfessor}{' '}
+                {getErrorMessage(professorResource.error)}
+              </p>
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => void refetchProfessor()}
                 class="mt-2"
               >
-                Try Again
+                {t().common.retry}
               </Button>
             </Alert>
           }
@@ -351,7 +377,7 @@ export default function ProfessorDetail() {
             fallback={
               <div>
                 <RequireRole minRole="creator">
-                  <h2 class="text-xl font-semibold mb-4">Edit Professor</h2>
+                  <h2 class="text-xl font-semibold mb-4">{t().professorDetail.editHeading}</h2>
                   <ProfessorForm
                     professor={professorResource()}
                     onSubmit={handleSubmitUpdate}
@@ -371,7 +397,7 @@ export default function ProfessorDetail() {
                 <div class="flex flex-wrap gap-2 items-center sm:justify-end">
                   <Show when={auth.canModify(professorResource()?.created_by)}>
                     <Button variant="secondary" size="sm" onClick={() => setIsEditing(true)}>
-                      Edit
+                      {t().common.edit}
                     </Button>
                     <Button
                       variant="outline"
@@ -379,7 +405,7 @@ export default function ProfessorDetail() {
                       onClick={() => setIsDeleting(true)}
                       class="text-danger border-danger hover:bg-danger-bg hover:text-foreground"
                     >
-                      Delete
+                      {t().common.delete}
                     </Button>
                   </Show>
                 </div>
@@ -387,7 +413,9 @@ export default function ProfessorDetail() {
 
               <Show when={generationError()}>
                 <Alert variant="danger" class="mb-4">
-                  <p>Error generating image: {generationError()}</p>
+                  <p>
+                    {t().professorDetail.errorGeneratingImage} {generationError()}
+                  </p>
                 </Alert>
               </Show>
 
@@ -396,19 +424,27 @@ export default function ProfessorDetail() {
                 {/* Left Column: All Attributes */}
                 <div class="order-2 md:order-1 md:w-1/2 space-y-3 text-muted">
                   <p>
-                    <strong class="font-semibold text-foreground">Title:</strong>{' '}
+                    <strong class="font-semibold text-foreground">
+                      {t().professorDetail.fields.title}:
+                    </strong>{' '}
                     <span class="text-muted">{professorResource()?.title}</span>
                   </p>
                   <Show when={professorResource()?.department_id}>
                     <p>
-                      <strong class="font-semibold text-foreground">Department:</strong>{' '}
+                      <strong class="font-semibold text-foreground">
+                        {t().professorDetail.fields.department}:
+                      </strong>{' '}
                       <Show
                         when={!departmentResource.loading && departmentResource()}
-                        fallback={<span class="text-muted italic">Loading department...</span>}
+                        fallback={
+                          <span class="text-muted italic">{t().departmentDetail.loading}</span>
+                        }
                       >
                         <Show
                           when={!departmentResource.error && departmentResource()}
-                          fallback={<span class="text-danger">Error loading department</span>}
+                          fallback={
+                            <span class="text-danger">{t().departmentDetail.errorLoading}</span>
+                          }
                         >
                           {(dept) => <span class="text-muted">{dept().name}</span>}
                         </Show>
@@ -419,7 +455,9 @@ export default function ProfessorDetail() {
                   <Show when={professorResource()?.specialization}>
                     {(specialization) => (
                       <p>
-                        <strong class="font-semibold text-foreground">Specialization:</strong>{' '}
+                        <strong class="font-semibold text-foreground">
+                          {t().professorDetail.fields.specialization}:
+                        </strong>{' '}
                         <span class="text-muted">{specialization()}</span>
                       </p>
                     )}
@@ -428,8 +466,14 @@ export default function ProfessorDetail() {
                   <Show when={professorResource()?.gender}>
                     {(gender) => (
                       <p>
-                        <strong class="font-semibold text-foreground">Gender:</strong>{' '}
-                        <span class="text-muted">{gender()}</span>
+                        <strong class="font-semibold text-foreground">
+                          {t().professorDetail.fields.gender}:
+                        </strong>{' '}
+                        <span class="text-muted">
+                          {t().professorDetail.genders[
+                            gender().toLowerCase() as 'male' | 'female' | 'neutral'
+                          ] || gender()}
+                        </span>
                       </p>
                     )}
                   </Show>
@@ -437,7 +481,9 @@ export default function ProfessorDetail() {
                   <Show when={professorResource()?.accent}>
                     {(accent) => (
                       <p>
-                        <strong class="font-semibold text-foreground">Accent:</strong>{' '}
+                        <strong class="font-semibold text-foreground">
+                          {t().professorDetail.fields.accent}:
+                        </strong>{' '}
                         <span class="text-muted">{accent()}</span>
                       </p>
                     )}
@@ -446,7 +492,9 @@ export default function ProfessorDetail() {
                   <Show when={professorResource()?.age}>
                     {(age) => (
                       <p>
-                        <strong class="font-semibold text-foreground">Age:</strong>{' '}
+                        <strong class="font-semibold text-foreground">
+                          {t().professorDetail.fields.age}:
+                        </strong>{' '}
                         <span class="text-muted">{age()}</span>
                       </p>
                     )}
@@ -466,7 +514,9 @@ export default function ProfessorDetail() {
                   <Show when={professorResource()?.description}>
                     {(desc) => (
                       <p>
-                        <strong class="font-semibold text-foreground">Description:</strong>
+                        <strong class="font-semibold text-foreground">
+                          {t().professorDetail.fields.description}:
+                        </strong>
                         <span class="block mt-1 whitespace-pre-wrap text-muted">{desc()}</span>
                       </p>
                     )}
@@ -475,7 +525,9 @@ export default function ProfessorDetail() {
                   <Show when={professorResource()?.background}>
                     {(bg) => (
                       <p>
-                        <strong class="font-semibold text-foreground">Background:</strong>
+                        <strong class="font-semibold text-foreground">
+                          {t().professorDetail.fields.background}:
+                        </strong>
                         <span class="block mt-1 whitespace-pre-wrap text-muted">{bg()}</span>
                       </p>
                     )}
@@ -484,7 +536,9 @@ export default function ProfessorDetail() {
                   <Show when={professorResource()?.teaching_style}>
                     {(style) => (
                       <p>
-                        <strong class="font-semibold text-foreground">Teaching Style:</strong>{' '}
+                        <strong class="font-semibold text-foreground">
+                          {t().professorDetail.fields.teachingStyle}:
+                        </strong>{' '}
                         <span class="block mt-1 whitespace-pre-wrap text-muted">{style()}</span>
                       </p>
                     )}
@@ -493,7 +547,9 @@ export default function ProfessorDetail() {
                   <Show when={professorResource()?.personality}>
                     {(pers) => (
                       <p>
-                        <strong class="font-semibold text-foreground">Personality:</strong>{' '}
+                        <strong class="font-semibold text-foreground">
+                          {t().professorDetail.fields.personality}:
+                        </strong>{' '}
                         <span class="block mt-1 whitespace-pre-wrap text-muted">{pers()}</span>
                       </p>
                     )}
@@ -527,7 +583,7 @@ export default function ProfessorDetail() {
                       <div class="flex flex-col items-center space-y-2">
                         <LoadingSpinner size="lg" />
                         <p class="text-sm text-muted">
-                          {isGeneratingImage() ? 'Generating image...' : 'Loading image...'}
+                          {isGeneratingImage() ? t().common.generating : t().common.loading}
                         </p>
                       </div>
                     </Show>
@@ -537,7 +593,10 @@ export default function ProfessorDetail() {
                       }
                     >
                       <p class="text-xs text-muted italic mt-2 text-center">
-                        Image generated with {professorResource()?.image_created_with}
+                        {t().professorDetail.imageGeneratedWith.replace(
+                          '{engine}',
+                          professorResource()?.image_created_with || ''
+                        )}
                       </p>
                     </Show>
                   </div>
@@ -548,9 +607,9 @@ export default function ProfessorDetail() {
                       class="w-full sm:w-auto"
                       onClick={() => void handleGenerateImage()}
                       isLoading={isGeneratingImage()}
-                      loadingText="Generating..."
+                      loadingText={t().common.generating}
                     >
-                      Generate Image
+                      {t().common.generateImage}
                     </MagicButton>
                   </Show>
 
@@ -586,14 +645,14 @@ export default function ProfessorDetail() {
 
       <ConfirmationModal
         isOpen={isDeleting()}
-        title="Delete Professor"
+        title={t().professorDetail.confirmDeleteTitle}
         message={
           <div>
-            <p>Are you sure you want to delete this professor?</p>
-            <p class="mt-2 font-medium">This action cannot be undone.</p>
+            <p>{t().professorDetail.confirmDeleteMessage}</p>
+            <p class="mt-2 font-medium">{t().professorDetail.confirmDeleteUndo}</p>
           </div>
         }
-        confirmText="Delete Professor"
+        confirmText={t().professorDetail.confirmDeleteTitle}
         onConfirm={() => void handleDelete()}
         onCancel={() => setIsDeleting(false)}
         isConfirming={isSubmitting()}

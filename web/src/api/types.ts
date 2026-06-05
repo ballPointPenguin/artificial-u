@@ -336,6 +336,7 @@ export interface Professor {
   image_created_with?: string | null
   voice_id?: number | null
   tts_backend?: string | null
+  language?: string | null
   created_by?: number | null
   created_with?: string | null
   created_at?: string | null
@@ -361,6 +362,7 @@ export interface ProfessorCreate {
   age?: number | null
   image_url?: string | null
   voice_id?: number | null
+  language?: string | null
 }
 
 export interface ProfessorUpdate {
@@ -377,6 +379,7 @@ export interface ProfessorUpdate {
   age?: number | null
   image_url?: string | null
   voice_id?: number | null
+  language?: string | null
 }
 
 export interface ProfessorsListResponse {
