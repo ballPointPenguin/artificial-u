@@ -90,8 +90,9 @@ const ProfessorForm: Component<ProfessorFormProps> = (props) => {
     })
   })
 
-  const [departmentsResource] = createResource(contentLanguage, async (lang) => {
-    try {
+  const [departmentsResource] = createResource(
+    () => contentLanguage(),
+    async (lang) => {
       const response = await departmentService.listDepartments({
         page: 1,
         size: 100,
@@ -103,13 +104,14 @@ const ProfessorForm: Component<ProfessorFormProps> = (props) => {
           label: `${dept.name} (${dept.code})`,
         })
       )
-    } catch (error: unknown) {
-      console.error('Failed to fetch departments:', error)
-      if (props.setError) {
-        const errorMessage = error instanceof Error ? error.message : String(error)
-        props.setError(`Failed to load departments: ${errorMessage}`)
-      }
-      return []
+    }
+  )
+
+  createEffect(() => {
+    const err = departmentsResource.error as unknown
+    if (err && props.setError) {
+      const errorMessage = err instanceof Error ? err.message : t().common.unknownError
+      props.setError(`Failed to load departments: ${errorMessage}`)
     }
   })
 

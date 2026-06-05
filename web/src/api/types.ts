@@ -151,6 +151,7 @@ export interface Department {
   faculty_id: number | null
   faculty_name: string | null
   description: string | null
+  language: string | null
 }
 
 export interface DepartmentCreate {
@@ -158,6 +159,7 @@ export interface DepartmentCreate {
   code: string
   faculty_id?: number | null
   description?: string | null
+  language?: string | null
 }
 
 export interface DepartmentUpdate {
@@ -165,6 +167,7 @@ export interface DepartmentUpdate {
   code: string
   faculty_id?: number | null
   description?: string | null
+  language?: string | null
 }
 
 export interface DepartmentsListResponse {
