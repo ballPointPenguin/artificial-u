@@ -1,4 +1,5 @@
 import asyncio
+import logging
 from typing import Any, Dict, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Request
@@ -9,6 +10,7 @@ from pydantic import BaseModel
 from artificial_u.api.dependencies import get_repository_factory
 from artificial_u.api.events import JobEventHub, sse_stream
 from artificial_u.api.security.auth0 import require_auth
+from artificial_u.config import get_settings
 from artificial_u.models.repositories.factory import RepositoryFactory
 
 router = APIRouter(prefix="/jobs", tags=["jobs"])
@@ -29,7 +31,106 @@ def _duration_ms_from_result(result: Any) -> Any:
         return None
 
 
-def _job_row_response(r) -> dict:
+def _tts_model_name(settings) -> Optional[str]:
+    """Best-effort TTS model name for the configured backend."""
+    backend = (settings.tts_backend or "").lower()
+    if backend == "mistral":
+        return settings.TTS_MISTRAL_MODEL
+    if backend == "xai":
+        # xAI's TTS endpoint does not expose a tunable model name; show the backend.
+        return "xai"
+    return settings.TTS_VOICE_MODEL
+
+
+def _job_model_name(kind: str, payload: Any) -> Optional[str]:
+    """
+    Best-effort model name for a job, based on its kind and the global generation
+    settings. Returns None for jobs without a single obvious model (e.g. course
+    creation, exports). Payload-level overrides take precedence where present.
+
+    Note: this reflects the global defaults; per-professor / per-voice overrides
+    applied at runtime are not resolved here.
+    """
+    payload = payload if isinstance(payload, dict) else {}
+    override = payload.get("model_name_override")
+    if override:
+        return str(override)
+
+    settings = get_settings()
+    if kind == "generate_lecture_audio":
+        return _tts_model_name(settings)
+
+    mapping = {
+        "generate_course": settings.COURSE_GENERATION_MODEL,
+        "generate_department": settings.DEPARTMENT_GENERATION_MODEL,
+        "generate_professor": settings.PROFESSOR_GENERATION_MODEL,
+        "generate_topics_for_course": settings.TOPICS_GENERATION_MODEL,
+        "generate_lecture": settings.LECTURE_GENERATION_MODEL,
+        "generate_lecture_text_only": settings.LECTURE_GENERATION_MODEL,
+        "generate_lecture_summary": settings.LECTURE_SUMMARY_MODEL,
+        "generate_lecture_images": settings.IMAGE_GENERATION_MODEL,
+        "resume_lecture_images": settings.IMAGE_GENERATION_MODEL,
+        "generate_lecture_slide": settings.IMAGE_GENERATION_MODEL,
+        "remap_lecture_images_timeline": settings.IMAGE_GENERATION_MODEL,
+        "generate_professor_image": settings.IMAGE_GENERATION_MODEL,
+        "generate_course_image": settings.IMAGE_GENERATION_MODEL,
+    }
+    return mapping.get(kind)
+
+
+def _coerce_int(value: Any) -> Optional[int]:
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, int):
+        return value
+    if isinstance(value, str) and value.strip().lstrip("-").isdigit():
+        return int(value)
+    return None
+
+
+def _job_link_path(payload: Any, result: Any, factory=None) -> Optional[str]:
+    """
+    Resolve a relative frontend path to the lecture or topic a job concerns.
+
+    Prefers the lecture when both a lecture and topic are present. The lecture /
+    topic detail routes are nested under a course, so a course id is required; it
+    is taken from the payload/result when available and otherwise resolved via a
+    single primary-key lookup.
+    """
+    payload = payload if isinstance(payload, dict) else {}
+    result = result if isinstance(result, dict) else {}
+    partial = payload.get("partial_attributes") if isinstance(payload, dict) else {}
+    partial = partial if isinstance(partial, dict) else {}
+
+    def _pick(key: str) -> Optional[int]:
+        for source in (payload, partial, result):
+            val = _coerce_int(source.get(key))
+            if val is not None:
+                return val
+        return None
+
+    lecture_id = _pick("lecture_id")
+    topic_id = _pick("topic_id")
+    course_id = _pick("course_id")
+
+    if lecture_id is not None:
+        if course_id is None and factory is not None:
+            lecture = factory.lecture.get(lecture_id)
+            course_id = getattr(lecture, "course_id", None)
+        if course_id is not None:
+            return f"/courses/{course_id}/lectures/{lecture_id}"
+
+    if topic_id is not None:
+        if course_id is None and factory is not None:
+            topic = factory.topic.get(topic_id)
+            course_id = getattr(topic, "course_id", None)
+        if course_id is not None:
+            return f"/courses/{course_id}/topics/{topic_id}"
+
+    return None
+
+
+def _job_row_response(r, factory=None) -> dict:
     return {
         "id": r.id,
         "kind": r.kind,
@@ -45,17 +146,20 @@ def _job_row_response(r) -> dict:
         "result": r.result,
         "duration_ms": _duration_ms_from_result(r.result),
         "parent_job_id": getattr(r, "parent_job_id", None),
+        "model": _job_model_name(r.kind, r.payload),
+        "link_path": _job_link_path(r.payload, r.result, factory),
     }
 
 
 def _active_job_snapshot(
-    repo,
+    factory,
     *,
     lecture_id: Optional[int],
     topic_id: Optional[int],
     kinds: list[str],
     limit_per_status: int = 100,
 ) -> list[dict]:
+    repo = factory.job
     kinds_set = set(kinds)
     rows = []
     for status in ("queued", "running"):
@@ -70,52 +174,56 @@ def _active_job_snapshot(
     if kinds_set:
         rows = [row for row in rows if row.kind in kinds_set]
     rows.sort(key=lambda row: row.created_at, reverse=True)
-    return [_job_row_response(row) for row in rows]
+    return [_job_row_response(row, factory) for row in rows]
 
 
 class EnqueueJob(BaseModel):
     kind: str
     payload: Dict[str, Any]
-    priority: int = 0
+    # When omitted, the priority is derived from the job kind (see job_priorities).
+    priority: Optional[int] = None
     max_attempts: int = 2
 
 
+async def _publish_job_event(request: Request, event: Dict[str, Any]) -> None:
+    """Best-effort publish of a job event to the SSE hub.
+
+    Reads the hub from app state (the same place ``jobs_stream`` uses) and awaits
+    the publish on the running event loop. Never raises: SSE delivery is
+    non-critical and must not fail the request.
+    """
+    hub: Optional[JobEventHub] = getattr(request.app.state, "job_events", None)
+    if hub is None:
+        return
+    try:
+        await hub.publish(event)
+    except Exception:  # noqa: BLE001
+        logging.getLogger(__name__).debug("Failed to publish job event", exc_info=True)
+
+
 @router.post("", dependencies=[Depends(require_auth)])
-def enqueue(
+async def enqueue(
     job: EnqueueJob,
+    request: Request,
     repository_factory: RepositoryFactory = Depends(get_repository_factory),
 ):
     repo = repository_factory.job
-    row = repo.create(
+    row = await asyncio.to_thread(
+        repo.create,
         kind=job.kind,
         payload=job.payload,
         priority=job.priority,
         max_attempts=job.max_attempts,
     )
-    # Publish queued event to SSE hub (best-effort)
-    try:
-        # Attempt to access global app instance for event hub
-        # FastAPI doesn't inject app here, so we import the app and use its state
-        from artificial_u.api.app import app  # type: ignore
-
-        hub = getattr(app.state, "job_events", None)
-        if hub is not None:
-            # Publish synchronously; hub.publish is async, schedule and forget
-            import asyncio
-
-            asyncio.create_task(
-                hub.publish(
-                    {
-                        "id": row.id,
-                        "kind": row.kind,
-                        "status": "queued",
-                        "payload": row.payload,
-                    }
-                )
-            )
-    except Exception:
-        # Never fail the enqueue API due to SSE publish errors
-        pass
+    await _publish_job_event(
+        request,
+        {
+            "id": row.id,
+            "kind": row.kind,
+            "status": "queued",
+            "payload": row.payload,
+        },
+    )
 
     return {
         "id": row.id,
@@ -149,7 +257,7 @@ def list_jobs(
         course_id=course_id,
         parent_id=parent_id,
     )
-    return [_job_row_response(r) for r in rows]
+    return [_job_row_response(r, repository_factory) for r in rows]
 
 
 @router.get("/summary", dependencies=[Depends(require_auth)])
@@ -195,7 +303,7 @@ async def jobs_stream(
     hub: JobEventHub = request.app.state.job_events
     snapshot = await asyncio.to_thread(
         _active_job_snapshot,
-        repository_factory.job,
+        repository_factory,
         lecture_id=lecture_id,
         topic_id=topic_id,
         kinds=kinds_list,
@@ -230,7 +338,7 @@ def get_job(
     row = repo.get(job_id)
     if not row:
         raise HTTPException(404, "job not found")
-    return _job_row_response(row)
+    return _job_row_response(row, repository_factory)
 
 
 @router.get("/{job_id}/children", dependencies=[Depends(require_auth)])
@@ -242,43 +350,33 @@ def get_job_children(
     if not repo.get(job_id):
         raise HTTPException(404, "job not found")
     rows = repo.list(parent_id=job_id, limit=200)
-    return [_job_row_response(r) for r in rows]
+    return [_job_row_response(r, repository_factory) for r in rows]
 
 
 @router.post("/{job_id}/cancel", dependencies=[Depends(require_auth)])
-def cancel_job(
+async def cancel_job(
     job_id: int,
+    request: Request,
     repository_factory: RepositoryFactory = Depends(get_repository_factory),
 ):
     repo = repository_factory.job
-    row = repo.get(job_id)
+    row = await asyncio.to_thread(repo.get, job_id)
     if not row:
         raise HTTPException(404, "job not found")
     if row.status in ("done", "failed", "cancelled"):
         return {"id": row.id, "status": row.status}
 
     # Set status to cancelled
-    repo.mark_cancelled(job_id)
+    await asyncio.to_thread(repo.mark_cancelled, job_id)
 
-    # Publish cancelled event
-    try:
-        from artificial_u.api.app import app  # type: ignore
-
-        hub = getattr(app.state, "job_events", None)
-        if hub is not None:
-            import asyncio
-
-            asyncio.create_task(
-                hub.publish(
-                    {
-                        "id": job_id,
-                        "kind": row.kind,
-                        "status": "cancelled",
-                        "payload": row.payload or {},
-                    }
-                )
-            )
-    except Exception:
-        pass
+    await _publish_job_event(
+        request,
+        {
+            "id": job_id,
+            "kind": row.kind,
+            "status": "cancelled",
+            "payload": row.payload or {},
+        },
+    )
 
     return {"id": job_id, "status": "cancelled"}

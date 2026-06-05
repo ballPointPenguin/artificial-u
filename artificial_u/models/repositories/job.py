@@ -8,6 +8,7 @@ from typing import Any, Dict, List, Optional, Tuple
 from sqlalchemy import and_, asc, desc, func, select, text, update
 
 from artificial_u.models.database import JobModel
+from artificial_u.models.job_priorities import priority_for_kind
 from artificial_u.models.repositories.base import BaseRepository
 
 
@@ -21,11 +22,15 @@ class JobRepository(BaseRepository):
         *,
         kind: str,
         payload: Dict[str, Any],
-        priority: int = 0,
+        priority: Optional[int] = None,
         run_after: Optional[dt.datetime] = None,
         max_attempts: int = 2,
         parent_job_id: Optional[int] = None,
     ) -> JobModel:
+        # When no explicit priority is given, derive it from the job kind so the
+        # scheme stays centralized and consistent across follow-up chains.
+        if priority is None:
+            priority = priority_for_kind(kind)
         run_after = run_after or self._now()
         with self.get_session() as session:
             job = JobModel(

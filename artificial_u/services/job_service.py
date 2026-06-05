@@ -85,7 +85,6 @@ class JobService:
         self,
         slide_payloads: list[Dict[str, Any]],
         *,
-        slide_priority: int,
         chain_parent_job_id: Optional[int] = None,
     ) -> Optional[Dict[str, Any]]:
         """
@@ -95,7 +94,6 @@ class JobService:
         next_payload: Optional[Dict[str, Any]] = None
         for slide_payload in reversed(slide_payloads):
             current = dict(slide_payload)
-            current["slide_priority"] = slide_priority
             if chain_parent_job_id is not None:
                 current["chain_parent_job_id"] = chain_parent_job_id
             if next_payload is not None:
@@ -125,9 +123,6 @@ class JobService:
         row = self.repository_factory.job.create(
             kind="generate_lecture_slide",
             payload=next_slide_payload,
-            priority=int(
-                next_slide_payload.get("slide_priority", payload.get("slide_priority", -10))
-            ),
             parent_job_id=chain_parent_job_id,
         )
         return row.id
@@ -307,7 +302,6 @@ class JobService:
                 self.repository_factory.job.create(
                     kind="generate_lecture_summary",
                     payload=summary_payload,
-                    priority=payload.get("priority", 0),
                     parent_job_id=parent_job_id,
                 )
             except Exception as e:  # noqa: BLE001
@@ -324,7 +318,6 @@ class JobService:
                 self.repository_factory.job.create(
                     kind="generate_lecture_audio",
                     payload={"lecture_id": saved_lecture.id, "topic_id": saved_lecture.topic_id},
-                    priority=payload.get("priority", 0),
                     parent_job_id=parent_job_id,
                 )
             except Exception as e:  # noqa: BLE001
@@ -408,7 +401,6 @@ class JobService:
                     "lecture_id": lecture_id,
                     "topic_id": payload.get("topic_id") or getattr(lecture, "topic_id", None),
                 },
-                priority=int(payload.get("priority", 0)),
                 parent_job_id=parent_job_id,
             )
             result["remap_images_timeline_job_id"] = row.id
@@ -451,10 +443,8 @@ class JobService:
         if cleanup_result is not None:
             result["deleted_existing_images"] = cleanup_result.get("deleted", 0)
         slide_payloads = result.pop("slide_payloads", [])
-        slide_priority = int(payload.get("slide_priority", -10))
         first_slide_payload = self._build_lecture_slide_chain(
             slide_payloads,
-            slide_priority=slide_priority,
             chain_parent_job_id=parent_job_id,
         )
         job_ids = []
@@ -462,7 +452,6 @@ class JobService:
             row = self.repository_factory.job.create(
                 kind="generate_lecture_slide",
                 payload=first_slide_payload,
-                priority=slide_priority,
                 parent_job_id=parent_job_id,
             )
             job_ids.append(row.id)
@@ -486,10 +475,8 @@ class JobService:
             model_name_override=payload.get("model_name_override"),
         )
         slide_payloads = result.pop("slide_payloads", [])
-        slide_priority = int(payload.get("slide_priority", -10))
         first_slide_payload = self._build_lecture_slide_chain(
             slide_payloads,
-            slide_priority=slide_priority,
             chain_parent_job_id=parent_job_id,
         )
         job_ids = []
@@ -497,7 +484,6 @@ class JobService:
             row = self.repository_factory.job.create(
                 kind="generate_lecture_slide",
                 payload=first_slide_payload,
-                priority=slide_priority,
                 parent_job_id=parent_job_id,
             )
             job_ids.append(row.id)
