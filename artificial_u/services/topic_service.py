@@ -69,6 +69,15 @@ class TopicService:
         """
         self.logger.info(f"Creating new topic: {title} for course {course_id}")
 
+        # Get course language if available to keep topic in sync
+        language = None
+        try:
+            course = self.repository_factory.course.get(course_id)
+            if course:
+                language = course.language
+        except Exception as ce:
+            self.logger.warning(f"Failed to fetch course language for topic creation: {ce}")
+
         # Create topic object
         topic = Topic(
             title=title,
@@ -78,6 +87,7 @@ class TopicService:
             content=content,
             created_by=created_by,
             created_with=created_with,
+            language=language,
         )
 
         # Save to database

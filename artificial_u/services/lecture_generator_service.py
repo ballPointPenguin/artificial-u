@@ -19,12 +19,6 @@ from artificial_u.models.converters import (
     topics_model_to_dict,
 )
 from artificial_u.models.core import Lecture
-from artificial_u.prompts import (
-    get_lecture_prompt,
-    get_system_prompt,
-)
-from artificial_u.prompts.summary import get_summary_prompt
-from artificial_u.prompts.system import SUMMARY_SYSTEM_PROMPT
 from artificial_u.utils import (
     ContentGenerationError,
     DatabaseError,
@@ -396,9 +390,19 @@ class LectureGeneratorService:
             )
             return {"lecture_id": lecture_id, "summary": None}
 
-        # Build prompt and system instruction
-        prompt = get_summary_prompt(lecture_content=lecture.content)
-        system_prompt = SUMMARY_SYSTEM_PROMPT
+        # Determine language for prompts
+        language = getattr(lecture, "language", None) or "en"
+        lang = "en"
+        if language and isinstance(language, str):
+            lang_prefix = language.lower()[:2]
+            if lang_prefix in ("en", "fr"):
+                lang = lang_prefix
+
+        from artificial_u.prompts import get_prompts_for_language
+
+        prompt_module = get_prompts_for_language(lang)
+        prompt = prompt_module.get_summary_prompt(lecture_content=lecture.content)
+        system_prompt = prompt_module.get_system_prompt("summary")
 
         # Generate summary via content service
         self.logger.info("Calling content service to generate lecture summary...")
@@ -610,8 +614,19 @@ class LectureGeneratorService:
 
     async def _generate_and_parse_content(self, prompt_args: Dict[str, Any], model: str) -> str:
         """Generate lecture content and parse the XML response."""
-        lecture_prompt = get_lecture_prompt(**prompt_args)
-        system_prompt = get_system_prompt("lecture")
+        # Determine language for prompts
+        language = prompt_args.get("course_data", {}).get("language") or "en"
+        lang = "en"
+        if language and isinstance(language, str):
+            lang_prefix = language.lower()[:2]
+            if lang_prefix in ("en", "fr"):
+                lang = lang_prefix
+
+        from artificial_u.prompts import get_prompts_for_language
+
+        prompt_module = get_prompts_for_language(lang)
+        lecture_prompt = prompt_module.get_lecture_prompt(**prompt_args)
+        system_prompt = prompt_module.get_system_prompt("lecture")
 
         self.logger.info(f"Calling content service to generate lecture with model: {model}...")
         raw_response = await self.content_service.generate_text(

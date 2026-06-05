@@ -18,7 +18,6 @@ from artificial_u.models.converters import (
 from artificial_u.models.repositories.factory import RepositoryFactory
 from artificial_u.prompts import (
     get_prompts_for_language,
-    get_system_prompt,
 )
 from artificial_u.services.content_service import ContentService
 from artificial_u.utils import (
@@ -248,7 +247,7 @@ class DepartmentGeneratorService:
         response = await self.content_service.generate_text(
             prompt=prompt,
             model=settings.DEPARTMENT_GENERATION_MODEL,
-            system_prompt=get_system_prompt("department"),
+            system_prompt=prompts_module.get_system_prompt("department"),
         )
         self.logger.info("Received response from content service.")
 

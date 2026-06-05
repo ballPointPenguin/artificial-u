@@ -12,7 +12,6 @@ from artificial_u.config import get_settings
 from artificial_u.models.converters import course_model_to_dict, parse_topic_xml, topics_to_xml
 from artificial_u.models.core import Topic
 from artificial_u.models.repositories.factory import RepositoryFactory
-from artificial_u.prompts import get_next_topic_prompt, get_system_prompt
 from artificial_u.services.content_service import ContentService
 from artificial_u.utils import (
     ContentGenerationError,
@@ -115,7 +114,9 @@ class TopicGeneratorService:
                     target_week=week,
                     target_order=order,
                 )
-                created_topic = self._save_topic_dict(topic_dict, course_id, created_by)
+                created_topic = self._save_topic_dict(
+                    topic_dict, course_id, created_by, language=course_model.language
+                )
                 created_topics.append(created_topic)
                 prior_topics_context.append(self._topic_model_to_prompt_dict(created_topic))
 
@@ -181,6 +182,7 @@ class TopicGeneratorService:
             course_id=course_id,
             week=topic_dict["week"],
             order=topic_dict["order"],
+            language=course_model.language,
             content=topic_dict.get("content"),
             created_by=created_by,
             created_with=get_settings().TOPICS_GENERATION_MODEL,
@@ -264,7 +266,19 @@ class TopicGeneratorService:
     ) -> Dict[str, Any]:
         """Generate a single topic for a specific canonical week/order slot."""
         prior_topics_xml = topics_to_xml(prior_topics_context) if prior_topics_context else None
-        topic_prompt = get_next_topic_prompt(
+
+        # Determine language for prompts
+        language = course_data.get("language") or "en"
+        lang = "en"
+        if language and isinstance(language, str):
+            lang_prefix = language.lower()[:2]
+            if lang_prefix in ("en", "fr"):
+                lang = lang_prefix
+
+        from artificial_u.prompts import get_prompts_for_language
+
+        prompt_module = get_prompts_for_language(lang)
+        topic_prompt = prompt_module.get_next_topic_prompt(
             course_data=course_data,
             target_week=target_week,
             target_order=target_order,
@@ -272,7 +286,7 @@ class TopicGeneratorService:
             prior_topics_xml=prior_topics_xml,
             related_courses_topics_context=related_courses_topics_context,
         )
-        system_prompt = get_system_prompt("topics")
+        system_prompt = prompt_module.get_system_prompt("topics")
         settings = get_settings()
 
         self.logger.info(
@@ -337,7 +351,11 @@ class TopicGeneratorService:
         return ensure_xml_wrapper(generated_topic_output, "topic")
 
     def _save_topic_dict(
-        self, topic_dict: Dict[str, Any], course_id: int, created_by: Optional[int]
+        self,
+        topic_dict: Dict[str, Any],
+        course_id: int,
+        created_by: Optional[int],
+        language: Optional[str] = None,
     ) -> Topic:
         title = topic_dict.get("title")
         week = topic_dict.get("week")
@@ -364,6 +382,7 @@ class TopicGeneratorService:
             course_id=course_id,
             week=week,
             order=order,
+            language=language,
             content=topic_dict.get("content"),
             created_by=created_by,
             created_with=settings.TOPICS_GENERATION_MODEL,

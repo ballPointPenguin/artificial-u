@@ -19,10 +19,6 @@ from artificial_u.models.converters import (
 )
 from artificial_u.models.core import Course, Department, Professor
 from artificial_u.models.repositories.factory import RepositoryFactory
-from artificial_u.prompts import (
-    get_course_prompt,
-    get_system_prompt,
-)
 from artificial_u.services.content_service import ContentService
 from artificial_u.services.image_service import ImageService
 from artificial_u.utils import (
@@ -192,8 +188,19 @@ class CourseGeneratorService:
 
     async def _generate_and_parse_content(self, prompt_args: Dict[str, Any]) -> str:
         """Generate course content and parse the XML response."""
-        course_prompt = get_course_prompt(**prompt_args)
-        system_prompt = get_system_prompt("course")
+        # Determine language for prompts
+        language = prompt_args.get("partial_course_attrs", {}).get("language") or "en"
+        lang = "en"
+        if language and isinstance(language, str):
+            lang_prefix = language.lower()[:2]
+            if lang_prefix in ("en", "fr"):
+                lang = lang_prefix
+
+        from artificial_u.prompts import get_prompts_for_language
+
+        prompt_module = get_prompts_for_language(lang)
+        course_prompt = prompt_module.get_course_prompt(**prompt_args)
+        system_prompt = prompt_module.get_system_prompt("course")
         settings = get_settings()
 
         self.logger.info("Calling content service to generate course...")
