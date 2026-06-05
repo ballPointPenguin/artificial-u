@@ -8,6 +8,7 @@ import type {
   ProfessorCreate,
   ProfessorGenerateRequest,
 } from '../../api/types.js'
+import { useTranslations } from '../../i18n'
 import { waitForJobResult } from '../../utils/job-management.js'
 import type { SelectOption } from '../ui'
 import {
@@ -48,6 +49,7 @@ interface ProfessorFormProps {
 }
 
 const ProfessorForm: Component<ProfessorFormProps> = (props) => {
+  const t = useTranslations()
   const [formData, setFormData] = createSignal<ProfessorFormData>({
     name: '',
     title: '',
@@ -111,10 +113,10 @@ const ProfessorForm: Component<ProfessorFormProps> = (props) => {
     value: string | number | null
   ): string => {
     if (fieldName === 'name' && (!value || String(value).trim() === '')) {
-      return 'Professor name is required'
+      return t().professors.form.nameRequired
     }
     if (fieldName === 'title' && (!value || String(value).trim() === '')) {
-      return 'Title is required'
+      return t().professors.form.titleRequired
     }
     // Add more specific validations as needed
     return ''
@@ -131,11 +133,11 @@ const ProfessorForm: Component<ProfessorFormProps> = (props) => {
     let isValid = true
 
     if (!data.name || data.name.trim() === '') {
-      newErrors.name = 'Professor name is required'
+      newErrors.name = t().professors.form.nameRequired
       isValid = false
     }
     if (!data.title || data.title.trim() === '') {
-      newErrors.title = 'Title is required'
+      newErrors.title = t().professors.form.titleRequired
       isValid = false
     }
     // Department is not strictly required by API for create/update, but might be for generation
@@ -143,7 +145,7 @@ const ProfessorForm: Component<ProfessorFormProps> = (props) => {
 
     // Example: Age must be a positive number if provided
     if (data.age !== null && data.age <= 0) {
-      newErrors.age = 'Age must be a positive number.'
+      newErrors.age = t().professors.form.agePositive
       isValid = false
     }
 
@@ -227,7 +229,7 @@ const ProfessorForm: Component<ProfessorFormProps> = (props) => {
         // image_url is not typically part of this generation flow
       }))
     } catch (err: unknown) {
-      let message = 'Failed to generate professor profile'
+      let message = t().professors.form.failedToGenerate
       if (
         typeof err === 'object' &&
         err !== null &&
@@ -266,7 +268,12 @@ const ProfessorForm: Component<ProfessorFormProps> = (props) => {
 
   return (
     <Form onSubmit={handleSubmit}>
-      <FormField label="Professor Name" name="name" required error={validationErrors().name}>
+      <FormField
+        label={t().professors.form.nameLabel}
+        name="name"
+        required
+        error={validationErrors().name}
+      >
         <Input
           name="name"
           value={formData().name}
@@ -278,7 +285,12 @@ const ProfessorForm: Component<ProfessorFormProps> = (props) => {
         />
       </FormField>
 
-      <FormField label="Title" name="title" required error={validationErrors().title}>
+      <FormField
+        label={t().professors.form.titleLabel}
+        name="title"
+        required
+        error={validationErrors().title}
+      >
         <Input
           name="title"
           value={formData().title}
@@ -291,10 +303,10 @@ const ProfessorForm: Component<ProfessorFormProps> = (props) => {
       </FormField>
 
       <FormField
-        label="Department"
+        label={t().professors.form.departmentLabel}
         name="department_id"
         error={validationErrors().department_id}
-        helperText="Department affiliation."
+        helperText={t().professors.form.departmentHelper}
       >
         <Select
           name="department_id"
@@ -303,17 +315,17 @@ const ProfessorForm: Component<ProfessorFormProps> = (props) => {
           onChange={(v) => {
             handleInputChange('department_id', v === '' ? null : Number(v))
           }}
-          placeholder="-- Select Department --"
+          placeholder={t().professors.form.departmentPlaceholder}
           disabled={departmentsResource.loading || isDisabled()}
           required
         />
       </FormField>
 
       <FormField
-        label="Specialization"
+        label={t().professors.form.specializationLabel}
         name="specialization"
         error={validationErrors().specialization}
-        helperText="Primary field of expertise."
+        helperText={t().professors.form.specializationHelper}
       >
         <Textarea
           name="specialization"
@@ -326,7 +338,11 @@ const ProfessorForm: Component<ProfessorFormProps> = (props) => {
         />
       </FormField>
 
-      <FormField label="Description" name="description" error={validationErrors().description}>
+      <FormField
+        label={t().professors.form.descriptionLabel}
+        name="description"
+        error={validationErrors().description}
+      >
         <Textarea
           name="description"
           rows={3}
@@ -338,7 +354,11 @@ const ProfessorForm: Component<ProfessorFormProps> = (props) => {
         />
       </FormField>
 
-      <FormField label="Background" name="background" error={validationErrors().background}>
+      <FormField
+        label={t().professors.form.backgroundLabel}
+        name="background"
+        error={validationErrors().background}
+      >
         <Textarea
           name="background"
           rows={6}
@@ -350,7 +370,11 @@ const ProfessorForm: Component<ProfessorFormProps> = (props) => {
         />
       </FormField>
 
-      <FormField label="Personality" name="personality" error={validationErrors().personality}>
+      <FormField
+        label={t().professors.form.personalityLabel}
+        name="personality"
+        error={validationErrors().personality}
+      >
         <Textarea
           name="personality"
           rows={3}
@@ -363,7 +387,7 @@ const ProfessorForm: Component<ProfessorFormProps> = (props) => {
       </FormField>
 
       <FormField
-        label="Teaching Style"
+        label={t().professors.form.teachingStyleLabel}
         name="teaching_style"
         error={validationErrors().teaching_style}
       >
@@ -379,7 +403,11 @@ const ProfessorForm: Component<ProfessorFormProps> = (props) => {
       </FormField>
 
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <FormField label="Gender" name="gender" error={validationErrors().gender}>
+        <FormField
+          label={t().professors.form.genderLabel}
+          name="gender"
+          error={validationErrors().gender}
+        >
           <Input
             name="gender"
             value={formData().gender}
@@ -390,7 +418,11 @@ const ProfessorForm: Component<ProfessorFormProps> = (props) => {
           />
         </FormField>
 
-        <FormField label="Accent" name="accent" error={validationErrors().accent}>
+        <FormField
+          label={t().professors.form.accentLabel}
+          name="accent"
+          error={validationErrors().accent}
+        >
           <Input
             name="accent"
             value={formData().accent}
@@ -401,7 +433,7 @@ const ProfessorForm: Component<ProfessorFormProps> = (props) => {
           />
         </FormField>
 
-        <FormField label="Age" name="age" error={validationErrors().age}>
+        <FormField label={t().professors.form.ageLabel} name="age" error={validationErrors().age}>
           <Input
             name="age"
             type="number"
@@ -415,9 +447,9 @@ const ProfessorForm: Component<ProfessorFormProps> = (props) => {
       </div>
 
       <FormField
-        label="AI Generation Prompt (Optional)"
+        label={t().professors.form.aiPromptLabel}
         name="freeform_prompt"
-        helperText="Provide a freeform prompt to guide AI generation for personality, background, teaching style, etc."
+        helperText={t().professors.form.aiPromptHelper}
         error={validationErrors().freeform_prompt}
       >
         <Textarea
@@ -444,10 +476,10 @@ const ProfessorForm: Component<ProfessorFormProps> = (props) => {
 
       <FormActions>
         <Button type="button" variant="outline" onClick={props.onCancel} disabled={isDisabled()}>
-          Cancel
+          {t().common.cancel}
         </Button>
         <Button type="button" variant="outline" onClick={handleClear} disabled={isDisabled()}>
-          Clear
+          {t().common.clear}
         </Button>
         <MagicButton
           type="button"
@@ -457,12 +489,16 @@ const ProfessorForm: Component<ProfessorFormProps> = (props) => {
           }}
           disabled={isDisabled()}
           isLoading={isGenerating()}
-          loadingText="Generating..."
+          loadingText={t().common.generating}
         >
-          Generate
+          {t().common.generate}
         </MagicButton>
         <Button type="submit" variant="primary" disabled={isDisabled()}>
-          {props.isSubmitting ? 'Saving...' : props.professor !== undefined ? 'Update' : 'Save'}
+          {props.isSubmitting
+            ? t().common.saving
+            : props.professor !== undefined
+              ? t().common.update
+              : t().common.save}
         </Button>
       </FormActions>
     </Form>

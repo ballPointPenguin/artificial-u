@@ -1,5 +1,6 @@
 import { createSignal, onMount, Show } from 'solid-js'
 import type { APIError, Lecture, LectureUpdate } from '../../api/types.js'
+import { useTranslations } from '../../i18n'
 import { Button } from '../ui/Button.jsx'
 import FormField from '../ui/FormField.jsx'
 import Input from '../ui/Input.jsx'
@@ -16,6 +17,7 @@ interface LectureFormProps {
 }
 
 export function LectureForm(props: LectureFormProps) {
+  const t = useTranslations()
   const [title, setTitle] = createSignal('')
   const [content, setContent] = createSignal('')
 
@@ -60,10 +62,12 @@ export function LectureForm(props: LectureFormProps) {
       class="arcane-card p-6 space-y-4"
     >
       <h3 class="text-xl font-display text-parchment-100 mb-4">
-        {props.existingLecture ? 'Edit Lecture' : 'Create New Lecture'}
+        {props.existingLecture
+          ? t().lectureDetail.form.editHeading
+          : t().lectureDetail.form.createHeading}
       </h3>
 
-      <FormField name="lectureTitle" label="Title" required>
+      <FormField name="lectureTitle" label={t().lectureDetail.form.titleLabel} required>
         <Input
           name="lectureTitle"
           type="text"
@@ -71,25 +75,23 @@ export function LectureForm(props: LectureFormProps) {
           onInput={(e: Event & { currentTarget: HTMLInputElement }) =>
             setTitle(e.currentTarget.value)
           }
-          placeholder="Enter lecture title"
+          placeholder={t().lectureDetail.form.titlePlaceholder}
           required
         />
       </FormField>
 
-      <FormField name="lectureContent" label="Content" required>
+      <FormField name="lectureContent" label={t().lectureDetail.form.contentLabel} required>
         <Textarea
           name="lectureContent"
           value={content()}
           onInput={(e: Event & { currentTarget: HTMLTextAreaElement }) =>
             setContent(e.currentTarget.value)
           }
-          placeholder="Enter lecture content..."
+          placeholder={t().lectureDetail.form.contentPlaceholder}
           rows={12}
           required
         />
-        <p class="text-xs text-parchment-400 mt-1">
-          Enter the lecture content. This will be the main text of the lecture.
-        </p>
+        <p class="text-xs text-parchment-400 mt-1">{t().lectureDetail.form.contentHelper}</p>
       </FormField>
 
       <Show when={props.error}>
@@ -103,16 +105,16 @@ export function LectureForm(props: LectureFormProps) {
 
       <div class="flex justify-end space-x-3 pt-3 mt-4 border-t border-parchment-800/30">
         <Button type="button" variant="outline" onClick={props.onCancel} disabled={props.isLoading}>
-          Cancel
+          {t().common.cancel}
         </Button>
         <Button type="submit" variant="primary" disabled={props.isLoading}>
           {props.isLoading
             ? props.existingLecture
-              ? 'Saving...'
-              : 'Creating...'
+              ? t().lectureDetail.form.saving
+              : t().lectureDetail.form.creating
             : props.existingLecture
-              ? 'Save Changes'
-              : 'Create Lecture'}
+              ? t().lectureDetail.form.saveChanges
+              : t().lectureDetail.form.createLecture}
         </Button>
       </div>
     </form>

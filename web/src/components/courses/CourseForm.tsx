@@ -75,25 +75,25 @@ const CourseForm: Component<CourseFormProps> = (props) => {
   createEffect(() => {
     const depError: unknown = departmentsResource.error
     if (depError) {
-      props.setError?.('Failed to load departments')
+      props.setError?.(t().courses.form.failedToLoadDepartments)
     }
   })
 
   createEffect(() => {
     const profError: unknown = professorsResource.error
     if (profError) {
-      props.setError?.('Failed to load professors')
+      props.setError?.(t().courses.form.failedToLoadProfessors)
     }
   })
 
   // Sentinel value for null option (IDs are positive integers, so -1 is safe)
   const NULL_OPTION_VALUE = -1
 
-  // Level options for the dropdown
-  const levelOptions: SelectOption[] = [
-    { value: NULL_OPTION_VALUE, label: '-- Select Level (Optional) --' },
-    { value: 'Undergraduate', label: 'Undergraduate' },
-    { value: 'Graduate', label: 'Graduate' },
+  // Level options for the dropdown (computed to pick up locale changes)
+  const levelOptions = (): SelectOption[] => [
+    { value: NULL_OPTION_VALUE, label: t().courses.form.levelPlaceholder },
+    { value: 'Undergraduate', label: t().courses.form.levelUndergraduate },
+    { value: 'Graduate', label: t().courses.form.levelGraduate },
   ]
 
   // Fetch departments for Select
@@ -106,7 +106,7 @@ const CourseForm: Component<CourseFormProps> = (props) => {
       })) as SelectOption[]
       // Add null option at the beginning to allow unselection
       return [
-        { value: NULL_OPTION_VALUE, label: '-- Select Department (Optional) --' },
+        { value: NULL_OPTION_VALUE, label: t().courses.form.departmentPlaceholder },
         ...departmentOptions,
       ] as SelectOption[]
     } catch {
@@ -132,7 +132,7 @@ const CourseForm: Component<CourseFormProps> = (props) => {
         })) as SelectOption[]
         // Add null option at the beginning to allow unselection
         return [
-          { value: NULL_OPTION_VALUE, label: '-- Select Professor (Optional) --' },
+          { value: NULL_OPTION_VALUE, label: t().courses.form.professorPlaceholder },
           ...professorOptions,
         ] as SelectOption[]
       } catch {
@@ -196,19 +196,19 @@ const CourseForm: Component<CourseFormProps> = (props) => {
 
   const validateForm = (data: CourseFormData): boolean => {
     const errors: Record<string, string> = {}
-    if (!data.code.trim()) errors.code = 'Course code is required.'
-    if (!data.title.trim()) errors.title = 'Course title is required.'
+    if (!data.code.trim()) errors.code = t().courses.form.codeRequired
+    if (!data.title.trim()) errors.title = t().courses.form.titleRequired
     // department_id, professor_id, and level are now optional - no validation needed
-    if (!data.description.trim()) errors.description = 'Description is required.'
+    if (!data.description.trim()) errors.description = t().courses.form.descriptionRequired
     // Optional fields like lectures_per_week, total_weeks can be validated if they have specific rules when provided
     if (data.lectures_per_week !== null) {
       if (Number(data.lectures_per_week) < 1 || Number(data.lectures_per_week) > 5) {
-        errors.lectures_per_week = 'Lectures per week must be between 1 and 5 if specified.'
+        errors.lectures_per_week = t().courses.form.lecturesPerWeekRange
       }
     }
     if (data.total_weeks !== null) {
       if (Number(data.total_weeks) < 1 || Number(data.total_weeks) > 50) {
-        errors.total_weeks = 'Total weeks must be between 1 and 50 if specified.'
+        errors.total_weeks = t().courses.form.totalWeeksRange
       }
     }
 
@@ -267,7 +267,7 @@ const CourseForm: Component<CourseFormProps> = (props) => {
           : prev.connected_course_ids,
       }))
     } catch (err) {
-      setGenerateError(err instanceof Error ? err.message : 'Failed to generate course details')
+      setGenerateError(err instanceof Error ? err.message : t().courses.form.failedToGenerate)
     } finally {
       setIsGenerating(false)
     }
@@ -296,7 +296,12 @@ const CourseForm: Component<CourseFormProps> = (props) => {
   return (
     <Form onSubmit={handleSubmit}>
       <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
-        <FormField label="Course Code" name="code" required error={validationErrors().code}>
+        <FormField
+          label={t().courses.form.codeLabel}
+          name="code"
+          required
+          error={validationErrors().code}
+        >
           <Input
             name="code"
             value={formData().code}
@@ -307,7 +312,12 @@ const CourseForm: Component<CourseFormProps> = (props) => {
             required
           />
         </FormField>
-        <FormField label="Course Title" name="title" required error={validationErrors().title}>
+        <FormField
+          label={t().courses.form.titleLabel}
+          name="title"
+          required
+          error={validationErrors().title}
+        >
           <Input
             name="title"
             value={formData().title}
@@ -319,11 +329,11 @@ const CourseForm: Component<CourseFormProps> = (props) => {
           />
         </FormField>
         <FormField
-          label="Department"
+          label={t().courses.form.departmentLabel}
           name="department_id"
           error={validationErrors().department_id}
           helperText={
-            formData().department_id === null ? 'AI will determine a department' : undefined
+            formData().department_id === null ? t().courses.form.aiDeterminesDepartment : undefined
           }
         >
           <Select
@@ -342,7 +352,7 @@ const CourseForm: Component<CourseFormProps> = (props) => {
                 ...(props.course ? {} : { connected_course_ids: [] }),
               }))
             }}
-            placeholder="-- Select Department (Optional) --"
+            placeholder={t().courses.form.departmentPlaceholder}
             disabled={departmentsResource.loading || isDisabled()}
           />
         </FormField>
@@ -361,11 +371,11 @@ const CourseForm: Component<CourseFormProps> = (props) => {
           </FormField>
         ) : null}
         <FormField
-          label="Professor"
+          label={t().courses.form.professorLabel}
           name="professor_id"
           error={validationErrors().professor_id}
           helperText={
-            formData().professor_id === null ? 'AI will determine a professor' : undefined
+            formData().professor_id === null ? t().courses.form.aiDeterminesProfessor : undefined
           }
         >
           <Select
@@ -378,34 +388,34 @@ const CourseForm: Component<CourseFormProps> = (props) => {
                 v === NULL_OPTION_VALUE || v === null || v === '' ? null : Number(v)
               handleInputChange('professor_id', professorId)
             }}
-            placeholder="-- Select Professor (Optional) --"
+            placeholder={t().courses.form.professorPlaceholder}
             disabled={professorsResource.loading || isDisabled()}
           />
         </FormField>
         <FormField
-          label="Course Level"
+          label={t().courses.form.levelLabel}
           name="level"
           error={validationErrors().level}
-          helperText={!formData().level ? 'AI will determine the level' : undefined}
+          helperText={!formData().level ? t().courses.form.aiDeterminesLevel : undefined}
         >
           <Select
             name="level"
-            options={levelOptions}
+            options={levelOptions()}
             value={formData().level || NULL_OPTION_VALUE}
             onChange={(v) => {
               // Convert sentinel value to null, otherwise use the selected string value
               const level = v === NULL_OPTION_VALUE ? null : String(v)
               handleInputChange('level', level)
             }}
-            placeholder="-- Select Level (Optional) --"
+            placeholder={t().courses.form.levelPlaceholder}
             disabled={isDisabled()}
           />
         </FormField>
         <FormField
-          label="Lectures per Week (Optional)"
+          label={t().courses.form.lecturesPerWeekLabel}
           name="lectures_per_week"
           error={validationErrors().lectures_per_week}
-          helperText="Number of lectures per week (1-5)"
+          helperText={t().courses.form.lecturesPerWeekHelper}
         >
           <Input
             name="lectures_per_week"
@@ -420,10 +430,10 @@ const CourseForm: Component<CourseFormProps> = (props) => {
           />
         </FormField>
         <FormField
-          label="Total Weeks (Optional)"
+          label={t().courses.form.totalWeeksLabel}
           name="total_weeks"
           error={validationErrors().total_weeks}
-          helperText="Total number of weeks (1-50)"
+          helperText={t().courses.form.totalWeeksHelper}
         >
           <Input
             name="total_weeks"
@@ -440,7 +450,7 @@ const CourseForm: Component<CourseFormProps> = (props) => {
       </div>
 
       <FormField
-        label="Description"
+        label={t().courses.form.descriptionLabel}
         name="description"
         required
         error={validationErrors().description}
@@ -458,9 +468,9 @@ const CourseForm: Component<CourseFormProps> = (props) => {
       </FormField>
 
       <FormField
-        label="AI Generation Prompt (Optional)"
+        label={t().courses.form.aiPromptLabel}
         name="freeform_prompt"
-        helperText="Provide a freeform prompt to guide AI generation for topics, detailed description, etc."
+        helperText={t().courses.form.aiPromptHelper}
         error={validationErrors().freeform_prompt}
       >
         <Textarea
@@ -483,10 +493,10 @@ const CourseForm: Component<CourseFormProps> = (props) => {
 
       <FormActions>
         <Button type="button" variant="outline" onClick={props.onCancel} disabled={isDisabled()}>
-          Cancel
+          {t().common.cancel}
         </Button>
         <Button type="button" variant="outline" onClick={handleClear} disabled={isDisabled()}>
-          Clear
+          {t().common.clear}
         </Button>
         <MagicButton
           type="button"
@@ -496,16 +506,16 @@ const CourseForm: Component<CourseFormProps> = (props) => {
           }}
           disabled={isDisabled()}
           isLoading={isGenerating()}
-          loadingText="Generating..."
+          loadingText={t().common.generating}
         >
-          Generate Details
+          {t().courses.form.generateDetails}
         </MagicButton>
         <Button type="submit" variant="primary" disabled={isDisabled()}>
           {props.isSubmitting
-            ? 'Saving...'
+            ? t().common.saving
             : props.course !== undefined
-              ? 'Update Course'
-              : 'Save Course'}
+              ? t().courses.form.updateCourse
+              : t().courses.form.saveCourse}
         </Button>
       </FormActions>
     </Form>

@@ -9,6 +9,7 @@ import type {
   TopicGenerateSingleRequest,
   TopicUpdate,
 } from '../../api/types.js'
+import { useTranslations } from '../../i18n'
 import { Alert } from '../ui/Alert.jsx'
 import { Button } from '../ui/Button.jsx'
 import FormField from '../ui/FormField.jsx'
@@ -26,6 +27,7 @@ interface TopicFormProps {
 }
 
 export function TopicForm(props: TopicFormProps) {
+  const t = useTranslations()
   const [title, setTitle] = createSignal('')
   const [week, setWeek] = createSignal('')
   const [order, setOrder] = createSignal('')
@@ -75,7 +77,7 @@ export function TopicForm(props: TopicFormProps) {
       setContentError(null)
       return true
     } catch {
-      setContentError('Invalid JSON format')
+      setContentError(t().topicDetail.form.invalidJsonError)
       return false
     }
   }
@@ -130,7 +132,7 @@ export function TopicForm(props: TopicFormProps) {
     const parsedOrder = parseInt(order(), 10)
 
     if (isNaN(parsedWeek) || isNaN(parsedOrder)) {
-      setGenerateError('Week and order must be valid numbers before generating.')
+      setGenerateError(t().topicDetail.form.weekOrderRequired)
       return
     }
 
@@ -151,7 +153,7 @@ export function TopicForm(props: TopicFormProps) {
       setContent(generated.content ? JSON.stringify(generated.content, null, 2) : '')
       setContentError(null)
     } catch (err) {
-      setGenerateError(err instanceof Error ? err.message : 'Failed to generate topic')
+      setGenerateError(err instanceof Error ? err.message : t().topicDetail.form.failedToGenerate)
     } finally {
       setIsGenerating(false)
     }
@@ -167,10 +169,12 @@ export function TopicForm(props: TopicFormProps) {
       class="arcane-card p-6 space-y-4"
     >
       <h3 class="text-xl font-display text-parchment-100 mb-4">
-        {props.existingTopic ? 'Edit Topic' : 'Create New Topic'}
+        {props.existingTopic
+          ? t().topicDetail.form.editHeading
+          : t().topicDetail.form.createHeading}
       </h3>
 
-      <FormField name="topicTitle" label="Title" required>
+      <FormField name="topicTitle" label={t().topicDetail.form.titleLabel} required>
         <Input
           name="topicTitle"
           type="text"
@@ -178,12 +182,12 @@ export function TopicForm(props: TopicFormProps) {
           onInput={(e: Event & { currentTarget: HTMLInputElement }) =>
             setTitle(e.currentTarget.value)
           }
-          placeholder="Enter topic title"
+          placeholder={t().topicDetail.form.titlePlaceholder}
           required
         />
       </FormField>
 
-      <FormField name="topicWeek" label="Week Number" required>
+      <FormField name="topicWeek" label={t().topicDetail.form.weekLabel} required>
         <Input
           name="topicWeek"
           type="number"
@@ -191,13 +195,13 @@ export function TopicForm(props: TopicFormProps) {
           onInput={(e: Event & { currentTarget: HTMLInputElement }) =>
             setWeek(e.currentTarget.value)
           }
-          placeholder="Enter week number"
+          placeholder={t().topicDetail.form.weekPlaceholder}
           required
           min="1"
         />
       </FormField>
 
-      <FormField name="topicOrder" label="Order in Week" required>
+      <FormField name="topicOrder" label={t().topicDetail.form.orderLabel} required>
         <Input
           name="topicOrder"
           type="number"
@@ -205,13 +209,13 @@ export function TopicForm(props: TopicFormProps) {
           onInput={(e: Event & { currentTarget: HTMLInputElement }) =>
             setOrder(e.currentTarget.value)
           }
-          placeholder="Enter order within the week"
+          placeholder={t().topicDetail.form.orderPlaceholder}
           required
           min="1"
         />
       </FormField>
 
-      <FormField name="topicContent" label="Content (JSON)">
+      <FormField name="topicContent" label={t().topicDetail.form.contentLabel}>
         <Textarea
           name="topicContent"
           value={content()}
@@ -224,16 +228,13 @@ export function TopicForm(props: TopicFormProps) {
           rows={8}
           error={contentError()}
         />
-        <p class="text-xs text-parchment-400 mt-1">
-          Enter JSON content for the topic. Example: lecture text, readings array, objectives array,
-          etc.
-        </p>
+        <p class="text-xs text-parchment-400 mt-1">{t().topicDetail.form.contentHelper}</p>
       </FormField>
 
       <FormField
         name="topicFreeformPrompt"
-        label="AI Generation Prompt (Optional)"
-        helperText="Provide a freeform prompt to guide AI generation for this topic."
+        label={t().topicDetail.form.aiPromptLabel}
+        helperText={t().topicDetail.form.aiPromptHelper}
       >
         <Textarea
           name="topicFreeformPrompt"
@@ -261,7 +262,7 @@ export function TopicForm(props: TopicFormProps) {
 
       <div class="flex justify-end space-x-3 pt-3 mt-4 border-t border-parchment-800/30">
         <Button type="button" variant="outline" onClick={props.onCancel} disabled={isDisabled()}>
-          Cancel
+          {t().common.cancel}
         </Button>
         <Button
           type="button"
@@ -271,7 +272,7 @@ export function TopicForm(props: TopicFormProps) {
           }}
           disabled={isDisabled()}
         >
-          Clear
+          {t().common.clear}
         </Button>
         <MagicButton
           type="button"
@@ -281,12 +282,16 @@ export function TopicForm(props: TopicFormProps) {
           }}
           disabled={isDisabled()}
           isLoading={isGenerating()}
-          loadingText="Generating..."
+          loadingText={t().common.generating}
         >
-          Generate
+          {t().common.generate}
         </MagicButton>
         <Button type="submit" variant="primary" disabled={isDisabled()}>
-          {props.isLoading ? 'Saving...' : props.existingTopic ? 'Update' : 'Create Topic'}
+          {props.isLoading
+            ? t().common.saving
+            : props.existingTopic
+              ? t().topicDetail.form.updateLabel
+              : t().topicDetail.form.createLabel}
         </Button>
       </div>
     </form>

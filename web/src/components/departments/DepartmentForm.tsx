@@ -2,7 +2,7 @@ import { createEffect, createResource, createSignal, type JSX, Show } from 'soli
 import { departmentService } from '../../api/services/department-service.js'
 import { facultyService } from '../../api/services/faculty-service.js'
 import type { Department, DepartmentGenerateRequest } from '../../api/types.js'
-import { useContentLanguage } from '../../i18n'
+import { useContentLanguage, useTranslations } from '../../i18n'
 import {
   Alert,
   Button,
@@ -34,6 +34,7 @@ interface DepartmentFormProps {
 
 const DepartmentForm = (props: DepartmentFormProps) => {
   const { contentLanguage } = useContentLanguage()
+  const t = useTranslations()
   const [validationErrors, setValidationErrors] = createSignal<Record<string, string>>({})
   const [isGenerating, setIsGenerating] = createSignal(false)
   const [generateError, setGenerateError] = createSignal<string | null>(null)
@@ -63,21 +64,21 @@ const DepartmentForm = (props: DepartmentFormProps) => {
     const newErrors: Record<string, string> = {}
 
     if (!currentData.name || currentData.name.trim() === '') {
-      newErrors.name = 'Department name is required'
+      newErrors.name = t().departments.form.nameRequired
     }
 
     if (!currentData.code || currentData.code.trim() === '') {
-      newErrors.code = 'Department code is required'
+      newErrors.code = t().departments.form.codeRequired
     } else if (currentData.code.length < 2 || currentData.code.length > 10) {
-      newErrors.code = 'Code must be between 2 and 10 characters'
+      newErrors.code = t().departments.form.codeLengthError
     }
 
     if (!currentData.faculty_id) {
-      newErrors.faculty_id = 'Faculty is required'
+      newErrors.faculty_id = t().departments.form.facultyRequired
     }
 
     if (!currentData.description || currentData.description.trim() === '') {
-      newErrors.description = 'Description is required'
+      newErrors.description = t().departments.form.descriptionRequired
     }
 
     setValidationErrors(newErrors)
@@ -139,7 +140,7 @@ const DepartmentForm = (props: DepartmentFormProps) => {
         description: generated.description || '',
       })
     } catch (err: unknown) {
-      let message = 'Failed to generate department'
+      let message = t().departments.form.failedToGenerate
       if (
         typeof err === 'object' &&
         err !== null &&
@@ -179,7 +180,12 @@ const DepartmentForm = (props: DepartmentFormProps) => {
 
   return (
     <Form onSubmit={handleSubmit}>
-      <FormField label="Department Name" name="name" required error={validationErrors().name}>
+      <FormField
+        label={t().departments.form.nameLabel}
+        name="name"
+        required
+        error={validationErrors().name}
+      >
         <Input
           name="name"
           value={formData().name}
@@ -192,11 +198,11 @@ const DepartmentForm = (props: DepartmentFormProps) => {
       </FormField>
 
       <FormField
-        label="Department Code"
+        label={t().departments.form.codeLabel}
         name="code"
         required
         error={validationErrors().code}
-        helperText="Must be between 2 and 10 characters."
+        helperText={t().departments.form.codeHelperText}
       >
         <Input
           name="code"
@@ -209,10 +215,15 @@ const DepartmentForm = (props: DepartmentFormProps) => {
         />
       </FormField>
 
-      <FormField label="Faculty" name="faculty_id" required error={validationErrors().faculty_id}>
+      <FormField
+        label={t().departments.form.facultyLabel}
+        name="faculty_id"
+        required
+        error={validationErrors().faculty_id}
+      >
         <Show
           when={!faculties.loading}
-          fallback={<div class="text-parchment-300">Loading faculties...</div>}
+          fallback={<div class="text-parchment-300">{t().departments.form.facultyLoading}</div>}
         >
           <Select
             name="faculty_id"
@@ -221,7 +232,7 @@ const DepartmentForm = (props: DepartmentFormProps) => {
               setFormData((prev) => ({ ...prev, faculty_id: (value as number) || null }))
             }}
             options={facultyOptions()}
-            placeholder="Select a faculty"
+            placeholder={t().departments.form.facultyPlaceholder}
             disabled={isDisabled()}
             required
           />
@@ -229,7 +240,7 @@ const DepartmentForm = (props: DepartmentFormProps) => {
       </FormField>
 
       <FormField
-        label="Description"
+        label={t().departments.form.descriptionLabel}
         name="description"
         required
         error={validationErrors().description}
@@ -259,10 +270,10 @@ const DepartmentForm = (props: DepartmentFormProps) => {
 
       <FormActions>
         <Button type="button" variant="outline" onClick={props.onCancel} disabled={isDisabled()}>
-          Cancel
+          {t().common.cancel}
         </Button>
         <Button type="button" variant="outline" onClick={handleClear} disabled={isDisabled()}>
-          Clear
+          {t().common.clear}
         </Button>
         <MagicButton
           type="button"
@@ -272,12 +283,16 @@ const DepartmentForm = (props: DepartmentFormProps) => {
           }}
           disabled={isDisabled()}
           isLoading={isGenerating()}
-          loadingText="Generating..."
+          loadingText={t().common.generating}
         >
-          Generate
+          {t().common.generate}
         </MagicButton>
         <Button type="submit" variant="primary" disabled={isDisabled()}>
-          {props.isSubmitting ? 'Saving...' : props.department !== undefined ? 'Update' : 'Save'}
+          {props.isSubmitting
+            ? t().common.saving
+            : props.department !== undefined
+              ? t().common.update
+              : t().common.save}
         </Button>
       </FormActions>
     </Form>
