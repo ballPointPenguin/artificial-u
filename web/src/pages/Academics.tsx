@@ -9,12 +9,12 @@ const DepartmentCard = (props: { department: Department }) => {
   return (
     <A
       href={`/departments/${String(props.department.id)}`}
-      class="arcane-card h-full flex flex-col hover:shadow-arcane hover:scale-105 hover:border-primary/50 transition-all duration-300 cursor-pointer group"
+      class="arcane-card h-full flex flex-col overflow-hidden hover:shadow-arcane hover:scale-105 hover:border-primary/50 transition-all duration-300 cursor-pointer group"
     >
-      <h3 class="text-xl font-semibold mb-2 text-parchment-100 group-hover:text-primary transition-colors duration-300">
+      <h3 class="text-xl font-semibold mb-2 text-parchment-100 line-clamp-2 shrink-0 group-hover:text-primary transition-colors duration-300">
         {props.department.name}
       </h3>
-      <p class="text-parchment-300 mb-4 line-clamp-3 flex-grow group-hover:text-parchment-200 transition-colors duration-300">
+      <p class="text-sm text-parchment-300 line-clamp-2 min-h-0 group-hover:text-parchment-200 transition-colors duration-300">
         {props.department.description}
       </p>
     </A>
