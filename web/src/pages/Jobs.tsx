@@ -1,3 +1,4 @@
+import { A } from '@solidjs/router'
 import { createResource, createSignal, For, onCleanup, Show } from 'solid-js'
 import {
   cancelJob,
@@ -250,6 +251,12 @@ export default function JobsPage() {
                       scope="col"
                       class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider"
                     >
+                      Model
+                    </th>
+                    <th
+                      scope="col"
+                      class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider"
+                    >
                       Status
                     </th>
                     <th
@@ -302,6 +309,11 @@ export default function JobsPage() {
                       <tr class="hover:bg-muted/30 transition-colors">
                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">{job.id}</td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm">{job.kind}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm">
+                          <Show when={job.model} fallback={<span class="text-muted">-</span>}>
+                            <span class="font-mono text-xs text-muted">{job.model}</span>
+                          </Show>
+                        </td>
                         <td class="px-6 py-4 whitespace-nowrap">
                           <span
                             class={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${STATUS_STYLES[job.status]}`}
@@ -327,7 +339,11 @@ export default function JobsPage() {
                           )}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-muted">
-                          {extractParams(job)}
+                          <Show when={job.link_path} fallback={<span>{extractParams(job)}</span>}>
+                            <A href={job.link_path as string} class="text-accent hover:underline">
+                              {extractParams(job)}
+                            </A>
+                          </Show>
                         </td>
                         <td class="px-6 py-4 text-sm text-muted">
                           <Show when={job.last_error} fallback={<span class="text-muted">-</span>}>

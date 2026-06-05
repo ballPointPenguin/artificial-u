@@ -500,9 +500,7 @@ class Worker:
             return
 
         # Enqueue the next job
-        await self._enqueue_follow_up_job(
-            action, next_payload, next_topic_id, payload.get("priority", 0)
-        )
+        await self._enqueue_follow_up_job(action, next_payload, next_topic_id)
 
     async def _build_follow_up_payload(
         self,
@@ -566,6 +564,33 @@ class Worker:
             self.logger.error("Follow-up audio generation missing course_id")
             return None
 
+        # Query for the lecture with this topic_id
+        try:
+            lecture_repo = self.repository_factory.lecture
+            lectures = await asyncio.to_thread(lecture_repo.list_by_topic, next_topic_id)
+            if not lectures or len(lectures) == 0:
+                self.logger.warning(
+                    f"No lecture found for topic {next_topic_id}, skipping audio generation"
+                )
+                # Return None to let caller handle continuation with remaining topics
+                return None
+
+            payload: Dict[str, Any] = {
+                "lecture_id": lectures[0].id,
+                "topic_id": next_topic_id,
+            }
+
+            if new_remaining:
+                payload["follow_up"] = {
+                    **follow_up,
+                    "remaining_topic_ids": new_remaining,
+                }
+
+            return payload
+        except Exception as e:
+            self.logger.error(f"Error querying lecture for topic {next_topic_id}: {e}")
+            return None
+
     async def _build_timeline_payload(
         self,
         next_topic_id: int,
@@ -611,48 +636,23 @@ class Worker:
             self.logger.error(f"Error querying lecture for topic {next_topic_id}: {e}")
             return None
 
-        # Query for the lecture with this topic_id
-        try:
-            lecture_repo = self.repository_factory.lecture
-            lectures = await asyncio.to_thread(lecture_repo.list_by_topic, next_topic_id)
-            if not lectures or len(lectures) == 0:
-                self.logger.warning(
-                    f"No lecture found for topic {next_topic_id}, skipping audio generation"
-                )
-                # Return None to let caller handle continuation with remaining topics
-                return None
-
-            payload = {
-                "lecture_id": lectures[0].id,
-                "topic_id": next_topic_id,
-            }
-
-            if new_remaining:
-                payload["follow_up"] = {
-                    **follow_up,
-                    "remaining_topic_ids": new_remaining,
-                }
-
-            return payload
-        except Exception as e:
-            self.logger.error(f"Error querying lecture for topic {next_topic_id}: {e}")
-            return None
-
     async def _enqueue_follow_up_job(
         self,
         action: str,
         next_payload: Dict[str, Any],
         next_topic_id: int,
-        priority: int,
     ) -> None:
-        """Enqueue the follow-up job."""
+        """Enqueue the follow-up job.
+
+        Priority is derived from the job kind (see ``job_priorities``), so it
+        stays consistent across the whole follow-up chain.
+        """
         try:
             repo = self.repository_factory.job
             next_job = await asyncio.to_thread(
                 repo.create,
                 kind=action,
                 payload=next_payload,
-                priority=priority,
             )
             self.logger.info(
                 f"Enqueued follow-up job {next_job.id}: {action} for topic {next_topic_id}"
@@ -683,5 +683,5 @@ class Worker:
                 await self._enqueue_next_in_chain(action, new_remaining, follow_up)
             return
 
-        # Enqueue the job (using default priority of 0)
-        await self._enqueue_follow_up_job(action, next_payload, next_topic_id, 0)
+        # Enqueue the job (priority is derived from the job kind)
+        await self._enqueue_follow_up_job(action, next_payload, next_topic_id)

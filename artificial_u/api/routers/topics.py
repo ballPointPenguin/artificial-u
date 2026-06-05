@@ -352,7 +352,6 @@ def generate_remaining_lectures(
     row = repository_factory.job.create(
         kind="generate_lecture",
         payload=payload,
-        priority=1,
     )
 
     return {
@@ -424,7 +423,6 @@ def regenerate_remaining_audio(
     row = repository_factory.job.create(
         kind="generate_lecture_audio",
         payload=payload,
-        priority=1,
     )
 
     return {
@@ -495,7 +493,6 @@ def generate_remaining_timelines(
     row = repository_factory.job.create(
         kind="generate_lecture_timeline",
         payload=payload,
-        priority=1,
     )
 
     return {
@@ -564,7 +561,6 @@ def regenerate_remaining_lectures(
     row = repository_factory.job.create(
         kind="generate_lecture",
         payload=payload,
-        priority=1,
     )
 
     return {
