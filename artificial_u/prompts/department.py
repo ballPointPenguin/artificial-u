@@ -29,6 +29,8 @@ Generate a new department profile following this XML structure:
 
 Instructions:
 - All fields (inside [GENERATE]) must be filled with generated values.
+- If a field in 'Partial Department Details' already contains a value (not [GENERATE]),
+  copy that value exactly into your output — do not replace or alter it.
 - Ensure that both <name> and <code> are unique compared to those listed under
   <existing_departments> (case-insensitive check).
 - <code> must be a short, memorable abbreviation (2-8 uppercase letters).

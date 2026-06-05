@@ -47,6 +47,9 @@ class DepartmentGenerate(BaseModel):
     department_id: Optional[int] = Field(
         None, description="ID of existing department being edited (for context)."
     )
+    language: Optional[str] = Field(
+        "en", description="Language code for generation context (e.g., 'en', 'fr')."
+    )
 
 
 # Department response model

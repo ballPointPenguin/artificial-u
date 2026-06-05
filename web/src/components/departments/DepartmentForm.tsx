@@ -129,6 +129,7 @@ const DepartmentForm = (props: DepartmentFormProps) => {
           faculty_id: currentData.faculty_id ?? undefined,
           description: currentData.description || undefined,
         },
+        language: contentLanguage(),
         // Include department ID if editing an existing department
         ...(props.department?.id && { department_id: props.department.id }),
       }

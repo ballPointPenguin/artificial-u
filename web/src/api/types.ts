@@ -179,6 +179,7 @@ export interface DepartmentGenerateRequest {
   partial_attributes?: Record<string, unknown>
   freeform_prompt?: string
   department_id?: number
+  language?: string
 }
 
 // Department nested endpoints response types

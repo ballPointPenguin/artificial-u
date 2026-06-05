@@ -361,6 +361,7 @@ class DepartmentApiService(
         partial_attrs = attrs.get("partial_attributes", {})
         freeform_prompt = attrs.get("freeform_prompt")
         department_id = attrs.get("department_id")
+        language = attrs.get("language", "en")
 
         # Add freeform_prompt to partial_attrs if present (core service expects it there)
         if freeform_prompt:
@@ -377,6 +378,7 @@ class DepartmentApiService(
             # Call generator service with the extracted partial attributes
             generated_dict = await self.generator_service.generate_department(
                 partial_attributes=partial_attrs,
+                language=language,
             )
 
             # Convert the dictionary to the API response model
