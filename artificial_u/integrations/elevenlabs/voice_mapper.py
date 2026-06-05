@@ -128,35 +128,46 @@ class VoiceMapper:
         # Normalize the input
         gender_str = professor.gender.lower().strip()
 
-        # Use word boundaries to avoid substring issues
-        # Check for explicit male indicators
-        if (
-            gender_str == "male"
-            or gender_str == "man"
-            or gender_str == "boy"
-            or gender_str == "m"
-            or gender_str == "he"
-            or gender_str == "his"
-            or gender_str == "him"
-            or gender_str.startswith("he/")
-            or gender_str.startswith("his/")
-            or gender_str.startswith("him/")
-        ):
+        # Check for explicit male indicators (English + French + Spanish)
+        male_terms = {
+            "male",
+            "man",
+            "boy",
+            "m",
+            "he",
+            "his",
+            "him",
+            # French
+            "mâle",
+            "male",
+            "homme",
+            "masculin",
+            # Spanish
+            "masculino",
+            "hombre",
+            "varón",
+        }
+        if gender_str in male_terms or gender_str.startswith(("he/", "his/", "him/")):
             return "male"
 
-        # Check for explicit female indicators
-        if (
-            gender_str == "female"
-            or gender_str == "woman"
-            or gender_str == "girl"
-            or gender_str == "f"
-            or gender_str == "she"
-            or gender_str == "her"
-            or gender_str == "hers"
-            or gender_str.startswith("she/")
-            or gender_str.startswith("her/")
-            or gender_str.startswith("hers/")
-        ):
+        # Check for explicit female indicators (English + French + Spanish)
+        female_terms = {
+            "female",
+            "woman",
+            "girl",
+            "f",
+            "she",
+            "her",
+            "hers",
+            # French
+            "femelle",
+            "femme",
+            "féminin",
+            # Spanish
+            "femenino",
+            "mujer",
+        }
+        if gender_str in female_terms or gender_str.startswith(("she/", "her/", "hers/")):
             return "female"
 
         # Check for terms that should be treated as neutral/any
