@@ -46,6 +46,8 @@ const LectureDetailView: Component<{
   const [timelineError, setTimelineError] = createSignal('')
   const [isGeneratingImages, setIsGeneratingImages] = createSignal(false)
   const [imagesError, setImagesError] = createSignal('')
+  const [isRecreatingTranscript, setIsRecreatingTranscript] = createSignal(false)
+  const [transcriptError, setTranscriptError] = createSignal('')
   const confirmRegeneration = (message: string) => window.confirm(message)
   const uploadAudioDisabled = () =>
     props.isUploadingAudio ||
@@ -89,6 +91,18 @@ const LectureDetailView: Component<{
       setImagesError(error instanceof Error ? error.message : 'Failed to resume lecture images')
     } finally {
       setIsGeneratingImages(false)
+    }
+  }
+
+  const handleRecreateTranscript = async () => {
+    setIsRecreatingTranscript(true)
+    setTranscriptError('')
+    try {
+      await lectureService.recreateLectureTranscript(props.lecture.id)
+    } catch (error) {
+      setTranscriptError(error instanceof Error ? error.message : 'Failed to recreate transcript')
+    } finally {
+      setIsRecreatingTranscript(false)
     }
   }
 
@@ -259,6 +273,20 @@ const LectureDetailView: Component<{
                   >
                     {t().lectureDetail.resumeImages}
                   </MagicButton>
+                </Show>
+                <MagicButton
+                  variant="primary"
+                  size="sm"
+                  class="min-h-[44px] sm:min-h-[32px] w-full sm:w-auto flex items-center justify-center whitespace-nowrap"
+                  onClick={() => void handleRecreateTranscript()}
+                  disabled={isRecreatingTranscript()}
+                >
+                  {isRecreatingTranscript()
+                    ? t().lectureDetail.recreatingTranscript
+                    : t().lectureDetail.recreateTranscript}
+                </MagicButton>
+                <Show when={transcriptError()}>
+                  <span class="text-xs text-red-400">{transcriptError()}</span>
                 </Show>
                 <label
                   for="audio-file-upload"

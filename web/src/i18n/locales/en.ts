@@ -694,6 +694,8 @@ export const en = {
       'Regenerate timeline? This replaces the word timeline and will remap the existing lecture image timeline without regenerating images.',
     confirmRegenerateImages:
       'Regenerate lecture images? This will delete existing slide images where possible and create a new image timeline with newly generated images.',
+    recreateTranscript: 'Recreate Transcript',
+    recreatingTranscript: 'Recreating Transcript...',
     generatingSummary: 'Generating Summary...',
     regeneratingSummary: 'Regenerating Summary...',
     regenerateSummary: 'Regenerate Summary',

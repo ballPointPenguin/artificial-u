@@ -701,6 +701,8 @@ export const zh = {
       '重新生成时间轴吗？这将替换单词时间轴，并在不重新生成图片的情况下重新映射现有的讲座图片时间轴。',
     confirmRegenerateImages:
       '重新生成讲座图片吗？这将尽可能删除现有幻灯片图片，并使用新生成的图片创建新的图片时间轴。',
+    recreateTranscript: '重新创建转录',
+    recreatingTranscript: '正在重新创建转录...',
     generatingSummary: '正在生成摘要...',
     regeneratingSummary: '正在重新生成摘要...',
     regenerateSummary: '重新生成摘要',

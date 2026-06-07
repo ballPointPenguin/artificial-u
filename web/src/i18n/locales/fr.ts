@@ -696,6 +696,8 @@ export const fr = {
       'Régénérer la chronologie ? Cela remplace la chronologie des mots et remappera la chronologie des images de la conférence existante sans régénérer les images.',
     confirmRegenerateImages:
       "Régénérer les images de la conférence ? Cela supprimera les images de diapositives existantes si possible et créera une nouvelle chronologie d'images avec des images fraîchement générées.",
+    recreateTranscript: 'Recréer la transcription',
+    recreatingTranscript: 'Recréation en cours...',
     generatingSummary: 'Génération du résumé...',
     regeneratingSummary: 'Régénération du résumé...',
     regenerateSummary: 'Régénérer le résumé',

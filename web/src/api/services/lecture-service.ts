@@ -160,6 +160,10 @@ export const lectureService = {
     return httpClient.post(ENDPOINTS.lectures.enqueueResumeImages(lectureId), undefined)
   },
 
+  recreateLectureTranscript: (lectureId: number): Promise<Lecture> => {
+    return httpClient.post<Lecture>(ENDPOINTS.lectures.recreateTranscript(lectureId), undefined)
+  },
+
   createLecture: (data: LectureCreate): Promise<Lecture> => {
     return httpClient.post<Lecture>(ENDPOINTS.lectures.list, data)
   },

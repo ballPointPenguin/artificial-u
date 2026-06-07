@@ -974,6 +974,98 @@ async def upload_lecture_audio(
 
 
 @router.post(
+    "/{lecture_id}/recreate-transcript",
+    summary="Recreate lecture transcript",
+    description=(
+        "Re-upload the lecture's stored content as the transcript file, overwriting the existing "
+        "S3 object. Useful for fixing encoding issues or applying updated storage settings. "
+        "Admin only. Returns the updated lecture."
+    ),
+    responses={
+        404: {"description": "Lecture not found"},
+        400: {"description": "Lecture has no content to upload"},
+        403: {"description": "Admin access required"},
+    },
+    dependencies=[require_role("admin")],
+)
+async def recreate_lecture_transcript(
+    lecture_id: int = Path(..., description="The ID of the lecture"),
+    repository_factory: RepositoryFactory = Depends(get_repository_factory),
+    storage_service: StorageService = Depends(get_storage_service),
+):
+    logger = logging.getLogger(__name__)
+
+    lecture = repository_factory.lecture.get(lecture_id)
+    if not lecture:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"Lecture {lecture_id} not found"
+        )
+
+    if not lecture.content:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Lecture {lecture_id} has no content to upload as transcript",
+        )
+
+    course = repository_factory.course.get(lecture.course_id)
+    topic = repository_factory.topic.get(lecture.topic_id) if lecture.topic_id else None
+
+    if not course:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Lecture must be associated with a valid course",
+        )
+
+    if not topic:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Lecture must be associated with a valid topic",
+        )
+
+    try:
+        object_key = storage_service.generate_lecture_key(
+            course_code=str(course.code),
+            week_number=int(topic.week),
+            lecture_order=int(topic.order),
+            extension="txt",
+        )
+
+        success, transcript_url = await storage_service.upload_lecture_file(
+            file_data=lecture.content.encode("utf-8"),
+            object_name=object_key,
+            content_type="text/plain; charset=utf-8",
+        )
+
+        if not success or not transcript_url:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to upload transcript to storage",
+            )
+
+        logger.info(f"Recreated transcript for lecture {lecture_id} at {transcript_url}")
+
+        lecture.transcript_url = transcript_url
+        updated_lecture = repository_factory.lecture.update(lecture)
+
+        if not updated_lecture:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to update lecture with transcript URL",
+            )
+
+        return updated_lecture
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error recreating transcript for lecture {lecture_id}: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to recreate transcript: {str(e)}",
+        )
+
+
+@router.post(
     "/{lecture_id}/generate-summary",
     response_model=Lecture,
     status_code=status.HTTP_200_OK,
