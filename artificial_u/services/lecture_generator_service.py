@@ -864,21 +864,11 @@ class LectureGeneratorService:
         topic_id: int,
         content_text: str,
     ) -> Optional[str]:
-        """Upload generated lecture text to storage and return its URL.
-
-        The text is normalized for TTS compatibility before being uploaded as a transcript.
-        This ensures that users can submit the transcript to external TTS services
-        and get good results.
-        """
+        """Upload generated lecture text to storage and return its URL."""
         if not self.storage_service or not content_text:
             return None
 
         try:
-            # Normalize text for TTS compatibility before uploading as transcript
-            from artificial_u.audio.speech_processor import SpeechProcessor
-
-            speech_processor = SpeechProcessor(logger=self.logger)
-            normalized_text = speech_processor.normalize_text(content_text)
             course = self.course_service.get_course(course_id)
             topic = self.topic_service.get_topic(topic_id)
 
@@ -894,9 +884,9 @@ class LectureGeneratorService:
             )
 
             success, url = await self.storage_service.upload_lecture_file(
-                file_data=normalized_text.encode("utf-8"),
+                file_data=content_text.encode("utf-8"),
                 object_name=object_key,
-                content_type="text/plain",
+                content_type="text/plain; charset=utf-8",
             )
             return url if success else None
         except Exception as e:
