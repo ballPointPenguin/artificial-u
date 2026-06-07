@@ -1,0 +1,78 @@
+name: Sync prod with main
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: How to update the prod branch
+        required: true
+        default: fast-forward
+        type: choice
+        options:
+          - fast-forward
+          - replace
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sync-prod
+  cancel-in-progress: false
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+
+jobs:
+  sync-prod:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Fetch main and prod
+        run: |
+          git fetch origin main
+          git fetch origin prod || true
+
+      - name: Update prod from main
+        env:
+          MODE: ${{ inputs.mode }}
+        run: |
+          set -euo pipefail
+
+          MAIN_REF="refs/remotes/origin/main"
+          PROD_REF="refs/remotes/origin/prod"
+          TARGET_REF="refs/heads/prod"
+
+          if ! git show-ref --verify --quiet "$MAIN_REF"; then
+            echo "main branch was not fetched"
+            exit 1
+          fi
+
+          if [ "$MODE" = "fast-forward" ] && git show-ref --verify --quiet "$PROD_REF"; then
+            if ! git merge-base --is-ancestor "$PROD_REF" "$MAIN_REF"; then
+              echo "prod is not an ancestor of main; rerun this workflow with mode=replace to force prod to match main"
+              exit 1
+            fi
+
+            git push origin "$MAIN_REF:$TARGET_REF"
+            echo "Fast-forwarded prod to match main"
+            exit 0
+          fi
+
+          if git show-ref --verify --quiet "$PROD_REF"; then
+            EXPECTED_PROD_SHA=$(git rev-parse "$PROD_REF")
+            git push --force-with-lease="$TARGET_REF:$EXPECTED_PROD_SHA" origin "$MAIN_REF:$TARGET_REF"
+          else
+            git push origin "$MAIN_REF:$TARGET_REF"
+          fi
+
+          echo "Replaced prod with main"
