@@ -31,15 +31,10 @@ def _duration_ms_from_result(result: Any) -> Any:
         return None
 
 
-def _tts_model_name(settings) -> Optional[str]:
-    """Best-effort TTS model name for the configured backend."""
-    backend = (settings.tts_backend or "").lower()
-    if backend == "mistral":
-        return settings.TTS_MISTRAL_MODEL
-    if backend == "xai":
-        # xAI's TTS endpoint does not expose a tunable model name; show the backend.
-        return "xai"
-    return settings.TTS_VOICE_MODEL
+def _tts_backend_name(settings) -> Optional[str]:
+    """TTS backend name for the configured backend (used as the display model for audio jobs)."""
+    backend = (settings.tts_backend or "").strip().lower()
+    return backend or None
 
 
 def _job_model_name(kind: str, payload: Any, factory=None) -> Optional[str]:
@@ -56,7 +51,7 @@ def _job_model_name(kind: str, payload: Any, factory=None) -> Optional[str]:
 
     settings = get_settings()
     if kind == "generate_lecture_audio":
-        return _tts_model_name(settings)
+        return _tts_backend_name(settings)
 
     # Map job kind to (preference_scope, settings_fallback)
     kind_map = {
