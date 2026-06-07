@@ -715,6 +715,8 @@ export const es = {
       '¿Regenerar cronología? Esto reemplaza la cronología de palabras y volverá a mapear la cronología de imágenes de la lección existente sin regenerar las imágenes.',
     confirmRegenerateImages:
       '¿Regenerar imágenes de la lección? Esto eliminará las imágenes de diapositivas existentes cuando sea posible y creará una nueva cronología de imágenes con imágenes recién generadas.',
+    recreateTranscript: 'Recrear transcripción',
+    recreatingTranscript: 'Recreando transcripción...',
     generatingSummary: 'Generando resumen...',
     regeneratingSummary: 'Regenerando resumen...',
     regenerateSummary: 'Regenerar resumen',
