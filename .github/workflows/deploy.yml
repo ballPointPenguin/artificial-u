@@ -5,6 +5,11 @@ on:
   push:
     branches:
       - prod
+  workflow_run:
+    workflows:
+      - Sync prod with main
+    types:
+      - completed
 
 # Permissions needed for OIDC authentication with AWS
 permissions:
@@ -16,10 +21,13 @@ env:
 
 jobs:
   deploy:
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
+        with:
+          ref: prod
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v6
