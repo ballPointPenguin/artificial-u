@@ -27,7 +27,7 @@ def _duration_ms_from_result(result: Any) -> Any:
         return None
     try:
         return int(d)
-    except TypeError, ValueError:
+    except (TypeError, ValueError):
         return None
 
 
@@ -42,14 +42,12 @@ def _tts_model_name(settings) -> Optional[str]:
     return settings.TTS_VOICE_MODEL
 
 
-def _job_model_name(kind: str, payload: Any) -> Optional[str]:
+def _job_model_name(kind: str, payload: Any, factory=None) -> Optional[str]:
     """
-    Best-effort model name for a job, based on its kind and the global generation
-    settings. Returns None for jobs without a single obvious model (e.g. course
-    creation, exports). Payload-level overrides take precedence where present.
+    Best-effort model name for a job. Payload-level overrides take precedence,
+    then global preference overrides (admin settings), then environment defaults.
 
-    Note: this reflects the global defaults; per-professor / per-voice overrides
-    applied at runtime are not resolved here.
+    Note: per-professor / per-voice overrides applied at runtime are not resolved here.
     """
     payload = payload if isinstance(payload, dict) else {}
     override = payload.get("model_name_override")
@@ -60,22 +58,34 @@ def _job_model_name(kind: str, payload: Any) -> Optional[str]:
     if kind == "generate_lecture_audio":
         return _tts_model_name(settings)
 
-    mapping = {
-        "generate_course": settings.COURSE_GENERATION_MODEL,
-        "generate_department": settings.DEPARTMENT_GENERATION_MODEL,
-        "generate_professor": settings.PROFESSOR_GENERATION_MODEL,
-        "generate_topics_for_course": settings.TOPICS_GENERATION_MODEL,
-        "generate_lecture": settings.LECTURE_GENERATION_MODEL,
-        "generate_lecture_text_only": settings.LECTURE_GENERATION_MODEL,
-        "generate_lecture_summary": settings.LECTURE_SUMMARY_MODEL,
-        "generate_lecture_images": settings.IMAGE_GENERATION_MODEL,
-        "resume_lecture_images": settings.IMAGE_GENERATION_MODEL,
-        "generate_lecture_slide": settings.IMAGE_GENERATION_MODEL,
-        "remap_lecture_images_timeline": settings.IMAGE_GENERATION_MODEL,
-        "generate_professor_image": settings.IMAGE_GENERATION_MODEL,
-        "generate_course_image": settings.IMAGE_GENERATION_MODEL,
+    # Map job kind to (preference_scope, settings_fallback)
+    kind_map = {
+        "generate_course": ("COURSE_GENERATION_MODEL", settings.COURSE_GENERATION_MODEL),
+        "generate_department": ("DEPARTMENT_GENERATION_MODEL", settings.DEPARTMENT_GENERATION_MODEL),
+        "generate_professor": ("PROFESSOR_GENERATION_MODEL", settings.PROFESSOR_GENERATION_MODEL),
+        "generate_topics_for_course": ("TOPICS_GENERATION_MODEL", settings.TOPICS_GENERATION_MODEL),
+        "generate_lecture": ("LECTURE_GENERATION_MODEL", settings.LECTURE_GENERATION_MODEL),
+        "generate_lecture_text_only": ("LECTURE_GENERATION_MODEL", settings.LECTURE_GENERATION_MODEL),
+        "generate_lecture_summary": ("LECTURE_SUMMARY_MODEL", settings.LECTURE_SUMMARY_MODEL),
+        "generate_lecture_images": ("IMAGE_GENERATION_MODEL", settings.IMAGE_GENERATION_MODEL),
+        "resume_lecture_images": ("IMAGE_GENERATION_MODEL", settings.IMAGE_GENERATION_MODEL),
+        "generate_lecture_slide": ("IMAGE_GENERATION_MODEL", settings.IMAGE_GENERATION_MODEL),
+        "remap_lecture_images_timeline": ("IMAGE_GENERATION_MODEL", settings.IMAGE_GENERATION_MODEL),
+        "generate_professor_image": ("IMAGE_GENERATION_MODEL", settings.IMAGE_GENERATION_MODEL),
+        "generate_course_image": ("IMAGE_GENERATION_MODEL", settings.IMAGE_GENERATION_MODEL),
     }
-    return mapping.get(kind)
+
+    entry = kind_map.get(kind)
+    if entry is None:
+        return None
+
+    scope, default = entry
+    if factory is not None:
+        pref = factory.preference.get_global(scope)
+        if pref:
+            return pref.value
+
+    return default
 
 
 def _coerce_int(value: Any) -> Optional[int]:
@@ -146,7 +156,7 @@ def _job_row_response(r, factory=None) -> dict:
         "result": r.result,
         "duration_ms": _duration_ms_from_result(r.result),
         "parent_job_id": getattr(r, "parent_job_id", None),
-        "model": _job_model_name(r.kind, r.payload),
+        "model": _job_model_name(r.kind, r.payload, factory),
         "link_path": _job_link_path(r.payload, r.result, factory),
     }
 
