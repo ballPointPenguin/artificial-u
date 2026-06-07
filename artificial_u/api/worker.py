@@ -5,7 +5,7 @@ import logging
 import os
 import sys
 import time
-from typing import Any, Awaitable, Callable, Dict, Optional
+from typing import Any, Awaitable, Callable, Dict, Optional, Set
 
 from aiolimiter import AsyncLimiter  # type: ignore
 
@@ -95,23 +95,50 @@ class Worker:
         repo = self.repository_factory.job
         self.logger.info("Worker loop started")
         loop_count = 0
+        running: Set[asyncio.Task] = set()
+        _last_sweep = 0.0
+        # Sweep at most once per minute; visibility timeout is 35 min so this is plenty.
+        _sweep_interval = 60.0
 
         while not self._stopped.is_set():
             loop_count += 1
             try:
                 await self._cooperative_yield()
-                await self._sweep_stuck_jobs(repo)
-                tasks = await self._reserve_jobs(repo)
-                if tasks:
-                    await self._process_tasks(tasks)
+
+                now_mono = time.monotonic()
+                if now_mono - _last_sweep >= _sweep_interval:
+                    await self._sweep_stuck_jobs(repo)
+                    _last_sweep = now_mono
+
+                # Fill any open concurrency slots immediately.
+                available = self.settings.WORKER_MAX_CONCURRENCY - len(running)
+                if available > 0:
+                    new_tasks = await self._reserve_jobs(repo, limit=available)
+                    if new_tasks:
+                        self.logger.info(
+                            f"Starting {len(new_tasks)} new job(s); "
+                            f"{len(running) + len(new_tasks)} total running"
+                        )
+                    running.update(new_tasks)
+
+                if running:
+                    # Wake as soon as any task finishes so we can refill the slot.
+                    done, running = await asyncio.wait(
+                        running,
+                        return_when=asyncio.FIRST_COMPLETED,
+                        timeout=self.settings.WORKER_POLL_IDLE_SEC,
+                    )
+                    if done:
+                        self.logger.debug(
+                            f"{len(done)} job(s) completed, {len(running)} still running"
+                        )
                 else:
                     await self._idle_or_log(loop_count)
             except asyncio.CancelledError:
                 self.logger.info("Worker loop cancelled, shutting down")
-                # Best-effort cancellation of any tasks created in this iteration
                 try:
-                    if "tasks" in locals() and tasks:
-                        await self._cancel_pending(tasks)
+                    if running:
+                        await self._cancel_pending(list(running))
                 except Exception:
                     pass
                 raise
@@ -140,10 +167,11 @@ class Worker:
         except asyncio.TimeoutError:
             self.logger.warning("Database operation timed out during sweep")
 
-    async def _reserve_jobs(self, repo) -> list[asyncio.Task]:
-        """Reserve up to max concurrency jobs, returning tasks to process them."""
+    async def _reserve_jobs(self, repo, limit: int | None = None) -> list[asyncio.Task]:
+        """Reserve up to limit (or WORKER_MAX_CONCURRENCY) jobs, returning tasks."""
+        max_count = limit if limit is not None else self.settings.WORKER_MAX_CONCURRENCY
         tasks: list[asyncio.Task] = []
-        for _ in range(self.settings.WORKER_MAX_CONCURRENCY):
+        for _ in range(max_count):
             if self._stopped.is_set():
                 break
             try:
@@ -170,22 +198,6 @@ class Worker:
             )
             tasks.append(asyncio.create_task(self._run_one(row.id)))
         return tasks
-
-    async def _process_tasks(self, tasks: list[asyncio.Task]) -> None:
-        """Process tasks with an optional timeout and cancel any that overrun."""
-        self.logger.info(f"Processing {len(tasks)} jobs concurrently")
-        timeout = self.settings.WORKER_TASKS_PROCESSING_TIMEOUT_SEC
-        try:
-            if timeout is None or timeout <= 0:
-                await asyncio.gather(*tasks, return_exceptions=True)
-            else:
-                await asyncio.wait_for(
-                    asyncio.gather(*tasks, return_exceptions=True),
-                    timeout=timeout,
-                )
-        except asyncio.TimeoutError:
-            self.logger.warning("Concurrent task batch timed out, cancelling remaining tasks")
-            await self._cancel_pending(tasks)
 
     async def _cancel_pending(self, tasks: list[asyncio.Task]) -> None:
         for task in tasks:
