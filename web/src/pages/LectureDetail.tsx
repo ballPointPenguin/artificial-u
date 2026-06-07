@@ -100,9 +100,7 @@ const LectureDetailView: Component<{
     try {
       await lectureService.recreateLectureTranscript(props.lecture.id)
     } catch (error) {
-      setTranscriptError(
-        error instanceof Error ? error.message : 'Failed to recreate transcript'
-      )
+      setTranscriptError(error instanceof Error ? error.message : 'Failed to recreate transcript')
     } finally {
       setIsRecreatingTranscript(false)
     }
