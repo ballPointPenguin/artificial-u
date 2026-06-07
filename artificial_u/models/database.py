@@ -39,6 +39,7 @@ class CourseModel(Base):
     total_weeks = Column(Integer, nullable=True, default=12)
     language = Column(String, nullable=True)
     status = Column(String, nullable=False, default="hidden")
+    notes = Column(Text, nullable=True)
     department_id = Column(Integer, ForeignKey("departments.id"), nullable=True)
     professor_id = Column(Integer, ForeignKey("professors.id"), nullable=True)
     # New attribution fields

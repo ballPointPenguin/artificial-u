@@ -36,6 +36,10 @@ LECTURE_PROMPT = PromptTemplate(
 
 {{freeform_prompt_text}}
 
+Remarque : Si le XML du cours contient un élément <user_notes>, il s'agit de notes fournies par
+l'utilisateur pour ce cours — traitez-les comme des consignes importantes lors de la génération
+de la séance.
+
 Instructions :
 
 1. Prenez connaissance des informations fournies pour comprendre le contexte de la séance.

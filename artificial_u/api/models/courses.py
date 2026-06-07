@@ -45,6 +45,10 @@ class CourseBase(BaseModel):
     status: Literal["hidden", "published"] = Field(
         default="hidden", description="Course visibility status"
     )
+    notes: Optional[str] = Field(
+        None,
+        description="Optional user-provided notes to guide content generation for this course",
+    )
     language: Optional[str] = Field(None, description="Language code (e.g., 'en', 'fr')")
     # Attribution (not required for create)
     created_by: Optional[int] = Field(None, description="Student ID who created the course")
@@ -89,6 +93,10 @@ class CourseUpdate(BaseModel):
     )
     status: Optional[Literal["hidden", "published"]] = Field(
         None, description="Updated course visibility status"
+    )
+    notes: Optional[str] = Field(
+        None,
+        description="Optional user-provided notes to guide content generation for this course",
     )
     connected_course_ids: Optional[List[int]] = Field(
         None,

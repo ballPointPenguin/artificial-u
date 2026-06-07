@@ -41,6 +41,7 @@ export interface Course {
   total_weeks: number
   connected_course_ids: number[]
   status: CourseStatus
+  notes?: string | null
   created_by?: number | null
   created_with?: string | null
   image_url?: string | null
@@ -89,6 +90,7 @@ export interface CourseCreate {
   level?: string | null
   professor_id?: number | null
   description: string
+  notes?: string | null
   lectures_per_week?: number
   total_weeks?: number
   created_with?: string | null
@@ -103,6 +105,7 @@ export interface CourseUpdate {
   level?: string | null
   professor_id?: number | null
   description?: string
+  notes?: string | null
   lectures_per_week?: number
   total_weeks?: number
   status?: CourseStatus

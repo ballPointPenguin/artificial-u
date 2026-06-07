@@ -76,6 +76,10 @@ Structure XML requise :
 Informations sur le cours :
 {{course_xml}}
 
+Remarque : Si le XML du cours contient un élément <user_notes>, il s'agit de notes fournies par
+l'utilisateur pour ce cours — traitez-les comme des consignes importantes lors de la génération
+du contenu.
+
 {{prior_topics_context}}
 {{related_courses_topics_context}}
 

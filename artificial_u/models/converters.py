@@ -283,6 +283,10 @@ def partial_course_to_xml(
         else:
             lines.append(f"  <{field}>{generate_marker}</{field}>")
 
+    notes = partial_attrs.get("notes")
+    if notes:
+        lines.append(f"  <user_notes>{escape_xml(str(notes))}</user_notes>")
+
     lines.append("</course>")
     return "\n".join(lines)
 
