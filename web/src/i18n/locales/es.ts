@@ -300,6 +300,11 @@ export const es = {
       lecturesPerWeekLabel: 'Clases por semana (opcional)',
       totalWeeksLabel: 'Total de semanas (opcional)',
       descriptionLabel: 'Descripción',
+      notesLabel: 'Notas del curso (opcional)',
+      notesPlaceholder:
+        'Ej. Este curso se imparte en inglés con vocabulario francés integrado. No generar lecciones completamente en francés.',
+      notesHelper:
+        'Notas opcionales para guiar la generación de contenido. Se envían a la IA al generar temas y lecciones. No se completan automáticamente con Generar detalles.',
       aiPromptLabel: 'Indicación de generación IA (opcional)',
       departmentPlaceholder: '-- Seleccionar departamento (opcional) --',
       professorPlaceholder: '-- Seleccionar profesor (opcional) --',

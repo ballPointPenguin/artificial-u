@@ -43,6 +43,7 @@ const CourseForm: Component<CourseFormProps> = (props) => {
     level: null,
     professor_id: null,
     description: '',
+    notes: null,
     lectures_per_week: null,
     total_weeks: null,
     freeform_prompt: '',
@@ -65,6 +66,7 @@ const CourseForm: Component<CourseFormProps> = (props) => {
         level: c.level || '',
         professor_id: c.professor_id,
         description: c.description || '',
+        notes: c.notes || null,
         lectures_per_week: c.lectures_per_week,
         total_weeks: c.total_weeks,
         freeform_prompt: '', // Reset generate prompt on edit
@@ -294,6 +296,7 @@ const CourseForm: Component<CourseFormProps> = (props) => {
       level: null,
       professor_id: null,
       description: '',
+      notes: null,
       lectures_per_week: null,
       total_weeks: null,
       freeform_prompt: '',
@@ -476,6 +479,24 @@ const CourseForm: Component<CourseFormProps> = (props) => {
           }}
           disabled={isDisabled()}
           required
+        />
+      </FormField>
+
+      <FormField
+        label={t().courses.form.notesLabel}
+        name="notes"
+        helperText={t().courses.form.notesHelper}
+        error={validationErrors().notes}
+      >
+        <Textarea
+          name="notes"
+          rows={3}
+          placeholder={t().courses.form.notesPlaceholder}
+          value={formData().notes || ''}
+          onChange={(v) => {
+            handleInputChange('notes', v || null)
+          }}
+          disabled={isDisabled()}
         />
       </FormField>
 

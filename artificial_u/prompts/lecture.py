@@ -38,6 +38,9 @@ LECTURE_PROMPT = PromptTemplate(
 
 {{freeform_prompt_text}}
 
+Note: If the course XML includes a <user_notes> element, those are user-provided notes for this
+course — treat them as important guidance when generating the lecture.
+
 Instructions:
 
 1. Review the provided information carefully to understand the context of the lecture.

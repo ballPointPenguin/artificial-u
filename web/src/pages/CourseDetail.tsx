@@ -423,6 +423,7 @@ const CourseDetail: Component = () => {
       level: formData.level ?? undefined,
       professor_id: formData.professor_id ?? undefined,
       description: formData.description,
+      notes: formData.notes ?? undefined,
       lectures_per_week: formData.lectures_per_week ?? undefined,
       total_weeks: formData.total_weeks ?? undefined,
       // topics are not part of CourseUpdate in types.ts, handle separately if needed

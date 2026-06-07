@@ -72,6 +72,7 @@ class CourseRepository(BaseRepository):
             total_weeks=db_course.total_weeks,
             language=language,
             status=db_course.status,
+            notes=getattr(db_course, "notes", None),
             department_id=db_course.department_id,
             professor_id=db_course.professor_id,
             created_by=db_course.created_by,
@@ -101,6 +102,7 @@ class CourseRepository(BaseRepository):
                 total_weeks=course.total_weeks,
                 language=course.language,
                 status=course.status,
+                notes=getattr(course, "notes", None),
                 department_id=course.department_id,
                 professor_id=course.professor_id,
                 created_by=course.created_by,
@@ -160,6 +162,7 @@ class CourseRepository(BaseRepository):
             db_course.total_weeks = course.total_weeks
             db_course.language = course.language
             db_course.status = course.status
+            db_course.notes = getattr(course, "notes", None)
             db_course.department_id = course.department_id
             db_course.professor_id = course.professor_id
             db_course.created_by = course.created_by

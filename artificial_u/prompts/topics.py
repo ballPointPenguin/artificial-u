@@ -73,6 +73,9 @@ Required XML Structure:
 Course Information:
 {{course_xml}}
 
+Note: If the course XML includes a <user_notes> element, those are user-provided notes for this
+course — treat them as important guidance when generating content.
+
 {{prior_topics_context}}
 {{related_courses_topics_context}}
 

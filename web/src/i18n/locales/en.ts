@@ -299,6 +299,11 @@ export const en = {
       lecturesPerWeekLabel: 'Lectures per Week (Optional)',
       totalWeeksLabel: 'Total Weeks (Optional)',
       descriptionLabel: 'Description',
+      notesLabel: 'Course Notes (Optional)',
+      notesPlaceholder:
+        'e.g. This course is taught in English with French vocabulary integrated throughout. Do not generate lectures entirely in French.',
+      notesHelper:
+        'Optional notes to guide content generation. These are passed to the AI when generating topics and lectures. Not auto-populated by Generate Details.',
       aiPromptLabel: 'AI Generation Prompt (Optional)',
       departmentPlaceholder: '-- Select Department (Optional) --',
       professorPlaceholder: '-- Select Professor (Optional) --',

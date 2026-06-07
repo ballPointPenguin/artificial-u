@@ -64,6 +64,7 @@ class CourseService:
         department_id: Optional[int] = None,
         professor_id: Optional[int] = None,
         description: Optional[str] = None,
+        notes: Optional[str] = None,
         created_by: Optional[int] = None,
         created_with: Optional[str] = None,
         connected_course_ids: Optional[List[int]] = None,
@@ -121,9 +122,10 @@ class CourseService:
             language=language,
         )
 
-        # Set attribution fields if provided
+        # Set attribution and user-provided fields
         course.created_by = created_by
         course.created_with = created_with
+        course.notes = notes
 
         # Save course
         created_course, created_professor = self._save_course(

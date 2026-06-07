@@ -7,6 +7,7 @@ export interface CourseFormData {
   level: string | null // Will be "Undergraduate", "Graduate", or null for AI determination
   professor_id: number | null // Will be number for submission, null if not selected
   description: string
+  notes?: string | null // Optional user notes to guide content generation
   lectures_per_week?: number | null // Optional field
   total_weeks?: number | null // Optional field
 

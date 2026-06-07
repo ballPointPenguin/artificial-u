@@ -352,6 +352,7 @@ class CourseApiService(BaseApiService[CoreCourse, CourseResponse, CoursesListRes
                 level=course_data.level,
                 professor_id=course_data.professor_id,  # Can be None for smart selection
                 description=course_data.description,
+                notes=course_data.notes,
                 weeks=course_data.total_weeks,
                 lectures_per_week=course_data.lectures_per_week,
                 created_by=created_by,

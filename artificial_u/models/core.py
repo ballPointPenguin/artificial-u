@@ -204,6 +204,7 @@ class Course(BaseModel):
     total_weeks: int = 12
     language: Optional[str] = None
     status: Literal["hidden", "published"] = "hidden"
+    notes: Optional[str] = None
     department_id: Optional[int] = None
     professor_id: Optional[int] = None
     # Attribution

@@ -299,6 +299,10 @@ export const zh = {
       lecturesPerWeekLabel: '每周讲座数（可选）',
       totalWeeksLabel: '总周数（可选）',
       descriptionLabel: '描述',
+      notesLabel: '课程备注（可选）',
+      notesPlaceholder: '例如：本课程以英语授课，并融入法语词汇。请勿将课程全部以法语生成。',
+      notesHelper:
+        '可选备注，用于指导内容生成。生成主题和讲座时将传递给AI。"生成详情"不会自动填写此字段。',
       aiPromptLabel: 'AI生成提示（可选）',
       departmentPlaceholder: '-- 选择系（可选）--',
       professorPlaceholder: '-- 选择教授（可选）--',
