@@ -36,6 +36,7 @@ class TestCourseRepository:
         mock_course.professor_id = 1
         mock_course.created_by = 1
         mock_course.created_with = "test-llm"
+        mock_course.notes = None
         mock_course.image_url = None
         mock_course.image_created_with = None
         mock_course.created_at = None
@@ -156,6 +157,7 @@ class TestCourseRepository:
         mock_course1.professor_id = 1
         mock_course1.created_by = 1
         mock_course1.created_with = "test-llm"
+        mock_course1.notes = None
         mock_course1.image_url = None
         mock_course1.image_created_with = None
         mock_course1.created_at = None
@@ -175,6 +177,7 @@ class TestCourseRepository:
         mock_course2.professor_id = 2
         mock_course2.created_by = 2
         mock_course2.created_with = "test-llm-2"
+        mock_course2.notes = None
         mock_course2.image_url = None
         mock_course2.image_created_with = None
         mock_course2.created_at = None
@@ -215,6 +218,7 @@ class TestCourseRepository:
         mock_course.professor_id = 1
         mock_course.created_by = 1
         mock_course.created_with = "test-llm"
+        mock_course.notes = None
         mock_course.image_url = None
         mock_course.image_created_with = None
         mock_course.created_at = None

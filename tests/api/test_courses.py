@@ -413,6 +413,7 @@ def test_create_course(client: TestClient, mock_api_service):
     # CourseCreate includes created_by, created_with, created_at, updated_at, status fields by default
     expected_course_data = {
         **new_course_data,
+        "notes": None,
         "language": None,
         "created_by": None,
         "created_with": None,
