@@ -178,8 +178,6 @@ class Settings(BaseSettings):
     OUTBOUND_RPS: int = 1
 
     # Worker timeouts (configurable)
-    # How long to allow the gather of concurrent tasks before cancelling (None disables)
-    WORKER_TASKS_PROCESSING_TIMEOUT_SEC: float | None = None
     # Max time allowed for a single job execution inside the worker
     JOB_EXECUTION_TIMEOUT_SEC: int = 1800  # 30 minutes
 
