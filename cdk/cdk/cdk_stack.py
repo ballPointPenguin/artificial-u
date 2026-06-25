@@ -55,6 +55,10 @@ class CdkStack(Stack):
             machine_image=ec2.AmazonLinuxImage(
                 generation=ec2.AmazonLinuxGeneration.AMAZON_LINUX_2023,
                 cpu_type=ec2.AmazonLinuxCpuType.ARM_64,
+                # Cache the resolved AMI in cdk.context.json so the bastion isn't replaced
+                # every deploy when Amazon republishes the "latest" AL2023 AMI. Refresh
+                # deliberately via `cdk context --reset` when a new AMI is wanted.
+                cached_in_context=True,
             ),
         )
 
@@ -568,6 +572,7 @@ class CdkStack(Stack):
                     # Service worker + PWA shell files are deployed in a separate step with no-cache
                     # headers to ensure updates work reliably in production.
                     exclude=[
+                        ".DS_Store",
                         "index.html",
                         "sw.js",
                         "workbox-*.js",
@@ -580,7 +585,12 @@ class CdkStack(Stack):
             destination_bucket=frontend_bucket,
             prune=False,  # Don't prune to avoid removing index.html
             distribution=distribution,
-            distribution_paths=["/assets/*", "/favicon.ico"],
+            # Screenshots are static (PWA/og:image) and ship here with long cache headers,
+            # so invalidate them on each deploy to ensure regenerated images propagate.
+            distribution_paths=["/assets/*", "/favicon.ico", "/screenshots/*"],
+            # 128 MB (the default) throttles CPU/network and pushed the sync close to the
+            # 900s Lambda timeout; more memory = proportionally more throughput.
+            memory_limit=1024,
             cache_control=[
                 s3_deployment.CacheControl.from_string("public,max-age=31536000,immutable"),
             ],
@@ -592,12 +602,15 @@ class CdkStack(Stack):
             sources=[
                 s3_deployment.Source.asset(
                     "../web/dist",
-                    exclude=["assets", "favicon.ico"],
+                    # Keep this no-cache bundle tiny: only the PWA shell / index.html belong here.
+                    # Static assets, favicon, and screenshots are handled by DeployWebAppAssets.
+                    exclude=[".DS_Store", "assets", "favicon.ico", "screenshots"],
                 )
             ],
             destination_bucket=frontend_bucket,
             prune=False,  # Don't prune to avoid removing assets
             distribution=distribution,
+            memory_limit=1024,
             distribution_paths=[
                 "/",
                 "/index.html",
