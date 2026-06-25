@@ -701,6 +701,16 @@ const CourseDetail: Component = () => {
                       <p class="text-base italic text-parchment-200 font-serif">
                         {course().description}
                       </p>
+                      <Show when={course().notes}>
+                        <div class="mt-3 pt-3 border-t border-parchment-800/30">
+                          <p class="text-xs font-display text-parchment-400 uppercase tracking-wider mb-1">
+                            {t().courseDetail.courseNotes}
+                          </p>
+                          <p class="text-sm text-parchment-300 font-serif whitespace-pre-wrap">
+                            {course().notes}
+                          </p>
+                        </div>
+                      </Show>
                     </div>
                   </div>
 

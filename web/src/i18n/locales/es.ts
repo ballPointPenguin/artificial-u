@@ -619,6 +619,7 @@ export const es = {
       '¿Estás seguro de que quieres eliminar este curso? Esta acción no se puede deshacer.',
     published: 'Publicado',
     hidden: 'Oculto',
+    courseNotes: 'Notas del Curso',
     courseDetails: 'Detalles del Curso',
     courseTopics: 'Temas del Curso',
     lecturesPerWeek: 'Lecciones por semana',

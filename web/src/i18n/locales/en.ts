@@ -615,6 +615,7 @@ export const en = {
       'Are you sure you want to delete this course? This action cannot be undone.',
     published: 'Published',
     hidden: 'Hidden',
+    courseNotes: 'Course Notes',
     courseDetails: 'Course Details',
     courseTopics: 'Course Topics',
     lecturesPerWeek: 'Lectures per week',

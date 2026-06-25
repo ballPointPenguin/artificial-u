@@ -617,6 +617,7 @@ export const fr = {
       'Êtes-vous sûr de vouloir supprimer ce cours ? Cette action est irréversible.',
     published: 'Publié',
     hidden: 'Masqué',
+    courseNotes: 'Notes du cours',
     courseDetails: 'Détails du cours',
     courseTopics: 'Sujets du cours',
     lecturesPerWeek: 'Conférences par semaine',

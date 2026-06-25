@@ -359,6 +359,11 @@ const CourseForm: Component<CourseFormProps> = (props) => {
               // Convert sentinel value to null, otherwise use the selected value
               const departmentId =
                 v === NULL_OPTION_VALUE || v === null || v === '' ? null : Number(v)
+              // Guard: Kobalte fires onChange when the controlled value prop changes
+              // programmatically (e.g. when createEffect populates the form from
+              // props.course). In that case formData is already up-to-date and we
+              // must NOT clear the professor that was just populated.
+              if (departmentId === formData().department_id) return
               handleInputChange('department_id', departmentId)
               // Clear professor selection when department changes to avoid mismatch
               setFormData((prev) => ({

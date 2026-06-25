@@ -91,7 +91,7 @@ class Worker:
                 pass
         self.logger.info("Worker stopped")
 
-    async def _run_loop(self):
+    async def _run_loop(self):  # noqa: C901
         repo = self.repository_factory.job
         self.logger.info("Worker loop started")
         loop_count = 0

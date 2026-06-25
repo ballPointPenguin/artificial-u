@@ -608,6 +608,7 @@ export const zh = {
     confirmDeleteMessage: '您确定要删除此课程吗？此操作无法撤销。',
     published: '已发布',
     hidden: '隐藏',
+    courseNotes: '课程备注',
     courseDetails: '课程详情',
     courseTopics: '课程主题',
     lecturesPerWeek: '每周讲座数',

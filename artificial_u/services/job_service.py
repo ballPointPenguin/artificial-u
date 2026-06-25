@@ -188,6 +188,7 @@ class JobService:
         created_with = payload.get("created_with")
         connected_course_ids = payload.get("connected_course_ids")
         language = payload.get("language")
+        notes = payload.get("notes")
 
         if not title or not code or not level:
             raise ValueError("title, code, and level are required to create a course")
@@ -201,6 +202,7 @@ class JobService:
             department_id=department_id,
             professor_id=professor_id,
             description=description,
+            notes=notes,
             created_by=created_by,
             created_with=created_with,
             connected_course_ids=connected_course_ids,
