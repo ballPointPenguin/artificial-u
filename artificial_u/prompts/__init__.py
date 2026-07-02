@@ -13,6 +13,7 @@ from artificial_u.prompts.professor import get_professor_prompt
 from artificial_u.prompts.professor_image import format_professor_image_prompt
 from artificial_u.prompts.summary import get_summary_prompt
 from artificial_u.prompts.system import get_system_prompt
+from artificial_u.prompts.tags import get_course_tags_prompt
 from artificial_u.prompts.topics import get_next_topic_prompt
 
 __all__ = [
@@ -33,6 +34,8 @@ __all__ = [
     "get_summary_prompt",
     # System prompts
     "get_system_prompt",
+    # Tags prompts
+    "get_course_tags_prompt",
     # Topics prompts
     "get_next_topic_prompt",
     # Language dispatch

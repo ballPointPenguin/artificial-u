@@ -233,6 +233,7 @@ def test_list_courses(client: TestClient, mock_api_service):
         student_role=None,
         include_hidden=False,
         language="en",
+        tags=None,
     )
 
 
@@ -264,6 +265,7 @@ def test_list_courses_with_filters(client: TestClient, mock_api_service):
         student_role=None,
         include_hidden=False,
         language="en",
+        tags=None,
     )
 
 
@@ -294,6 +296,7 @@ def test_list_courses_with_sorting(client: TestClient, mock_api_service):
         student_role=None,
         include_hidden=False,
         language="en",
+        tags=None,
     )
 
 
@@ -329,6 +332,7 @@ def test_list_courses_filter_by_created_by(client: TestClient, mock_api_service)
         student_role=None,
         include_hidden=False,
         language="en",
+        tags=None,
     )
 
 
@@ -634,3 +638,129 @@ def test_export_course_requires_admin(client: TestClient, monkeypatch):
 
     # Note: Testing with actual admin auth and job creation would require mocking
     # the entire auth0 flow and job system, which is better covered by integration test
+
+
+# ---------------------------------------------------------------------------
+# Course tags endpoints
+# ---------------------------------------------------------------------------
+
+
+@pytest.fixture
+def mock_tags_repository_factory():
+    """Mock repository factory for the course-tag endpoints."""
+    from types import SimpleNamespace
+
+    from artificial_u.api.app import app
+    from artificial_u.api.dependencies import get_repository_factory
+    from artificial_u.models.core import Course as CoreCourse
+    from artificial_u.models.core import Tag
+
+    factory = MagicMock()
+    factory.course.get.return_value = CoreCourse(
+        id=1,
+        code="CS101",
+        title="Test Course",
+        description="A course",
+        level="Undergraduate",
+        status="published",
+        language="en",
+        created_by=2,
+    )
+
+    def get_or_create(names, language="en"):
+        return [
+            Tag(id=i + 1, slug=name.lower().replace(" ", "-"), name=name, language=language)
+            for i, name in enumerate(names)
+        ]
+
+    factory.tag.get_or_create_by_names.side_effect = get_or_create
+    factory.tag.set_course_tags.side_effect = lambda course_id, tag_ids: [
+        Tag(id=tag_id, slug=f"slug-{tag_id}", name=f"Tag {tag_id}", language="en")
+        for tag_id in tag_ids
+    ]
+    factory.job.create.return_value = SimpleNamespace(
+        id=42,
+        kind="generate_tags_for_course",
+        status="queued",
+        attempts=0,
+        max_attempts=2,
+        priority=0,
+        run_after=None,
+    )
+
+    app.dependency_overrides[get_repository_factory] = lambda: factory
+    yield factory
+    app.dependency_overrides.pop(get_repository_factory, None)
+
+
+@pytest.mark.unit
+def test_list_courses_forwards_tags_filter(client: TestClient, mock_api_service):
+    """Repeated tags query params reach the service as a list (AND semantics)."""
+    response = client.get("/api/v1/courses?tags=ethics&tags=machine-learning")
+    assert response.status_code == 200
+    kwargs = mock_api_service["get_courses"].call_args.kwargs
+    assert kwargs["tags"] == ["ethics", "machine-learning"]
+
+
+@pytest.mark.unit
+def test_update_course_tags(client: TestClient, mock_tags_repository_factory):
+    """Admin (or owner) replaces the course tag set with display names."""
+    response = client.put("/api/v1/courses/1/tags", json={"tags": ["Machine Learning", "Ethics"]})
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data) == 2
+    mock_tags_repository_factory.tag.get_or_create_by_names.assert_called_once_with(
+        ["Machine Learning", "Ethics"], language="en"
+    )
+    mock_tags_repository_factory.tag.set_course_tags.assert_called_once_with(1, [1, 2])
+
+
+@pytest.mark.unit
+def test_update_course_tags_course_not_found(client: TestClient, mock_tags_repository_factory):
+    mock_tags_repository_factory.course.get.return_value = None
+    response = client.put("/api/v1/courses/999/tags", json={"tags": ["Ethics"]})
+    assert response.status_code == 404
+
+
+@pytest.mark.unit
+def test_update_course_tags_forbidden_for_non_owner(
+    client: TestClient, mock_tags_repository_factory
+):
+    """A creator who does not own the course cannot edit its tags."""
+    from artificial_u.api.app import app
+    from artificial_u.api.dependencies import ensure_student
+    from artificial_u.models.core import Student
+
+    def mock_other_creator():
+        return Student(
+            id=99,
+            name="Other Creator",
+            email="other@example.com",
+            auth0_sub="other-123",
+            role="creator",
+            coins=10,
+            is_active=True,
+        )
+
+    app.dependency_overrides[ensure_student] = mock_other_creator
+    try:
+        response = client.put("/api/v1/courses/1/tags", json={"tags": ["Ethics"]})
+        assert response.status_code == 403
+    finally:
+        from tests.api.conftest import mock_ensure_student
+
+        app.dependency_overrides[ensure_student] = mock_ensure_student
+
+
+@pytest.mark.unit
+def test_enqueue_generate_course_tags(client: TestClient, mock_tags_repository_factory):
+    """Owner/admin can enqueue a tag (re)generation job for a course."""
+    response = client.post("/api/v1/courses/1/tags/generate/enqueue")
+    assert response.status_code == 202
+    data = response.json()
+    assert data["id"] == 42
+    assert data["kind"] == "generate_tags_for_course"
+    call_kwargs = mock_tags_repository_factory.job.create.call_args.kwargs
+    assert call_kwargs["kind"] == "generate_tags_for_course"
+    assert call_kwargs["payload"]["course_id"] == 1
+    assert call_kwargs["payload"]["created_by"] == 1

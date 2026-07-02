@@ -42,6 +42,7 @@ class TestCourseRepository:
         mock_course.created_at = None
         mock_course.updated_at = None
         mock_course.student = None  # Mock student relationship
+        mock_course.tags = []  # Mock tags relationship
         return mock_course
 
     def test_create(self, course_repository, mock_session):
@@ -128,14 +129,16 @@ class TestCourseRepository:
         """Test getting a course by code."""
         # Configure mock behavior
         query_mock = mock_session.query.return_value
-        query_mock.filter_by.return_value.first.return_value = mock_course_model
+        options_mock = query_mock.options.return_value
+        options_mock.filter_by.return_value.first.return_value = mock_course_model
 
         # Exercise
         result = course_repository.get_by_code("CS101")
 
         # Verify
         mock_session.query.assert_called_once_with(CourseModel)
-        query_mock.filter_by.assert_called_once_with(code="CS101")
+        query_mock.options.assert_called_once()  # Verify selectinload was applied
+        options_mock.filter_by.assert_called_once_with(code="CS101")
         assert result.id == 1
         assert result.code == "CS101"
         assert result.created_by == 1

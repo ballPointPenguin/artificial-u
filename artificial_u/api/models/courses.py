@@ -128,6 +128,26 @@ class ProfessorBrief(BaseModel):
     image_url: Optional[str] = Field(None, description="URL of the professor's image")
 
 
+# Tag brief info model for course responses
+class TagBrief(BaseModel):
+    """Brief tag information for course responses."""
+
+    id: int = Field(..., description="Tag ID")
+    slug: str = Field(..., description="URL-safe tag identifier, unique per language")
+    name: str = Field(..., description="Tag display name in its content language")
+    language: str = Field(..., description="Content language of the tag (e.g., 'en', 'fr')")
+
+
+class TagsUpdate(BaseModel):
+    """Request body for replacing a course's tags."""
+
+    tags: List[str] = Field(
+        ...,
+        max_length=20,
+        description="Tag display names; replaces the course's existing tag set",
+    )
+
+
 # Department brief info model for course responses
 class DepartmentBrief(BaseModel):
     """Brief department information for course responses."""
@@ -157,6 +177,7 @@ class CourseResponse(CourseBase):
     department: Optional[DepartmentBrief] = Field(
         None, description="Department offering the course"
     )
+    tags: List[TagBrief] = Field(default_factory=list, description="Subject tags for the course")
     # Audio/Topic Counts
     lectures_with_audio_count: Optional[int] = Field(
         0, description="Number of lectures with audio files"

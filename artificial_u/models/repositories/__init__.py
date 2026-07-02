@@ -11,6 +11,7 @@ from artificial_u.models.repositories.featured import FeaturedItemRepository
 from artificial_u.models.repositories.lecture import LectureRepository
 from artificial_u.models.repositories.professor import ProfessorRepository
 from artificial_u.models.repositories.student import StudentRepository
+from artificial_u.models.repositories.tag import TagRepository
 from artificial_u.models.repositories.topic import TopicRepository
 from artificial_u.models.repositories.voice import VoiceRepository
 
@@ -24,6 +25,7 @@ __all__ = [
     "ProfessorRepository",
     "StudentRepository",
     "RepositoryFactory",
+    "TagRepository",
     "TopicRepository",
     "VoiceRepository",
 ]

@@ -12,6 +12,7 @@ import type {
   CourseUpdate,
   DepartmentBrief,
   ProfessorBrief,
+  Tag,
 } from '../types.js'
 
 interface ListCoursesParams {
@@ -26,6 +27,7 @@ interface ListCoursesParams {
   order?: 'asc' | 'desc'
   includeHidden?: boolean
   language?: string
+  tags?: string[]
 }
 
 export const courseService = {
@@ -43,6 +45,9 @@ export const courseService = {
     if (params.order) queryParams.set('order', params.order)
     if (params.includeHidden) queryParams.set('include_hidden', 'true')
     if (params.language) queryParams.set('language', params.language)
+    for (const slug of params.tags ?? []) {
+      queryParams.append('tags', slug)
+    }
     return httpClient.get<CoursesListResponse>(
       `${ENDPOINTS.courses.list}?${queryParams.toString()}`
     )
@@ -122,6 +127,24 @@ export const courseService = {
     run_after?: string
   }> => {
     return httpClient.post(ENDPOINTS.courses.enqueueCreate, data)
+  },
+
+  updateCourseTags: (courseId: number, tags: string[]): Promise<Tag[]> => {
+    return httpClient.put<Tag[]>(ENDPOINTS.courses.tags(courseId), { tags })
+  },
+
+  enqueueGenerateTags: (
+    courseId: number
+  ): Promise<{
+    id: number
+    kind: string
+    status: string
+    attempts: number
+    max_attempts: number
+    priority?: number
+    run_after?: string
+  }> => {
+    return httpClient.post(ENDPOINTS.courses.enqueueGenerateTags(courseId), {})
   },
 
   exportCourse: (

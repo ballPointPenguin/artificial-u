@@ -26,6 +26,22 @@ export interface HealthCheckResponse {
   timestamp: number
 }
 
+// Tag types
+export interface Tag {
+  id: number
+  slug: string
+  name: string
+  language: string
+}
+
+export interface TagWithCount extends Tag {
+  course_count: number
+}
+
+export interface TagsListResponse {
+  items: TagWithCount[]
+}
+
 // Course types
 export type CourseStatus = 'hidden' | 'published'
 
@@ -70,6 +86,7 @@ export interface Course {
     faculty_id: number | null
     faculty_name: string | null
   } | null
+  tags?: Tag[]
 }
 
 export type CoursesList = PaginatedResponse<Course>

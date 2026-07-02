@@ -625,6 +625,37 @@ def parse_topic_xml(topic_xml: str) -> Dict[str, Any]:
         raise ValueError(f"Invalid XML format: {e}")
 
 
+def parse_tags_xml(tags_xml: str) -> List[str]:
+    """Parse tags XML from LLM response into a list of display names.
+
+    Args:
+        tags_xml: The XML string to parse, rooted at <tags>
+
+    Returns:
+        List[str]: Tag display names in document order
+
+    Raises:
+        ValueError: If the XML is invalid or contains no <tag> elements
+    """
+    try:
+        root = ET.fromstring(tags_xml.strip())
+    except ET.ParseError as e:
+        raise ValueError(f"Invalid XML format: {e}")
+
+    if root.tag != "tags":
+        raise ValueError("Root element must be <tags>")
+
+    names = []
+    for tag_element in root.findall("tag"):
+        text = (tag_element.text or "").strip()
+        if text and "[GENERATE]" not in text:
+            names.append(html.unescape(text))
+
+    if not names:
+        raise ValueError("No <tag> elements found in tags XML")
+    return names
+
+
 def _repair_topics_xml(xml_str: str) -> str:
     """Repair common XML issues in topics XML.
 

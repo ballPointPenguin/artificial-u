@@ -22,6 +22,7 @@ export const fr = {
     admin: 'Admin',
     login: 'Connexion',
     logout: 'Déconnexion',
+    browse: 'Parcourir',
     openMenu: 'Ouvrir le menu principal',
   },
 
@@ -567,6 +568,19 @@ export const fr = {
   },
 
   // Course Detail page
+  // Page de découverte
+  browse: {
+    title: 'Parcourir',
+    subtitle: 'Feuilletez les bacs et voyez ce qui attire votre attention.',
+    recentlyAdded: 'Ajouts récents',
+    all: 'Tous',
+    surpriseMe: 'Surprenez-moi',
+    picking: 'Sélection...',
+    loadMore: 'Charger plus',
+    empty: 'Rien dans les bacs ne correspond à ces tags pour le moment.',
+    errorLoading: 'Erreur de chargement de la bibliothèque. Veuillez réessayer.',
+  },
+
   courseDetail: {
     department: 'Département',
     professor: 'Professeur',
@@ -618,6 +632,14 @@ export const fr = {
     published: 'Publié',
     hidden: 'Masqué',
     courseNotes: 'Notes du cours',
+    editTags: 'Modifier les tags',
+    tagsEditHeading: 'Modifier les tags',
+    tagsEditDescription:
+      'Les tags décrivent les thèmes du cours et alimentent la navigation et le filtrage.',
+    addTagPlaceholder: 'Ajoutez un tag et appuyez sur Entrée',
+    regenerateTags: "Régénérer avec l'IA",
+    tagsQueued: "Génération des tags en file d'attente. Les nouveaux tags apparaîtront bientôt.",
+    failedToSaveTags: "Échec de l'enregistrement des tags",
     courseDetails: 'Détails du cours',
     courseTopics: 'Sujets du cours',
     lecturesPerWeek: 'Conférences par semaine',

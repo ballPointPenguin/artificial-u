@@ -141,6 +141,8 @@ class Settings(BaseSettings):
     PROFESSOR_GENERATION_MODEL: str = "gpt-5.4-nano"
     # Topics generation model
     TOPICS_GENERATION_MODEL: str = "gemini-3.5-flash"
+    # Course tags generation model
+    TAGS_GENERATION_MODEL: str = "gpt-5.4-nano"
     # Image generation model
     IMAGE_GENERATION_MODEL: str = "gemini-3.1-flash-image"
     # Lecture generation defaults

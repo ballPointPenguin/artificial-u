@@ -416,3 +416,58 @@ def test_lecture_delete_by_topic(repository, db_lecture):
     # Verify delete by topic
     topic_lectures = repository.lecture.list_by_topic(db_lecture.topic_id)
     assert len(topic_lectures) == 0
+
+
+@pytest.mark.integration
+def test_tag_repository_round_trip(repository, db_course):
+    """Tags: get-or-create, per-language universes, course assignment, counts."""
+    tag_repo = repository.tag
+
+    # Get-or-create dedupes names that normalize to the same slug
+    en_tags = tag_repo.get_or_create_by_names(
+        ["Quantum Physics", "quantum physics", "Ethics"], language="en"
+    )
+    assert [t.slug for t in en_tags] == ["quantum-physics", "ethics"]
+
+    # Same display name in another language is a distinct tag row
+    fr_tags = tag_repo.get_or_create_by_names(["Ethics"], language="fr")
+    assert fr_tags[0].id != en_tags[1].id
+    assert fr_tags[0].language == "fr"
+
+    # Re-resolving returns the existing rows
+    again = tag_repo.get_or_create_by_names(["Ethics"], language="en")
+    assert again[0].id == en_tags[1].id
+
+    # Assign to a course and read back (ordered by name)
+    saved = tag_repo.set_course_tags(db_course.id, [t.id for t in en_tags])
+    assert [t.slug for t in saved] == ["ethics", "quantum-physics"]
+    assert [t.slug for t in tag_repo.list_for_course(db_course.id)] == [
+        "ethics",
+        "quantum-physics",
+    ]
+
+    # Tag filter on the course list (AND semantics)
+    courses, total = repository.course.list_and_count(tags=["quantum-physics", "ethics"])
+    assert total == 1
+    assert courses[0].id == db_course.id
+    assert {t.slug for t in courses[0].tags} == {"ethics", "quantum-physics"}
+    _, none_total = repository.course.list_and_count(tags=["nonexistent-tag"])
+    assert none_total == 0
+
+    # Counts are scoped to published courses in the tag's language
+    published = db_course.model_copy(update={"status": "published"})
+    repository.course.update(published)
+    counts = {t.slug: n for t, n in tag_repo.list_with_counts(language="en")}
+    assert counts == {"ethics": 1, "quantum-physics": 1}
+    assert tag_repo.list_with_counts(language="fr") == []
+
+    # Vocabulary for prompt priming
+    assert tag_repo.list_top_names(language="en") == ["Ethics", "Quantum Physics"]
+
+    # Backfill listing: course now has tags, so it's excluded unless forced
+    assert db_course.id not in tag_repo.list_backfill_course_ids()
+    assert db_course.id in tag_repo.list_backfill_course_ids(force=True)
+
+    # Replacing with an empty set clears assignments
+    assert tag_repo.set_course_tags(db_course.id, []) == []
+    assert tag_repo.list_for_course(db_course.id) == []

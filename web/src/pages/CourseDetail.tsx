@@ -15,6 +15,8 @@ import { useAuth } from '../auth/AuthProvider'
 import { RequireRole } from '../auth/RequireRole'
 import CourseForm from '../components/courses/CourseForm.jsx'
 import CourseStatusBadge from '../components/courses/CourseStatusBadge.jsx'
+import TagChip from '../components/courses/TagChip.jsx'
+import TagEditModal from '../components/courses/TagEditModal.jsx'
 import type { CourseFormData } from '../components/courses/types.jsx'
 import { Alert, Button, MagicButton, MetadataInfo, ShareButton } from '../components/ui'
 import { useTranslations } from '../i18n'
@@ -26,6 +28,7 @@ const COURSE_CREATION_HANDOFF_KINDS = [
   'generate_course_image',
   'generate_topics_for_course',
   'generate_topic_for_course_slot',
+  'generate_tags_for_course',
 ]
 
 const TOPIC_GENERATION_JOB_KINDS = new Set([
@@ -319,6 +322,8 @@ const CourseDetail: Component = () => {
   const [isPublishing, setIsPublishing] = createSignal(false)
   const [isGeneratingImage, setIsGeneratingImage] = createSignal(false)
   const [imageGenerationError, setImageGenerationError] = createSignal('')
+  const [isEditingTags, setIsEditingTags] = createSignal(false)
+  const [tagsQueuedMessage, setTagsQueuedMessage] = createSignal('')
 
   // Check if courseId is a valid number before creating resources
   const isValidId = !Number.isNaN(courseId)
@@ -395,6 +400,9 @@ const CourseDetail: Component = () => {
       if (isTopicGenerationJob(event.kind)) {
         clearActiveJob(setActiveTopicJobIds, event.id)
         void refetchTopics()
+      }
+      if (event.kind === 'generate_tags_for_course') {
+        void refetchCourse()
       }
     },
     onJobFail: (event) => {
@@ -583,6 +591,9 @@ const CourseDetail: Component = () => {
                         <Button variant="primary" onClick={() => setIsEditing(true)}>
                           {t().courseDetail.editCourse}
                         </Button>
+                        <Button variant="outline" onClick={() => setIsEditingTags(true)}>
+                          {t().courseDetail.editTags}
+                        </Button>
                         <Button variant="secondary" onClick={() => setShowDeleteConfirm(true)}>
                           {t().common.delete}
                         </Button>
@@ -612,6 +623,27 @@ const CourseDetail: Component = () => {
                     {imageGenerationError()}
                   </Alert>
                 </Show>
+
+                <Show when={tagsQueuedMessage()}>
+                  <Alert variant="success" class="mb-4">
+                    {tagsQueuedMessage()}
+                  </Alert>
+                </Show>
+
+                <TagEditModal
+                  isOpen={isEditingTags()}
+                  courseId={courseId}
+                  initialTags={course().tags ?? []}
+                  onSaved={() => {
+                    setIsEditingTags(false)
+                    void refetchCourse()
+                  }}
+                  onRegenerateQueued={() => {
+                    setIsEditingTags(false)
+                    setTagsQueuedMessage(t().courseDetail.tagsQueued)
+                  }}
+                  onCancel={() => setIsEditingTags(false)}
+                />
 
                 {/* Export Success Message */}
                 <Show when={exportMessage()}>
@@ -701,6 +733,13 @@ const CourseDetail: Component = () => {
                       <p class="text-base italic text-parchment-200 font-serif">
                         {course().description}
                       </p>
+                      <Show when={(course().tags ?? []).length > 0}>
+                        <div class="flex flex-wrap gap-2 mt-1">
+                          <For each={course().tags ?? []}>
+                            {(tag) => <TagChip tag={tag} link />}
+                          </For>
+                        </div>
+                      </Show>
                       <Show when={course().notes}>
                         <div class="mt-3 pt-3 border-t border-parchment-800/30">
                           <p class="text-xs font-display text-parchment-400 uppercase tracking-wider mb-1">

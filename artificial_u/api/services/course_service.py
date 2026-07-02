@@ -243,6 +243,7 @@ class CourseApiService(BaseApiService[CoreCourse, CourseResponse, CoursesListRes
         student_role: Optional[str] = None,
         include_hidden: bool = False,
         language: Optional[str] = None,
+        tags: Optional[List[str]] = None,
     ) -> CoursesListResponse:
         """
         Get a paginated list of courses with optional filtering and sorting.
@@ -285,6 +286,7 @@ class CourseApiService(BaseApiService[CoreCourse, CourseResponse, CoursesListRes
                 include_own_hidden=show_own_hidden,
                 requesting_student_id=student_id if show_own_hidden else None,
                 language=language,
+                tags=tags,
             )
 
             # Convert to response models (this part is now more complex)

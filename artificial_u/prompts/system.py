@@ -46,6 +46,13 @@ SUMMARY_SYSTEM_PROMPT = (
     "items conceptual, not implementation-level. "
 )
 
+TAGS_SYSTEM_PROMPT = (
+    "You are an expert academic librarian who classifies university courses "
+    "with concise, reusable subject tags. "
+    "You always respond in valid, indented XML format. "
+    "Do not include any explanations, notes, or text outside the XML block."
+)
+
 # Dictionary to easily access system prompts by type
 SYSTEM_PROMPTS: Dict[str, str] = {
     "generic": GENERIC_XML_SYSTEM_PROMPT,
@@ -55,6 +62,7 @@ SYSTEM_PROMPTS: Dict[str, str] = {
     "professor": PROFESSOR_SYSTEM_PROMPT,
     "topics": TOPICS_SYSTEM_PROMPT,
     "summary": SUMMARY_SYSTEM_PROMPT,
+    "tags": TAGS_SYSTEM_PROMPT,
 }
 
 

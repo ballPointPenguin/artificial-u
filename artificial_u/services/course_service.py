@@ -232,6 +232,19 @@ class CourseService:
                         bg_e,
                         exc_info=True,
                     )
+                try:
+                    self.job_enqueue_service.enqueue_tags_generation(
+                        created_course.id,
+                        created_by=created_course.created_by,
+                        parent_job_id=parent_job_id,
+                    )
+                except Exception as bg_e:
+                    self.logger.error(
+                        "Failed to enqueue tags generation for course %s: %s",
+                        created_course.id,
+                        bg_e,
+                        exc_info=True,
+                    )
             return created_course, professor
         except Exception as e:
             error_msg = f"Failed to save course {code}: {str(e)}"

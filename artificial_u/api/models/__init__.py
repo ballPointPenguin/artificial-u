@@ -19,6 +19,10 @@ from artificial_u.api.models.courses import (
 )
 from artificial_u.api.models.courses import LectureBrief as CourseLectureBrief
 from artificial_u.api.models.courses import ProfessorBrief as CourseProfessorBrief
+from artificial_u.api.models.courses import (
+    TagBrief,
+    TagsUpdate,
+)
 
 # Department model
 from artificial_u.api.models.departments import CourseBrief as DepartmentCourseBrief
@@ -130,6 +134,8 @@ __all__ = [
     "CourseUpdate",
     "CourseGenerate",
     "CourseResponse",
+    "TagBrief",
+    "TagsUpdate",
     "CoursesListResponse",
     "CourseProfessorBrief",
     "CourseLectureBrief",

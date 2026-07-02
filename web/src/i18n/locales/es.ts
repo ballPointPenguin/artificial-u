@@ -22,6 +22,7 @@ export const es = {
     admin: 'Admin',
     login: 'Iniciar sesión',
     logout: 'Cerrar sesión',
+    browse: 'Explorar',
     openMenu: 'Abrir menú principal',
   },
 
@@ -569,6 +570,19 @@ export const es = {
   },
 
   // Course Detail page
+  // Página de exploración
+  browse: {
+    title: 'Explorar',
+    subtitle: 'Hojea los estantes y descubre lo que te llame la atención.',
+    recentlyAdded: 'Añadidos recientemente',
+    all: 'Todos',
+    surpriseMe: 'Sorpréndeme',
+    picking: 'Eligiendo...',
+    loadMore: 'Cargar más',
+    empty: 'Nada en los estantes coincide con esas etiquetas todavía.',
+    errorLoading: 'Error al cargar la biblioteca. Inténtalo de nuevo.',
+  },
+
   courseDetail: {
     department: 'Departamento',
     professor: 'Profesor',
@@ -620,6 +634,14 @@ export const es = {
     published: 'Publicado',
     hidden: 'Oculto',
     courseNotes: 'Notas del Curso',
+    editTags: 'Editar etiquetas',
+    tagsEditHeading: 'Editar etiquetas',
+    tagsEditDescription:
+      'Las etiquetas describen los temas del curso y potencian la exploración y el filtrado.',
+    addTagPlaceholder: 'Añade una etiqueta y pulsa Enter',
+    regenerateTags: 'Regenerar con IA',
+    tagsQueued: 'Generación de etiquetas en cola. Las nuevas etiquetas aparecerán en breve.',
+    failedToSaveTags: 'No se pudieron guardar las etiquetas',
     courseDetails: 'Detalles del Curso',
     courseTopics: 'Temas del Curso',
     lecturesPerWeek: 'Lecciones por semana',
