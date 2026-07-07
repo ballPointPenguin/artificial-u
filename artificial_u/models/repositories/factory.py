@@ -19,6 +19,7 @@ from artificial_u.models.repositories.lecture import LectureRepository
 from artificial_u.models.repositories.preference import PreferenceRepository
 from artificial_u.models.repositories.professor import ProfessorRepository
 from artificial_u.models.repositories.student import StudentRepository
+from artificial_u.models.repositories.tag import TagRepository
 from artificial_u.models.repositories.topic import TopicRepository
 from artificial_u.models.repositories.voice import VoiceRepository
 
@@ -149,6 +150,11 @@ class RepositoryFactory:
     def featured(self) -> FeaturedItemRepository:
         """Get the featured item repository."""
         return self.get_repository(FeaturedItemRepository)
+
+    @property
+    def tag(self) -> TagRepository:
+        """Get the tag repository."""
+        return self.get_repository(TagRepository)
 
     def create_tables(self):
         """Create all database tables if they don't exist."""

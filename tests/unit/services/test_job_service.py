@@ -272,3 +272,38 @@ async def test_generate_lecture_slide_does_not_continue_stale_batch():
 
     assert result["reason"] == "stale_batch"
     assert repository_factory.job.created == []
+
+
+@pytest.mark.asyncio
+async def test_generate_tags_for_course_dispatches_to_tag_generator():
+    repository_factory = FakeRepositoryFactory()
+    service = JobService(repository_factory=repository_factory, logger=MagicMock())
+    tags_service = MagicMock()
+    tags_service.generate_tags_for_course = AsyncMock(
+        return_value=[
+            SimpleNamespace(id=1, slug="ethics", name="Ethics"),
+            SimpleNamespace(id=2, slug="logic", name="Logic"),
+        ]
+    )
+    service._tag_generator_service_instance = MagicMock(return_value=tags_service)
+
+    handler = service._get_handler("generate_tags_for_course")
+    assert handler is not None
+
+    result = await handler({"course_id": 7})
+
+    tags_service.generate_tags_for_course.assert_awaited_once_with(7)
+    assert result == {
+        "course_id": 7,
+        "tags": [
+            {"id": 1, "slug": "ethics", "name": "Ethics"},
+            {"id": 2, "slug": "logic", "name": "Logic"},
+        ],
+    }
+
+
+@pytest.mark.asyncio
+async def test_generate_tags_for_course_requires_course_id():
+    service = JobService(repository_factory=FakeRepositoryFactory(), logger=MagicMock())
+    with pytest.raises(ValueError):
+        await service._handle_generate_tags_for_course({})

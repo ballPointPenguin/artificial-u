@@ -40,6 +40,7 @@ class JobService:
         self._department_generator_service = None
         self._topic_service = None
         self._topic_generator_service = None
+        self._tag_generator_service = None
         self._lecture_service = None
         self._lecture_generator_service = None
         self._lecture_images_generator_service = None
@@ -137,6 +138,7 @@ class JobService:
             "generate_department": self._handle_generate_department,
             "generate_professor": self._handle_generate_professor,
             "generate_topics_for_course": self._handle_generate_topics_for_course,
+            "generate_tags_for_course": self._handle_generate_tags_for_course,
             "generate_lecture": self._handle_generate_lecture,
             "generate_lecture_text_only": self._handle_generate_lecture_text_only,
             "generate_lecture_summary": self._handle_generate_lecture_summary,
@@ -275,6 +277,19 @@ class JobService:
                 }
                 for t in topics
             ]
+        }
+
+    async def _handle_generate_tags_for_course(
+        self, payload: Dict[str, Any], parent_job_id: Optional[int] = None
+    ) -> Dict[str, Any]:
+        service = self._tag_generator_service_instance()
+        course_id = payload.get("course_id")
+        if course_id is None:
+            raise ValueError("course_id is required")
+        tags = await service.generate_tags_for_course(course_id)
+        return {
+            "course_id": course_id,
+            "tags": [{"id": t.id, "slug": t.slug, "name": t.name} for t in tags],
         }
 
     async def _handle_generate_lecture(
@@ -886,6 +901,18 @@ class JobService:
                 logger=self.logger,
             )
         return self._topic_generator_service
+
+    def _tag_generator_service_instance(self):
+        if self._tag_generator_service is None:
+            from artificial_u.services.tag_generator_service import TagGeneratorService
+
+            self._tag_generator_service = TagGeneratorService(
+                course_service=self._course_service_instance(),
+                content_service=self._content_service_instance(),
+                repository_factory=self.repository_factory,
+                logger=self.logger,
+            )
+        return self._tag_generator_service
 
     def _get_elevenlabs_client(self):
         """Get ElevenLabs client with API key if available."""

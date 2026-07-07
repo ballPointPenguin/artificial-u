@@ -175,6 +175,27 @@ class Professor(BaseModel):
     student: Optional["Student"] = None
 
 
+class Tag(BaseModel):
+    """A subject tag belonging to a single content-language universe."""
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "id": 1,
+                "slug": "quantum-physics",
+                "name": "Quantum Physics",
+                "language": "en",
+            }
+        }
+    )
+
+    id: Optional[int] = None
+    slug: str
+    name: str
+    language: str = "en"
+    created_at: Optional[datetime] = None
+
+
 class Course(BaseModel):
     """Course model representing a complete academic course."""
 
@@ -221,6 +242,7 @@ class Course(BaseModel):
     department: Optional["Department"] = None
     student: Optional["Student"] = None
     connected_course_ids: List[int] = Field(default_factory=list)
+    tags: List[Tag] = Field(default_factory=list)
     # Audio/Topic Counts
     lectures_with_audio_count: Optional[int] = 0
     topics_count: Optional[int] = 0

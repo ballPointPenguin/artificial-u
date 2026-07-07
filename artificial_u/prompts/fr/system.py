@@ -47,6 +47,13 @@ SUMMARY_SYSTEM_PROMPT = (
     "gardez les éléments conceptuels, sans entrer dans les détails d'implémentation. "
 )
 
+TAGS_SYSTEM_PROMPT = (
+    "Vous êtes un bibliothécaire universitaire expert qui classe les cours "
+    "universitaires avec des tags thématiques concis et réutilisables. "
+    "Vous répondez toujours dans un format XML valide et indenté. "
+    "N'incluez aucune explication, note ou texte en dehors du bloc XML."
+)
+
 SYSTEM_PROMPTS: Dict[str, str] = {
     "generic": GENERIC_XML_SYSTEM_PROMPT,
     "course": COURSE_SYSTEM_PROMPT,
@@ -55,6 +62,7 @@ SYSTEM_PROMPTS: Dict[str, str] = {
     "professor": PROFESSOR_SYSTEM_PROMPT,
     "topics": TOPICS_SYSTEM_PROMPT,
     "summary": SUMMARY_SYSTEM_PROMPT,
+    "tags": TAGS_SYSTEM_PROMPT,
 }
 
 

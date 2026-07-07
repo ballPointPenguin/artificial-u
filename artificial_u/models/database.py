@@ -67,6 +67,12 @@ class CourseModel(Base):
         back_populates="connected_course",
         cascade="all, delete-orphan",
     )
+    tags = relationship(
+        "TagModel",
+        secondary="course_tags",
+        order_by="TagModel.name",
+        viewonly=True,
+    )
 
     @property
     def connected_course_ids(self) -> list[int]:
@@ -96,6 +102,30 @@ class CourseConnectionModel(Base):
     __table_args__ = (
         CheckConstraint("course_id < connected_course_id", name="ck_course_connections_ordering"),
     )
+
+
+class TagModel(Base):
+    """A subject tag belonging to a single content-language universe."""
+
+    __tablename__ = "tags"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    slug = Column(String, nullable=False)
+    name = Column(String, nullable=False)
+    language = Column(String, nullable=False, default="en")
+    created_at = Column(DateTime, nullable=False, default=datetime.now)
+
+    __table_args__ = (UniqueConstraint("slug", "language", name="uq_tags_slug_language"),)
+
+
+class CourseTagModel(Base):
+    __tablename__ = "course_tags"
+
+    course_id = Column(Integer, ForeignKey("courses.id", ondelete="CASCADE"), primary_key=True)
+    tag_id = Column(Integer, ForeignKey("tags.id", ondelete="CASCADE"), primary_key=True)
+    created_at = Column(DateTime, nullable=False, server_default=text("now()"))
+
+    __table_args__ = (Index("idx_course_tags_tag_id", "tag_id"),)
 
 
 class FacultyModel(Base):

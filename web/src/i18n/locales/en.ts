@@ -21,6 +21,7 @@ export const en = {
     admin: 'Admin',
     login: 'Login',
     logout: 'Logout',
+    browse: 'Browse',
     openMenu: 'Open main menu',
   },
 
@@ -566,6 +567,21 @@ export const en = {
   },
 
   // Course Detail page
+  // Browse discovery page
+  browse: {
+    title: 'Browse',
+    subtitle: 'Flip through the stacks and see what catches your eye.',
+    recentlyAdded: 'Recently Added',
+    all: 'All',
+    surpriseMe: 'Surprise me',
+    picking: 'Picking...',
+    loadMore: 'Load more',
+    empty: 'Nothing in the stacks matches those tags yet.',
+    errorLoading: 'Error loading the library. Please try again.',
+    resetFilters: 'Reset filters',
+    catalogueLink: 'Prefer a plain list? View the course catalogue',
+  },
+
   courseDetail: {
     department: 'Department',
     professor: 'Professor',
@@ -616,6 +632,13 @@ export const en = {
     published: 'Published',
     hidden: 'Hidden',
     courseNotes: 'Course Notes',
+    editTags: 'Edit Tags',
+    tagsEditHeading: 'Edit Tags',
+    tagsEditDescription: 'Tags describe the course subjects and power browsing and filtering.',
+    addTagPlaceholder: 'Add a tag and press Enter',
+    regenerateTags: 'Regenerate with AI',
+    tagsQueued: 'Tag generation queued. New tags will appear shortly.',
+    failedToSaveTags: 'Failed to save tags',
     courseDetails: 'Course Details',
     courseTopics: 'Course Topics',
     lecturesPerWeek: 'Lectures per week',

@@ -2,16 +2,18 @@ from typing import List, Optional, Tuple
 
 from sqlalchemy import func, or_
 from sqlalchemy.engine import Engine
-from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import joinedload, selectinload
 
-from artificial_u.models.core import Course, Student
+from artificial_u.models.core import Course, Student, Tag
 from artificial_u.models.database import (
     CourseConnectionModel,
     CourseModel,
+    CourseTagModel,
     DepartmentModel,
     LectureModel,
     ProfessorModel,
     StudentModel,
+    TagModel,
     TopicModel,
 )
 from artificial_u.models.repositories.base import BaseRepository
@@ -83,6 +85,16 @@ class CourseRepository(BaseRepository):
             updated_at=db_course.updated_at,
             student=course_student,
             connected_course_ids=list(db_course.connected_course_ids),
+            tags=[
+                Tag(
+                    id=tag.id,
+                    slug=tag.slug,
+                    name=tag.name,
+                    language=tag.language,
+                    created_at=tag.created_at,
+                )
+                for tag in (getattr(db_course, "tags", None) or [])
+            ],
             lectures_with_audio_count=0,
             topics_count=0,
         )
@@ -125,7 +137,7 @@ class CourseRepository(BaseRepository):
         with self.get_session() as session:
             db_course = (
                 session.query(self.model)
-                .options(joinedload(self.model.student))
+                .options(joinedload(self.model.student), selectinload(self.model.tags))
                 .filter_by(id=course_id)
                 .first()
             )
@@ -135,7 +147,12 @@ class CourseRepository(BaseRepository):
 
     def get_by_code(self, code: str) -> Optional[Course]:
         with self.get_session() as session:
-            db_course = session.query(self.model).filter_by(code=code).first()
+            db_course = (
+                session.query(self.model)
+                .options(selectinload(self.model.tags))
+                .filter_by(code=code)
+                .first()
+            )
             if db_course:
                 return self._convert_course(db_course)
         return None
@@ -245,6 +262,7 @@ class CourseRepository(BaseRepository):
         include_own_hidden: bool = False,
         requesting_student_id: Optional[int] = None,
         language: Optional[str] = None,
+        tags: Optional[List[str]] = None,
     ) -> Tuple[List[Course], int]:
         """
         List courses with advanced filtering, sorting, pagination, and counts.
@@ -253,6 +271,7 @@ class CourseRepository(BaseRepository):
         Args:
             include_own_hidden: If True, include hidden courses created by requesting_student_id
             requesting_student_id: ID of the student making the request (for own hidden courses)
+            tags: Tag slugs the course must all carry (AND semantics)
         """
         with self.get_session() as session:
             # Subquery for lectures with audio
@@ -290,6 +309,7 @@ class CourseRepository(BaseRepository):
                     joinedload(CourseModel.professor),
                     joinedload(CourseModel.department),
                     joinedload(CourseModel.student),
+                    selectinload(CourseModel.tags),
                 )
             )
 
@@ -306,6 +326,14 @@ class CourseRepository(BaseRepository):
                 query = query.filter(CourseModel.created_by == created_by)
             if language is not None:
                 query = query.filter(CourseModel.language == language)
+            for tag_slug in tags or []:
+                query = query.filter(
+                    CourseModel.id.in_(
+                        session.query(CourseTagModel.course_id)
+                        .join(TagModel, TagModel.id == CourseTagModel.tag_id)
+                        .filter(TagModel.slug == tag_slug)
+                    )
+                )
 
             # Status filtering with special handling for own hidden courses
             if status:
@@ -379,6 +407,7 @@ class CourseRepository(BaseRepository):
                     joinedload(self.model.professor),
                     joinedload(self.model.department),
                     joinedload(self.model.student),
+                    selectinload(self.model.tags),
                 )
                 .order_by(self.model.id.desc())
                 .limit(limit)

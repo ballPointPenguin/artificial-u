@@ -183,6 +183,34 @@ class JobEnqueueService:
             self.logger.error(error_msg, exc_info=True)
             raise DatabaseError(error_msg) from e
 
+    def enqueue_tags_generation(
+        self,
+        course_id: int,
+        created_by: Optional[int] = None,
+        *,
+        parent_job_id: Optional[int] = None,
+    ) -> Optional[int]:
+        """Enqueue a background job to generate tags for a course."""
+        if get_settings().testing:
+            self.logger.debug("Skipping tags generation job enqueue: running in test mode")
+            return None
+
+        try:
+            payload: dict = {"course_id": course_id}
+            if created_by is not None:
+                payload["created_by"] = created_by
+            job = self.repository_factory.job.create(
+                kind="generate_tags_for_course",
+                payload=payload,
+                parent_job_id=parent_job_id,
+            )
+            self.logger.info("Enqueued tags generation job %d for course %d", job.id, course_id)
+            return job.id
+        except Exception as e:
+            error_msg = f"Failed to enqueue tags generation job for course {course_id}: {e}"
+            self.logger.error(error_msg, exc_info=True)
+            raise DatabaseError(error_msg) from e
+
     def enqueue_topics_generation(
         self,
         course_id: int,

@@ -28,6 +28,7 @@ export const zh = {
     admin: '管理',
     login: '登录',
     logout: '登出',
+    browse: '浏览',
     openMenu: '打开主菜单',
   },
 
@@ -560,6 +561,21 @@ export const zh = {
   },
 
   // Course Detail page
+  // 浏览发现页
+  browse: {
+    title: '浏览',
+    subtitle: '像翻唱片一样翻阅书库，看看有什么吸引你。',
+    recentlyAdded: '最近添加',
+    all: '全部',
+    surpriseMe: '给我惊喜',
+    picking: '挑选中...',
+    loadMore: '加载更多',
+    empty: '书库中还没有符合这些标签的内容。',
+    errorLoading: '加载书库时出错，请重试。',
+    resetFilters: '重置筛选',
+    catalogueLink: '更喜欢简单列表？查看课程目录',
+  },
+
   courseDetail: {
     department: '系',
     professor: '教授',
@@ -609,6 +625,13 @@ export const zh = {
     published: '已发布',
     hidden: '隐藏',
     courseNotes: '课程备注',
+    editTags: '编辑标签',
+    tagsEditHeading: '编辑标签',
+    tagsEditDescription: '标签描述课程主题，用于浏览和筛选。',
+    addTagPlaceholder: '输入标签后按回车键添加',
+    regenerateTags: '用 AI 重新生成',
+    tagsQueued: '标签生成任务已加入队列，新标签稍后显示。',
+    failedToSaveTags: '保存标签失败',
     courseDetails: '课程详情',
     courseTopics: '课程主题',
     lecturesPerWeek: '每周讲座数',

@@ -20,6 +20,7 @@ const QuickstartAccessDenied: Component = () => {
 // Lazily load page components
 const Home = lazy(() => import('./pages/Home'))
 const About = lazy(() => import('./pages/About'))
+const Browse = lazy(() => import('./pages/Browse'))
 const Academics = lazy(() => import('./pages/Academics'))
 const Departments = lazy(() => import('./pages/Departments'))
 const DepartmentDetail = lazy(() => import('./pages/DepartmentDetail'))
@@ -75,6 +76,7 @@ const App: Component = () => {
       <Route path="/about/faq" component={AboutFaq} />
       <Route path="/academics" component={Academics} />
       <Route path="/search" component={Search} />
+      <Route path="/browse" component={Browse} />
       <Route path="/stylebook" component={Stylebook} />
       <Route path="/login" component={Login} />
 

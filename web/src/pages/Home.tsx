@@ -139,7 +139,7 @@ const Home = () => {
             </h1>
             <p class="text-lg text-muted max-w-lg mb-8 leading-relaxed">{t().home.hero.subtitle}</p>
             <div class="flex flex-wrap gap-4">
-              <A href="/courses">
+              <A href="/browse">
                 <Button variant="primary" size="lg">
                   <span class="mr-2">&#9654;</span>
                   {t().home.hero.browseCta}
@@ -244,7 +244,7 @@ const Home = () => {
                 <h2 class="text-2xl font-display text-foreground">Recently Added Courses</h2>
               </div>
               <A
-                href="/courses"
+                href="/browse"
                 class="text-sm font-sans text-accent hover:text-primary transition-colors"
               >
                 View all courses &rarr;

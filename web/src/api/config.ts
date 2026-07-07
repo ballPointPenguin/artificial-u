@@ -83,6 +83,12 @@ export const ENDPOINTS = {
     generate: '/v1/courses/generate',
     enqueueGenerate: '/v1/courses/generate/enqueue',
     enqueueCreate: '/v1/courses/create/enqueue',
+    tags: (id: number) => `/v1/courses/${String(id)}/tags`,
+    enqueueGenerateTags: (id: number) => `/v1/courses/${String(id)}/tags/generate/enqueue`,
+  },
+  tags: {
+    list: '/v1/tags',
+    backfill: '/v1/tags/backfill/enqueue',
   },
   jobs: {
     list: '/v1/jobs',

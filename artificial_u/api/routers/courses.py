@@ -2,7 +2,7 @@
 Course router for handling course-related API endpoints.
 """
 
-from typing import Optional
+from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
 
@@ -22,6 +22,8 @@ from artificial_u.api.models import (
     CoursesListResponse,
     CourseUpdate,
     GeneratedCourseData,
+    TagBrief,
+    TagsUpdate,
 )
 from artificial_u.api.security.auth0 import require_coins, require_role
 from artificial_u.api.services import CourseApiService
@@ -73,6 +75,10 @@ async def list_courses(
         ),
     ),
     language: str = Query("en", description="Content language sandbox (e.g., 'en', 'fr')"),
+    tags: Optional[List[str]] = Query(
+        None,
+        description="Filter by tag slugs; repeat the parameter for AND semantics",
+    ),
     course_service: CourseApiService = Depends(get_course_api_service),
     student: Optional[Student] = Depends(optional_student),
 ):
@@ -100,6 +106,7 @@ async def list_courses(
         student_role=student_role,
         include_hidden=include_hidden,
         language=language,
+        tags=tags,
     )
 
 
@@ -581,4 +588,88 @@ async def export_course(
         "priority": row.priority,
         "run_after": row.run_after,
         "message": f"Course export job enqueued. Poll GET /api/v1/jobs/{row.id} for status and download URL.",
+    }
+
+
+@router.put(
+    "/{course_id}/tags",
+    response_model=list[TagBrief],
+    summary="Replace course tags",
+    description=(
+        "Replace the course's tag set with the given display names. Tags are "
+        "created in the course's content-language universe if they don't exist "
+        "yet. Only the course creator or an admin can edit tags."
+    ),
+    responses={
+        404: {"description": "Course not found"},
+        403: {"description": "Forbidden - user doesn't own this course"},
+    },
+    dependencies=[require_role("creator")],
+)
+async def update_course_tags(
+    tags_data: TagsUpdate,
+    course_id: int = Path(..., description="The ID of the course to tag"),
+    repository_factory: RepositoryFactory = Depends(get_repository_factory),
+    student: Student = Depends(ensure_student),
+):
+    from artificial_u.api.security.auth0 import verify_asset_ownership
+
+    course = repository_factory.course.get(course_id)
+    if not course:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Course with ID {course_id} not found.",
+        )
+    verify_asset_ownership(student.id, course.created_by, student.role, "course")
+
+    language = (course.language or "en").lower()[:2]
+    if language not in ("en", "fr"):
+        language = "en"
+    tags = repository_factory.tag.get_or_create_by_names(tags_data.tags, language=language)
+    saved = repository_factory.tag.set_course_tags(course_id, [tag.id for tag in tags])
+    return [TagBrief.model_validate(tag.model_dump()) for tag in saved]
+
+
+@router.post(
+    "/{course_id}/tags/generate/enqueue",
+    status_code=status.HTTP_202_ACCEPTED,
+    summary="Enqueue course tag generation job",
+    description=(
+        "Enqueue an async job to (re)generate the course's tags with AI, "
+        "replacing the current set. Only the course creator or an admin can "
+        "trigger this. Returns a job id to poll via GET /api/v1/jobs/{id}."
+    ),
+    responses={
+        404: {"description": "Course not found"},
+        403: {"description": "Forbidden - user doesn't own this course"},
+    },
+    dependencies=[require_role("creator")],
+)
+async def enqueue_generate_course_tags(
+    course_id: int = Path(..., description="The ID of the course to tag"),
+    repository_factory: RepositoryFactory = Depends(get_repository_factory),
+    student: Student = Depends(ensure_student),
+):
+    from artificial_u.api.security.auth0 import verify_asset_ownership
+
+    course = repository_factory.course.get(course_id)
+    if not course:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Course with ID {course_id} not found.",
+        )
+    verify_asset_ownership(student.id, course.created_by, student.role, "course")
+
+    row = repository_factory.job.create(
+        kind="generate_tags_for_course",
+        payload={"course_id": course_id, "created_by": student.id},
+    )
+    return {
+        "id": row.id,
+        "kind": row.kind,
+        "status": row.status,
+        "attempts": row.attempts,
+        "max_attempts": row.max_attempts,
+        "priority": row.priority,
+        "run_after": row.run_after,
     }

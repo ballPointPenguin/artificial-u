@@ -6,6 +6,7 @@ from artificial_u.prompts.fr.lecture import get_lecture_prompt
 from artificial_u.prompts.fr.professor import get_professor_prompt
 from artificial_u.prompts.fr.summary import get_summary_prompt
 from artificial_u.prompts.fr.system import get_system_prompt
+from artificial_u.prompts.fr.tags import get_course_tags_prompt
 from artificial_u.prompts.fr.topics import get_next_topic_prompt
 
 __all__ = [
@@ -15,5 +16,6 @@ __all__ = [
     "get_professor_prompt",
     "get_summary_prompt",
     "get_system_prompt",
+    "get_course_tags_prompt",
     "get_next_topic_prompt",
 ]
