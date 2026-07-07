@@ -85,7 +85,7 @@ Before deploying, ensure you have the following installed and configured:
     npm install -g aws-cdk
     ```
 
-4. **Python 3.14 and Hatch**: For managing the Python environment.
+4. **Python 3.14 and uv**: For managing the Python environment.
 5. **Docker**: The CDK will use Docker to build the API container image locally before publishing it as a CDK image asset.
 6. **Built frontend assets**: The stack deploys `web/dist` into the frontend bucket, so run the frontend build before deploying locally:
 

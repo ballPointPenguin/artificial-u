@@ -49,21 +49,17 @@ dependencies = [
     "uvicorn[standard]>=0.42.0",
 ]
 
-[project.optional-dependencies]
+# PEP 735 dependency groups (managed by uv; `dev` is installed by default with `uv sync`)
+[dependency-groups]
 dev = [
+    { include-group = "test" },
     "aws-cdk-lib>=2.0.0",
     "black>=26.3.1",
     "constructs>=10.0.0",
     "flake8>=7.3.0",
     "isort>=8.0.1",
     "mypy>=1.17.1",
-    "pip-tools>=7.5.0",
     "pre-commit>=4.3.0",
-    "pytest>=8.4.2",
-    "pytest-asyncio>=1.2.0",
-    "pytest-cov>=7.0.0",
-    "pytest-env>=1.6.0",
-    "pytest-mock>=3.15.1",
 ]
 test = [
     "pytest>=8.4.2",
@@ -79,13 +75,6 @@ test = [
 
 [project.scripts]
 artificial_u = "artificial_u.cli:cli"
-
-[tool.hatch.envs.default]
-python = "3.14"
-features = ["dev"]
-dependencies = [
-    "pip~=26.0.1",
-]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -136,7 +125,7 @@ skip = [".git", "venv", ".venv", ".mypy_cache", "__pycache__", "web"]
 known_first_party = ["artificial_u"]
 
 [tool.ruff]
-# Match hatch/CI (3.14): bracketless multi-exception `except` is valid on 3.14+ only.
+# Match CI (3.14): bracketless multi-exception `except` is valid on 3.14+ only.
 target-version = "py314"
 line-length = 100
 extend-exclude = ["alembic", "scripts", "web"]

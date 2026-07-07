@@ -32,9 +32,6 @@ ENV/
 venv/
 .venv/
 
-# uv (generated when uv is used as a runner, not the primary package manager)
-uv.lock
-
 # IDE
 .idea/
 .vscode/
@@ -45,9 +42,6 @@ uv.lock
 .coverage
 .pytest_cache/
 htmlcov/
-
-# Pip-tools
-.pip-tools-cache/
 
 # OS
 .DS_Store

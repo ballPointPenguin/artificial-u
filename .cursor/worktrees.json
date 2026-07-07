@@ -12,12 +12,12 @@
     "[ -f \"$ROOT_WORKTREE_PATH/web/.env\" ] && cp -f \"$ROOT_WORKTREE_PATH/web/.env\" web/.env || true"
   ],
   "setup-python": [
-    "# Prefer mise if available, otherwise use system python/hatch",
+    "# Prefer mise if available, otherwise use system python/uv",
     "command -v mise >/dev/null 2>&1 && mise install -q || true",
     "",
-    "# Create/sync hatch env and install dev deps",
-    "command -v hatch >/dev/null 2>&1 || (echo \"hatch not found; install hatch to work on the backend\" && false)",
-    "hatch run pip install -e \".[dev]\""
+    "# Create/sync the uv-managed venv (project + dev deps) from uv.lock",
+    "command -v uv >/dev/null 2>&1 || (echo \"uv not found; install uv to work on the backend\" && false)",
+    "uv sync --locked"
   ],
   "setup-web": [
     "# Prefer mise if available, otherwise rely on system node/pnpm",

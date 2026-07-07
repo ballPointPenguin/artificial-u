@@ -4,79 +4,71 @@ This document details the development environment setup, dependency management s
 
 ## Environment Setup & Dependency Management
 
-This project uses [Hatch](https://hatch.pypa.io/latest/) for managing Python environments and project dependencies defined in `pyproject.toml`. Optionally, `pip-tools` can be used to generate lockfiles for pinning dependencies to ensure reproducible environments.
+This project uses [uv](https://docs.astral.sh/uv/) for managing the Python toolchain, the project virtualenv, and dependencies defined in `pyproject.toml`. Exact versions are pinned in `uv.lock`, which is committed to the repository for reproducible environments.
 
-### Using Hatch (Recommended)
+### Using uv
 
-1. **Install Hatch:** Follow the instructions on the [Hatch website](https://hatch.pypa.io/latest/install/).
+1. **Install uv:** `brew install uv`, or follow the [uv installation guide](https://docs.astral.sh/uv/getting-started/installation/).
 2. **Install Project & Dependencies:** Navigate to the project root directory and run:
 
     ```bash
-    # Installs the project in editable mode along with 'dev' dependencies
-    hatch run pip install -e ".[dev]"
+    # Creates .venv/, installs the pinned Python version (from .python-version),
+    # the project in editable mode, and the 'dev' dependency group
+    uv sync
     ```
 
-3. **Activate Environment:** To work within the managed environment directly:
+3. **Run commands in the environment:** Prefix commands with `uv run` — no activation needed:
 
     ```bash
-    hatch shell
+    uv run pytest
+    uv run python scripts/initialize_db.py
     ```
 
-    *(Within the hatch shell, you can run Python, pip, pytest, etc., directly)*
+    Or activate the virtualenv for interactive use:
+
+    ```bash
+    source .venv/bin/activate
+    ```
 
 4. **Running Alembic Commands:** When working with database migrations, use one of these approaches:
 
     ```bash
     # Option 1: Using the helper script (recommended)
-    python scripts/run_alembic.py upgrade head
+    uv run python scripts/run_alembic.py upgrade head
 
-    # Option 2: Using hatch run
-    hatch run alembic upgrade head
+    # Option 2: Using uv run directly
+    uv run alembic upgrade head
 
-    # Option 3: Direct alembic command (only works within hatch shell)
+    # Option 3: Direct alembic command (with the virtualenv activated)
     alembic upgrade head
     ```
 
-### Optional: Generating Lockfiles with pip-tools
+### Dependency Management with uv
 
-For highly reproducible environments, especially for CI or specific deployment scenarios, you can generate pinned dependency lockfiles using `pip-tools` (which is included in the dev dependencies).
+Dependencies live in `pyproject.toml`: runtime dependencies under `[project.dependencies]`, and development/test tooling under PEP 735 `[dependency-groups]`. The `uv.lock` lockfile pins the full resolved graph and is committed to the repo — CI, Docker, and other developers all install from it.
 
-1. **Generate Lockfiles:**
+- **Add a dependency:** `uv add <package>` (or `uv add --group dev <package>` for dev tooling). This updates both `pyproject.toml` and `uv.lock`.
+- **Remove a dependency:** `uv remove <package>`
+- **Re-lock after manual `pyproject.toml` edits:** `uv lock` (or `make deps-lock`)
+- **Upgrade everything within constraints:** `uv lock --upgrade` (or `make deps-upgrade`)
+- **Sync your environment to the lockfile:** `uv sync --locked` (or `make deps-sync`)
 
-    ```bash
-    # Ensure you are in the hatch environment or use 'hatch run'
-    # Generate requirements.txt for base dependencies
-    pip-compile pyproject.toml --resolver=backtracking -o requirements.txt
-
-    # Generate requirements-dev.txt for development dependencies
-    pip-compile pyproject.toml --resolver=backtracking --extra dev -o requirements-dev.txt
-    ```
-
-2. **Sync Environment from Lockfiles:** If you have generated the lockfiles, you can synchronize your environment to match them exactly:
-
-    ```bash
-    # Sync using the development requirements file
-    pip-sync requirements-dev.txt
-
-    # Or, sync using only the base requirements file
-    # pip-sync requirements.txt
-    ```
-
-    *Note: If using lockfiles, remember to regenerate them (step 1) and re-sync (step 2) whenever you modify dependencies in `pyproject.toml`. Commit the updated `pyproject.toml` and `requirements*.txt` files.*
+Commit `pyproject.toml` and `uv.lock` together whenever dependencies change.
 
 ### GitHub Codespaces
 
-This repository includes a devcontainer configuration. GitHub Codespaces automatically sets up the environment using Hatch. Simply open the Codespace, add your API keys to `.env`, and use `hatch shell` or `hatch run`.
+This repository includes a devcontainer configuration. GitHub Codespaces automatically sets up the environment using uv. Simply open the Codespace, add your API keys to `.env`, and use `uv run` as usual.
 
 ## pyproject.toml Configuration
 
 The `pyproject.toml` file ([PEP 518](https://peps.python.org/pep-518/), [PEP 621](https://peps.python.org/pep-621/)) is the central configuration hub for:
 
-- **Build System:** Defines `hatchling` as the build backend.
+- **Build System:** Defines `hatchling` as the build backend (used by uv when installing the project).
 - **Project Metadata:** Contains name, version, description, dependencies, etc.
+- **Dependency Groups:** PEP 735 `[dependency-groups]` for dev/test tooling (installed by `uv sync`).
 - **Tool Configurations:** Settings for `pytest`, `black`, `isort`, `mypy`, etc.
 
-This standard approach simplifies configuration management and integrates well with modern Python tooling. Standard commands like `pip install -e .[dev]`, `pytest`, `black .`, `isort .`, `mypy artificial_u` work seamlessly, picking up their configuration from this file.
+This standard approach simplifies configuration management and integrates well with modern Python tooling. Standard commands like `uv sync`, `pytest`, `black .`, `isort .`, `mypy artificial_u` work seamlessly, picking up their configuration from this file.
 
 ## Code Quality Tools
 
@@ -117,8 +109,8 @@ Mypy checks static type hints to find potential type errors.
 
 Pre-commit hooks are configured in `.pre-commit-config.yaml` to automatically run Black, isort, Flake8, and Mypy before each commit.
 
-1. **Install pre-commit:** `pip install pre-commit` (or `hatch run pip install pre-commit`)
-2. **Install hooks:** `pre-commit install`
+1. **Install dependencies:** `uv sync` (pre-commit is included in the dev dependency group)
+2. **Install hooks:** `uv run pre-commit install`
 
 This ensures that code pushed to the repository adheres to the defined quality standards.
 
@@ -148,8 +140,9 @@ make test-unit          # Run unit tests only
 make test-cov           # Run tests with coverage report
 
 # Dependencies
-make deps-upgrade       # Upgrade and compile requirements files
-make deps-compile       # Compile requirements files using pip-tools
+make deps-lock          # Update uv.lock from pyproject.toml
+make deps-upgrade       # Upgrade all dependencies in uv.lock
+make deps-sync          # Sync environment with uv.lock
 
 # Database
 make db-setup           # Set up development database
