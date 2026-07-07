@@ -9,7 +9,8 @@ interface CrateCardProps {
 
 /**
  * A cover-art-forward "record sleeve" card for the Browse page.
- * Courses without album art get a themed gradient with a course-code monogram.
+ * Generated album art already bakes in the title and professor name, so
+ * those are only overlaid as text when there's no art to fall back on.
  */
 const CrateCard: Component<CrateCardProps> = (props) => {
   const tags = () => (props.course.tags ?? []).slice(0, 3)
@@ -32,19 +33,21 @@ const CrateCard: Component<CrateCardProps> = (props) => {
         >
           <img
             src={props.course.image_url ?? ''}
-            alt=""
+            alt={props.course.title}
             loading="lazy"
             class="h-full w-full object-cover"
           />
         </Show>
-        <div class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-3 pt-10">
-          <h3 class="line-clamp-2 font-display text-base leading-snug text-white">
-            {props.course.title}
-          </h3>
-          <Show when={props.course.professor?.name}>
-            <p class="mt-0.5 font-serif text-xs text-white/70">{props.course.professor?.name}</p>
-          </Show>
-        </div>
+        <Show when={!props.course.image_url}>
+          <div class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-3 pt-10">
+            <h3 class="line-clamp-2 font-display text-base leading-snug text-white">
+              {props.course.title}
+            </h3>
+            <Show when={props.course.professor?.name}>
+              <p class="mt-0.5 font-serif text-xs text-white/70">{props.course.professor?.name}</p>
+            </Show>
+          </div>
+        </Show>
       </div>
       <Show when={tags().length > 0}>
         <div class="flex flex-wrap gap-1.5 p-3">

@@ -67,11 +67,12 @@ async def test_generates_and_saves_tags_in_course_language():
     saved = await service.generate_tags_for_course(1)
 
     repos.tag.list_top_names.assert_called_once_with(language="en", limit=100)
+    # Department name is mechanically prepended alongside the LLM-generated tags
     repos.tag.get_or_create_by_names.assert_called_once_with(
-        ["Machine Learning", "Ethics"], language="en"
+        ["Computer Science", "Machine Learning", "Ethics"], language="en"
     )
-    repos.tag.set_course_tags.assert_called_once_with(1, [1, 2])
-    assert len(saved) == 2
+    repos.tag.set_course_tags.assert_called_once_with(1, [1, 2, 3])
+    assert len(saved) == 3
 
     # Prompt carries course context and vocabulary
     prompt = content.generate_text.call_args.kwargs["prompt"]
@@ -97,6 +98,7 @@ async def test_french_course_uses_french_universe():
     await service.generate_tags_for_course(2)
 
     repos.tag.list_top_names.assert_called_once_with(language="fr", limit=100)
+    # This course has no department_id, so no department tag is prepended
     repos.tag.get_or_create_by_names.assert_called_once_with(["Philosophie"], language="fr")
 
 
@@ -109,7 +111,43 @@ async def test_bare_tags_block_without_output_wrapper_is_accepted():
 
     await service.generate_tags_for_course(1)
 
-    repos.tag.get_or_create_by_names.assert_called_once_with(["Logic", "Rhetoric"], language="en")
+    repos.tag.get_or_create_by_names.assert_called_once_with(
+        ["Computer Science", "Logic", "Rhetoric"], language="en"
+    )
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_department_name_is_prepended_as_a_tag():
+    """The department (e.g. 'Biology', 'French') is added mechanically, not via the LLM."""
+    service, repos, _ = _build_service()
+
+    await service.generate_tags_for_course(1)
+
+    call_args = repos.tag.get_or_create_by_names.call_args
+    tag_names = call_args.args[0]
+    assert tag_names[0] == "Computer Science"
+    assert tag_names[1:] == ["Machine Learning", "Ethics"]
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_no_department_tag_when_course_has_no_department():
+    course = Course(
+        id=3,
+        code="GEN100",
+        title="Independent Study",
+        description="No department assigned.",
+        language="en",
+    )
+    service, repos, _ = _build_service(course=course)
+
+    await service.generate_tags_for_course(3)
+
+    repos.department.get.assert_not_called()
+    repos.tag.get_or_create_by_names.assert_called_once_with(
+        ["Machine Learning", "Ethics"], language="en"
+    )
 
 
 @pytest.mark.unit

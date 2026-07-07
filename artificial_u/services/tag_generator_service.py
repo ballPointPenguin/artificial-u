@@ -115,6 +115,10 @@ class TagGeneratorService:
         )
 
         tag_names = self._parse_tag_names(raw_response)
+        if department_name:
+            # Mechanically include the department as a tag (e.g. "Biology", "French")
+            # rather than relying on the LLM, which is instructed to avoid restating it.
+            tag_names = [department_name, *tag_names]
         tags = self.repository_factory.tag.get_or_create_by_names(tag_names, language=language)
         if not tags:
             raise ContentGenerationError(
