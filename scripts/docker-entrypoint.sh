@@ -66,6 +66,16 @@ if [ "${RUN_BACKFILL_VOICE_TTS_BACKEND}" = "1" ]; then
   fi
 fi
 
+# Optionally backfill AI-generated tags for courses missing them
+if [ "${RUN_BACKFILL_COURSE_TAGS}" = "1" ]; then
+  if [ -n "$DATABASE_URL" ]; then
+    echo "[entrypoint] RUN_BACKFILL_COURSE_TAGS=1 detected; backfilling course tags..."
+    python scripts/backfill_course_tags.py || echo "[entrypoint] Course tags backfill failed; continuing"
+  else
+    echo "[entrypoint] DATABASE_URL not set; skipping course tags backfill"
+  fi
+fi
+
 # Optionally seed Mistral Voxtral preset voices
 if [ "${RUN_SEED_MISTRAL_VOICES}" = "1" ]; then
   if [ -n "$DATABASE_URL" ]; then
