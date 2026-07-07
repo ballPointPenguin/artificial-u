@@ -153,6 +153,11 @@ run-api: ## Run the FastAPI application
 	@echo "$(GREEN)Starting FastAPI application...$(NC)"
 	@$(HATCH) run uvicorn $(PROJECT_NAME).api.app:app --reload --reload-delay 1.0 --reload-dir $(SRC_DIR) --reload-include "*.py" --host 0.0.0.0 --port $(FASTAPI_PORT)
 
+.PHONY: run-api-log
+run-api-log: ## Run the FastAPI application and log output to api.log
+	@echo "$(GREEN)Starting FastAPI application and logging to api.log...$(NC)"
+	@$(MAKE) run-api 2>&1 | tee api.log
+
 .PHONY: run-api-no-reload
 run-api-no-reload: ## Run the FastAPI application without auto-reload
 	@echo "$(GREEN)Starting FastAPI application (no reload)...$(NC)"
