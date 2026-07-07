@@ -537,6 +537,12 @@ class JobService:
         next_job_id = self._enqueue_next_lecture_slide(payload, result)
         if next_job_id is not None:
             result["next_slide_job_id"] = next_job_id
+
+        # Raise exception if slide generation failed so the background job fails in DB
+        if result.get("status") == "failed":
+            error_reason = result.get("error") or "Image generation returned no URL"
+            raise RuntimeError(f"Slide generation failed for slot {slot_idx}: {error_reason}")
+
         return result
 
     async def _handle_generate_professor_image(

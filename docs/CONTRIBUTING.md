@@ -4,7 +4,7 @@ Thank you for considering contributing to ArtificialU! This document provides gu
 
 ## Getting Started
 
-1. **Environment Setup**: Please follow the **Installation & Setup** instructions in the main [README.md](README.md) to set up your development environment using Hatch.
+1. **Environment Setup**: Please follow the **Installation & Setup** instructions in the main [README.md](README.md) to set up your development environment using uv.
 2. **Project Overview**: Familiarize yourself with the project's goals and structure described in the [README.md](README.md).
 3. **Development Tooling**: Review the tools and practices outlined in the [Development Environment Guide](docs/development.md).
 

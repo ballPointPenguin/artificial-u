@@ -780,20 +780,35 @@ class LectureImagesGeneratorService:
         first_slide_url = self._first_done_slide_url(latest_timeline) if slot_idx > 0 else None
         previous_slide_url = self._previous_done_slide_url(latest_timeline, slot_idx)
 
-        slide_url = await self.image_service.generate_lecture_slide_image(
-            professor=professor,
-            course=course,
-            week_number=week,
-            lecture_order=order,
-            lecture_summary=getattr(lecture, "summary", None),
-            chunk_text=chunk_text,
-            previous_chunk_text=previous_chunk_text,
-            first_slide_url=first_slide_url,
-            previous_slide_url=previous_slide_url,
-            slot_idx=slot_idx,
-            aspect_ratio=aspect_ratio,
-            model_name_override=model_name_override,
-        )
+        try:
+            slide_url = await self.image_service.generate_lecture_slide_image(
+                professor=professor,
+                course=course,
+                week_number=week,
+                lecture_order=order,
+                lecture_summary=getattr(lecture, "summary", None),
+                chunk_text=chunk_text,
+                previous_chunk_text=previous_chunk_text,
+                first_slide_url=first_slide_url,
+                previous_slide_url=previous_slide_url,
+                slot_idx=slot_idx,
+                aspect_ratio=aspect_ratio,
+                model_name_override=model_name_override,
+            )
+        except Exception as e:
+            await self._update_slot(
+                object_key,
+                slot_idx,
+                batch_id=batch_id,
+                status="failed",
+                error=str(e),
+            )
+            return {
+                "lecture_id": lecture_id,
+                "slot_idx": slot_idx,
+                "status": "failed",
+                "error": str(e),
+            }
 
         if slide_url:
             await self._update_slot(
@@ -817,4 +832,5 @@ class LectureImagesGeneratorService:
             "lecture_id": lecture_id,
             "slot_idx": slot_idx,
             "status": "failed",
+            "error": "image_generation_returned_no_url",
         }

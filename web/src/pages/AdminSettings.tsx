@@ -4,6 +4,7 @@ import { Button, Card, FormField, Input } from '../components/ui'
 
 /** Well-known model identifiers shown as quick-pick suggestions. */
 const SUGGESTED_MODELS = [
+  'claude-sonnet-5',
   'claude-opus-4-8',
   'claude-opus-4-6',
   'claude-sonnet-4-6',

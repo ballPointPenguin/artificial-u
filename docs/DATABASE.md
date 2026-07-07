@@ -38,10 +38,10 @@ When you need to make changes to the database schema:
    # Option 1: Using the helper script (recommended)
    python scripts/run_alembic.py revision --autogenerate -m "Description of changes"
 
-   # Option 2: Using hatch run
-   hatch run alembic revision --autogenerate -m "Description of changes"
+   # Option 2: Using uv run
+   uv run alembic revision --autogenerate -m "Description of changes"
 
-   # Option 3: Direct alembic command (only works within hatch shell)
+   # Option 3: Direct alembic command (with the virtualenv activated)
    alembic revision --autogenerate -m "Description of changes"
    ```
 
@@ -53,10 +53,10 @@ When you need to make changes to the database schema:
    # Option 1: Using the helper script (recommended)
    python scripts/run_alembic.py upgrade head
 
-   # Option 2: Using hatch run
-   hatch run alembic upgrade head
+   # Option 2: Using uv run
+   uv run alembic upgrade head
 
-   # Option 3: Direct alembic command (only works within hatch shell)
+   # Option 3: Direct alembic command (with the virtualenv activated)
    alembic upgrade head
    ```
 
@@ -64,13 +64,13 @@ When you need to make changes to the database schema:
 
 Alembic tracks the applied schema version in the `alembic_version` table (a single row with the current revision ID). Rolling back runs each migration's `downgrade()` function in reverse order until the database reaches the target revision.
 
-Always use the helper script or `hatch run` so Alembic runs inside the project environment with the correct `DATABASE_URL` from `.env`:
+Always use the helper script or `uv run` so Alembic runs inside the project environment with the correct `DATABASE_URL` from `.env`:
 
 ```sh
 # Recommended
-hatch run python scripts/run_alembic.py <command>
+uv run python scripts/run_alembic.py <command>
 
-# Or, from an active hatch shell
+# Or, with the virtualenv activated
 python scripts/run_alembic.py <command>
 ```
 
@@ -80,13 +80,13 @@ Know where you are and what you are undoing:
 
 ```sh
 # Current revision applied to this database
-hatch run python scripts/run_alembic.py current
+uv run python scripts/run_alembic.py current
 
 # Full migration chain (newest first)
-hatch run python scripts/run_alembic.py history --verbose
+uv run python scripts/run_alembic.py history --verbose
 
 # Latest revision(s) in the migration graph (compare with `current`)
-hatch run python scripts/run_alembic.py heads
+uv run python scripts/run_alembic.py heads
 ```
 
 Each file in `alembic/versions/` has a `revision` ID (for example `e9a1c2d3f4b5`) and a `down_revision` pointing to its parent. Use these IDs as rollback targets.
@@ -96,31 +96,31 @@ Each file in `alembic/versions/` has a `revision` ID (for example `e9a1c2d3f4b5`
 **Undo the most recent migration** (safest day-to-day option):
 
 ```sh
-hatch run python scripts/run_alembic.py downgrade -1
+uv run python scripts/run_alembic.py downgrade -1
 ```
 
 **Undo several migrations** (repeat `-1`, or step back N revisions at once):
 
 ```sh
-hatch run python scripts/run_alembic.py downgrade -3
+uv run python scripts/run_alembic.py downgrade -3
 ```
 
 **Roll back to a specific revision** (everything after that revision is reversed):
 
 ```sh
-hatch run python scripts/run_alembic.py downgrade e9a1c2d3f4b5
+uv run python scripts/run_alembic.py downgrade e9a1c2d3f4b5
 ```
 
 **Roll back all migrations** (empty schema — development only):
 
 ```sh
-hatch run python scripts/run_alembic.py downgrade base
+uv run python scripts/run_alembic.py downgrade base
 ```
 
 **Re-apply after fixing a migration or switching branches:**
 
 ```sh
-hatch run python scripts/run_alembic.py upgrade head
+uv run python scripts/run_alembic.py upgrade head
 ```
 
 ### Good Practices
@@ -160,7 +160,7 @@ For local development, if the database is disposable and you want to reset every
 ### Verify After Rollback
 
 ```sh
-hatch run python scripts/run_alembic.py current
+uv run python scripts/run_alembic.py current
 ```
 
 The reported revision should match your target. Run the application or relevant tests to confirm the schema matches expectations.

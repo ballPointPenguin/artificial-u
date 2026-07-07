@@ -18,7 +18,7 @@ ArtificialU is an AI-powered educational content platform that generates univers
 - **Validation**: Pydantic v2
 - **Authentication**: Auth0 (JWT-based)
 - **Job Queue**: Custom async worker with PostgreSQL-backed job system
-- **Package Management**: Hatch (with optional pip-tools for lockfiles)
+- **Package Management**: uv (with a committed uv.lock lockfile)
 
 ### Frontend
 
@@ -392,7 +392,7 @@ The audio processing system consists of specialized components working together:
 
 ### Environment Management
 
-- **Hatch**: Python environment and dependency management
+- **uv**: Python environment and dependency management
 - **Docker Compose**: Local service orchestration
 - **Configuration**: Environment variables via `.env` files
 - **Hot Reload**: Development servers with auto-restart

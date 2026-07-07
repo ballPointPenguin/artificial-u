@@ -150,14 +150,41 @@ PROFESSOR_GENERATION_MODEL=gpt-5.4-nano
 # Topics generation model
 TOPICS_GENERATION_MODEL=gemini-3.5-flash
 
-# Image generation model
-IMAGE_GENERATION_MODEL=gemini-3.1-flash-image
+# Image generation model (gemini-3.1-flash-lite-image, gemini-3.1-flash-image, or gemini-3-pro-image)
+IMAGE_GENERATION_MODEL=gemini-3.1-flash-lite-image
 
 # Text-to-speech voice model (ElevenLabs)
 # Must be supported by the selected voice's verified languages
 # Common values: eleven_flash_v2_5, eleven_multilingual_v2
 TTS_VOICE_MODEL=eleven_flash_v2_5
 ```
+
+### Anthropic (Claude) Model Version Compatibility
+
+`ContentService` inspects the Claude model name (e.g. `claude-sonnet-4-6`,
+`claude-opus-4-8`, `claude-sonnet-5`) to automatically adjust request parameters
+for API differences across model generations, so callers can swap
+`LECTURE_GENERATION_MODEL` (or the equivalent preference) without code changes:
+
+- **Prefill**: Claude 4.6+ models (including Sonnet 5) reject assistant-message
+  prefill with a 400 error; it's automatically skipped for these models.
+- **Sampling params**: Claude 4.7+ models (including Opus 4.8 and Sonnet 5) reject
+  non-default `temperature`/`top_p`/`top_k`; these are omitted for supported models
+  instead of causing a request failure.
+- **Effort**: Claude Opus 4.5+ and Sonnet 4.6+ (including Sonnet 5) support the
+  `output_config.effort` parameter, which controls overall token spend. Defaults to
+  `"medium"` for content generation.
+- **Adaptive thinking**: Claude Sonnet 5 is the first model that runs adaptive
+  thinking by default (no `thinking` field required), and thinking tokens count
+  against `max_tokens`. To keep output budgets predictable and behavior consistent
+  with Sonnet 4.6/Opus 4.5-4.8 (which don't think unless explicitly configured),
+  `ContentService` explicitly sends `thinking: {"type": "disabled"}` for Sonnet 5+
+  models.
+
+Model names are parsed with `ContentService._parse_claude_version()`, which
+understands both the `claude-{tier}-{major}-{minor}[-date]` naming scheme (e.g.
+`claude-sonnet-4-6`) and the bare-major naming scheme introduced with Sonnet 5
+(e.g. `claude-sonnet-5`, with no explicit minor version).
 
 ## Lecture Defaults
 
@@ -287,7 +314,7 @@ TESTING=true
 | `LECTURE_SUMMARY_MODEL` | Model for lecture summary generation | `gpt-5.4-nano` | No |
 | `TOPICS_GENERATION_MODEL` | Model for topics generation | `gemini-3.5-flash` | No |
 | `PROFESSOR_GENERATION_MODEL` | Model for professor generation | `gpt-5.4-nano` | No |
-| `IMAGE_GENERATION_MODEL` | Model for image generation | `gemini-3.1-flash-image` | No |
+| `IMAGE_GENERATION_MODEL` | Model for image generation (`gemini-3.1-flash-lite-image`, `gemini-3.1-flash-image`, `gemini-3-pro-image`) | `gemini-3.1-flash-lite-image` | No |
 | `TTS_VOICE_MODEL` | Model for text-to-speech voice | `eleven_flash_v2_5` | No |
 | `XAI_TTS_BASE_URL` | Base URL for the xAI TTS API | `https://api.x.ai/v1` | No |
 | `XAI_TTS_LANGUAGE` | Default output language (BCP-47) for the xAI backend | `en` | No |

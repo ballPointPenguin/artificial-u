@@ -8,7 +8,7 @@
         },
         "ghcr.io/devcontainers/features/git:1": {}
     },
-    "postCreateCommand": "pip install -r requirements.txt",
+    "postCreateCommand": "pip install uv && uv sync",
     "customizations": {
         "vscode": {
             "extensions": [
@@ -19,7 +19,7 @@
                 "eamodio.gitlens"
             ],
             "settings": {
-                "python.defaultInterpreterPath": "/usr/local/bin/python",
+                "python.defaultInterpreterPath": "${workspaceFolder}/.venv/bin/python",
                 "python.linting.enabled": true,
                 "python.linting.pylintEnabled": true,
                 "python.formatting.provider": "black",

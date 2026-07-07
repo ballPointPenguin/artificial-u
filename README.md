@@ -24,18 +24,17 @@ ArtificialU combines the Anthropic Claude API for generating educational content
 - Python 3.14+
 - Anthropic API key
 - ElevenLabs API key
-- [Hatch](https://hatch.pypa.io/latest/) (for environment management)
+- [uv](https://docs.astral.sh/uv/) (for environment and dependency management)
 
 ## Installation & Setup
 
-This project uses [Hatch](https://hatch.pypa.io/latest/) for managing Python environments and dependencies.
+This project uses [uv](https://docs.astral.sh/uv/) for managing the Python toolchain, virtual environment, and dependencies.
 
-### Installing Hatch with pipx (Recommended)
+### Installing uv (Recommended)
 
 ```bash
-brew install pipx
-pipx ensurepath
-pipx install hatch
+brew install uv
+# or: curl -LsSf https://astral.sh/uv/install.sh | sh
 ```
 
 1. **Clone the repository:**
@@ -46,17 +45,17 @@ pipx install hatch
     ```
 
 2. **Install Project & Dependencies:**
-    Hatch automatically manages project environments. Use `hatch run` to execute commands within the managed environment.
+    uv creates and manages the project virtualenv (`.venv/`) automatically. Use `uv run` to execute commands within the environment — it installs the correct Python and dependencies on first use.
 
     ```bash
-    # Installs the project in editable mode along with 'dev' dependencies
-    hatch run pip install -e ".[dev]"
+    # Installs the project in editable mode along with the 'dev' dependency group
+    uv sync
     ```
 
-    To activate the environment for interactive use (e.g., running `python`, `pip`, `pytest` directly):
+    To activate the environment for interactive use (e.g., running `python`, `pytest` directly):
 
     ```bash
-    hatch shell
+    source .venv/bin/activate
     ```
 
 3. **Configure API Keys:**
@@ -70,9 +69,9 @@ pipx install hatch
 4. **Database Setup:**
     ArtificialU uses PostgreSQL. See the [PostgreSQL Setup Guide](docs/POSTGRES.md) for details on setting up the database container and initializing the schema.
 
-### Optional: Lockfiles for Reproducibility
+### Lockfile & Reproducibility
 
-For ensuring identical environments across different machines or CI/CD, you can generate pinned `requirements.txt` files using `pip-tools`. See the [Development Environment Guide](docs/development.md#optional-generating-lockfiles-with-pip-tools) for details.
+Dependencies are pinned in `uv.lock` (committed to the repo), so every machine, CI run, and Docker build resolves identical versions. `uv sync` always installs from the lockfile; run `uv lock` after changing dependencies in `pyproject.toml`. See the [Development Environment Guide](docs/development.md#dependency-management-with-uv) for details.
 
 ### Development Environment Details
 
@@ -80,51 +79,51 @@ For a comprehensive guide on the development environment, including dependency m
 
 ### GitHub Codespaces
 
-This repository is configured for [GitHub Codespaces](https://github.com/features/codespaces). Simply open a Codespace, add your API keys to `.env`, and use `hatch run` or `hatch shell` as described above. The environment and database setup are handled automatically.
+This repository is configured for [GitHub Codespaces](https://github.com/features/codespaces). Simply open a Codespace, add your API keys to `.env`, and use `uv run` as described above. The environment and database setup are handled automatically.
 
 ## Usage
 
-The CLI interface, defined as a script in `pyproject.toml`, can be run using `hatch run`:
+The CLI interface, defined as a script in `pyproject.toml`, can be run using `uv run`:
 
 ```bash
 # Example: Create a course
-hatch run artificial_u create-course -d "Computer Science" -t "Introduction to Artificial Intelligence" -c "CS4511"
+uv run artificial_u create-course -d "Computer Science" -t "Introduction to Artificial Intelligence" -c "CS4511"
 
 # Example: Create audio for a lecture
-hatch run artificial_u create-audio -c "CS4511" -w 1 -n 1
+uv run artificial_u create-audio -c "CS4511" -w 1 -n 1
 
 # Example: List available courses
-hatch run artificial_u list-courses
+uv run artificial_u list-courses
 
 # Example: Play a lecture (if available)
-hatch run artificial_u play-lecture -c "CS4511" -w 1 -n 1
+uv run artificial_u play-lecture -c "CS4511" -w 1 -n 1
 
 # Example: Show lecture content
-hatch run artificial_u show-lecture -c "CS4511" -w 1 -n 1
+uv run artificial_u show-lecture -c "CS4511" -w 1 -n 1
 ```
 
 For more details on any command, use the `--help` option:
 
 ```bash
-hatch run artificial_u --help
-hatch run artificial_u create-course --help
+uv run artificial_u --help
+uv run artificial_u create-course --help
 ```
 
 ## Testing
 
-The project uses pytest for testing. Tests are organized into several categories and can be run using `hatch run`:
+The project uses pytest for testing. Tests are organized into several categories and can be run using `uv run`:
 
 ```bash
 # Run all automated tests
-hatch run pytest
+uv run pytest
 
 # Run specific test categories
-hatch run pytest -m unit          # Unit tests only
-hatch run pytest -m integration   # Integration tests only
-hatch run pytest -m e2e          # End-to-end tests only
+uv run pytest -m unit          # Unit tests only
+uv run pytest -m integration   # Integration tests only
+uv run pytest -m e2e          # End-to-end tests only
 
 # Run with coverage report
-hatch run pytest --cov=artificial_u
+uv run pytest --cov=artificial_u
 ```
 
 ### Test Database Setup
@@ -133,10 +132,10 @@ Integration tests require a PostgreSQL test database. Ensure PostgreSQL is runni
 
 ```bash
 # Create the test database (run once)
-hatch run python scripts/setup_test_db.py
+uv run python scripts/setup_test_db.py
 
 # Run integration tests
-hatch run pytest tests/integration -v
+uv run pytest tests/integration -v
 ```
 
 See the [PostgreSQL Setup Guide](docs/POSTGRES.md) for more database details.
@@ -176,8 +175,7 @@ LICENSE                    # Project license
 Makefile                   # Common development tasks and shortcuts
 pyproject.toml             # Project metadata, dependencies, tool config
 README.md                  # This file
-requirements.txt           # Optional: Pinned production dependencies
-requirements-dev.txt       # Optional: Pinned development dependencies
+uv.lock                    # Pinned dependency lockfile (managed by uv)
 ```
 
 *(This is a simplified overview. See the respective directories for more detail.)*

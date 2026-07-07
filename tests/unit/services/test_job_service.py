@@ -230,17 +230,18 @@ async def test_generate_lecture_slide_does_not_enqueue_next_slide_after_failure(
     )
     service._lecture_images_generator_service_instance = MagicMock(return_value=images_service)
 
-    result = await service._handle_generate_lecture_slide(
-        {
-            "lecture_id": 123,
-            "slot_idx": 0,
-            "object_key": "TST100/images.json",
-            "chunk_text": "first",
-            "next_slide_payload": {"lecture_id": 123, "slot_idx": 1},
-        }
-    )
+    with pytest.raises(RuntimeError) as exc_info:
+        await service._handle_generate_lecture_slide(
+            {
+                "lecture_id": 123,
+                "slot_idx": 0,
+                "object_key": "TST100/images.json",
+                "chunk_text": "first",
+                "next_slide_payload": {"lecture_id": 123, "slot_idx": 1},
+            }
+        )
 
-    assert result["status"] == "failed"
+    assert "Slide generation failed for slot 0" in str(exc_info.value)
     assert repository_factory.job.created[0]["kind"] == "generate_lecture_slide"
     assert repository_factory.job.created[0]["payload"]["slot_idx"] == 1
 

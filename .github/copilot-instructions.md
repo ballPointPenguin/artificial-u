@@ -12,7 +12,7 @@ ArtificialU is an AI-powered educational content platform that generates univers
 
 - Python 3.14 with FastAPI
 - PostgreSQL with SQLAlchemy ORM
-- Hatch for environment management
+- uv for environment and dependency management
 - AI: Anthropic Claude, Google Gemini, OpenAI
 - TTS: ElevenLabs
 - Storage: MinIO (dev) / S3 (prod)
@@ -76,35 +76,35 @@ web/src/
 
 ### Python Backend
 
-All Python commands use `hatch` for environment management:
+All Python commands use `uv` for environment management:
 
 ```bash
 # Run CLI commands
-hatch run artificial_u --help
-hatch run artificial_u list-courses
+uv run artificial_u --help
+uv run artificial_u list-courses
 
 # Testing
-hatch run pytest                    # All tests
-hatch run pytest -m unit            # Unit tests only
-hatch run pytest -m integration     # Integration tests only
-hatch run pytest --cov=artificial_u # Coverage report
+uv run pytest                    # All tests
+uv run pytest -m unit            # Unit tests only
+uv run pytest -m integration     # Integration tests only
+uv run pytest --cov=artificial_u # Coverage report
 
 # Code quality
-hatch run black artificial_u        # Format code
-hatch run isort artificial_u        # Sort imports
-hatch run flake8 artificial_u       # Lint
-hatch run mypy artificial_u         # Type check
+uv run black artificial_u        # Format code
+uv run isort artificial_u        # Sort imports
+uv run flake8 artificial_u       # Lint
+uv run mypy artificial_u         # Type check
 
 # Database
-hatch run python scripts/initialize_db.py       # Setup dev database
-hatch run python scripts/setup_test_db.py      # Setup test database
-hatch run python scripts/run_alembic.py upgrade head  # Run migrations
+uv run python scripts/initialize_db.py       # Setup dev database
+uv run python scripts/setup_test_db.py      # Setup test database
+uv run python scripts/run_alembic.py upgrade head  # Run migrations
 
 # API server
-hatch run uvicorn artificial_u.api.app:app --reload --host 0.0.0.0 --port 8000
+uv run uvicorn artificial_u.api.app:app --reload --host 0.0.0.0 --port 8000
 
 # Background worker
-hatch run python -m artificial_u.api.worker
+uv run python -m artificial_u.api.worker
 ```
 
 ### Frontend (SolidJS)
@@ -178,8 +178,8 @@ Tests are organized by pytest markers:
 **Integration tests require test database setup:**
 
 ```bash
-hatch run python scripts/setup_test_db.py
-hatch run pytest -m integration
+uv run python scripts/setup_test_db.py
+uv run pytest -m integration
 ```
 
 ## API Development Patterns
@@ -209,13 +209,13 @@ When adding new API endpoints:
 
 ```bash
 # Create new migration
-hatch run python scripts/run_alembic.py revision --autogenerate -m "description"
+uv run python scripts/run_alembic.py revision --autogenerate -m "description"
 
 # Apply migrations
-hatch run python scripts/run_alembic.py upgrade head
+uv run python scripts/run_alembic.py upgrade head
 
 # Rollback one version
-hatch run python scripts/run_alembic.py downgrade -1
+uv run python scripts/run_alembic.py downgrade -1
 ```
 
 ### Database Management Scripts
@@ -290,7 +290,7 @@ When adding frontend features:
 3. **Type hints**: While not strictly required, mypy runs on the main codebase
 4. **Web directory**: Frontend commands MUST run from `web/` directory
 5. **Test database**: Integration tests fail without proper test database setup
-6. **Hatch environment**: Always use `hatch run` or activate `hatch shell` first
+6. **uv environment**: Always use `uv run` or activate the virtualenv (`source .venv/bin/activate`) first
 7. **Long-running commands**: Development servers (API, frontend) don't terminate automatically
 
 ## Configuration Files Reference

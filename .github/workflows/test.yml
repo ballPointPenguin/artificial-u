@@ -7,12 +7,16 @@ on:
       - main
     paths:
       - "artificial_u/**"
+      - "pyproject.toml"
+      - "uv.lock"
       - ".github/workflows/test.yml"
   pull_request:
     branches:
       - main
     paths:
       - "artificial_u/**"
+      - "pyproject.toml"
+      - "uv.lock"
       - ".github/workflows/test.yml"
 
 env:
@@ -43,16 +47,13 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
 
-      - name: Set up Python
-        uses: actions/setup-python@v6
+      - name: Install uv
+        uses: astral-sh/setup-uv@v8.3.0
         with:
-          python-version: "3.14"
+          enable-cache: true
 
-      - name: Install pipx and hatch
-        run: |
-          python -m pip install --upgrade pip
-          python -m pip install pipx
-          pipx install hatch
+      - name: Install dependencies
+        run: uv sync --locked
 
       - name: Start MinIO server
         run: |
@@ -144,28 +145,28 @@ jobs:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/artificial_u_test
           TESTING: "true"
         run: |
-          hatch run python scripts/setup_test_db.py
+          uv run python scripts/setup_test_db.py
 
       - name: Run unit tests
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/artificial_u_test
           TESTING: "true"
         run: |
-          hatch run pytest -m unit -v --cov=artificial_u --cov-report=xml --cov-report=term
+          uv run pytest -m unit -v --cov=artificial_u --cov-report=xml --cov-report=term
 
       - name: Run integration tests
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/artificial_u_test
           TESTING: "true"
         run: |
-          hatch run pytest -m integration -v --cov=artificial_u --cov-append --cov-report=xml --cov-report=term
+          uv run pytest -m integration -v --cov=artificial_u --cov-append --cov-report=xml --cov-report=term
 
       - name: Run all other tests (not marked as unit or integration)
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/artificial_u_test
           TESTING: "true"
         run: |
-          hatch run pytest -m "not unit and not integration and not slow" -v --cov=artificial_u --cov-append --cov-report=xml --cov-report=term
+          uv run pytest -m "not unit and not integration and not slow" -v --cov=artificial_u --cov-append --cov-report=xml --cov-report=term
 
       - name: Upload coverage reports to Codecov (optional)
         uses: codecov/codecov-action@v6
