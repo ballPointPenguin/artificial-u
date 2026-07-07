@@ -246,7 +246,7 @@ class CdkStack(Stack):
             "GUNICORN_TIMEOUT": "120",
             "GUNICORN_WORKERS": "1",
             "MALLOC_ARENA_MAX": "2",
-            "IMAGE_GENERATION_MODEL": "gemini-3.1-flash-image",
+            "IMAGE_GENERATION_MODEL": "gemini-3.1-flash-lite-image",
             "LECTURE_GENERATION_MODEL": "claude-sonnet-4-6",
             "LECTURE_SUMMARY_MODEL": "gpt-5.4-nano",
             "LOG_LEVEL": "INFO",

@@ -256,6 +256,7 @@ class ContentService:
         backend: str,
         prefill: str | None = None,
         effort: str | None = None,
+        thinking_disabled: bool | None = None,
     ) -> None:
         """Log the content generation details to storage.
 
@@ -268,6 +269,8 @@ class ContentService:
             response: The generated response
             backend: The backend service used (anthropic, openai, etc.)
             prefill: Optional assistant prefill content (Anthropic only)
+            thinking_disabled: Whether thinking was explicitly disabled (Anthropic only,
+                relevant for models like Claude Sonnet 5 that think by default)
         """
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
 
@@ -281,6 +284,7 @@ class ContentService:
                     "temperature": temperature,
                     "max_tokens": max_tokens,
                     "effort": effort,
+                    "thinking_disabled": thinking_disabled,
                 },
             },
             "content": {
@@ -316,17 +320,34 @@ class ContentService:
     def _parse_claude_version(model: str) -> Optional[tuple[int, int]]:
         """Parse the (major, minor) version from a Claude model name.
 
-        Handles new-style names like ``claude-{tier}-{major}-{minor}[-date]``.
-        Returns ``None`` for old-style (``claude-3-*``) or unrecognized patterns.
+        Handles new-style names like ``claude-{tier}-{major}-{minor}[-date]``, as
+        well as bare-major names with no minor component (e.g. ``claude-sonnet-5``,
+        the naming style introduced with Claude Sonnet 5), which are treated as
+        ``(major, 0)``. Returns ``None`` for old-style (``claude-3-*``) or
+        unrecognized patterns.
         """
-        match = re.match(r"claude-\w+-(\d+)-(\d+)", model)
+        match = re.match(r"claude-[a-zA-Z]+-(\d+)(?:-(\d+))?", model)
         if not match:
             return None
         major = int(match.group(1))
         minor_or_date = match.group(2)
-        # If the second number is a date (8+ digits like 20250514), minor is 0
-        minor = 0 if len(minor_or_date) >= 8 else int(minor_or_date)
+        if minor_or_date is None:
+            # Bare major version, e.g. "claude-sonnet-5" (no explicit minor/date)
+            minor = 0
+        elif len(minor_or_date) >= 8:
+            # Second number is a date suffix (8+ digits like 20250514), not a minor version
+            minor = 0
+        else:
+            minor = int(minor_or_date)
         return (major, minor)
+
+    @staticmethod
+    def _parse_claude_tier(model: str) -> Optional[str]:
+        """Parse the model tier (e.g. "sonnet", "opus", "haiku") from a new-style
+        Claude model name. Returns ``None`` for old-style or unrecognized patterns.
+        """
+        match = re.match(r"claude-([a-zA-Z]+)-\d", model)
+        return match.group(1) if match else None
 
     def _is_prefill_supported(self, model: str) -> bool:
         """Check if a Claude model supports assistant message prefill.
@@ -355,13 +376,31 @@ class ContentService:
     def _supports_effort(self, model: str) -> bool:
         """Check if a Claude model accepts the ``output_config.effort`` parameter.
 
-        Supported on Claude Opus 4.5+ and Sonnet 4.6+. Older models (claude-3-*,
-        etc.) do not support it, so effort is omitted for them.
+        Supported on Claude Opus 4.5+ and Sonnet 4.6+ (and thus Sonnet 5+). Older
+        models (claude-3-*, etc.) do not support it, so effort is omitted for them.
         """
         version = self._parse_claude_version(model)
         if version is None:
             return False
         return version >= (4, 5)
+
+    def _defaults_to_adaptive_thinking(self, model: str) -> bool:
+        """Check if a Claude model runs adaptive thinking by default.
+
+        Claude Sonnet 5 is the first model where requests *without* a ``thinking``
+        field automatically run with adaptive thinking (prior Sonnet/Opus models
+        only think when ``thinking`` is explicitly configured). Because thinking
+        tokens count against ``max_tokens``, leaving this on by default risks
+        truncating the visible response for long-form content generation where
+        ``effort`` already controls output depth/quality. We explicitly disable
+        thinking for these models to keep behavior consistent with Sonnet 4.6 and
+        Opus 4.5-4.8, where no thinking is used unless requested.
+        """
+        version = self._parse_claude_version(model)
+        if version is None:
+            return False
+        tier = self._parse_claude_tier(model)
+        return tier == "sonnet" and version >= (5, 0)
 
     async def _generate_anthropic(  # noqa: C901
         self, prompt, model, system_prompt, temperature, max_tokens, prefill, **kwargs
@@ -411,6 +450,13 @@ class ContentService:
                     f"Effort not supported for model {model}, skipping (requested: {effort})."
                 )
 
+            # Claude Sonnet 5 thinks by default even without a `thinking` field, and
+            # thinking tokens count against max_tokens. Explicitly disable it so
+            # behavior/budgeting stays consistent with Sonnet 4.6 and Opus 4.5-4.8.
+            disable_thinking = self._defaults_to_adaptive_thinking(model)
+            if disable_thinking:
+                request_params["thinking"] = {"type": "disabled"}
+
             response = await anthropic_client.messages.create(**request_params)
         except anthropic.APIError as e:
             # Let the retry logic handle this
@@ -448,6 +494,7 @@ class ContentService:
             backend="anthropic",
             prefill=prefill,
             effort=effective_effort,
+            thinking_disabled=disable_thinking,
         )
 
         return response_text

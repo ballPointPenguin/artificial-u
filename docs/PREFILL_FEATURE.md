@@ -96,6 +96,14 @@ The system gracefully handles prefill for non-Anthropic models by:
 - Proceeding with normal generation (ignoring the prefill parameter)
 - Maintaining backward compatibility
 
+### Model Version Compatibility (Anthropic)
+
+Claude 4.6+ models (including Sonnet 4.6, Opus 4.6+, and Sonnet 5) return a 400 error
+when an assistant-message prefill is sent, so `ContentService` automatically detects
+these models via `_is_prefill_supported()`/`_parse_claude_version()` and skips the
+prefill (logging an info message) rather than sending it. Callers do not need to
+special-case newer models themselves.
+
 ## Implementation Details
 
 ### ContentService Changes

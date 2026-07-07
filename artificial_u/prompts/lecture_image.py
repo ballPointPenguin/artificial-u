@@ -18,10 +18,8 @@ def format_lecture_slide_prompt(  # noqa: C901
     aspect_ratio: str = "1:1",
 ) -> Tuple[str, List[str]]:
     """
-    Format a prompt for generating a lecture slideshow image.
-
-    Returns:
-        (prompt_text, reference_image_urls)
+    Format a highly optimized and structured prompt for generating a lecture slideshow image.
+    Follows Gemini native image model best practices (Style, Subject, Setting, Action, Composition).
     """
     professor_name = getattr(professor, "name", "the professor")
     professor_title = getattr(professor, "title", None)
@@ -29,10 +27,6 @@ def format_lecture_slide_prompt(  # noqa: C901
     professor_specialization = getattr(professor, "specialization", None)
     professor_gender = getattr(professor, "gender", None)
     professor_age = getattr(professor, "age", None)
-    professor_accent = getattr(professor, "accent", None)
-
-    course_code = getattr(course, "code", None)
-    course_title = getattr(course, "title", None)
 
     # Reference image URLs (multimodal context) - keep order stable.
     refs: List[str] = []
@@ -43,88 +37,65 @@ def format_lecture_slide_prompt(  # noqa: C901
     if previous_slide_url and previous_slide_url != first_slide_url:
         refs.append(previous_slide_url)
 
-    context_lines: List[str] = [
-        "Task: Generate an image for the following moment in a lecture.",
-        "Professor: "
-        + f"{professor_name}"
-        + (f" ({professor_title})" if professor_title else "")
-        + ".",
+    # Truncate texts to prevent prompt bloat and keep generation fast and focused
+    def clean_and_truncate(text: Optional[str], max_chars: int) -> str:
+        if not text:
+            return ""
+        text = text.strip()
+        if len(text) <= max_chars:
+            return text
+        return text[: max_chars - 3].rstrip() + "..."
+
+    summary_clean = clean_and_truncate(lecture_summary, 300)
+    prior_clean = clean_and_truncate(previous_chunk_text, 250)
+    current_clean = clean_and_truncate(chunk_text, 600)
+
+    # Build traits string
+    traits = []
+    if professor_gender:
+        traits.append(str(professor_gender))
+    if professor_age:
+        traits.append(f"Age {professor_age}")
+    if professor_title:
+        traits.append(str(professor_title))
+    traits_str = f" ({', '.join(traits)})" if traits else ""
+
+    # Structure prompt following the Gemini DeepMind guide (Style, Subject, Setting, Action, Composition)
+    prompt_parts = [
+        (
+            "STYLE: Semi-realistic, highly polished digital illustration. "
+            "Smooth textures, vivid saturated colors, illustrative digital art style "
+            "similar to Riot Games concept art, Hearthstone card art, or ArtStation trending. "
+            "NOT photorealistic."
+        ),
+        f"SUBJECT: Professor {professor_name}{traits_str}. Specialization: {professor_specialization or 'Academic'}. "
+        + (f"Appearance details: {professor_description}" if professor_description else ""),
+        (
+            "SETTING: An idealized academic setting (e.g., a modern lab, "
+            "vintage lecture hall, or cozy classroom) that feels warm, inviting, "
+            "and slightly magical."
+        ),
+        f'ACTION/SCENE: Illustrate a key visual element or concept from this moment in the lecture:\n"{current_clean}"'
+        + (f'\n\nPrior Context: "{prior_clean}"' if prior_clean else "")
+        + (f'\n\nLecture Topic Summary: "{summary_clean}"' if summary_clean else ""),
+        (
+            "COMPOSITION GUIDANCE:\n"
+            "- Maintain strong visual continuity. The professor should look "
+            "like the same person as in the reference images (if provided).\n"
+            "- Keep it simple and legible: This image will be viewed on small screens "
+            "at low resolution (512x512). Do NOT render complex text, dense formulas, "
+            "or detailed charts in the background behind the professor. Make background "
+            "elements clean and uncluttered.\n"
+            "- If showing a visual aid (like a digital slide or whiteboard diagram), "
+            "make the visual aid the focal point with large, bold, highly legible graphics.\n"
+            "- Ensure correct anatomy: The professor must have exactly two arms and two "
+            "hands (no floating hands or extra limbs).\n"
+            "- Avoid religious or sacred figure portraits directly; use architecture, "
+            "calligraphy, maps, or symbolic imagery for prohibited figures.\n"
+            "- Depict historical topics (like slavery or oppression) with gravity and dignity."
+        ),
+        "LIGHTING & ATMOSPHERE: Volumetric cozy lighting, soft rim lighting, subtle atmospheric glow.",
+        f"ASPECT RATIO: {aspect_ratio}",
     ]
 
-    professor_traits: List[str] = []
-    if professor_gender:
-        professor_traits.append(str(professor_gender))
-    if professor_age:
-        professor_traits.append(f"Age {professor_age}")
-    if professor_traits:
-        context_lines.append(f"Professor traits: {', '.join(professor_traits)}.")
-    if professor_accent:
-        context_lines.append(f"Professor accent (voice): {professor_accent}.")
-
-    if professor_description:
-        context_lines.append(f"Professor description: {professor_description}")
-    if professor_specialization:
-        context_lines.append(f"Professor specialization: {professor_specialization}")
-
-    course_bits: List[str] = []
-    if course_code:
-        course_bits.append(str(course_code))
-    if course_title:
-        course_bits.append(str(course_title))
-    if course_bits:
-        context_lines.append(f"Course: {' — '.join(course_bits)}")
-
-    if lecture_summary:
-        context_lines.append("")
-        context_lines.append("Lecture summary (optional context):")
-        context_lines.append(lecture_summary.strip())
-
-    if previous_chunk_text:
-        context_lines.append("")
-        context_lines.append("Immediately prior context (optional):")
-        context_lines.append(previous_chunk_text.strip())
-
-    context_lines.append("")
-    context_lines.append("Current lecture moment (primary source text):")
-    context_lines.append(chunk_text.strip())
-
-    context_lines.extend(
-        [
-            "",
-            "Art Direction: Semi-realistic, highly polished digital art. Smooth textures, vivid colors, ",
-            "illustrative style similar to Riot Games art, Hearthstone card art, or ArtStation trending.",
-            "Atmosphere: Subtle atmospheric lighting, a hint of wonder in the air, soft rim lighting.",
-            "Background: Idealized academic setting (e.g., a lab or classroom) that feels cozy and slightly "
-            "magical.",
-            "",
-            "Cultural Sensitivity:",
-            "- Do NOT depict the face or physical form of Prophet Muhammad or other figures whose personal "
-            "depiction is religiously prohibited (e.g., in Islamic aniconism). Use calligraphy, architecture, "
-            "maps, timelines, or symbolic imagery instead.",
-            "- For other sacred or revered figures (religious founders, deities, saints), prefer symbolic or "
-            "contextual imagery over literal portraiture unless the lecture clearly calls for it.",
-            "- When illustrating topics involving slavery, colonialism, or historical oppression, depict with "
-            "dignity and historical gravity — not sensationalism or caricature.",
-            "- Violence and conflict may be shown with appropriate gravitas for college-level academic content, "
-            "but avoid gratuitous gore.",
-            "",
-            "Composition Guidance:",
-            "- The professor should feel like the same person as the reference image (if present).",
-            "- If a previous slide reference is provided, preserve visual continuity with it while "
-            "adapting to the current lecture moment.",
-            "- Mix up the composition. While many frames show the professor, feel free to generate full-screen "
-            "visual aids (diagrams, close-ups of objects, slides) when appropriate for the current lecture moment.",
-            "- CRITICAL FOR READABILITY: This image will be viewed on small screens at low resolution (512x512). "
-            "Do NOT put complex text, detailed charts, or dense information in the background behind the professor. "
-            "If the lecture moment requires showing detailed information, make the ENTIRE image a full-screen "
-            "visual aid with large, bold, highly legible elements.",
-            "- Keep background elements simple and uncluttered to avoid visual noise.",
-            "- Consider including simple visual aids relevant to the lecture moment (e.g., a digital slide, "
-            "whiteboard, diagrams, instruments, lab apparatus, props).",
-            "- CRITICAL ANATOMY CHECK: The professor must have at most two arms and two hands. No floating hands, ",
-            "no third hand holding a book while two hands gesture.",
-            f"Aspect Ratio: {aspect_ratio}",
-        ]
-    )
-
-    return "\n".join(context_lines), refs
+    return "\n\n".join(prompt_parts), refs
