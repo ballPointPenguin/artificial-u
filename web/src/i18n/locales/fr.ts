@@ -579,6 +579,8 @@ export const fr = {
     loadMore: 'Charger plus',
     empty: 'Rien dans les bacs ne correspond à ces tags pour le moment.',
     errorLoading: 'Erreur de chargement de la bibliothèque. Veuillez réessayer.',
+    resetFilters: 'Réinitialiser les filtres',
+    catalogueLink: 'Vous préférez une liste simple ? Voir le catalogue des cours',
   },
 
   courseDetail: {

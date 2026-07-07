@@ -1,4 +1,4 @@
-import { useSearchParams } from '@solidjs/router'
+import { A, useSearchParams } from '@solidjs/router'
 import { type Component, createResource, createSignal, For, Index, Show } from 'solid-js'
 import { courseService } from '../api/services/course-service.js'
 import { tagService } from '../api/services/tag-service.js'
@@ -74,6 +74,15 @@ const Browse: Component = () => {
     (source) => tagService.listTags({ language: source.language, limit: TAG_CHIP_LIMIT })
   )
 
+  // Once a filter is active, narrow the chip options to tags that actually
+  // co-occur with the current selection, so picking "Paleoclimate History"
+  // won't leave dead-end chips like "Neurobiology" that would yield 0 results.
+  const [narrowedTagsData] = createResource(
+    () => (hasFilter() ? { language: contentLanguage(), tags: selectedTags() } : null),
+    (source) =>
+      tagService.listTags({ language: source.language, tags: source.tags, limit: TAG_CHIP_LIMIT })
+  )
+
   const [recentData] = createResource(
     () => ({ language: contentLanguage() }),
     (source) =>
@@ -114,12 +123,32 @@ const Browse: Component = () => {
   const crateRowTags = (): TagWithCount[] => topTags().slice(0, CRATE_ROW_TAGS)
   const canLoadMore = () => (gridData()?.loaded ?? 0) < (gridData()?.total ?? 0)
 
+  // Chips shown in the filter bar: the full vocabulary when nothing is
+  // selected, or the narrowed co-occurring set (plus any selected tags that
+  // fell out of the narrowed set, e.g. a zero-result combination) once filtering.
+  const chipTags = (): TagWithCount[] => {
+    if (!hasFilter()) return topTags()
+    const narrowed = narrowedTagsData()?.items ?? []
+    const narrowedSlugs = new Set(narrowed.map((tag) => tag.slug))
+    const stillSelected = selectedTags()
+      .filter((slug) => !narrowedSlugs.has(slug))
+      .map((slug) => topTags().find((tag) => tag.slug === slug))
+      .filter((tag): tag is TagWithCount => tag !== undefined)
+    return [...narrowed, ...stillSelected]
+  }
+
   return (
     <div class="container mx-auto px-4 py-6 sm:px-6">
       <div class="mb-6 flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 class="text-3xl font-display text-parchment-100">{t().browse.title}</h1>
           <p class="mt-1 font-serif italic text-muted">{t().browse.subtitle}</p>
+          <A
+            href="/courses"
+            class="mt-2 inline-block font-sans text-xs text-muted underline-offset-2 hover:text-primary hover:underline"
+          >
+            {t().browse.catalogueLink}
+          </A>
         </div>
         <SurpriseMe
           language={contentLanguage()}
@@ -135,10 +164,10 @@ const Browse: Component = () => {
         </Alert>
       </Show>
 
-      <Show when={topTags().length > 0}>
+      <Show when={chipTags().length > 0}>
         <div class="mb-6">
           <TagChipsBar
-            tags={topTags()}
+            tags={chipTags()}
             selected={selectedTags()}
             onToggle={toggleTag}
             onClear={clearTags}
@@ -165,7 +194,14 @@ const Browse: Component = () => {
         <Show when={!gridData.loading || gridCourses().length > 0} fallback={<LoadingSpinner />}>
           <Show
             when={gridCourses().length > 0}
-            fallback={<p class="font-serif text-muted">{t().browse.empty}</p>}
+            fallback={
+              <div class="flex flex-col items-start gap-3">
+                <p class="font-serif text-muted">{t().browse.empty}</p>
+                <Button variant="outline" onClick={clearTags}>
+                  {t().browse.resetFilters}
+                </Button>
+              </div>
+            }
           >
             <div class="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
               <For each={gridCourses()}>{(course) => <CrateCard course={course} />}</For>

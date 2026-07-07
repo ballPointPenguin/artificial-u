@@ -9,6 +9,8 @@ interface ListTagsParams {
   language?: string
   q?: string
   limit?: number
+  /** Scope counts to tags co-occurring with these slugs (faceted drill-down) */
+  tags?: string[]
 }
 
 export const tagService = {
@@ -17,6 +19,9 @@ export const tagService = {
     if (params.language) queryParams.set('language', params.language)
     if (params.q) queryParams.set('q', params.q)
     if (params.limit) queryParams.set('limit', params.limit.toString())
+    for (const slug of params.tags ?? []) {
+      queryParams.append('tags', slug)
+    }
     const query = queryParams.toString()
     return httpClient.get<TagsListResponse>(
       query ? `${ENDPOINTS.tags.list}?${query}` : ENDPOINTS.tags.list

@@ -33,7 +33,7 @@ export const Footer: Component = () => {
               {t().footer.explore}
             </h4>
             <nav class="flex flex-col gap-2.5">
-              <A href="/courses" class={linkClass}>
+              <A href="/browse" class={linkClass}>
                 {t().footer.allCourses}
               </A>
               <A href="/departments" class={linkClass}>

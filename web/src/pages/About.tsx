@@ -106,7 +106,7 @@ const About: Component = () => {
 
           <div class="mt-12 text-center">
             <a
-              href="/courses"
+              href="/browse"
               class="inline-block px-6 py-3 border border-parchment-400 text-parchment-200 bg-arcanum-800/50 hover:bg-arcanum-700/50 transition-colors duration-300 rounded font-serif tracking-wider"
             >
               {t().about.exploreCourses}

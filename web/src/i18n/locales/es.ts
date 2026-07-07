@@ -581,6 +581,8 @@ export const es = {
     loadMore: 'Cargar más',
     empty: 'Nada en los estantes coincide con esas etiquetas todavía.',
     errorLoading: 'Error al cargar la biblioteca. Inténtalo de nuevo.',
+    resetFilters: 'Restablecer filtros',
+    catalogueLink: '¿Prefieres una lista sencilla? Ver el catálogo de cursos',
   },
 
   courseDetail: {

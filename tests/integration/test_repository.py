@@ -471,3 +471,64 @@ def test_tag_repository_round_trip(repository, db_course):
     # Replacing with an empty set clears assignments
     assert tag_repo.set_course_tags(db_course.id, []) == []
     assert tag_repo.list_for_course(db_course.id) == []
+
+
+@pytest.mark.integration
+def test_tag_repository_faceted_counts(repository, db_department, db_professor):
+    """list_with_counts(tags=...) scopes counts to co-occurring tags (drill-down)."""
+    tag_repo = repository.tag
+
+    def make_course(code: str) -> Course:
+        return repository.course.create(
+            Course(
+                code=code,
+                title=f"Course {code}",
+                description="A course for facet testing.",
+                level="Undergraduate",
+                department_id=db_department.id,
+                professor_id=db_professor.id,
+                language="en",
+                status="published",
+            )
+        )
+
+    course_a = make_course("FACET1")
+    course_b = make_course("FACET2")
+    course_c = make_course("FACET3")
+
+    paleo, mil, neuro, comp = tag_repo.get_or_create_by_names(
+        ["Paleoclimate History", "Military History", "Neurobiology", "Computer Science"],
+        language="en",
+    )
+    tag_repo.set_course_tags(course_a.id, [paleo.id, mil.id])
+    tag_repo.set_course_tags(course_b.id, [paleo.id, comp.id])
+    tag_repo.set_course_tags(course_c.id, [neuro.id])
+
+    # Unscoped: every tag with a published course appears
+    unscoped = {t.slug: n for t, n in tag_repo.list_with_counts(language="en")}
+    assert unscoped == {
+        "paleoclimate-history": 2,
+        "military-history": 1,
+        "neurobiology": 1,
+        "computer-science": 1,
+    }
+
+    # Scoped to one tag: co-occurring tags appear (including the tag itself);
+    # tags that never co-occur (neurobiology) are omitted
+    scoped = {
+        t.slug: n
+        for t, n in tag_repo.list_with_counts(language="en", tags=["paleoclimate-history"])
+    }
+    assert scoped == {"paleoclimate-history": 2, "military-history": 1, "computer-science": 1}
+
+    # Scoped to a combination: only the course(s) matching all given tags count
+    combo = {
+        t.slug: n
+        for t, n in tag_repo.list_with_counts(
+            language="en", tags=["paleoclimate-history", "military-history"]
+        )
+    }
+    assert combo == {"paleoclimate-history": 1, "military-history": 1}
+
+    # A combination with zero matching courses yields no tags at all
+    assert tag_repo.list_with_counts(language="en", tags=["military-history", "neurobiology"]) == []

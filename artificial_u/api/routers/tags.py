@@ -61,9 +61,16 @@ async def list_tags(
     language: str = Query("en", description="Content language sandbox (e.g., 'en', 'fr')"),
     q: Optional[str] = Query(None, description="Optional name prefix filter"),
     limit: int = Query(100, ge=1, le=500, description="Maximum number of tags"),
+    tags: Optional[List[str]] = Query(
+        None,
+        description=(
+            "Scope counts to courses carrying all of these tag slugs "
+            "(faceted drill-down); repeat the parameter for multiple tags"
+        ),
+    ),
     repository_factory: RepositoryFactory = Depends(get_repository_factory),
 ):
-    rows = repository_factory.tag.list_with_counts(language=language, q=q, limit=limit)
+    rows = repository_factory.tag.list_with_counts(language=language, q=q, limit=limit, tags=tags)
     return TagsListResponse(
         items=[
             TagResponse(

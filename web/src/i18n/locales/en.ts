@@ -578,6 +578,8 @@ export const en = {
     loadMore: 'Load more',
     empty: 'Nothing in the stacks matches those tags yet.',
     errorLoading: 'Error loading the library. Please try again.',
+    resetFilters: 'Reset filters',
+    catalogueLink: 'Prefer a plain list? View the course catalogue',
   },
 
   courseDetail: {

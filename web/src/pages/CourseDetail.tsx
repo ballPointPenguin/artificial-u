@@ -554,7 +554,7 @@ const CourseDetail: Component = () => {
               <div>
                 <div class="flex flex-wrap items-center justify-between gap-y-3 gap-x-4 mb-4">
                   <A
-                    href="/courses"
+                    href="/browse"
                     class="text-mystic-400 hover:text-mystic-300 transition-colors whitespace-nowrap"
                   >
                     ← {t().courseDetail.backToCourses}

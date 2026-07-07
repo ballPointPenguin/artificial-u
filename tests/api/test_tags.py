@@ -50,7 +50,7 @@ def test_list_tags_public(client: TestClient, mock_repository_factory):
     assert data["items"][0]["course_count"] == 5
     assert data["items"][0]["language"] == "en"
     mock_repository_factory.tag.list_with_counts.assert_called_once_with(
-        language="en", q=None, limit=50
+        language="en", q=None, limit=50, tags=None
     )
 
 
@@ -59,7 +59,17 @@ def test_list_tags_prefix_filter(client: TestClient, mock_repository_factory):
     response = client.get("/api/v1/tags?q=mach")
     assert response.status_code == 200
     mock_repository_factory.tag.list_with_counts.assert_called_once_with(
-        language="en", q="mach", limit=100
+        language="en", q="mach", limit=100, tags=None
+    )
+
+
+@pytest.mark.unit
+def test_list_tags_scoped_to_selected_tags(client: TestClient, mock_repository_factory):
+    """Repeated tags query params scope the facet counts (drill-down)."""
+    response = client.get("/api/v1/tags?tags=paleoclimate-history&tags=military-history")
+    assert response.status_code == 200
+    mock_repository_factory.tag.list_with_counts.assert_called_once_with(
+        language="en", q=None, limit=100, tags=["paleoclimate-history", "military-history"]
     )
 
 

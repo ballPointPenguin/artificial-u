@@ -572,6 +572,8 @@ export const zh = {
     loadMore: '加载更多',
     empty: '书库中还没有符合这些标签的内容。',
     errorLoading: '加载书库时出错，请重试。',
+    resetFilters: '重置筛选',
+    catalogueLink: '更喜欢简单列表？查看课程目录',
   },
 
   courseDetail: {

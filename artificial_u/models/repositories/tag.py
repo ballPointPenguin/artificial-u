@@ -121,6 +121,7 @@ class TagRepository(BaseRepository):
         language: str = "en",
         q: Optional[str] = None,
         limit: int = 100,
+        tags: Optional[List[str]] = None,
     ) -> List[Tuple[Tag, int]]:
         """
         List tags in a language universe with published-course counts,
@@ -130,6 +131,10 @@ class TagRepository(BaseRepository):
             language: Content language of the tag universe
             q: Optional name prefix filter
             limit: Maximum number of tags returned
+            tags: Optional slugs to scope counting to courses carrying all of
+                them (faceted drill-down: "what else co-occurs with these?").
+                The given slugs themselves are included in the result since a
+                course trivially co-occurs with its own tags.
 
         Returns:
             List of (Tag, course_count) tuples
@@ -144,6 +149,14 @@ class TagRepository(BaseRepository):
             )
             if q:
                 query = query.filter(TagModel.name.ilike(f"{q}%"))
+            for tag_slug in tags or []:
+                query = query.filter(
+                    CourseModel.id.in_(
+                        session.query(CourseTagModel.course_id)
+                        .join(TagModel, TagModel.id == CourseTagModel.tag_id)
+                        .filter(TagModel.slug == tag_slug, TagModel.language == language)
+                    )
+                )
             rows = (
                 query.group_by(TagModel.id)
                 .order_by(count_col.desc(), TagModel.name.asc())
