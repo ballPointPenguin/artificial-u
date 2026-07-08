@@ -4,6 +4,8 @@ Image generation prompts for course album art (ArtificialU).
 
 from typing import Any, Optional
 
+from artificial_u.utils.text_sanitize import sanitize_safety_keywords
+
 
 def _truncate_for_themes(text: str, max_len: int = 500) -> str:
     text = text.strip()
@@ -16,6 +18,7 @@ def format_course_image_prompt(
     course: Any,
     professor: Optional[Any] = None,
     aspect_ratio: str = "1:1",
+    sanitize: bool = False,
 ) -> str:
     """
     Format a prompt for generating square album-art style course imagery.
@@ -24,6 +27,10 @@ def format_course_image_prompt(
         course: A Course object (title, code, level, description expected).
         professor: Optional Professor object; name may appear in optional credits.
         aspect_ratio: The aspect ratio for the generated image (default: "1:1").
+        sanitize: If True, soften sensitive/confrontational keywords in the title
+            and description (e.g. course titles/descriptions on history, conflict,
+            or other sensitive topics) that can otherwise trip automated image
+            safety filters and cause a false "no image data" failure.
 
     Returns:
         A formatted prompt string for the image generation API.
@@ -32,6 +39,10 @@ def format_course_image_prompt(
     code = getattr(course, "code", None)
     level = getattr(course, "level", None)
     description = getattr(course, "description", None)
+
+    if sanitize:
+        title = sanitize_safety_keywords(title) or title
+        description = sanitize_safety_keywords(description)
 
     course_parts = [f"Course: {title}"]
     if code:

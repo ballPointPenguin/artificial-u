@@ -2,14 +2,22 @@
 Image generation prompts for professor portraits (ArtificialU).
 """
 
+from artificial_u.utils.text_sanitize import sanitize_safety_keywords
 
-def format_professor_image_prompt(professor, aspect_ratio: str = "1:1") -> str:
+
+def format_professor_image_prompt(
+    professor, aspect_ratio: str = "1:1", sanitize: bool = False
+) -> str:
     """
     Format a prompt for generating a professor's image.
 
     Args:
         professor: A Professor object
         aspect_ratio: The aspect ratio for the generated image (default: "1:1")
+        sanitize: If True, soften sensitive/confrontational keywords in the
+            description and specialization (e.g. a military historian's bio)
+            that can otherwise trip automated image safety filters and cause
+            a false "no image data" failure.
 
     Returns:
         A formatted prompt string for the image generation API
@@ -19,6 +27,10 @@ def format_professor_image_prompt(professor, aspect_ratio: str = "1:1") -> str:
     age = getattr(professor, "age", None)
     description = getattr(professor, "description", None)
     specialization = getattr(professor, "specialization", None)
+
+    if sanitize:
+        description = sanitize_safety_keywords(description)
+        specialization = sanitize_safety_keywords(specialization)
 
     # Build subject line
     subject_parts = [f"Subject: A university professor named {name}."]
