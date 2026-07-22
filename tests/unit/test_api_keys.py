@@ -28,6 +28,11 @@ def test_environment_variables_are_set():
     # Verify xAI API key
     assert os.environ.get("XAI_API_KEY") == "test_xai_key", "xAI API key not set to test value"
 
+    # Verify Alibaba API key
+    assert (
+        os.environ.get("ALIBABA_API_KEY") == "test_alibaba_key"
+    ), "Alibaba API key not set to test value"
+
     # Verify Google API key
     assert (
         os.environ.get("GOOGLE_API_KEY") == "test_google_key"

@@ -422,6 +422,8 @@ export const zh = {
     noMistralVoices: '未找到 Mistral 声音。请检查是否配置了 MISTRAL_API_KEY。',
     browseXai: '浏览 xAI (Grok) 声音并在分配前预览。',
     noXaiVoices: '未找到 xAI 声音。请检查是否配置了 XAI_API_KEY。',
+    browseQwen: '浏览 Qwen (阿里巴巴) 声音并在分配前预览。',
+    noQwenVoices: '未找到 Qwen 声音。请检查是否配置了 ALIBABA_API_KEY。',
     voicePreview: '声音预览',
     assignVoiceId: '粘贴现有的 ElevenLabs 声音 ID 以分配给该教授。',
     assignButton: '分配',

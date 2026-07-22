@@ -589,6 +589,21 @@ export interface XaiVoiceCatalog {
   total: number
 }
 
+// Qwen (Alibaba) voice catalog (static preset list, not stored in DB)
+export interface QwenCatalogVoice {
+  id: string
+  name: string
+  gender: string | null
+  description: string | null
+  languages: string[] | null
+  model: string | null
+}
+
+export interface QwenVoiceCatalog {
+  items: QwenCatalogVoice[]
+  total: number
+}
+
 // Voice cloning
 export interface VoiceCloneToMistralRequest {
   professor_id: number

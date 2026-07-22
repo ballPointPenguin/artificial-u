@@ -145,6 +145,7 @@ export const ENDPOINTS = {
     preview: '/v1/voices/preview',
     mistralCatalog: '/v1/voices/mistral/catalog',
     xaiCatalog: '/v1/voices/xai/catalog',
+    qwenCatalog: '/v1/voices/qwen/catalog',
     designPreviews: '/v1/voices/design/previews',
     designSave: '/v1/voices/design/save',
     cloneToMistral: '/v1/voices/clone-to-mistral',

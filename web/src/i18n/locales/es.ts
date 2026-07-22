@@ -428,6 +428,9 @@ export const es = {
       'No se encontraron voces de Mistral. Verifique que MISTRAL_API_KEY esté configurada.',
     browseXai: 'Explore las voces de xAI (Grok) y escúchelas antes de asignarlas.',
     noXaiVoices: 'No se encontraron voces de xAI. Verifique que XAI_API_KEY esté configurada.',
+    browseQwen: 'Explore las voces de Qwen (Alibaba) y escúchelas antes de asignarlas.',
+    noQwenVoices:
+      'No se encontraron voces de Qwen. Verifique que ALIBABA_API_KEY esté configurada.',
     voicePreview: 'Vista Previa de Voz',
     assignVoiceId: 'Pegue un ID de voz de ElevenLabs existente para asignarlo a este profesor.',
     assignButton: 'Asignar',

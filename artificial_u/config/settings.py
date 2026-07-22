@@ -15,6 +15,7 @@ from pydantic import Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from artificial_u.config.defaults import (
+    DEFAULT_ALIBABA_TTS_WSS_URL,
     DEFAULT_CONTENT_BACKEND,
     DEFAULT_CONTENT_LOGS_PATH,
     DEFAULT_DB_MAX_OVERFLOW,
@@ -26,6 +27,7 @@ from artificial_u.config.defaults import (
     DEFAULT_LECTURE_IMAGE_INTERVAL_SEC,
     DEFAULT_LECTURE_WORD_COUNT,
     DEFAULT_LOG_LEVEL,
+    DEFAULT_QWEN_TTS_MODEL,
     DEFAULT_STORAGE_AUDIO_BUCKET,
     DEFAULT_STORAGE_CONTENT_LOGS_BUCKET,
     DEFAULT_STORAGE_ENDPOINT_URL,
@@ -94,6 +96,7 @@ class Settings(BaseSettings):
     LOG_LEVEL: str = DEFAULT_LOG_LEVEL
 
     # API Keys
+    ALIBABA_API_KEY: Optional[str] = None
     ANTHROPIC_API_KEY: Optional[str] = None
     ELEVENLABS_API_KEY: Optional[str] = None
     GOOGLE_API_KEY: Optional[str] = None
@@ -150,7 +153,7 @@ class Settings(BaseSettings):
     LECTURE_IMAGE_INTERVAL_SEC: int = DEFAULT_LECTURE_IMAGE_INTERVAL_SEC
 
     # Text-to-speech settings
-    tts_backend: str = DEFAULT_TTS_BACKEND  # "elevenlabs", "mistral", or "xai"
+    tts_backend: str = DEFAULT_TTS_BACKEND  # "elevenlabs", "mistral", "xai", or "qwen"
     # ElevenLabs voice model. Example values: "eleven_flash_v2_5", "eleven_multilingual_v2"
     TTS_VOICE_MODEL: str = "eleven_flash_v2_5"
     # Mistral TTS model
@@ -161,6 +164,10 @@ class Settings(BaseSettings):
     XAI_TTS_BASE_URL: str = DEFAULT_XAI_TTS_BASE_URL
     # Default output language (BCP-47 code) for backends that accept one (e.g. xAI)
     XAI_TTS_LANGUAGE: str = DEFAULT_XAI_TTS_LANGUAGE
+    # Qwen (Alibaba Model Studio) TTS settings (used only if tts_backend="qwen")
+    TTS_QWEN_MODEL: str = DEFAULT_QWEN_TTS_MODEL
+    # WebSocket endpoint; must match the region the ALIBABA_API_KEY was created in
+    ALIBABA_TTS_WSS_URL: str = DEFAULT_ALIBABA_TTS_WSS_URL
 
     # Coin costs for generation operations (can be tuned via environment variables)
     COIN_COST_COURSE_GENERATION: int = 1
@@ -276,6 +283,7 @@ class Settings(BaseSettings):
             "elevenlabs_api_key": self.ELEVENLABS_API_KEY,
             "mistral_api_key": self.MISTRAL_API_KEY,
             "xai_api_key": self.XAI_API_KEY,
+            "alibaba_api_key": self.ALIBABA_API_KEY,
             "google_api_key": self.GOOGLE_API_KEY,
             "openai_api_key": self.OPENAI_API_KEY,
             "storage_type": self.STORAGE_TYPE,

@@ -346,6 +346,7 @@ Required in `.env` file:
 
 - `ANTHROPIC_API_KEY`: Anthropic Claude API key
 - `ELEVENLABS_API_KEY`: ElevenLabs TTS API key
+- `ALIBABA_API_KEY`: Alibaba Cloud API key (TTS when using Qwen backend)
 - `MISTRAL_API_KEY`: Mistral API key (TTS when using Mistral backend)
 - `XAI_API_KEY`: xAI API key (TTS when using xAI/Grok backend)
 - `DATABASE_URL`: PostgreSQL connection string

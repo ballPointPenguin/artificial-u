@@ -22,6 +22,12 @@ DEFAULT_CONTENT_LOGS_PATH = "content_logs"
 DEFAULT_TTS_BACKEND = "elevenlabs"
 DEFAULT_XAI_TTS_BASE_URL = "https://api.x.ai/v1"
 DEFAULT_XAI_TTS_LANGUAGE = "en"
+DEFAULT_QWEN_TTS_MODEL = "qwen-audio-3.0-tts-flash"
+# Alibaba Model Studio WebSocket endpoint. qwen-audio-3.0-tts is served only
+# from the Singapore and Beijing regions (NOT us-east-1/Virginia, which 404s
+# on the websocket route), so the ALIBABA_API_KEY must be a Singapore- or
+# Beijing-region key. Singapore -> dashscope-intl, Beijing -> dashscope.
+DEFAULT_ALIBABA_TTS_WSS_URL = "wss://dashscope-intl.aliyuncs.com/api-ws/v1/inference"
 
 # Storage defaults (MinIO/S3)
 DEFAULT_STORAGE_TYPE = "minio"  # "minio" or "s3"
