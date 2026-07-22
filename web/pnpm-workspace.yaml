@@ -1,5 +1,25 @@
-onlyBuiltDependencies:
-  - '@biomejs/biome'
-  - '@tailwindcss/oxide'
-  - browser-tabs-lock
-  - esbuild
+overrides:
+  '@typescript-eslint/utils': ^8.59.0
+  '@typescript-eslint/typescript-estree': ^8.59.0
+
+allowBuilds:
+  '@biomejs/biome': true
+  '@tailwindcss/oxide': true
+  browser-tabs-lock: true
+  esbuild: true
+
+pmOnFail: ignore
+trustLockfile: true
+minimumReleaseAgeExclude:
+  - '@auth0/auth0-spa-js@2.24.0'
+  - '@biomejs/biome@2.5.5'
+  - '@biomejs/cli-darwin-arm64@2.5.5'
+  - '@biomejs/cli-darwin-x64@2.5.5'
+  - '@biomejs/cli-linux-arm64-musl@2.5.5'
+  - '@biomejs/cli-linux-arm64@2.5.5'
+  - '@biomejs/cli-linux-x64-musl@2.5.5'
+  - '@biomejs/cli-linux-x64@2.5.5'
+  - '@biomejs/cli-win32-arm64@2.5.5'
+  - '@biomejs/cli-win32-x64@2.5.5'
+  - baseline-browser-mapping@2.11.0
+  - postcss@8.5.21
