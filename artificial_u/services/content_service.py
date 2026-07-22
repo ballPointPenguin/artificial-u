@@ -32,6 +32,27 @@ def _is_gemini_3_plus(model: str) -> bool:
     return bool(match) and int(match.group(1)) >= 3
 
 
+def _deprecates_gemini_sampling_params(model: str) -> bool:
+    """Check if a Gemini model deprecates sampling parameters (temperature, top_p, top_k).
+
+    Starting with Gemini 3.6 Flash and Gemini 3.5 Flash-Lite, sampling parameters
+    are deprecated and ignored (and will return a 400 error in future model generations).
+    """
+    if not model or not model.startswith("gemini-"):
+        return False
+
+    if "gemini-3.5-flash-lite" in model:
+        return True
+
+    match = re.match(r"gemini-(\d+)(?:\.(\d+))?", model)
+    if match:
+        major = int(match.group(1))
+        minor = int(match.group(2)) if match.group(2) else 0
+        return (major, minor) >= (3, 6)
+
+    return False
+
+
 class ContentService:
     """
     Service for generating text content using various AI models/backends.
@@ -628,18 +649,22 @@ class ContentService:
             # which in turn burns the output budget and truncates the response).
             is_gemini_3_plus = _is_gemini_3_plus(model)
 
-            if temperature is not None:
-                effective_temperature = temperature
-            elif is_gemini_3_plus:
-                effective_temperature = 1.0
-            else:
-                effective_temperature = DEFAULT_TEMPERATURE
-
-            # Create generation config with all parameters including system_instruction
+            # Create generation config with max_output_tokens
             config_params = {
-                "temperature": effective_temperature,
                 "max_output_tokens": max_tokens if max_tokens is not None else DEFAULT_MAX_TOKENS,
             }
+
+            # Sampling parameters (temperature, top_p, top_k) are deprecated starting
+            # with Gemini 3.6 Flash and Gemini 3.5 Flash-Lite. Omit temperature for models
+            # that deprecate it to avoid errors or ignored parameter warnings.
+            if not _deprecates_gemini_sampling_params(model):
+                if temperature is not None:
+                    effective_temperature = temperature
+                elif is_gemini_3_plus:
+                    effective_temperature = 1.0
+                else:
+                    effective_temperature = DEFAULT_TEMPERATURE
+                config_params["temperature"] = effective_temperature
 
             # Control reasoning effort on models that support it (Gemini 3+). Using a
             # lower thinking level reserves more of the output budget for the visible

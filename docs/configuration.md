@@ -148,7 +148,7 @@ LECTURE_GENERATION_MODEL=claude-sonnet-4-6
 PROFESSOR_GENERATION_MODEL=gpt-5.4-nano
 
 # Topics generation model
-TOPICS_GENERATION_MODEL=gemini-3.5-flash
+TOPICS_GENERATION_MODEL=gemini-3.6-flash
 
 # Image generation model (gemini-3.1-flash-lite-image, gemini-3.1-flash-image, or gemini-3-pro-image)
 IMAGE_GENERATION_MODEL=gemini-3.1-flash-lite-image
@@ -312,7 +312,7 @@ TESTING=true
 | `DEPARTMENT_GENERATION_MODEL` | Model for department generation | `gpt-5.4-nano` | No |
 | `LECTURE_GENERATION_MODEL` | Model for lecture generation | `claude-sonnet-4-6` | No |
 | `LECTURE_SUMMARY_MODEL` | Model for lecture summary generation | `gpt-5.4-nano` | No |
-| `TOPICS_GENERATION_MODEL` | Model for topics generation | `gemini-3.5-flash` | No |
+| `TOPICS_GENERATION_MODEL` | Model for topics generation | `gemini-3.6-flash` | No |
 | `PROFESSOR_GENERATION_MODEL` | Model for professor generation | `gpt-5.4-nano` | No |
 | `IMAGE_GENERATION_MODEL` | Model for image generation (`gemini-3.1-flash-lite-image`, `gemini-3.1-flash-image`, `gemini-3-pro-image`) | `gemini-3.1-flash-lite-image` | No |
 | `TTS_VOICE_MODEL` | Model for text-to-speech voice | `eleven_flash_v2_5` | No |

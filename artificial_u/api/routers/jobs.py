@@ -117,7 +117,7 @@ def _coerce_int(value: Any) -> Optional[int]:
     return None
 
 
-def _job_link_path(
+def _job_link_path(  # noqa: C901
     payload: Any, result: Any, factory=None, cache: Optional[dict] = None
 ) -> Optional[str]:
     """

@@ -140,7 +140,7 @@ class Settings(BaseSettings):
     # Professor generation model
     PROFESSOR_GENERATION_MODEL: str = "gpt-5.4-nano"
     # Topics generation model
-    TOPICS_GENERATION_MODEL: str = "gemini-3.5-flash"
+    TOPICS_GENERATION_MODEL: str = "gemini-3.6-flash"
     # Course tags generation model
     TAGS_GENERATION_MODEL: str = "gpt-5.4-nano"
     # Image generation model
@@ -220,7 +220,7 @@ class Settings(BaseSettings):
             if backend == "openai":
                 return "gpt-5.4-nano"
             elif backend == "gemini":
-                return "gemini-3.5-flash"
+                return "gemini-3.6-flash"
             elif backend == "anthropic":
                 return "claude-sonnet-4-6"
             else:
