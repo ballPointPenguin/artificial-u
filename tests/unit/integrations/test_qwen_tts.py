@@ -156,11 +156,24 @@ def test_voice_manager_lists_all_voices():
     voices = QwenVoiceManager().list_voices()
     assert len(voices) == len(QWEN_VOICES)
     ids = {v["id"] for v in voices}
-    assert {"loongmary", "loongeva_v3.6", "loongjohn", "longanlingxin"} <= ids
-    # Every preset voice speaks English and has a model assignment
+    assert {"loongeva_v3.6", "loongjohn", "longanlingxin", "longanlufeng"} <= ids
+    # No child voices are exposed
+    assert "longjielidou_v3.6" not in ids
+    # Every voice has a valid model and at least one language
     for v in voices:
-        assert "en" in v["languages"]
         assert v["model"] in (FLASH_MODEL, PLUS_MODEL)
+        assert v["languages"]
+
+
+@pytest.mark.unit
+def test_voice_manager_includes_chinese_only_base_voices():
+    """Base (cloned) voices are Mandarin-only and use model-prefixed ids."""
+    mgr = QwenVoiceManager()
+    kai = mgr.get_voice("qwen-audio-3.0-tts-plus-longyinghaikai")
+    assert kai is not None
+    assert kai["languages"] == ["zh"]
+    assert kai["gender"] == "female"
+    assert kai["model"] == PLUS_MODEL
 
 
 @pytest.mark.unit
@@ -169,11 +182,14 @@ def test_voice_manager_get_voice():
     john = mgr.get_voice("loongjohn")
     assert john["gender"] == "male"
     assert john["model"] == FLASH_MODEL
+    lufeng = mgr.get_voice("longanlufeng")
+    assert lufeng["gender"] == "male"
     assert mgr.get_voice("nonexistent") is None
 
 
 @pytest.mark.unit
 def test_model_for_voice():
     assert model_for_voice("longanlufeng") == PLUS_MODEL
-    assert model_for_voice("longpaopao_v3.6") == FLASH_MODEL
+    assert model_for_voice("loongeva_v3.6") == FLASH_MODEL
+    assert model_for_voice("qwen-audio-3.0-tts-plus-longyinghaikai") == PLUS_MODEL
     assert model_for_voice("nonexistent") is None

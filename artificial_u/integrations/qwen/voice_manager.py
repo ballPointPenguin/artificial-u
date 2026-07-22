@@ -4,8 +4,18 @@ Qwen (Alibaba) voice manager.
 Alibaba Model Studio exposes no voice-list API for the qwen-audio-3.0-tts
 models, so the preset catalog is maintained here as a static list, taken from
 https://www.alibabacloud.com/help/en/model-studio/qwen-audio-tts-voice-list
-Every preset voice supports English; most are bilingual Mandarin+English.
-Each voice works only with the model it is listed under.
+
+The catalog has two kinds of entries:
+  * System voices — first-class voices whose ``voice`` parameter is a plain id
+    (e.g. ``longanlingxin``) tied to one model (plus or flash).
+  * Base voices — pre-generated cloned voices whose ``voice`` parameter is the
+    full model-prefixed name (e.g. ``qwen-audio-3.0-tts-plus-longyinghaikai``).
+    Alibaba publishes 1000+ of these; only a representative subset is listed
+    here. The same suffix works in both plus and flash; we standardize on plus.
+
+Child voices (age < 18) are intentionally omitted (Longjie Lidou, Long Paopao,
+Long Huohuo, and the young base voices). Base voices are Chinese (Mandarin)
+only, which is useful for Chinese-language content.
 """
 
 import logging
@@ -15,7 +25,7 @@ FLASH_MODEL = "qwen-audio-3.0-tts-flash"
 PLUS_MODEL = "qwen-audio-3.0-tts-plus"
 
 QWEN_VOICES: List[Dict[str, Any]] = [
-    # qwen-audio-3.0-tts-plus (flagship tier)
+    # ---- System voices: qwen-audio-3.0-tts-plus (flagship) ----
     {
         "id": "longanlingxin",
         "name": "Longan Lingxin",
@@ -27,12 +37,13 @@ QWEN_VOICES: List[Dict[str, Any]] = [
     {
         "id": "longanlufeng",
         "name": "Longan Lufeng",
-        "gender": "female",
+        "gender": "male",
         "description": "Bright and cheerful",
         "languages": ["zh", "en"],
         "model": PLUS_MODEL,
     },
-    # qwen-audio-3.0-tts-flash — native-English voices
+    # ---- System voices: qwen-audio-3.0-tts-flash ----
+    # Native-English voices
     {
         "id": "loongmary",
         "name": "Mary",
@@ -57,7 +68,7 @@ QWEN_VOICES: List[Dict[str, Any]] = [
         "languages": ["en"],
         "model": FLASH_MODEL,
     },
-    # qwen-audio-3.0-tts-flash — bilingual Mandarin+English voices
+    # Bilingual Mandarin+English voices
     {
         "id": "longanfengyue",
         "name": "Longan Fengyue",
@@ -99,36 +110,101 @@ QWEN_VOICES: List[Dict[str, Any]] = [
         "model": FLASH_MODEL,
     },
     {
-        "id": "longjielidou_v3.6",
-        "name": "Longjie Lidou",
-        "gender": "male",
-        "description": "Innocent boy",
-        "languages": ["zh", "en"],
-        "model": FLASH_MODEL,
-    },
-    {
-        "id": "longpaopao_v3.6",
-        "name": "Long Paopao",
-        "gender": "female",
-        "description": "Soft and adorable",
-        "languages": ["zh", "en"],
-        "model": FLASH_MODEL,
-    },
-    {
-        "id": "longhuohuo_v3.6",
-        "name": "Long Huohuo",
-        "gender": "male",
-        "description": "Mischievous boy",
-        "languages": ["zh", "en"],
-        "model": FLASH_MODEL,
-    },
-    {
         "id": "longchuanshu_v3.6",
         "name": "Long Chuanshu",
         "gender": "male",
         "description": "Sichuan-dialect storyteller",
         "languages": ["zh", "en"],
         "model": FLASH_MODEL,
+    },
+    # ---- Base (cloned) voices: Mandarin only, plus-tier ----
+    {
+        "id": "qwen-audio-3.0-tts-plus-longyinghaikai",
+        "name": "Long Ying Hai Kai",
+        "gender": "female",
+        "description": "Positive and upbeat",
+        "languages": ["zh"],
+        "model": PLUS_MODEL,
+    },
+    {
+        "id": "qwen-audio-3.0-tts-plus-longyinghaixuan",
+        "name": "Long Ying Hai Xuan",
+        "gender": "female",
+        "description": "Capable and composed",
+        "languages": ["zh"],
+        "model": PLUS_MODEL,
+    },
+    {
+        "id": "qwen-audio-3.0-tts-plus-longyingjingdong",
+        "name": "Long Ying Jing Dong",
+        "gender": "female",
+        "description": "Composed and professional",
+        "languages": ["zh"],
+        "model": PLUS_MODEL,
+    },
+    {
+        "id": "qwen-audio-3.0-tts-plus-longyinghaizhe",
+        "name": "Long Ying Hai Zhe",
+        "gender": "male",
+        "description": "Firm and persuasive",
+        "languages": ["zh"],
+        "model": PLUS_MODEL,
+    },
+    {
+        "id": "qwen-audio-3.0-tts-plus-longyingjinhao",
+        "name": "Long Ying Jin Hao",
+        "gender": "female",
+        "description": "Approachable and reliable",
+        "languages": ["zh"],
+        "model": PLUS_MODEL,
+    },
+    {
+        "id": "qwen-audio-3.0-tts-plus-longluanxuanling",
+        "name": "Long Luan Xuan Ling",
+        "gender": "female",
+        "description": "Gentle older-sister voice",
+        "languages": ["zh"],
+        "model": PLUS_MODEL,
+    },
+    {
+        "id": "qwen-audio-3.0-tts-plus-longhexiaoxuan",
+        "name": "Long He Xiao Xuan",
+        "gender": "male",
+        "description": "Refined and scholarly",
+        "languages": ["zh"],
+        "model": PLUS_MODEL,
+    },
+    {
+        "id": "qwen-audio-3.0-tts-plus-longsonglinwang",
+        "name": "Long Song Lin Wang",
+        "gender": "male",
+        "description": "Warm and magnetic",
+        "languages": ["zh"],
+        "model": PLUS_MODEL,
+    },
+    {
+        "id": "qwen-audio-3.0-tts-plus-longhuiluling",
+        "name": "Long Hui Lu Ling",
+        "gender": "female",
+        "description": "Gentle and caring",
+        "languages": ["zh"],
+        "model": PLUS_MODEL,
+    },
+    {
+        "id": "qwen-audio-3.0-tts-plus-longshuojizhu",
+        "name": "Long Shuo Ji Zhu",
+        "gender": "male",
+        "description": "Standard broadcasting voice",
+        "languages": ["zh"],
+        "model": PLUS_MODEL,
+    },
+    {
+        "id": "qwen-audio-3.0-tts-plus-longyufengmo",
+        "name": "Long Yu Feng Mo",
+        "gender": "female",
+        "description": "Gentle and resilient",
+        "languages": ["zh"],
+        "model": PLUS_MODEL,
     },
 ]
 
