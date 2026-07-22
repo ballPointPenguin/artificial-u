@@ -19,7 +19,7 @@ interface JobCardProps {
   onCancel: (job: JobRow) => void
 }
 
-const STATUS_VARIANT: Record<
+export const STATUS_VARIANT: Record<
   JobRow['status'],
   'info' | 'warning' | 'success' | 'danger' | 'outline'
 > = {
