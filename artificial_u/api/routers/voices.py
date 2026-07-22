@@ -411,6 +411,71 @@ async def list_xai_catalog(
 
 
 # ---------------------------------------------------------------------------
+# Qwen (Alibaba) voice catalog (static preset list)
+# ---------------------------------------------------------------------------
+
+
+class QwenVoiceCatalogItem(BaseModel):
+    """A Qwen preset voice, mapped into a shape the frontend can use."""
+
+    id: str = Field(..., description="Qwen voice id (e.g. 'loongeva_v3.6')")
+    name: str = Field(..., description="Display name")
+    gender: Optional[str] = None
+    description: Optional[str] = None
+    languages: Optional[list] = None
+    model: Optional[str] = Field(None, description="qwen-audio TTS model this voice belongs to")
+
+
+class QwenVoiceCatalogResponse(BaseModel):
+    items: list[QwenVoiceCatalogItem]
+    total: int
+
+
+@router.get(
+    "/qwen/catalog",
+    response_model=QwenVoiceCatalogResponse,
+    dependencies=[Depends(require_auth)],
+)
+async def list_qwen_catalog(
+    language: Optional[str] = Query(None, description="Filter by language prefix (e.g. 'en')"),
+    gender: Optional[str] = Query(None, description="Filter by gender"),
+):
+    """
+    List the Qwen (Alibaba) preset voices.
+
+    Alibaba exposes no voice-list API for qwen-audio-3.0-tts, so this serves a
+    static catalog. These are **not** stored in our database; the frontend uses
+    the Qwen voice ``id`` as the ``voice_id`` when previewing or assigning.
+    """
+    from artificial_u.integrations.qwen.voice_manager import QwenVoiceManager
+
+    raw_voices = QwenVoiceManager().list_voices()
+
+    items: list[QwenVoiceCatalogItem] = []
+    for v in raw_voices:
+        # Optional client-side filters
+        if language:
+            langs = v.get("languages") or []
+            if not any(str(lang).startswith(language) for lang in langs):
+                continue
+        if gender and v.get("gender") != gender:
+            continue
+
+        items.append(
+            QwenVoiceCatalogItem(
+                id=v["id"],
+                name=v.get("name") or v["id"],
+                gender=v.get("gender"),
+                description=v.get("description"),
+                languages=v.get("languages"),
+                model=v.get("model"),
+            )
+        )
+
+    return QwenVoiceCatalogResponse(items=items, total=len(items))
+
+
+# ---------------------------------------------------------------------------
 # Voice preview (TTS sample generation)
 # ---------------------------------------------------------------------------
 

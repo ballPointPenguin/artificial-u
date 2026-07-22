@@ -7,6 +7,7 @@ import type {
   ManualVoiceAssignmentPayload,
   MistralVoiceCatalog,
   PaginatedVoices,
+  QwenVoiceCatalog,
   Voice,
   VoiceCloneToMistralRequest,
   VoiceDesignPreviewsResponse,
@@ -134,6 +135,28 @@ export const listXaiCatalog = async (
   const qs = params.toString()
   const url = qs ? `${ENDPOINTS.voices.xaiCatalog}?${qs}` : ENDPOINTS.voices.xaiCatalog
   return httpClient.get<XaiVoiceCatalog>(url)
+}
+
+/**
+ * List Qwen (Alibaba) preset voices.
+ *
+ * Alibaba exposes no voice-list API for qwen-audio-3.0-tts, so the backend
+ * serves a static catalog.
+ *
+ * @param language - Optional language prefix filter (e.g. "en").
+ * @param gender - Optional gender filter.
+ * @returns Promise<QwenVoiceCatalog>
+ */
+export const listQwenCatalog = async (
+  language?: string,
+  gender?: string
+): Promise<QwenVoiceCatalog> => {
+  const params = new URLSearchParams()
+  if (language) params.set('language', language)
+  if (gender) params.set('gender', gender)
+  const qs = params.toString()
+  const url = qs ? `${ENDPOINTS.voices.qwenCatalog}?${qs}` : ENDPOINTS.voices.qwenCatalog
+  return httpClient.get<QwenVoiceCatalog>(url)
 }
 
 /**

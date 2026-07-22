@@ -52,5 +52,7 @@ def verify_test_environment():
         assert settings.MISTRAL_API_KEY == "test_mistral_key", "Using incorrect Mistral key"
     if settings.XAI_API_KEY:
         assert settings.XAI_API_KEY == "test_xai_key", "Using incorrect xAI key"
+    if settings.ALIBABA_API_KEY:
+        assert settings.ALIBABA_API_KEY == "test_alibaba_key", "Using incorrect Alibaba key"
 
     yield

@@ -27,6 +27,7 @@ dependencies = [
     "anthropic>=0.86.0",
     "boto3>=1.42.73",
     "click>=8.2.0",
+    "dashscope>=1.26.4",
     "elevenlabs>=2.39.0",
     "fastapi>=0.135.1",
     "google-api-core>=2.28.1",

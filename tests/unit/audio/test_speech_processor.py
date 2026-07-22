@@ -330,6 +330,17 @@ class TestSpeechProcessorMistral:
         assert "[walks to the front" in out
 
     @pytest.mark.unit
+    def test_qwen_strips_pause_directions(self, processor):
+        """Qwen path removes pause brackets entirely, no SSML/markup added."""
+        out = processor.normalize_text(
+            "Please consider this. [Pause] Now continue.", backend_name="qwen"
+        )
+        assert "<break" not in out
+        assert "[Pause]" not in out
+        assert "[pause]" not in out
+        assert "Please consider this." in out and "Now continue." in out
+
+    @pytest.mark.unit
     def test_unknown_backend_defaults_to_clean_prose(self, processor):
         """Unknown backends fall back to clean prose (pause directions stripped)."""
         out = processor.normalize_text(

@@ -742,37 +742,8 @@ class VoiceService:
                 external_id=external_id,
                 name=external_id,
             )
-            # Try to enrich from the provider API (best-effort)
-            if tts_backend == "mistral":
-                try:
-                    from artificial_u.integrations.mistral.voice_manager import (
-                        MistralVoiceManager,
-                    )
-
-                    mgr = MistralVoiceManager()
-                    info = mgr.get_voice(external_id)
-                    if info:
-                        voice.name = info.get("name") or external_id
-                        voice.gender = info.get("gender")
-                        lang_list = info.get("languages") or []
-                        if lang_list:
-                            voice.language = str(lang_list[0])
-                except Exception as e:
-                    self.logger.warning("Could not enrich Mistral voice metadata: %s", e)
-            elif tts_backend == "xai":
-                try:
-                    from artificial_u.integrations.xai.voice_manager import (
-                        XAIVoiceManager,
-                    )
-
-                    info = XAIVoiceManager().get_voice(external_id)
-                    if info:
-                        voice.name = info.get("name") or external_id
-                        voice.gender = info.get("gender")
-                        voice.language = info.get("language")
-                        voice.category = "preset"
-                except Exception as e:
-                    self.logger.warning("Could not enrich xAI voice metadata: %s", e)
+            # Best-effort enrichment from the provider catalog
+            self._enrich_generic_voice(voice, tts_backend, external_id)
 
             voice = self.repository_factory.voice.upsert(voice)
             self.logger.info(
@@ -788,6 +759,48 @@ class VoiceService:
         self.logger.info(
             "Assigned voice %s (backend=%s) to professor %s", external_id, tts_backend, professor_id
         )
+
+    def _enrich_generic_voice(self, voice, tts_backend: str, external_id: str) -> None:
+        """Populate a new non-ElevenLabs Voice from its provider catalog, in place.
+
+        Best-effort: any provider lookup failure is logged and the voice keeps
+        its fallback (name == external_id).
+        """
+        try:
+            if tts_backend == "mistral":
+                from artificial_u.integrations.mistral.voice_manager import MistralVoiceManager
+
+                info = MistralVoiceManager().get_voice(external_id)
+                if info:
+                    voice.name = info.get("name") or external_id
+                    voice.gender = info.get("gender")
+                    lang_list = info.get("languages") or []
+                    if lang_list:
+                        voice.language = str(lang_list[0])
+            elif tts_backend == "xai":
+                from artificial_u.integrations.xai.voice_manager import XAIVoiceManager
+
+                info = XAIVoiceManager().get_voice(external_id)
+                if info:
+                    voice.name = info.get("name") or external_id
+                    voice.gender = info.get("gender")
+                    voice.language = info.get("language")
+                    voice.category = "preset"
+            elif tts_backend == "qwen":
+                from artificial_u.integrations.qwen.voice_manager import QwenVoiceManager
+
+                info = QwenVoiceManager().get_voice(external_id)
+                if info:
+                    voice.name = info.get("name") or external_id
+                    voice.gender = info.get("gender")
+                    voice.description = info.get("description")
+                    lang_list = info.get("languages") or []
+                    if lang_list:
+                        # All Qwen presets speak English; prefer it for filtering
+                        voice.language = "en" if "en" in lang_list else str(lang_list[0])
+                    voice.category = "preset"
+        except Exception as e:
+            self.logger.warning("Could not enrich %s voice metadata: %s", tts_backend, e)
 
     # ---------------------------------------------------------------------------
     # Voice Design

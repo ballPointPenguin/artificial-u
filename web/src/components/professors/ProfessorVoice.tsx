@@ -14,22 +14,29 @@ import {
   generateVoiceDesignPreviews,
   getVoice,
   listMistralCatalog,
+  listQwenCatalog,
   listXaiCatalog,
   manualAssignVoice,
   previewVoice,
   saveDesignedVoice,
 } from '../../api/services/voice-service.js'
-import type { MistralCatalogVoice, VoiceDesignPreview, XaiCatalogVoice } from '../../api/types.js'
+import type {
+  MistralCatalogVoice,
+  QwenCatalogVoice,
+  VoiceDesignPreview,
+  XaiCatalogVoice,
+} from '../../api/types.js'
 import { RequireRole } from '../../auth/RequireRole'
 import { useLocale, useTranslations } from '../../i18n'
 import { Alert, Badge, Button, LoadingSpinner } from '../ui'
 
-type TtsBackendKey = 'elevenlabs' | 'mistral' | 'xai'
+type TtsBackendKey = 'elevenlabs' | 'mistral' | 'xai' | 'qwen'
 
 const BACKEND_OPTIONS: Array<{ value: TtsBackendKey; label: string }> = [
   { value: 'elevenlabs', label: 'ElevenLabs' },
   { value: 'mistral', label: 'Voxtral (Mistral)' },
   { value: 'xai', label: 'xAI (Grok)' },
+  { value: 'qwen', label: 'Qwen (Alibaba)' },
 ]
 
 /** Display-friendly name for a TTS backend. */
@@ -38,6 +45,7 @@ const backendLabel = (backend: string | null | undefined): string => {
     elevenlabs: 'ElevenLabs',
     mistral: 'Voxtral',
     xai: 'xAI (Grok)',
+    qwen: 'Qwen (Alibaba)',
   }
   return (backend && map[backend]) ?? 'ElevenLabs'
 }
@@ -189,6 +197,92 @@ const XaiVoiceCard: Component<{
 }
 
 // ---------------------------------------------------------------------------
+// Voice card for Qwen (Alibaba) preset voices
+// ---------------------------------------------------------------------------
+const QwenVoiceCard: Component<{
+  voice: QwenCatalogVoice
+  isSelected: boolean
+  isPreviewing: boolean
+  onSelect: () => void
+  onPreview: () => void
+}> = (props) => {
+  const t = useTranslations()
+  const attrs = createMemo(() => {
+    const v = props.voice
+    const items: Array<{ label: string; value: string }> = []
+    if (v.gender) {
+      const genderKey = v.gender.toLowerCase() as 'male' | 'female' | 'neutral'
+      const localizedGender = t().professorDetail.genders[genderKey] || v.gender
+      items.push({ label: t().professorDetail.fields.gender, value: localizedGender })
+    }
+    if (v.languages?.length) {
+      items.push({ label: t().professorVoice.langLabel || 'Lang', value: v.languages.join(', ') })
+    }
+    return items
+  })
+  // Model tier badge (e.g. "flash" / "plus" from qwen-audio-3.0-tts-flash)
+  const tier = createMemo(() => {
+    const model = props.voice.model
+    if (!model) return null
+    const parts = model.split('-')
+    return parts[parts.length - 1]
+  })
+
+  return (
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={() => {
+        props.onSelect()
+      }}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault()
+          props.onSelect()
+        }
+      }}
+      class={`arcane-card-sm p-4 text-left w-full transition-colors cursor-pointer ${
+        props.isSelected ? 'ring-2 ring-accent bg-accent/10' : 'hover:bg-surface-hover'
+      }`}
+    >
+      <div class="flex items-start justify-between gap-2">
+        <div class="min-w-0 flex-1">
+          <div class="flex items-center gap-2">
+            <p class="font-semibold text-foreground truncate">{props.voice.name}</p>
+            <Show when={tier()}>
+              <Badge variant="secondary">{tier()}</Badge>
+            </Show>
+          </div>
+          <Show when={props.voice.description}>
+            <p class="text-xs text-muted mt-0.5 truncate">{props.voice.description}</p>
+          </Show>
+          <div class="flex flex-wrap gap-1.5 mt-1.5">
+            <For each={attrs()}>
+              {(attr) => (
+                <Badge variant="outline">
+                  <span class="text-muted mr-1">{attr.label}:</span> {attr.value}
+                </Badge>
+              )}
+            </For>
+          </div>
+        </div>
+        <button
+          type="button"
+          class="shrink-0 text-xs px-2 py-1 rounded bg-surface hover:bg-accent/20 text-accent transition-colors"
+          onClick={(e) => {
+            e.stopPropagation()
+            props.onPreview()
+          }}
+          disabled={props.isPreviewing}
+        >
+          {props.isPreviewing ? '...' : `▶ ${t().common.preview}`}
+        </button>
+      </div>
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
 // Main component
 // ---------------------------------------------------------------------------
 const ProfessorVoice: Component = () => {
@@ -223,7 +317,7 @@ const ProfessorVoice: Component = () => {
     if (!backendInitialized && voice) {
       backendInitialized = true
       const backend = voice.tts_backend
-      if (backend === 'mistral' || backend === 'xai') {
+      if (backend === 'mistral' || backend === 'xai' || backend === 'qwen') {
         setSelectedBackend(backend)
       } else {
         setSelectedBackend('elevenlabs')
@@ -269,6 +363,18 @@ const ProfessorVoice: Component = () => {
     return xaiCatalog()?.items.find((v) => v.id === id) ?? null
   })
 
+  // ---- Qwen voices (on-demand static preset catalog) ----
+  const [qwenCatalog] = createResource(
+    () => (selectedBackend() === 'qwen' ? true : null),
+    async (enabled) => (enabled ? listQwenCatalog() : undefined)
+  )
+  const [selectedQwenId, setSelectedQwenId] = createSignal<string | null>(null)
+  const selectedQwenVoice = createMemo(() => {
+    const id = selectedQwenId()
+    if (!id) return null
+    return qwenCatalog()?.items.find((v) => v.id === id) ?? null
+  })
+
   // ---- Audio preview ----
   const [previewAudioUri, setPreviewAudioUri] = createSignal<string | null>(null)
   const [isPreviewingId, setIsPreviewingId] = createSignal<string | null>(null)
@@ -297,6 +403,23 @@ const ProfessorVoice: Component = () => {
       const resp = await previewVoice({
         voice_id: voice.id,
         tts_backend: 'xai',
+        language: currentLocale(),
+      })
+      setPreviewAudioUri(resp.audio_data_uri)
+    } catch (e) {
+      console.error('Preview failed', e)
+    } finally {
+      setIsPreviewingId(null)
+    }
+  }
+
+  const handleQwenPreview = async (voice: QwenCatalogVoice) => {
+    setIsPreviewingId(voice.id)
+    setPreviewAudioUri(null)
+    try {
+      const resp = await previewVoice({
+        voice_id: voice.id,
+        tts_backend: 'qwen',
         language: currentLocale(),
       })
       setPreviewAudioUri(resp.audio_data_uri)
@@ -340,6 +463,14 @@ const ProfessorVoice: Component = () => {
       }
       externalId = voice.id
       ttsBackend = 'xai'
+    } else if (backend === 'qwen') {
+      const voice = selectedQwenVoice()
+      if (!voice) {
+        setAssignError(t().professorVoice.errorSelectVoice)
+        return
+      }
+      externalId = voice.id
+      ttsBackend = 'qwen'
     } else {
       const voice = selectedMistralVoice()
       if (!voice) {
@@ -498,6 +629,7 @@ const ProfessorVoice: Component = () => {
     setSelectedBackend(b)
     setSelectedMistralId(null)
     setSelectedXaiId(null)
+    setSelectedQwenId(null)
     setPreviewAudioUri(null)
     setAssignError('')
     setAssignSuccess('')
@@ -907,6 +1039,75 @@ const ProfessorVoice: Component = () => {
                           onSelect={() => setSelectedXaiId(voice.id)}
                           onPreview={() => {
                             void handleXaiPreview(voice)
+                          }}
+                        />
+                      )}
+                    </For>
+                  </div>
+                </Show>
+              </Show>
+
+              {/* Audio player for preview */}
+              <Show when={previewAudioUri()}>
+                <div class="mt-4 p-3 bg-surface rounded-lg">
+                  <p class="text-xs text-muted mb-2">{t().professorVoice.voicePreview}</p>
+                  <audio
+                    controls
+                    autoplay
+                    class="w-full max-w-md"
+                    src={previewAudioUri() ?? ''}
+                    aria-label="Voice preview audio"
+                  >
+                    <track
+                      kind="captions"
+                      src="data:text/vtt;charset=utf-8,WEBVTT%0A%0A"
+                      srclang="en"
+                      label="English captions"
+                      default
+                    />
+                    Your browser does not support the audio element.
+                  </audio>
+                </div>
+              </Show>
+            </div>
+          </Show>
+
+          {/* Qwen: voice browsing grid (static preset catalog) */}
+          <Show when={selectedBackend() === 'qwen'}>
+            <div class="space-y-4">
+              <div class="flex items-center justify-between">
+                <p class="text-sm text-muted">{t().professorVoice.browseQwen}</p>
+                <Show when={selectedQwenVoice()}>
+                  <Button
+                    variant="primary"
+                    onClick={() => void handleAssign()}
+                    disabled={isAssigning()}
+                  >
+                    {isAssigning()
+                      ? t().professorVoice.assigning
+                      : t().professorVoice.assignSpecificVoice.replace(
+                          '{name}',
+                          selectedQwenVoice()?.name || ''
+                        )}
+                  </Button>
+                </Show>
+              </div>
+
+              <Show when={!qwenCatalog.loading} fallback={<LoadingSpinner />}>
+                <Show
+                  when={(qwenCatalog()?.items.length ?? 0) > 0}
+                  fallback={<p class="text-muted text-sm">{t().professorVoice.noQwenVoices}</p>}
+                >
+                  <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                    <For each={qwenCatalog()?.items ?? []}>
+                      {(voice) => (
+                        <QwenVoiceCard
+                          voice={voice}
+                          isSelected={selectedQwenId() === voice.id}
+                          isPreviewing={isPreviewingId() === voice.id}
+                          onSelect={() => setSelectedQwenId(voice.id)}
+                          onPreview={() => {
+                            void handleQwenPreview(voice)
                           }}
                         />
                       )}

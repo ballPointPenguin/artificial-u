@@ -36,8 +36,8 @@ class SpeechProcessor:
         Args:
             text: The text to normalize.
             backend_name: TTS backend the text is destined for
-                ("elevenlabs", "mistral", "xai"). Unknown backends fall back to
-                clean prose (pause directions stripped, no markup).
+                ("elevenlabs", "mistral", "xai", "qwen"). Unknown backends fall
+                back to clean prose (pause directions stripped, no markup).
 
         Returns:
             Normalized text suitable for the given TTS backend.
@@ -52,6 +52,10 @@ class SpeechProcessor:
             normalized_text = self._process_xai(normalized_text)
         elif backend_name == "mistral":
             # No markup support: strip bracketed pause directions entirely.
+            normalized_text = self._strip_pause_directions(normalized_text)
+        elif backend_name == "qwen":
+            # Qwen supports its own inline tags ([excited], [laughing], ...) but
+            # our lecture stage directions aren't in that set: strip them.
             normalized_text = self._strip_pause_directions(normalized_text)
         else:
             self.logger.debug(
