@@ -37,13 +37,21 @@ def _tts_backend_name(settings) -> Optional[str]:
     return backend or None
 
 
-def _job_model_name(kind: str, payload: Any, factory=None) -> Optional[str]:
+def _job_model_name(
+    kind: str, payload: Any, result: Any = None, factory=None, cache: Optional[dict] = None
+) -> Optional[str]:
     """
-    Best-effort model name for a job. Payload-level overrides take precedence,
-    then global preference overrides (admin settings), then environment defaults.
+    Best-effort model name for a job. The backend recorded in the job result at
+    generation time takes precedence, then payload-level overrides, then global
+    preference overrides (admin settings), then environment defaults.
 
-    Note: per-professor / per-voice overrides applied at runtime are not resolved here.
+    ``cache`` memoizes preference lookups across the rows of one request.
     """
+    result = result if isinstance(result, dict) else {}
+    recorded = result.get("tts_backend")
+    if recorded:
+        return str(recorded)
+
     payload = payload if isinstance(payload, dict) else {}
     override = payload.get("model_name_override")
     if override:
@@ -85,9 +93,16 @@ def _job_model_name(kind: str, payload: Any, factory=None) -> Optional[str]:
 
     scope, default = entry
     if factory is not None:
-        pref = factory.preference.get_global(scope)
-        if pref:
-            return pref.value
+        cache_key = ("pref", scope)
+        if cache is not None and cache_key in cache:
+            pref_value = cache[cache_key]
+        else:
+            pref = factory.preference.get_global(scope)
+            pref_value = pref.value if pref else None
+            if cache is not None:
+                cache[cache_key] = pref_value
+        if pref_value:
+            return pref_value
 
     return default
 
@@ -102,14 +117,16 @@ def _coerce_int(value: Any) -> Optional[int]:
     return None
 
 
-def _job_link_path(payload: Any, result: Any, factory=None) -> Optional[str]:
+def _job_link_path(
+    payload: Any, result: Any, factory=None, cache: Optional[dict] = None
+) -> Optional[str]:
     """
     Resolve a relative frontend path to the lecture or topic a job concerns.
 
     Prefers the lecture when both a lecture and topic are present. The lecture /
     topic detail routes are nested under a course, so a course id is required; it
     is taken from the payload/result when available and otherwise resolved via a
-    single primary-key lookup.
+    primary-key lookup memoized in ``cache`` across the rows of one request.
     """
     payload = payload if isinstance(payload, dict) else {}
     result = result if isinstance(result, dict) else {}
@@ -127,24 +144,32 @@ def _job_link_path(payload: Any, result: Any, factory=None) -> Optional[str]:
     topic_id = _pick("topic_id")
     course_id = _pick("course_id")
 
+    def _resolve_course_id(kind: str, entity_id: int, repo) -> Optional[int]:
+        cache_key = (kind, entity_id)
+        if cache is not None and cache_key in cache:
+            return cache[cache_key]
+        entity = repo.get(entity_id)
+        resolved = getattr(entity, "course_id", None)
+        if cache is not None:
+            cache[cache_key] = resolved
+        return resolved
+
     if lecture_id is not None:
         if course_id is None and factory is not None:
-            lecture = factory.lecture.get(lecture_id)
-            course_id = getattr(lecture, "course_id", None)
+            course_id = _resolve_course_id("lecture_course", lecture_id, factory.lecture)
         if course_id is not None:
             return f"/courses/{course_id}/lectures/{lecture_id}"
 
     if topic_id is not None:
         if course_id is None and factory is not None:
-            topic = factory.topic.get(topic_id)
-            course_id = getattr(topic, "course_id", None)
+            course_id = _resolve_course_id("topic_course", topic_id, factory.topic)
         if course_id is not None:
             return f"/courses/{course_id}/topics/{topic_id}"
 
     return None
 
 
-def _job_row_response(r, factory=None) -> dict:
+def _job_row_response(r, factory=None, cache: Optional[dict] = None) -> dict:
     return {
         "id": r.id,
         "kind": r.kind,
@@ -160,8 +185,8 @@ def _job_row_response(r, factory=None) -> dict:
         "result": r.result,
         "duration_ms": _duration_ms_from_result(r.result),
         "parent_job_id": getattr(r, "parent_job_id", None),
-        "model": _job_model_name(r.kind, r.payload, factory),
-        "link_path": _job_link_path(r.payload, r.result, factory),
+        "model": _job_model_name(r.kind, r.payload, r.result, factory, cache),
+        "link_path": _job_link_path(r.payload, r.result, factory, cache),
     }
 
 
@@ -188,7 +213,8 @@ def _active_job_snapshot(
     if kinds_set:
         rows = [row for row in rows if row.kind in kinds_set]
     rows.sort(key=lambda row: row.created_at, reverse=True)
-    return [_job_row_response(row, factory) for row in rows]
+    cache: dict = {}
+    return [_job_row_response(row, factory, cache) for row in rows]
 
 
 class EnqueueJob(BaseModel):
@@ -253,34 +279,46 @@ async def enqueue(
 @router.get("", dependencies=[Depends(require_auth)])
 def list_jobs(
     status: Optional[str] = None,
-    limit: int = 50,
+    limit: int = 25,
     kind: Optional[str] = None,
     lecture_id: Optional[int] = None,
     topic_id: Optional[int] = None,
     course_id: Optional[int] = None,
     parent_id: Optional[int] = None,
+    before_id: Optional[int] = None,
     repository_factory: RepositoryFactory = Depends(get_repository_factory),
 ):
+    limit = max(1, min(limit, 100))
     repo = repository_factory.job
+    # Fetch one extra row to detect whether another page exists.
     rows = repo.list(
         status=status,
-        limit=limit,
+        limit=limit + 1,
         kind=kind,
         lecture_id=lecture_id,
         topic_id=topic_id,
         course_id=course_id,
         parent_id=parent_id,
+        before_id=before_id,
     )
-    return [_job_row_response(r, repository_factory) for r in rows]
+    has_more = len(rows) > limit
+    rows = rows[:limit]
+    cache: dict = {}
+    jobs = [_job_row_response(r, repository_factory, cache) for r in rows]
+    return {
+        "jobs": jobs,
+        "has_more": has_more,
+        "next_before_id": rows[-1].id if rows and has_more else None,
+    }
 
 
 @router.get("/summary", dependencies=[Depends(require_auth)])
 def jobs_summary(
+    window_hours: int = 24,
     repository_factory: RepositoryFactory = Depends(get_repository_factory),
 ):
-    repo = repository_factory.job
-    counts = repo.summary_counts()
-    return {k: v for k, v in counts}
+    window_hours = max(1, min(window_hours, 24 * 7))
+    return repository_factory.job.dashboard_stats(window_hours=window_hours)
 
 
 @router.get("/stream")
@@ -364,7 +402,8 @@ def get_job_children(
     if not repo.get(job_id):
         raise HTTPException(404, "job not found")
     rows = repo.list(parent_id=job_id, limit=200)
-    return [_job_row_response(r, repository_factory) for r in rows]
+    cache: dict = {}
+    return [_job_row_response(r, repository_factory, cache) for r in rows]
 
 
 @router.post("/{job_id}/cancel", dependencies=[Depends(require_auth)])

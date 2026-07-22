@@ -61,6 +61,7 @@ class JobRepository(BaseRepository):
         topic_id: Optional[int] = None,
         course_id: Optional[int] = None,
         parent_id: Optional[int] = None,
+        before_id: Optional[int] = None,
     ) -> List[JobModel]:
         with self.get_session() as session:
             stmt = select(JobModel)
@@ -70,6 +71,8 @@ class JobRepository(BaseRepository):
                 stmt = stmt.where(JobModel.kind == kind)
             if parent_id is not None:
                 stmt = stmt.where(JobModel.parent_job_id == parent_id)
+            if before_id is not None:
+                stmt = stmt.where(JobModel.id < before_id)
 
             # JSONB payload filters (best-effort on Postgres)
             if lecture_id is not None:
@@ -101,7 +104,9 @@ class JobRepository(BaseRepository):
                     )
                 )
 
-            stmt = stmt.order_by(desc(JobModel.created_at)).limit(limit)
+            # id DESC matches created_at DESC for the serial PK and keeps keyset
+            # pagination (before_id) stable while new jobs stream in.
+            stmt = stmt.order_by(desc(JobModel.id)).limit(limit)
             return list(session.execute(stmt).scalars())
 
     def reserve_one_skip_locked(self) -> Optional[JobModel]:
@@ -259,6 +264,77 @@ class JobRepository(BaseRepository):
                 "counts": counts,
                 "avg_wait_seconds": avg_wait_seconds,
                 "failed_last_hour": failed_last_hour_count,
+            }
+
+    def dashboard_stats(self, *, window_hours: int = 24) -> Dict[str, Any]:
+        """
+        Aggregates backing the admin jobs dashboard.
+
+        Returns counts by status (all time), queue health (avg queued wait,
+        failures in the last hour), and per-kind activity over the recent
+        window: job count plus avg/p50 duration of done jobs, sourced from
+        the worker telemetry stored at result._job_telemetry.duration_ms.
+        """
+        from sqlalchemy import Numeric, cast
+
+        now = self._now()
+        cutoff = now - dt.timedelta(hours=window_hours)
+        with self.get_session() as session:
+            counts_rows = session.execute(
+                select(JobModel.status, func.count()).group_by(JobModel.status)
+            ).all()
+            counts: Dict[str, int] = {str(s): int(c) for s, c in counts_rows}
+
+            avg_wait = session.execute(
+                select(func.avg(func.extract("epoch", now - JobModel.created_at))).where(
+                    JobModel.status == "queued"
+                )
+            ).scalar()
+            avg_wait_seconds = float(avg_wait) if avg_wait is not None else 0.0
+
+            failed_last_hour = session.execute(
+                select(func.count())
+                .select_from(JobModel)
+                .where(
+                    and_(
+                        JobModel.status == "failed",
+                        JobModel.updated_at >= now - dt.timedelta(hours=1),
+                    )
+                )
+            ).scalar()
+
+            duration = cast(JobModel.result["_job_telemetry"]["duration_ms"].astext, Numeric)
+            is_done = JobModel.status == "done"
+            kind_rows = session.execute(
+                select(
+                    JobModel.kind,
+                    func.count().label("count"),
+                    func.avg(duration).filter(is_done).label("avg_duration_ms"),
+                    func.percentile_cont(0.5)
+                    .within_group(duration.asc())
+                    .filter(is_done)
+                    .label("p50_duration_ms"),
+                )
+                .where(JobModel.updated_at >= cutoff)
+                .group_by(JobModel.kind)
+                .order_by(func.count().desc())
+            ).all()
+            kinds_recent = [
+                {
+                    "kind": str(kind),
+                    "count": int(count),
+                    "avg_duration_ms": float(avg) if avg is not None else None,
+                    "p50_duration_ms": float(p50) if p50 is not None else None,
+                }
+                for kind, count, avg, p50 in kind_rows
+            ]
+
+            return {
+                "counts": counts,
+                "avg_wait_seconds": avg_wait_seconds,
+                "failed_last_hour": int(failed_last_hour or 0),
+                "window_hours": window_hours,
+                "kinds_recent": kinds_recent,
             }
 
     def sweep_stuck(self, *, visibility_timeout_seconds: int) -> int:

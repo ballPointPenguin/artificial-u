@@ -499,6 +499,7 @@ class LectureGeneratorService:
             "timeline_url": updated.timeline_url,
             "voice_id": updated.voice_id,
             "duration": updated.duration,
+            "tts_backend": backend_name,
         }
 
     async def generate_lecture_timeline(self, lecture_id: int) -> Dict[str, Any]:

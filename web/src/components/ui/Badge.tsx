@@ -1,6 +1,6 @@
 import { type JSX, splitProps } from 'solid-js'
 
-type BadgeVariant = 'default' | 'outline' | 'secondary' | 'success' | 'danger'
+type BadgeVariant = 'default' | 'outline' | 'secondary' | 'success' | 'danger' | 'warning' | 'info'
 
 interface BadgeProps {
   variant?: BadgeVariant
@@ -17,6 +17,8 @@ export function Badge(props: BadgeProps) {
     secondary: 'bg-accent/40 text-accent',
     success: 'bg-success-bg text-success',
     danger: 'bg-danger-bg text-danger',
+    warning: 'bg-warning-bg text-warning',
+    info: 'bg-info-bg text-info',
   }
 
   return (

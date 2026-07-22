@@ -25,6 +25,28 @@ export interface JobRow {
   link_path?: string | null
 }
 
+export interface JobListPage {
+  jobs: JobRow[]
+  has_more: boolean
+  /** Pass as before_id to fetch the next (older) page; null on the last page. */
+  next_before_id: number | null
+}
+
+export interface JobKindStat {
+  kind: string
+  count: number
+  avg_duration_ms: number | null
+  p50_duration_ms: number | null
+}
+
+export interface JobsSummary {
+  counts: Partial<Record<JobStatus, number>>
+  avg_wait_seconds: number
+  failed_last_hour: number
+  window_hours: number
+  kinds_recent: JobKindStat[]
+}
+
 export async function getJob(jobId: number): Promise<JobRow> {
   return httpClient.get<JobRow>(ENDPOINTS.jobs.detail(jobId))
 }
@@ -37,7 +59,8 @@ export async function listJobs(params?: {
   topic_id?: number
   course_id?: number
   parent_id?: number
-}): Promise<JobRow[]> {
+  before_id?: number
+}): Promise<JobListPage> {
   const qs = new URLSearchParams()
   if (params?.status) qs.set('status', params.status)
   if (params?.limit) qs.set('limit', String(params.limit))
@@ -46,8 +69,13 @@ export async function listJobs(params?: {
   if (params?.topic_id != null) qs.set('topic_id', String(params.topic_id))
   if (params?.course_id != null) qs.set('course_id', String(params.course_id))
   if (params?.parent_id != null) qs.set('parent_id', String(params.parent_id))
+  if (params?.before_id != null) qs.set('before_id', String(params.before_id))
   const endpoint = `${ENDPOINTS.jobs.list}${qs.toString() ? `?${qs.toString()}` : ''}`
-  return httpClient.get<JobRow[]>(endpoint)
+  return httpClient.get<JobListPage>(endpoint)
+}
+
+export async function getJobsSummary(): Promise<JobsSummary> {
+  return httpClient.get<JobsSummary>(ENDPOINTS.jobs.summary)
 }
 
 export async function listJobChildren(parentJobId: number): Promise<JobRow[]> {
