@@ -18,47 +18,43 @@
     "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
-    "@auth0/auth0-spa-js": "^2.23.0",
+    "@auth0/auth0-spa-js": "^2.24.0",
     "@kobalte/core": "^0.13.12",
     "@plausible-analytics/tracker": "^0.4.5",
     "@solid-primitives/i18n": "^2.2.1",
-    "@solidjs/router": "^0.16.1",
-    "lucide-solid": "^1.23.0",
+    "@solidjs/router": "^0.16.2",
+    "lucide-solid": "^1.25.0",
     "media-chrome": "^4.19.2",
     "solid-js": "^1.9.14"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.5.2",
+    "@biomejs/biome": "^2.5.5",
     "@eslint/js": "^10.0.1",
     "@kobalte/tailwindcss": "^0.9.0",
     "@solidjs/testing-library": "^0.8.10",
-    "@tailwindcss/vite": "^4.3.2",
-    "@testing-library/jest-dom": "^6.9.1",
+    "@tailwindcss/vite": "^4.3.3",
+    "@testing-library/jest-dom": "^7.0.0",
     "@vitest/coverage-v8": "^4.1.10",
-    "baseline-browser-mapping": "^2.10.42",
-    "eslint": "^10.6.0",
+    "baseline-browser-mapping": "^2.11.0",
+    "eslint": "^10.7.0",
     "eslint-plugin-solid": "^0.14.5",
     "globals": "^17.7.0",
     "jsdom": "^29.1.1",
-    "postcss": "^8.5.16",
+    "postcss": "^8.5.21",
     "postcss-color-hsl": "^2.0.0",
     "postcss-preset-env": "^11.3.2",
-    "stylelint": "^17.14.0",
+    "stylelint": "^17.14.1",
     "stylelint-config-standard": "^40.0.0",
     "stylelint-config-tailwindcss": "^1.0.1",
-    "tailwindcss": "^4.3.2",
-    "typescript": "~6.0.3",
-    "typescript-eslint": "^8.63.0",
-    "vite": "^8.1.3",
+    "tailwindcss": "^4.3.3",
+    "@typescript/native": "npm:typescript@~7.0.2",
+    "typescript": "npm:@typescript/typescript6@~6.0.2",
+    "typescript-eslint": "^8.65.0",
+    "vite": "^8.1.5",
     "vite-plugin-pwa": "^1.3.0",
-    "vite-plugin-solid": "^2.11.12",
+    "vite-plugin-solid": "^2.11.13",
     "vitest": "^4.1.10",
     "workbox-window": "^7.4.1"
   },
-  "pnpm": {
-    "overrides": {
-      "@typescript-eslint/utils": "^8.59.0",
-      "@typescript-eslint/typescript-estree": "^8.59.0"
-    }
-  }
+  "packageManager": "pnpm@11.15.1"
 }

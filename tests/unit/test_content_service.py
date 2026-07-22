@@ -11,7 +11,10 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from artificial_u.services.content_service import ContentService
+from artificial_u.services.content_service import (
+    ContentService,
+    _deprecates_gemini_sampling_params,
+)
 
 
 def _build_service():
@@ -175,3 +178,95 @@ async def test_generate_anthropic_uses_sampling_params_for_sonnet_4_6(monkeypatc
     call_kwargs = mock_client.messages.create.await_args.kwargs
     assert "thinking" not in call_kwargs
     assert call_kwargs["temperature"] == pytest.approx(0.3)
+
+
+@pytest.mark.parametrize(
+    "model,expected",
+    [
+        ("gemini-3.6-flash", True),
+        ("gemini-3.5-flash-lite", True),
+        ("gemini-3.5-flash", False),
+        ("gemini-3.1-pro-preview", False),
+        ("gemini-3.1-flash-lite", False),
+        ("gemini-4.0-flash", True),
+        ("claude-sonnet-4-6", False),
+        ("", False),
+    ],
+)
+def test_deprecates_gemini_sampling_params(model, expected):
+    assert _deprecates_gemini_sampling_params(model) is expected
+
+
+@pytest.mark.asyncio
+async def test_generate_gemini_omits_temperature_for_gemini_3_6_flash(monkeypatch):
+    service = _build_service()
+
+    part_mock = MagicMock()
+    part_mock.text = "hello from gemini"
+    part_mock.thought = False
+
+    candidate_mock = MagicMock()
+    candidate_mock.content.parts = [part_mock]
+
+    response_mock = MagicMock()
+    response_mock.candidates = [candidate_mock]
+
+    mock_client = MagicMock()
+    mock_client.aio.models.generate_content = AsyncMock(return_value=response_mock)
+    monkeypatch.setattr("artificial_u.services.content_service.gemini_client", mock_client)
+
+    result = await service._generate_gemini(
+        prompt="Test prompt",
+        model="gemini-3.6-flash",
+        system_prompt="Test system",
+        temperature=0.3,
+        max_tokens=2048,
+        prefill=None,
+        thinking_level="low",
+    )
+
+    assert result == "hello from gemini"
+    call_kwargs = mock_client.aio.models.generate_content.await_args.kwargs
+    config = call_kwargs["config"]
+    # Config should not have temperature set because gemini-3.6-flash deprecates sampling params
+    assert not hasattr(config, "temperature") or getattr(config, "temperature", None) is None
+    assert config.max_output_tokens == 2048
+    assert (
+        getattr(
+            config.thinking_config.thinking_level, "value", config.thinking_config.thinking_level
+        ).lower()
+        == "low"
+    )
+
+
+@pytest.mark.asyncio
+async def test_generate_gemini_includes_temperature_for_gemini_3_5_flash(monkeypatch):
+    service = _build_service()
+
+    part_mock = MagicMock()
+    part_mock.text = "hello from gemini 3.5"
+    part_mock.thought = False
+
+    candidate_mock = MagicMock()
+    candidate_mock.content.parts = [part_mock]
+
+    response_mock = MagicMock()
+    response_mock.candidates = [candidate_mock]
+
+    mock_client = MagicMock()
+    mock_client.aio.models.generate_content = AsyncMock(return_value=response_mock)
+    monkeypatch.setattr("artificial_u.services.content_service.gemini_client", mock_client)
+
+    result = await service._generate_gemini(
+        prompt="Test prompt",
+        model="gemini-3.5-flash",
+        system_prompt="Test system",
+        temperature=None,
+        max_tokens=2048,
+        prefill=None,
+    )
+
+    assert result == "hello from gemini 3.5"
+    call_kwargs = mock_client.aio.models.generate_content.await_args.kwargs
+    config = call_kwargs["config"]
+    assert config.temperature == 1.0
