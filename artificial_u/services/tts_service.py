@@ -68,7 +68,7 @@ class TTSService:
             from artificial_u.integrations.tts.factory import create_tts_backend
 
             self.backend = create_tts_backend(
-                backend_name="elevenlabs",
+                backend_name=self.settings.tts_backend or "elevenlabs",
                 api_key=api_key,
                 logger=self.logger,
             )

@@ -2,6 +2,8 @@
 Integration tests for the database models and repository.
 """
 
+import uuid
+
 import pytest
 
 from artificial_u.models.core import Course, Department, Faculty, Lecture, Professor, Topic
@@ -532,3 +534,57 @@ def test_tag_repository_faceted_counts(repository, db_department, db_professor):
 
     # A combination with zero matching courses yields no tags at all
     assert tag_repo.list_with_counts(language="en", tags=["military-history", "neurobiology"]) == []
+
+
+@pytest.mark.integration
+def test_job_list_keyset_pagination(repository):
+    """before_id pages through jobs newest-first with no overlap between pages."""
+    job_repo = repository.job
+    # Unique kind keeps the test deterministic on a persistent test database.
+    kind = f"test_keyset_{uuid.uuid4().hex[:8]}"
+    created_ids = [job_repo.create(kind=kind, payload={"n": i}).id for i in range(5)]
+
+    page_one = job_repo.list(kind=kind, limit=3)
+    page_one_ids = [job.id for job in page_one]
+    assert page_one_ids == sorted(created_ids, reverse=True)[:3]
+
+    page_two = job_repo.list(kind=kind, limit=3, before_id=page_one_ids[-1])
+    page_two_ids = [job.id for job in page_two]
+    assert page_two_ids == sorted(created_ids, reverse=True)[3:]
+    assert not set(page_one_ids) & set(page_two_ids)
+
+
+@pytest.mark.integration
+def test_job_dashboard_stats(repository):
+    """dashboard_stats aggregates counts, queue health, and per-kind durations."""
+    job_repo = repository.job
+    done_kind = f"test_stats_done_{uuid.uuid4().hex[:8]}"
+    pending_kind = f"test_stats_pending_{uuid.uuid4().hex[:8]}"
+
+    done_a = job_repo.create(kind=done_kind, payload={})
+    done_b = job_repo.create(kind=done_kind, payload={})
+    job_repo.mark_done(done_a.id, {"_job_telemetry": {"duration_ms": 60000}})
+    job_repo.mark_done(done_b.id, {"_job_telemetry": {"duration_ms": 30000}})
+
+    job_repo.create(kind=pending_kind, payload={})
+    failed = job_repo.create(kind=pending_kind, payload={})
+    job_repo.mark_failed_or_retry(failed.id, attempts=2, max_attempts=2, last_error="boom")
+
+    stats = job_repo.dashboard_stats(window_hours=24)
+
+    assert stats["counts"]["done"] >= 2
+    assert stats["counts"]["queued"] >= 1
+    assert stats["counts"]["failed"] >= 1
+    assert stats["failed_last_hour"] >= 1
+    assert stats["avg_wait_seconds"] >= 0.0
+    assert stats["window_hours"] == 24
+
+    by_kind = {entry["kind"]: entry for entry in stats["kinds_recent"]}
+    done_stats = by_kind[done_kind]
+    assert done_stats["count"] == 2
+    assert done_stats["avg_duration_ms"] == pytest.approx(45000.0)
+    assert done_stats["p50_duration_ms"] == pytest.approx(45000.0)
+    # The queued/failed jobs have no completed telemetry to aggregate.
+    pending_stats = by_kind[pending_kind]
+    assert pending_stats["count"] == 2
+    assert pending_stats["avg_duration_ms"] is None

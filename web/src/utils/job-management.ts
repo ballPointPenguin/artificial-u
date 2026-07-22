@@ -455,7 +455,9 @@ export function adoptJobHandoff(options: JobHandoffAdoptionOptions) {
         listJobs({ course_id: currentEntity.id, status: 'queued', limit: 100 }),
         listJobs({ course_id: currentEntity.id, status: 'running', limit: 100 }),
       ])
-      const activeJobs = [...queued, ...running].filter((job) => matchesJobKind(job, options.kinds))
+      const activeJobs = [...queued.jobs, ...running.jobs].filter((job) =>
+        matchesJobKind(job, options.kinds)
+      )
       for (const job of activeJobs) trackOnce(job.id)
       await discoverChildren(activeJobs.map((job) => job.id))
     } catch (error) {
@@ -604,6 +606,33 @@ export function getJobMessage(
 
   const kindMessages = messages[kind]
   return kindMessages ? kindMessages[status] || `${kind} ${status}` : `${kind} ${status}`
+}
+
+/** Short human-readable names for job kinds (getJobMessage yields sentences, not names). */
+const JOB_KIND_LABELS: Record<string, string> = {
+  generate_course: 'Course',
+  generate_department: 'Department',
+  generate_professor: 'Professor',
+  generate_professor_image: 'Professor image',
+  generate_course_image: 'Course image',
+  generate_topics_for_course: 'Course topics',
+  generate_tags_for_course: 'Course tags',
+  generate_lecture: 'Lecture',
+  generate_lecture_text_only: 'Lecture text',
+  generate_lecture_summary: 'Lecture summary',
+  generate_lecture_audio: 'Lecture audio',
+  generate_lecture_timeline: 'Audio timeline',
+  generate_lecture_images: 'Image planning',
+  resume_lecture_images: 'Image resume',
+  generate_lecture_slide: 'Lecture image',
+  remap_lecture_images_timeline: 'Image timeline remap',
+}
+
+/** Known job kinds, for filter UIs. */
+export const JOB_KINDS: string[] = Object.keys(JOB_KIND_LABELS)
+
+export function getJobKindLabel(kind: string): string {
+  return JOB_KIND_LABELS[kind] ?? kind
 }
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
