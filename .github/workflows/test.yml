@@ -63,7 +63,7 @@ jobs:
             -p 9001:9001 \
             -e MINIO_ROOT_USER=minioadmin \
             -e MINIO_ROOT_PASSWORD=minioadmin \
-            minio/minio:latest \
+            quay.io/minio/minio:latest \
             server /data --console-address ":9001"
 
           # Wait for MinIO to be ready
