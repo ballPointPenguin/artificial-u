@@ -244,18 +244,18 @@ class CdkStack(Stack):
             "CLOUDWATCH_NAMESPACE": "ArtificialU",
             # Tracemalloc drift tracing: baseline snapshot at startup + SIGUSR1 diff logs.
             "DIAG_TRACEMALLOC": "0",
-            "COURSE_GENERATION_MODEL": "gpt-5.4-nano",
-            "DEPARTMENT_GENERATION_MODEL": "gpt-5.4-nano",
+            "COURSE_GENERATION_MODEL": "gpt-5.6-luna",
+            "DEPARTMENT_GENERATION_MODEL": "gpt-5.6-luna",
             "ENV": "production",
             "GUNICORN_THREADS": "8",
             "GUNICORN_TIMEOUT": "120",
             "GUNICORN_WORKERS": "1",
             "MALLOC_ARENA_MAX": "2",
             "IMAGE_GENERATION_MODEL": "gemini-3.1-flash-lite-image",
-            "LECTURE_GENERATION_MODEL": "claude-sonnet-4-6",
-            "LECTURE_SUMMARY_MODEL": "gpt-5.4-nano",
+            "LECTURE_GENERATION_MODEL": "claude-sonnet-5",
+            "LECTURE_SUMMARY_MODEL": "gpt-5.6-luna",
             "LOG_LEVEL": "INFO",
-            "PROFESSOR_GENERATION_MODEL": "gpt-5.4-nano",
+            "PROFESSOR_GENERATION_MODEL": "gpt-5.6-luna",
             # "RUN_INITIALIZE_VOICES": "1",  # TEMPORARY - initialize/refresh voice records at boot
             # "RUN_BACKFILL_DURATIONS": "1",  # TEMPORARY - comment out when not using it
             # "RUN_BACKFILL_ID3": "1",  # TEMPORARY - comment out when not using it
@@ -269,7 +269,7 @@ class CdkStack(Stack):
             "STORAGE_LECTURES_BUCKET": lectures_bucket.bucket_name,
             "STORAGE_REGION": self.region,
             "STORAGE_TYPE": "s3",
-            "TOPICS_GENERATION_MODEL": "gemini-3.6-flash",
+            "TOPICS_GENERATION_MODEL": "gemini-3.8-flash",
             "TTS_VOICE_MODEL": "eleven_flash_v2_5",
             # Database connection pool settings (conservative for db.t4g.small ~110 max_connections)
             # These ensure the app uses a shared connection pool and doesn't exhaust RDS connections

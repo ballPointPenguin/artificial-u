@@ -136,21 +136,21 @@ ArtificialU allows configuration of different AI models for various services:
 
 ```python
 # Course generation model
-COURSE_GENERATION_MODEL=gpt-5.4-nano
+COURSE_GENERATION_MODEL=gpt-5.6-luna
 
 # Department generation model
-DEPARTMENT_GENERATION_MODEL=gpt-5.4-nano
+DEPARTMENT_GENERATION_MODEL=gpt-5.6-luna
 
 # Lecture generation model
-LECTURE_GENERATION_MODEL=claude-sonnet-4-6
+LECTURE_GENERATION_MODEL=claude-sonnet-5
 
 # Professor generation model
-PROFESSOR_GENERATION_MODEL=gpt-5.4-nano
+PROFESSOR_GENERATION_MODEL=gpt-5.6-luna
 
 # Topics generation model
-TOPICS_GENERATION_MODEL=gemini-3.6-flash
+TOPICS_GENERATION_MODEL=gemini-3.8-flash
 
-# Image generation model (gemini-3.1-flash-lite-image, gemini-3.1-flash-image, or gemini-3-pro-image)
+# Image generation model (Gemini image models, gpt-image-2, or gpt-image-2.5-flare)
 IMAGE_GENERATION_MODEL=gemini-3.1-flash-lite-image
 
 # Text-to-speech voice model (ElevenLabs)
@@ -159,19 +159,37 @@ IMAGE_GENERATION_MODEL=gemini-3.1-flash-lite-image
 TTS_VOICE_MODEL=eleven_flash_v2_5
 ```
 
+`gpt-5.6-luna` is the cost-sensitive replacement for `gpt-5.4-nano`; both remain
+supported. For higher-capability text generation, use `gpt-5.6` (an alias for
+`gpt-5.6-sol`) or the pinned `gpt-5.6-sol` identifier. GPT-5.6 models support
+the Chat Completions and Responses APIs; ArtificialU uses Chat Completions for
+text generation. When calling `ContentService.generate_text()` directly, pass
+`effort` (`none`, `low`, `medium`, `high`, `xhigh`, or `max`) to set GPT-5.6
+reasoning effort; otherwise the API default is `medium`.
+
+`gemini-3.8-flash` is the default Topics model for medium-complexity generation.
+It uses Gemini 3's `thinking_level` control (`low`, `medium`, or `high`); the
+`minimal` level is not supported. Gemini 3.8 rejects sampling parameters, so
+ArtificialU omits temperature, top-p, and top-k from its requests.
+
+For image generation, `gemini-3.1-flash-lite-image` remains the default. The
+supported OpenAI alternatives are `gpt-image-2` and `gpt-image-2.5-flare`, the
+fast GPT Image 2.5 model. Both use OpenAI's Image API and return base64 image
+data. `imagen-*` and GPT Image 1.x model identifiers are no longer supported.
+
 ### Anthropic (Claude) Model Version Compatibility
 
 `ContentService` inspects the Claude model name (e.g. `claude-sonnet-4-6`,
-`claude-opus-4-8`, `claude-sonnet-5`) to automatically adjust request parameters
+`claude-opus-5`, `claude-sonnet-5`) to automatically adjust request parameters
 for API differences across model generations, so callers can swap
 `LECTURE_GENERATION_MODEL` (or the equivalent preference) without code changes:
 
 - **Prefill**: Claude 4.6+ models (including Sonnet 5) reject assistant-message
   prefill with a 400 error; it's automatically skipped for these models.
-- **Sampling params**: Claude 4.7+ models (including Opus 4.8 and Sonnet 5) reject
+-- **Sampling params**: Claude 4.7+ models (including Opus 5 and Sonnet 5) reject
   non-default `temperature`/`top_p`/`top_k`; these are omitted for supported models
   instead of causing a request failure.
-- **Effort**: Claude Opus 4.5+ and Sonnet 4.6+ (including Sonnet 5) support the
+-- **Effort**: Claude Opus 5+ and Sonnet 4.6+ (including Sonnet 5) support the
   `output_config.effort` parameter, which controls overall token spend. Defaults to
   `"medium"` for content generation.
 - **Adaptive thinking**: Claude Sonnet 5 is the first model that runs adaptive
@@ -183,7 +201,7 @@ for API differences across model generations, so callers can swap
 
 Model names are parsed with `ContentService._parse_claude_version()`, which
 understands both the `claude-{tier}-{major}-{minor}[-date]` naming scheme (e.g.
-`claude-sonnet-4-6`) and the bare-major naming scheme introduced with Sonnet 5
+`claude-sonnet-5`) and the bare-major naming scheme introduced with Sonnet 5
 (e.g. `claude-sonnet-5`, with no explicit minor version).
 
 ## Lecture Defaults
@@ -289,7 +307,7 @@ TESTING=true
 ## Available Configuration Options
 
 | Setting | Description | Default | Required |
-|---------|-------------|---------|----------|
+| --------- | ------------- | --------- | ---------- |
 | `DATABASE_URL` | Database connection string | `postgresql://postgres:postgres@localhost:5432/artificial_u_dev` | Yes |
 | `ANTHROPIC_API_KEY` | API key for Anthropic | None | No |
 | `ELEVENLABS_API_KEY` | API key for ElevenLabs | None | No |
@@ -309,12 +327,12 @@ TESTING=true
 | `DIAG_TRACEMALLOC` | Enable one-off tracemalloc baseline + SIGUSR1 diffs (`1` on; `0` or unset off) | `0` (off) | No |
 | `content_backend` | Backend for content generation | `anthropic` | No |
 | `content_model` | Model for chosen backend | Depends on backend | No |
-| `COURSE_GENERATION_MODEL` | Model for course generation | `gpt-5.4-nano` | No |
-| `DEPARTMENT_GENERATION_MODEL` | Model for department generation | `gpt-5.4-nano` | No |
-| `LECTURE_GENERATION_MODEL` | Model for lecture generation | `claude-sonnet-4-6` | No |
-| `LECTURE_SUMMARY_MODEL` | Model for lecture summary generation | `gpt-5.4-nano` | No |
-| `TOPICS_GENERATION_MODEL` | Model for topics generation | `gemini-3.6-flash` | No |
-| `PROFESSOR_GENERATION_MODEL` | Model for professor generation | `gpt-5.4-nano` | No |
+| `COURSE_GENERATION_MODEL` | Model for course generation | `gpt-5.6-luna` | No |
+| `DEPARTMENT_GENERATION_MODEL` | Model for department generation | `gpt-5.6-luna` | No |
+| `LECTURE_GENERATION_MODEL` | Model for lecture generation | `claude-sonnet-5` | No |
+| `LECTURE_SUMMARY_MODEL` | Model for lecture summary generation | `gpt-5.6-luna` | No |
+| `TOPICS_GENERATION_MODEL` | Model for topics generation | `gemini-3.8-flash` | No |
+| `PROFESSOR_GENERATION_MODEL` | Model for professor generation | `gpt-5.6-luna` | No |
 | `IMAGE_GENERATION_MODEL` | Model for image generation (`gemini-3.1-flash-lite-image`, `gemini-3.1-flash-image`, `gemini-3-pro-image`) | `gemini-3.1-flash-lite-image` | No |
 | `TTS_VOICE_MODEL` | Model for text-to-speech voice | `eleven_flash_v2_5` | No |
 | `XAI_TTS_BASE_URL` | Base URL for the xAI TTS API | `https://api.x.ai/v1` | No |
