@@ -14,11 +14,13 @@ import pytest
 from artificial_u.services.content_service import (
     ContentService,
     _deprecates_gemini_sampling_params,
+    _is_gpt_5_6,
+    _supports_gemini_minimal_thinking_level,
 )
 
 
 def _build_service():
-    settings = SimpleNamespace(content_backend="anthropic", content_model="claude-sonnet-4-6")
+    settings = SimpleNamespace(content_backend="anthropic", content_model="claude-sonnet-5")
     service = ContentService.__new__(ContentService)
     service.logger = MagicMock()
     service.default_backend = settings.content_backend
@@ -41,7 +43,7 @@ def _build_service():
         ("claude-3-7-sonnet-latest", None),
         ("claude-3-5-sonnet-20241022", None),
         ("claude-3-opus-20240229", None),
-        ("gpt-5.5", None),
+        ("gpt-5.6", None),
     ],
 )
 def test_parse_claude_version(model, expected):
@@ -56,7 +58,7 @@ def test_parse_claude_version(model, expected):
         ("claude-sonnet-5", "sonnet"),
         ("claude-opus-5", "opus"),
         ("claude-3-7-sonnet-latest", None),
-        ("gpt-5.5", None),
+        ("gpt-5.6", None),
     ],
 )
 def test_parse_claude_tier(model, expected):
@@ -109,7 +111,7 @@ class TestVersionGatedFeatures:
             ("claude-opus-4-8", False),  # thinking off by default (adaptive requires opt-in)
             ("claude-sonnet-5", True),  # adaptive thinking on by default
             ("claude-sonnet-5-1", True),
-            ("claude-opus-5", False),  # not a sonnet-tier model
+            ("claude-opus-5", True),  # adaptive thinking on by default
         ],
     )
     def test_defaults_to_adaptive_thinking(self, model, expected):
@@ -117,7 +119,7 @@ class TestVersionGatedFeatures:
 
 
 @pytest.mark.asyncio
-async def test_generate_anthropic_disables_thinking_for_sonnet_5(monkeypatch):
+async def test_generate_anthropic_disables_thinking_for_claude_5(monkeypatch):
     service = _build_service()
 
     mock_response = MagicMock()
@@ -129,7 +131,7 @@ async def test_generate_anthropic_disables_thinking_for_sonnet_5(monkeypatch):
     monkeypatch.setattr("artificial_u.services.content_service.anthropic_client", mock_client)
 
     await service._generate_anthropic(
-        "prompt", "claude-sonnet-5", "system", None, None, None, effort=None
+        "prompt", "claude-opus-5", "system", None, None, None, effort=None
     )
 
     call_kwargs = mock_client.messages.create.await_args.kwargs
@@ -183,18 +185,102 @@ async def test_generate_anthropic_uses_sampling_params_for_sonnet_4_6(monkeypatc
 @pytest.mark.parametrize(
     "model,expected",
     [
+        ("gpt-5.6-luna", True),
+        ("gpt-5.6-sol", True),
+        ("gpt-5.6", True),
+        ("gpt-5.4-nano", False),
+        ("gpt-5.5", False),
+    ],
+)
+def test_is_gpt_5_6(model, expected):
+    assert _is_gpt_5_6(model) is expected
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("model", ["gpt-5.6-luna", "gpt-5.6-sol", "gpt-5.6"])
+async def test_generate_openai_gpt_5_6_uses_reasoning_effort_without_temperature(
+    monkeypatch, model
+):
+    service = _build_service()
+
+    mock_response = MagicMock()
+    mock_response.choices = [SimpleNamespace(message=SimpleNamespace(content="hello world"))]
+    mock_client = MagicMock()
+    mock_client.chat.completions.create = AsyncMock(return_value=mock_response)
+    monkeypatch.setattr("artificial_u.services.content_service.openai_client", mock_client)
+
+    await service._generate_openai("prompt", model, "system", 0.3, 2048, None, effort="low")
+
+    call_kwargs = mock_client.chat.completions.create.await_args.kwargs
+    assert call_kwargs["max_completion_tokens"] == 2048
+    assert call_kwargs["reasoning_effort"] == "low"
+    assert "temperature" not in call_kwargs
+
+
+@pytest.mark.asyncio
+async def test_generate_openai_retains_gpt_5_4_nano_without_temperature(monkeypatch):
+    service = _build_service()
+
+    mock_response = MagicMock()
+    mock_response.choices = [SimpleNamespace(message=SimpleNamespace(content="hello world"))]
+    mock_client = MagicMock()
+    mock_client.chat.completions.create = AsyncMock(return_value=mock_response)
+    monkeypatch.setattr("artificial_u.services.content_service.openai_client", mock_client)
+
+    await service._generate_openai("prompt", "gpt-5.4-nano", "system", 0.3, 2048, None)
+
+    call_kwargs = mock_client.chat.completions.create.await_args.kwargs
+    assert "reasoning_effort" not in call_kwargs
+    assert "temperature" not in call_kwargs
+
+
+@pytest.mark.parametrize(
+    "model,expected",
+    [
         ("gemini-3.6-flash", True),
         ("gemini-3.5-flash-lite", True),
-        ("gemini-3.5-flash", False),
+        ("gemini-3.8-flash", True),
         ("gemini-3.1-pro-preview", False),
         ("gemini-3.1-flash-lite", False),
         ("gemini-4.0-flash", True),
-        ("claude-sonnet-4-6", False),
+        ("claude-sonnet-5", False),
         ("", False),
     ],
 )
 def test_deprecates_gemini_sampling_params(model, expected):
     assert _deprecates_gemini_sampling_params(model) is expected
+
+
+@pytest.mark.parametrize(
+    "model,expected",
+    [
+        ("gemini-3.5-flash", True),
+        ("gemini-3.6-flash", True),
+        ("gemini-3.8-flash", False),
+    ],
+)
+def test_supports_gemini_minimal_thinking_level(model, expected):
+    assert _supports_gemini_minimal_thinking_level(model) is expected
+
+
+@pytest.mark.asyncio
+async def test_generate_gemini_rejects_minimal_thinking_level_for_gemini_3_8(monkeypatch):
+    service = _build_service()
+    mock_client = MagicMock()
+    monkeypatch.setattr("artificial_u.services.content_service.gemini_client", mock_client)
+
+    with pytest.raises(ValueError, match="does not support thinking_level='minimal'"):
+        await service._generate_gemini(
+            prompt="Test prompt",
+            model="gemini-3.8-flash",
+            system_prompt=None,
+            temperature=None,
+            max_tokens=2048,
+            prefill=None,
+            thinking_level="minimal",
+        )
+
+    mock_client.aio.models.generate_content.assert_not_called()
 
 
 @pytest.mark.asyncio
@@ -217,7 +303,7 @@ async def test_generate_gemini_omits_temperature_for_gemini_3_6_flash(monkeypatc
 
     result = await service._generate_gemini(
         prompt="Test prompt",
-        model="gemini-3.6-flash",
+        model="gemini-3.8-flash",
         system_prompt="Test system",
         temperature=0.3,
         max_tokens=2048,
@@ -240,7 +326,7 @@ async def test_generate_gemini_omits_temperature_for_gemini_3_6_flash(monkeypatc
 
 
 @pytest.mark.asyncio
-async def test_generate_gemini_includes_temperature_for_gemini_3_5_flash(monkeypatch):
+async def test_generate_gemini_includes_temperature_for_gemini_3_1_flash(monkeypatch):
     service = _build_service()
 
     part_mock = MagicMock()
@@ -259,7 +345,7 @@ async def test_generate_gemini_includes_temperature_for_gemini_3_5_flash(monkeyp
 
     result = await service._generate_gemini(
         prompt="Test prompt",
-        model="gemini-3.5-flash",
+        model="gemini-3.1-flash",
         system_prompt="Test system",
         temperature=None,
         max_tokens=2048,

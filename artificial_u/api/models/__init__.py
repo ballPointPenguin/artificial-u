@@ -14,15 +14,10 @@ from artificial_u.api.models.courses import (
     CourseUpdate,
 )
 from artificial_u.api.models.courses import DepartmentBrief as CourseDepartmentBrief
-from artificial_u.api.models.courses import (
-    GeneratedCourseData,
-)
+from artificial_u.api.models.courses import GeneratedCourseData
 from artificial_u.api.models.courses import LectureBrief as CourseLectureBrief
 from artificial_u.api.models.courses import ProfessorBrief as CourseProfessorBrief
-from artificial_u.api.models.courses import (
-    TagBrief,
-    TagsUpdate,
-)
+from artificial_u.api.models.courses import TagBrief, TagsUpdate
 
 # Department model
 from artificial_u.api.models.departments import CourseBrief as DepartmentCourseBrief
@@ -82,10 +77,7 @@ from artificial_u.api.models.professors import (
 
 # Quickstart model
 from artificial_u.api.models.quickstart import CourseBrief as QuickstartCourseBrief
-from artificial_u.api.models.quickstart import (
-    IntroAudioRequest,
-    IntroAudioResponse,
-)
+from artificial_u.api.models.quickstart import IntroAudioRequest, IntroAudioResponse
 from artificial_u.api.models.quickstart import ProfessorDetail as QuickstartProfessorDetail
 from artificial_u.api.models.quickstart import (
     QuickstartFinalizeRequest,

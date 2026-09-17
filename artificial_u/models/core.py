@@ -372,7 +372,7 @@ class Preference(BaseModel):
                 "id": 1,
                 "student_id": None,
                 "scope": "LECTURE_GENERATION_MODEL",
-                "value": "claude-sonnet-4-6",
+                "value": "claude-sonnet-5",
                 "is_global": True,
                 "created_at": "2025-12-19T00:00:00Z",
                 "updated_at": "2025-12-19T00:00:00Z",

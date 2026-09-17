@@ -63,7 +63,7 @@ jobs:
             -p 9001:9001 \
             -e MINIO_ROOT_USER=minioadmin \
             -e MINIO_ROOT_PASSWORD=minioadmin \
-            minio/minio:latest \
+            quay.io/minio/minio:latest \
             server /data --console-address ":9001"
 
           # Wait for MinIO to be ready
@@ -78,17 +78,15 @@ jobs:
 
       - name: Set up MinIO buckets
         env:
-          MINIO_ENDPOINT: http://localhost:9000
           MINIO_ACCESS_KEY: minioadmin
           MINIO_SECRET_KEY: minioadmin
         run: |
-          # Install MinIO client
-          wget https://dl.min.io/client/mc/release/linux-amd64/mc
-          chmod +x mc
-          sudo mv mc /usr/local/bin/
-
-          # Configure MinIO client
-          mc alias set testminio $MINIO_ENDPOINT $MINIO_ACCESS_KEY $MINIO_SECRET_KEY
+          # dl.min.io no longer serves the mc binary (410 Gone), so run mc via its container image instead
+          mc() {
+            docker run --rm --network host \
+              -e MC_HOST_testminio="http://${MINIO_ACCESS_KEY}:${MINIO_SECRET_KEY}@localhost:9000" \
+              quay.io/minio/mc "$@"
+          }
 
           # Create buckets
           mc mb testminio/artificial-u-audio --ignore-existing

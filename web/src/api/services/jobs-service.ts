@@ -19,7 +19,7 @@ export interface JobRow {
   parent_job_id?: number | null
   created_at?: string
   updated_at?: string
-  /** Best-effort model name for this job's kind (e.g. "claude-sonnet-4-6"), when one is obvious. */
+  /** Best-effort model name for this job's kind (e.g. "claude-sonnet-5"), when one is obvious. */
   model?: string | null
   /** Relative frontend path to the lecture or topic this job concerns, when resolvable. */
   link_path?: string | null

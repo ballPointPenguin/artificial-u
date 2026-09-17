@@ -21,7 +21,7 @@ content_service = ContentService()
 response = await content_service.generate_text(
     prompt="Create a lecture outline for machine learning basics",
     prefill="<lecture_outline>",
-    model="claude-sonnet-4-6"
+    model="claude-sonnet-5"
 )
 
 # The response will start with "<lecture_outline>" and continue from there

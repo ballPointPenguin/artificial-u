@@ -42,6 +42,47 @@ def test_sanitize_safety_keywords():
     assert "clashes" in sanitized.lower()
 
 
+@pytest.mark.parametrize(
+    "model_name,backend",
+    [
+        ("gemini-3.1-flash-lite-image", "gemini"),
+        ("gpt-image-2", "openai"),
+        ("gpt-image-2.5-flare", "openai"),
+    ],
+)
+def test_determine_backend_supports_current_image_models(model_name, backend):
+    image_service = ImageService.__new__(ImageService)
+    assert image_service._determine_backend(model_name) == backend
+
+
+@pytest.mark.parametrize("model_name", ["imagen-4.0-generate-001", "gpt-image-1.5"])
+def test_determine_backend_rejects_retired_image_models(model_name):
+    image_service = ImageService.__new__(ImageService)
+    with pytest.raises(ValueError, match="Unsupported image generation model"):
+        image_service._determine_backend(model_name)
+
+
+@pytest.mark.asyncio
+async def test_call_openai_image_api_supports_gpt_image_2_5_flare(monkeypatch):
+    image_service = ImageService.__new__(ImageService)
+    mock_response = MagicMock()
+    mock_client = MagicMock()
+    mock_client.images.generate = AsyncMock(return_value=mock_response)
+    monkeypatch.setattr("artificial_u.services.image_service.openai_client", mock_client)
+
+    response = await image_service._call_openai_api(
+        model_name="gpt-image-2.5-flare", prompt="A lecture slide", aspect_ratio="16:9"
+    )
+
+    assert response is mock_response
+    assert mock_client.images.generate.await_args.kwargs == {
+        "model": "gpt-image-2.5-flare",
+        "prompt": "A lecture slide",
+        "n": 1,
+        "size": "1792x1024",
+    }
+
+
 @pytest.mark.asyncio
 async def test_generate_lecture_slide_image_progressive_retries(monkeypatch):
     """Test that generate_lecture_slide_image progressively drops references and sanitizes on errors."""
@@ -54,7 +95,7 @@ async def test_generate_lecture_slide_image_progressive_retries(monkeypatch):
 
     image_service = ImageService(storage_service=storage_service)
 
-    # Mock _generate_with_backend to fail on the first six attempts and succeed on the seventh (gpt-image-2 fallback)
+    # Mock _generate_with_backend to fail on the first six attempts and succeed on Flare fallback.
     mock_generate = AsyncMock()
     mock_generate.side_effect = [
         Exception("Attempt 1 failure"),
@@ -63,7 +104,7 @@ async def test_generate_lecture_slide_image_progressive_retries(monkeypatch):
         Exception("Attempt 4 failure"),
         Exception("Attempt 5 failure"),
         Exception("Attempt 6 failure"),
-        [b"fake_openai_bytes"],  # Success (Attempt 7 - gpt-image-2 fallback)
+        [b"fake_openai_bytes"],  # Success (Attempt 7 - GPT Image 2.5 Flare fallback)
     ]
     monkeypatch.setattr(image_service, "_generate_with_backend", mock_generate)
     monkeypatch.setattr(image_service, "_log_image_prompt", AsyncMock())
@@ -97,7 +138,7 @@ async def test_generate_lecture_slide_image_progressive_retries(monkeypatch):
         aspect_ratio="1:1",
     )
 
-    # Check that we ultimately got a valid slide URL from the gpt-image-2 fallback
+    # Check that we ultimately got a valid slide URL from the Flare fallback.
     assert url == "https://storage.example/slide_10.png"
 
     # Assert _generate_with_backend was called exactly 7 times (since the 7th fallback succeeded)
@@ -114,10 +155,10 @@ async def test_generate_lecture_slide_image_progressive_retries(monkeypatch):
     ]
     assert "Slavery and colonialism" in first_kw["prompt"]
 
-    # Verify properties of Attempt 7: No references, sanitized text, gpt-image-2 fallback
+    # Verify properties of Attempt 7: No references, sanitized text, Flare fallback.
     last_call = mock_generate.call_args_list[6]
     last_kw = last_call[1]
-    assert last_kw["model_name"] == "gpt-image-2"
+    assert last_kw["model_name"] == "gpt-image-2.5-flare"
     assert last_kw["reference_image_urls"] is None  # OpenAI backend gets None reference_image_urls
     assert "historical servitude and historical territorial settlement" in last_kw["prompt"]
 
@@ -182,7 +223,7 @@ async def test_generate_course_image_retries_with_sanitized_text_on_safety_block
 async def test_generate_course_image_falls_back_to_alternate_model_and_openai(monkeypatch):
     """
     If sanitized text still fails on the primary model, fall back to the sibling
-    Gemini model, and finally to OpenAI's gpt-image-2 as a last resort.
+    Gemini model, and finally to OpenAI's GPT Image 2.5 Flare as a last resort.
     """
     storage_service = MagicMock()
     storage_service.images_bucket = "images"
@@ -221,7 +262,7 @@ async def test_generate_course_image_falls_back_to_alternate_model_and_openai(mo
         "gemini-3.1-flash-lite-image",
         "gemini-3.1-flash-lite-image",
         "gemini-3.1-flash-image",
-        "gpt-image-2",
+        "gpt-image-2.5-flare",
     ]
 
 
@@ -318,7 +359,7 @@ async def test_generate_professor_image_retries_with_sanitized_text_on_safety_bl
 async def test_generate_professor_image_falls_back_to_alternate_model_and_openai(monkeypatch):
     """
     If sanitized text still fails on the primary model, fall back to the sibling
-    Gemini model, and finally to OpenAI's gpt-image-2 as a last resort.
+    Gemini model, and finally to OpenAI's GPT Image 2.5 Flare as a last resort.
     """
     storage_service = MagicMock()
     storage_service.images_bucket = "images"
@@ -358,7 +399,7 @@ async def test_generate_professor_image_falls_back_to_alternate_model_and_openai
         "gemini-3.1-flash-lite-image",
         "gemini-3.1-flash-lite-image",
         "gemini-3.1-flash-image",
-        "gpt-image-2",
+        "gpt-image-2.5-flare",
     ]
 
 

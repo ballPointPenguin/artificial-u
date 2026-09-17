@@ -1,5 +1,5 @@
 import { A } from '@solidjs/router'
-import { Download, FileText, Film, Headphones, Pencil, Play, Trash2, Upload } from 'lucide-solid'
+import { Download, FileText, Film, Headphones, Pencil, Play, Trash, Upload } from 'lucide-solid'
 import { type Component, createSignal, Show } from 'solid-js'
 import { lectureService } from '../../api/services/lecture-service.js'
 import type { Lecture } from '../../api/types.js'
@@ -513,7 +513,7 @@ export const LectureSection: Component<LectureSectionProps> = (props) => {
                     onClick={() => setShowDeleteModal(true)}
                     disabled={isDeleting()}
                   >
-                    <Trash2 class="h-4 w-4" aria-hidden="true" />
+                    <Trash class="h-4 w-4" aria-hidden="true" />
                     {isDeleting() ? t().lectureDetail.deleting : t().lectureDetail.delete}
                   </Button>
                 </div>
@@ -610,7 +610,7 @@ export const LectureSection: Component<LectureSectionProps> = (props) => {
                         onClick={() => setShowClearSummaryModal(true)}
                         disabled={anyJobActive()}
                       >
-                        <Trash2 size={14} class="mr-1" />
+                        <Trash size={14} class="mr-1" />
                         {t().common.clear}
                       </Button>
                     </div>

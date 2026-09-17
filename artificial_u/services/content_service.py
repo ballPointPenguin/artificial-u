@@ -22,6 +22,11 @@ DEFAULT_MAX_TOKENS = 4096  # Increased from 1024 to allow for longer responses l
 DEFAULT_ANTHROPIC_EFFORT = "medium"
 
 
+def _is_gpt_5_6(model: str) -> bool:
+    """Return whether a model belongs to the GPT-5.6 family."""
+    return bool(re.match(r"gpt-5\.6(?:-|$)", model or ""))
+
+
 def _is_gemini_3_plus(model: str) -> bool:
     """Return True for Gemini 3.x (and newer) reasoning models.
 
@@ -51,6 +56,11 @@ def _deprecates_gemini_sampling_params(model: str) -> bool:
         return (major, minor) >= (3, 6)
 
     return False
+
+
+def _supports_gemini_minimal_thinking_level(model: str) -> bool:
+    """Return whether a Gemini model accepts the ``minimal`` thinking level."""
+    return not model.startswith("gemini-3.8-")
 
 
 class ContentService:
@@ -207,9 +217,9 @@ class ContentService:
             Claude will continue from where this prefill text ends.
             thinking_level: Optional reasoning effort for Gemini 3+ models
             ('minimal', 'low', 'medium', 'high'). Ignored by other backends/models.
-            effort: Optional effort level for Anthropic models that support it
-            ('low', 'medium', 'high', 'xhigh', 'max'). Controls overall token spend.
-            Defaults to 'medium' for supported Claude models. Ignored by other backends.
+            effort: Optional effort level for supported Anthropic and OpenAI reasoning models
+            ('none', 'low', 'medium', 'high', 'xhigh', 'max'). Controls overall token spend.
+            Defaults to 'medium' for supported Claude and GPT-5.6 models. Ignored otherwise.
 
         Returns:
             The generated text content as a string.
@@ -408,20 +418,17 @@ class ContentService:
     def _defaults_to_adaptive_thinking(self, model: str) -> bool:
         """Check if a Claude model runs adaptive thinking by default.
 
-        Claude Sonnet 5 is the first model where requests *without* a ``thinking``
-        field automatically run with adaptive thinking (prior Sonnet/Opus models
-        only think when ``thinking`` is explicitly configured). Because thinking
-        tokens count against ``max_tokens``, leaving this on by default risks
-        truncating the visible response for long-form content generation where
-        ``effort`` already controls output depth/quality. We explicitly disable
-        thinking for these models to keep behavior consistent with Sonnet 4.6 and
-        Opus 4.5-4.8, where no thinking is used unless requested.
+        Claude 5 models run with adaptive thinking when requests omit a
+        ``thinking`` field; prior Sonnet/Opus models only think when explicitly
+        configured. Because thinking tokens count against ``max_tokens``, leaving
+        this on by default risks truncating visible long-form content where
+        ``effort`` already controls output depth and quality. We explicitly
+        disable thinking to keep behavior consistent with earlier Claude models.
         """
         version = self._parse_claude_version(model)
         if version is None:
             return False
-        tier = self._parse_claude_tier(model)
-        return tier == "sonnet" and version >= (5, 0)
+        return version >= (5, 0)
 
     async def _generate_anthropic(  # noqa: C901
         self, prompt, model, system_prompt, temperature, max_tokens, prefill, **kwargs
@@ -471,9 +478,9 @@ class ContentService:
                     f"Effort not supported for model {model}, skipping (requested: {effort})."
                 )
 
-            # Claude Sonnet 5 thinks by default even without a `thinking` field, and
-            # thinking tokens count against max_tokens. Explicitly disable it so
-            # behavior/budgeting stays consistent with Sonnet 4.6 and Opus 4.5-4.8.
+            # Claude 5 thinks by default even without a `thinking` field, and thinking
+            # tokens count against max_tokens. Explicitly disable it so behavior and
+            # budgeting stay consistent with earlier Claude models.
             disable_thinking = self._defaults_to_adaptive_thinking(model)
             if disable_thinking:
                 request_params["thinking"] = {"type": "disabled"}
@@ -555,14 +562,21 @@ class ContentService:
                 )
                 self.logger.debug(f"Using max_tokens parameter for model {model}")
 
-            # Handle temperature - gpt-5.4-nano and some other models don't support custom temperature
-            # For now, we'll skip temperature for gpt-5.4-nano specifically
-            if model == "gpt-5.4-nano":
+            # GPT-5.4 nano and GPT-5.6 reasoning models do not accept a custom
+            # temperature. Prompting and reasoning effort control their behavior.
+            if model == "gpt-5.4-nano" or _is_gpt_5_6(model):
                 self.logger.debug(f"Skipping temperature parameter for {model} (not supported)")
             else:
                 completion_params["temperature"] = (
                     temperature if temperature is not None else DEFAULT_TEMPERATURE
                 )
+
+            # GPT-5.6 Luna and Sol (including the gpt-5.6 alias for Sol) support
+            # reasoning effort through Chat Completions. Their documented default
+            # is medium, so only forward an explicit caller preference.
+            effort = kwargs.get("effort")
+            if effort and _is_gpt_5_6(model):
+                completion_params["reasoning_effort"] = effort
 
             response = await openai_client.chat.completions.create(**completion_params)
             response_text = self._extract_openai_text(response)
@@ -623,7 +637,7 @@ class ContentService:
             pass
         return ""
 
-    async def _generate_gemini(
+    async def _generate_gemini(  # noqa: C901
         self,
         prompt,
         model,
@@ -637,6 +651,8 @@ class ContentService:
         self.logger.info(f"Generating text with Gemini model: {model}")
         if prefill:
             self.logger.warning("Prefill parameter provided but not supported for Gemini models")
+        if thinking_level == "minimal" and not _supports_gemini_minimal_thinking_level(model):
+            raise ValueError("Gemini 3.8 Flash does not support thinking_level='minimal'")
         try:
             from google.genai import types
 
