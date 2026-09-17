@@ -25,10 +25,7 @@ from artificial_u.services import (
     CourseService,
 )
 from artificial_u.services import LectureService as CoreLectureService  # Rename to avoid conflict
-from artificial_u.services import (
-    ProfessorService,
-    TopicService,
-)
+from artificial_u.services import ProfessorService, TopicService
 from artificial_u.utils import (
     ContentGenerationError,
     DatabaseError,
