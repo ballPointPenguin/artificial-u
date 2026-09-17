@@ -78,9 +78,7 @@ export default function AdminDashboard() {
       setSuccessMessage(`Adjusted student ${String(studentId)} by ${String(amount)} coins`)
       setTimeout(() => setSuccessMessage(null), 3000)
       setCoinAmounts((prev) => {
-        const { [studentId]: removedValue, ...rest } = prev
-        void removedValue
-        return rest
+        return Object.fromEntries(Object.entries(prev).filter(([key]) => key !== String(studentId)))
       })
       void refetch()
     } catch (error) {
@@ -116,9 +114,9 @@ export default function AdminDashboard() {
       setSuccessMessage(`Deleted student ${student.name || String(student.id)}`)
       setTimeout(() => setSuccessMessage(null), 3000)
       setCoinAmounts((prev) => {
-        const { [student.id]: removedValue, ...rest } = prev
-        void removedValue
-        return rest
+        return Object.fromEntries(
+          Object.entries(prev).filter(([key]) => key !== String(student.id))
+        )
       })
       void refetch()
     } catch (error) {

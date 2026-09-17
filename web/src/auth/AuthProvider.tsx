@@ -110,7 +110,7 @@ export function AuthProvider(props: { children: JSX.Element }) {
       setTokenProvider(async () => {
         try {
           const token = await c.getTokenSilently()
-          return token
+          return token ?? null
         } catch (error) {
           if (isAuthRequiredError(error)) {
             // Token is truly expired/invalid - update UI state
@@ -244,7 +244,7 @@ export function AuthProvider(props: { children: JSX.Element }) {
       const c = client()
       if (!c) return null
       try {
-        return await c.getTokenSilently()
+        return (await c.getTokenSilently()) ?? null
       } catch (error) {
         if (isAuthRequiredError(error)) {
           setIsAuthenticated(false)

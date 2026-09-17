@@ -21,6 +21,7 @@
       }
     ],
     "at-rule-no-deprecated": null,
+    "at-rule-prelude-no-invalid": null,
     "color-function-notation": null,
     "alpha-value-notation": null,
     "declaration-block-no-redundant-longhand-properties": null,

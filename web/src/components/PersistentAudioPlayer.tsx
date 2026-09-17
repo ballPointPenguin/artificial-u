@@ -45,30 +45,30 @@ export const PersistentAudioPlayer: Component = () => {
 
   // Attach listeners whenever the <audio> element mounts. Detach on unmount.
   createEffect(() => {
-    const audio = audioEl()
-    if (!audio) return
+    const initialAudio = audioEl()
+    if (!initialAudio) return
 
-    audio.volume = untrack(() => player.volume())
+    initialAudio.volume = untrack(() => player.volume())
 
     const handlePlay = () => {
       player.setIsPlaying(true)
     }
     const handlePause = () => {
       player.setIsPlaying(false)
-      player.setCurrentTime(audio.currentTime || 0)
+      player.setCurrentTime(initialAudio.currentTime || 0)
       player.saveCurrentTime()
     }
     const handleTimeUpdate = () => {
-      player.setCurrentTime(audio.currentTime || 0)
+      player.setCurrentTime(initialAudio.currentTime || 0)
     }
     const handleDurationChange = () => {
-      player.setDuration(audio.duration || 0)
+      player.setDuration(initialAudio.duration || 0)
     }
     const handleVolumeChange = () => {
-      player.setVolume(audio.volume || 0.7)
+      player.setVolume(initialAudio.volume || 0.7)
     }
     const handleLoadedMetadata = () => {
-      restoreFromPending(audio)
+      restoreFromPending(initialAudio)
     }
     const handleError = () => {
       if (import.meta.env.DEV) {
@@ -76,22 +76,22 @@ export const PersistentAudioPlayer: Component = () => {
       }
     }
 
-    audio.addEventListener('play', handlePlay)
-    audio.addEventListener('pause', handlePause)
-    audio.addEventListener('timeupdate', handleTimeUpdate)
-    audio.addEventListener('durationchange', handleDurationChange)
-    audio.addEventListener('volumechange', handleVolumeChange)
-    audio.addEventListener('loadedmetadata', handleLoadedMetadata)
-    audio.addEventListener('error', handleError)
+    initialAudio.addEventListener('play', handlePlay)
+    initialAudio.addEventListener('pause', handlePause)
+    initialAudio.addEventListener('timeupdate', handleTimeUpdate)
+    initialAudio.addEventListener('durationchange', handleDurationChange)
+    initialAudio.addEventListener('volumechange', handleVolumeChange)
+    initialAudio.addEventListener('loadedmetadata', handleLoadedMetadata)
+    initialAudio.addEventListener('error', handleError)
 
     onCleanup(() => {
-      audio.removeEventListener('play', handlePlay)
-      audio.removeEventListener('pause', handlePause)
-      audio.removeEventListener('timeupdate', handleTimeUpdate)
-      audio.removeEventListener('durationchange', handleDurationChange)
-      audio.removeEventListener('volumechange', handleVolumeChange)
-      audio.removeEventListener('loadedmetadata', handleLoadedMetadata)
-      audio.removeEventListener('error', handleError)
+      initialAudio.removeEventListener('play', handlePlay)
+      initialAudio.removeEventListener('pause', handlePause)
+      initialAudio.removeEventListener('timeupdate', handleTimeUpdate)
+      initialAudio.removeEventListener('durationchange', handleDurationChange)
+      initialAudio.removeEventListener('volumechange', handleVolumeChange)
+      initialAudio.removeEventListener('loadedmetadata', handleLoadedMetadata)
+      initialAudio.removeEventListener('error', handleError)
     })
   })
 
