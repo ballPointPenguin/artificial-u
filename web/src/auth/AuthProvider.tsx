@@ -106,6 +106,28 @@ export function AuthProvider(props: { children: JSX.Element }) {
         }
       }
 
+      // Handle OAuth redirect callback and settle initial auth state BEFORE
+      // registering the token provider below. Otherwise, any component that
+      // fires an API call during this window can trigger a concurrent
+      // getTokenSilently() call with no cached token yet, fail, and clear
+      // auth state out from under the callback we're currently processing.
+      let postCallbackTargetUrl: string | null = null
+      if (location.search.includes('code=') && location.search.includes('state=')) {
+        try {
+          const result = await c.handleRedirectCallback()
+          postCallbackTargetUrl =
+            (result.appState as { targetUrl?: string } | undefined)?.targetUrl ?? location.pathname
+        } catch (error) {
+          // Leaving the stale code/state params in the URL would otherwise strand
+          // the user on a dirty URL with no way to retry (a refresh just replays
+          // the same failed exchange). Send them back to /login to try again.
+          console.error('Error handling redirect callback:', error)
+          postCallbackTargetUrl = '/login'
+        }
+      }
+
+      await refreshState()
+
       // Register token provider with proper error handling
       setTokenProvider(async () => {
         try {
@@ -130,20 +152,9 @@ export function AuthProvider(props: { children: JSX.Element }) {
         await refreshState()
       })
 
-      // Handle OAuth redirect callback
-      if (location.search.includes('code=') && location.search.includes('state=')) {
-        try {
-          const result = await c.handleRedirectCallback()
-          const targetUrl =
-            (result.appState as { targetUrl?: string } | undefined)?.targetUrl ?? location.pathname
-          navigate(targetUrl, { replace: true })
-        } catch (error) {
-          console.error('Error handling redirect callback:', error)
-        }
+      if (postCallbackTargetUrl) {
+        navigate(postCallbackTargetUrl, { replace: true })
       }
-
-      // Initial state check
-      await refreshState()
 
       // Cross-tab sync: listen for Auth0 localStorage updates
       storageListener = (e: StorageEvent) => {
