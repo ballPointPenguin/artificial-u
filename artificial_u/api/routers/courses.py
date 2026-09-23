@@ -205,6 +205,26 @@ async def generate_course_image(
     )
 
 
+def _reject_new_hidden_connections(
+    repository_factory: RepositoryFactory,
+    course_id: Optional[int],
+    connected_course_ids: Optional[List[int]],
+    student: Student,
+) -> None:
+    """
+    Raise 400 if the request would newly connect this course to hidden courses
+    the student doesn't own (admins may connect any course).
+    """
+    disallowed_ids = repository_factory.course.find_disallowed_connections(
+        course_id, connected_course_ids or [], student
+    )
+    if disallowed_ids:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Cannot connect to hidden courses: {disallowed_ids}",
+        )
+
+
 @router.post(
     "",
     response_model=CourseResponse,
@@ -220,6 +240,7 @@ async def generate_course_image(
 async def create_course(
     course_data: CourseCreate,
     course_service: CourseApiService = Depends(get_course_api_service),
+    repository_factory: RepositoryFactory = Depends(get_repository_factory),
     student=Depends(ensure_student),
 ):
     """
@@ -227,6 +248,9 @@ async def create_course(
     If department_id or professor_id are not provided, the system will
     intelligently select existing ones or generate new ones using AI.
     """
+    _reject_new_hidden_connections(
+        repository_factory, None, course_data.connected_course_ids, student
+    )
     return await course_service.create_course(course_data, created_by=student.id)
 
 
@@ -247,6 +271,7 @@ async def update_course(
     course_data: CourseUpdate,
     course_id: int = Path(..., description="The ID of the course to update"),
     course_service: CourseApiService = Depends(get_course_api_service),
+    repository_factory: RepositoryFactory = Depends(get_repository_factory),
     student: Student = Depends(ensure_student),
 ):
     """
@@ -254,6 +279,9 @@ async def update_course(
     The service handles the update logic and potential errors.
     Requires ownership verification - only the course creator or admin can update.
     """
+    _reject_new_hidden_connections(
+        repository_factory, course_id, course_data.connected_course_ids, student
+    )
     # Service handles update logic with ownership check
     updated_course_data = course_service.update_course(
         course_id, course_data, student.id, student.role
@@ -499,6 +527,9 @@ async def enqueue_create_course(
     """
     Enqueue a job with kind 'create_course'. The payload mirrors CourseCreate fields.
     """
+    _reject_new_hidden_connections(
+        repository_factory, None, course_data.connected_course_ids, student
+    )
     payload = {
         "code": course_data.code,
         "title": course_data.title,

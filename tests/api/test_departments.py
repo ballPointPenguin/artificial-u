@@ -155,7 +155,7 @@ def mock_api_service(monkeypatch):
     mock_service["get_department_professors"].side_effect = _mock_get_department_professors
 
     # GET Department Courses
-    def _mock_get_department_courses(dept_id: int):
+    def _mock_get_department_courses(dept_id: int, viewer=None):
         if dept_id == 1:
             courses = [
                 c for i, c in enumerate(sample_courses_brief_base) if i < 2
@@ -452,7 +452,7 @@ def test_get_department_courses(client: TestClient, mock_api_service):
     assert len(data["courses"]) == 2  # Based on mock setup
     assert data["total"] == 2
     assert data["courses"][0]["code"] == sample_courses_brief_base[0].code
-    mock_api_service["get_department_courses"].assert_called_with(1)
+    mock_api_service["get_department_courses"].assert_called_with(1, viewer=None)
 
     # Test with valid ID for Dept 2 (mock returns last 2 courses)
     mock_api_service["get_department_courses"].reset_mock()
@@ -462,14 +462,14 @@ def test_get_department_courses(client: TestClient, mock_api_service):
     assert data["department_id"] == 2
     assert len(data["courses"]) == 2  # Based on mock setup
     assert data["total"] == 2
-    mock_api_service["get_department_courses"].assert_called_with(2)
+    mock_api_service["get_department_courses"].assert_called_with(2, viewer=None)
 
     # Test with invalid ID (mock returns None, router raises 404)
     mock_api_service["get_department_courses"].reset_mock()
     mock_api_service["get_department_courses"].return_value = None
     response = client.get("/api/v1/departments/999/courses")
     assert response.status_code == 404
-    mock_api_service["get_department_courses"].assert_called_with(999)
+    mock_api_service["get_department_courses"].assert_called_with(999, viewer=None)
 
 
 @pytest.mark.unit

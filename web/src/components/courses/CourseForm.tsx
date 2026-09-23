@@ -170,7 +170,9 @@ const CourseForm: Component<CourseFormProps> = (props) => {
         page: 1,
         size: 100,
         departmentId,
-        // Published plus own hidden courses (or all hidden for admins); see API visibility rules
+        // Published plus own hidden courses (or all hidden for admins). This matches
+        // what the API lets this user newly connect; connections to other hidden
+        // courses are preserved but not shown (see handleConnectedCoursesChange).
         includeHidden: true,
       })
       return response.items.filter((course) => course.id !== excludeCourseId)

@@ -9,6 +9,8 @@ import json
 import logging
 from typing import Any, Dict, List, Optional, Set, Tuple
 
+from sqlalchemy import ColumnElement
+
 from artificial_u.models.core import Lecture
 from artificial_u.services.storage_service import StorageService
 from artificial_u.utils import DatabaseError, LectureNotFoundError
@@ -164,6 +166,7 @@ class LectureService:
         professor_id: Optional[int] = None,
         topic_id: Optional[int] = None,
         search_query: Optional[str] = None,
+        course_filter: Optional[ColumnElement[bool]] = None,
     ) -> List[Lecture]:
         """
         List lectures with filtering and pagination.
@@ -175,6 +178,7 @@ class LectureService:
             professor_id: Optional filter by professor ID
             topic_id: Optional filter by topic ID
             search_query: Optional search in title/description
+            course_filter: Optional criterion on CourseModel (e.g. discoverable_courses())
 
         Returns:
             List[Lecture]: List of lectures
@@ -190,6 +194,7 @@ class LectureService:
                 professor_id=professor_id,
                 topic_id=topic_id,
                 search_query=search_query,
+                course_filter=course_filter,
             )
             self.logger.debug(f"Found {len(lectures)} lectures")
             return lectures

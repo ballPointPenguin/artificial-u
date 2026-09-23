@@ -507,6 +507,8 @@ export const fr = {
     saveChanges: 'Enregistrer les Modifications',
     profileUpdated: 'Profil mis à jour avec succès !',
     failedToLoad: 'Échec du chargement du profil',
+    loadFailedBanner:
+      'Impossible de charger votre profil ; certaines actions peuvent être masquées.',
     failedToUpdate: 'Échec de la mise à jour du profil',
     enrollmentStatus: "Statut d'Inscription",
     status: 'Statut',

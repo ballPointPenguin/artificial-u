@@ -4,7 +4,7 @@ Lecture repository for database operations.
 
 from typing import Any, Dict, List, Optional
 
-from sqlalchemy import func, or_
+from sqlalchemy import ColumnElement, func, or_
 from sqlalchemy.orm import joinedload
 
 from artificial_u.models.core import Lecture
@@ -246,6 +246,7 @@ class LectureRepository(BaseRepository):
         professor_id: Optional[int] = None,
         topic_id: Optional[int] = None,
         search_query: Optional[str] = None,
+        course_filter: Optional[ColumnElement[bool]] = None,
     ) -> int:
         """
         Count lectures with filtering, counting only the latest revision for each topic.
@@ -255,6 +256,7 @@ class LectureRepository(BaseRepository):
             professor_id: Filter by professor ID
             topic_id: Filter by topic ID
             search_query: Search query for content/summary/title
+            course_filter: Criterion on CourseModel (e.g. discoverable_courses())
 
         Returns:
             int: Total count of latest revision lectures matching the filters
@@ -280,9 +282,12 @@ class LectureRepository(BaseRepository):
             if course_id is not None:
                 query = query.filter(LectureModel.course_id == course_id)
 
+            if professor_id is not None or course_filter is not None:
+                query = query.join(CourseModel, LectureModel.course_id == CourseModel.id)
             if professor_id is not None:
-                # Join with CourseModel to filter by professor_id
-                query = query.join(CourseModel).filter(CourseModel.professor_id == professor_id)
+                query = query.filter(CourseModel.professor_id == professor_id)
+            if course_filter is not None:
+                query = query.filter(course_filter)
 
             if topic_id is not None:
                 query = query.filter(LectureModel.topic_id == topic_id)
@@ -307,6 +312,7 @@ class LectureRepository(BaseRepository):
         professor_id: Optional[int] = None,
         topic_id: Optional[int] = None,
         search_query: Optional[str] = None,
+        course_filter: Optional[ColumnElement[bool]] = None,
     ) -> List[Lecture]:
         """
         List lectures with filtering and pagination,
@@ -319,6 +325,7 @@ class LectureRepository(BaseRepository):
             professor_id: Filter by professor ID
             topic_id: Filter by topic ID
             search_query: Search query for content/summary/title
+            course_filter: Criterion on CourseModel (e.g. discoverable_courses())
 
         Returns:
             List[Lecture]: List of lectures (latest revision per topic)
@@ -344,9 +351,12 @@ class LectureRepository(BaseRepository):
             if course_id is not None:
                 query = query.filter(LectureModel.course_id == course_id)
 
+            if professor_id is not None or course_filter is not None:
+                query = query.join(CourseModel, LectureModel.course_id == CourseModel.id)
             if professor_id is not None:
-                # Join with CourseModel to filter by professor_id
-                query = query.join(CourseModel).filter(CourseModel.professor_id == professor_id)
+                query = query.filter(CourseModel.professor_id == professor_id)
+            if course_filter is not None:
+                query = query.filter(course_filter)
 
             if topic_id is not None:
                 query = query.filter(LectureModel.topic_id == topic_id)

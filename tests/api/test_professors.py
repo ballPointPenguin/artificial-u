@@ -124,7 +124,7 @@ def mock_api_service(monkeypatch):
     mock_service["delete_professor"].side_effect = _mock_delete_professor
 
     # GET Professor Courses
-    def _mock_get_professor_courses(professor_id: int):
+    def _mock_get_professor_courses(professor_id: int, viewer=None):
         if professor_id in [p.id for p in sample_professors_base]:
             return ProfessorCoursesResponse(
                 professor_id=professor_id,
@@ -136,7 +136,7 @@ def mock_api_service(monkeypatch):
     mock_service["get_professor_courses"].side_effect = _mock_get_professor_courses
 
     # GET Professor Lectures
-    def _mock_get_professor_lectures(professor_id: int):
+    def _mock_get_professor_lectures(professor_id: int, viewer=None):
         if professor_id in [p.id for p in sample_professors_base]:
             return ProfessorLecturesResponse(
                 professor_id=professor_id,
@@ -379,14 +379,14 @@ def test_get_professor_courses(client: TestClient, mock_api_service):
     assert len(data["courses"]) == len(sample_courses_brief_base)
     assert data["total"] == len(sample_courses_brief_base)
     assert data["courses"][0]["code"] == sample_courses_brief_base[0].code
-    mock_api_service["get_professor_courses"].assert_called_once_with(1)
+    mock_api_service["get_professor_courses"].assert_called_once_with(1, viewer=None)
 
     # Test invalid ID
     mock_api_service["get_professor_courses"].reset_mock()
     mock_api_service["get_professor_courses"].return_value = None
     response = client.get("/api/v1/professors/999/courses")
     assert response.status_code == 404
-    mock_api_service["get_professor_courses"].assert_called_once_with(999)
+    mock_api_service["get_professor_courses"].assert_called_once_with(999, viewer=None)
 
 
 @pytest.mark.unit
@@ -400,14 +400,14 @@ def test_get_professor_lectures(client: TestClient, mock_api_service):
     assert len(data["lectures"]) == len(sample_lectures_brief_base)
     assert data["total"] == len(sample_lectures_brief_base)
     assert data["lectures"][0]["title"] == sample_lectures_brief_base[0].title
-    mock_api_service["get_professor_lectures"].assert_called_once_with(1)
+    mock_api_service["get_professor_lectures"].assert_called_once_with(1, viewer=None)
 
     # Test invalid ID
     mock_api_service["get_professor_lectures"].reset_mock()
     mock_api_service["get_professor_lectures"].return_value = None
     response = client.get("/api/v1/professors/999/lectures")
     assert response.status_code == 404
-    mock_api_service["get_professor_lectures"].assert_called_once_with(999)
+    mock_api_service["get_professor_lectures"].assert_called_once_with(999, viewer=None)
 
 
 @pytest.mark.unit

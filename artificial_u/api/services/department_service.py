@@ -19,7 +19,9 @@ from artificial_u.api.models.departments import (
 )
 from artificial_u.api.services.base_service import BaseApiService
 from artificial_u.models.core import Department as CoreDepartment
+from artificial_u.models.core import Student
 from artificial_u.models.repositories import RepositoryFactory
+from artificial_u.models.visibility import discoverable_courses
 from artificial_u.services import ContentService, CourseService, DepartmentService, ProfessorService
 from artificial_u.utils import (
     ContentGenerationError,
@@ -303,19 +305,24 @@ class DepartmentApiService(
         except Exception:
             return None
 
-    def get_department_courses(self, department_id: int) -> Optional[DepartmentCoursesResponse]:
+    def get_department_courses(
+        self, department_id: int, viewer: Optional[Student] = None
+    ) -> Optional[DepartmentCoursesResponse]:
         """
-        Get courses in a department.
+        Get courses in a department that `viewer` may discover.
 
         Args:
             department_id: ID of the department
+            viewer: The requesting student, if authenticated
 
         Returns:
             DepartmentCoursesResponse or None if department not found
         """
         try:
             # Get courses using core service
-            courses = self.core_service.get_department_courses(department_id)
+            courses = self.core_service.get_department_courses(
+                department_id, course_filter=discoverable_courses(viewer)
+            )
 
             # Convert to brief format
             course_briefs = [

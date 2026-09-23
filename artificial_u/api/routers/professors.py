@@ -10,6 +10,7 @@ from artificial_u.api.dependencies import (
     ensure_student,
     get_professor_api_service,
     get_repository_factory,
+    optional_student,
 )
 from artificial_u.api.models import (
     ProfessorCoursesResponse,
@@ -252,6 +253,7 @@ async def delete_professor(
 async def get_professor_courses(
     professor_id: int = Path(..., description="The ID of the professor"),
     service: ProfessorApiService = Depends(get_professor_api_service),
+    student: Optional[Student] = Depends(optional_student),
 ):
     """
     Get courses taught by a specific professor.
@@ -259,7 +261,7 @@ async def get_professor_courses(
     - **professor_id**: The unique identifier of the professor
     - Returns a list of courses taught by the professor
     """
-    response = service.get_professor_courses(professor_id)
+    response = service.get_professor_courses(professor_id, viewer=student)
     if not response:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -278,6 +280,7 @@ async def get_professor_courses(
 async def get_professor_lectures(
     professor_id: int = Path(..., description="The ID of the professor"),
     service: ProfessorApiService = Depends(get_professor_api_service),
+    student: Optional[Student] = Depends(optional_student),
 ):
     """
     Get lectures by a specific professor.
@@ -285,7 +288,7 @@ async def get_professor_lectures(
     - **professor_id**: The unique identifier of the professor
     - Returns a list of lectures by the professor across all their courses
     """
-    response = service.get_professor_lectures(professor_id)
+    response = service.get_professor_lectures(professor_id, viewer=student)
     if not response:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

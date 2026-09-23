@@ -31,8 +31,9 @@ async def get_stats(
     """
     Get aggregate platform statistics.
 
-    Returns counts of published courses, lectures with audio,
-    and total audio hours derived from the lectures.duration column.
+    Returns counts of published courses, lectures with audio in published
+    courses, and total audio hours derived from the lectures.duration column.
+    These are public site-wide numbers, so hidden courses never count.
     """
     with repository_factory.lecture.get_session() as session:
         # Count published courses
@@ -46,7 +47,8 @@ async def get_stats(
         # Count lectures that have audio
         lecture_count = (
             session.query(func.count(LectureModel.id))
-            .filter(LectureModel.audio_url.isnot(None))
+            .join(CourseModel, LectureModel.course_id == CourseModel.id)
+            .filter(CourseModel.status == "published", LectureModel.audio_url.isnot(None))
             .scalar()
             or 0
         )
@@ -54,7 +56,8 @@ async def get_stats(
         # Sum duration (seconds) for all lectures with audio, convert to hours
         total_seconds = (
             session.query(func.sum(LectureModel.duration))
-            .filter(LectureModel.audio_url.isnot(None))
+            .join(CourseModel, LectureModel.course_id == CourseModel.id)
+            .filter(CourseModel.status == "published", LectureModel.audio_url.isnot(None))
             .scalar()
             or 0
         )

@@ -194,7 +194,15 @@ def mock_api_service(monkeypatch):
     monkeypatch.setattr(f"{base_path}.generate_course", mock_service["generate_course"])
     monkeypatch.setattr(f"{base_path}.generate_course_image", mock_service["generate_course_image"])
 
-    return mock_service
+    # Routes that validate connected_course_ids query the repository directly
+    from artificial_u.api.app import app
+    from artificial_u.api.dependencies import get_repository_factory
+
+    mock_service["repository_factory"] = MagicMock()
+    mock_service["repository_factory"].course.find_disallowed_connections.return_value = []
+    app.dependency_overrides[get_repository_factory] = lambda: mock_service["repository_factory"]
+    yield mock_service
+    app.dependency_overrides.pop(get_repository_factory, None)
 
 
 # Test functions will go here
@@ -429,6 +437,33 @@ def test_create_course(client: TestClient, mock_api_service):
         "status": "hidden",
     }
     assert call_args[0].model_dump() == expected_course_data
+
+
+@pytest.mark.unit
+def test_create_course_rejects_new_hidden_connections(client: TestClient, mock_api_service):
+    """Connecting to a hidden course the student can't newly connect returns 400."""
+    repo = mock_api_service["repository_factory"]
+    repo.course.find_disallowed_connections.return_value = [7]
+
+    response = client.post(
+        "/api/v1/courses",
+        json={
+            "code": "NEW101",
+            "title": "New",
+            "description": "A course",
+            "department_id": 1,
+            "level": "Graduate",
+            "lectures_per_week": 1,
+            "total_weeks": 10,
+            "connected_course_ids": [7],
+        },
+    )
+
+    assert response.status_code == 400
+    assert "[7]" in response.json()["message"]
+    mock_api_service["create_course"].assert_not_called()
+    student = repo.course.find_disallowed_connections.call_args[0][2]
+    assert student.id == 1
 
 
 @pytest.mark.unit

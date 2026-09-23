@@ -10,6 +10,7 @@ import logging
 from typing import Any, Dict, List
 
 from artificial_u.config import get_settings
+from artificial_u.models.database import CourseModel
 from artificial_u.models.repositories.factory import RepositoryFactory
 from artificial_u.prompts.course_selection import (
     get_course_selection_prompt,
@@ -79,14 +80,20 @@ class CourseSelectorService:
             decision = await self._make_selection_decision(user_query, published_courses)
 
             if decision["action"] == "SELECT":
-                # Fetch the full course objects for selected IDs
+                # Fetch the full course objects for selected IDs. Only accept IDs
+                # we actually offered, so an LLM-invented ID can't surface a hidden course.
+                offered_ids = {c["id"] for c in published_courses}
                 courses = []
                 for course_id in decision["course_ids"]:
-                    course = self.repository_factory.course.get(course_id)
+                    course = (
+                        self.repository_factory.course.get(course_id)
+                        if course_id in offered_ids
+                        else None
+                    )
                     if course:
                         courses.append(course)
                     else:
-                        self.logger.warning(f"Course ID {course_id} not found, skipping")
+                        self.logger.warning(f"Course ID {course_id} not offered, skipping")
 
                 if not courses:
                     # All selected courses were invalid, fall back to GENERATE
@@ -134,9 +141,9 @@ class CourseSelectorService:
         Returns:
             List of course dictionaries with id, title, description, and professor_name
         """
-        # Get all courses and filter for published status
-        all_courses = self.repository_factory.course.list()
-        courses = [c for c in all_courses if c.status == "published"]
+        courses = self.repository_factory.course.list(
+            course_filter=CourseModel.status == "published"
+        )
 
         course_dicts = []
         for course in courses:
