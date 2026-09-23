@@ -196,8 +196,9 @@ for API differences across model generations, so callers can swap
   thinking by default (no `thinking` field required), and thinking tokens count
   against `max_tokens`. To keep output budgets predictable and behavior consistent
   with Sonnet 4.6/Opus 4.5-4.8 (which don't think unless explicitly configured),
-  `ContentService` explicitly sends `thinking: {"type": "disabled"}` for Sonnet 5+
-  models.
+  `ContentService` explicitly sends `thinking: {"type": "disabled"}` for supported
+  Claude 5 models. Claude Opus 5.5 requires adaptive thinking, so the field is
+  omitted when using `claude-opus-5-5` or its snapshots.
 
 Model names are parsed with `ContentService._parse_claude_version()`, which
 understands both the `claude-{tier}-{major}-{minor}[-date]` naming scheme (e.g.

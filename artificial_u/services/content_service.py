@@ -430,6 +430,15 @@ class ContentService:
             return False
         return version >= (5, 0)
 
+    @staticmethod
+    def _supports_disabling_thinking(model: str) -> bool:
+        """Check whether a Claude model accepts ``thinking: {"type": "disabled"}``.
+
+        Claude Opus 5.5 requires adaptive thinking and rejects requests that
+        disable it. Snapshot identifiers retain the ``claude-opus-5-5`` prefix.
+        """
+        return not model.startswith("claude-opus-5-5")
+
     async def _generate_anthropic(  # noqa: C901
         self, prompt, model, system_prompt, temperature, max_tokens, prefill, **kwargs
     ):
@@ -480,8 +489,11 @@ class ContentService:
 
             # Claude 5 thinks by default even without a `thinking` field, and thinking
             # tokens count against max_tokens. Explicitly disable it so behavior and
-            # budgeting stay consistent with earlier Claude models.
-            disable_thinking = self._defaults_to_adaptive_thinking(model)
+            # budgeting stay consistent with earlier Claude models, except for Opus 5.5,
+            # whose adaptive thinking cannot be disabled.
+            disable_thinking = self._defaults_to_adaptive_thinking(
+                model
+            ) and self._supports_disabling_thinking(model)
             if disable_thinking:
                 request_params["thinking"] = {"type": "disabled"}
 
