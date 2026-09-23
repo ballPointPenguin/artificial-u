@@ -133,19 +133,19 @@ class Settings(BaseSettings):
     content_model: Optional[str] = None
 
     # Course generation model
-    COURSE_GENERATION_MODEL: str = "gpt-5.6-luna"
+    COURSE_GENERATION_MODEL: str = "gpt-6-luna"
     # Department generation model
-    DEPARTMENT_GENERATION_MODEL: str = "gpt-5.6-luna"
+    DEPARTMENT_GENERATION_MODEL: str = "gpt-6-luna"
     # Lecture generation model
     LECTURE_GENERATION_MODEL: str = "claude-sonnet-5"
     # Lecture summary generation model
-    LECTURE_SUMMARY_MODEL: str = "gpt-5.6-luna"
+    LECTURE_SUMMARY_MODEL: str = "gpt-6-luna"
     # Professor generation model
-    PROFESSOR_GENERATION_MODEL: str = "gpt-5.6-luna"
+    PROFESSOR_GENERATION_MODEL: str = "gpt-6-luna"
     # Topics generation model
     TOPICS_GENERATION_MODEL: str = "gemini-3.8-flash"
     # Course tags generation model
-    TAGS_GENERATION_MODEL: str = "gpt-5.6-luna"
+    TAGS_GENERATION_MODEL: str = "gpt-6-luna"
     # Image generation model
     IMAGE_GENERATION_MODEL: str = "gemini-3.1-flash-lite-image"
     # Lecture generation defaults
@@ -225,13 +225,13 @@ class Settings(BaseSettings):
         if v is None:
             backend = info.data.get("content_backend")
             if backend == "openai":
-                return "gpt-5.6-luna"
+                return "gpt-6-luna"
             elif backend == "gemini":
                 return "gemini-3.8-flash"
             elif backend == "anthropic":
                 return "claude-sonnet-5"
             else:
-                return "gpt-5.6-luna"
+                return "gpt-6-luna"
         return v
 
     @model_validator(mode="after")

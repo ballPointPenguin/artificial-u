@@ -22,9 +22,9 @@ DEFAULT_MAX_TOKENS = 4096  # Increased from 1024 to allow for longer responses l
 DEFAULT_ANTHROPIC_EFFORT = "medium"
 
 
-def _is_gpt_5_6(model: str) -> bool:
-    """Return whether a model belongs to the GPT-5.6 family."""
-    return bool(re.match(r"gpt-5\.6(?:-|$)", model or ""))
+def _is_gpt_reasoning_model(model: str) -> bool:
+    """Return whether a model supports GPT reasoning controls in Chat Completions."""
+    return bool(re.match(r"gpt-(?:5\.6|6-(?:sol|luna))(?:-|$)", model or ""))
 
 
 def _is_gemini_3_plus(model: str) -> bool:
@@ -219,7 +219,7 @@ class ContentService:
             ('minimal', 'low', 'medium', 'high'). Ignored by other backends/models.
             effort: Optional effort level for supported Anthropic and OpenAI reasoning models
             ('none', 'low', 'medium', 'high', 'xhigh', 'max'). Controls overall token spend.
-            Defaults to 'medium' for supported Claude and GPT-5.6 models. Ignored otherwise.
+            Defaults to 'medium' for supported Claude and GPT-5.6/GPT-6 models. Ignored otherwise.
 
         Returns:
             The generated text content as a string.
@@ -535,7 +535,7 @@ class ContentService:
             self.logger.warning("Prefill parameter provided but not supported for OpenAI models")
         try:
             # Determine which parameters to use based on the model
-            newer_model_prefixes = ("gpt-5", "o1-", "o3-")
+            newer_model_prefixes = ("gpt-5", "gpt-6", "o1-", "o3-")
             is_newer_model = any(model.startswith(prefix) for prefix in newer_model_prefixes)
 
             # Build chat messages, mapping system prompt to 'developer' for newer models
@@ -562,20 +562,20 @@ class ContentService:
                 )
                 self.logger.debug(f"Using max_tokens parameter for model {model}")
 
-            # GPT-5.4 nano and GPT-5.6 reasoning models do not accept a custom
+            # GPT-5.4 nano and GPT-5.6/GPT-6 reasoning models do not accept a custom
             # temperature. Prompting and reasoning effort control their behavior.
-            if model == "gpt-5.4-nano" or _is_gpt_5_6(model):
+            if model == "gpt-5.4-nano" or _is_gpt_reasoning_model(model):
                 self.logger.debug(f"Skipping temperature parameter for {model} (not supported)")
             else:
                 completion_params["temperature"] = (
                     temperature if temperature is not None else DEFAULT_TEMPERATURE
                 )
 
-            # GPT-5.6 Luna and Sol (including the gpt-5.6 alias for Sol) support
-            # reasoning effort through Chat Completions. Their documented default
-            # is medium, so only forward an explicit caller preference.
+            # GPT-5.6 and GPT-6 Luna and Sol support reasoning effort through Chat
+            # Completions. Their documented default is medium, so only forward an
+            # explicit caller preference.
             effort = kwargs.get("effort")
-            if effort and _is_gpt_5_6(model):
+            if effort and _is_gpt_reasoning_model(model):
                 completion_params["reasoning_effort"] = effort
 
             response = await openai_client.chat.completions.create(**completion_params)

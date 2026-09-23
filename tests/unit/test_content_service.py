@@ -14,7 +14,7 @@ import pytest
 from artificial_u.services.content_service import (
     ContentService,
     _deprecates_gemini_sampling_params,
-    _is_gpt_5_6,
+    _is_gpt_reasoning_model,
     _supports_gemini_minimal_thinking_level,
 )
 
@@ -188,19 +188,22 @@ async def test_generate_anthropic_uses_sampling_params_for_sonnet_4_6(monkeypatc
         ("gpt-5.6-luna", True),
         ("gpt-5.6-sol", True),
         ("gpt-5.6", True),
+        ("gpt-6-luna", True),
+        ("gpt-6-sol", True),
+        ("gpt-6", False),
         ("gpt-5.4-nano", False),
         ("gpt-5.5", False),
     ],
 )
-def test_is_gpt_5_6(model, expected):
-    assert _is_gpt_5_6(model) is expected
+def test_is_gpt_reasoning_model(model, expected):
+    assert _is_gpt_reasoning_model(model) is expected
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("model", ["gpt-5.6-luna", "gpt-5.6-sol", "gpt-5.6"])
-async def test_generate_openai_gpt_5_6_uses_reasoning_effort_without_temperature(
-    monkeypatch, model
-):
+@pytest.mark.parametrize(
+    "model", ["gpt-5.6-luna", "gpt-5.6-sol", "gpt-5.6", "gpt-6-luna", "gpt-6-sol"]
+)
+async def test_generate_openai_reasoning_models_use_effort_without_temperature(monkeypatch, model):
     service = _build_service()
 
     mock_response = MagicMock()

@@ -136,16 +136,16 @@ ArtificialU allows configuration of different AI models for various services:
 
 ```python
 # Course generation model
-COURSE_GENERATION_MODEL=gpt-5.6-luna
+COURSE_GENERATION_MODEL=gpt-6-luna
 
 # Department generation model
-DEPARTMENT_GENERATION_MODEL=gpt-5.6-luna
+DEPARTMENT_GENERATION_MODEL=gpt-6-luna
 
 # Lecture generation model
 LECTURE_GENERATION_MODEL=claude-sonnet-5
 
 # Professor generation model
-PROFESSOR_GENERATION_MODEL=gpt-5.6-luna
+PROFESSOR_GENERATION_MODEL=gpt-6-luna
 
 # Topics generation model
 TOPICS_GENERATION_MODEL=gemini-3.8-flash
@@ -159,13 +159,13 @@ IMAGE_GENERATION_MODEL=gemini-3.1-flash-lite-image
 TTS_VOICE_MODEL=eleven_flash_v2_5
 ```
 
-`gpt-5.6-luna` is the cost-sensitive replacement for `gpt-5.4-nano`; both remain
-supported. For higher-capability text generation, use `gpt-5.6` (an alias for
-`gpt-5.6-sol`) or the pinned `gpt-5.6-sol` identifier. GPT-5.6 models support
-the Chat Completions and Responses APIs; ArtificialU uses Chat Completions for
-text generation. When calling `ContentService.generate_text()` directly, pass
-`effort` (`none`, `low`, `medium`, `high`, `xhigh`, or `max`) to set GPT-5.6
-reasoning effort; otherwise the API default is `medium`.
+`gpt-6-luna` is the default cost-sensitive model for quick text generation and
+summary tasks. `gpt-6-sol` is supported when higher-capability text generation is
+needed, including when selected as the global content model. Both GPT-6 models
+support the Chat Completions and Responses APIs; ArtificialU uses Chat Completions
+for text generation. When calling `ContentService.generate_text()` directly, pass
+`effort` (`none`, `low`, `medium`, `high`, `xhigh`, or `max`) to set GPT-6 reasoning
+effort; otherwise the API default is `medium`.
 
 `gemini-3.8-flash` is the default Topics model for medium-complexity generation.
 It uses Gemini 3's `thinking_level` control (`low`, `medium`, or `high`); the
@@ -327,12 +327,12 @@ TESTING=true
 | `DIAG_TRACEMALLOC` | Enable one-off tracemalloc baseline + SIGUSR1 diffs (`1` on; `0` or unset off) | `0` (off) | No |
 | `content_backend` | Backend for content generation | `anthropic` | No |
 | `content_model` | Model for chosen backend | Depends on backend | No |
-| `COURSE_GENERATION_MODEL` | Model for course generation | `gpt-5.6-luna` | No |
-| `DEPARTMENT_GENERATION_MODEL` | Model for department generation | `gpt-5.6-luna` | No |
+| `COURSE_GENERATION_MODEL` | Model for course generation | `gpt-6-luna` | No |
+| `DEPARTMENT_GENERATION_MODEL` | Model for department generation | `gpt-6-luna` | No |
 | `LECTURE_GENERATION_MODEL` | Model for lecture generation | `claude-sonnet-5` | No |
-| `LECTURE_SUMMARY_MODEL` | Model for lecture summary generation | `gpt-5.6-luna` | No |
+| `LECTURE_SUMMARY_MODEL` | Model for lecture summary generation | `gpt-6-luna` | No |
 | `TOPICS_GENERATION_MODEL` | Model for topics generation | `gemini-3.8-flash` | No |
-| `PROFESSOR_GENERATION_MODEL` | Model for professor generation | `gpt-5.6-luna` | No |
+| `PROFESSOR_GENERATION_MODEL` | Model for professor generation | `gpt-6-luna` | No |
 | `IMAGE_GENERATION_MODEL` | Model for image generation (`gemini-3.1-flash-lite-image`, `gemini-3.1-flash-image`, `gemini-3-pro-image`) | `gemini-3.1-flash-lite-image` | No |
 | `TTS_VOICE_MODEL` | Model for text-to-speech voice | `eleven_flash_v2_5` | No |
 | `XAI_TTS_BASE_URL` | Base URL for the xAI TTS API | `https://api.x.ai/v1` | No |
