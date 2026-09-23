@@ -14,7 +14,7 @@ import pytest
 from artificial_u.services.content_service import (
     ContentService,
     _deprecates_gemini_sampling_params,
-    _is_gpt_5_6,
+    _is_gpt_reasoning_model,
     _supports_gemini_minimal_thinking_level,
 )
 
@@ -38,6 +38,7 @@ def _build_service():
         ("claude-haiku-4-5", (4, 5)),
         ("claude-sonnet-5", (5, 0)),
         ("claude-opus-5", (5, 0)),
+        ("claude-opus-5-5", (5, 5)),
         ("claude-sonnet-5-1", (5, 1)),
         ("claude-sonnet-5-20260601", (5, 0)),
         ("claude-3-7-sonnet-latest", None),
@@ -112,10 +113,22 @@ class TestVersionGatedFeatures:
             ("claude-sonnet-5", True),  # adaptive thinking on by default
             ("claude-sonnet-5-1", True),
             ("claude-opus-5", True),  # adaptive thinking on by default
+            ("claude-opus-5-5", True),
         ],
     )
     def test_defaults_to_adaptive_thinking(self, model, expected):
         assert self.service._defaults_to_adaptive_thinking(model) is expected
+
+    @pytest.mark.parametrize(
+        "model,expected",
+        [
+            ("claude-opus-5", True),
+            ("claude-opus-5-5", False),
+            ("claude-opus-5-5-20260922", False),
+        ],
+    )
+    def test_supports_disabling_thinking(self, model, expected):
+        assert self.service._supports_disabling_thinking(model) is expected
 
 
 @pytest.mark.asyncio
@@ -136,6 +149,28 @@ async def test_generate_anthropic_disables_thinking_for_claude_5(monkeypatch):
 
     call_kwargs = mock_client.messages.create.await_args.kwargs
     assert call_kwargs["thinking"] == {"type": "disabled"}
+    assert "temperature" not in call_kwargs
+    assert call_kwargs["output_config"] == {"effort": "medium"}
+
+
+@pytest.mark.asyncio
+async def test_generate_anthropic_keeps_required_thinking_for_opus_5_5(monkeypatch):
+    service = _build_service()
+
+    mock_response = MagicMock()
+    mock_response.stop_reason = "end_turn"
+    mock_response.content = [SimpleNamespace(type="text", text="hello world")]
+
+    mock_client = MagicMock()
+    mock_client.messages.create = AsyncMock(return_value=mock_response)
+    monkeypatch.setattr("artificial_u.services.content_service.anthropic_client", mock_client)
+
+    await service._generate_anthropic(
+        "prompt", "claude-opus-5-5", "system", None, None, None, effort=None
+    )
+
+    call_kwargs = mock_client.messages.create.await_args.kwargs
+    assert "thinking" not in call_kwargs
     assert "temperature" not in call_kwargs
     assert call_kwargs["output_config"] == {"effort": "medium"}
 
@@ -188,19 +223,22 @@ async def test_generate_anthropic_uses_sampling_params_for_sonnet_4_6(monkeypatc
         ("gpt-5.6-luna", True),
         ("gpt-5.6-sol", True),
         ("gpt-5.6", True),
+        ("gpt-6-luna", True),
+        ("gpt-6-sol", True),
+        ("gpt-6", False),
         ("gpt-5.4-nano", False),
         ("gpt-5.5", False),
     ],
 )
-def test_is_gpt_5_6(model, expected):
-    assert _is_gpt_5_6(model) is expected
+def test_is_gpt_reasoning_model(model, expected):
+    assert _is_gpt_reasoning_model(model) is expected
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("model", ["gpt-5.6-luna", "gpt-5.6-sol", "gpt-5.6"])
-async def test_generate_openai_gpt_5_6_uses_reasoning_effort_without_temperature(
-    monkeypatch, model
-):
+@pytest.mark.parametrize(
+    "model", ["gpt-5.6-luna", "gpt-5.6-sol", "gpt-5.6", "gpt-6-luna", "gpt-6-sol"]
+)
+async def test_generate_openai_reasoning_models_use_effort_without_temperature(monkeypatch, model):
     service = _build_service()
 
     mock_response = MagicMock()

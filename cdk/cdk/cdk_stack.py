@@ -244,8 +244,8 @@ class CdkStack(Stack):
             "CLOUDWATCH_NAMESPACE": "ArtificialU",
             # Tracemalloc drift tracing: baseline snapshot at startup + SIGUSR1 diff logs.
             "DIAG_TRACEMALLOC": "0",
-            "COURSE_GENERATION_MODEL": "gpt-5.6-luna",
-            "DEPARTMENT_GENERATION_MODEL": "gpt-5.6-luna",
+            "COURSE_GENERATION_MODEL": "gpt-6-luna",
+            "DEPARTMENT_GENERATION_MODEL": "gpt-6-luna",
             "ENV": "production",
             "GUNICORN_THREADS": "8",
             "GUNICORN_TIMEOUT": "120",
@@ -253,9 +253,9 @@ class CdkStack(Stack):
             "MALLOC_ARENA_MAX": "2",
             "IMAGE_GENERATION_MODEL": "gemini-3.1-flash-lite-image",
             "LECTURE_GENERATION_MODEL": "claude-sonnet-5",
-            "LECTURE_SUMMARY_MODEL": "gpt-5.6-luna",
+            "LECTURE_SUMMARY_MODEL": "gpt-6-luna",
             "LOG_LEVEL": "INFO",
-            "PROFESSOR_GENERATION_MODEL": "gpt-5.6-luna",
+            "PROFESSOR_GENERATION_MODEL": "gpt-6-luna",
             # "RUN_INITIALIZE_VOICES": "1",  # TEMPORARY - initialize/refresh voice records at boot
             # "RUN_BACKFILL_DURATIONS": "1",  # TEMPORARY - comment out when not using it
             # "RUN_BACKFILL_ID3": "1",  # TEMPORARY - comment out when not using it
