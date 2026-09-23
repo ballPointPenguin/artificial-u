@@ -8,6 +8,8 @@ are handled by the ProfessorGeneratorService.
 import logging
 from typing import Any, Dict, List, Optional
 
+from sqlalchemy import ColumnElement
+
 from artificial_u.models.core import Course, Professor
 from artificial_u.models.repositories.factory import RepositoryFactory
 from artificial_u.services.voice_service import VoiceService
@@ -348,12 +350,15 @@ class ProfessorService:
 
     # --- Relationship Methods --- #
 
-    def list_professor_courses(self, professor_id: int) -> List[Course]:
+    def list_professor_courses(
+        self, professor_id: int, course_filter: Optional[ColumnElement[bool]] = None
+    ) -> List[Course]:
         """
         Lists all courses taught by a specific professor.
 
         Args:
             professor_id: The ID of the professor.
+            course_filter: Optional criterion on CourseModel (e.g. discoverable_courses()).
 
         Returns:
             A list of Course objects taught by the professor.
@@ -371,13 +376,9 @@ class ProfessorService:
             raise ProfessorNotFoundError(error_msg)
 
         try:
-            # Fetch all courses (or courses based on supported filters by .list())
-            # and then filter by professor_id in Python.
-            # Assuming self.repository_factory.course.list() without arguments lists all courses.
-            # If it expects other arguments (e.g., department_id) or has mandatory ones,
-            # this might need further adjustment based on CourseRepository's actual signature.
-            all_courses = self.repository_factory.course.list()
-            courses = [course for course in all_courses if course.professor_id == professor_id]
+            courses = self.repository_factory.course.list(
+                professor_id=professor_id, course_filter=course_filter
+            )
             self.logger.info(f"Found {len(courses)} courses for prof ID: {professor_id}")
             return courses
         except Exception as e:

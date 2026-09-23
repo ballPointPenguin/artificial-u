@@ -510,6 +510,8 @@ export const es = {
     saveChanges: 'Guardar Cambios',
     profileUpdated: '¡Perfil actualizado con éxito!',
     failedToLoad: 'Error al cargar perfil',
+    loadFailedBanner:
+      'No pudimos cargar su perfil, por lo que algunas acciones pueden estar ocultas.',
     failedToUpdate: 'Error al actualizar perfil',
     enrollmentStatus: 'Estado de Inscripción',
     status: 'Estado',

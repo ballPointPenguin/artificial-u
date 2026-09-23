@@ -19,7 +19,9 @@ from artificial_u.api.models.professors import (
 )
 from artificial_u.api.services.base_service import BaseApiService
 from artificial_u.models.core import Professor as CoreProfessor
+from artificial_u.models.core import Student
 from artificial_u.models.repositories import RepositoryFactory
+from artificial_u.models.visibility import discoverable_courses
 from artificial_u.services import (
     ContentService,
     ImageService,
@@ -287,19 +289,24 @@ class ProfessorApiService(BaseApiService[CoreProfessor, ProfessorResponse, Profe
         except ProfessorNotFoundError, DatabaseError:
             return False
 
-    def get_professor_courses(self, professor_id: int) -> Optional[ProfessorCoursesResponse]:
+    def get_professor_courses(
+        self, professor_id: int, viewer: Optional[Student] = None
+    ) -> Optional[ProfessorCoursesResponse]:
         """
-        Get courses taught by a professor.
+        Get courses taught by a professor that `viewer` may discover.
 
         Args:
             professor_id: ID of the professor
+            viewer: The requesting student, if authenticated
 
         Returns:
             ProfessorCoursesResponse or None if professor not found
         """
         try:
             # Use core service to get courses
-            courses = self.core_service.list_professor_courses(professor_id)
+            courses = self.core_service.list_professor_courses(
+                professor_id, course_filter=discoverable_courses(viewer)
+            )
 
             # Convert to brief format
             course_briefs = [
@@ -321,12 +328,15 @@ class ProfessorApiService(BaseApiService[CoreProfessor, ProfessorResponse, Profe
         except ProfessorNotFoundError:
             return None
 
-    def get_professor_lectures(self, professor_id: int) -> Optional[ProfessorLecturesResponse]:
+    def get_professor_lectures(
+        self, professor_id: int, viewer: Optional[Student] = None
+    ) -> Optional[ProfessorLecturesResponse]:
         """
-        Get lectures by a professor.
+        Get lectures by a professor in courses that `viewer` may discover.
 
         Args:
             professor_id: ID of the professor
+            viewer: The requesting student, if authenticated
 
         Returns:
             ProfessorLecturesResponse or None if professor not found
@@ -336,7 +346,9 @@ class ProfessorApiService(BaseApiService[CoreProfessor, ProfessorResponse, Profe
             self.core_service.get_professor(professor_id)
 
             # Get lectures by professor using the lecture repository
-            lectures = self.repository_factory.lecture.list(professor_id=professor_id)
+            lectures = self.repository_factory.lecture.list(
+                professor_id=professor_id, course_filter=discoverable_courses(viewer)
+            )
 
             # Convert to brief format
             lecture_briefs = [

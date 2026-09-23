@@ -72,9 +72,10 @@ async function handleResponse<T>(response: Response): Promise<T> {
       errorData = { detail: errorMessage }
     }
 
-    // Handle authentication errors (401 Unauthorized or 403 Forbidden)
-    // This indicates the token has expired, is invalid, or lacks required permissions
-    if ((response.status === 401 || response.status === 403) && onAuthError) {
+    // 401 means the token is missing, expired, or invalid, so re-check auth state.
+    // 403 is an authorization failure (authenticated but not permitted) and
+    // says nothing about the session, so it's left to the caller.
+    if (response.status === 401 && onAuthError) {
       // Fire and forget - don't block the error response
       void onAuthError()
     }

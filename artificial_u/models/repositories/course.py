@@ -1,6 +1,6 @@
 from typing import List, Optional, Tuple
 
-from sqlalchemy import func, or_
+from sqlalchemy import ColumnElement, func, not_, or_
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import joinedload, selectinload
 
@@ -17,6 +17,7 @@ from artificial_u.models.database import (
     TopicModel,
 )
 from artificial_u.models.repositories.base import BaseRepository
+from artificial_u.models.visibility import discoverable_courses
 
 # Sort fields that require an outer join on a related table (driven by sort_by value)
 _RELATION_JOIN_COLUMNS = {
@@ -157,11 +158,24 @@ class CourseRepository(BaseRepository):
                 return self._convert_course(db_course)
         return None
 
-    def list(self, department_id: Optional[int] = None) -> List[Course]:
+    def list(
+        self,
+        department_id: Optional[int] = None,
+        professor_id: Optional[int] = None,
+        course_filter: Optional[ColumnElement[bool]] = None,
+    ) -> List[Course]:
+        """
+        List courses, optionally by department/professor. `course_filter` is an
+        extra criterion on CourseModel (e.g. discoverable_courses()).
+        """
         with self.get_session() as session:
             query = session.query(self.model)
             if department_id is not None:
                 query = query.filter_by(department_id=department_id)
+            if professor_id is not None:
+                query = query.filter_by(professor_id=professor_id)
+            if course_filter is not None:
+                query = query.filter(course_filter)
             db_courses = query.all()
             return [self._convert_course(course) for course in db_courses]
 
@@ -204,6 +218,43 @@ class CourseRepository(BaseRepository):
             session.delete(db_course)
             session.commit()
             return True
+
+    def find_disallowed_connections(
+        self,
+        course_id: Optional[int],
+        connected_course_ids: List[int],
+        viewer: Optional[Student],
+    ) -> List[int]:
+        """
+        Return the IDs in `connected_course_ids` that `viewer` may not newly connect.
+
+        A connection makes a course discoverable from the other course's page, so
+        new connections are limited to courses `viewer` may discover (published,
+        their own hidden courses, or anything for admins). Existing connections
+        are always kept, even if the connected course has since been hidden.
+
+        Args:
+            course_id: The course being edited, or None when creating a course
+            connected_course_ids: The requested set of connected course IDs
+            viewer: The student making the change
+        """
+        if not connected_course_ids:
+            return []
+        with self.get_session() as session:
+            existing: set[int] = set()
+            if course_id is not None:
+                db_course = session.query(self.model).filter_by(id=course_id).first()
+                if db_course:
+                    existing = set(db_course.connected_course_ids)
+            # Unknown IDs aren't matched here; set_connected_courses reports them
+            undiscoverable_ids = {
+                row[0]
+                for row in session.query(CourseModel.id).filter(
+                    CourseModel.id.in_(set(connected_course_ids)),
+                    not_(discoverable_courses(viewer)),
+                )
+            }
+            return sorted(undiscoverable_ids - existing)
 
     def set_connected_courses(self, course_id: int, connected_course_ids: List[int]) -> Course:
         with self.get_session() as session:

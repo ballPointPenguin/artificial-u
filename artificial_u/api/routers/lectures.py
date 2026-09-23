@@ -27,6 +27,7 @@ from artificial_u.api.dependencies import (
     get_lecture_api_service,
     get_repository_factory,
     get_storage_service,
+    optional_student,
 )
 from artificial_u.api.models import (
     AdminLectureListItem,
@@ -50,6 +51,7 @@ from artificial_u.models.database import (
     TopicModel,
 )
 from artificial_u.models.repositories.factory import RepositoryFactory
+from artificial_u.models.visibility import discoverable_courses
 from artificial_u.services.storage_service import StorageService
 
 # -- Response model for recent/enriched lectures --
@@ -284,6 +286,7 @@ async def list_lectures(
     topic_id: Optional[int] = Query(None, description="Filter by topic ID"),
     search: Optional[str] = Query(None, description="Search in content and summary"),
     lecture_service: LectureApiService = Depends(get_lecture_api_service),
+    student: Optional[Student] = Depends(optional_student),
 ):
     """
     Get a paginated list of lectures with filtering options.
@@ -294,6 +297,9 @@ async def list_lectures(
     - **professor_id**: Filter by professor ID
     - **topic_id**: Filter by topic ID
     - **search**: Search in title and description
+
+    Without `course_id` or `topic_id`, lectures in hidden courses are only
+    listed for the course owner or an admin.
     """
     return lecture_service.list_lectures(
         page=page,
@@ -302,6 +308,7 @@ async def list_lectures(
         professor_id=professor_id,
         topic_id=topic_id,
         search=search,
+        viewer=student,
     )
 
 
@@ -321,9 +328,12 @@ async def get_recent_lectures(
         description="Comma-separated lecture IDs to fetch (overrides limit/recency ordering)",
     ),
     repository_factory: RepositoryFactory = Depends(get_repository_factory),
+    student: Optional[Student] = Depends(optional_student),
 ):
     """
     Get enriched lectures with nested course/professor/topic/department data.
+    Lectures in hidden courses are excluded unless the viewer owns the course
+    or is an admin.
 
     Two modes:
     - **Default**: returns the N most recently created lectures with audio.
@@ -332,7 +342,8 @@ async def get_recent_lectures(
     with repository_factory.lecture.get_session() as session:
         query = (
             session.query(LectureModel)
-            .outerjoin(CourseModel, LectureModel.course_id == CourseModel.id)
+            .join(CourseModel, LectureModel.course_id == CourseModel.id)
+            .filter(discoverable_courses(student))
             .outerjoin(TopicModel, LectureModel.topic_id == TopicModel.id)
             .outerjoin(ProfessorModel, CourseModel.professor_id == ProfessorModel.id)
             .outerjoin(DepartmentModel, CourseModel.department_id == DepartmentModel.id)

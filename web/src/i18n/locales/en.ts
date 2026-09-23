@@ -506,6 +506,7 @@ export const en = {
     saveChanges: 'Save Changes',
     profileUpdated: 'Profile updated successfully!',
     failedToLoad: 'Failed to load profile',
+    loadFailedBanner: "We couldn't load your profile, so some actions may be hidden.",
     failedToUpdate: 'Failed to update profile',
     enrollmentStatus: 'Enrollment Status',
     status: 'Status',

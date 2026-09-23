@@ -11,7 +11,8 @@ from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel, Field
 from sqlalchemy import or_
 
-from artificial_u.api.dependencies import get_repository_factory
+from artificial_u.api.dependencies import get_repository_factory, optional_student
+from artificial_u.models.core import Student
 from artificial_u.models.database import (
     CourseModel,
     DepartmentModel,
@@ -20,6 +21,7 @@ from artificial_u.models.database import (
     TopicModel,
 )
 from artificial_u.models.repositories import RepositoryFactory
+from artificial_u.models.visibility import discoverable_courses
 
 router = APIRouter(prefix="/search", tags=["Search"])
 
@@ -115,27 +117,31 @@ async def global_search(
         description="Max results per category",
     ),
     repository_factory: RepositoryFactory = Depends(get_repository_factory),
+    student: Optional[Student] = Depends(optional_student),
 ):
     """
     Search across lectures, courses, professors, departments, and topics.
 
     Returns up to `limit` results per category, matched via case-insensitive
-    substring search (ILIKE).
+    substring search (ILIKE). Hidden courses, and their lectures and topics,
+    only match for the course owner or an admin.
     """
     pattern = f"%{q}%"
+    course_visible = discoverable_courses(student)
 
     with repository_factory.lecture.get_session() as session:
         # -- Lectures: title, summary --
         lecture_rows = (
             session.query(LectureModel)
-            .outerjoin(CourseModel, LectureModel.course_id == CourseModel.id)
+            .join(CourseModel, LectureModel.course_id == CourseModel.id)
             .outerjoin(ProfessorModel, CourseModel.professor_id == ProfessorModel.id)
             .outerjoin(DepartmentModel, CourseModel.department_id == DepartmentModel.id)
             .filter(
+                course_visible,
                 or_(
                     LectureModel.title.ilike(pattern),
                     LectureModel.summary.ilike(pattern),
-                )
+                ),
             )
             .order_by(LectureModel.created_at.desc())
             .limit(limit)
@@ -167,11 +173,12 @@ async def global_search(
             .outerjoin(DepartmentModel, CourseModel.department_id == DepartmentModel.id)
             .outerjoin(ProfessorModel, CourseModel.professor_id == ProfessorModel.id)
             .filter(
+                course_visible,
                 or_(
                     CourseModel.title.ilike(pattern),
                     CourseModel.description.ilike(pattern),
                     CourseModel.code.ilike(pattern),
-                )
+                ),
             )
             .order_by(CourseModel.updated_at.desc())
             .limit(limit)
@@ -243,8 +250,8 @@ async def global_search(
         # -- Topics: title --
         topic_rows = (
             session.query(TopicModel)
-            .outerjoin(CourseModel, TopicModel.course_id == CourseModel.id)
-            .filter(TopicModel.title.ilike(pattern))
+            .join(CourseModel, TopicModel.course_id == CourseModel.id)
+            .filter(course_visible, TopicModel.title.ilike(pattern))
             .order_by(TopicModel.title)
             .limit(limit)
             .all()

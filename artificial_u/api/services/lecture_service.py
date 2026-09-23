@@ -16,7 +16,9 @@ from artificial_u.api.models.lectures import (
 )
 from artificial_u.api.services.base_service import BaseApiService
 from artificial_u.models.core import Lecture as CoreLecture
+from artificial_u.models.core import Student
 from artificial_u.models.repositories import RepositoryFactory
+from artificial_u.models.visibility import discoverable_courses
 from artificial_u.services import (
     StorageService,  # Keep even if not used directly now, matches dependency injection
 )
@@ -125,9 +127,14 @@ class LectureApiService(BaseApiService[CoreLecture, Lecture, LectureListResponse
         professor_id: Optional[int] = None,
         topic_id: Optional[int] = None,
         search: Optional[str] = None,
+        viewer: Optional[Student] = None,
     ) -> LectureListResponse:
         """
         List lectures with filtering and pagination using the core service and repository.
+
+        Listing a specific course's or topic's lectures is direct access and
+        includes hidden courses; any other listing is discovery and only
+        includes courses `viewer` may discover.
 
         Args:
             page: Page number (1-indexed)
@@ -136,6 +143,7 @@ class LectureApiService(BaseApiService[CoreLecture, Lecture, LectureListResponse
             professor_id: Filter by professor ID
             topic_id: Filter by topic ID
             search: Search query for title/description
+            viewer: The requesting student, if authenticated
 
         Returns:
             LectureListResponse: Paginated list of lectures
@@ -143,6 +151,8 @@ class LectureApiService(BaseApiService[CoreLecture, Lecture, LectureListResponse
         Raises:
             HTTPException: If there's an error retrieving data.
         """
+        scoped = course_id is not None or topic_id is not None
+        course_filter = None if scoped else discoverable_courses(viewer)
         try:
             # Get lectures using the core service list method (delegates to repository)
             core_lectures = self.core_service.list_lectures(
@@ -152,6 +162,7 @@ class LectureApiService(BaseApiService[CoreLecture, Lecture, LectureListResponse
                 professor_id=professor_id,
                 topic_id=topic_id,
                 search_query=search,
+                course_filter=course_filter,
             )
 
             # Convert core models to API models and enrich with download URLs
@@ -168,6 +179,7 @@ class LectureApiService(BaseApiService[CoreLecture, Lecture, LectureListResponse
                 professor_id=professor_id,
                 topic_id=topic_id,
                 search_query=search,
+                course_filter=course_filter,
             )
 
             # Calculate total pages

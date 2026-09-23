@@ -1,14 +1,15 @@
-import { createSignal, onMount, Show } from 'solid-js'
-import { studentService } from '../api/services'
-import type { Student, StudentUpdate } from '../api/types'
+import { createSignal, Show } from 'solid-js'
+import type { StudentUpdate } from '../api/types'
+import { useAuth } from '../auth/AuthProvider'
 import { Button, Card, FormField, Input } from '../components/ui'
 import { type ContentLanguage, useContentLanguage, useTranslations } from '../i18n'
 
 const Profile = () => {
   const t = useTranslations()
   const { contentLanguageOverride, setContentLanguage } = useContentLanguage()
-  const [student, setStudent] = createSignal<Student | null>(null)
-  const [isLoading, setIsLoading] = createSignal(true)
+  // The profile is owned by AuthProvider so this page and every role check agree
+  const auth = useAuth()
+  const student = auth.student
   const [isEditing, setIsEditing] = createSignal(false)
   const [isSaving, setIsSaving] = createSignal(false)
   const [error, setError] = createSignal<string | null>(null)
@@ -34,27 +35,14 @@ const Profile = () => {
     email: '',
   })
 
-  // Load student profile on mount
-  onMount(() => {
-    void (async () => {
-      try {
-        setIsLoading(true)
-        setError(null)
-        const data = await studentService.getCurrentStudent()
-        setStudent(data)
-        setFormData({
-          name: data.name,
-          email: data.email || '',
-        })
-      } catch (err) {
-        setError(err instanceof Error ? err.message : t().profile.failedToLoad)
-      } finally {
-        setIsLoading(false)
-      }
-    })()
-  })
-
   const handleEdit = () => {
+    const currentStudent = student()
+    if (currentStudent) {
+      setFormData({
+        name: currentStudent.name,
+        email: currentStudent.email || '',
+      })
+    }
     setIsEditing(true)
     setError(null)
     setSuccessMessage(null)
@@ -64,14 +52,6 @@ const Profile = () => {
     setIsEditing(false)
     setError(null)
     setSuccessMessage(null)
-    // Reset form to current student data
-    const currentStudent = student()
-    if (currentStudent) {
-      setFormData({
-        name: currentStudent.name,
-        email: currentStudent.email || '',
-      })
-    }
   }
 
   const handleSave = async () => {
@@ -80,9 +60,7 @@ const Profile = () => {
       setError(null)
       setSuccessMessage(null)
 
-      const updateData = formData()
-      const updatedStudent = await studentService.updateCurrentStudent(updateData)
-      setStudent(updatedStudent)
+      await auth.updateProfile(formData())
       setIsEditing(false)
       setSuccessMessage(t().profile.profileUpdated)
 
@@ -103,22 +81,13 @@ const Profile = () => {
     <div class="container mx-auto max-w-4xl px-4 py-8">
       <h1 class="text-3xl font-display mb-8">{t().profile.title}</h1>
 
-      <Show when={isLoading()}>
-        <div class="flex items-center justify-center py-12">
-          <div class="text-center">
-            <div class="mb-4 inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-current border-r-transparent" />
-            <p>{t().profile.loading}</p>
-          </div>
-        </div>
-      </Show>
-
-      <Show when={!isLoading() && error()}>
+      <Show when={!student() && auth.profileError()}>
         <Card class="border-error-border bg-error-surface">
-          <p class="text-error-text">{error()}</p>
+          <p class="text-error-text">{t().profile.failedToLoad}</p>
         </Card>
       </Show>
 
-      <Show when={!isLoading() && student()}>
+      <Show when={student()}>
         <Card class="mb-6">
           <Show when={successMessage()}>
             <div class="mb-4 rounded-lg bg-green-100 p-4 text-green-800 dark:bg-green-900/30 dark:text-green-200">

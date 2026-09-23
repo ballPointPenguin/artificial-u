@@ -1,5 +1,6 @@
 import type { RouteSectionProps } from '@solidjs/router'
 import { type Component, onCleanup, onMount } from 'solid-js'
+import { ProfileErrorBanner } from '../auth/ProfileErrorBanner'
 import { useAudioPlayer } from '../utils/audio-player-context.jsx'
 import { InstallPWAPrompt, PWAUpdatePrompt } from '../utils/pwa'
 import { Footer } from './Footer'
@@ -47,6 +48,7 @@ const Layout: Component<RouteSectionProps> = (props) => {
     <div class="flex min-h-dvh flex-col bg-background text-foreground">
       <header class="shrink-0">
         <NavBar />
+        <ProfileErrorBanner />
       </header>
 
       <div class="flex min-h-0 flex-1 flex-col">

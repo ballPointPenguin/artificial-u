@@ -501,6 +501,7 @@ export const zh = {
     saveChanges: '保存更改',
     profileUpdated: '资料更新成功！',
     failedToLoad: '无法加载资料',
+    loadFailedBanner: '无法加载您的资料，部分操作可能被隐藏。',
     failedToUpdate: '无法更新资料',
     enrollmentStatus: '学籍状态',
     status: '状态',

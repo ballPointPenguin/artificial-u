@@ -1,3 +1,4 @@
+import time
 from functools import lru_cache
 from typing import Any, Dict, List, Optional
 
@@ -43,44 +44,67 @@ def get_user_info(access_token: str) -> Dict[str, Any]:
         return response.json()
 
 
-def _get_signing_key(kid: str) -> Optional[Dict[str, Any]]:
+# Minimum seconds between JWKS refetches triggered by an unknown key id, so
+# tokens with bogus `kid`s can't make us hammer Auth0
+_JWKS_REFRESH_INTERVAL = 60.0
+_jwks_last_refresh = float("-inf")
+
+
+def _find_key(kid: str) -> Optional[Dict[str, Any]]:
     keys: List[Dict[str, Any]] = get_jwks().get("keys", [])
-    for key in keys:
-        if key.get("kid") == kid:
-            return key
-    return None
+    return next((key for key in keys if key.get("kid") == kid), None)
+
+
+def _get_signing_key(kid: str) -> Optional[Dict[str, Any]]:
+    global _jwks_last_refresh
+    key = _find_key(kid)
+    if key is None and time.monotonic() - _jwks_last_refresh > _JWKS_REFRESH_INTERVAL:
+        # Auth0 may have rotated its signing keys since we cached the JWKS
+        _jwks_last_refresh = time.monotonic()
+        get_jwks.cache_clear()
+        key = _find_key(kid)
+    return key
+
+
+def _decode_token(token: str) -> Dict[str, Any]:
+    """
+    Verify an Auth0 access token and return its payload.
+
+    Raises:
+        HTTPException: 401 if the signing key is unknown
+        JWTError: (or a subclass) if the token is malformed, expired, or has bad claims
+    """
+    settings = get_settings()
+    kid = jwt.get_unverified_header(token).get("kid")
+    jwk_data = _get_signing_key(kid) if kid else None
+    if not jwk_data:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Signing key not found"
+        )
+
+    # Pass RSA key params dict directly (kty,n,e) to python-jose
+    rsa_key = {
+        "kty": jwk_data.get("kty"),
+        "kid": jwk_data.get("kid"),
+        "use": jwk_data.get("use"),
+        "n": jwk_data.get("n"),
+        "e": jwk_data.get("e"),
+    }
+
+    return jwt.decode(
+        token,
+        rsa_key,
+        algorithms=[settings.AUTH0_ALG],
+        audience=settings.AUTH0_AUDIENCE,
+        issuer=f"https://{settings.AUTH0_DOMAIN}/",
+    )
 
 
 def require_auth(
     credentials: HTTPAuthorizationCredentials = Depends(auth_scheme),
 ) -> Dict[str, Any]:
-    settings = get_settings()
-    token = credentials.credentials
     try:
-        unverified = jwt.get_unverified_header(token)
-        jwk_data = _get_signing_key(unverified["kid"])  # type: ignore[reportGeneralTypeIssues]
-        if not jwk_data:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED, detail="Signing key not found"
-            )
-
-        # Pass RSA key params dict directly (kty,n,e) to python-jose
-        rsa_key = {
-            "kty": jwk_data.get("kty"),
-            "kid": jwk_data.get("kid"),
-            "use": jwk_data.get("use"),
-            "n": jwk_data.get("n"),
-            "e": jwk_data.get("e"),
-        }
-
-        payload = jwt.decode(
-            token,
-            rsa_key,
-            algorithms=[settings.AUTH0_ALG],
-            audience=settings.AUTH0_AUDIENCE,
-            issuer=f"https://{settings.AUTH0_DOMAIN}/",
-        )
-        return payload  # contains sub, scope, etc.
+        return _decode_token(credentials.credentials)  # contains sub, scope, etc.
     except ExpiredSignatureError:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token expired")
     except JWTClaimsError as e:
@@ -102,32 +126,9 @@ def optional_auth(
     if not credentials:
         return None
 
-    settings = get_settings()
-    token = credentials.credentials
     try:
-        unverified = jwt.get_unverified_header(token)
-        jwk_data = _get_signing_key(unverified["kid"])  # type: ignore[reportGeneralTypeIssues]
-        if not jwk_data:
-            return None
-
-        # Pass RSA key params dict directly (kty,n,e) to python-jose
-        rsa_key = {
-            "kty": jwk_data.get("kty"),
-            "kid": jwk_data.get("kid"),
-            "use": jwk_data.get("use"),
-            "n": jwk_data.get("n"),
-            "e": jwk_data.get("e"),
-        }
-
-        payload = jwt.decode(
-            token,
-            rsa_key,
-            algorithms=[settings.AUTH0_ALG],
-            audience=settings.AUTH0_AUDIENCE,
-            issuer=f"https://{settings.AUTH0_DOMAIN}/",
-        )
-        return payload  # contains sub, scope, etc.
-    except ExpiredSignatureError, JWTClaimsError, JWTError:
+        return _decode_token(credentials.credentials)  # contains sub, scope, etc.
+    except HTTPException, JWTError:
         # Silently fail for optional auth - return None on any token error
         return None
 

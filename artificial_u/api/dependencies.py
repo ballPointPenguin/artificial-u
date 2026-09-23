@@ -10,7 +10,7 @@ import logging
 from typing import Optional
 
 import httpx
-from fastapi import Depends
+from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials
 
 from artificial_u.api.config import get_settings
@@ -41,6 +41,8 @@ from artificial_u.services import (
 )
 from artificial_u.services.http_client import get_shared_async_client
 from artificial_u.services.job_enqueue_service import JobEnqueueService
+
+logger = logging.getLogger(__name__)
 
 
 def get_repository_factory() -> RepositoryFactory:
@@ -73,48 +75,47 @@ def _get_or_create_student_from_payload(
     Helper to get or create a student from JWT payload.
 
     Args:
-        payload: JWT payload with user claims
+        payload: Verified JWT payload with user claims
         repository_factory: Repository factory for database access
         credentials: Optional credentials for fetching additional user info from Auth0
 
     Returns:
         Student model instance
     """
-    import logging
-
     from artificial_u.api.security.auth0 import get_user_info
 
-    logger = logging.getLogger(__name__)
+    sub = payload.get("sub")
+    if not isinstance(sub, str) or not sub:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Token missing subject claim"
+        )
 
-    # Try to fetch additional user info from Auth0 if we have credentials
-    # and the token is missing profile claims
+    # Profile claims only seed a new account, so skip the /userinfo round trip
+    # (which Auth0 rate-limits) for students we already know
+    existing = repository_factory.student.get_by_auth0_sub(sub)
+    if existing:
+        return existing
+
+    # Access tokens usually lack profile claims; fetch them from Auth0 if we can
     user_info = payload
     if credentials and not payload.get("email") and not payload.get("name"):
         logger.info("Token missing user profile claims, fetching from /userinfo endpoint")
         try:
-            access_token = credentials.credentials
-            fetched_info = get_user_info(access_token)
-            logger.info(f"Fetched user info: {fetched_info}")
+            fetched_info = get_user_info(credentials.credentials)
             # Merge, with payload taking precedence for auth claims
             user_info = {**fetched_info, **payload}
         except Exception as e:
             logger.warning(f"Failed to fetch user info from Auth0: {e}")
-            # Continue with just the payload
-            user_info = payload
 
-    sub = user_info.get("sub")
     email = user_info.get("email")
     email_verified = user_info.get("email_verified", False)
-
-    if not isinstance(sub, str):
-        sub = "unknown"
 
     # Prefer name->nickname->email->sub for initial display name
     display_name = (
         user_info.get("name")
         or user_info.get("nickname")
         or (email if isinstance(email, str) else None)
-        or (sub if isinstance(sub, str) else "User")
+        or sub
     )
 
     return repository_factory.student.get_or_create_by_auth0(
@@ -155,17 +156,8 @@ def ensure_student(
     claims to seed the initial name. Email is captured if present.
 
     If the access token doesn't contain user profile information, fetches it from
-    Auth0's /userinfo endpoint.
+    Auth0's /userinfo endpoint when creating a new student.
     """
-    import logging
-
-    logger = logging.getLogger(__name__)
-
-    # Debug: log the entire payload structure
-    logger.info(f"JWT Payload keys: {list(payload.keys())}")
-    logger.info(f"JWT Payload: {payload}")
-
-    # Use shared helper with credentials for /userinfo fallback
     return _get_or_create_student_from_payload(payload, repository_factory, credentials)
 
 

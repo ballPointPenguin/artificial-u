@@ -6,9 +6,12 @@ from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
 
-from artificial_u.api.dependencies import get_department_api_service, get_repository_factory
+from artificial_u.api.dependencies import (
+    get_department_api_service,
+    get_repository_factory,
+    optional_student,
+)
 from artificial_u.api.models import (
-    CoursesListResponse,
     DepartmentCoursesResponse,
     DepartmentCreate,
     DepartmentGenerate,
@@ -16,11 +19,11 @@ from artificial_u.api.models import (
     DepartmentResponse,
     DepartmentsListResponse,
     DepartmentUpdate,
-    ProfessorsListResponse,
 )
 from artificial_u.api.security.auth0 import require_coins, require_role
 from artificial_u.api.services import DepartmentApiService
 from artificial_u.config.settings import get_settings
+from artificial_u.models.core import Student
 from artificial_u.models.repositories.factory import RepositoryFactory
 
 # Create the router with dependencies that will be applied to all routes
@@ -206,6 +209,7 @@ async def get_department_professors(
 async def get_department_courses(
     department_id: int = Path(..., description="The ID of the department"),
     department_service: DepartmentApiService = Depends(get_department_api_service),
+    student: Optional[Student] = Depends(optional_student),
 ):
     """
     Get courses in a specific department.
@@ -213,7 +217,7 @@ async def get_department_courses(
     - **department_id**: The unique identifier of the department
     - Returns a list of courses in the department
     """
-    response = department_service.get_department_courses(department_id)
+    response = department_service.get_department_courses(department_id, viewer=student)
     if not response:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -244,54 +248,6 @@ async def get_department_by_code(
     if not department:
         raise HTTPException(status_code=404, detail="Department not found")
     return department
-
-
-@router.get("/{department_id}/professors", response_model=ProfessorsListResponse)
-async def list_department_professors(
-    department_id: int,
-    department_service: DepartmentApiService = Depends(get_department_api_service),
-):
-    """
-    List professors for a department.
-
-    Args:
-        department_id: Department ID
-        department_service: Department service
-
-    Returns:
-        List of professors
-
-    Raises:
-        HTTPException: If department not found
-    """
-    professors = department_service.get_department_professors(department_id)
-    if not professors:
-        raise HTTPException(status_code=404, detail="Department not found")
-    return professors
-
-
-@router.get("/{department_id}/courses", response_model=CoursesListResponse)
-async def list_department_courses(
-    department_id: int,
-    department_service: DepartmentApiService = Depends(get_department_api_service),
-):
-    """
-    List courses for a department.
-
-    Args:
-        department_id: Department ID
-        department_service: Department service
-
-    Returns:
-        List of courses
-
-    Raises:
-        HTTPException: If department not found
-    """
-    courses = department_service.get_department_courses(department_id)
-    if not courses:
-        raise HTTPException(status_code=404, detail="Department not found")
-    return courses
 
 
 @router.post(

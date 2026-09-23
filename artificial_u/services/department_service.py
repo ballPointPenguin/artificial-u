@@ -5,6 +5,8 @@ Department management service for ArtificialU.
 import logging
 from typing import Dict, List, Optional
 
+from sqlalchemy import ColumnElement
+
 from artificial_u.models.core import Course, Department, Professor
 from artificial_u.models.repositories.factory import RepositoryFactory
 from artificial_u.utils import (
@@ -256,12 +258,15 @@ class DepartmentService:
             self.logger.error(error_msg)
             raise DatabaseError(error_msg) from e
 
-    def get_department_courses(self, department_id: str) -> List[Course]:
+    def get_department_courses(
+        self, department_id: str, course_filter: Optional[ColumnElement[bool]] = None
+    ) -> List[Course]:
         """
         Get all courses in a department.
 
         Args:
             department_id: ID of the department
+            course_filter: Optional criterion on CourseModel (e.g. discoverable_courses())
 
         Returns:
             List[Course]: List of courses in the department
@@ -274,7 +279,9 @@ class DepartmentService:
         self.get_department(department_id)
 
         try:
-            courses = self.repository_factory.course.list(department_id=department_id)
+            courses = self.repository_factory.course.list(
+                department_id=department_id, course_filter=course_filter
+            )
             self.logger.debug(f"Found {len(courses)} courses")
             return courses
         except Exception as e:
