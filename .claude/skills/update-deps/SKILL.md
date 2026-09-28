@@ -64,11 +64,17 @@ For every **major** bump, and for any minor bump of a 0.x package:
 
 Run these from the repo root and fix anything that fails. Don't paper over failures.
 
+The integration tests need the local Postgres from Docker. Make sure it's running
+(`docker compose ps`; start it with `docker compose up -d`, and run
+`uv run python scripts/setup_test_db.py` if the test DB doesn't exist yet). Don't skip the
+integration tests: driver and ORM upgrades (e.g. SQLAlchemy 2.1 switching to psycopg 3) only
+show up against a real database.
+
 ```bash
 make pre-commit              # all hooks, all files; re-run if hooks rewrote files
 make lint                    # black --check, isort --check-only, flake8
-uv run mypy artificial_u
-uv run pytest -m unit        # add -m integration if the test DB is set up
+uv run mypy artificial_u     # not enforced in CI; compare against main, flag only new errors
+uv run pytest                # unit + integration (needs the Docker DB)
 ```
 
 For web changes:
