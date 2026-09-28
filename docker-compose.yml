@@ -16,39 +16,43 @@ services:
       timeout: 5s
       retries: 5
 
-  minio:
-    image: quay.io/minio/minio:latest
-    container_name: artificial_u_minio
+  # S3-compatible object storage for local development (production uses AWS S3).
+  # RustFS replaced MinIO after MinIO withdrew its public container images.
+  rustfs:
+    image: rustfs/rustfs:1.0.0
+    container_name: artificial_u_rustfs
     ports:
-      - "${MINIO_PORT:-9000}:9000" # API port
-      - "${MINIO_CONSOLE_PORT:-9001}:9001" # Console port
+      - "${STORAGE_PORT:-9000}:9000" # S3 API
+      - "${STORAGE_CONSOLE_PORT:-9001}:9001" # Web console
     environment:
-      MINIO_ROOT_USER: minioadmin
-      MINIO_ROOT_PASSWORD: minioadmin
+      RUSTFS_ACCESS_KEY: minioadmin
+      RUSTFS_SECRET_KEY: minioadmin
+      RUSTFS_CONSOLE_ENABLE: "true"
     volumes:
-      - minio_data:/data
-    command: server --console-address ":9001" /data
+      - rustfs_data:/data
+    command: /data
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
-      interval: 30s
-      timeout: 20s
-      retries: 3
+      test: ["CMD", "curl", "-f", "http://localhost:9000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
-  # MinIO client for bucket setup
-  mc:
-    image: minio/mc:latest
-    container_name: artificial_u_mc
+  # One-shot: create buckets, public-read policy, and CORS (mirrors the CDK S3 config)
+  storage-setup:
+    image: amazon/aws-cli:latest
+    container_name: artificial_u_storage_setup
     depends_on:
-      - minio
+      rustfs:
+        condition: service_healthy
     volumes:
-      - ./scripts/mc_setup.sh:/usr/bin/mc_setup.sh
+      - ./scripts/storage_setup.sh:/storage_setup.sh:ro
     environment:
-      MINIO_PORT: ${MINIO_PORT:-9000}
-    entrypoint:
-      - sh
-      - -c
-      - '/usr/bin/mc_setup.sh "${MINIO_PORT}"'
+      AWS_ACCESS_KEY_ID: minioadmin
+      AWS_SECRET_ACCESS_KEY: minioadmin
+      AWS_DEFAULT_REGION: us-east-1
+      STORAGE_ENDPOINT: http://rustfs:9000
+    entrypoint: ["sh", "/storage_setup.sh"]
 
 volumes:
   postgres_data:
-  minio_data:
+  rustfs_data:

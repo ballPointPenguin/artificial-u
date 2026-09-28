@@ -1,11 +1,12 @@
 #!/bin/bash
 set -e
 
-echo "Starting backup upload to MinIO..."
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=storage_lib.sh
+source "${SCRIPT_DIR}/storage_lib.sh"
 
-# Docker container and alias info
-MC_CONTAINER="artificial_u_mc"
-MC_ALIAS="myminio"
+echo "Starting backup upload to local storage..."
+
 BACKUP_BASE="./backups"
 
 # Function to upload a backup directory to its corresponding bucket
@@ -15,25 +16,13 @@ upload_backup() {
 
     echo "Uploading ${backup_dir} to ${bucket_name} bucket..."
 
-    # Use docker run with proper entrypoint override
-    docker run --rm \
-        --network artificial_u_default \
-        -v "$(pwd)/backups/${backup_dir}:/data" \
-        --entrypoint sh \
-        minio/mc:latest \
-        -c "
-            mc alias set myminio http://minio:9000 minioadmin minioadmin && \
-            mc mirror --remove /data myminio/${bucket_name}
-        "
+    aws_cli -v "$(cd "${BACKUP_BASE}/${backup_dir}" && pwd):/data:ro" \
+        s3 sync --delete --only-show-errors /data "s3://${bucket_name}"
 
     echo "✅ Completed upload for ${backup_dir}"
 }
 
-# Ensure MinIO is running
-if ! docker ps | grep -q artificial_u_minio; then
-    echo "❌ MinIO container is not running. Please start it with: docker-compose up -d minio"
-    exit 1
-fi
+require_storage
 
 # Upload each backup directory
 upload_backup "artificial-u-audio" "artificial-u-audio"
@@ -42,4 +31,4 @@ upload_backup "artificial-u-lectures" "artificial-u-lectures"
 upload_backup "artificial-u-exports" "artificial-u-exports"
 
 echo "🎉 All backups uploaded successfully!"
-echo "You can verify uploads at: http://localhost:9001 (minioadmin/minioadmin)"
+echo "You can verify uploads at: ${STORAGE_CONSOLE_URL} (minioadmin/minioadmin)"

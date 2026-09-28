@@ -10,7 +10,7 @@ ArtificialU is an AI-powered educational content platform that generates univers
 - **Frontend**: SolidJS with TypeScript, TailwindCSS v4, Auth0
 - **AI Integration**: Anthropic Claude, Google Gemini, OpenAI
 - **TTS Services**: ElevenLabs
-- **Storage**: MinIO (dev) / S3 (prod)
+- **Storage**: RustFS (dev, S3-compatible) / S3 (prod)
 - **Job Processing**: Custom async worker with PostgreSQL-backed queue
 
 ## Essential Commands
@@ -76,7 +76,7 @@ pnpm test:coverage    # Coverage report
 ### Docker Services
 
 ```bash
-docker compose up -d     # Start postgres, minio
+docker compose up -d     # Start postgres, rustfs (+ bucket setup)
 docker compose down      # Stop services
 docker compose logs -f   # View logs
 docker compose restart   # Restart services
@@ -216,7 +216,7 @@ uv run pytest -m integration
 - **.flake8**: Flake8 linting rules
 - **.pre-commit-config.yaml**: Pre-commit hooks
 - **alembic.ini**: Database migration configuration
-- **docker-compose.yml**: Local service orchestration (postgres, minio)
+- **docker-compose.yml**: Local service orchestration (postgres, rustfs)
 - **web/package.json**: Frontend dependencies and scripts
 - **web/biome.json**: BiomeJS formatter/linter config
 - **web/tsconfig.json**: TypeScript configuration
@@ -351,7 +351,7 @@ Required in `.env` file:
 - `XAI_API_KEY`: xAI API key (TTS when using xAI/Grok backend)
 - `DATABASE_URL`: PostgreSQL connection string
 - `AUTH0_DOMAIN`, `AUTH0_CLIENT_ID`, `AUTH0_CLIENT_SECRET`: Auth0 configuration
-- `MINIO_*` or `AWS_*`: Storage configuration
+- `STORAGE_*`: Storage configuration (local RustFS or AWS S3)
 
 Frontend requires `.env.local` in `web/` directory with Auth0 and API URL configuration.
 

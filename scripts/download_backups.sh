@@ -1,11 +1,14 @@
 #!/bin/bash
 set -e
 
-echo "Starting backup download from MinIO..."
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=storage_lib.sh
+source "${SCRIPT_DIR}/storage_lib.sh"
+
+echo "Starting backup download from local storage..."
 
 # Configuration
 BACKUP_BASE="./backups"
-MC_ALIAS="myminio"
 
 # Function to download a bucket to a local directory
 download_backup() {
@@ -17,16 +20,8 @@ download_backup() {
     # Create local directory if it doesn't exist
     mkdir -p "${local_dir}"
 
-    # Use docker run with proper entrypoint override
-    docker run --rm \
-        --network artificial_u_default \
-        -v "$(pwd)/${local_dir}:/downloads" \
-        --entrypoint sh \
-        minio/mc:latest \
-        -c "
-            mc alias set ${MC_ALIAS} http://minio:9000 minioadmin minioadmin && \
-            mc mirror --remove ${MC_ALIAS}/${bucket_name} /downloads
-        "
+    aws_cli -v "$(cd "${local_dir}" && pwd):/downloads" \
+        s3 sync --delete --only-show-errors "s3://${bucket_name}" /downloads
 
     echo "✅ Completed download for ${bucket_name}"
 }
@@ -100,11 +95,7 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-# Ensure MinIO is running
-if ! docker ps | grep -q artificial_u_minio; then
-    echo "❌ MinIO container is not running. Please start it with: docker-compose up -d minio"
-    exit 1
-fi
+require_storage
 
 # Create base backup directory
 mkdir -p "${BACKUP_BASE}"
@@ -133,7 +124,7 @@ fi
 echo ""
 echo "🎉 All selected backups downloaded successfully!"
 echo "📁 Files saved to: $(realpath "${BACKUP_BASE}")"
-echo "🌐 You can verify bucket contents at: http://localhost:9001 (minioadmin/minioadmin)"
+echo "🌐 You can verify bucket contents at: ${STORAGE_CONSOLE_URL} (minioadmin/minioadmin)"
 
 # Show summary of downloaded content
 echo ""
