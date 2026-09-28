@@ -15,7 +15,7 @@ ArtificialU is an AI-powered educational content platform that generates univers
 - uv for environment and dependency management
 - AI: Anthropic Claude, Google Gemini, OpenAI
 - TTS: ElevenLabs
-- Storage: MinIO (dev) / S3 (prod)
+- Storage: RustFS (dev, S3-compatible) / S3 (prod)
 - Background jobs: Custom async worker with PostgreSQL-backed queue
 
 **Frontend:**
@@ -130,7 +130,7 @@ pnpm test:coverage    # Coverage report
 ### Docker & Services
 
 ```bash
-docker compose up -d     # Start postgres, minio
+docker compose up -d     # Start postgres, rustfs (+ bucket setup)
 docker compose down      # Stop services
 docker compose logs -f   # View logs
 
@@ -276,7 +276,7 @@ When adding frontend features:
 - `XAI_API_KEY`: xAI API key (TTS when using xAI/Grok backend)
 - `DATABASE_URL`: PostgreSQL connection string
 - `AUTH0_DOMAIN`, `AUTH0_CLIENT_ID`, `AUTH0_CLIENT_SECRET`: Auth0 configuration
-- `MINIO_*` or `AWS_*`: Storage configuration
+- `STORAGE_*`: Storage configuration (local RustFS or AWS S3)
 
 **Frontend** (`.env.local` in `web/` directory):
 
@@ -300,7 +300,7 @@ When adding frontend features:
 - `.flake8`: Flake8 linting rules
 - `.pre-commit-config.yaml`: Pre-commit hooks
 - `alembic.ini`: Database migration configuration
-- `docker-compose.yml`: Local service orchestration (postgres, minio)
+- `docker-compose.yml`: Local service orchestration (postgres, rustfs)
 - `web/package.json`: Frontend dependencies and scripts
 - `web/biome.json`: BiomeJS formatter/linter config
 - `web/tsconfig.json`: TypeScript configuration

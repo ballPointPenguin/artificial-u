@@ -60,11 +60,13 @@ content_model=claude-3-7-sonnet-latest
 
 ## Storage Configuration
 
-ArtificialU provides a unified storage interface for both local development (MinIO) and production (AWS S3):
+ArtificialU provides a unified storage interface for both local development (RustFS, S3-compatible) and production (AWS S3):
 
-### MinIO Configuration (Development)
+### Local Storage Configuration (Development)
 
-For local development with MinIO, you **must** set the following environment variables in your `.env` file:
+Local development uses [RustFS](https://github.com/rustfs/rustfs), an S3-compatible server started by `docker compose up -d` (API on `:9000`, web console on `:9001`, login `minioadmin`/`minioadmin`). The one-shot `storage-setup` service creates the buckets and applies the same public-read policy and CORS rules as production. `STORAGE_TYPE=minio` is a historical name: it means "a local S3-compatible endpoint" and works with any such server.
+
+You **must** set the following environment variables in your `.env` file:
 
 ```bash
 STORAGE_TYPE=minio
@@ -80,7 +82,11 @@ STORAGE_EXPORTS_BUCKET=artificial-u-exports
 STORAGE_CONTENT_LOGS_BUCKET=artificial-u-content-logs
 ```
 
-**Important:** The `STORAGE_ACCESS_KEY` and `STORAGE_SECRET_KEY` have no default values and must be explicitly set for MinIO to work.
+**Important:** The `STORAGE_ACCESS_KEY` and `STORAGE_SECRET_KEY` have no default values and must be explicitly set for local storage to work.
+
+**Backups:** `scripts/storage_sync.sh` uploads/downloads bucket contents to `./backups/` (run it with `help` for usage).
+
+**Migrating from MinIO:** MinIO withdrew its public container images in September 2026. If you have an existing `artificial_u_minio_data` volume, run `scripts/migrate_minio_to_rustfs.sh` once before `docker compose up -d`. It copies the volume into `artificial_u_rustfs_data` (RustFS reads MinIO's data format in place) and leaves the old volume as a backup.
 
 ### AWS S3 Configuration (Production)
 
@@ -112,7 +118,7 @@ STORAGE_SECRET_KEY = "your-aws-secret-key"  # Optional, uses IAM role if not pro
 
 ArtificialU automatically logs all LLM generation requests and responses for debugging and analysis purposes. These logs are stored as JSON files in a dedicated bucket:
 
-**Development (MinIO):**
+**Development (RustFS):**
 
 ```python
 STORAGE_CONTENT_LOGS_BUCKET = "artificial-u-content-logs"
@@ -128,7 +134,7 @@ Each log file contains:
 
 Log files are named with the format: `{timestamp}_{backend}_{model}.json`
 
-This allows you to browse and download logs from your MinIO console (dev) or S3 console (prod) for inspection, analysis, or debugging of generation issues.
+This allows you to browse and download logs from the RustFS console (dev) or S3 console (prod) for inspection, analysis, or debugging of generation issues.
 
 ## Model Selection
 
@@ -347,9 +353,9 @@ TESTING=true
 | `ALIBABA_TTS_WSS_URL` | Model Studio WebSocket endpoint; **must match the region your `ALIBABA_API_KEY` was created in** (keys are region-locked). Singapore: `wss://dashscope-intl.aliyuncs.com/api-ws/v1/inference`; Beijing: `wss://dashscope.aliyuncs.com/api-ws/v1/inference` | `wss://dashscope-intl.aliyuncs.com/api-ws/v1/inference` | No |
 | `LECTURE_WORD_COUNT` | Target word count for generated lectures | `3000` | No |
 | `LECTURE_IMAGE_INTERVAL_SEC` | Approximate seconds between generated lecture images | `45` | No |
-| `STORAGE_TYPE` | Storage type ("minio" or "s3") | `minio` | No |
-| `STORAGE_ENDPOINT_URL` | MinIO endpoint URL | `http://localhost:9000` | No |
-| `STORAGE_PUBLIC_URL` | Public URL for MinIO | `http://localhost:9000` | No |
+| `STORAGE_TYPE` | Storage type ("minio" = local S3-compatible, or "s3") | `minio` | No |
+| `STORAGE_ENDPOINT_URL` | Local storage endpoint URL | `http://localhost:9000` | No |
+| `STORAGE_PUBLIC_URL` | Public URL for local storage | `http://localhost:9000` | No |
 | `STORAGE_ACCESS_KEY` | Storage access key | `minioadmin` | No |
 | `STORAGE_SECRET_KEY` | Storage secret key | `minioadmin` | No |
 | `STORAGE_REGION` | Storage region | `us-east-1` | No |

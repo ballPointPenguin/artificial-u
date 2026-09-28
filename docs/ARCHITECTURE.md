@@ -41,11 +41,11 @@ ArtificialU is an AI-powered educational content platform that generates univers
 - **Text-to-Speech**:
   - ElevenLabs API (primary)
 - **Image Generation**: Integration-ready (professor portraits)
-- **Storage**: MinIO (development) / AWS S3 (production)
+- **Storage**: RustFS, S3-compatible (development) / AWS S3 (production)
 
 ### Infrastructure
 
-- **Local Orchestration**: Docker Compose for PostgreSQL and MinIO during development
+- **Local Orchestration**: Docker Compose for PostgreSQL and RustFS during development
 - **Production Infrastructure**: AWS CDK in Python
 - **Production Compute**: ECS on Fargate behind an internet-facing Application Load Balancer
 - **Production Delivery**: CloudFront with Route 53, ACM, AWS WAF, and S3-hosted frontend assets
@@ -117,7 +117,7 @@ The application itself follows a modern three-tier architecture with clear separ
     ┌───────────────────────┼───────────────────────────┐
     │                       │                           │
 ┌───▼────────┐  ┌───────────▼────────┐  ┌──────────────▼──────┐
-│ PostgreSQL │  │ MinIO/S3 Storage   │  │ External APIs       │
+│ PostgreSQL │  │ RustFS/S3 Storage  │  │ External APIs       │
 │            │  │ - Audio files      │  │ - Anthropic Claude  │
 │ - Courses  │  │ - Lecture content  │  │ - ElevenLabs TTS    │
 │ - Lectures │  │ - Professor images │  │ - Google Gemini     │
@@ -298,12 +298,12 @@ web/src/
 
 ### Storage Layer
 
-- **MinIO/S3**: Object storage for files
+- **RustFS/S3**: Object storage for files
   - Audio files from TTS conversion
   - Lecture content backups
   - Professor profile images
 - **Bucket Organization**:
-  - Development uses MinIO-compatible local storage.
+  - Development uses RustFS, an S3-compatible local server.
   - Production uses CDK-managed S3 buckets for audio, lectures, images, exports, and content logs.
   - The production audio, lectures, and images buckets are public-readable with CORS for the application domains.
   - The exports and content logs buckets are private application buckets.
@@ -442,7 +442,7 @@ The audio processing system consists of specialized components working together:
    - Map professor to voice
    - Process text for optimal TTS
    - Convert via ElevenLabs API
-   - Store audio in S3/MinIO
+   - Store audio in S3 (RustFS locally)
 
 4. **Delivery**:
    - Serve content via API
