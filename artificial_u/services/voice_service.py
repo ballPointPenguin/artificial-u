@@ -681,7 +681,7 @@ class VoiceService:
         # If persistence unexpectedly failed without exception
         return el_voice_data
 
-    def manual_voice_assignment(self, professor_id: str, el_voice_id: str) -> None:
+    def manual_voice_assignment(self, professor_id: int, el_voice_id: str) -> None:
         """
         Manually assign a voice to a professor.
 
@@ -720,7 +720,7 @@ class VoiceService:
         self.logger.info(f"Manually assigned voice {el_voice_id} to professor {professor_id}")
 
     def manual_voice_assignment_generic(
-        self, professor_id: str, external_id: str, tts_backend: str
+        self, professor_id: int, external_id: str, tts_backend: str
     ) -> None:
         """
         Manually assign a non-ElevenLabs voice to a professor.

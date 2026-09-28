@@ -55,53 +55,6 @@ jobs:
       - name: Install dependencies
         run: uv sync --locked
 
-      - name: Start MinIO server
-        run: |
-          docker run -d \
-            --name minio \
-            -p 9000:9000 \
-            -p 9001:9001 \
-            -e MINIO_ROOT_USER=minioadmin \
-            -e MINIO_ROOT_PASSWORD=minioadmin \
-            quay.io/minio/minio:latest \
-            server /data --console-address ":9001"
-
-          # Wait for MinIO to be ready
-          for i in {1..30}; do
-            if curl -f http://localhost:9000/minio/health/live > /dev/null 2>&1; then
-              echo "MinIO is ready"
-              break
-            fi
-            echo "Waiting for MinIO to start... ($i/30)"
-            sleep 2
-          done
-
-      - name: Set up MinIO buckets
-        env:
-          MINIO_ACCESS_KEY: minioadmin
-          MINIO_SECRET_KEY: minioadmin
-        run: |
-          # dl.min.io no longer serves the mc binary (410 Gone), so run mc via its container image instead
-          mc() {
-            docker run --rm --network host \
-              -e MC_HOST_testminio="http://${MINIO_ACCESS_KEY}:${MINIO_SECRET_KEY}@localhost:9000" \
-              quay.io/minio/mc "$@"
-          }
-
-          # Create buckets
-          mc mb testminio/artificial-u-audio --ignore-existing
-          mc mb testminio/artificial-u-lectures --ignore-existing
-          mc mb testminio/artificial-u-images --ignore-existing
-          mc mb testminio/artificial-u-exports --ignore-existing
-          mc mb testminio/artificial-u-content-logs --ignore-existing
-
-          # Set public policy for buckets (optional, adjust as needed)
-          mc anonymous set download testminio/artificial-u-audio
-          mc anonymous set download testminio/artificial-u-lectures
-          mc anonymous set download testminio/artificial-u-images
-          mc anonymous set download testminio/artificial-u-exports
-          mc anonymous set download testminio/artificial-u-content-logs
-
       - name: Create .env.test file
         run: |
           cat > .env.test << EOF
@@ -109,7 +62,7 @@ jobs:
           TESTING=true
           DATABASE_URL=postgresql://postgres:postgres@localhost:5432/artificial_u_test
 
-          # Storage configuration for MinIO
+          # Storage settings (tests mock storage; no MinIO/S3 server is needed)
           STORAGE_TYPE=minio
           STORAGE_ENDPOINT_URL=http://localhost:9000
           STORAGE_PUBLIC_URL=http://localhost:9000
