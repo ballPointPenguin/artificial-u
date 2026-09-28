@@ -300,8 +300,8 @@ class ContentService:
             response: The generated response
             backend: The backend service used (anthropic, openai, etc.)
             prefill: Optional assistant prefill content (Anthropic only)
-            thinking_disabled: Whether thinking was explicitly disabled (Anthropic only,
-                relevant for models like Claude Sonnet 5 that think by default)
+            thinking_disabled: Whether up-front thinking was turned off (Anthropic only,
+                relevant for Claude 5 models that think by default)
         """
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
 
@@ -354,8 +354,8 @@ class ContentService:
         Handles new-style names like ``claude-{tier}-{major}-{minor}[-date]``, as
         well as bare-major names with no minor component (e.g. ``claude-sonnet-5``,
         the naming style introduced with Claude Sonnet 5), which are treated as
-        ``(major, 0)``. Returns ``None`` for old-style (``claude-3-*``) or
-        unrecognized patterns.
+        ``(major, 0)``. ``claude-sonnet-5-5`` is ``(5, 5)``. Returns ``None`` for
+        old-style (``claude-3-*``) or unrecognized patterns.
         """
         match = re.match(r"claude-[a-zA-Z]+-(\d+)(?:-(\d+))?", model)
         if not match:
@@ -435,9 +435,39 @@ class ContentService:
         """Check whether a Claude model accepts ``thinking: {"type": "disabled"}``.
 
         Claude Opus 5.5 requires adaptive thinking and rejects requests that
-        disable it. Snapshot identifiers retain the ``claude-opus-5-5`` prefix.
+        disable it. Claude Sonnet 5.5 also rejects ``disabled``; use
+        ``between_tools`` instead (see ``_upfront_thinking_type``). Snapshot
+        identifiers retain the model-id prefix.
         """
-        return not model.startswith("claude-opus-5-5")
+        return not (model.startswith("claude-opus-5-5") or model.startswith("claude-sonnet-5-5"))
+
+    def _upfront_thinking_type(self, model: str, effort: str | None) -> str | None:
+        """Return the ``thinking.type`` that skips up-front thinking, or ``None``.
+
+        Claude 5 models think when the request omits ``thinking``, and those
+        tokens count against ``max_tokens``. Content generation turns that off:
+
+        - Claude Sonnet 5 and Claude Opus 5 accept ``"disabled"``.
+        - Claude Sonnet 5.5 rejects ``"disabled"`` with a 400 and uses
+          ``"between_tools"``, which is valid only at ``high`` effort or below.
+          At ``xhigh`` or ``max``, adaptive thinking is left on.
+        - Claude Opus 5.5 requires adaptive thinking, so the field is omitted.
+        """
+        if not self._defaults_to_adaptive_thinking(model):
+            return None
+        if model.startswith("claude-sonnet-5-5"):
+            if effort in ("xhigh", "max"):
+                self.logger.info(
+                    "between_tools thinking is not accepted at effort %s for %s; "
+                    "leaving adaptive thinking on.",
+                    effort,
+                    model,
+                )
+                return None
+            return "between_tools"
+        if self._supports_disabling_thinking(model):
+            return "disabled"
+        return None
 
     async def _generate_anthropic(  # noqa: C901
         self, prompt, model, system_prompt, temperature, max_tokens, prefill, **kwargs
@@ -488,14 +518,14 @@ class ContentService:
                 )
 
             # Claude 5 thinks by default even without a `thinking` field, and thinking
-            # tokens count against max_tokens. Explicitly disable it so behavior and
-            # budgeting stay consistent with earlier Claude models, except for Opus 5.5,
-            # whose adaptive thinking cannot be disabled.
-            disable_thinking = self._defaults_to_adaptive_thinking(
-                model
-            ) and self._supports_disabling_thinking(model)
-            if disable_thinking:
-                request_params["thinking"] = {"type": "disabled"}
+            # tokens count against max_tokens. Turn off up-front thinking so behavior
+            # and budgeting stay consistent with earlier Claude models. Sonnet 5.5
+            # rejects "disabled" and uses "between_tools"; Opus 5.5 cannot turn
+            # adaptive thinking off.
+            thinking_type = self._upfront_thinking_type(model, effective_effort)
+            disable_thinking = thinking_type is not None
+            if thinking_type:
+                request_params["thinking"] = {"type": thinking_type}
 
             response = await anthropic_client.messages.create(**request_params)
         except anthropic.APIError as e:

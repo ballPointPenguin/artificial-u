@@ -6,6 +6,7 @@ import { Button, Card, FormField, Input } from '../components/ui'
 const SUGGESTED_MODELS = [
   'claude-opus-5-5',
   'claude-opus-5',
+  'claude-sonnet-5-5',
   'claude-sonnet-5',
   'claude-haiku-4-5',
   'gpt-6-sol',

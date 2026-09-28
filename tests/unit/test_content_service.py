@@ -2,8 +2,8 @@
 
 These tests cover version/tier parsing and the feature flags derived from it
 (prefill support, sampling params, effort, and adaptive-thinking defaults),
-including the naming style introduced with Claude Sonnet 5 (e.g.
-``claude-sonnet-5``, with no explicit minor version).
+including the bare-major naming style introduced with Claude Sonnet 5
+(``claude-sonnet-5``) and Claude Sonnet 5.5 (``claude-sonnet-5-5``).
 """
 
 from types import SimpleNamespace
@@ -20,7 +20,7 @@ from artificial_u.services.content_service import (
 
 
 def _build_service():
-    settings = SimpleNamespace(content_backend="anthropic", content_model="claude-sonnet-5")
+    settings = SimpleNamespace(content_backend="anthropic", content_model="claude-sonnet-5-5")
     service = ContentService.__new__(ContentService)
     service.logger = MagicMock()
     service.default_backend = settings.content_backend
@@ -39,6 +39,8 @@ def _build_service():
         ("claude-sonnet-5", (5, 0)),
         ("claude-opus-5", (5, 0)),
         ("claude-opus-5-5", (5, 5)),
+        ("claude-sonnet-5-5", (5, 5)),
+        ("claude-sonnet-5-5-20260928", (5, 5)),
         ("claude-sonnet-5-1", (5, 1)),
         ("claude-sonnet-5-20260601", (5, 0)),
         ("claude-3-7-sonnet-latest", None),
@@ -57,6 +59,7 @@ def test_parse_claude_version(model, expected):
         ("claude-sonnet-4-6", "sonnet"),
         ("claude-opus-4-8", "opus"),
         ("claude-sonnet-5", "sonnet"),
+        ("claude-sonnet-5-5", "sonnet"),
         ("claude-opus-5", "opus"),
         ("claude-3-7-sonnet-latest", None),
         ("gpt-5.6", None),
@@ -77,6 +80,7 @@ class TestVersionGatedFeatures:
             ("claude-sonnet-4-6", False),  # 4.6+ rejects prefill
             ("claude-opus-4-8", False),
             ("claude-sonnet-5", False),  # Sonnet 5 also rejects prefill
+            ("claude-sonnet-5-5", False),  # Sonnet 5.5 also rejects prefill
         ],
     )
     def test_is_prefill_supported(self, model, expected):
@@ -88,6 +92,7 @@ class TestVersionGatedFeatures:
             ("claude-sonnet-4-6", True),  # < 4.7, still accepts sampling params
             ("claude-opus-4-8", False),  # 4.7+ rejects sampling params
             ("claude-sonnet-5", False),  # Sonnet 5 also rejects sampling params
+            ("claude-sonnet-5-5", False),  # Sonnet 5.5 also rejects sampling params
         ],
     )
     def test_supports_sampling_params(self, model, expected):
@@ -100,6 +105,7 @@ class TestVersionGatedFeatures:
             ("claude-sonnet-4-6", True),
             ("claude-opus-4-8", True),
             ("claude-sonnet-5", True),
+            ("claude-sonnet-5-5", True),
         ],
     )
     def test_supports_effort(self, model, expected):
@@ -111,6 +117,7 @@ class TestVersionGatedFeatures:
             ("claude-sonnet-4-6", False),  # thinking off by default
             ("claude-opus-4-8", False),  # thinking off by default (adaptive requires opt-in)
             ("claude-sonnet-5", True),  # adaptive thinking on by default
+            ("claude-sonnet-5-5", True),
             ("claude-sonnet-5-1", True),
             ("claude-opus-5", True),  # adaptive thinking on by default
             ("claude-opus-5-5", True),
@@ -123,8 +130,11 @@ class TestVersionGatedFeatures:
         "model,expected",
         [
             ("claude-opus-5", True),
+            ("claude-sonnet-5", True),
             ("claude-opus-5-5", False),
             ("claude-opus-5-5-20260922", False),
+            ("claude-sonnet-5-5", False),
+            ("claude-sonnet-5-5-20260928", False),
         ],
     )
     def test_supports_disabling_thinking(self, model, expected):
@@ -151,6 +161,49 @@ async def test_generate_anthropic_disables_thinking_for_claude_5(monkeypatch):
     assert call_kwargs["thinking"] == {"type": "disabled"}
     assert "temperature" not in call_kwargs
     assert call_kwargs["output_config"] == {"effort": "medium"}
+
+
+@pytest.mark.asyncio
+async def test_generate_anthropic_uses_between_tools_for_sonnet_5_5(monkeypatch):
+    service = _build_service()
+
+    mock_response = MagicMock()
+    mock_response.stop_reason = "end_turn"
+    mock_response.content = [SimpleNamespace(type="text", text="hello world")]
+
+    mock_client = MagicMock()
+    mock_client.messages.create = AsyncMock(return_value=mock_response)
+    monkeypatch.setattr("artificial_u.services.content_service.anthropic_client", mock_client)
+
+    await service._generate_anthropic(
+        "prompt", "claude-sonnet-5-5", "system", None, None, None, effort=None
+    )
+
+    call_kwargs = mock_client.messages.create.await_args.kwargs
+    assert call_kwargs["thinking"] == {"type": "between_tools"}
+    assert "temperature" not in call_kwargs
+    assert call_kwargs["output_config"] == {"effort": "medium"}
+
+
+@pytest.mark.asyncio
+async def test_generate_anthropic_skips_between_tools_at_max_effort(monkeypatch):
+    service = _build_service()
+
+    mock_response = MagicMock()
+    mock_response.stop_reason = "end_turn"
+    mock_response.content = [SimpleNamespace(type="text", text="hello world")]
+
+    mock_client = MagicMock()
+    mock_client.messages.create = AsyncMock(return_value=mock_response)
+    monkeypatch.setattr("artificial_u.services.content_service.anthropic_client", mock_client)
+
+    await service._generate_anthropic(
+        "prompt", "claude-sonnet-5-5", "system", None, None, None, effort="max"
+    )
+
+    call_kwargs = mock_client.messages.create.await_args.kwargs
+    assert "thinking" not in call_kwargs
+    assert call_kwargs["output_config"] == {"effort": "max"}
 
 
 @pytest.mark.asyncio
@@ -281,7 +334,7 @@ async def test_generate_openai_retains_gpt_5_4_nano_without_temperature(monkeypa
         ("gemini-3.1-pro-preview", False),
         ("gemini-3.1-flash-lite", False),
         ("gemini-4.0-flash", True),
-        ("claude-sonnet-5", False),
+        ("claude-sonnet-5-5", False),
         ("", False),
     ],
 )

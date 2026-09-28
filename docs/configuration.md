@@ -142,7 +142,7 @@ COURSE_GENERATION_MODEL=gpt-6-luna
 DEPARTMENT_GENERATION_MODEL=gpt-6-luna
 
 # Lecture generation model
-LECTURE_GENERATION_MODEL=claude-sonnet-5
+LECTURE_GENERATION_MODEL=claude-sonnet-5-5
 
 # Professor generation model
 PROFESSOR_GENERATION_MODEL=gpt-6-luna
@@ -180,30 +180,35 @@ data. `imagen-*` and GPT Image 1.x model identifiers are no longer supported.
 ### Anthropic (Claude) Model Version Compatibility
 
 `ContentService` inspects the Claude model name (e.g. `claude-sonnet-4-6`,
-`claude-opus-5`, `claude-sonnet-5`) to automatically adjust request parameters
+`claude-opus-5`, `claude-sonnet-5-5`) to automatically adjust request parameters
 for API differences across model generations, so callers can swap
 `LECTURE_GENERATION_MODEL` (or the equivalent preference) without code changes:
 
-- **Prefill**: Claude 4.6+ models (including Sonnet 5) reject assistant-message
-  prefill with a 400 error; it's automatically skipped for these models.
--- **Sampling params**: Claude 4.7+ models (including Opus 5 and Sonnet 5) reject
-  non-default `temperature`/`top_p`/`top_k`; these are omitted for supported models
-  instead of causing a request failure.
--- **Effort**: Claude Opus 5+ and Sonnet 4.6+ (including Sonnet 5) support the
+- **Prefill**: Claude 4.6+ models (including Sonnet 5 and Sonnet 5.5) reject
+  assistant-message prefill with a 400 error; it's automatically skipped for
+  these models.
+- **Sampling params**: Claude 4.7+ models (including Opus 5, Sonnet 5, and
+  Sonnet 5.5) reject non-default `temperature`/`top_p`/`top_k`; these are omitted
+  for supported models instead of causing a request failure.
+- **Effort**: Claude Opus 4.5+ and Sonnet 4.6+ (including Sonnet 5.5) support the
   `output_config.effort` parameter, which controls overall token spend. Defaults to
   `"medium"` for content generation.
-- **Adaptive thinking**: Claude Sonnet 5 is the first model that runs adaptive
-  thinking by default (no `thinking` field required), and thinking tokens count
-  against `max_tokens`. To keep output budgets predictable and behavior consistent
-  with Sonnet 4.6/Opus 4.5-4.8 (which don't think unless explicitly configured),
-  `ContentService` explicitly sends `thinking: {"type": "disabled"}` for supported
-  Claude 5 models. Claude Opus 5.5 requires adaptive thinking, so the field is
-  omitted when using `claude-opus-5-5` or its snapshots.
+- **Adaptive thinking**: Claude 5 models run adaptive thinking by default (no
+  `thinking` field required), and thinking tokens count against `max_tokens`.
+  To keep output budgets predictable, `ContentService` turns off up-front
+  thinking. Claude Sonnet 5 and Claude Opus 5 accept
+  `thinking: {"type": "disabled"}`. Claude Sonnet 5.5 rejects `disabled` with a
+  400 and uses `thinking: {"type": "between_tools"}`, which is valid at `high`
+  effort or below (the content-generation default is `medium`). At `xhigh` or
+  `max`, adaptive thinking is left on. Claude Opus 5.5 requires adaptive
+  thinking, so the field is omitted for `claude-opus-5-5` and its snapshots.
+  Responses are read by content-block `type`, so leading `thinking` blocks are
+  skipped.
 
 Model names are parsed with `ContentService._parse_claude_version()`, which
 understands both the `claude-{tier}-{major}-{minor}[-date]` naming scheme (e.g.
-`claude-sonnet-5`) and the bare-major naming scheme introduced with Sonnet 5
-(e.g. `claude-sonnet-5`, with no explicit minor version).
+`claude-sonnet-5-5`, `claude-sonnet-4-6`) and the bare-major naming scheme
+introduced with Sonnet 5 (e.g. `claude-sonnet-5`, with no explicit minor version).
 
 ## Lecture Defaults
 
@@ -330,7 +335,7 @@ TESTING=true
 | `content_model` | Model for chosen backend | Depends on backend | No |
 | `COURSE_GENERATION_MODEL` | Model for course generation | `gpt-6-luna` | No |
 | `DEPARTMENT_GENERATION_MODEL` | Model for department generation | `gpt-6-luna` | No |
-| `LECTURE_GENERATION_MODEL` | Model for lecture generation | `claude-sonnet-5` | No |
+| `LECTURE_GENERATION_MODEL` | Model for lecture generation | `claude-sonnet-5-5` | No |
 | `LECTURE_SUMMARY_MODEL` | Model for lecture summary generation | `gpt-6-luna` | No |
 | `TOPICS_GENERATION_MODEL` | Model for topics generation | `gemini-3.8-flash` | No |
 | `PROFESSOR_GENERATION_MODEL` | Model for professor generation | `gpt-6-luna` | No |

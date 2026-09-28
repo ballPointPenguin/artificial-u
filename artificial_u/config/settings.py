@@ -137,7 +137,7 @@ class Settings(BaseSettings):
     # Department generation model
     DEPARTMENT_GENERATION_MODEL: str = "gpt-6-luna"
     # Lecture generation model
-    LECTURE_GENERATION_MODEL: str = "claude-sonnet-5"
+    LECTURE_GENERATION_MODEL: str = "claude-sonnet-5-5"
     # Lecture summary generation model
     LECTURE_SUMMARY_MODEL: str = "gpt-6-luna"
     # Professor generation model
@@ -229,7 +229,7 @@ class Settings(BaseSettings):
             elif backend == "gemini":
                 return "gemini-3.8-flash"
             elif backend == "anthropic":
-                return "claude-sonnet-5"
+                return "claude-sonnet-5-5"
             else:
                 return "gpt-6-luna"
         return v

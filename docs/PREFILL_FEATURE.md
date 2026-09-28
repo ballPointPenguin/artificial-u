@@ -17,15 +17,17 @@ from artificial_u.services.content_service import ContentService
 
 content_service = ContentService()
 
-# Guide the response to start with specific XML structure
+# Callers may still pass a prefill. Sonnet 5.5 does not accept it.
 response = await content_service.generate_text(
     prompt="Create a lecture outline for machine learning basics",
     prefill="<lecture_outline>",
-    model="claude-sonnet-5"
+    model="claude-sonnet-5-5"
 )
 
-# The response will start with "<lecture_outline>" and continue from there
-print(response)  # "<lecture_outline>\n1. Introduction to ML\n2. ..."
+# Claude Sonnet 5.5 rejects assistant prefills, so ContentService skips the
+# prefill and returns only the model text. On models that still accept prefill
+# (Claude 4.5 and earlier), the response starts with "<lecture_outline>".
+print(response)
 ```
 
 ### Lecture Generation
@@ -98,7 +100,7 @@ The system gracefully handles prefill for non-Anthropic models by:
 
 ### Model Version Compatibility (Anthropic)
 
-Claude 4.6+ models (including Sonnet 4.6, Opus 4.6+, and Sonnet 5) return a 400 error
+Claude 4.6+ models (including Sonnet 4.6, Opus 4.6+, Sonnet 5, and Sonnet 5.5) return a 400 error
 when an assistant-message prefill is sent, so `ContentService` automatically detects
 these models via `_is_prefill_supported()`/`_parse_claude_version()` and skips the
 prefill (logging an info message) rather than sending it. Callers do not need to
