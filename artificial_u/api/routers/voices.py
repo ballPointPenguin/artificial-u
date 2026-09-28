@@ -35,7 +35,7 @@ router = APIRouter(
 
 @router.post("/{professor_id}/assign_voice", status_code=204, dependencies=[Depends(require_auth)])
 async def manual_assign_voice(
-    professor_id: str = Path(..., description="ID of the professor to assign voice to"),
+    professor_id: int = Path(..., description="ID of the professor to assign voice to"),
     assignment_request: ManualVoiceAssignmentRequest = Body(...),
     voice_service: VoiceService = Depends(get_voice_service),
 ):

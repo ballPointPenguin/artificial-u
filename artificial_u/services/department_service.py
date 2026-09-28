@@ -89,7 +89,7 @@ class DepartmentService:
             self.logger.error(error_msg, exc_info=True)
             raise DatabaseError(error_msg) from e
 
-    def get_department(self, department_id: str) -> Department:
+    def get_department(self, department_id: int) -> Department:
         """
         Get a department by ID.
 
@@ -157,7 +157,7 @@ class DepartmentService:
             self.logger.error(error_msg)
             raise DatabaseError(error_msg) from e
 
-    def update_department(self, department_id: str, update_data: Dict) -> Department:
+    def update_department(self, department_id: int, update_data: Dict) -> Department:
         """
         Update a department.
 
@@ -191,7 +191,7 @@ class DepartmentService:
             self.logger.error(error_msg)
             raise DatabaseError(error_msg) from e
 
-    def delete_department(self, department_id: str) -> bool:
+    def delete_department(self, department_id: int) -> bool:
         """
         Delete a department.
 
@@ -230,7 +230,7 @@ class DepartmentService:
             self.logger.error(error_msg)
             raise DatabaseError(error_msg) from e
 
-    def get_department_professors(self, department_id: str) -> List[Professor]:
+    def get_department_professors(self, department_id: int) -> List[Professor]:
         """
         Get all professors in a department.
 

@@ -143,7 +143,7 @@ class TestDepartmentService:
     def test_get_department_not_found(self, department_service):
         """Test getting a non-existent department raises appropriate error."""
         with pytest.raises(DepartmentNotFoundError):
-            department_service.get_department("999999")
+            department_service.get_department(999999)
 
     def test_department_with_professors(
         self, department_service, repository_factory, sample_faculties
