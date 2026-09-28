@@ -61,3 +61,6 @@ backups/*
 
 # CDK
 cdk.out/
+
+# Claude Code: share skills/settings, keep personal overrides local
+.claude/settings.local.json
