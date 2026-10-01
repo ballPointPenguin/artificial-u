@@ -35,10 +35,10 @@ class PreferenceValueUpdate(BaseModel):
     value: str = Field(..., description="The new preference value")
 
 
-class LectureModelResponse(BaseModel):
-    """Response model for lecture generation model."""
+class ModelSettingResponse(BaseModel):
+    """Response model for a configurable generation model."""
 
-    model: str = Field(..., description="The current lecture generation model")
+    model: str = Field(..., description="The current model")
     source: str = Field(..., description="Source of the model setting (preference or environment)")
 
 
@@ -161,7 +161,7 @@ def delete_global_preference(
 
 @router.get(
     "/models/lecture-generation",
-    response_model=LectureModelResponse,
+    response_model=ModelSettingResponse,
     summary="Get lecture generation model",
     description="Get the currently configured lecture generation model.",
     dependencies=[Depends(require_auth)],
@@ -182,4 +182,28 @@ def get_lecture_generation_model(
     pref = repository_factory.preference.get(student.id, PreferenceService.LECTURE_GENERATION_MODEL)
     source = "preference" if pref else "environment"
 
-    return LectureModelResponse(model=model, source=source)
+    return ModelSettingResponse(model=model, source=source)
+
+
+@router.get(
+    "/models/topics-generation",
+    response_model=ModelSettingResponse,
+    summary="Get topics generation model",
+    description="Get the currently configured topics generation model.",
+    dependencies=[Depends(require_auth)],
+)
+def get_topics_generation_model(
+    repository_factory: RepositoryFactory = Depends(get_repository_factory),
+):
+    """
+    Get the topics generation model setting.
+
+    Topics models are global (not per-student). Returns the model name and the
+    source (preference or environment).
+    """
+    pref_service = PreferenceService(repository_factory)
+    model = pref_service.get_topics_generation_model()
+    pref = repository_factory.preference.get_global(PreferenceService.TOPICS_GENERATION_MODEL)
+    source = "preference" if pref else "environment"
+
+    return ModelSettingResponse(model=model, source=source)

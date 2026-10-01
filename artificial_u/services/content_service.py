@@ -9,7 +9,7 @@ import openai
 from google.api_core import exceptions as google_exceptions
 
 from artificial_u.config import get_settings
-from artificial_u.integrations import anthropic_client, gemini_client, openai_client
+from artificial_u.integrations import anthropic_client, gemini_client, openai_client, xai_client
 from artificial_u.services.storage_service import StorageService
 from artificial_u.utils.exceptions import ContentGenerationError
 
@@ -25,6 +25,10 @@ DEFAULT_ANTHROPIC_EFFORT = "medium"
 def _is_gpt_reasoning_model(model: str) -> bool:
     """Return whether a model supports GPT reasoning controls in Chat Completions."""
     return bool(re.match(r"gpt-(?:5\.6|6-(?:sol|luna))(?:-|$)", model or ""))
+
+
+# Reasoning effort levels accepted by Grok reasoning models; anything else is not forwarded.
+XAI_REASONING_EFFORTS = ("low", "medium", "high", "xhigh")
 
 
 def _is_gemini_3_plus(model: str) -> bool:
@@ -103,6 +107,8 @@ class ContentService:
             return "openai"
         elif model.startswith("gemini-"):
             return "gemini"
+        elif model.startswith("grok-"):
+            return "xai"
         elif model.startswith("imagen-"):
             self.logger.error(
                 f"Model '{model}' is an image model, not suitable for text generation."
@@ -120,7 +126,8 @@ class ContentService:
         """
         if backend == "anthropic":
             return self._categorize_anthropic_error(error)
-        elif backend == "openai":
+        elif backend in ("openai", "xai"):
+            # xAI is called through the OpenAI SDK, so it raises the same exception types
             return self._categorize_openai_error(error)
         elif backend == "gemini":
             return self._categorize_gemini_error(error)
@@ -245,6 +252,7 @@ class ContentService:
         backend_methods = {
             "anthropic": self._generate_anthropic,
             "openai": self._generate_openai,
+            "xai": self._generate_xai,
             "gemini": self._generate_gemini,
         }
 
@@ -642,6 +650,50 @@ class ContentService:
             max_tokens=max_tokens,
             response=response_text,
             backend="openai",
+        )
+
+        return response_text
+
+    async def _generate_xai(
+        self, prompt, model, system_prompt, temperature, max_tokens, prefill, **kwargs
+    ):
+        """Generate text with a Grok model via xAI's OpenAI-compatible Chat Completions API."""
+        self.logger.info(f"Generating text with xAI model: {model}")
+        if not get_settings().XAI_API_KEY:
+            raise ValueError("XAI_API_KEY is required to use Grok models")
+        if prefill:
+            self.logger.warning("Prefill parameter provided but not supported for xAI models")
+
+        completion_params = {
+            "model": model,
+            "messages": self._build_openai_messages(system_prompt, prompt),
+            "max_completion_tokens": max_tokens if max_tokens is not None else DEFAULT_MAX_TOKENS,
+        }
+        # Grok 4.7 reasons by default (effort "high"); only forward an explicit preference.
+        effort = kwargs.get("effort")
+        if effort in XAI_REASONING_EFFORTS:
+            completion_params["reasoning_effort"] = effort
+        # Only forward an explicit temperature; reasoning models are steered by effort/prompt.
+        if temperature is not None:
+            completion_params["temperature"] = temperature
+
+        try:
+            response = await xai_client.chat.completions.create(**completion_params)
+            response_text = self._extract_openai_text(response)
+        except openai.APIError as e:
+            self.logger.error(f"xAI API error for model {model}: {str(e)}")
+            raise e
+
+        self.logger.info(f"Received response from xAI: {response_text[:500]}")
+
+        await self._log_content(
+            model=model,
+            prompt=prompt,
+            system_prompt=system_prompt,
+            temperature=temperature,
+            max_tokens=max_tokens,
+            response=response_text,
+            backend="xai",
         )
 
         return response_text

@@ -324,7 +324,8 @@ TESTING=true
 | `ANTHROPIC_API_KEY` | API key for Anthropic | None | No |
 | `ELEVENLABS_API_KEY` | API key for ElevenLabs | None | No |
 | `MISTRAL_API_KEY` | API key for Mistral (TTS when using Mistral backend) | None | No |
-| `XAI_API_KEY` | API key for xAI (TTS when using xAI/Grok backend) | None | No |
+| `XAI_API_KEY` | API key for xAI (Grok content generation and TTS) | None | No |
+| `XAI_BASE_URL` | Base URL for the xAI chat API (Grok content generation) | `https://api.x.ai/v1` | No |
 | `ALIBABA_API_KEY` | API key for Alibaba Cloud Model Studio (TTS when using Qwen backend). Must be a **Singapore- or Beijing-region** key — `qwen-audio-3.0-tts` is not hosted in us-east-1 | None | No |
 | `GOOGLE_API_KEY` | API key for Google | None | No |
 | `OPENAI_API_KEY` | API key for OpenAI | None | No |
@@ -348,7 +349,7 @@ TESTING=true
 | `IMAGE_GENERATION_MODEL` | Model for image generation (`gemini-3.1-flash-lite-image`, `gemini-3.1-flash-image`, `gemini-3-pro-image`) | `gemini-3.1-flash-lite-image` | No |
 | `TTS_VOICE_MODEL` | Model for text-to-speech voice | `eleven_flash_v2_5` | No |
 | `XAI_TTS_BASE_URL` | Base URL for the xAI TTS API | `https://api.x.ai/v1` | No |
-| `XAI_TTS_LANGUAGE` | Default output language (BCP-47) for the xAI backend | `en` | No |
+| `XAI_TTS_LANGUAGE` | xAI output language: BCP-47 code or `auto` (detect from text) | `auto` | No |
 | `TTS_QWEN_MODEL` | Qwen TTS model (`qwen-audio-3.0-tts-flash` or `qwen-audio-3.0-tts-plus`) | `qwen-audio-3.0-tts-flash` | No |
 | `ALIBABA_TTS_WSS_URL` | Model Studio WebSocket endpoint; **must match the region your `ALIBABA_API_KEY` was created in** (keys are region-locked). Singapore: `wss://dashscope-intl.aliyuncs.com/api-ws/v1/inference`; Beijing: `wss://dashscope.aliyuncs.com/api-ws/v1/inference` | `wss://dashscope-intl.aliyuncs.com/api-ws/v1/inference` | No |
 | `LECTURE_WORD_COUNT` | Target word count for generated lectures | `3000` | No |

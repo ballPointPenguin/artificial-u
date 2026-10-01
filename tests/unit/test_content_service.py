@@ -447,3 +447,56 @@ async def test_generate_gemini_includes_temperature_for_gemini_3_1_flash(monkeyp
     call_kwargs = mock_client.aio.models.generate_content.await_args.kwargs
     config = call_kwargs["config"]
     assert config.temperature == 1.0
+
+
+def test_determine_backend_routes_grok_to_xai():
+    assert _build_service()._determine_backend("grok-4.7") == "xai"
+
+
+@pytest.mark.asyncio
+async def test_generate_xai_forwards_effort_and_omits_default_temperature(monkeypatch):
+    service = _build_service()
+    monkeypatch.setattr(
+        "artificial_u.services.content_service.get_settings",
+        lambda: SimpleNamespace(XAI_API_KEY="key"),
+    )
+    mock_response = MagicMock()
+    mock_response.choices = [SimpleNamespace(message=SimpleNamespace(content="hello grok"))]
+    mock_client = MagicMock()
+    mock_client.chat.completions.create = AsyncMock(return_value=mock_response)
+    monkeypatch.setattr("artificial_u.services.content_service.xai_client", mock_client)
+
+    text = await service._generate_xai(
+        "prompt", "grok-4.7", "system", None, 2048, None, effort="medium"
+    )
+
+    assert text == "hello grok"
+    kwargs = mock_client.chat.completions.create.await_args.kwargs
+    assert kwargs["model"] == "grok-4.7"
+    assert kwargs["max_completion_tokens"] == 2048
+    assert kwargs["reasoning_effort"] == "medium"
+    assert "temperature" not in kwargs
+    assert kwargs["messages"][0] == {"role": "system", "content": "system"}
+
+
+@pytest.mark.asyncio
+async def test_generate_xai_ignores_unsupported_effort_and_requires_key(monkeypatch):
+    service = _build_service()
+    monkeypatch.setattr(
+        "artificial_u.services.content_service.get_settings",
+        lambda: SimpleNamespace(XAI_API_KEY=None),
+    )
+    with pytest.raises(ValueError, match="XAI_API_KEY"):
+        await service._generate_xai("p", "grok-4.7", None, None, None, None)
+
+    monkeypatch.setattr(
+        "artificial_u.services.content_service.get_settings",
+        lambda: SimpleNamespace(XAI_API_KEY="key"),
+    )
+    mock_response = MagicMock()
+    mock_response.choices = [SimpleNamespace(message=SimpleNamespace(content="ok"))]
+    mock_client = MagicMock()
+    mock_client.chat.completions.create = AsyncMock(return_value=mock_response)
+    monkeypatch.setattr("artificial_u.services.content_service.xai_client", mock_client)
+    await service._generate_xai("p", "grok-4.7", None, None, None, None, effort="max")
+    assert "reasoning_effort" not in mock_client.chat.completions.create.await_args.kwargs

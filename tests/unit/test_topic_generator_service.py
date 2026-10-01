@@ -15,6 +15,9 @@ def _build_service(
     topics_by_course_id=None,
 ):
     repository_factory = MagicMock()
+    repository_factory.preference.get_global.return_value = SimpleNamespace(
+        value="test-topics-model"
+    )
     repository_factory.topic.get_by_course_week_order.return_value = None
 
     created_topics = []
@@ -74,11 +77,6 @@ def _build_service(
 
 @pytest.mark.asyncio
 async def test_generate_topics_for_course_generates_missing_slots_sequentially(monkeypatch):
-    monkeypatch.setattr(
-        "artificial_u.services.topic_generator_service.get_settings",
-        lambda: SimpleNamespace(TOPICS_GENERATION_MODEL="test-topics-model"),
-    )
-
     service, repository_factory, content_service, created_topics = _build_service()
     content_service.generate_text.side_effect = [
         "<output><topic><title>Atmospheric Structure</title><week>1</week><order>1</order></topic></output>",
@@ -100,6 +98,9 @@ async def test_generate_topics_for_course_generates_missing_slots_sequentially(m
         "Cloud Formation and Precipitation",
     ]
     assert content_service.generate_text.await_count == 4
+    for call in content_service.generate_text.await_args_list:
+        assert call.kwargs["model"] == "test-topics-model"
+    assert {t.created_with for t in created_topics} == {"test-topics-model"}
     assert repository_factory.topic.create.call_count == 4
     assert len(created_topics) == 4
 
@@ -117,11 +118,6 @@ async def test_generate_topics_for_course_generates_missing_slots_sequentially(m
 async def test_generate_topics_for_course_reuses_existing_slots_and_normalizes_position(
     monkeypatch,
 ):
-    monkeypatch.setattr(
-        "artificial_u.services.topic_generator_service.get_settings",
-        lambda: SimpleNamespace(TOPICS_GENERATION_MODEL="test-topics-model"),
-    )
-
     existing_topic = Topic(
         id=10,
         title="Atmospheric Structure",
@@ -154,11 +150,6 @@ async def test_generate_topics_for_course_reuses_existing_slots_and_normalizes_p
 
 @pytest.mark.asyncio
 async def test_generate_topic_for_course_slot_includes_related_course_topics_context(monkeypatch):
-    monkeypatch.setattr(
-        "artificial_u.services.topic_generator_service.get_settings",
-        lambda: SimpleNamespace(TOPICS_GENERATION_MODEL="test-topics-model"),
-    )
-
     related_course = Course(
         id=2,
         code="ATM250",

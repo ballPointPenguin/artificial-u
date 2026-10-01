@@ -16,7 +16,7 @@ export interface PreferenceValueUpdate {
   value: string
 }
 
-export interface LectureModelResponse {
+export interface ModelSettingResponse {
   model: string
   source: 'preference' | 'environment'
 }
@@ -53,7 +53,13 @@ export const preferenceService = {
   /**
    * Get the current lecture generation model
    */
-  getLectureGenerationModel: (): Promise<LectureModelResponse> => {
-    return httpClient.get<LectureModelResponse>(ENDPOINTS.preferences.lectureGenerationModel)
+  getLectureGenerationModel: (): Promise<ModelSettingResponse> => {
+    return httpClient.get<ModelSettingResponse>(ENDPOINTS.preferences.lectureGenerationModel)
+  },
+  /**
+   * Get the current topics generation model
+   */
+  getTopicsGenerationModel: (): Promise<ModelSettingResponse> => {
+    return httpClient.get<ModelSettingResponse>(ENDPOINTS.preferences.topicsGenerationModel)
   },
 }

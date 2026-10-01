@@ -19,9 +19,9 @@ from artificial_u.config import get_settings
 class XAITTSClient:
     """Low-level client for the xAI Grok text-to-speech API."""
 
-    # Default built-in voice (one of: ara, eve, leo, rex, sal)
+    # Default voice (built-in; full catalog at GET /tts/voices)
     DEFAULT_VOICE = "eve"
-    DEFAULT_LANGUAGE = "en"
+    DEFAULT_LANGUAGE = "auto"
     DEFAULT_OUTPUT_FORMAT: Dict[str, Any] = {
         "codec": "mp3",
         "sample_rate": 24000,
@@ -70,8 +70,8 @@ class XAITTSClient:
 
         Args:
             text: Text to convert.
-            voice_id: Built-in xAI voice name (ara, eve, leo, rex, sal).
-            language: BCP-47 language code (default: "en").
+            voice_id: xAI voice id (built-in or custom; see GET /tts/voices).
+            language: BCP-47 code, or "auto" to detect from the text (default).
             output_format: Codec/sample-rate/bit-rate dict. Defaults to mp3.
 
         Returns:

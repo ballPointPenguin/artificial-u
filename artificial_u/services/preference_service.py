@@ -17,6 +17,7 @@ class PreferenceService:
 
     # Preference scope constants
     LECTURE_GENERATION_MODEL = "LECTURE_GENERATION_MODEL"
+    TOPICS_GENERATION_MODEL = "TOPICS_GENERATION_MODEL"
 
     def __init__(
         self,
@@ -137,3 +138,22 @@ class PreferenceService:
         """
         self.logger.info(f"Setting global lecture generation model to: {model}")
         return self.set_global_preference(self.LECTURE_GENERATION_MODEL, model)
+
+    def get_topics_generation_model(self) -> str:
+        """
+        Get the topics generation model to use.
+
+        Topics are generated per course, not per student, so only the global
+        preference is consulted before falling back to the environment setting.
+
+        Returns:
+            The model name to use for topics generation
+        """
+        model = self.get_global_preference(self.TOPICS_GENERATION_MODEL)
+        if model:
+            self.logger.info(f"Using preference-configured topics model: {model}")
+            return model
+
+        model = self.settings.TOPICS_GENERATION_MODEL
+        self.logger.info(f"Using environment-configured topics model: {model}")
+        return model

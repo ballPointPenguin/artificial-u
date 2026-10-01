@@ -50,16 +50,16 @@ class XAITTSBackend:
 
         Args:
             text: Text to convert.
-            voice_id: Built-in xAI voice name (ara, eve, leo, rex, sal).
+            voice_id: xAI voice id (built-in or custom; see GET /tts/voices).
             **kwargs: Optional overrides:
-                - language: BCP-47 language code (defaults to settings.XAI_TTS_LANGUAGE).
+                - language: BCP-47 code or "auto" (defaults to settings.XAI_TTS_LANGUAGE).
                 - output_format: Codec/sample-rate/bit-rate dict.
 
         Returns:
             Audio data as bytes.
         """
         effective_voice_id = voice_id or self.DEFAULT_VOICE
-        language = kwargs.get("language") or getattr(self._settings, "XAI_TTS_LANGUAGE", "en")
+        language = kwargs.get("language") or getattr(self._settings, "XAI_TTS_LANGUAGE", "auto")
         output_format = kwargs.get("output_format")
 
         return self._client.text_to_speech(

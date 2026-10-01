@@ -8,11 +8,11 @@ separated from the core CRUD operations in TopicService.
 import logging
 from typing import Any, Dict, List, Optional
 
-from artificial_u.config import get_settings
 from artificial_u.models.converters import course_model_to_dict, parse_topic_xml, topics_to_xml
 from artificial_u.models.core import Topic
 from artificial_u.models.repositories.factory import RepositoryFactory
 from artificial_u.services.content_service import ContentService
+from artificial_u.services.preference_service import PreferenceService
 from artificial_u.utils import (
     ContentGenerationError,
     CourseNotFoundError,
@@ -52,6 +52,7 @@ class TopicGeneratorService:
         self.repository_factory = repository_factory
         self.job_enqueue_service = job_enqueue_service
         self.logger = logger or logging.getLogger(__name__)
+        self.preference_service = PreferenceService(repository_factory, logger=self.logger)
 
     async def generate_topics_for_course(
         self,
@@ -94,6 +95,7 @@ class TopicGeneratorService:
             }
             prior_topics_context = []
             created_topics = []
+            model = self.preference_service.get_topics_generation_model()
 
             self.logger.info(
                 f"Preparing canonical topic generation for {len(topic_slots)} slots "
@@ -113,9 +115,10 @@ class TopicGeneratorService:
                     related_courses_topics_context=related_courses_topics_context,
                     target_week=week,
                     target_order=order,
+                    model=model,
                 )
                 created_topic = self._save_topic_dict(
-                    topic_dict, course_id, created_by, language=course_model.language
+                    topic_dict, course_id, created_by, model=model, language=course_model.language
                 )
                 created_topics.append(created_topic)
                 prior_topics_context.append(self._topic_model_to_prompt_dict(created_topic))
@@ -168,6 +171,7 @@ class TopicGeneratorService:
             if self._topic_sort_key(topic) < (week, order, 0)
         ]
 
+        model = self.preference_service.get_topics_generation_model()
         topic_dict = await self._generate_topic_for_slot(
             course_data=course_data,
             freeform_prompt=freeform_prompt,
@@ -175,6 +179,7 @@ class TopicGeneratorService:
             related_courses_topics_context=related_courses_topics_context,
             target_week=week,
             target_order=order,
+            model=model,
         )
 
         return Topic(
@@ -185,7 +190,7 @@ class TopicGeneratorService:
             language=course_model.language,
             content=topic_dict.get("content"),
             created_by=created_by,
-            created_with=get_settings().TOPICS_GENERATION_MODEL,
+            created_with=model,
         )
 
     def _build_topic_slots(self, course_data: Dict[str, Any]) -> List[tuple[int, int]]:
@@ -263,6 +268,7 @@ class TopicGeneratorService:
         related_courses_topics_context: str,
         target_week: int,
         target_order: int,
+        model: str,
     ) -> Dict[str, Any]:
         """Generate a single topic for a specific canonical week/order slot."""
         prior_topics_xml = topics_to_xml(prior_topics_context) if prior_topics_context else None
@@ -287,14 +293,12 @@ class TopicGeneratorService:
             related_courses_topics_context=related_courses_topics_context,
         )
         system_prompt = prompt_module.get_system_prompt("topics")
-        settings = get_settings()
-
         self.logger.info(
             f"Generating topic for course ID {course_data.get('id')} "
             f"(week={target_week}, order={target_order})"
         )
         raw_response = await self.content_service.generate_text(
-            model=settings.TOPICS_GENERATION_MODEL,
+            model=model,
             prompt=topic_prompt,
             system_prompt=system_prompt,
             # Gemini 3.x reasoning models spend "thinking" tokens out of this same
@@ -355,6 +359,7 @@ class TopicGeneratorService:
         topic_dict: Dict[str, Any],
         course_id: int,
         created_by: Optional[int],
+        model: str,
         language: Optional[str] = None,
     ) -> Topic:
         title = topic_dict.get("title")
@@ -364,7 +369,6 @@ class TopicGeneratorService:
         if not title or week is None or order is None:
             raise ContentGenerationError(f"Generated topic data is incomplete: {topic_dict}")
 
-        settings = get_settings()
         existing_topic = self.repository_factory.topic.get_by_course_week_order(
             course_id=course_id,
             week=week,
@@ -385,6 +389,6 @@ class TopicGeneratorService:
             language=language,
             content=topic_dict.get("content"),
             created_by=created_by,
-            created_with=settings.TOPICS_GENERATION_MODEL,
+            created_with=model,
         )
         return self.repository_factory.topic.create(new_topic)
