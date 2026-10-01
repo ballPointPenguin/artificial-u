@@ -67,7 +67,7 @@ def test_client_defaults_voice_and_language(patch_httpx):
     client.text_to_speech("Hi there everyone")
     body = patch_httpx.last_call["json"]
     assert body["voice_id"] == "eve"
-    assert body["language"] == "en"
+    assert body["language"] == "auto"
 
 
 @pytest.mark.unit
@@ -201,3 +201,25 @@ def test_voice_manager_get_voice(patch_voices_httpx):
     mgr = XAIVoiceManager(api_key="key", base_url="https://api.x.ai/v1")
     assert mgr.get_voice("xia")["language"] == "zh"
     assert mgr.get_voice("nonexistent") is None
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize("catalog_lang,expected", [("multilingual", None), ("fr", "fr")])
+def test_enrich_xai_voice_language_fits_column(monkeypatch, catalog_lang, expected):
+    """'multilingual' (12 chars) overflows voices.language VARCHAR(10); it must be dropped."""
+    from artificial_u.models.core import Voice
+    from artificial_u.services.voice_service import VoiceService
+
+    monkeypatch.setattr(
+        "artificial_u.integrations.xai.voice_manager.XAIVoiceManager.get_voice",
+        lambda self, vid: {"id": vid, "name": "Carina", "language": catalog_lang, "gender": "f"},
+    )
+    monkeypatch.setattr(
+        "artificial_u.integrations.xai.voice_manager.XAIVoiceManager.__init__",
+        lambda self, *a, **k: None,
+    )
+    voice = Voice(tts_backend="xai", external_id="carina", name="carina")
+    VoiceService._enrich_generic_voice(object.__new__(VoiceService), voice, "xai", "carina")
+
+    assert voice.language == expected
+    assert voice.name == "Carina"

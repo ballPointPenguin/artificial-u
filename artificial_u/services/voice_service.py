@@ -784,7 +784,10 @@ class VoiceService:
                 if info:
                     voice.name = info.get("name") or external_id
                     voice.gender = info.get("gender")
-                    voice.language = info.get("language")
+                    # xAI reports "multilingual" for voices that speak any language;
+                    # that isn't a language code (and overflows the column), so leave unset.
+                    xai_lang = info.get("language")
+                    voice.language = None if xai_lang == "multilingual" else xai_lang
                     voice.category = "preset"
             elif tts_backend == "qwen":
                 from artificial_u.integrations.qwen.voice_manager import QwenVoiceManager

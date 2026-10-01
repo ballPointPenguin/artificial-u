@@ -20,8 +20,9 @@ DEFAULT_CONTENT_LOGS_PATH = "content_logs"
 
 # TTS defaults
 DEFAULT_TTS_BACKEND = "elevenlabs"
+DEFAULT_XAI_BASE_URL = "https://api.x.ai/v1"
 DEFAULT_XAI_TTS_BASE_URL = "https://api.x.ai/v1"
-DEFAULT_XAI_TTS_LANGUAGE = "en"
+DEFAULT_XAI_TTS_LANGUAGE = "auto"
 DEFAULT_QWEN_TTS_MODEL = "qwen-audio-3.0-tts-flash"
 # Alibaba Model Studio WebSocket endpoint. qwen-audio-3.0-tts is served only
 # from the Singapore and Beijing regions (NOT us-east-1/Virginia, which 404s

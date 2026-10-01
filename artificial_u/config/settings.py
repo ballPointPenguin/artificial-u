@@ -38,6 +38,7 @@ from artificial_u.config.defaults import (
     DEFAULT_STORAGE_REGION,
     DEFAULT_STORAGE_TYPE,
     DEFAULT_TTS_BACKEND,
+    DEFAULT_XAI_BASE_URL,
     DEFAULT_XAI_TTS_BASE_URL,
     DEFAULT_XAI_TTS_LANGUAGE,
 )
@@ -102,6 +103,8 @@ class Settings(BaseSettings):
     GOOGLE_API_KEY: Optional[str] = None
     OPENAI_API_KEY: Optional[str] = None
     XAI_API_KEY: Optional[str] = None
+    # xAI chat (content generation) API base URL; OpenAI-compatible
+    XAI_BASE_URL: str = DEFAULT_XAI_BASE_URL
 
     # Auth0 (API resource protection)
     AUTH0_DOMAIN: Optional[str] = None
@@ -162,7 +165,7 @@ class Settings(BaseSettings):
     MISTRAL_API_KEY: Optional[str] = None
     # xAI (Grok) TTS settings (used only if tts_backend="xai")
     XAI_TTS_BASE_URL: str = DEFAULT_XAI_TTS_BASE_URL
-    # Default output language (BCP-47 code) for backends that accept one (e.g. xAI)
+    # xAI output language: a BCP-47 code or "auto" (detect from the text)
     XAI_TTS_LANGUAGE: str = DEFAULT_XAI_TTS_LANGUAGE
     # Qwen (Alibaba Model Studio) TTS settings (used only if tts_backend="qwen")
     TTS_QWEN_MODEL: str = DEFAULT_QWEN_TTS_MODEL
