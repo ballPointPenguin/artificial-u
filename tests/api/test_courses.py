@@ -675,6 +675,40 @@ def test_export_course_requires_admin(client: TestClient, monkeypatch):
     # the entire auth0 flow and job system, which is better covered by integration test
 
 
+@pytest.mark.unit
+@pytest.mark.parametrize(
+    "method,path",
+    [
+        ("post", "/api/v1/courses/import/analyze"),
+        ("post", "/api/v1/courses/import"),
+        ("delete", "/api/v1/courses/1/purge"),
+    ],
+)
+def test_import_and_purge_require_auth(client: TestClient, method, path):
+    """Import/purge endpoints are admin-only; unauthenticated callers are rejected."""
+    from fastapi import HTTPException, status
+
+    from artificial_u.api.app import app
+    from artificial_u.api.dependencies import ensure_student
+
+    def mock_no_auth():
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication required"
+        )
+
+    app.dependency_overrides[ensure_student] = mock_no_auth
+    try:
+        kwargs = {"files": {"file": ("x.zip", b"x")}} if path.endswith("analyze") else {}
+        if path == "/api/v1/courses/import":
+            kwargs = {"json": {"upload_key": "imports/x.zip"}}
+        response = getattr(client, method)(path, **kwargs)
+        assert response.status_code == 401
+    finally:
+        from tests.api.conftest import mock_ensure_student
+
+        app.dependency_overrides[ensure_student] = mock_ensure_student
+
+
 # ---------------------------------------------------------------------------
 # Course tags endpoints
 # ---------------------------------------------------------------------------

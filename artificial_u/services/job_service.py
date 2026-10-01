@@ -36,6 +36,7 @@ class JobService:
         self._course_service = None
         self._course_generator_service = None
         self._course_export_service = None
+        self._course_import_service = None
         self._department_service = None
         self._department_generator_service = None
         self._topic_service = None
@@ -152,6 +153,7 @@ class JobService:
             "generate_course_image": self._handle_generate_course_image,
             # Export tasks
             "export_course": self._handle_export_course,
+            "import_course": self._handle_import_course,
             # Quickstart tasks
             "quickstart_start": self._handle_quickstart_start,
         }.get(kind)
@@ -582,6 +584,33 @@ class JobService:
         result = await service.export_course(course_id)
         return result
 
+    async def _handle_import_course(
+        self, payload: Dict[str, Any], parent_job_id: Optional[int] = None
+    ) -> Dict[str, Any]:
+        """Import a previously uploaded course archive from the exports bucket."""
+        from artificial_u.services.course_import_service import ImportCancelled
+
+        upload_key = payload.get("upload_key")
+        if not upload_key:
+            raise ValueError("upload_key is required")
+
+        storage = self._storage_service_instance()
+        data, _ = await storage.download_file(storage.exports_bucket, upload_key)
+        if not data:
+            raise ValueError(f"Uploaded archive {upload_key} not found (it may have expired)")
+
+        service = self._course_import_service_instance()
+        try:
+            result = await service.execute(
+                data,
+                resolutions=payload.get("resolutions"),
+                student_id=payload.get("student_id"),
+            )
+        except ImportCancelled:
+            result = {"cancelled": True}
+        await storage.delete_file(storage.exports_bucket, upload_key)
+        return result
+
     async def _handle_quickstart_start(
         self, payload: Dict[str, Any], parent_job_id: Optional[int] = None
     ) -> Dict[str, Any]:
@@ -824,6 +853,19 @@ class JobService:
                 logger=self.logger,
             )
         return self._course_generator_service
+
+    def _course_import_service_instance(self):
+        if self._course_import_service is None:
+            from artificial_u.services.course_import_service import (
+                CourseImportService,
+            )
+
+            self._course_import_service = CourseImportService(
+                repository_factory=self.repository_factory,
+                storage_service=self._storage_service_instance(),
+                logger=self.logger,
+            )
+        return self._course_import_service
 
     def _course_export_service_instance(self):
         if self._course_export_service is None:

@@ -13,6 +13,7 @@ const NAV_ITEMS: AdminNavItem[] = [
   { href: '/admin/settings', label: 'Settings' },
   { href: '/admin/jobs', label: 'Jobs' },
   { href: '/admin/lectures', label: 'Lectures' },
+  { href: '/admin/import', label: 'Import' },
 ]
 
 export default function AdminLayout(props: RouteSectionProps) {

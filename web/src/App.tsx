@@ -41,6 +41,7 @@ const AdminSettings = lazy(() => import('./pages/admin/AdminSettings'))
 const AdminFeatured = lazy(() => import('./pages/admin/AdminFeatured'))
 const AdminJobs = lazy(() => import('./pages/admin/AdminJobs'))
 const AdminLectures = lazy(() => import('./pages/admin/AdminLectures'))
+const AdminImport = lazy(() => import('./pages/admin/AdminImport'))
 const Search = lazy(() => import('./pages/Search'))
 const AboutPrivacy = lazy(() => import('./pages/AboutPrivacy'))
 const AboutTerms = lazy(() => import('./pages/AboutTerms'))
@@ -130,6 +131,7 @@ const App: Component = () => {
         <Route path="/settings" component={AdminSettings} />
         <Route path="/jobs" component={AdminJobs} />
         <Route path="/lectures" component={AdminLectures} />
+        <Route path="/import" component={AdminImport} />
       </Route>
 
       {/* Departments routes */}

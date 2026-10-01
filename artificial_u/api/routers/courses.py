@@ -2,14 +2,16 @@
 Course router for handling course-related API endpoints.
 """
 
+import uuid
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
+from fastapi import APIRouter, Depends, File, HTTPException, Path, Query, UploadFile, status
 
 from artificial_u.api.dependencies import (
     ensure_student,
     get_course_api_service,
     get_repository_factory,
+    get_storage_service,
     optional_student,
 )
 from artificial_u.api.models import (
@@ -25,11 +27,22 @@ from artificial_u.api.models import (
     TagBrief,
     TagsUpdate,
 )
+from artificial_u.api.models.course_import import (
+    ImportAnalysisResponse,
+    ImportRequest,
+)
 from artificial_u.api.security.auth0 import require_coins, require_role
 from artificial_u.api.services import CourseApiService
 from artificial_u.config.settings import get_settings
 from artificial_u.models.core import Student
 from artificial_u.models.repositories.factory import RepositoryFactory
+from artificial_u.services.course_import_service import (
+    CourseImportService,
+    ImportArchiveError,
+)
+from artificial_u.services.course_purge_service import CoursePurgeService
+from artificial_u.services.storage_service import StorageService
+from artificial_u.utils import CourseNotFoundError
 
 # Create the router
 router = APIRouter(
@@ -620,6 +633,120 @@ async def export_course(
         "run_after": row.run_after,
         "message": f"Course export job enqueued. Poll GET /api/v1/jobs/{row.id} for status and download URL.",
     }
+
+
+MAX_IMPORT_UPLOAD_BYTES = 1024**3
+IMPORT_UPLOAD_PREFIX = "imports/"
+
+
+@router.post(
+    "/import/analyze",
+    response_model=ImportAnalysisResponse,
+    summary="Upload a course export archive and preview the import",
+    description=(
+        "Admin-only. Stores the uploaded zip temporarily and reports what it contains and "
+        "what would collide with existing data (course code, professor, department, voices). "
+        "Nothing is imported yet; pass the returned upload_key and your resolutions to "
+        "POST /api/v1/courses/import."
+    ),
+    dependencies=[require_role("admin")],
+    responses={400: {"description": "Not a valid or supported course archive"}},
+)
+async def analyze_course_import(
+    file: UploadFile = File(..., description="Course export zip"),
+    repository_factory: RepositoryFactory = Depends(get_repository_factory),
+    storage_service: StorageService = Depends(get_storage_service),
+):
+    data = await file.read()
+    if len(data) > MAX_IMPORT_UPLOAD_BYTES:
+        raise HTTPException(
+            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE, detail="Archive is too large"
+        )
+
+    service = CourseImportService(repository_factory, storage_service)
+    try:
+        plan = service.analyze(data)
+    except ImportArchiveError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+    upload_key = f"{IMPORT_UPLOAD_PREFIX}{uuid.uuid4().hex}.zip"
+    success, _ = await storage_service.upload_export_file(data, upload_key)
+    if not success:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to stage the uploaded archive",
+        )
+    return {"upload_key": upload_key, "plan": plan}
+
+
+@router.post(
+    "/import",
+    status_code=status.HTTP_202_ACCEPTED,
+    summary="Import a previously analyzed course archive",
+    description=(
+        "Admin-only. Enqueues an import job for an archive staged by "
+        "POST /courses/import/analyze. Poll GET /api/v1/jobs/{id}; the job result "
+        "contains the new course_id."
+    ),
+    dependencies=[require_role("admin")],
+    responses={
+        400: {"description": "Unknown upload_key"},
+        409: {"description": "Course code exists and no resolution was given"},
+    },
+)
+async def import_course(
+    body: ImportRequest,
+    repository_factory: RepositoryFactory = Depends(get_repository_factory),
+    storage_service: StorageService = Depends(get_storage_service),
+    student: Student = Depends(ensure_student),
+):
+    key = body.upload_key
+    if not key.startswith(IMPORT_UPLOAD_PREFIX) or ".." in key:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid upload_key")
+    if not await storage_service.object_exists(storage_service.exports_bucket, key):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Upload not found or expired; analyze the archive again",
+        )
+
+    resolutions = body.resolutions.model_dump(exclude_none=True)
+    row = repository_factory.job.create(
+        kind="import_course",
+        payload={"upload_key": key, "resolutions": resolutions, "student_id": student.id},
+        max_attempts=1,
+    )
+    return {
+        "id": row.id,
+        "kind": row.kind,
+        "status": row.status,
+        "attempts": row.attempts,
+        "max_attempts": row.max_attempts,
+        "priority": row.priority,
+        "run_after": row.run_after,
+    }
+
+
+@router.delete(
+    "/{course_id}/purge",
+    summary="Delete a course with all its lectures, topics and assets",
+    description=(
+        "Admin-only. Unlike DELETE /courses/{id}, this also removes the course's lectures, "
+        "topics and stored files. Professors, departments and voices are kept."
+    ),
+    dependencies=[require_role("admin")],
+    responses={404: {"description": "Course not found"}},
+)
+async def purge_course(
+    course_id: int = Path(..., description="The ID of the course to purge"),
+    repository_factory: RepositoryFactory = Depends(get_repository_factory),
+    storage_service: StorageService = Depends(get_storage_service),
+):
+    try:
+        return await CoursePurgeService(repository_factory, storage_service).purge_course(course_id)
+    except CourseNotFoundError:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"Course with ID {course_id} not found."
+        )
 
 
 @router.put(

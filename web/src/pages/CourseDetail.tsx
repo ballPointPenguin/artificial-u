@@ -460,8 +460,9 @@ const CourseDetail: Component = () => {
 
     setIsDeleting(true)
 
-    void courseService
-      .deleteCourse(courseId)
+    // Plain delete refuses courses that still have lectures; admins purge instead
+    const remove = auth.isAdmin() ? courseService.purgeCourse : courseService.deleteCourse
+    void remove(courseId)
       .then(() => {
         // Redirect to courses list after successful deletion
         navigate('/courses')
