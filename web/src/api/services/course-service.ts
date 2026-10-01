@@ -73,6 +73,11 @@ export const courseService = {
     return httpClient.delete(ENDPOINTS.courses.detail(courseId))
   },
 
+  /** Admin: delete a course together with its lectures, topics and stored assets. */
+  purgeCourse: (courseId: number): Promise<undefined> => {
+    return httpClient.delete(ENDPOINTS.courses.purge(courseId))
+  },
+
   publishCourse: (courseId: number): Promise<Course> => {
     return httpClient.post<Course>(`${ENDPOINTS.courses.detail(courseId)}/publish`, {})
   },
