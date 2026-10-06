@@ -10,6 +10,7 @@ import random
 import re
 from typing import Any, Dict, List, Optional
 
+from artificial_u.integrations.elevenlabs.models import ELEVENLABS_V4_MODEL, voice_lists_model
 from artificial_u.models.core import Professor
 
 
@@ -416,6 +417,10 @@ class VoiceMapper:
         if criteria_use_case and voice_use_case == criteria_use_case:
             score += 0.1
             # self.logger.debug(f"  +0.1 for use case match: {voice_use_case}")
+
+        # Gently prefer voices verified for Eleven v4 (all voices still work with it)
+        if voice_lists_model(voice, ELEVENLABS_V4_MODEL):
+            score += 0.1
 
         return score
 

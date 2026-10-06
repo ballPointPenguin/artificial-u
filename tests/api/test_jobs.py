@@ -106,15 +106,25 @@ def test_audio_job_model_prefers_recorded_backend(client: TestClient, mock_repos
     mock_repository_factory.job.list.return_value = [
         _job_row(1, kind="generate_lecture_audio", result={"tts_backend": "mistral"}),
         _job_row(2, kind="generate_lecture_audio", result=None),
+        _job_row(
+            3,
+            kind="generate_lecture_audio",
+            result={"tts_backend": "elevenlabs", "tts_model": "eleven_v4"},
+        ),
     ]
 
     data = client.get("/api/v1/jobs").json()
     from artificial_u.config import get_settings
 
+    settings = get_settings()
     assert data["jobs"][0]["model"] == "mistral"
-    # Without a recorded backend the configured default still applies.
-    expected_default = (get_settings().tts_backend or "").strip().lower() or None
+    # Without a recorded backend (and no resolvable lecture) the configured default applies.
+    backend = (settings.tts_backend or "").strip().lower()
+    expected_default = (
+        f"{backend}/{settings.TTS_VOICE_MODEL}" if backend == "elevenlabs" else backend
+    )
     assert data["jobs"][1]["model"] == expected_default
+    assert data["jobs"][2]["model"] == "elevenlabs/eleven_v4"
 
 
 @pytest.mark.unit

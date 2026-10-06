@@ -52,6 +52,8 @@ class TestLectureRepository:
         lecture.images_timeline_url = None
         lecture.course_id = 1
         lecture.topic_id = 1
+        lecture.tts_backend = None
+        lecture.tts_model = None
         lecture.created_by = None
         lecture.created_with = None
         lecture.created_at = None
@@ -438,6 +440,8 @@ class TestLectureRepository:
         lecture1.course_id = 1
         lecture1.topic_id = 1
         lecture1.created_by = None
+        lecture1.tts_backend = None
+        lecture1.tts_model = None
         lecture1.created_with = None
         lecture1.created_at = None
         lecture1.updated_at = None
@@ -456,6 +460,8 @@ class TestLectureRepository:
         lecture2.course_id = 1
         lecture2.topic_id = 1
         lecture2.created_by = None
+        lecture2.tts_backend = None
+        lecture2.tts_model = None
         lecture2.created_with = None
         lecture2.created_at = None
         lecture2.updated_at = None
@@ -502,6 +508,8 @@ class TestLectureRepository:
         latest_lecture.course_id = 1
         latest_lecture.topic_id = 1
         latest_lecture.created_by = None
+        latest_lecture.tts_backend = None
+        latest_lecture.tts_model = None
         latest_lecture.created_with = None
         latest_lecture.created_at = None
         latest_lecture.updated_at = None

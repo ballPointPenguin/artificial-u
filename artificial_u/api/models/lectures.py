@@ -31,6 +31,12 @@ class LectureBase(BaseModel):
         description="URL to image-slideshow timeline JSON for synced lecture images",
     )
     voice_id: Optional[int] = Field(None, description="ID of the voice used for this lecture")
+    tts_backend: Optional[str] = Field(
+        None, description="TTS backend that generated the audio (None if not recorded)"
+    )
+    tts_model: Optional[str] = Field(
+        None, description="TTS model that generated the audio (None if not recorded)"
+    )
     word_count: Optional[int] = Field(
         None, description="Approximate number of words in the lecture content"
     )

@@ -12,6 +12,7 @@ from artificial_u.api.events import JobEventHub, sse_stream
 from artificial_u.api.security.auth0 import require_auth
 from artificial_u.config import get_settings
 from artificial_u.models.repositories.factory import RepositoryFactory
+from artificial_u.services.tts_service import configured_tts_model
 
 router = APIRouter(prefix="/jobs", tags=["jobs"])
 
@@ -31,10 +32,48 @@ def _duration_ms_from_result(result: Any) -> Any:
         return None
 
 
-def _tts_backend_name(settings) -> Optional[str]:
-    """TTS backend name for the configured backend (used as the display model for audio jobs)."""
-    backend = (settings.tts_backend or "").strip().lower()
+def _tts_label(backend: Optional[str], model: Optional[str]) -> Optional[str]:
+    """Display label for an audio job's TTS target, e.g. ``elevenlabs/eleven_v4``."""
+    if backend and model:
+        return f"{backend}/{model}"
     return backend or None
+
+
+def _planned_audio_label(
+    payload: dict, settings, factory=None, cache: Optional[dict] = None
+) -> Optional[str]:
+    """TTS target a not-yet-finished lecture audio job will use.
+
+    Resolves the lecture's professor (professor override, else voice backend, else
+    ElevenLabs) the same way audio generation does, falling back to the globally
+    configured backend when the lecture can't be resolved.
+    """
+    default_backend = (settings.tts_backend or "").strip().lower() or None
+    lecture_id = _coerce_int(payload.get("lecture_id"))
+    if lecture_id is None or factory is None:
+        return _tts_label(default_backend, configured_tts_model(default_backend or "", settings))
+
+    cache_key = ("audio_target", lecture_id)
+    if cache is not None and cache_key in cache:
+        return cache[cache_key]
+
+    backend = default_backend
+    lecture = factory.lecture.get(lecture_id)
+    course = factory.course.get(lecture.course_id) if lecture else None
+    professor = (
+        factory.professor.get(course.professor_id) if course and course.professor_id else None
+    )
+    if professor:
+        backend = getattr(professor, "tts_backend", None)
+        if not backend and professor.voice_id:
+            voice = factory.voice.get(professor.voice_id)
+            backend = voice.tts_backend if voice else None
+        backend = backend or "elevenlabs"
+
+    label = _tts_label(backend, configured_tts_model(backend or "", settings))
+    if cache is not None:
+        cache[cache_key] = label
+    return label
 
 
 def _job_model_name(
@@ -50,7 +89,7 @@ def _job_model_name(
     result = result if isinstance(result, dict) else {}
     recorded = result.get("tts_backend")
     if recorded:
-        return str(recorded)
+        return _tts_label(str(recorded), result.get("tts_model"))
 
     payload = payload if isinstance(payload, dict) else {}
     override = payload.get("model_name_override")
@@ -59,7 +98,7 @@ def _job_model_name(
 
     settings = get_settings()
     if kind == "generate_lecture_audio":
-        return _tts_backend_name(settings)
+        return _planned_audio_label(payload, settings, factory, cache)
 
     # Map job kind to (preference_scope, settings_fallback)
     kind_map = {

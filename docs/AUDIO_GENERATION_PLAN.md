@@ -57,7 +57,7 @@
 
 ## ElevenLabs usage notes
 
-- Default model: `eleven_flash_v2_5` (fast, low-latency); configurable
+- Default model: `eleven_v4` (high-quality); configurable
 - Default format: mp3; other `output_format` variants available (see capabilities doc)
 - Python SDK call path in our client: `client.text_to_speech.convert(text, voice_id, model_id, voice_settings)` (Create speech API)
 - Chunking: Implemented in `TTSService` via `SpeechProcessor.split_into_chunks`, with concatenation of segments

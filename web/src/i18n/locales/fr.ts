@@ -463,6 +463,7 @@ export const fr = {
     errorGeneratePreviewsFailed: 'Échec de la génération des aperçus de la voix.',
     errorSaveVoiceFailed: "Échec de l'enregistrement de la voix.",
     styleLabel: 'Style',
+    v4Verified: 'v4 vérifiée',
     langLabel: 'Lang',
   },
 
@@ -843,6 +844,7 @@ export const fr = {
   metadata: {
     createdBy: 'Créé par',
     createdWith: 'Créé avec',
+    audioModel: 'Modèle audio',
     createdOn: 'Créé le',
     type: 'Type de ressource',
     types: {

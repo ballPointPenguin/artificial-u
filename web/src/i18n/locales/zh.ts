@@ -457,6 +457,7 @@ export const zh = {
     errorGeneratePreviewsFailed: '生成声音预览失败。',
     errorSaveVoiceFailed: '保存声音失败。',
     styleLabel: '风格',
+    v4Verified: 'v4 已验证',
     langLabel: '语言',
   },
 
@@ -824,6 +825,7 @@ export const zh = {
   metadata: {
     createdBy: '创建者',
     createdWith: '生成模型',
+    audioModel: '音频模型',
     createdOn: '创建日期',
     type: '资源类型',
     types: {

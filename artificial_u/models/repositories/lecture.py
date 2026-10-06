@@ -47,6 +47,8 @@ class LectureRepository(BaseRepository):
             voice_id=getattr(db_lecture, "voice_id", None),
             word_count=db_lecture.word_count,
             duration=db_lecture.duration,
+            tts_backend=db_lecture.tts_backend,
+            tts_model=db_lecture.tts_model,
             created_by=db_lecture.created_by,
             created_with=db_lecture.created_with,
             created_at=db_lecture.created_at,
@@ -82,6 +84,8 @@ class LectureRepository(BaseRepository):
                 topic_id=lecture.topic_id,
                 word_count=word_count,
                 duration=lecture.duration,
+                tts_backend=lecture.tts_backend,
+                tts_model=lecture.tts_model,
                 created_by=lecture.created_by,
                 created_with=lecture.created_with,
             )
@@ -492,6 +496,8 @@ class LectureRepository(BaseRepository):
             db_lecture.topic_id = lecture.topic_id
             db_lecture.word_count = self._calculate_word_count(lecture.content)
             db_lecture.duration = lecture.duration
+            db_lecture.tts_backend = lecture.tts_backend
+            db_lecture.tts_model = lecture.tts_model
             db_lecture.created_by = lecture.created_by
             db_lecture.created_with = lecture.created_with
 
@@ -537,6 +543,8 @@ class LectureRepository(BaseRepository):
                 "topic_id",
                 "voice_id",
                 "duration",
+                "tts_backend",
+                "tts_model",
                 "created_by",
                 "created_with",
             }

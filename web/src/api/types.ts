@@ -259,6 +259,8 @@ export interface Lecture {
   timeline_url: string | null
   images_timeline_url: string | null
   voice_id?: number | null
+  tts_backend?: string | null
+  tts_model?: string | null
   word_count: number | null
   duration: number | null
   created_by?: number | null

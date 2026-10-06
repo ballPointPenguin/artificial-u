@@ -256,7 +256,7 @@ class CdkStack(Stack):
             "LECTURE_SUMMARY_MODEL": "gpt-6-luna",
             "LOG_LEVEL": "INFO",
             "PROFESSOR_GENERATION_MODEL": "gpt-6-luna",
-            # "RUN_INITIALIZE_VOICES": "1",  # TEMPORARY - initialize/refresh voice records at boot
+            "RUN_INITIALIZE_VOICES": "1",  # TEMPORARY - initialize/refresh voice records at boot
             # "RUN_BACKFILL_DURATIONS": "1",  # TEMPORARY - comment out when not using it
             # "RUN_BACKFILL_ID3": "1",  # TEMPORARY - comment out when not using it
             # "RUN_BACKFILL_VOICE_TTS_BACKEND": "1",  # TEMPORARY - backfill tts_backend on voices
@@ -270,7 +270,7 @@ class CdkStack(Stack):
             "STORAGE_REGION": self.region,
             "STORAGE_TYPE": "s3",
             "TOPICS_GENERATION_MODEL": "gemini-3.8-flash",
-            "TTS_VOICE_MODEL": "eleven_flash_v2_5",
+            "TTS_VOICE_MODEL": "eleven_v4",
             # Database connection pool settings (conservative for db.t4g.small ~110 max_connections)
             # These ensure the app uses a shared connection pool and doesn't exhaust RDS connections
             "DB_POOL_SIZE": "5",

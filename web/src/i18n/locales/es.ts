@@ -466,6 +466,7 @@ export const es = {
     errorGeneratePreviewsFailed: 'Error al generar vistas previas de voz.',
     errorSaveVoiceFailed: 'Error al guardar la voz.',
     styleLabel: 'Estilo',
+    v4Verified: 'v4 verificada',
     langLabel: 'Idioma',
   },
 
@@ -846,6 +847,7 @@ export const es = {
   metadata: {
     createdBy: 'Creado por',
     createdWith: 'Creado con',
+    audioModel: 'Modelo de audio',
     createdOn: 'Creado el',
     type: 'Tipo de recurso',
     types: {

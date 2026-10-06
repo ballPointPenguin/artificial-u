@@ -5,6 +5,8 @@ Voice repository for database operations.
 from datetime import datetime
 from typing import List, Optional
 
+from sqlalchemy import Text, cast, or_
+
 from artificial_u.models.core import Voice
 from artificial_u.models.database import VoiceModel
 from artificial_u.models.repositories.base import BaseRepository
@@ -139,6 +141,27 @@ class VoiceRepository(BaseRepository):
                 query.order_by(VoiceModel.popularity_score.desc()).limit(limit).offset(offset).all()
             )
 
+            return [self._to_domain(v) for v in voices]
+
+    def list_missing_verified_languages(
+        self, tts_backend: str = "elevenlabs", limit: int = 200
+    ) -> List[Voice]:
+        """List voices of a backend whose verified_languages is empty or unset."""
+        with self.get_session() as session:
+            voices = (
+                session.query(VoiceModel)
+                .filter(VoiceModel.tts_backend == tts_backend)
+                .filter(
+                    or_(
+                        VoiceModel.verified_languages.is_(None),
+                        # JSON null (None stored via JSONB) and empty list
+                        cast(VoiceModel.verified_languages, Text).in_(["null", "[]"]),
+                    )
+                )
+                .order_by(VoiceModel.id)
+                .limit(limit)
+                .all()
+            )
             return [self._to_domain(v) for v in voices]
 
     def update(self, voice: Voice) -> Voice:

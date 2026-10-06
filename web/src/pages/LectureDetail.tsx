@@ -378,6 +378,7 @@ const LectureDetailView: Component<{
         type="lecture"
         createdBy={props.lecture.student}
         createdWith={props.lecture.created_with}
+        audioModel={props.lecture.audio_url ? props.lecture.tts_model : null}
         createdAt={props.lecture.created_at}
         class="mb-6 pb-6 border-b border-parchment-800/30"
       />

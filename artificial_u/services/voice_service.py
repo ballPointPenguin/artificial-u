@@ -10,6 +10,7 @@ from typing import Any, Dict, List, Optional
 
 from artificial_u.config import get_settings
 from artificial_u.integrations import elevenlabs
+from artificial_u.integrations.elevenlabs.models import UNGATED_MODELS
 from artificial_u.models.core import Professor, Voice
 from artificial_u.models.repositories import RepositoryFactory
 
@@ -209,6 +210,9 @@ class VoiceService:
 
         voices: List[Dict[str, Any]] = []
         required_model = getattr(self.settings, "TTS_VOICE_MODEL", None)
+        if required_model in UNGATED_MODELS:
+            # Works with any library voice; don't filter on sparse verified_languages
+            required_model = None
 
         # First, try to get premade voices if we haven't already
         premade_voices = self.client.get_premade_voices()
@@ -396,6 +400,63 @@ class VoiceService:
         except Exception as e:
             self.logger.error(f"Error fetching premade voices: {e}")
             return 0
+
+    def refresh_voices_missing_verified_languages(self, limit: int = 200) -> Dict[str, int]:
+        """Re-fetch ElevenLabs voices that have no verified_languages and fill in gaps.
+
+        Voices added by ID before verified_languages was captured (or that never had
+        any) are looked up again in the account library via ``get_el_voice`` (the slow
+        shared-voices search is skipped). Only empty fields are filled,
+        so existing metadata such as popularity and preview URLs is never overwritten.
+
+        Returns:
+            Counts of voices ``checked``, ``updated`` and ``unresolved`` (not found or
+            still without verified_languages upstream).
+        """
+        stats = {"checked": 0, "updated": 0, "unresolved": 0}
+        fillable = (
+            "accent",
+            "age",
+            "category",
+            "description",
+            "descriptive",
+            "gender",
+            "language",
+            "locale",
+            "preview_url",
+            "use_case",
+        )
+
+        for voice in self.repository_factory.voice.list_missing_verified_languages(limit=limit):
+            stats["checked"] += 1
+            el_voice_id = voice.el_voice_id or voice.external_id
+            fetched = (
+                self.client.get_el_voice(el_voice_id, search_shared=False) if el_voice_id else None
+            )
+            if not fetched:
+                stats["unresolved"] += 1
+                continue
+
+            verified = self._convert_verified_languages(fetched.get("verified_languages", []))
+            updates: Dict[str, Any] = {
+                field: fetched[field]
+                for field in fillable
+                if not getattr(voice, field) and fetched.get(field)
+            }
+            if verified:
+                updates["verified_languages"] = verified
+            else:
+                stats["unresolved"] += 1
+            if not updates:
+                continue
+
+            try:
+                self.repository_factory.voice.update(voice.model_copy(update=updates))
+                stats["updated"] += 1
+            except Exception as e:
+                self.logger.error(f"Error updating voice {el_voice_id}: {e}")
+
+        return stats
 
     def _find_voices_with_relaxed_criteria(
         self, attributes: Dict[str, Any]
@@ -610,6 +671,10 @@ class VoiceService:
         # Create Voice model
         voice = Voice(
             el_voice_id=el_voice_data["el_voice_id"],
+            # ElevenLabs voices mirror their ID in external_id; keep it so refreshes
+            # don't blank it on upsert
+            external_id=el_voice_data["el_voice_id"],
+            tts_backend="elevenlabs",
             name=el_voice_data["name"],
             accent=el_voice_data.get("accent"),
             gender=el_voice_data.get("gender"),

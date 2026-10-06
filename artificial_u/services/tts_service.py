@@ -10,10 +10,12 @@ import os
 import shutil
 import subprocess
 import tempfile
+from dataclasses import dataclass
 from typing import Any, Dict, Optional, Union
 
 from artificial_u.audio.speech_processor import SpeechProcessor
 from artificial_u.config import get_settings
+from artificial_u.integrations.elevenlabs.models import FALLBACK_MODEL, UNGATED_MODELS
 from artificial_u.integrations.tts.base import TTSBackend
 from artificial_u.models.core import Lecture, Professor
 from artificial_u.utils import AudioProcessingError
@@ -23,6 +25,28 @@ ELEVENLABS_MODEL_PREFERENCE = [
     "eleven_v3",
     "eleven_multilingual_v2",
 ]
+
+
+@dataclass(frozen=True)
+class LectureAudio:
+    """Synthesized lecture audio and the model that actually produced it."""
+
+    audio: bytes
+    model_id: Optional[str] = None
+
+
+def configured_tts_model(backend_name: str, settings: Any = None) -> Optional[str]:
+    """Model a backend is configured to use, or None when it isn't known up front.
+
+    For ElevenLabs this is the preferred model; generation may still fall back to
+    another one for a voice that can't use it.
+    """
+    settings = settings or get_settings()
+    if backend_name == "elevenlabs":
+        return settings.TTS_VOICE_MODEL
+    if backend_name == "mistral":
+        return settings.TTS_MISTRAL_MODEL
+    return None
 
 
 class TTSService:
@@ -258,7 +282,11 @@ class TTSService:
                 except Exception as e:
                     self.logger.debug("Error cleaning up temp dir: %s", e)
 
-    def generate_lecture_audio(
+    def generate_lecture_audio(self, *args: Any, **kwargs: Any) -> bytes:
+        """Generate audio for a lecture; see ``synthesize_lecture_audio``."""
+        return self.synthesize_lecture_audio(*args, **kwargs).audio
+
+    def synthesize_lecture_audio(
         self,
         lecture: Lecture,
         professor: Professor,
@@ -266,7 +294,7 @@ class TTSService:
         el_voice_id: Optional[str] = None,
         model_id: Optional[str] = None,
         language: Optional[str] = None,
-    ) -> bytes:
+    ) -> LectureAudio:
         """
         Generate audio for a lecture.
 
@@ -280,52 +308,82 @@ class TTSService:
                 that accept one (e.g. xAI).
 
         Returns:
-            Audio data as bytes.
+            The audio and the model that produced it (None if the backend's model
+            isn't known).
         """
-        effective_voice_id = voice_id or el_voice_id
-
-        # Resolve voice from professor if not specified
-        if not effective_voice_id:
-            if professor.voice_id and self.repository_factory:
-                voice = self.repository_factory.voice.get(professor.voice_id)
-                if voice:
-                    # Use el_voice_id for ElevenLabs, external_id for others
-                    if voice.tts_backend == "elevenlabs" and voice.el_voice_id:
-                        effective_voice_id = voice.el_voice_id
-                    elif voice.external_id:
-                        effective_voice_id = voice.external_id
-                    else:
-                        effective_voice_id = voice.el_voice_id
-                else:
-                    raise ValueError("No voice found for professor")
-            else:
-                raise ValueError("No voice ID specified or found for professor")
+        effective_voice_id = voice_id or el_voice_id or self._voice_id_for_professor(professor)
 
         # Resolve the best model this voice supports
-        if self.backend.backend_name == "elevenlabs" and model_id is None:
+        auto_model = self.backend.backend_name == "elevenlabs" and model_id is None
+        if auto_model:
             model_id = self._resolve_model_for_voice(
                 professor=professor,
                 el_voice_id=effective_voice_id,
             )
 
-        try:
-            audio_data = self.convert_text_to_speech(
+        def convert(model: Optional[str]) -> LectureAudio:
+            audio = self.convert_text_to_speech(
                 text=lecture.content,
                 voice_id=effective_voice_id,
-                model_id=model_id,
+                model_id=model,
                 language=language,
             )
+            used = model or configured_tts_model(self.backend.backend_name, self.settings)
+            return LectureAudio(audio=audio, model_id=used)
+
+        try:
+            try:
+                return convert(model_id)
+            except Exception as e:
+                if not (auto_model and model_id in UNGATED_MODELS):
+                    raise
+                # The voice may not be usable with the newer model; retry with the
+                # model the voice is verified for.
+                fallback = self._resolve_verified_model_for_voice(professor, effective_voice_id)
+                self.logger.warning(
+                    "Voice %s failed with %s (%s); retrying with %s",
+                    effective_voice_id,
+                    model_id,
+                    e,
+                    fallback,
+                )
+                return convert(fallback)
         except Exception as e:
             raise AudioProcessingError(f"Failed to generate lecture audio: {e}")
 
-        return audio_data
+    def _voice_id_for_professor(self, professor: Professor) -> str:
+        """Return the provider-specific voice ID for the professor's assigned voice."""
+        if not (professor.voice_id and self.repository_factory):
+            raise ValueError("No voice ID specified or found for professor")
+        voice = self.repository_factory.voice.get(professor.voice_id)
+        if not voice:
+            raise ValueError("No voice found for professor")
+        # Use el_voice_id for ElevenLabs, external_id for others
+        if voice.tts_backend == "elevenlabs" and voice.el_voice_id:
+            return voice.el_voice_id
+        return voice.external_id or voice.el_voice_id
 
     def _resolve_model_for_voice(self, professor: Professor, el_voice_id: Optional[str]) -> str:
-        """Return the best ElevenLabs model supported by this voice.
+        """Return the ElevenLabs model to use for this voice.
+
+        Ungated models (e.g. eleven_v4) configured via TTS_VOICE_MODEL work with
+        any library voice, so they are used as-is; generation retries with
+        ``_resolve_verified_model_for_voice`` if the voice turns out not to work.
+        """
+        configured = self.settings.TTS_VOICE_MODEL
+        if configured in UNGATED_MODELS:
+            return configured
+        return self._resolve_verified_model_for_voice(professor, el_voice_id)
+
+    def _resolve_verified_model_for_voice(
+        self, professor: Professor, el_voice_id: Optional[str]
+    ) -> str:
+        """Return the best ElevenLabs model this voice is verified for.
 
         Checks verified_languages from the DB record (or the ElevenLabs API as
         a fallback) and returns the first match from ELEVENLABS_MODEL_PREFERENCE.
-        Falls back to TTS_VOICE_MODEL when no model info is available.
+        Falls back to TTS_VOICE_MODEL (or FALLBACK_MODEL if that is an ungated
+        model) when no model info is available.
         """
         try:
             voice_info = (
@@ -367,7 +425,8 @@ class TTSService:
         except Exception as e:
             self.logger.debug("Could not resolve voice model info: %s", e)
 
-        return self.settings.TTS_VOICE_MODEL
+        configured = self.settings.TTS_VOICE_MODEL
+        return FALLBACK_MODEL if configured in UNGATED_MODELS else configured
 
     def play_audio(self, audio_source: Union[bytes, str]) -> None:
         """Play audio data or a file."""

@@ -462,6 +462,7 @@ export const en = {
     errorGeneratePreviewsFailed: 'Failed to generate voice previews.',
     errorSaveVoiceFailed: 'Failed to save voice.',
     styleLabel: 'Style',
+    v4Verified: 'v4 verified',
     langLabel: 'Lang',
   },
 
@@ -836,6 +837,7 @@ export const en = {
   metadata: {
     createdBy: 'Created By',
     createdWith: 'Created with',
+    audioModel: 'Audio model',
     createdOn: 'Created on',
     type: 'Asset Type',
     types: {

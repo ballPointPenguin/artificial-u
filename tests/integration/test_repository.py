@@ -340,6 +340,64 @@ def test_topic_delete_by_course(repository, db_topic):
 
 
 @pytest.mark.integration
+def test_voice_list_missing_verified_languages(repository):
+    """Voices with empty/unset verified_languages are listed; others are not."""
+    from artificial_u.models.core import Voice
+    from artificial_u.models.database import VoiceModel
+
+    tag = uuid.uuid4().hex[:8]
+    empty = repository.voice.create(
+        Voice(
+            el_voice_id=f"empty-{tag}",
+            external_id=f"empty-{tag}",
+            name="Empty",
+            verified_languages=[],
+        )
+    )
+    unset = repository.voice.create(
+        Voice(el_voice_id=f"unset-{tag}", external_id=f"unset-{tag}", name="Unset")
+    )
+    # Legacy rows can have SQL NULL, which the domain model can't represent
+    with repository.voice.get_session() as session:
+        session.query(VoiceModel).filter_by(id=unset.id).update({"verified_languages": None})
+        session.commit()
+    full = repository.voice.create(
+        Voice(
+            el_voice_id=f"full-{tag}",
+            external_id=f"full-{tag}",
+            name="Full",
+            verified_languages=[{"model_id": "eleven_v4"}],
+        )
+    )
+
+    ids = {v.id for v in repository.voice.list_missing_verified_languages(limit=100000)}
+
+    assert empty.id in ids
+    assert unset.id in ids
+    assert full.id not in ids
+
+
+@pytest.mark.integration
+def test_lecture_tts_backend_and_model_roundtrip(repository, db_lecture):
+    """Audio generation records which TTS backend/model produced the audio."""
+    assert db_lecture.tts_backend is None
+    assert db_lecture.tts_model is None
+
+    updated = repository.lecture.update_fields(
+        lecture_id=db_lecture.id,
+        update_data={
+            "audio_url": "s3://bucket/audio.mp3",
+            "tts_backend": "elevenlabs",
+            "tts_model": "eleven_v4",
+        },
+    )
+    assert (updated.tts_backend, updated.tts_model) == ("elevenlabs", "eleven_v4")
+
+    fetched = repository.lecture.get(db_lecture.id)
+    assert (fetched.tts_backend, fetched.tts_model) == ("elevenlabs", "eleven_v4")
+
+
+@pytest.mark.integration
 def test_lecture_crud(repository, sample_lecture):
     """Test CRUD operations for lectures."""
     # Create

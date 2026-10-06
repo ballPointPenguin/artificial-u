@@ -89,7 +89,9 @@ class ElevenLabsClient:
         Voice details or None if not found
     """
 
-    def get_el_voice(self, el_voice_id: str) -> Optional[Dict[str, Any]]:
+    def get_el_voice(
+        self, el_voice_id: str, search_shared: bool = True
+    ) -> Optional[Dict[str, Any]]:
         """
         Get details of a specific voice.
 
@@ -98,6 +100,8 @@ class ElevenLabsClient:
 
         Args:
             el_voice_id: ElevenLabs Voice ID of the voice to retrieve
+            search_shared: Whether to fall back to the (slow, paginated) shared voices
+                search when the voice isn't in the user's library
 
         Returns:
             Voice details or None if not found
@@ -106,15 +110,20 @@ class ElevenLabsClient:
         try:
             response = self.client.voices.get(voice_id=el_voice_id)
 
+            labels = getattr(response, "labels", None) or {}
             voice_data = {
                 "el_voice_id": response.voice_id,
                 "name": response.name,
                 "category": getattr(response, "category", "premade"),
-                "gender": getattr(response, "labels", {}).get("gender", "neutral"),
-                "accent": getattr(response, "labels", {}).get("accent", "american"),
-                "age": getattr(response, "labels", {}).get("age", "middle_aged"),
+                "gender": labels.get("gender", "neutral"),
+                "accent": labels.get("accent", "american"),
+                "age": labels.get("age", "middle_aged"),
+                "descriptive": labels.get("descriptive"),
+                "use_case": labels.get("use_case"),
+                "language": labels.get("language"),
                 "description": getattr(response, "description", ""),
                 "preview_url": getattr(response, "preview_url", ""),
+                "verified_languages": getattr(response, "verified_languages", None) or [],
             }
 
             self.logger.debug(f"Found voice {el_voice_id} in user's library")
@@ -132,6 +141,8 @@ class ElevenLabsClient:
             )
 
         # Step 2: Fall back to searching shared voices
+        if not search_shared:
+            return None
         return self._search_shared_voice_by_id(el_voice_id)
 
     def _search_shared_voice_by_id(
@@ -452,7 +463,7 @@ class ElevenLabsClient:
         Args:
             text: Text to convert to speech
             voice_id: ElevenLabs Voice ID to use
-            model_id: Model ID to use (defaults to eleven_flash_v2_5)
+            model_id: Model ID to use (defaults to eleven_v4)
             voice_settings: Voice settings (stability, speed, etc.)
 
         Returns:
