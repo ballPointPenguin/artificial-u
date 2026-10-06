@@ -10,6 +10,7 @@ from typing import Any, Dict, List, Optional
 
 from artificial_u.config import get_settings
 from artificial_u.integrations import elevenlabs
+from artificial_u.integrations.elevenlabs.models import UNGATED_MODELS
 from artificial_u.models.core import Professor, Voice
 from artificial_u.models.repositories import RepositoryFactory
 
@@ -209,6 +210,9 @@ class VoiceService:
 
         voices: List[Dict[str, Any]] = []
         required_model = getattr(self.settings, "TTS_VOICE_MODEL", None)
+        if required_model in UNGATED_MODELS:
+            # Works with any library voice; don't filter on sparse verified_languages
+            required_model = None
 
         # First, try to get premade voices if we haven't already
         premade_voices = self.client.get_premade_voices()
@@ -610,6 +614,10 @@ class VoiceService:
         # Create Voice model
         voice = Voice(
             el_voice_id=el_voice_data["el_voice_id"],
+            # ElevenLabs voices mirror their ID in external_id; keep it so refreshes
+            # don't blank it on upsert
+            external_id=el_voice_data["el_voice_id"],
+            tts_backend="elevenlabs",
             name=el_voice_data["name"],
             accent=el_voice_data.get("accent"),
             gender=el_voice_data.get("gender"),

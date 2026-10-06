@@ -161,8 +161,9 @@ IMAGE_GENERATION_MODEL=gemini-3.1-flash-lite-image
 
 # Text-to-speech voice model (ElevenLabs)
 # Must be supported by the selected voice's verified languages
-# Common values: eleven_flash_v2_5, eleven_multilingual_v2
-TTS_VOICE_MODEL=eleven_flash_v2_5
+# Common values: eleven_v4, eleven_flash_v2_5, eleven_multilingual_v2
+# eleven_v4 falls back to a voice-verified model if a voice cannot be used with it
+TTS_VOICE_MODEL=eleven_v4
 ```
 
 `gpt-6-luna` is the default cost-sensitive model for quick text generation and
@@ -347,7 +348,7 @@ TESTING=true
 | `TOPICS_GENERATION_MODEL` | Model for topics generation | `gemini-3.8-flash` | No |
 | `PROFESSOR_GENERATION_MODEL` | Model for professor generation | `gpt-6-luna` | No |
 | `IMAGE_GENERATION_MODEL` | Model for image generation (`gemini-3.1-flash-lite-image`, `gemini-3.1-flash-image`, `gemini-3-pro-image`) | `gemini-3.1-flash-lite-image` | No |
-| `TTS_VOICE_MODEL` | Model for text-to-speech voice | `eleven_flash_v2_5` | No |
+| `TTS_VOICE_MODEL` | Model for text-to-speech voice | `eleven_v4` | No |
 | `XAI_TTS_BASE_URL` | Base URL for the xAI TTS API | `https://api.x.ai/v1` | No |
 | `XAI_TTS_LANGUAGE` | xAI output language: BCP-47 code or `auto` (detect from text) | `auto` | No |
 | `TTS_QWEN_MODEL` | Qwen TTS model (`qwen-audio-3.0-tts-flash` or `qwen-audio-3.0-tts-plus`) | `qwen-audio-3.0-tts-flash` | No |

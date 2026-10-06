@@ -157,8 +157,9 @@ class Settings(BaseSettings):
 
     # Text-to-speech settings
     tts_backend: str = DEFAULT_TTS_BACKEND  # "elevenlabs", "mistral", "xai", or "qwen"
-    # ElevenLabs voice model. Example values: "eleven_flash_v2_5", "eleven_multilingual_v2"
-    TTS_VOICE_MODEL: str = "eleven_flash_v2_5"
+    # ElevenLabs voice model. Example values: "eleven_v4", "eleven_flash_v2_5",
+    # "eleven_multilingual_v2"
+    TTS_VOICE_MODEL: str = "eleven_v4"
     # Mistral TTS model
     TTS_MISTRAL_MODEL: str = "voxtral-mini-tts-2603"
     # Mistral API key (optional, required only if tts_backend="mistral")

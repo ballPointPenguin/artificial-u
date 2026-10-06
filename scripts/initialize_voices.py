@@ -13,6 +13,10 @@ from pathlib import Path
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
+from artificial_u.integrations.elevenlabs.models import (  # noqa: E402
+    ELEVENLABS_V4_MODEL,
+    voice_lists_model,
+)
 from artificial_u.models.repositories import RepositoryFactory  # noqa: E402
 from artificial_u.services import VoiceService  # noqa: E402
 
@@ -75,7 +79,11 @@ def main():
         fr_count = repository_factory.voice.count(language="fr")
         es_count = repository_factory.voice.count(language="es")
 
+        el_voices = repository_factory.voice.list(tts_backend="elevenlabs", limit=100000)
+        v4_count = sum(voice_lists_model(v.model_dump(), ELEVENLABS_V4_MODEL) for v in el_voices)
+
         logger.info("Voice database statistics:")
+        logger.info(f"  Voices verified for {ELEVENLABS_V4_MODEL}: {v4_count}/{len(el_voices)}")
         logger.info(f"  Total voices: {total_voices}")
         logger.info(f"  Premade voices: {premade_count}")
         logger.info(f"  Professional voices: {professional_count}")

@@ -452,7 +452,7 @@ class ElevenLabsClient:
         Args:
             text: Text to convert to speech
             voice_id: ElevenLabs Voice ID to use
-            model_id: Model ID to use (defaults to eleven_flash_v2_5)
+            model_id: Model ID to use (defaults to eleven_v4)
             voice_settings: Voice settings (stability, speed, etc.)
 
         Returns:
