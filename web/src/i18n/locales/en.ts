@@ -462,6 +462,7 @@ export const en = {
     errorGeneratePreviewsFailed: 'Failed to generate voice previews.',
     errorSaveVoiceFailed: 'Failed to save voice.',
     styleLabel: 'Style',
+    v4Verified: 'v4 verified',
     langLabel: 'Lang',
   },
 

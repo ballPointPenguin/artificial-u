@@ -457,6 +457,7 @@ export const zh = {
     errorGeneratePreviewsFailed: '生成声音预览失败。',
     errorSaveVoiceFailed: '保存声音失败。',
     styleLabel: '风格',
+    v4Verified: 'v4 已验证',
     langLabel: '语言',
   },
 

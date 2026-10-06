@@ -681,7 +681,7 @@ const ProfessorVoice: Component = () => {
                     <Badge variant="outline">{voice().descriptive}</Badge>
                   </Show>
                   <Show when={isVerifiedForElevenV4(voice())}>
-                    <Badge variant="outline">Eleven v4</Badge>
+                    <Badge variant="outline">{t().professorVoice.v4Verified}</Badge>
                   </Show>
                   <Show when={voice().tts_backend === 'mistral' && voice().external_id}>
                     <button

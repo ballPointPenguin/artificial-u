@@ -466,6 +466,7 @@ export const es = {
     errorGeneratePreviewsFailed: 'Error al generar vistas previas de voz.',
     errorSaveVoiceFailed: 'Error al guardar la voz.',
     styleLabel: 'Estilo',
+    v4Verified: 'v4 verificada',
     langLabel: 'Idioma',
   },
 
