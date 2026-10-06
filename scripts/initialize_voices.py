@@ -70,6 +70,14 @@ def main():
                     break
                 page += 1
 
+        # Repair voices added by ID that never captured verified_languages
+        logger.info("Refreshing voices with empty verified_languages ...")
+        refresh = voice_service.refresh_voices_missing_verified_languages()
+        logger.info(
+            f"  Checked {refresh['checked']}, updated {refresh['updated']}, "
+            f"unresolved {refresh['unresolved']}"
+        )
+
         # Get some statistics
         total_voices = repository_factory.voice.count()
         premade_count = repository_factory.voice.count(category="premade")
