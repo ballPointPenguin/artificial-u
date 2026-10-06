@@ -10,6 +10,7 @@ import os
 import shutil
 import subprocess
 import tempfile
+from dataclasses import dataclass
 from typing import Any, Dict, Optional, Union
 
 from artificial_u.audio.speech_processor import SpeechProcessor
@@ -24,6 +25,28 @@ ELEVENLABS_MODEL_PREFERENCE = [
     "eleven_v3",
     "eleven_multilingual_v2",
 ]
+
+
+@dataclass(frozen=True)
+class LectureAudio:
+    """Synthesized lecture audio and the model that actually produced it."""
+
+    audio: bytes
+    model_id: Optional[str] = None
+
+
+def configured_tts_model(backend_name: str, settings: Any = None) -> Optional[str]:
+    """Model a backend is configured to use, or None when it isn't known up front.
+
+    For ElevenLabs this is the preferred model; generation may still fall back to
+    another one for a voice that can't use it.
+    """
+    settings = settings or get_settings()
+    if backend_name == "elevenlabs":
+        return settings.TTS_VOICE_MODEL
+    if backend_name == "mistral":
+        return settings.TTS_MISTRAL_MODEL
+    return None
 
 
 class TTSService:
@@ -259,7 +282,11 @@ class TTSService:
                 except Exception as e:
                     self.logger.debug("Error cleaning up temp dir: %s", e)
 
-    def generate_lecture_audio(
+    def generate_lecture_audio(self, *args: Any, **kwargs: Any) -> bytes:
+        """Generate audio for a lecture; see ``synthesize_lecture_audio``."""
+        return self.synthesize_lecture_audio(*args, **kwargs).audio
+
+    def synthesize_lecture_audio(
         self,
         lecture: Lecture,
         professor: Professor,
@@ -267,7 +294,7 @@ class TTSService:
         el_voice_id: Optional[str] = None,
         model_id: Optional[str] = None,
         language: Optional[str] = None,
-    ) -> bytes:
+    ) -> LectureAudio:
         """
         Generate audio for a lecture.
 
@@ -281,7 +308,8 @@ class TTSService:
                 that accept one (e.g. xAI).
 
         Returns:
-            Audio data as bytes.
+            The audio and the model that produced it (None if the backend's model
+            isn't known).
         """
         effective_voice_id = voice_id or el_voice_id or self._voice_id_for_professor(professor)
 
@@ -293,13 +321,15 @@ class TTSService:
                 el_voice_id=effective_voice_id,
             )
 
-        def convert(model: Optional[str]) -> bytes:
-            return self.convert_text_to_speech(
+        def convert(model: Optional[str]) -> LectureAudio:
+            audio = self.convert_text_to_speech(
                 text=lecture.content,
                 voice_id=effective_voice_id,
                 model_id=model,
                 language=language,
             )
+            used = model or configured_tts_model(self.backend.backend_name, self.settings)
+            return LectureAudio(audio=audio, model_id=used)
 
         try:
             try:

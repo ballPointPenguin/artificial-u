@@ -646,6 +646,7 @@ export const LectureSection: Component<LectureSectionProps> = (props) => {
                 type="lecture"
                 createdBy={lectureData().student}
                 createdWith={lectureData().created_with}
+                audioModel={lectureData().audio_url ? lectureData().tts_model : null}
                 createdAt={lectureData().created_at}
               />
             </div>

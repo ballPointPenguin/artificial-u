@@ -836,6 +836,7 @@ export const en = {
   metadata: {
     createdBy: 'Created By',
     createdWith: 'Created with',
+    audioModel: 'Audio model',
     createdOn: 'Created on',
     type: 'Asset Type',
     types: {

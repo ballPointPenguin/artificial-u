@@ -330,6 +330,9 @@ class Lecture(BaseModel):
     voice_id: Optional[int] = None
     word_count: Optional[int] = None
     duration: Optional[int] = None  # Audio duration in seconds
+    # TTS backend/model that produced audio_url (None for audio predating tracking)
+    tts_backend: Optional[str] = None
+    tts_model: Optional[str] = None
     # Attribution
     created_by: Optional[int] = None
     created_with: Optional[str] = None

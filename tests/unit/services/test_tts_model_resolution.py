@@ -18,7 +18,9 @@ def make_service(configured_model="eleven_v4", verified=None):
     repo = MagicMock()
     repo.voice.get.return_value = {"verified_languages": verified} if verified else None
     service = TTSService(backend=backend, repository_factory=repo)
-    service.settings = SimpleNamespace(TTS_VOICE_MODEL=configured_model)
+    service.settings = SimpleNamespace(
+        TTS_VOICE_MODEL=configured_model, TTS_MISTRAL_MODEL="voxtral-mini-tts-2603"
+    )
     return service
 
 
@@ -59,6 +61,26 @@ def test_generation_falls_back_when_v4_fails():
 
     assert audio == b"audio"
     assert calls == ["eleven_v4", "eleven_multilingual_v2"]
+
+
+def test_synthesis_reports_model_actually_used():
+    service = make_service(verified=[{"model_id": "eleven_multilingual_v2"}])
+    service.convert_text_to_speech = MagicMock(return_value=b"audio")
+    result = service.synthesize_lecture_audio(LECTURE, PROFESSOR, voice_id="abc")
+    assert (result.audio, result.model_id) == (b"audio", "eleven_v4")
+
+
+def test_synthesis_reports_fallback_model_when_v4_fails():
+    service = make_service(verified=[{"model_id": "eleven_multilingual_v2"}])
+
+    def fake_convert(text, voice_id, model_id=None, language=None, **kwargs):
+        if model_id == "eleven_v4":
+            raise RuntimeError("voice not supported")
+        return b"audio"
+
+    service.convert_text_to_speech = fake_convert
+    result = service.synthesize_lecture_audio(LECTURE, PROFESSOR, voice_id="abc")
+    assert result.model_id == "eleven_multilingual_v2"
 
 
 def test_explicit_model_is_not_retried():

@@ -340,6 +340,26 @@ def test_topic_delete_by_course(repository, db_topic):
 
 
 @pytest.mark.integration
+def test_lecture_tts_backend_and_model_roundtrip(repository, db_lecture):
+    """Audio generation records which TTS backend/model produced the audio."""
+    assert db_lecture.tts_backend is None
+    assert db_lecture.tts_model is None
+
+    updated = repository.lecture.update_fields(
+        lecture_id=db_lecture.id,
+        update_data={
+            "audio_url": "s3://bucket/audio.mp3",
+            "tts_backend": "elevenlabs",
+            "tts_model": "eleven_v4",
+        },
+    )
+    assert (updated.tts_backend, updated.tts_model) == ("elevenlabs", "eleven_v4")
+
+    fetched = repository.lecture.get(db_lecture.id)
+    assert (fetched.tts_backend, fetched.tts_model) == ("elevenlabs", "eleven_v4")
+
+
+@pytest.mark.integration
 def test_lecture_crud(repository, sample_lecture):
     """Test CRUD operations for lectures."""
     # Create

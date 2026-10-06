@@ -843,6 +843,7 @@ export const fr = {
   metadata: {
     createdBy: 'Créé par',
     createdWith: 'Créé avec',
+    audioModel: 'Modèle audio',
     createdOn: 'Créé le',
     type: 'Type de ressource',
     types: {

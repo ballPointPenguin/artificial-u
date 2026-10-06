@@ -8,7 +8,7 @@ and background job enqueueing.
 
 import asyncio
 import logging
-from typing import Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 from artificial_u.config import get_settings
 from artificial_u.models.converters import (
@@ -28,6 +28,9 @@ from artificial_u.utils import (
     extract_partial_xml_content,
     extract_xml_between_tags,
 )
+
+if TYPE_CHECKING:
+    from artificial_u.services.tts_service import LectureAudio
 
 
 class LectureGeneratorService:
@@ -442,9 +445,10 @@ class LectureGeneratorService:
         voice_identifier, voice_id, backend_name = self._ensure_professor_voice(professor)
 
         # 3. Generate audio bytes (blocking TTS executed in a thread)
-        audio_bytes = await asyncio.to_thread(
-            self._generate_audio_bytes, lecture, professor, voice_identifier, backend_name
+        generated = await asyncio.to_thread(
+            self._generate_audio, lecture, professor, voice_identifier, backend_name
         )
+        audio_bytes = generated.audio
 
         # 4. Add ID3 metadata tags to audio
         audio_bytes = self._add_id3_tags_to_audio(
@@ -461,7 +465,11 @@ class LectureGeneratorService:
         audio_url = await self._upload_audio_and_get_url(course, topic, audio_bytes)
 
         # 6. Partial update lecture with audio URL, voice_id, and duration (avoid clobbering summary)
-        update_data = {"audio_url": audio_url}
+        update_data = {
+            "audio_url": audio_url,
+            "tts_backend": backend_name,
+            "tts_model": generated.model_id,
+        }
         if voice_id:
             update_data["voice_id"] = voice_id
         if duration_seconds is not None:
@@ -500,6 +508,7 @@ class LectureGeneratorService:
             "voice_id": updated.voice_id,
             "duration": updated.duration,
             "tts_backend": backend_name,
+            "tts_model": generated.model_id,
         }
 
     async def generate_lecture_timeline(self, lecture_id: int) -> Dict[str, Any]:
@@ -981,10 +990,10 @@ class LectureGeneratorService:
         voice_id_str, db_voice_id, _ = self._ensure_professor_voice(professor)
         return voice_id_str, db_voice_id
 
-    def _generate_audio_bytes(
+    def _generate_audio(
         self, lecture, professor, el_voice_id: str, backend_name: str = "elevenlabs"
-    ) -> bytes:
-        """Use TTSService to generate audio bytes for a lecture."""
+    ) -> "LectureAudio":
+        """Use TTSService to generate audio (and note the model used) for a lecture."""
         from artificial_u.integrations.tts.factory import create_tts_backend
         from artificial_u.services.tts_service import TTSService
 
@@ -996,12 +1005,11 @@ class LectureGeneratorService:
             logger=self.logger,
         )
         try:
-            audio_bytes = tts_service.generate_lecture_audio(
+            return tts_service.synthesize_lecture_audio(
                 lecture=lecture,
                 professor=professor,
                 voice_id=el_voice_id,
             )
-            return audio_bytes
         except Exception as e:
             raise ContentGenerationError(f"TTS generation failed: {e}")
 

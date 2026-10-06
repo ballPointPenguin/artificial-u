@@ -11,6 +11,8 @@ interface MetadataInfoProps {
     email?: string | null
   } | null
   createdWith?: string | null
+  /** TTS model that produced the lecture audio (lectures with recorded audio only) */
+  audioModel?: string | null
   createdAt?: string | null
   class?: string
 }
@@ -23,7 +25,7 @@ const MetadataInfo: Component<MetadataInfoProps> = (props) => {
   const t = useTranslations()
 
   return (
-    <Show when={props.createdBy || props.createdWith || props.createdAt}>
+    <Show when={props.createdBy || props.createdWith || props.audioModel || props.createdAt}>
       <div class={`text-sm text-parchment-400 space-y-1 ${props.class || ''}`}>
         <Show when={props.type}>
           <p>
@@ -38,6 +40,11 @@ const MetadataInfo: Component<MetadataInfoProps> = (props) => {
         <Show when={props.createdWith}>
           <p>
             <span class="font-medium">{t().metadata.createdWith}:</span> {props.createdWith}
+          </p>
+        </Show>
+        <Show when={props.audioModel}>
+          <p>
+            <span class="font-medium">{t().metadata.audioModel}:</span> {props.audioModel}
           </p>
         </Show>
         <Show when={props.createdAt}>

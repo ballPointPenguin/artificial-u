@@ -331,6 +331,8 @@ def test_create_lecture(client: TestClient, mock_api_service):
         "word_count": None,
         "duration": None,
         "voice_id": None,
+        "tts_backend": None,
+        "tts_model": None,
         "created_by": 1,  # Set from authenticated student fixture
         "created_with": None,
         "created_at": None,

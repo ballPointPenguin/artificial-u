@@ -824,6 +824,7 @@ export const zh = {
   metadata: {
     createdBy: '创建者',
     createdWith: '生成模型',
+    audioModel: '音频模型',
     createdOn: '创建日期',
     type: '资源类型',
     types: {

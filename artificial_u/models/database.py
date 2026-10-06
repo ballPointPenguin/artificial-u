@@ -176,6 +176,9 @@ class LectureModel(Base):
     voice_id = Column(Integer, ForeignKey("voices.id"), nullable=True)
     word_count = Column(Integer, nullable=True)
     duration = Column(Integer, nullable=True)  # Audio duration in seconds
+    # TTS backend/model that actually produced audio_url (null for audio predating tracking)
+    tts_backend = Column(String(50), nullable=True)
+    tts_model = Column(String, nullable=True)
     # Attribution fields
     created_by = Column(Integer, ForeignKey("students.id"), nullable=True)
     created_with = Column(String, nullable=True)
