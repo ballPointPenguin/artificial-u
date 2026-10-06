@@ -23,6 +23,7 @@ import {
 import type {
   MistralCatalogVoice,
   QwenCatalogVoice,
+  Voice,
   VoiceDesignPreview,
   XaiCatalogVoice,
 } from '../../api/types.js'
@@ -49,6 +50,12 @@ const backendLabel = (backend: string | null | undefined): string => {
   }
   return (backend && map[backend]) ?? 'ElevenLabs'
 }
+
+// ElevenLabs voices work with v4 regardless; this only reflects that the voice is
+// explicitly verified for it in the cached voice metadata.
+const isVerifiedForElevenV4 = (voice: Voice): boolean =>
+  voice.tts_backend === 'elevenlabs' &&
+  voice.verified_languages.some((item) => item.model_id === 'eleven_v4')
 
 const EXCLUDED_MISTRAL_EMOTIONS = new Set(['sad', 'angry', 'shameful', 'jealousy', 'frustrated'])
 
@@ -672,6 +679,9 @@ const ProfessorVoice: Component = () => {
                   </Show>
                   <Show when={voice().descriptive}>
                     <Badge variant="outline">{voice().descriptive}</Badge>
+                  </Show>
+                  <Show when={isVerifiedForElevenV4(voice())}>
+                    <Badge variant="outline">Eleven v4</Badge>
                   </Show>
                   <Show when={voice().tts_backend === 'mistral' && voice().external_id}>
                     <button
