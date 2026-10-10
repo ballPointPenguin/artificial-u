@@ -100,6 +100,8 @@ class Settings(BaseSettings):
     ALIBABA_API_KEY: Optional[str] = None
     ANTHROPIC_API_KEY: Optional[str] = None
     ELEVENLABS_API_KEY: Optional[str] = None
+    # Optional second ElevenLabs account, used while the primary's quota is exhausted
+    ELEVENLABS_API_KEY_ALT: Optional[str] = None
     GOOGLE_API_KEY: Optional[str] = None
     OPENAI_API_KEY: Optional[str] = None
     XAI_API_KEY: Optional[str] = None

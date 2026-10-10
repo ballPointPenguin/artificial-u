@@ -179,6 +179,10 @@ export const ENDPOINTS = {
   },
   search: '/v1/search',
   stats: '/v1/stats',
+  adminElevenLabs: {
+    status: '/v1/admin/elevenlabs/status',
+    reset: '/v1/admin/elevenlabs/reset',
+  },
   preferences: {
     listGlobal: '/v1/preferences/global',
     getGlobal: (scope: string) => `/v1/preferences/global/${encodeURIComponent(scope)}`,

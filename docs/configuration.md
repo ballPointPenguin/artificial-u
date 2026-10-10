@@ -324,6 +324,7 @@ TESTING=true
 | `DATABASE_URL` | Database connection string | `postgresql://postgres:postgres@localhost:5432/artificial_u_dev` | Yes |
 | `ANTHROPIC_API_KEY` | API key for Anthropic | None | No |
 | `ELEVENLABS_API_KEY` | API key for ElevenLabs | None | No |
+| `ELEVENLABS_API_KEY_ALT` | Optional second ElevenLabs account. When the primary key hits `quota_exceeded`, TTS switches to this key until the primary's quota resets (read from its subscription; 24h fallback). Status and a manual "switch to primary" are in Admin → Settings | None | No |
 | `MISTRAL_API_KEY` | API key for Mistral (TTS when using Mistral backend) | None | No |
 | `XAI_API_KEY` | API key for xAI (Grok content generation and TTS) | None | No |
 | `XAI_BASE_URL` | Base URL for the xAI chat API (Grok content generation) | `https://api.x.ai/v1` | No |

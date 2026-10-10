@@ -8,7 +8,7 @@ import logging
 import os
 import sys
 import time
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional, Tuple, TypeVar
 from unittest.mock import MagicMock
 
 import httpx
@@ -16,6 +16,13 @@ from elevenlabs import play
 from elevenlabs.client import ElevenLabs
 
 from artificial_u.config import get_settings
+from artificial_u.integrations.elevenlabs.failover import (
+    get_key_manager,
+    is_quota_error,
+    reset_time_from_subscription,
+)
+
+T = TypeVar("T")
 
 
 class ElevenLabsClient:
@@ -36,35 +43,57 @@ class ElevenLabsClient:
     # Wait time between retries (seconds)
     RETRY_WAIT = 2
 
-    def __init__(self, api_key: Optional[str] = None):
+    def __init__(self, api_key: Optional[str] = None, alt_api_key: Optional[str] = None):
         """
         Initialize the ElevenLabs client.
 
         Args:
             api_key: ElevenLabs API key. If not provided, will use
                 ELEVENLABS_API_KEY environment variable.
+            alt_api_key: Optional second-account key used while the primary's quota is
+                exhausted. When omitted it defaults to ELEVENLABS_API_KEY_ALT, but only if
+                ``api_key`` is the configured primary (so explicit keys never pick up an
+                unrelated alt).
         """
         self.logger = logging.getLogger(__name__)
 
         # Check if we're in a test environment
-        in_test_env = os.environ.get("TESTING") == "true" or "pytest" in sys.modules
+        self._in_test_env = os.environ.get("TESTING") == "true" or "pytest" in sys.modules
 
-        self.api_key = api_key or os.environ.get("ELEVENLABS_API_KEY")
-        if not self.api_key:
-            if in_test_env:
+        primary_key = api_key or os.environ.get("ELEVENLABS_API_KEY")
+        if not primary_key:
+            if self._in_test_env:
                 # Use a dummy key in test environment
-                self.api_key = "test_elevenlabs_key"
+                primary_key = "test_elevenlabs_key"
                 self.logger.info("Using test API key in test environment")
             else:
                 # Only raise error in production
                 raise ValueError("ElevenLabs API key is required")
 
+        settings = get_settings()
+        if alt_api_key is None and primary_key == settings.ELEVENLABS_API_KEY:
+            alt_api_key = settings.ELEVENLABS_API_KEY_ALT
+
+        self._primary_key = primary_key
+        self._alt_key = alt_api_key or None
+        self._failover = (
+            get_key_manager(primary_key, self._alt_key)
+            if self._alt_key and self._alt_key != primary_key
+            else None
+        )
+
+        self._init_sdk(self._failover.active_key() if self._failover else primary_key)
+
+    def _init_sdk(self, api_key: str) -> None:
+        """(Re)build the SDK client and request headers for ``api_key``."""
+        self.api_key = api_key
+
         # Initialize standard ElevenLabs client
         try:
-            self.client = ElevenLabs(api_key=self.api_key)
+            self.client = ElevenLabs(api_key=api_key)
             self.logger.debug("Successfully initialized ElevenLabs client")
         except Exception as e:
-            if in_test_env:
+            if self._in_test_env:
                 self.logger.info(f"Test environment: Mocking ElevenLabs client due to error: {e}")
                 # Create a dummy client for testing
                 self.client = MagicMock()
@@ -74,10 +103,47 @@ class ElevenLabsClient:
 
         # Headers for API requests
         self.headers = {
-            "xi-api-key": self.api_key,
+            "xi-api-key": api_key,
             "Content-Type": "application/json",
             "Accept": "application/json",
         }
+
+    # ---------------------------------------------------------------------------
+    # Primary/alt key failover
+    # ---------------------------------------------------------------------------
+
+    def _sync_active_key(self) -> None:
+        """Adopt the manager's current key (another client may have failed over)."""
+        if self._failover and self._failover.active_key() != self.api_key:
+            self._init_sdk(self._failover.active_key())
+
+    def _fail_over(self) -> bool:
+        """Switch to the alt key after a quota error. False if there is nowhere to go."""
+        if not self._failover or self.api_key == self._alt_key:
+            return False  # failover not configured, or the alt is exhausted too
+        if self._failover.active_label() == "primary":
+            self._failover.activate_alt(self._primary_reset_at())
+        self._sync_active_key()
+        return self.api_key == self._alt_key
+
+    def _primary_reset_at(self):
+        """Best-effort lookup of when the (exhausted) primary account's quota resets."""
+        try:
+            return reset_time_from_subscription(self.get_subscription_status())
+        except Exception as e:
+            self.logger.warning(f"Could not read primary ElevenLabs reset time: {e}")
+            return None
+
+    def _with_failover(self, operation: Callable[[], T]) -> T:
+        """Run a credit-consuming call, retrying once on the alt key if the primary is spent."""
+        self._sync_active_key()
+        try:
+            return operation()
+        except Exception as e:
+            if not is_quota_error(e) or not self._fail_over():
+                raise
+            self.logger.warning("ElevenLabs quota exhausted; retrying on alternate account")
+            return operation()
 
     """
     Get details of a specific voice by ElevenLabs voice ID.
@@ -480,21 +546,26 @@ class ElevenLabsClient:
                 # Get audio stream from the API
                 # Follow official SDK example to ensure full audio is returned
                 # Ref: https://elevenlabs.io/docs/api-reference/text-to-speech/convert
-                audio_stream = self.client.text_to_speech.convert(
-                    voice_id=voice_id,
-                    output_format="mp3_44100_128",
-                    text=text,
-                    model_id=model_id,
-                    voice_settings=voice_settings,
-                    # Keep default apply_text_normalization behavior (auto)
-                )
+                def convert() -> bytes:
+                    # Re-read self.client on each call: failover swaps it
+                    stream = self.client.text_to_speech.convert(
+                        voice_id=voice_id,
+                        output_format="mp3_44100_128",
+                        text=text,
+                        model_id=model_id,
+                        voice_settings=voice_settings,
+                        # Keep default apply_text_normalization behavior (auto)
+                    )
+                    return self._consume_audio_stream(stream)
 
-                audio_data = self._consume_audio_stream(audio_stream)
+                audio_data = self._with_failover(convert)
                 self._warn_if_suspicious_audio(audio_data, len(text))
                 return audio_data
 
             except Exception as e:
                 self.logger.error(f"Error in text-to-speech conversion: {str(e)}")
+                if is_quota_error(e):
+                    raise  # retrying cannot help; every available account is exhausted
                 if attempt < self.MAX_RETRIES - 1:
                     self.logger.info(f"Waiting {self.RETRY_WAIT}s before retry...")
                     time.sleep(self.RETRY_WAIT)
@@ -545,6 +616,32 @@ class ElevenLabsClient:
             self.logger.error(f"Error retrieving user info: {e}")
             return {}
 
+    def get_subscription_status(self) -> Dict[str, Any]:
+        """
+        Get usage and billing-cycle details for the account behind this client's key.
+
+        Raises on API errors (callers decide how to degrade).
+
+        Returns:
+            Dictionary with tier, status, character_count, character_limit,
+            characters_remaining, next_reset_unix and the refresh periods.
+        """
+        sub = self.client.user.subscription.get()
+        limit = sub.character_limit or 0
+        used = sub.character_count or 0
+        return {
+            "tier": sub.tier,
+            "status": str(getattr(sub.status, "value", sub.status)),
+            "character_count": used,
+            "character_limit": limit,
+            "characters_remaining": max(limit - used, 0),
+            "next_reset_unix": sub.next_character_count_reset_unix,
+            "billing_period": str(getattr(sub.billing_period, "value", sub.billing_period or "")),
+            "character_refresh_period": str(
+                getattr(sub.character_refresh_period, "value", sub.character_refresh_period or "")
+            ),
+        }
+
     # ---------------------------------------------------------------------------
     # Voice Design (text-to-voice) API
     # ---------------------------------------------------------------------------
@@ -583,11 +680,14 @@ class ElevenLabsClient:
             "model_id": "eleven_multilingual_ttv_v2",
         }
 
-        try:
+        def create_previews() -> Dict[str, Any]:
             with httpx.Client(timeout=90) as http:
                 resp = http.post(url, json=payload, headers=self.headers)
                 resp.raise_for_status()
-                data = resp.json()
+                return resp.json()
+
+        try:
+            data = self._with_failover(create_previews)
             raw_previews = data.get("previews", [])
             self.logger.info("Voice Design: received %d preview(s)", len(raw_previews))
             # Normalise field name: ElevenLabs returns audio_base_64; we expose audio_sample
