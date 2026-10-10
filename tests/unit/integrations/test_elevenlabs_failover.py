@@ -201,3 +201,14 @@ def test_subscription_status_summary():
     assert status["characters_remaining"] == 7_500
     assert status["next_reset_unix"] == 1_900_000_000
     assert status["tier"] == "creator"
+
+
+def test_voice_missing_on_alt_account_gets_explanatory_error():
+    client, sdks = make_client()
+    sdks["primary-key"].text_to_speech.convert.side_effect = quota_error()
+    sdks["primary-key"].user.subscription.get.return_value = subscription()
+    missing = ApiError(status_code=404, body={"detail": {"status": "voice_not_found"}})
+    sdks.setdefault("alt-key", MagicMock()).text_to_speech.convert.side_effect = missing
+
+    with pytest.raises(RuntimeError, match="custom voices are not shared"):
+        client.text_to_speech("hi", "voice")

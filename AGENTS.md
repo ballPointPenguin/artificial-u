@@ -47,8 +47,8 @@ uv run python scripts/run_alembic.py upgrade head  # Run migrations
 # API server
 uv run uvicorn artificial_u.api.app:app --reload --host 0.0.0.0 --port 8000
 
-# Background worker
-uv run python -m artificial_u.api.worker
+# Background jobs: the worker runs inside the API server process (started in the app lifespan);
+# there is no separate worker command
 ```
 
 ### Frontend (SolidJS)
@@ -127,7 +127,7 @@ artificial_u/
 │   ├── app.py        # Application factory
 │   ├── dependencies.py  # Dependency injection
 │   ├── events.py     # SSE event hub
-│   ├── worker.py     # Background job processor
+│   ├── worker.py     # Background job processor (runs in-process with the API)
 │   ├── routers/      # API endpoints
 │   ├── services/     # API-layer services
 │   ├── models/       # Pydantic request/response models

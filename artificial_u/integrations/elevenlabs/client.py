@@ -143,7 +143,16 @@ class ElevenLabsClient:
             if not is_quota_error(e) or not self._fail_over():
                 raise
             self.logger.warning("ElevenLabs quota exhausted; retrying on alternate account")
-            return operation()
+            try:
+                return operation()
+            except Exception as retry_error:
+                if "voice_not_found" in str(retry_error).lower():
+                    # Custom/cloned voices belong to one account and are not shared.
+                    raise RuntimeError(
+                        "ElevenLabs primary quota is exhausted and this voice does not exist on "
+                        f"the alternate account (custom voices are not shared): {retry_error}"
+                    ) from retry_error
+                raise
 
     """
     Get details of a specific voice by ElevenLabs voice ID.
