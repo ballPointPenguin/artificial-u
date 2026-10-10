@@ -25,6 +25,10 @@ from artificial_u.integrations.elevenlabs.failover import (
 T = TypeVar("T")
 
 
+def _is_voice_not_found(exc: BaseException) -> bool:
+    return "voice_not_found" in f"{exc} {getattr(exc, 'body', '')}".lower()
+
+
 class ElevenLabsClient:
     """
     Low-level client for interacting with ElevenLabs API.
@@ -138,21 +142,25 @@ class ElevenLabsClient:
         """Run a credit-consuming call, retrying once on the alt key if the primary is spent."""
         self._sync_active_key()
         try:
-            return operation()
+            return self._run_on_active_account(operation)
         except Exception as e:
             if not is_quota_error(e) or not self._fail_over():
                 raise
             self.logger.warning("ElevenLabs quota exhausted; retrying on alternate account")
-            try:
-                return operation()
-            except Exception as retry_error:
-                if "voice_not_found" in str(retry_error).lower():
-                    # Custom/cloned voices belong to one account and are not shared.
-                    raise RuntimeError(
-                        "ElevenLabs primary quota is exhausted and this voice does not exist on "
-                        f"the alternate account (custom voices are not shared): {retry_error}"
-                    ) from retry_error
-                raise
+            return self._run_on_active_account(operation)
+
+    def _run_on_active_account(self, operation: Callable[[], T]) -> T:
+        """Run ``operation``, explaining voice_not_found errors that come from using the alt."""
+        try:
+            return operation()
+        except Exception as e:
+            if self._failover and self.api_key == self._alt_key and _is_voice_not_found(e):
+                # Custom/cloned voices belong to one account and are not shared.
+                raise RuntimeError(
+                    "ElevenLabs primary quota is exhausted and this voice does not exist on "
+                    f"the alternate account (custom voices are not shared): {e}"
+                ) from e
+            raise
 
     """
     Get details of a specific voice by ElevenLabs voice ID.
@@ -573,8 +581,8 @@ class ElevenLabsClient:
 
             except Exception as e:
                 self.logger.error(f"Error in text-to-speech conversion: {str(e)}")
-                if is_quota_error(e):
-                    raise  # retrying cannot help; every available account is exhausted
+                if is_quota_error(e) or _is_voice_not_found(e):
+                    raise  # not transient: every account is exhausted, or the voice is missing
                 if attempt < self.MAX_RETRIES - 1:
                     self.logger.info(f"Waiting {self.RETRY_WAIT}s before retry...")
                     time.sleep(self.RETRY_WAIT)
