@@ -187,6 +187,13 @@ class CdkStack(Stack):
                     self, "ElevenLabsApiKey", "/artificial-u/prod/ELEVENLABS_API_KEY"
                 )
             ),
+            # Optional second ElevenLabs account (failover when the primary's quota is spent).
+            # The SSM parameter must exist before deploying.
+            "ELEVENLABS_API_KEY_ALT": ecs.Secret.from_ssm_parameter(
+                ssm.StringParameter.from_string_parameter_name(
+                    self, "ElevenLabsApiKeyAlt", "/artificial-u/prod/ELEVENLABS_API_KEY_ALT"
+                )
+            ),
             "MISTRAL_API_KEY": ecs.Secret.from_ssm_parameter(
                 ssm.StringParameter.from_string_parameter_name(
                     self, "MistralApiKey", "/artificial-u/prod/MISTRAL_API_KEY"
