@@ -47,8 +47,8 @@ uv run python scripts/run_alembic.py upgrade head  # Run migrations
 # API server
 uv run uvicorn artificial_u.api.app:app --reload --host 0.0.0.0 --port 8000
 
-# Background worker
-uv run python -m artificial_u.api.worker
+# Background jobs: the worker runs inside the API server process (started in the app lifespan);
+# there is no separate worker command
 ```
 
 ### Frontend (SolidJS)
@@ -127,7 +127,7 @@ artificial_u/
 │   ├── app.py        # Application factory
 │   ├── dependencies.py  # Dependency injection
 │   ├── events.py     # SSE event hub
-│   ├── worker.py     # Background job processor
+│   ├── worker.py     # Background job processor (runs in-process with the API)
 │   ├── routers/      # API endpoints
 │   ├── services/     # API-layer services
 │   ├── models/       # Pydantic request/response models
@@ -346,6 +346,7 @@ Required in `.env` file:
 
 - `ANTHROPIC_API_KEY`: Anthropic Claude API key
 - `ELEVENLABS_API_KEY`: ElevenLabs TTS API key
+- `ELEVENLABS_API_KEY_ALT` (optional): second ElevenLabs account used while the primary's quota is exhausted
 - `ALIBABA_API_KEY`: Alibaba Cloud API key (TTS when using Qwen backend)
 - `MISTRAL_API_KEY`: Mistral API key (TTS when using Mistral backend)
 - `XAI_API_KEY`: xAI API key (TTS when using xAI/Grok backend)

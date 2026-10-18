@@ -17,6 +17,7 @@ from artificial_u.api.events import JobEventHub
 from artificial_u.api.middlewares.cors_middleware import setup_cors
 from artificial_u.api.middlewares.error_handler import add_error_handlers
 from artificial_u.api.middlewares.logging_middleware import LoggingMiddleware
+from artificial_u.api.routers.admin_elevenlabs import router as admin_elevenlabs_router
 from artificial_u.api.routers.auth import router as auth_router
 from artificial_u.api.routers.courses import router as courses_router
 from artificial_u.api.routers.departments import router as departments_router
@@ -179,6 +180,7 @@ def create_application() -> FastAPI:
     app.include_router(featured_router, prefix="/api/v1")
     app.include_router(jobs_router, prefix="/api/v1")
     app.include_router(lectures_router, prefix="/api/v1")
+    app.include_router(admin_elevenlabs_router, prefix="/api/v1")
     app.include_router(preferences_router, prefix="/api/v1")
     app.include_router(professors_router, prefix="/api/v1")
     app.include_router(students_router, prefix="/api/v1")

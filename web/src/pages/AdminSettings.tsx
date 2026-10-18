@@ -1,4 +1,8 @@
 import { createResource, createSignal, For, Show } from 'solid-js'
+import {
+  type ElevenLabsAccountStatus,
+  elevenLabsAdminService,
+} from '../api/services/elevenlabs-admin-service'
 import { type ModelSettingResponse, preferenceService } from '../api/services/preference-service'
 import { Button, Card, FormField, Input } from '../components/ui'
 
@@ -181,6 +185,131 @@ function ModelSettingCard(props: {
   )
 }
 
+const formatNumber = (n: number | null) => (n === null ? '—' : n.toLocaleString())
+const formatDate = (iso: string | null) => (iso ? new Date(iso).toLocaleString() : '—')
+
+function AccountRow(props: { account: ElevenLabsAccountStatus }) {
+  const a = () => props.account
+  return (
+    <div class="rounded-md border border-border p-3 text-sm">
+      <div class="mb-2 flex items-center gap-2">
+        <strong class="capitalize">{a().label} account</strong>
+        <Show when={a().active}>
+          <span class="rounded bg-accent/15 px-2 py-0.5 text-xs text-accent">In use</span>
+        </Show>
+        <Show when={a().configured && a().tier}>
+          <span class="text-muted text-xs">
+            {a().tier} · {a().status}
+          </span>
+        </Show>
+      </div>
+      <Show when={a().configured} fallback={<p class="text-muted">Not configured.</p>}>
+        <Show
+          when={!a().error}
+          fallback={<p class="text-danger">Usage unavailable: {a().error}</p>}
+        >
+          <div class="mb-1 h-2 overflow-hidden rounded bg-surface">
+            <div
+              class="h-full bg-accent"
+              style={{ width: `${String(Math.min(a().percent_used ?? 0, 100))}%` }}
+            />
+          </div>
+          <p>
+            {formatNumber(a().character_count)} / {formatNumber(a().character_limit)} characters
+            used ({a().percent_used ?? 0}%) · {formatNumber(a().characters_remaining)} remaining
+          </p>
+          <p class="text-muted">
+            Resets {formatDate(a().next_reset_at)}
+            {a().billing_period ? ` · ${a().billing_period ?? ''} billing` : ''}
+          </p>
+        </Show>
+      </Show>
+    </div>
+  )
+}
+
+/** Shows which ElevenLabs account is serving TTS, usage per account, and a manual reset. */
+function ElevenLabsStatusCard(props: {
+  setSuccess: (message: string | null) => void
+  setError: (message: string | null) => void
+}) {
+  const [status, { refetch }] = createResource(() => elevenLabsAdminService.getStatus())
+  const [isResetting, setIsResetting] = createSignal(false)
+
+  const handleReset = async () => {
+    setIsResetting(true)
+    props.setError(null)
+    try {
+      await elevenLabsAdminService.reset()
+      props.setSuccess('Switched back to the primary ElevenLabs account')
+      setTimeout(() => {
+        props.setSuccess(null)
+      }, 3000)
+      void refetch()
+    } catch (error) {
+      props.setError(error instanceof Error ? error.message : 'Failed to reset failover')
+    } finally {
+      setIsResetting(false)
+    }
+  }
+
+  return (
+    <Card class="mb-6">
+      <div class="space-y-4">
+        <div>
+          <h2 class="mb-2 text-2xl font-semibold">ElevenLabs Accounts</h2>
+          <p class="text-muted text-sm">
+            Text-to-speech uses the primary account until its quota is exhausted, then the alternate
+            account until the primary's quota resets.
+          </p>
+        </div>
+        <Show when={!status.loading} fallback={<div class="text-muted">Loading usage...</div>}>
+          <Show
+            when={status()}
+            fallback={<div class="text-danger">Could not load ElevenLabs status.</div>}
+          >
+            {(s) => (
+              <>
+                <Show
+                  when={s().failover_enabled}
+                  fallback={
+                    <p class="text-muted text-sm">
+                      No alternate account configured (set ELEVENLABS_API_KEY_ALT).
+                    </p>
+                  }
+                >
+                  <div class="rounded-md border border-info-border bg-info-bg p-3 text-sm text-info">
+                    <strong>Active:</strong> {s().active_account} account
+                    <Show when={s().failover_until}>
+                      {' '}
+                      — returns to primary {formatDate(s().failover_until)}
+                    </Show>
+                  </div>
+                </Show>
+                <For each={s().accounts}>{(account) => <AccountRow account={account} />}</For>
+                <div class="flex justify-end gap-2">
+                  <Button onClick={() => void refetch()} variant="outline">
+                    Refresh
+                  </Button>
+                  <Show when={s().active_account === 'alt'}>
+                    <Button
+                      onClick={() => void handleReset()}
+                      disabled={isResetting()}
+                      variant="primary"
+                    >
+                      {isResetting() ? 'Resetting...' : 'Switch to primary now'}
+                    </Button>
+                  </Show>
+                </div>
+              </>
+            )}
+          </Show>
+        </Show>
+      </div>
+    </Card>
+  )
+}
+
 export default function AdminSettings() {
   const [successMessage, setSuccessMessage] = createSignal<string | null>(null)
   const [errorMessage, setErrorMessage] = createSignal<string | null>(null)
@@ -222,6 +351,8 @@ export default function AdminSettings() {
         setSuccess={setSuccessMessage}
         setError={setErrorMessage}
       />
+
+      <ElevenLabsStatusCard setSuccess={setSuccessMessage} setError={setErrorMessage} />
 
       {/* Future Settings Sections */}
       <Card class="opacity-50">
