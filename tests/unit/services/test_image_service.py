@@ -483,3 +483,20 @@ async def test_generate_course_image_nano_banana_2_1_falls_back_to_lite(monkeypa
         "gemini-nano-banana-2.1",
         "gemini-3.1-flash-lite-image",
     ]
+
+
+@pytest.mark.parametrize(
+    "model_name,requested,expected",
+    [
+        ("gemini-3.1-flash-image", "512", "512"),
+        ("gemini-3.1-flash-lite-image", "512", "1K"),
+        ("gemini-3.1-flash-lite-image", "2K", "1K"),
+        ("gemini-nano-banana-2.1", "512", "1K"),
+        ("gemini-nano-banana-2.1", "2K", "2K"),
+        ("gemini-3-pro-image", "512", "1K"),
+    ],
+)
+def test_coerce_gemini_image_size(model_name, requested, expected):
+    from artificial_u.services.image_service import _coerce_gemini_image_size
+
+    assert _coerce_gemini_image_size(model_name, requested) == expected

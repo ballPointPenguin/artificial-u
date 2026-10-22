@@ -28,14 +28,25 @@ def format_lecture_slide_prompt(  # noqa: C901
     professor_gender = getattr(professor, "gender", None)
     professor_age = getattr(professor, "age", None)
 
-    # Reference image URLs (multimodal context) - keep order stable.
+    # Reference image URLs (multimodal context) - keep order stable. The model receives the
+    # images in this order, so each one is described by position in REFERENCE IMAGES below.
     refs: List[str] = []
+    ref_roles: List[str] = []
     if professor_image_url:
         refs.append(professor_image_url)
+        ref_roles.append("the professor's portrait (face, hair, build, and signature look)")
     if first_slide_url:
         refs.append(first_slide_url)
+        ref_roles.append(
+            "the first slide of this lecture (the outfit, hairstyle, accessories, "
+            "and classroom to reuse)"
+        )
     if previous_slide_url and previous_slide_url != first_slide_url:
         refs.append(previous_slide_url)
+        ref_roles.append(
+            "the previous slide (the most recent look and room to stay consistent with)"
+        )
+    has_slide_refs = bool(first_slide_url or previous_slide_url)
 
     # Truncate texts to prevent prompt bloat and keep generation fast and focused
     def clean_and_truncate(text: Optional[str], max_chars: int) -> str:
@@ -61,7 +72,15 @@ def format_lecture_slide_prompt(  # noqa: C901
     traits_str = f" ({', '.join(traits)})" if traits else ""
 
     # Structure prompt following the Gemini DeepMind guide (Style, Subject, Setting, Action, Composition)
-    prompt_parts = [
+    prompt_parts = []
+    if ref_roles:
+        listing = "\n".join(f"- Image {i}: {role}" for i, role in enumerate(ref_roles, 1))
+        prompt_parts.append(
+            "REFERENCE IMAGES (provided in this order):\n"
+            f"{listing}\n"
+            "Take the look from them, but the scene content from ACTION/SCENE below."
+        )
+    prompt_parts += [
         (
             "STYLE: Semi-realistic, highly polished digital illustration. "
             "Smooth textures, vivid saturated colors, illustrative digital art style "
@@ -71,7 +90,11 @@ def format_lecture_slide_prompt(  # noqa: C901
         f"SUBJECT: Professor {professor_name}{traits_str}. Specialization: {professor_specialization or 'Academic'}. "
         + (f"Appearance details: {professor_description}" if professor_description else ""),
         (
-            "SETTING: An idealized academic setting (e.g., a modern lab, "
+            "SETTING: The same classroom as in the reference slides: keep the room, "
+            "furniture, windows, and color palette recognizably identical, changing only "
+            "the camera angle and what the professor is showing."
+            if has_slide_refs
+            else "SETTING: An idealized academic setting (e.g., a modern lab, "
             "vintage lecture hall, or cozy classroom) that feels warm, inviting, "
             "and slightly magical."
         ),
@@ -81,7 +104,9 @@ def format_lecture_slide_prompt(  # noqa: C901
         (
             "COMPOSITION GUIDANCE:\n"
             "- Maintain strong visual continuity. The professor should look "
-            "like the same person as in the reference images (if provided).\n"
+            "like the same person as in the reference images (if provided), wearing "
+            "exactly the same outfit, hairstyle, and accessories as in the reference "
+            "slides (if provided).\n"
             "- Keep it simple and legible: This image will be viewed on small screens "
             "at low resolution (512x512). Do NOT render complex text, dense formulas, "
             "or detailed charts in the background behind the professor. Make background "

@@ -3,7 +3,7 @@ import logging
 import uuid
 from datetime import datetime
 from enum import Enum
-from typing import Any, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 import httpx  # Added httpx import
 import openai  # Added openai import
@@ -85,6 +85,32 @@ class ImageGenerationResult:
         self.success = success
         self.image_keys = image_keys or []
         self.error = error
+
+
+# Supported `image_size` values per Gemini image model, smallest first. Requesting an
+# unsupported size is a 400 (e.g. "Image size 512 is not supported for this model").
+_GEMINI_IMAGE_SIZES: Dict[str, Tuple[str, ...]] = {
+    "gemini-3.1-flash-image": ("512", "1K", "2K", "4K"),
+    "gemini-3.1-flash-lite-image": ("1K",),
+    "gemini-nano-banana-2.1": ("1K", "2K", "4K"),
+    "gemini-3-pro-image": ("1K", "2K", "4K"),
+}
+_IMAGE_SIZE_ORDER = ("512", "1K", "2K", "4K")
+
+
+def _coerce_gemini_image_size(model_name: str, image_size: str) -> str:
+    """Return `image_size` if the model supports it, else the closest supported size."""
+    supported = _GEMINI_IMAGE_SIZES.get(model_name)
+    if not supported or image_size in supported:
+        return image_size
+    if image_size in _IMAGE_SIZE_ORDER:
+        wanted = _IMAGE_SIZE_ORDER.index(image_size)
+        larger = [s for s in supported if _IMAGE_SIZE_ORDER.index(s) >= wanted]
+        coerced = larger[0] if larger else supported[-1]
+    else:
+        coerced = supported[0]
+    logger.info(f"Coercing image_size '{image_size}' to '{coerced}' for {model_name}.")
+    return coerced
 
 
 class ImageService:
@@ -278,15 +304,11 @@ class ImageService:
         Generates image(s) using the Google Gemini backend.
         Automatically selects the appropriate API based on the model name.
         """
-        # gemini-3.1-flash-lite-image (Nano Banana 2 Lite) supports only 1K resolution
-        # and is not optimized for multiple reference inputs.
+        image_size = _coerce_gemini_image_size(model_name, image_size)
+
+        # gemini-3.1-flash-lite-image (Nano Banana 2 Lite) is not optimized for multiple
+        # reference inputs.
         if model_name == "gemini-3.1-flash-lite-image":
-            if image_size != "1K":
-                logger.info(
-                    f"Coercing image_size '{image_size}' to '1K' for {model_name} "
-                    "as it only supports 1K resolution."
-                )
-                image_size = "1K"
             if reference_image_urls and len(reference_image_urls) > 1:
                 logger.info(
                     f"Limiting reference images to 1 for {model_name} "
