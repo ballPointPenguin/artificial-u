@@ -1,5 +1,5 @@
 {
-  "$schema": "https://biomejs.dev/schemas/2.5.14/schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.5.15/schema.json",
   "files": {
     "includes": [
       "**/*.js",
@@ -56,9 +56,7 @@
   },
   "overrides": [
     {
-      "includes": [
-        "package.json"
-      ],
+      "includes": ["package.json"],
       "json": {
         "formatter": {
           "expand": "auto"
