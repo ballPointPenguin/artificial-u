@@ -17,7 +17,7 @@ repos:
         # additional_dependencies: [flake8-docstrings]
 
   - repo: https://github.com/psf/black
-    rev: 26.5.1
+    rev: 26.10.1
     hooks:
       - id: black
 
@@ -28,7 +28,7 @@ repos:
 
   # Syntax/parser target must match pyproject.toml [tool.ruff] (py314).
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.16.9
+    rev: v0.17.1
     hooks:
       - id: ruff-check
         args: [--config, pyproject.toml]
