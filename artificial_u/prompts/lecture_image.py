@@ -38,13 +38,14 @@ def format_lecture_slide_prompt(  # noqa: C901
     if first_slide_url:
         refs.append(first_slide_url)
         ref_roles.append(
-            "the first slide of this lecture (the outfit, hairstyle, accessories, "
-            "and classroom to reuse)"
+            "an earlier slide from this lecture (for the professor's outfit and the "
+            "general look of the classroom)"
         )
     if previous_slide_url and previous_slide_url != first_slide_url:
         refs.append(previous_slide_url)
         ref_roles.append(
-            "the previous slide (the most recent look and room to stay consistent with)"
+            "the previous slide (for continuity only; do not copy its camera angle, "
+            "framing, or pose)"
         )
     has_slide_refs = bool(first_slide_url or previous_slide_url)
 
@@ -78,7 +79,8 @@ def format_lecture_slide_prompt(  # noqa: C901
         prompt_parts.append(
             "REFERENCE IMAGES (provided in this order):\n"
             f"{listing}\n"
-            "Take the look from them, but the scene content from ACTION/SCENE below."
+            "Use them only to keep the professor and the world recognizable. "
+            "Compose a fresh shot; the scene content comes from ACTION/SCENE below."
         )
     prompt_parts += [
         (
@@ -90,9 +92,9 @@ def format_lecture_slide_prompt(  # noqa: C901
         f"SUBJECT: Professor {professor_name}{traits_str}. Specialization: {professor_specialization or 'Academic'}. "
         + (f"Appearance details: {professor_description}" if professor_description else ""),
         (
-            "SETTING: The same classroom as in the reference slides: keep the room, "
-            "furniture, windows, and color palette recognizably identical, changing only "
-            "the camera angle and what the professor is showing."
+            "SETTING: The same classroom world as the reference slides, recognizably the "
+            "same place, but it does not need to be shown from the same spot: explore "
+            "other corners, props, and views of it."
             if has_slide_refs
             else "SETTING: An idealized academic setting (e.g., a modern lab, "
             "vintage lecture hall, or cozy classroom) that feels warm, inviting, "
@@ -107,6 +109,11 @@ def format_lecture_slide_prompt(  # noqa: C901
             "like the same person as in the reference images (if provided), wearing "
             "exactly the same outfit, hairstyle, and accessories as in the reference "
             "slides (if provided).\n"
+            "- Vary the shot from slide to slide. Pick the framing that best serves this "
+            "moment: a wide room view, a low or over-the-shoulder angle, a medium shot, or "
+            "a close-up / full-frame view of the whiteboard, slide, prop, or object being "
+            "discussed (the professor can be small, partly in frame, or out of frame). "
+            "Do not reuse the previous slide's framing.\n"
             "- Keep it simple and legible: This image will be viewed on small screens "
             "at low resolution (512x512). Do NOT render complex text, dense formulas, "
             "or detailed charts in the background behind the professor. Make background "

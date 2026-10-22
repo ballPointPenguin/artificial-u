@@ -129,7 +129,7 @@ def test_lecture_slide_prompt():
     assert refs[2] == "https://example.com/prev.png"
 
 
-def test_slide_prompt_labels_references_and_requests_outfit_and_room_continuity():
+def test_slide_prompt_labels_references_and_encourages_shot_variety():
     professor = SimpleNamespace(name="Collins", specialization="Music")
     prompt, refs = format_lecture_slide_prompt(
         professor=professor,
@@ -143,10 +143,12 @@ def test_slide_prompt_labels_references_and_requests_outfit_and_room_continuity(
 
     assert refs == ["prof.png", "first.png", "prev.png"]
     assert "Image 1: the professor's portrait" in prompt
-    assert "Image 2: the first slide" in prompt
+    assert "Image 2: an earlier slide" in prompt
     assert "Image 3: the previous slide" in prompt
-    assert "SETTING: The same classroom as in the reference slides" in prompt
+    assert "SETTING: The same classroom world as the reference slides" in prompt
     assert "exactly the same outfit" in prompt
+    assert "Vary the shot" in prompt
+    assert "do not copy its camera angle" in prompt
 
 
 def test_slide_prompt_without_slide_references_keeps_open_setting():
