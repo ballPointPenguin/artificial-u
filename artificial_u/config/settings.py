@@ -152,7 +152,7 @@ class Settings(BaseSettings):
     # Course tags generation model
     TAGS_GENERATION_MODEL: str = "gpt-6-luna"
     # Image generation model
-    IMAGE_GENERATION_MODEL: str = "gemini-3.1-flash-lite-image"
+    IMAGE_GENERATION_MODEL: str = "gemini-nano-banana-2.1"
     # Lecture generation defaults
     LECTURE_WORD_COUNT: int = DEFAULT_LECTURE_WORD_COUNT
     LECTURE_IMAGE_INTERVAL_SEC: int = DEFAULT_LECTURE_IMAGE_INTERVAL_SEC

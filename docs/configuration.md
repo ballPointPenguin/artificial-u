@@ -157,7 +157,7 @@ PROFESSOR_GENERATION_MODEL=gpt-6-luna
 TOPICS_GENERATION_MODEL=gemini-3.8-flash
 
 # Image generation model (Gemini image models, gpt-image-2, or gpt-image-2.5-flare)
-IMAGE_GENERATION_MODEL=gemini-3.1-flash-lite-image
+IMAGE_GENERATION_MODEL=gemini-nano-banana-2.1
 
 # Text-to-speech voice model (ElevenLabs)
 # Must be supported by the selected voice's verified languages
@@ -179,7 +179,8 @@ It uses Gemini 3's `thinking_level` control (`low`, `medium`, or `high`); the
 `minimal` level is not supported. Gemini 3.8 rejects sampling parameters, so
 ArtificialU omits temperature, top-p, and top-k from its requests.
 
-For image generation, `gemini-3.1-flash-lite-image` remains the default. The
+For image generation, `gemini-nano-banana-2.1` is the default (it falls back to
+`gemini-3.1-flash-lite-image` if it fails). The
 supported OpenAI alternatives are `gpt-image-2` and `gpt-image-2.5-flare`, the
 fast GPT Image 2.5 model. Both use OpenAI's Image API and return base64 image
 data. `imagen-*` and GPT Image 1.x model identifiers are no longer supported.

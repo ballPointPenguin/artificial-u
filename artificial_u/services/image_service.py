@@ -681,7 +681,7 @@ class ImageService:
                     "desc": "fallback to gemini-3.1-flash-image, sanitized text",
                 }
             )
-        elif primary_model == "gemini-3.1-flash-image":
+        elif primary_model in {"gemini-3.1-flash-image", "gemini-nano-banana-2.1"}:
             attempts.append(
                 {
                     "model_name": "gemini-3.1-flash-lite-image",
@@ -786,7 +786,7 @@ class ImageService:
                     "desc": "fallback to gemini-3.1-flash-image, sanitized text",
                 }
             )
-        elif primary_model == "gemini-3.1-flash-image":
+        elif primary_model in {"gemini-3.1-flash-image", "gemini-nano-banana-2.1"}:
             attempts.append(
                 {
                     "model_name": "gemini-3.1-flash-lite-image",
@@ -935,7 +935,7 @@ class ImageService:
                     "desc": "fallback to gemini-3.1-flash-image, no references, sanitized text",
                 }
             )
-        elif primary_model == "gemini-3.1-flash-image":
+        elif primary_model in {"gemini-3.1-flash-image", "gemini-nano-banana-2.1"}:
             # Attempt 5: Try lite model as fallback (different safety constraints/capacity)
             attempts.append(
                 {
