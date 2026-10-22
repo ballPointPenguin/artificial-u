@@ -41,6 +41,7 @@ async def test_generate_and_set_course_image_updates_course(monkeypatch):
     professor_service = MagicMock()
 
     image_service = MagicMock()
+    image_service.model_name = "gemini-test"
     image_service.generate_course_image = AsyncMock(
         return_value=ImageGenerationResult(success=True, image_keys=["abc.png"])
     )

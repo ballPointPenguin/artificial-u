@@ -22,6 +22,7 @@ from artificial_u.services import (
     TTSService,
     VoiceService,
 )
+from artificial_u.services.preference_service import PreferenceService
 from artificial_u.utils import ConfigurationError
 
 
@@ -198,7 +199,10 @@ class UniversitySystem:
         )
 
         # Initialize ImageService
-        self.image_service = ImageService(storage_service=self.storage_service)
+        self.image_service = ImageService(
+            storage_service=self.storage_service,
+            preference_service=PreferenceService(self.repository_factory),
+        )
 
         # Initialize TTS service
         self.tts_service = TTSService(

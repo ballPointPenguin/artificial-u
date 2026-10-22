@@ -171,17 +171,16 @@ class ProfessorGeneratorService:
 
         # Update the professor record with the new image URL and model used
         try:
-            settings = get_settings()
+            model_name = self.image_service.model_name
             updated_professor = self.professor_service.update_professor(
                 professor_id=professor_id,
                 attributes={
                     "image_url": image_url,
-                    "image_created_with": settings.IMAGE_GENERATION_MODEL,
+                    "image_created_with": model_name,
                 },
             )
             self.logger.info(
-                f"Professor {professor_id} updated with new image URL "
-                f"(model: {settings.IMAGE_GENERATION_MODEL})."
+                f"Professor {professor_id} updated with new image URL " f"(model: {model_name})."
             )
             return updated_professor
         except Exception as e:

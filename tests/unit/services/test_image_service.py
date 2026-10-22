@@ -4,11 +4,18 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
+from artificial_u.config import get_settings
 from artificial_u.services.image_service import (
     ImageGenerationResult,
     ImageService,
     _sanitize_safety_keywords,
 )
+
+
+@pytest.fixture(autouse=True)
+def lite_image_model(monkeypatch):
+    """Pin the Nano Banana 2 Lite chain; the nano-banana-2.1 chain has its own tests below."""
+    monkeypatch.setattr(get_settings(), "IMAGE_GENERATION_MODEL", "gemini-3.1-flash-lite-image")
 
 
 class MockProfessor:
@@ -45,6 +52,7 @@ def test_sanitize_safety_keywords():
 @pytest.mark.parametrize(
     "model_name,backend",
     [
+        ("gemini-nano-banana-2.1", "gemini"),
         ("gemini-3.1-flash-lite-image", "gemini"),
         ("gpt-image-2", "openai"),
         ("gpt-image-2.5-flare", "openai"),
@@ -440,3 +448,72 @@ async def test_generate_professor_image_returns_last_failure_when_all_attempts_f
         "gemini-3.1-flash-lite-image",
         "gemini-3.1-flash-image",
     ]
+
+
+def test_default_image_model_is_nano_banana_2_1():
+    from artificial_u.config.settings import Settings
+
+    assert Settings.model_fields["IMAGE_GENERATION_MODEL"].default == "gemini-nano-banana-2.1"
+
+
+@pytest.mark.asyncio
+async def test_generate_course_image_nano_banana_2_1_falls_back_to_lite(monkeypatch):
+    """nano-banana-2.1 retries itself (original + sanitized), then the Lite model."""
+    monkeypatch.setattr(get_settings(), "IMAGE_GENERATION_MODEL", "gemini-nano-banana-2.1")
+    storage_service = MagicMock()
+    storage_service.images_bucket = "images"
+
+    image_service = ImageService(storage_service=storage_service)
+    monkeypatch.setattr(image_service.settings, "OPENAI_API_KEY", None)
+
+    failing_result = ImageGenerationResult(
+        success=False, error=MagicMock(error_type=MagicMock(value="backend_unavailable"))
+    )
+    mock_generate_image = AsyncMock(return_value=failing_result)
+    monkeypatch.setattr(image_service, "generate_image", mock_generate_image)
+
+    course = MockCourse(id=103, code="HIST204", title="A Course", description="d", level="Grad")
+    await image_service.generate_course_image(course=course, aspect_ratio="1:1")
+
+    models_used = [
+        call.kwargs["model_name_override"] for call in mock_generate_image.call_args_list
+    ]
+    assert models_used == [
+        "gemini-nano-banana-2.1",
+        "gemini-nano-banana-2.1",
+        "gemini-3.1-flash-lite-image",
+    ]
+
+
+@pytest.mark.parametrize(
+    "model_name,requested,expected",
+    [
+        ("gemini-3.1-flash-image", "512", "512"),
+        ("gemini-3.1-flash-lite-image", "512", "1K"),
+        ("gemini-3.1-flash-lite-image", "2K", "1K"),
+        ("gemini-nano-banana-2.1", "512", "1K"),
+        ("gemini-nano-banana-2.1", "2K", "2K"),
+        ("gemini-3-pro-image", "512", "1K"),
+    ],
+)
+def test_coerce_gemini_image_size(model_name, requested, expected):
+    from artificial_u.services.image_service import _coerce_gemini_image_size
+
+    assert _coerce_gemini_image_size(model_name, requested) == expected
+
+
+def test_model_name_uses_global_preference_when_set(monkeypatch):
+    from artificial_u.services.preference_service import PreferenceService
+
+    factory = MagicMock()
+    factory.preference.get.return_value = None
+    factory.preference.get_global.return_value = MagicMock(value="gemini-3.1-flash-image")
+    service = ImageService(
+        storage_service=MagicMock(), preference_service=PreferenceService(factory)
+    )
+
+    assert service.model_name == "gemini-3.1-flash-image"
+    assert service.backend == "gemini"
+
+    factory.preference.get_global.return_value = None
+    assert service.model_name == get_settings().IMAGE_GENERATION_MODEL

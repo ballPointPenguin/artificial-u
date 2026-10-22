@@ -28,14 +28,26 @@ def format_lecture_slide_prompt(  # noqa: C901
     professor_gender = getattr(professor, "gender", None)
     professor_age = getattr(professor, "age", None)
 
-    # Reference image URLs (multimodal context) - keep order stable.
+    # Reference image URLs (multimodal context) - keep order stable. The model receives the
+    # images in this order, so each one is described by position in REFERENCE IMAGES below.
     refs: List[str] = []
+    ref_roles: List[str] = []
     if professor_image_url:
         refs.append(professor_image_url)
+        ref_roles.append("the professor's portrait (face, hair, build, and signature look)")
     if first_slide_url:
         refs.append(first_slide_url)
+        ref_roles.append(
+            "an earlier slide from this lecture (for the professor's outfit and the "
+            "general look of the classroom)"
+        )
     if previous_slide_url and previous_slide_url != first_slide_url:
         refs.append(previous_slide_url)
+        ref_roles.append(
+            "the previous slide (for continuity only; do not copy its camera angle, "
+            "framing, or pose)"
+        )
+    has_slide_refs = bool(first_slide_url or previous_slide_url)
 
     # Truncate texts to prevent prompt bloat and keep generation fast and focused
     def clean_and_truncate(text: Optional[str], max_chars: int) -> str:
@@ -61,7 +73,16 @@ def format_lecture_slide_prompt(  # noqa: C901
     traits_str = f" ({', '.join(traits)})" if traits else ""
 
     # Structure prompt following the Gemini DeepMind guide (Style, Subject, Setting, Action, Composition)
-    prompt_parts = [
+    prompt_parts = []
+    if ref_roles:
+        listing = "\n".join(f"- Image {i}: {role}" for i, role in enumerate(ref_roles, 1))
+        prompt_parts.append(
+            "REFERENCE IMAGES (provided in this order):\n"
+            f"{listing}\n"
+            "Use them only to keep the professor and the world recognizable. "
+            "Compose a fresh shot; the scene content comes from ACTION/SCENE below."
+        )
+    prompt_parts += [
         (
             "STYLE: Semi-realistic, highly polished digital illustration. "
             "Smooth textures, vivid saturated colors, illustrative digital art style "
@@ -71,7 +92,11 @@ def format_lecture_slide_prompt(  # noqa: C901
         f"SUBJECT: Professor {professor_name}{traits_str}. Specialization: {professor_specialization or 'Academic'}. "
         + (f"Appearance details: {professor_description}" if professor_description else ""),
         (
-            "SETTING: An idealized academic setting (e.g., a modern lab, "
+            "SETTING: The same classroom world as the reference slides, recognizably the "
+            "same place, but it does not need to be shown from the same spot: explore "
+            "other corners, props, and views of it."
+            if has_slide_refs
+            else "SETTING: An idealized academic setting (e.g., a modern lab, "
             "vintage lecture hall, or cozy classroom) that feels warm, inviting, "
             "and slightly magical."
         ),
@@ -81,7 +106,14 @@ def format_lecture_slide_prompt(  # noqa: C901
         (
             "COMPOSITION GUIDANCE:\n"
             "- Maintain strong visual continuity. The professor should look "
-            "like the same person as in the reference images (if provided).\n"
+            "like the same person as in the reference images (if provided), wearing "
+            "exactly the same outfit, hairstyle, and accessories as in the reference "
+            "slides (if provided).\n"
+            "- Vary the shot from slide to slide. Pick the framing that best serves this "
+            "moment: a wide room view, a low or over-the-shoulder angle, a medium shot, or "
+            "a close-up / full-frame view of the whiteboard, slide, prop, or object being "
+            "discussed (the professor can be small, partly in frame, or out of frame). "
+            "Do not reuse the previous slide's framing.\n"
             "- Keep it simple and legible: This image will be viewed on small screens "
             "at low resolution (512x512). Do NOT render complex text, dense formulas, "
             "or detailed charts in the background behind the professor. Make background "

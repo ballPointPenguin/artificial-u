@@ -190,5 +190,6 @@ export const ENDPOINTS = {
     deleteGlobal: (scope: string) => `/v1/preferences/global/${encodeURIComponent(scope)}`,
     lectureGenerationModel: '/v1/preferences/models/lecture-generation',
     topicsGenerationModel: '/v1/preferences/models/topics-generation',
+    imageGenerationModel: '/v1/preferences/models/image-generation',
   },
 }

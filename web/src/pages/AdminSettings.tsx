@@ -21,11 +21,22 @@ const SUGGESTED_MODELS = [
   'grok-4.7',
 ]
 
+/** Image generation models shown as quick picks (Gemini image models and GPT Image). */
+const SUGGESTED_IMAGE_MODELS = [
+  'gemini-nano-banana-2.1',
+  'gemini-3.1-flash-image',
+  'gemini-3.1-flash-lite-image',
+  'gemini-3-pro-image',
+  'gpt-image-2.5-flare',
+  'gpt-image-2',
+]
+
 /** One admin-wide model preference: shows the current model, quick picks, save and reset. */
 function ModelSettingCard(props: {
   title: string
   description: string
   scope: string
+  suggestions?: string[]
   load: () => Promise<ModelSettingResponse>
   setSuccess: (message: string | null) => void
   setError: (message: string | null) => void
@@ -153,7 +164,7 @@ function ModelSettingCard(props: {
         <div>
           <p class="text-muted mb-2 text-xs font-medium">Quick suggestions:</p>
           <div class="flex flex-wrap gap-2">
-            <For each={SUGGESTED_MODELS}>
+            <For each={props.suggestions ?? SUGGESTED_MODELS}>
               {(model) => (
                 <button
                   type="button"
@@ -348,6 +359,16 @@ export default function AdminSettings() {
         description="Set the AI model used for generating course topics."
         scope="TOPICS_GENERATION_MODEL"
         load={preferenceService.getTopicsGenerationModel}
+        setSuccess={setSuccessMessage}
+        setError={setErrorMessage}
+      />
+
+      <ModelSettingCard
+        title="Image Generation Model"
+        description="Set the AI model used for course, professor, and lecture slide images."
+        scope="IMAGE_GENERATION_MODEL"
+        suggestions={SUGGESTED_IMAGE_MODELS}
+        load={preferenceService.getImageGenerationModel}
         setSuccess={setSuccessMessage}
         setError={setErrorMessage}
       />
