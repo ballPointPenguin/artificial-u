@@ -500,3 +500,20 @@ def test_coerce_gemini_image_size(model_name, requested, expected):
     from artificial_u.services.image_service import _coerce_gemini_image_size
 
     assert _coerce_gemini_image_size(model_name, requested) == expected
+
+
+def test_model_name_uses_global_preference_when_set(monkeypatch):
+    from artificial_u.services.preference_service import PreferenceService
+
+    factory = MagicMock()
+    factory.preference.get.return_value = None
+    factory.preference.get_global.return_value = MagicMock(value="gemini-3.1-flash-image")
+    service = ImageService(
+        storage_service=MagicMock(), preference_service=PreferenceService(factory)
+    )
+
+    assert service.model_name == "gemini-3.1-flash-image"
+    assert service.backend == "gemini"
+
+    factory.preference.get_global.return_value = None
+    assert service.model_name == get_settings().IMAGE_GENERATION_MODEL

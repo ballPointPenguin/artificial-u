@@ -207,3 +207,27 @@ def get_topics_generation_model(
     source = "preference" if pref else "environment"
 
     return ModelSettingResponse(model=model, source=source)
+
+
+@router.get(
+    "/models/image-generation",
+    response_model=ModelSettingResponse,
+    summary="Get image generation model",
+    description="Get the currently configured image generation model.",
+    dependencies=[Depends(require_auth)],
+)
+def get_image_generation_model(
+    repository_factory: RepositoryFactory = Depends(get_repository_factory),
+):
+    """
+    Get the image generation model setting.
+
+    Image models are global (not per-student). Returns the model name and the
+    source (preference or environment).
+    """
+    pref_service = PreferenceService(repository_factory)
+    model = pref_service.get_image_generation_model()
+    pref = repository_factory.preference.get_global(PreferenceService.IMAGE_GENERATION_MODEL)
+    source = "preference" if pref else "environment"
+
+    return ModelSettingResponse(model=model, source=source)

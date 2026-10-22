@@ -185,6 +185,10 @@ supported OpenAI alternatives are `gpt-image-2` and `gpt-image-2.5-flare`, the
 fast GPT Image 2.5 model. Both use OpenAI's Image API and return base64 image
 data. `imagen-*` and GPT Image 1.x model identifiers are no longer supported.
 
+Admins can override the image model without a redeploy from the admin Settings page
+(global `IMAGE_GENERATION_MODEL` preference); it takes precedence over the environment
+value.
+
 ### Anthropic (Claude) Model Version Compatibility
 
 `ContentService` inspects the Claude model name (e.g. `claude-sonnet-4-6`,

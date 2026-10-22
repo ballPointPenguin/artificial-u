@@ -3,7 +3,7 @@ import logging
 import uuid
 from datetime import datetime
 from enum import Enum
-from typing import Any, Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 
 import httpx  # Added httpx import
 import openai  # Added openai import
@@ -25,6 +25,9 @@ from artificial_u.prompts.professor_image import format_professor_image_prompt
 from artificial_u.services.http_client import get_shared_async_client
 from artificial_u.services.storage_service import StorageService
 from artificial_u.utils.text_sanitize import sanitize_safety_keywords as _sanitize_safety_keywords
+
+if TYPE_CHECKING:
+    from artificial_u.services.preference_service import PreferenceService
 
 logger = logging.getLogger(__name__)
 
@@ -124,26 +127,34 @@ class ImageService:
         self,
         storage_service: StorageService,
         http_client: Optional[httpx.AsyncClient] = None,
+        preference_service: Optional["PreferenceService"] = None,
     ):
         """
         Initialize the image generation service.
 
         Args:
             storage_service: The storage service for persisting generated images
+            preference_service: Optional; when given, the admin-set global image model
+                preference overrides the IMAGE_GENERATION_MODEL environment setting
         """
         self.storage_service = storage_service
         self.http_client = http_client or get_shared_async_client()
 
-        # Get model name and determine backend from settings
         from artificial_u.config import get_settings
 
         self.settings = get_settings()
-        self.model_name = self.settings.IMAGE_GENERATION_MODEL
-        self.backend = self._determine_backend(self.model_name)
+        self.preference_service = preference_service
 
-        logger.info(
-            f"ImageService initialized with model: {self.model_name} (backend: {self.backend})"
-        )
+    @property
+    def model_name(self) -> str:
+        """Effective default model: admin preference if set, else the environment setting."""
+        if self.preference_service is not None:
+            return self.preference_service.get_image_generation_model()
+        return self.settings.IMAGE_GENERATION_MODEL
+
+    @property
+    def backend(self) -> str:
+        return self._determine_backend(self.model_name)
 
     def _determine_backend(self, model_name: str) -> str:
         """Determine the backend based on the model name."""

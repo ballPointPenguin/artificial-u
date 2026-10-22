@@ -41,6 +41,7 @@ from artificial_u.services import (
 )
 from artificial_u.services.http_client import get_shared_async_client
 from artificial_u.services.job_enqueue_service import JobEnqueueService
+from artificial_u.services.preference_service import PreferenceService
 
 logger = logging.getLogger(__name__)
 
@@ -210,6 +211,7 @@ def get_image_service(
     return ImageService(
         storage_service=storage_service,
         http_client=http_client,
+        preference_service=PreferenceService(get_repository_factory()),
     )
 
 

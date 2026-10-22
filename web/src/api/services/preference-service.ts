@@ -62,4 +62,10 @@ export const preferenceService = {
   getTopicsGenerationModel: (): Promise<ModelSettingResponse> => {
     return httpClient.get<ModelSettingResponse>(ENDPOINTS.preferences.topicsGenerationModel)
   },
+  /**
+   * Get the current image generation model
+   */
+  getImageGenerationModel: (): Promise<ModelSettingResponse> => {
+    return httpClient.get<ModelSettingResponse>(ENDPOINTS.preferences.imageGenerationModel)
+  },
 }

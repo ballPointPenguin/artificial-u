@@ -422,18 +422,16 @@ class CourseGeneratorService:
         image_key = self._validate_course_image_result(result, course_id)
         image_url = self._get_course_image_url_from_key(image_key, course_id)
 
-        settings = get_settings()
+        model_name = self.image_service.model_name
         try:
             updated = self.course_service.update_course(
                 course_id,
                 {
                     "image_url": image_url,
-                    "image_created_with": settings.IMAGE_GENERATION_MODEL,
+                    "image_created_with": model_name,
                 },
             )
-            self.logger.info(
-                f"Course {course_id} updated with album art (model: {settings.IMAGE_GENERATION_MODEL})."
-            )
+            self.logger.info(f"Course {course_id} updated with album art (model: {model_name}).")
             return updated
         except Exception as e:
             self.logger.error(f"Failed to update course {course_id} with image URL: {e}")

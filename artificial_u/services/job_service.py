@@ -697,9 +697,11 @@ class JobService:
     def _image_service_instance(self):
         if self._image_service is None:
             from artificial_u.services.image_service import ImageService
+            from artificial_u.services.preference_service import PreferenceService
 
             self._image_service = ImageService(
                 storage_service=self._storage_service_instance(),
+                preference_service=PreferenceService(self.repository_factory),
             )
         return self._image_service
 

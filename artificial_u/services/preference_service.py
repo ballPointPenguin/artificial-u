@@ -18,6 +18,7 @@ class PreferenceService:
     # Preference scope constants
     LECTURE_GENERATION_MODEL = "LECTURE_GENERATION_MODEL"
     TOPICS_GENERATION_MODEL = "TOPICS_GENERATION_MODEL"
+    IMAGE_GENERATION_MODEL = "IMAGE_GENERATION_MODEL"
 
     def __init__(
         self,
@@ -157,3 +158,18 @@ class PreferenceService:
         model = self.settings.TOPICS_GENERATION_MODEL
         self.logger.info(f"Using environment-configured topics model: {model}")
         return model
+
+    def get_image_generation_model(self) -> str:
+        """
+        Get the image generation model to use.
+
+        Images are generated per lecture/course/professor, not per student, so only
+        the global preference is consulted before falling back to the environment setting.
+
+        Returns:
+            The model name to use for image generation
+        """
+        model = self.get_global_preference(self.IMAGE_GENERATION_MODEL)
+        if model:
+            return model
+        return self.settings.IMAGE_GENERATION_MODEL
