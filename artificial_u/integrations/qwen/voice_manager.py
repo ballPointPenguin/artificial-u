@@ -1,233 +1,209 @@
 """
 Qwen (Alibaba) voice manager.
 
-Alibaba Model Studio exposes no voice-list API for the qwen-audio-3.0-tts
-models, so the preset catalog is maintained here as a static list, taken from
+Alibaba Model Studio exposes no voice-list API for qwen-audio-3.1-tts-flash, so
+the system-voice catalog is maintained here as a static list, taken from
 https://www.alibabacloud.com/help/en/model-studio/qwen-audio-tts-voice-list
 
-The catalog has two kinds of entries:
-  * System voices — first-class voices whose ``voice`` parameter is a plain id
-    (e.g. ``longanlingxin``) tied to one model (plus or flash).
-  * Base voices — pre-generated cloned voices whose ``voice`` parameter is the
-    full model-prefixed name (e.g. ``qwen-audio-3.0-tts-plus-longyinghaikai``).
-    Alibaba publishes 1000+ of these; only a representative subset is listed
-    here. The same suffix works in both plus and flash; we standardize on plus.
-
-Child voices (age < 18) are intentionally omitted (Longjie Lidou, Long Paopao,
-Long Huohuo, and the young base voices). Base voices are Chinese (Mandarin)
-only, which is useful for Chinese-language content.
+Only voices that work in the Singapore region are listed; each was verified
+against the live API. The docs also list ~45 Mandarin-only and extra voices
+(e.g. ``yuxiaoyun_v3.1``, ``longanyang_v3.1``) that are China (Beijing) only and
+fail in Singapore ("Engine error [411]"). Child voices are intentionally omitted.
 """
 
 import logging
 from typing import Any, Dict, List, Optional
 
-FLASH_MODEL = "qwen-audio-3.0-tts-flash"
-PLUS_MODEL = "qwen-audio-3.0-tts-plus"
+from artificial_u.config.defaults import DEFAULT_QWEN_TTS_MODEL
+
+DEFAULT_VOICE_ID = "Brian_v3.1"
 
 QWEN_VOICES: List[Dict[str, Any]] = [
-    # ---- System voices: qwen-audio-3.0-tts-plus (flagship) ----
     {
-        "id": "longanlingxin",
-        "name": "Longan Lingxin",
+        "id": "longanhuan_v3.1",
+        "name": "Long An Huan",
         "gender": "female",
-        "description": "Warm and empathetic",
-        "languages": ["zh", "en"],
-        "model": PLUS_MODEL,
+        "description": "Multilingual with Chinese dialects",
+        "languages": ["zh", "en", "ja", "ko", "fr", "de", "pt", "it", "vi", "id"],
+        "accent": None,
+        "model": DEFAULT_QWEN_TTS_MODEL,
     },
     {
-        "id": "longanlufeng",
-        "name": "Longan Lufeng",
+        "id": "longanlingxin_v3.1",
+        "name": "Long An Lingxin",
+        "gender": "female",
+        "description": "Multilingual with Chinese dialects",
+        "languages": ["zh", "en", "ja", "ko", "fr", "de", "pt", "it", "vi", "id"],
+        "accent": None,
+        "model": DEFAULT_QWEN_TTS_MODEL,
+    },
+    {
+        "id": "longanfengyue_v3.1",
+        "name": "Long An Fengyue",
+        "gender": "female",
+        "description": "Multilingual with Chinese dialects",
+        "languages": ["zh", "en", "ja", "ko", "fr", "de", "pt", "it", "vi", "id"],
+        "accent": None,
+        "model": DEFAULT_QWEN_TTS_MODEL,
+    },
+    {
+        "id": "xunanchuan_v3.1",
+        "name": "Xu Nanchuan",
         "gender": "male",
-        "description": "Bright and cheerful",
-        "languages": ["zh", "en"],
-        "model": PLUS_MODEL,
+        "description": "Multilingual with Chinese dialects",
+        "languages": ["zh", "en", "ja", "ko", "fr", "de", "pt", "it", "vi", "id"],
+        "accent": None,
+        "model": DEFAULT_QWEN_TTS_MODEL,
     },
-    # ---- System voices: qwen-audio-3.0-tts-flash ----
-    # Native-English voices
     {
-        "id": "loongmary",
-        "name": "Mary",
+        "id": "Emily_v3.1",
+        "name": "Emily",
         "gender": "female",
-        "description": "Warm British accent",
+        "description": "British English",
         "languages": ["en"],
-        "model": FLASH_MODEL,
+        "accent": "British",
+        "model": DEFAULT_QWEN_TTS_MODEL,
     },
     {
-        "id": "loongeva_v3.6",
-        "name": "Eva",
+        "id": "Luna_v3.1",
+        "name": "Luna",
         "gender": "female",
-        "description": "Intelligent and elegant",
+        "description": "British English",
         "languages": ["en"],
-        "model": FLASH_MODEL,
+        "accent": "British",
+        "model": DEFAULT_QWEN_TTS_MODEL,
     },
     {
-        "id": "loongjohn",
-        "name": "John",
+        "id": "Eric_v3.1",
+        "name": "Eric",
         "gender": "male",
-        "description": "Calm and friendly American accent",
+        "description": "British English",
         "languages": ["en"],
-        "model": FLASH_MODEL,
-    },
-    # Bilingual Mandarin+English voices
-    {
-        "id": "longanfengyue",
-        "name": "Longan Fengyue",
-        "gender": "female",
-        "description": "Natural and friendly",
-        "languages": ["zh", "en"],
-        "model": FLASH_MODEL,
+        "accent": "British",
+        "model": DEFAULT_QWEN_TTS_MODEL,
     },
     {
-        "id": "longanyuanfei",
-        "name": "Longan Yuanfei",
-        "gender": "female",
-        "description": "Proud and regal",
-        "languages": ["zh", "en"],
-        "model": FLASH_MODEL,
-    },
-    {
-        "id": "longanlingxi",
-        "name": "Longan Lingxi",
-        "gender": "female",
-        "description": "Cute and sweet",
-        "languages": ["zh", "en"],
-        "model": FLASH_MODEL,
-    },
-    {
-        "id": "longanxiaoxin",
-        "name": "Longan Xiaoxin",
-        "gender": "female",
-        "description": "Friendly and lively",
-        "languages": ["zh", "en"],
-        "model": FLASH_MODEL,
-    },
-    {
-        "id": "longanhuan_v3.6",
-        "name": "Longan Huan",
-        "gender": "female",
-        "description": "Gentle and soothing",
-        "languages": ["zh", "en"],
-        "model": FLASH_MODEL,
-    },
-    {
-        "id": "longchuanshu_v3.6",
-        "name": "Long Chuanshu",
+        "id": "Luca_v3.1",
+        "name": "Luca",
         "gender": "male",
-        "description": "Sichuan-dialect storyteller",
-        "languages": ["zh", "en"],
-        "model": FLASH_MODEL,
+        "description": "British English",
+        "languages": ["en"],
+        "accent": "British",
+        "model": DEFAULT_QWEN_TTS_MODEL,
     },
-    # ---- Base (cloned) voices: Mandarin only, plus-tier ----
     {
-        "id": "qwen-audio-3.0-tts-plus-longyinghaikai",
-        "name": "Long Ying Hai Kai",
+        "id": "Abby_v3.1",
+        "name": "Abby",
         "gender": "female",
-        "description": "Positive and upbeat",
-        "languages": ["zh"],
-        "model": PLUS_MODEL,
+        "description": "American English",
+        "languages": ["en"],
+        "accent": "American",
+        "model": DEFAULT_QWEN_TTS_MODEL,
     },
     {
-        "id": "qwen-audio-3.0-tts-plus-longyinghaixuan",
-        "name": "Long Ying Hai Xuan",
+        "id": "Annie_v3.1",
+        "name": "Annie",
         "gender": "female",
-        "description": "Capable and composed",
-        "languages": ["zh"],
-        "model": PLUS_MODEL,
+        "description": "American English",
+        "languages": ["en"],
+        "accent": "American",
+        "model": DEFAULT_QWEN_TTS_MODEL,
     },
     {
-        "id": "qwen-audio-3.0-tts-plus-longyingjingdong",
-        "name": "Long Ying Jing Dong",
+        "id": "Ava_v3.1",
+        "name": "Ava",
         "gender": "female",
-        "description": "Composed and professional",
-        "languages": ["zh"],
-        "model": PLUS_MODEL,
+        "description": "American English",
+        "languages": ["en"],
+        "accent": "American",
+        "model": DEFAULT_QWEN_TTS_MODEL,
     },
     {
-        "id": "qwen-audio-3.0-tts-plus-longyinghaizhe",
-        "name": "Long Ying Hai Zhe",
+        "id": "Beth_v3.1",
+        "name": "Beth",
+        "gender": "female",
+        "description": "American English",
+        "languages": ["en"],
+        "accent": "American",
+        "model": DEFAULT_QWEN_TTS_MODEL,
+    },
+    {
+        "id": "Betty_v3.1",
+        "name": "Betty",
+        "gender": "female",
+        "description": "American English",
+        "languages": ["en"],
+        "accent": "American",
+        "model": DEFAULT_QWEN_TTS_MODEL,
+    },
+    {
+        "id": "Cally_v3.1",
+        "name": "Cally",
+        "gender": "female",
+        "description": "American English",
+        "languages": ["en"],
+        "accent": "American",
+        "model": DEFAULT_QWEN_TTS_MODEL,
+    },
+    {
+        "id": "Cindy_v3.1",
+        "name": "Cindy",
+        "gender": "female",
+        "description": "American English",
+        "languages": ["en"],
+        "accent": "American",
+        "model": DEFAULT_QWEN_TTS_MODEL,
+    },
+    {
+        "id": "Donna_v3.1",
+        "name": "Donna",
+        "gender": "female",
+        "description": "American English",
+        "languages": ["en"],
+        "accent": "American",
+        "model": DEFAULT_QWEN_TTS_MODEL,
+    },
+    {
+        "id": "Andy_v3.1",
+        "name": "Andy",
         "gender": "male",
-        "description": "Firm and persuasive",
-        "languages": ["zh"],
-        "model": PLUS_MODEL,
+        "description": "American English",
+        "languages": ["en"],
+        "accent": "American",
+        "model": DEFAULT_QWEN_TTS_MODEL,
     },
     {
-        "id": "qwen-audio-3.0-tts-plus-longyingjinhao",
-        "name": "Long Ying Jin Hao",
-        "gender": "female",
-        "description": "Approachable and reliable",
-        "languages": ["zh"],
-        "model": PLUS_MODEL,
-    },
-    {
-        "id": "qwen-audio-3.0-tts-plus-longluanxuanling",
-        "name": "Long Luan Xuan Ling",
-        "gender": "female",
-        "description": "Gentle older-sister voice",
-        "languages": ["zh"],
-        "model": PLUS_MODEL,
-    },
-    {
-        "id": "qwen-audio-3.0-tts-plus-longhexiaoxuan",
-        "name": "Long He Xiao Xuan",
+        "id": "Brian_v3.1",
+        "name": "Brian",
         "gender": "male",
-        "description": "Refined and scholarly",
-        "languages": ["zh"],
-        "model": PLUS_MODEL,
+        "description": "American English",
+        "languages": ["en"],
+        "accent": "American",
+        "model": DEFAULT_QWEN_TTS_MODEL,
     },
     {
-        "id": "qwen-audio-3.0-tts-plus-longsonglinwang",
-        "name": "Long Song Lin Wang",
+        "id": "David_v3.1",
+        "name": "David",
         "gender": "male",
-        "description": "Warm and magnetic",
-        "languages": ["zh"],
-        "model": PLUS_MODEL,
-    },
-    {
-        "id": "qwen-audio-3.0-tts-plus-longhuiluling",
-        "name": "Long Hui Lu Ling",
-        "gender": "female",
-        "description": "Gentle and caring",
-        "languages": ["zh"],
-        "model": PLUS_MODEL,
-    },
-    {
-        "id": "qwen-audio-3.0-tts-plus-longshuojizhu",
-        "name": "Long Shuo Ji Zhu",
-        "gender": "male",
-        "description": "Standard broadcasting voice",
-        "languages": ["zh"],
-        "model": PLUS_MODEL,
-    },
-    {
-        "id": "qwen-audio-3.0-tts-plus-longyufengmo",
-        "name": "Long Yu Feng Mo",
-        "gender": "female",
-        "description": "Gentle and resilient",
-        "languages": ["zh"],
-        "model": PLUS_MODEL,
+        "description": "American English",
+        "languages": ["en"],
+        "accent": "American",
+        "model": DEFAULT_QWEN_TTS_MODEL,
     },
 ]
 
 
-def model_for_voice(voice_id: str) -> Optional[str]:
-    """Return the qwen-audio model a preset voice belongs to, or None if unknown."""
-    for voice in QWEN_VOICES:
-        if voice["id"] == voice_id:
-            return voice["model"]
-    return None
-
-
 class QwenVoiceManager:
-    """Reads the static Qwen preset voice catalog."""
+    """Reads the static Qwen voice catalog."""
 
     def __init__(self, logger: Optional[logging.Logger] = None):
         self.logger = logger or logging.getLogger(__name__)
 
     def list_voices(self) -> List[Dict[str, Any]]:
-        """List available Qwen preset voices.
+        """List available Qwen voices.
 
         Returns:
-            List of voice dicts: id, name, gender, description, languages, model.
+            List of voice dicts: id, name, gender, description, languages, accent, model.
         """
         return [dict(voice) for voice in QWEN_VOICES]
 

@@ -862,9 +862,10 @@ class VoiceService:
                     voice.name = info.get("name") or external_id
                     voice.gender = info.get("gender")
                     voice.description = info.get("description")
+                    voice.accent = info.get("accent")
                     lang_list = info.get("languages") or []
                     if lang_list:
-                        # All Qwen presets speak English; prefer it for filtering
+                        # Prefer English for filtering
                         voice.language = "en" if "en" in lang_list else str(lang_list[0])
                     voice.category = "preset"
         except Exception as e:

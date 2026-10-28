@@ -24,7 +24,7 @@ DEFAULT_ANTHROPIC_EFFORT = "medium"
 
 def _is_gpt_reasoning_model(model: str) -> bool:
     """Return whether a model supports GPT reasoning controls in Chat Completions."""
-    return bool(re.match(r"gpt-(?:5\.6|6-(?:sol|luna))(?:-|$)", model or ""))
+    return bool(re.match(r"gpt-(?:5\.6|6-(?:sol|luna)|6\.1-sol)(?:-|$)", model or ""))
 
 
 # Reasoning effort levels accepted by Grok reasoning models; anything else is not forwarded.
@@ -214,8 +214,8 @@ class ContentService:
 
         Args:
             prompt: The main text prompt for generation.
-            model: The specific model name to use (e.g., 'claude-3-7-sonnet-latest',
-            'gpt-4', 'gemini-1.5-pro'). If None, uses the default model from settings.
+            model: The specific model name to use (e.g., 'claude-sonnet-5-5',
+            'gpt-6-luna', 'gemini-3.8-flash'). If None, uses the default model from settings.
             system_prompt: An optional system prompt or instruction for the model.
             temperature: Optional temperature for sampling (model-dependent, default varies).
             max_tokens: Optional maximum number of tokens to generate
@@ -359,11 +359,11 @@ class ContentService:
     def _parse_claude_version(model: str) -> Optional[tuple[int, int]]:
         """Parse the (major, minor) version from a Claude model name.
 
-        Handles new-style names like ``claude-{tier}-{major}-{minor}[-date]``, as
+        Handles names like ``claude-{tier}-{major}-{minor}[-date]``, as
         well as bare-major names with no minor component (e.g. ``claude-sonnet-5``,
         the naming style introduced with Claude Sonnet 5), which are treated as
         ``(major, 0)``. ``claude-sonnet-5-5`` is ``(5, 5)``. Returns ``None`` for
-        old-style (``claude-3-*``) or unrecognized patterns.
+        unrecognized patterns.
         """
         match = re.match(r"claude-[a-zA-Z]+-(\d+)(?:-(\d+))?", model)
         if not match:
@@ -382,8 +382,8 @@ class ContentService:
 
     @staticmethod
     def _parse_claude_tier(model: str) -> Optional[str]:
-        """Parse the model tier (e.g. "sonnet", "opus", "haiku") from a new-style
-        Claude model name. Returns ``None`` for old-style or unrecognized patterns.
+        """Parse the model tier (e.g. "sonnet", "opus", "haiku") from a Claude
+        model name. Returns ``None`` for unrecognized patterns.
         """
         match = re.match(r"claude-([a-zA-Z]+)-\d", model)
         return match.group(1) if match else None
@@ -395,7 +395,7 @@ class ContentService:
         """
         version = self._parse_claude_version(model)
         if version is None:
-            # Old-style models (claude-3-*, etc.) and unrecognized patterns
+            # Unrecognized pattern: assume supported
             return True
         return version < (4, 6)
 
@@ -408,7 +408,7 @@ class ContentService:
         """
         version = self._parse_claude_version(model)
         if version is None:
-            # Old-style models (claude-3-*, etc.) and unrecognized patterns
+            # Unrecognized pattern: assume supported
             return True
         return version < (4, 7)
 
@@ -416,7 +416,7 @@ class ContentService:
         """Check if a Claude model accepts the ``output_config.effort`` parameter.
 
         Supported on Claude Opus 4.5+ and Sonnet 4.6+ (and thus Sonnet 5+). Older
-        models (claude-3-*, etc.) do not support it, so effort is omitted for them.
+        or unrecognized models do not support it, so effort is omitted for them.
         """
         version = self._parse_claude_version(model)
         if version is None:
@@ -585,7 +585,7 @@ class ContentService:
             self.logger.warning("Prefill parameter provided but not supported for OpenAI models")
         try:
             # Determine which parameters to use based on the model
-            newer_model_prefixes = ("gpt-5", "gpt-6", "o1-", "o3-")
+            newer_model_prefixes = ("gpt-5", "gpt-6")
             is_newer_model = any(model.startswith(prefix) for prefix in newer_model_prefixes)
 
             # Build chat messages, mapping system prompt to 'developer' for newer models
@@ -601,7 +601,7 @@ class ContentService:
             # Handle token limits
             if is_newer_model:
                 completion_params["response_format"] = {"type": "text"}
-                # For GPT-5/o1/o3 via Chat Completions, use max_completion_tokens
+                # For GPT-5/GPT-6 via Chat Completions, use max_completion_tokens
                 completion_params["max_completion_tokens"] = (
                     max_tokens if max_tokens is not None else DEFAULT_MAX_TOKENS
                 )
@@ -612,17 +612,17 @@ class ContentService:
                 )
                 self.logger.debug(f"Using max_tokens parameter for model {model}")
 
-            # GPT-5.4 nano and GPT-5.6/GPT-6 reasoning models do not accept a custom
+            # GPT-5.6/GPT-6 reasoning models do not accept a custom
             # temperature. Prompting and reasoning effort control their behavior.
-            if model == "gpt-5.4-nano" or _is_gpt_reasoning_model(model):
+            if _is_gpt_reasoning_model(model):
                 self.logger.debug(f"Skipping temperature parameter for {model} (not supported)")
             else:
                 completion_params["temperature"] = (
                     temperature if temperature is not None else DEFAULT_TEMPERATURE
                 )
 
-            # GPT-5.6 and GPT-6 Luna and Sol support reasoning effort through Chat
-            # Completions. Their documented default is medium, so only forward an
+            # GPT-5.6 and GPT-6 Luna and Sol (including GPT-6.1 Sol) support reasoning effort
+            # through Chat Completions. Their documented default is medium, so only forward an
             # explicit caller preference.
             effort = kwargs.get("effort")
             if effort and _is_gpt_reasoning_model(model):

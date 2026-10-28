@@ -15,7 +15,7 @@ from pydantic import Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from artificial_u.config.defaults import (
-    DEFAULT_ALIBABA_TTS_WSS_URL,
+    DEFAULT_ALIBABA_TTS_REGION,
     DEFAULT_CONTENT_BACKEND,
     DEFAULT_CONTENT_LOGS_PATH,
     DEFAULT_DB_MAX_OVERFLOW,
@@ -172,8 +172,10 @@ class Settings(BaseSettings):
     XAI_TTS_LANGUAGE: str = DEFAULT_XAI_TTS_LANGUAGE
     # Qwen (Alibaba Model Studio) TTS settings (used only if tts_backend="qwen")
     TTS_QWEN_MODEL: str = DEFAULT_QWEN_TTS_MODEL
-    # WebSocket endpoint; must match the region the ALIBABA_API_KEY was created in
-    ALIBABA_TTS_WSS_URL: str = DEFAULT_ALIBABA_TTS_WSS_URL
+    # Endpoint is https://{workspace}.{region}.maas.aliyuncs.com; the region must match
+    # the one the ALIBABA_API_KEY was created in
+    ALIBABA_WORKSPACE_ID: Optional[str] = None
+    ALIBABA_TTS_REGION: str = DEFAULT_ALIBABA_TTS_REGION
 
     # Coin costs for generation operations (can be tuned via environment variables)
     COIN_COST_COURSE_GENERATION: int = 1

@@ -1,40 +1,50 @@
 """
 Qwen (Alibaba) TTS client.
 
-Wraps the dashscope SDK's synchronous SpeechSynthesizer, which drives the
-qwen-audio-3.0-tts WebSocket protocol and returns complete audio bytes.
-The endpoint is region-locked to the API key (see ALIBABA_TTS_WSS_URL).
+Calls the qwen-audio-3.1-tts-flash HTTPS audio generation API with a system
+voice. The call is non-streaming: it returns JSON with a short-lived (24h)
+audio URL, which is then downloaded. The endpoint is workspace- and region-specific, and the
+ALIBABA_API_KEY must belong to the same region (e.g. Singapore, ap-southeast-1).
 """
 
 import logging
 import os
 import sys
 import time
-from typing import Optional
+from typing import Any, Optional
+
+import httpx
 
 from artificial_u.config import get_settings
-from artificial_u.integrations.qwen.voice_manager import model_for_voice
+from artificial_u.integrations.qwen.voice_manager import DEFAULT_VOICE_ID
 
 
 class QwenTTSClient:
-    """Low-level client for Alibaba Model Studio Qwen text-to-speech."""
+    """Low-level client for Alibaba Model Studio Qwen audio generation."""
 
-    DEFAULT_VOICE = "loongeva_v3.6"
+    DEFAULT_VOICE = DEFAULT_VOICE_ID
+
+    OUTPUT_FORMAT = "mp3"
+    SAMPLE_RATE = 24000
+    CHANNELS = 1
 
     MAX_RETRIES = 3
     RETRY_WAIT = 2
+    REQUEST_TIMEOUT = 180
 
     def __init__(
         self,
         api_key: Optional[str] = None,
-        wss_url: Optional[str] = None,
+        workspace_id: Optional[str] = None,
+        region: Optional[str] = None,
         logger: Optional[logging.Logger] = None,
     ):
         """Initialize the Qwen TTS client.
 
         Args:
             api_key: Alibaba Cloud API key. Falls back to ALIBABA_API_KEY env/settings.
-            wss_url: Override the Model Studio WebSocket endpoint.
+            workspace_id: Model Studio workspace ID. Falls back to ALIBABA_WORKSPACE_ID.
+            region: Region of the workspace. Falls back to ALIBABA_TTS_REGION.
             logger: Optional logger.
         """
         self.logger = logger or logging.getLogger(__name__)
@@ -50,8 +60,24 @@ class QwenTTSClient:
             else:
                 raise ValueError("Alibaba API key is required for Qwen TTS")
 
-        self.wss_url = wss_url or settings.ALIBABA_TTS_WSS_URL
+        self.workspace_id = (
+            workspace_id or os.environ.get("ALIBABA_WORKSPACE_ID") or settings.ALIBABA_WORKSPACE_ID
+        )
+        if not self.workspace_id:
+            if in_test_env:
+                self.workspace_id = "test-workspace"
+            else:
+                raise ValueError("ALIBABA_WORKSPACE_ID is required for Qwen TTS")
+
+        self.region = region or settings.ALIBABA_TTS_REGION
         self.default_model = settings.TTS_QWEN_MODEL
+
+    @property
+    def url(self) -> str:
+        return (
+            f"https://{self.workspace_id}.{self.region}.maas.aliyuncs.com"
+            "/api/v1/services/audio/tts/SpeechSynthesizer"
+        )
 
     def text_to_speech(
         self,
@@ -59,46 +85,46 @@ class QwenTTSClient:
         voice_id: str = DEFAULT_VOICE,
         model: Optional[str] = None,
     ) -> bytes:
-        """Convert text to speech via the Qwen TTS WebSocket API.
+        """Convert text to speech via the Qwen audio generation API.
 
         Args:
             text: Text to convert.
-            voice_id: Qwen preset voice id (e.g. loongeva_v3.6, loongjohn).
-            model: Model override. Defaults to the model the voice belongs to
-                (plus-tier voices need qwen-audio-3.0-tts-plus), falling back
-                to settings.TTS_QWEN_MODEL.
+            voice_id: Qwen system voice id (e.g. Brian_v3.1, Emily_v3.1).
+            model: Model override. Defaults to settings.TTS_QWEN_MODEL.
 
         Returns:
             Audio data as mp3 bytes.
         """
-        # Imported lazily so the module (and test mocks) load without the SDK
-        # opening network resources at import time.
-        import dashscope
-        from dashscope.audio.tts_v2 import AudioFormat, SpeechSynthesizer
-
-        effective_voice_id = voice_id or self.DEFAULT_VOICE
-        effective_model = model or model_for_voice(effective_voice_id) or self.default_model
-
-        # The SDK reads the key from module state; there is no per-call param.
-        dashscope.api_key = self.api_key
+        payload: dict[str, Any] = {
+            "model": model or self.default_model,
+            "input": {
+                "text": text,
+                "voice": voice_id or self.DEFAULT_VOICE,
+                "format": self.OUTPUT_FORMAT,
+                "sample_rate": self.SAMPLE_RATE,
+                "channels": self.CHANNELS,
+            },
+        }
+        headers = {"Authorization": f"Bearer {self.api_key}"}
 
         for attempt in range(self.MAX_RETRIES):
             try:
                 self.logger.debug(
                     "Qwen TTS attempt %d: model=%s, voice=%s, text_len=%d",
                     attempt + 1,
-                    effective_model,
-                    effective_voice_id,
+                    payload["model"],
+                    payload["input"]["voice"],
                     len(text),
                 )
-                # SpeechSynthesizer instances are single-use: one per call.
-                synthesizer = SpeechSynthesizer(
-                    model=effective_model,
-                    voice=effective_voice_id,
-                    format=AudioFormat.MP3_24000HZ_MONO_256KBPS,
-                    url=self.wss_url,
-                )
-                audio_data = synthesizer.call(text)
+                with httpx.Client(timeout=self.REQUEST_TIMEOUT) as http:
+                    resp = http.post(self.url, json=payload, headers=headers)
+                    self._raise_for_status(resp)
+                    audio_url = (resp.json().get("output") or {}).get("audio", {}).get("url")
+                    if not audio_url:
+                        raise RuntimeError(f"Qwen TTS response had no audio URL: {resp.text[:300]}")
+                    audio_resp = http.get(audio_url)
+                    audio_resp.raise_for_status()
+                    audio_data = audio_resp.content
 
                 if not audio_data:
                     raise RuntimeError("Qwen TTS returned no audio data")
@@ -112,12 +138,35 @@ class QwenTTSClient:
 
             except Exception as e:
                 self.logger.error("Qwen TTS error (attempt %d): %s", attempt + 1, e)
-                if attempt < self.MAX_RETRIES - 1:
-                    wait = self.RETRY_WAIT * (attempt + 1)
-                    self.logger.info("Waiting %ds before retry...", wait)
-                    time.sleep(wait)
-                    continue
-                raise
+                if not self._is_retryable(e) or attempt == self.MAX_RETRIES - 1:
+                    raise
+                wait = self.RETRY_WAIT * (attempt + 1)
+                self.logger.info("Waiting %ds before retry...", wait)
+                time.sleep(wait)
 
         # Should not reach here, but satisfy type checker
         raise RuntimeError("Qwen TTS failed after all retries")
+
+    @staticmethod
+    def _raise_for_status(resp: httpx.Response) -> None:
+        """Raise with the API's error code/message, which httpx's default hides."""
+        if resp.status_code < 400:
+            return
+        try:
+            body = resp.json()
+            detail = f"{body.get('code')}: {body.get('message')}"
+        except ValueError:
+            detail = resp.text[:300]
+        raise httpx.HTTPStatusError(
+            f"Qwen TTS HTTP {resp.status_code} ({detail})",
+            request=resp.request,
+            response=resp,
+        )
+
+    @staticmethod
+    def _is_retryable(error: Exception) -> bool:
+        """Retry transport errors, throttling, and 5xx; not auth/validation errors."""
+        if isinstance(error, httpx.HTTPStatusError):
+            status = error.response.status_code
+            return status == 429 or status >= 500
+        return isinstance(error, (httpx.TransportError, RuntimeError))

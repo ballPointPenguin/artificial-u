@@ -27,7 +27,7 @@ class QwenTTSBackend:
         api_key = api_key or getattr(settings, "ALIBABA_API_KEY", None)
         self._client = client or QwenTTSClient(
             api_key=api_key,
-            wss_url=getattr(settings, "ALIBABA_TTS_WSS_URL", None),
+            workspace_id=getattr(settings, "ALIBABA_WORKSPACE_ID", None),
             logger=self.logger,
         )
 
@@ -49,17 +49,15 @@ class QwenTTSBackend:
 
         Args:
             text: Text to convert.
-            voice_id: Qwen preset voice id (e.g. loongeva_v3.6, loongjohn).
+            voice_id: Qwen system voice id (e.g. Brian_v3.1, Emily_v3.1).
             **kwargs: Optional overrides:
-                - model: qwen-audio TTS model id (defaults to the voice's model).
+                - model: qwen-audio TTS model id (defaults to settings.TTS_QWEN_MODEL).
 
         Returns:
             Audio data as bytes.
         """
-        effective_voice_id = voice_id or self.DEFAULT_VOICE
-
         return self._client.text_to_speech(
             text=text,
-            voice_id=effective_voice_id,
+            voice_id=voice_id or self.DEFAULT_VOICE,
             model=kwargs.get("model"),
         )

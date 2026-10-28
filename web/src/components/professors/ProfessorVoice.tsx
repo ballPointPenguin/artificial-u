@@ -227,7 +227,7 @@ const QwenVoiceCard: Component<{
     }
     return items
   })
-  // Model tier badge (e.g. "flash" / "plus" from qwen-audio-3.0-tts-flash)
+  // Model tier badge (e.g. "flash" from qwen-audio-3.1-tts-flash)
   const tier = createMemo(() => {
     const model = props.voice.model
     if (!model) return null

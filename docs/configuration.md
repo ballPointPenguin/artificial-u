@@ -55,7 +55,7 @@ ArtificialU supports multiple backends for content generation:
 content_backend=anthropic
 
 # Model to use with the chosen backend
-content_model=claude-3-7-sonnet-latest
+content_model=claude-sonnet-5-5
 ```
 
 ## Storage Configuration
@@ -173,6 +173,11 @@ support the Chat Completions and Responses APIs; ArtificialU uses Chat Completio
 for text generation. When calling `ContentService.generate_text()` directly, pass
 `effort` (`none`, `low`, `medium`, `high`, `xhigh`, or `max`) to set GPT-6 reasoning
 effort; otherwise the API default is `medium`.
+
+`gpt-6.1-sol` is also supported as an optional model for lecture content generation
+(1.05M-token context, 128K max output). It is not a default anywhere; select it via
+`LECTURE_GENERATION_MODEL` or the admin settings page. It is handled like the other GPT-6 models
+(no custom temperature; reasoning effort forwarded when set).
 
 `gemini-3.8-flash` is the default Topics model for medium-complexity generation.
 It uses Gemini 3's `thinking_level` control (`low`, `medium`, or `high`); the
@@ -333,7 +338,8 @@ TESTING=true
 | `MISTRAL_API_KEY` | API key for Mistral (TTS when using Mistral backend) | None | No |
 | `XAI_API_KEY` | API key for xAI (Grok content generation and TTS) | None | No |
 | `XAI_BASE_URL` | Base URL for the xAI chat API (Grok content generation) | `https://api.x.ai/v1` | No |
-| `ALIBABA_API_KEY` | API key for Alibaba Cloud Model Studio (TTS when using Qwen backend). Must be a **Singapore- or Beijing-region** key — `qwen-audio-3.0-tts` is not hosted in us-east-1 | None | No |
+| `ALIBABA_API_KEY` | API key for Alibaba Cloud Model Studio (TTS when using Qwen backend). Must be created in the same region as your workspace (e.g. Singapore) — `qwen-audio-3.1-tts-flash` is not hosted in us-east-1 | None | No |
+| `ALIBABA_WORKSPACE_ID` | Model Studio workspace ID; the Qwen TTS endpoint is `https://{ALIBABA_WORKSPACE_ID}.{ALIBABA_TTS_REGION}.maas.aliyuncs.com`. Required for the Qwen backend | None | No |
 | `GOOGLE_API_KEY` | API key for Google | None | No |
 | `OPENAI_API_KEY` | API key for OpenAI | None | No |
 | `CONTENT_LOGS_PATH` | (Deprecated) Path for content generation logs | `content_logs` | No |
@@ -357,8 +363,8 @@ TESTING=true
 | `TTS_VOICE_MODEL` | Model for text-to-speech voice | `eleven_v4` | No |
 | `XAI_TTS_BASE_URL` | Base URL for the xAI TTS API | `https://api.x.ai/v1` | No |
 | `XAI_TTS_LANGUAGE` | xAI output language: BCP-47 code or `auto` (detect from text) | `auto` | No |
-| `TTS_QWEN_MODEL` | Qwen TTS model (`qwen-audio-3.0-tts-flash` or `qwen-audio-3.0-tts-plus`) | `qwen-audio-3.0-tts-flash` | No |
-| `ALIBABA_TTS_WSS_URL` | Model Studio WebSocket endpoint; **must match the region your `ALIBABA_API_KEY` was created in** (keys are region-locked). Singapore: `wss://dashscope-intl.aliyuncs.com/api-ws/v1/inference`; Beijing: `wss://dashscope.aliyuncs.com/api-ws/v1/inference` | `wss://dashscope-intl.aliyuncs.com/api-ws/v1/inference` | No |
+| `TTS_QWEN_MODEL` | Qwen TTS model | `qwen-audio-3.1-tts-flash` | No |
+| `ALIBABA_TTS_REGION` | Region of the Model Studio workspace (must match the region your `ALIBABA_API_KEY` was created in) | `ap-southeast-1` (Singapore) | No |
 | `LECTURE_WORD_COUNT` | Target word count for generated lectures | `3000` | No |
 | `LECTURE_IMAGE_INTERVAL_SEC` | Approximate seconds between generated lecture images | `45` | No |
 | `STORAGE_TYPE` | Storage type ("minio" = local S3-compatible, or "s3") | `minio` | No |

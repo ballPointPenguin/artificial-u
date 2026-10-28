@@ -269,6 +269,7 @@ class CdkStack(Stack):
             # "RUN_BACKFILL_VOICE_TTS_BACKEND": "1",  # TEMPORARY - backfill tts_backend on voices
             # "RUN_BACKFILL_COURSE_TAGS": "1",  # TEMPORARY - backfill AI-generated tags on courses
             # "RUN_SEED_MISTRAL_VOICES": "1",  # TEMPORARY - seed Mistral Voxtral preset voices
+            "RUN_BACKFILL_QWEN_VOICES_V31": "1",  # TEMPORARY - migrate Qwen voices to 3.1
             "STORAGE_AUDIO_BUCKET": audio_bucket.bucket_name,
             "STORAGE_CONTENT_LOGS_BUCKET": content_logs_bucket.bucket_name,
             "STORAGE_EXPORTS_BUCKET": exports_bucket.bucket_name,

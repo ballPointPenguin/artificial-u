@@ -86,6 +86,16 @@ if [ "${RUN_SEED_MISTRAL_VOICES}" = "1" ]; then
   fi
 fi
 
+# Optionally migrate Qwen voices from 3.0 to the qwen-audio-3.1-tts-flash voices
+if [ "${RUN_BACKFILL_QWEN_VOICES_V31}" = "1" ]; then
+  if [ -n "$DATABASE_URL" ]; then
+    echo "[entrypoint] RUN_BACKFILL_QWEN_VOICES_V31=1 detected; migrating Qwen voices to 3.1..."
+    python scripts/backfill_qwen_voices_v31.py || echo "[entrypoint] Qwen voice 3.1 backfill failed; continuing"
+  else
+    echo "[entrypoint] DATABASE_URL not set; skipping Qwen voice 3.1 backfill"
+  fi
+fi
+
 echo "[entrypoint] Starting Gunicorn..."
 exec gunicorn artificial_u.api.app:app \
   -k uvicorn.workers.UvicornWorker \
