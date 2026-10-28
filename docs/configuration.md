@@ -55,7 +55,7 @@ ArtificialU supports multiple backends for content generation:
 content_backend=anthropic
 
 # Model to use with the chosen backend
-content_model=claude-3-7-sonnet-latest
+content_model=claude-sonnet-5-5
 ```
 
 ## Storage Configuration
@@ -173,6 +173,11 @@ support the Chat Completions and Responses APIs; ArtificialU uses Chat Completio
 for text generation. When calling `ContentService.generate_text()` directly, pass
 `effort` (`none`, `low`, `medium`, `high`, `xhigh`, or `max`) to set GPT-6 reasoning
 effort; otherwise the API default is `medium`.
+
+`gpt-6.1-sol` is also supported as an optional model for lecture content generation
+(1.05M-token context, 128K max output). It is not a default anywhere; select it via
+`LECTURE_GENERATION_MODEL` or the admin settings page. It is handled like the other GPT-6 models
+(no custom temperature; reasoning effort forwarded when set).
 
 `gemini-3.8-flash` is the default Topics model for medium-complexity generation.
 It uses Gemini 3's `thinking_level` control (`low`, `medium`, or `high`); the

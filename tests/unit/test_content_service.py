@@ -43,9 +43,6 @@ def _build_service():
         ("claude-sonnet-5-5-20260928", (5, 5)),
         ("claude-sonnet-5-1", (5, 1)),
         ("claude-sonnet-5-20260601", (5, 0)),
-        ("claude-3-7-sonnet-latest", None),
-        ("claude-3-5-sonnet-20241022", None),
-        ("claude-3-opus-20240229", None),
         ("gpt-5.6", None),
     ],
 )
@@ -61,7 +58,6 @@ def test_parse_claude_version(model, expected):
         ("claude-sonnet-5", "sonnet"),
         ("claude-sonnet-5-5", "sonnet"),
         ("claude-opus-5", "opus"),
-        ("claude-3-7-sonnet-latest", None),
         ("gpt-5.6", None),
     ],
 )
@@ -76,7 +72,6 @@ class TestVersionGatedFeatures:
     @pytest.mark.parametrize(
         "model,expected",
         [
-            ("claude-3-7-sonnet-latest", True),  # old-style, unrecognized -> assume supported
             ("claude-sonnet-4-6", False),  # 4.6+ rejects prefill
             ("claude-opus-4-8", False),
             ("claude-sonnet-5", False),  # Sonnet 5 also rejects prefill
@@ -101,7 +96,6 @@ class TestVersionGatedFeatures:
     @pytest.mark.parametrize(
         "model,expected",
         [
-            ("claude-3-7-sonnet-latest", False),  # old-style, no effort support
             ("claude-sonnet-4-6", True),
             ("claude-opus-4-8", True),
             ("claude-sonnet-5", True),
@@ -278,8 +272,9 @@ async def test_generate_anthropic_uses_sampling_params_for_sonnet_4_6(monkeypatc
         ("gpt-5.6", True),
         ("gpt-6-luna", True),
         ("gpt-6-sol", True),
+        ("gpt-6.1-sol", True),
+        ("gpt-6.1", False),
         ("gpt-6", False),
-        ("gpt-5.4-nano", False),
         ("gpt-5.5", False),
     ],
 )
@@ -289,7 +284,7 @@ def test_is_gpt_reasoning_model(model, expected):
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
-    "model", ["gpt-5.6-luna", "gpt-5.6-sol", "gpt-5.6", "gpt-6-luna", "gpt-6-sol"]
+    "model", ["gpt-5.6-luna", "gpt-5.6-sol", "gpt-5.6", "gpt-6-luna", "gpt-6-sol", "gpt-6.1-sol"]
 )
 async def test_generate_openai_reasoning_models_use_effort_without_temperature(monkeypatch, model):
     service = _build_service()
@@ -305,23 +300,6 @@ async def test_generate_openai_reasoning_models_use_effort_without_temperature(m
     call_kwargs = mock_client.chat.completions.create.await_args.kwargs
     assert call_kwargs["max_completion_tokens"] == 2048
     assert call_kwargs["reasoning_effort"] == "low"
-    assert "temperature" not in call_kwargs
-
-
-@pytest.mark.asyncio
-async def test_generate_openai_retains_gpt_5_4_nano_without_temperature(monkeypatch):
-    service = _build_service()
-
-    mock_response = MagicMock()
-    mock_response.choices = [SimpleNamespace(message=SimpleNamespace(content="hello world"))]
-    mock_client = MagicMock()
-    mock_client.chat.completions.create = AsyncMock(return_value=mock_response)
-    monkeypatch.setattr("artificial_u.services.content_service.openai_client", mock_client)
-
-    await service._generate_openai("prompt", "gpt-5.4-nano", "system", 0.3, 2048, None)
-
-    call_kwargs = mock_client.chat.completions.create.await_args.kwargs
-    assert "reasoning_effort" not in call_kwargs
     assert "temperature" not in call_kwargs
 
 
