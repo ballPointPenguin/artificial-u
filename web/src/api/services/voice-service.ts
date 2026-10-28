@@ -138,9 +138,9 @@ export const listXaiCatalog = async (
 }
 
 /**
- * List Qwen (Alibaba) preset voices.
+ * List Qwen (Alibaba) voices.
  *
- * Alibaba exposes no voice-list API for qwen-audio-3.0-tts, so the backend
+ * Alibaba exposes no voice-list API for qwen-audio-3.1-tts-flash, so the backend
  * serves a static catalog.
  *
  * @param language - Optional language prefix filter (e.g. "en").

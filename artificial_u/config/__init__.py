@@ -4,7 +4,7 @@ Configuration modules for the ArtificialU system.
 
 # Re-export defaults for direct import from artificial_u.config
 from artificial_u.config.defaults import (
-    DEFAULT_ALIBABA_TTS_WSS_URL,
+    DEFAULT_ALIBABA_TTS_REGION,
     DEFAULT_CONTENT_BACKEND,
     DEFAULT_CONTENT_LOGS_PATH,
     DEFAULT_DB_URL,
@@ -55,7 +55,7 @@ __all__ = [
     # TTS defaults
     "DEFAULT_TTS_BACKEND",
     "DEFAULT_QWEN_TTS_MODEL",
-    "DEFAULT_ALIBABA_TTS_WSS_URL",
+    "DEFAULT_ALIBABA_TTS_REGION",
     # Course and lecture defaults
     "DEFAULT_LECTURE_IMAGE_INTERVAL_SEC",
     "DEFAULT_LECTURE_WORD_COUNT",

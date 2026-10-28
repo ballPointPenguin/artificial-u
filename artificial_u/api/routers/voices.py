@@ -411,14 +411,14 @@ async def list_xai_catalog(
 
 
 # ---------------------------------------------------------------------------
-# Qwen (Alibaba) voice catalog (static preset list)
+# Qwen (Alibaba) voice catalog (static system-voice list)
 # ---------------------------------------------------------------------------
 
 
 class QwenVoiceCatalogItem(BaseModel):
-    """A Qwen preset voice, mapped into a shape the frontend can use."""
+    """A Qwen voice, mapped into a shape the frontend can use."""
 
-    id: str = Field(..., description="Qwen voice id (e.g. 'loongeva_v3.6')")
+    id: str = Field(..., description="Qwen voice id (e.g. 'Brian_v3.1')")
     name: str = Field(..., description="Display name")
     gender: Optional[str] = None
     description: Optional[str] = None
@@ -441,11 +441,12 @@ async def list_qwen_catalog(
     gender: Optional[str] = Query(None, description="Filter by gender"),
 ):
     """
-    List the Qwen (Alibaba) preset voices.
+    List the Qwen (Alibaba) voices.
 
-    Alibaba exposes no voice-list API for qwen-audio-3.0-tts, so this serves a
-    static catalog. These are **not** stored in our database; the frontend uses
-    the Qwen voice ``id`` as the ``voice_id`` when previewing or assigning.
+    Alibaba exposes no voice-list API for qwen-audio-3.1-tts-flash, so this
+    serves a static catalog of the Singapore-region system voices. These are
+    **not** stored in our database; the frontend uses the Qwen voice ``id`` as
+    the ``voice_id`` when previewing or assigning.
     """
     from artificial_u.integrations.qwen.voice_manager import QwenVoiceManager
 

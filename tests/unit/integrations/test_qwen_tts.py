@@ -1,195 +1,191 @@
 """Unit tests for the Qwen (Alibaba) TTS client, backend adapter, and factory."""
 
+import importlib.util
+from pathlib import Path
+
+import httpx
 import pytest
 
+from artificial_u.config.defaults import DEFAULT_QWEN_TTS_MODEL
 from artificial_u.integrations.qwen.tts_client import QwenTTSClient
-from artificial_u.integrations.qwen.voice_manager import (
-    FLASH_MODEL,
-    PLUS_MODEL,
-    QWEN_VOICES,
-    QwenVoiceManager,
-    model_for_voice,
-)
+from artificial_u.integrations.qwen.voice_manager import QWEN_VOICES, QwenVoiceManager
 from artificial_u.integrations.tts.factory import create_tts_backend
 from artificial_u.integrations.tts.qwen_backend import QwenTTSBackend
 
-
-class _FakeSynthesizer:
-    """Stand-in for dashscope SpeechSynthesizer capturing constructor args."""
-
-    last_call = {}
-    audio = b"audio-bytes"
-
-    def __init__(self, model=None, voice=None, format=None, url=None, **kwargs):
-        _FakeSynthesizer.last_call = {
-            "model": model,
-            "voice": voice,
-            "format": format,
-            "url": url,
-        }
-
-    def call(self, text, timeout_millis=None):
-        _FakeSynthesizer.last_call["text"] = text
-        return _FakeSynthesizer.audio
+AUDIO_URL = "https://oss.example.test/audio.mp3"
+API_PATH = "/api/v1/services/audio/tts/SpeechSynthesizer"
 
 
 @pytest.fixture
-def patch_synthesizer(monkeypatch):
-    import dashscope.audio.tts_v2 as tts_v2
+def no_sleep(monkeypatch):
+    monkeypatch.setattr("artificial_u.integrations.qwen.tts_client.time.sleep", lambda *_: None)
 
-    _FakeSynthesizer.last_call = {}
-    _FakeSynthesizer.audio = b"audio-bytes"
-    monkeypatch.setattr(tts_v2, "SpeechSynthesizer", _FakeSynthesizer)
-    return _FakeSynthesizer
+
+@pytest.fixture
+def mock_api(monkeypatch):
+    """Route httpx.Client through a MockTransport; records requests."""
+    state = {"requests": [], "api_status": 200, "api_json": None, "audio": b"audio-bytes"}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        state["requests"].append(request)
+        if request.url.path == API_PATH:
+            body = state["api_json"]
+            if body is None:
+                body = {"output": {"audio": {"url": AUDIO_URL}}}
+            return httpx.Response(state["api_status"], json=body)
+        return httpx.Response(200, content=state["audio"])
+
+    real_client = httpx.Client
+    monkeypatch.setattr(
+        "artificial_u.integrations.qwen.tts_client.httpx.Client",
+        lambda **kw: real_client(transport=httpx.MockTransport(handler), **kw),
+    )
+    return state
+
+
+def _client(**kwargs):
+    return QwenTTSClient(api_key="key-123", workspace_id="ws1", **kwargs)
 
 
 @pytest.mark.unit
-def test_client_calls_synthesizer_with_voice_and_url(patch_synthesizer):
-    client = QwenTTSClient(api_key="key-123", wss_url="wss://example.test/api-ws/v1/inference")
-    audio = client.text_to_speech("Hello world", voice_id="loongjohn")
+def test_client_posts_documented_request(mock_api):
+    audio = _client().text_to_speech("Hello world", voice_id="Emily_v3.1")
 
     assert audio == b"audio-bytes"
-    call = patch_synthesizer.last_call
-    assert call["voice"] == "loongjohn"
-    assert call["model"] == FLASH_MODEL
-    assert call["url"] == "wss://example.test/api-ws/v1/inference"
-    assert call["text"] == "Hello world"
-    assert "MP3" in str(call["format"])
+    api_req, audio_req = mock_api["requests"]
+    assert str(api_req.url) == f"https://ws1.ap-southeast-1.maas.aliyuncs.com{API_PATH}"
+    assert api_req.headers["Authorization"] == "Bearer key-123"
+    import json
 
-    import dashscope
-
-    assert dashscope.api_key == "key-123"
-
-
-@pytest.mark.unit
-def test_client_defaults_voice(patch_synthesizer):
-    client = QwenTTSClient(api_key="key")
-    client.text_to_speech("Hi there everyone")
-    assert patch_synthesizer.last_call["voice"] == QwenTTSClient.DEFAULT_VOICE
+    body = json.loads(api_req.content)
+    assert body["model"] == DEFAULT_QWEN_TTS_MODEL == "qwen-audio-3.1-tts-flash"
+    assert body["input"]["text"] == "Hello world"
+    assert body["input"]["voice"] == "Emily_v3.1"
+    assert body["input"]["format"] == "mp3"
+    assert str(audio_req.url) == AUDIO_URL
 
 
 @pytest.mark.unit
-def test_client_resolves_plus_model_from_voice(patch_synthesizer):
-    client = QwenTTSClient(api_key="key")
-    client.text_to_speech("text", voice_id="longanlingxin")
-    assert patch_synthesizer.last_call["model"] == PLUS_MODEL
+def test_client_region_and_model_override(mock_api):
+    _client(region="cn-beijing").text_to_speech("text", model="custom-model")
+    import json
+
+    api_req = mock_api["requests"][0]
+    assert api_req.url.host == "ws1.cn-beijing.maas.aliyuncs.com"
+    assert json.loads(api_req.content)["model"] == "custom-model"
 
 
 @pytest.mark.unit
-def test_client_explicit_model_overrides_voice_mapping(patch_synthesizer):
-    client = QwenTTSClient(api_key="key")
-    client.text_to_speech("text", voice_id="longanlingxin", model="custom-model")
-    assert patch_synthesizer.last_call["model"] == "custom-model"
+def test_client_defaults_voice(mock_api):
+    import json
+
+    _client().text_to_speech("text")
+    body = json.loads(mock_api["requests"][0].content)
+    assert body["input"]["voice"] == QwenTTSClient.DEFAULT_VOICE == "Brian_v3.1"
 
 
 @pytest.mark.unit
-def test_client_unknown_voice_falls_back_to_settings_model(patch_synthesizer):
-    client = QwenTTSClient(api_key="key")
-    client.text_to_speech("text", voice_id="some-cloned-voice-id")
-    assert patch_synthesizer.last_call["model"] == client.default_model
+def test_client_retries_throttling_then_raises(mock_api, no_sleep):
+    mock_api["api_status"] = 429
+    mock_api["api_json"] = {"code": "Throttling.RateQuota", "message": "slow down"}
+    with pytest.raises(httpx.HTTPStatusError, match="Throttling.RateQuota"):
+        _client().text_to_speech("text")
+    assert len(mock_api["requests"]) == QwenTTSClient.MAX_RETRIES
 
 
 @pytest.mark.unit
-def test_client_retries_then_raises(monkeypatch):
-    import dashscope.audio.tts_v2 as tts_v2
-
-    monkeypatch.setattr("artificial_u.integrations.qwen.tts_client.time.sleep", lambda *_: None)
-
-    attempts = {"n": 0}
-
-    class _AlwaysFails(_FakeSynthesizer):
-        def call(self, text, timeout_millis=None):
-            attempts["n"] += 1
-            raise ConnectionError("boom")
-
-    monkeypatch.setattr(tts_v2, "SpeechSynthesizer", _AlwaysFails)
-    client = QwenTTSClient(api_key="key")
-    with pytest.raises(ConnectionError):
-        client.text_to_speech("text")
-    assert attempts["n"] == QwenTTSClient.MAX_RETRIES
+def test_client_does_not_retry_auth_errors(mock_api, no_sleep):
+    mock_api["api_status"] = 401
+    mock_api["api_json"] = {"code": "InvalidApiKey", "message": "bad key"}
+    with pytest.raises(httpx.HTTPStatusError, match="InvalidApiKey"):
+        _client().text_to_speech("text")
+    assert len(mock_api["requests"]) == 1
 
 
 @pytest.mark.unit
-def test_client_raises_on_empty_audio(monkeypatch, patch_synthesizer):
-    monkeypatch.setattr("artificial_u.integrations.qwen.tts_client.time.sleep", lambda *_: None)
-    patch_synthesizer.audio = None
-    client = QwenTTSClient(api_key="key")
-    with pytest.raises(RuntimeError):
-        client.text_to_speech("text")
+def test_client_raises_when_response_has_no_audio_url(mock_api, no_sleep):
+    mock_api["api_json"] = {"output": {"audio": {"url": ""}}}
+    with pytest.raises(RuntimeError, match="no audio URL"):
+        _client().text_to_speech("text")
 
 
 @pytest.mark.unit
-def test_backend_adapter_uses_client(patch_synthesizer):
-    client = QwenTTSClient(api_key="key")
-    backend = QwenTTSBackend(client=client)
+def test_client_raises_on_empty_audio(mock_api, no_sleep):
+    mock_api["audio"] = b""
+    with pytest.raises(RuntimeError, match="no audio data"):
+        _client().text_to_speech("text")
+
+
+@pytest.mark.unit
+def test_backend_adapter_uses_client(mock_api):
+    backend = QwenTTSBackend(client=_client())
     assert backend.backend_name == "qwen"
-
-    backend.text_to_speech("Some lecture text here", voice_id="loongmary")
-    assert patch_synthesizer.last_call["voice"] == "loongmary"
+    assert backend.text_to_speech("Some lecture text here", voice_id="Eric_v3.1") == b"audio-bytes"
 
 
 @pytest.mark.unit
-def test_backend_ignores_unrelated_kwargs(patch_synthesizer):
+def test_backend_ignores_unrelated_kwargs(mock_api):
     """language / voice_settings (used by other backends) must not break Qwen."""
-    client = QwenTTSClient(api_key="key")
-    backend = QwenTTSBackend(client=client)
+    backend = QwenTTSBackend(client=_client())
     backend.text_to_speech(
-        "text here please", voice_id="loongjohn", language="en", voice_settings={"x": 1}
+        "text here please", voice_id="Brian_v3.1", language="en", voice_settings={"x": 1}
     )
-    assert patch_synthesizer.last_call["voice"] == "loongjohn"
+    assert len(mock_api["requests"]) == 2
 
 
 @pytest.mark.unit
-def test_factory_creates_qwen_backend(patch_synthesizer):
+def test_factory_creates_qwen_backend():
     backend = create_tts_backend(backend_name="qwen", api_key="key")
     assert isinstance(backend, QwenTTSBackend)
     assert backend.backend_name == "qwen"
 
 
-# ---------------------------------------------------------------------------
-# Voice manager (static preset catalog)
-# ---------------------------------------------------------------------------
-
-
 @pytest.mark.unit
-def test_voice_manager_lists_all_voices():
-    voices = QwenVoiceManager().list_voices()
+def test_voice_manager_catalog():
+    mgr = QwenVoiceManager()
+    voices = mgr.list_voices()
     assert len(voices) == len(QWEN_VOICES)
-    ids = {v["id"] for v in voices}
-    assert {"loongeva_v3.6", "loongjohn", "longanlingxin", "longanlufeng"} <= ids
+    ids = [v["id"] for v in voices]
+    assert len(ids) == len(set(ids))
+    assert all(i.endswith("_v3.1") for i in ids)
+    assert QwenTTSClient.DEFAULT_VOICE in ids
     # No child voices are exposed
-    assert "longjielidou_v3.6" not in ids
-    # Every voice has a valid model and at least one language
+    assert "longjielidou_v3.1" not in ids
     for v in voices:
-        assert v["model"] in (FLASH_MODEL, PLUS_MODEL)
+        assert v["model"] == DEFAULT_QWEN_TTS_MODEL
         assert v["languages"]
+    emily = mgr.get_voice("Emily_v3.1")
+    assert (emily["gender"], emily["accent"], emily["languages"]) == ("female", "British", ["en"])
+    assert mgr.get_voice("loongjohn") is None
+
+
+def _load_backfill_script():
+    path = Path(__file__).resolve().parents[3] / "scripts" / "backfill_qwen_voices_v31.py"
+    spec = importlib.util.spec_from_file_location("backfill_qwen_voices_v31", path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
 
 
 @pytest.mark.unit
-def test_voice_manager_includes_chinese_only_base_voices():
-    """Base (cloned) voices are Mandarin-only and use model-prefixed ids."""
-    mgr = QwenVoiceManager()
-    kai = mgr.get_voice("qwen-audio-3.0-tts-plus-longyinghaikai")
-    assert kai is not None
-    assert kai["languages"] == ["zh"]
-    assert kai["gender"] == "female"
-    assert kai["model"] == PLUS_MODEL
+def test_backfill_script_mapping_targets_exist_in_catalog():
+    script = _load_backfill_script()
+    catalog = {v["id"] for v in QWEN_VOICES}
+    assert set(script.VOICE_MAP.values()) <= catalog
+    assert {script.FALLBACK_FEMALE, script.FALLBACK_MALE} <= catalog
 
 
 @pytest.mark.unit
-def test_voice_manager_get_voice():
-    mgr = QwenVoiceManager()
-    john = mgr.get_voice("loongjohn")
-    assert john["gender"] == "male"
-    assert john["model"] == FLASH_MODEL
-    lufeng = mgr.get_voice("longanlufeng")
-    assert lufeng["gender"] == "male"
-    assert mgr.get_voice("nonexistent") is None
-
-
-@pytest.mark.unit
-def test_model_for_voice():
-    assert model_for_voice("longanlufeng") == PLUS_MODEL
-    assert model_for_voice("loongeva_v3.6") == FLASH_MODEL
-    assert model_for_voice("qwen-audio-3.0-tts-plus-longyinghaikai") == PLUS_MODEL
-    assert model_for_voice("nonexistent") is None
+@pytest.mark.parametrize(
+    "old_id,gender,expected",
+    [
+        ("loongjohn", "male", "Brian_v3.1"),
+        ("loongmary", None, "Emily_v3.1"),
+        ("longanhuan_v3.6", "female", "longanhuan_v3.1"),
+        ("qwen-audio-3.0-tts-plus-longyinghaikai", "female", "Ava_v3.1"),
+        ("qwen-audio-3.0-tts-plus-longyinghaixuan", "male", "Brian_v3.1"),
+        ("unknown-voice", None, "Brian_v3.1"),
+    ],
+)
+def test_backfill_script_replacement_voice_id(old_id, gender, expected):
+    assert _load_backfill_script().replacement_voice_id(old_id, gender) == expected

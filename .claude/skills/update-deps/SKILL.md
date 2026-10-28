@@ -56,7 +56,7 @@ For every **major** bump, and for any minor bump of a 0.x package:
 - Grep the codebase for the APIs the notes say were changed or removed. Fix the call sites,
   or pin back and explain why.
 - Pay extra attention to the AI/TTS SDKs (`anthropic`, `openai`, `google-genai`,
-  `elevenlabs`, `mistralai`, `dashscope`), `fastapi`, `pydantic`, `sqlalchemy`, `alembic`,
+  `elevenlabs`, `mistralai`), `fastapi`, `pydantic`, `sqlalchemy`, `alembic`,
   and on the web side `solid-js`, `@solidjs/router`, `@kobalte/core`, `tailwindcss`, `vite`,
   `eslint`, `typescript`.
 
