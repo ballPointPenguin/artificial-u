@@ -163,7 +163,7 @@ class Settings(BaseSettings):
     # "eleven_multilingual_v2"
     TTS_VOICE_MODEL: str = "eleven_v4"
     # Mistral TTS model
-    TTS_MISTRAL_MODEL: str = "voxtral-mini-tts-2603"
+    TTS_MISTRAL_MODEL: str = "voxtral-mini-tts-3-0"
     # Mistral API key (optional, required only if tts_backend="mistral")
     MISTRAL_API_KEY: Optional[str] = None
     # xAI (Grok) TTS settings (used only if tts_backend="xai")

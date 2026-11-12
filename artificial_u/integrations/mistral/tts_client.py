@@ -15,7 +15,7 @@ from mistralai.client import Mistral
 class MistralTTSClient:
     """Client for Mistral TTS using the official SDK."""
 
-    DEFAULT_MODEL = "voxtral-mini-tts-2603"
+    DEFAULT_MODEL = "voxtral-mini-tts-3-0"
     DEFAULT_FORMAT = "mp3"
     MAX_RETRIES = 3
     RETRY_WAIT = 2
@@ -45,7 +45,7 @@ class MistralTTSClient:
             text: Text to convert.
             voice_id: Voice UUID from the Mistral Voices API, or a
                 custom voice ID from audio.voices.create().
-            model: Model name (default: voxtral-mini-tts-2603).
+            model: Model name (default: voxtral-mini-tts-3-0).
             response_format: Audio format (default: mp3).
 
         Returns:
