@@ -19,7 +19,7 @@ def make_service(configured_model="eleven_v4", verified=None):
     repo.voice.get.return_value = {"verified_languages": verified} if verified else None
     service = TTSService(backend=backend, repository_factory=repo)
     service.settings = SimpleNamespace(
-        TTS_VOICE_MODEL=configured_model, TTS_MISTRAL_MODEL="voxtral-mini-tts-2603"
+        TTS_VOICE_MODEL=configured_model, TTS_MISTRAL_MODEL="voxtral-mini-tts-3-0"
     )
     return service
 

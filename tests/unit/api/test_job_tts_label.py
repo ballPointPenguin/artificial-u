@@ -12,7 +12,7 @@ pytestmark = pytest.mark.unit
 SETTINGS = SimpleNamespace(
     tts_backend="elevenlabs",
     TTS_VOICE_MODEL="eleven_v4",
-    TTS_MISTRAL_MODEL="voxtral-mini-tts-2603",
+    TTS_MISTRAL_MODEL="voxtral-mini-tts-3-0",
 )
 
 
@@ -46,7 +46,7 @@ def test_recorded_result_without_model_shows_backend_only():
 def test_pending_job_uses_professor_voice_backend_not_global_default():
     factory = make_factory(voice_backend="mistral")
     label = _job_model_name("generate_lecture_audio", {"lecture_id": 1}, None, factory)
-    assert label == "mistral/voxtral-mini-tts-2603"
+    assert label == "mistral/voxtral-mini-tts-3-0"
 
 
 def test_pending_job_professor_override_wins():
