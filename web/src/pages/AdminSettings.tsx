@@ -345,6 +345,15 @@ export default function AdminSettings() {
       </Show>
 
       <ModelSettingCard
+        title="Course & Syllabus Generation Model"
+        description="Set the AI model used for generating courses and weekly syllabi."
+        scope="COURSE_GENERATION_MODEL"
+        load={preferenceService.getCourseGenerationModel}
+        setSuccess={setSuccessMessage}
+        setError={setErrorMessage}
+      />
+
+      <ModelSettingCard
         title="Lecture Generation Model"
         description="Set the AI model used for generating lecture content."
         scope="LECTURE_GENERATION_MODEL"

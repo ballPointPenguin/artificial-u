@@ -188,6 +188,7 @@ export const ENDPOINTS = {
     getGlobal: (scope: string) => `/v1/preferences/global/${encodeURIComponent(scope)}`,
     setGlobal: (scope: string) => `/v1/preferences/global/${encodeURIComponent(scope)}`,
     deleteGlobal: (scope: string) => `/v1/preferences/global/${encodeURIComponent(scope)}`,
+    courseGenerationModel: '/v1/preferences/models/course-generation',
     lectureGenerationModel: '/v1/preferences/models/lecture-generation',
     topicsGenerationModel: '/v1/preferences/models/topics-generation',
     imageGenerationModel: '/v1/preferences/models/image-generation',

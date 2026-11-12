@@ -186,6 +186,30 @@ def get_lecture_generation_model(
 
 
 @router.get(
+    "/models/course-generation",
+    response_model=ModelSettingResponse,
+    summary="Get course generation model",
+    description="Get the currently configured course and syllabus generation model.",
+    dependencies=[Depends(require_auth)],
+)
+def get_course_generation_model(
+    repository_factory: RepositoryFactory = Depends(get_repository_factory),
+):
+    """
+    Get the course generation model setting.
+
+    Course models are global (not per-student). Returns the model name and the
+    source (preference or environment).
+    """
+    pref_service = PreferenceService(repository_factory)
+    model = pref_service.get_course_generation_model()
+    pref = repository_factory.preference.get_global(PreferenceService.COURSE_GENERATION_MODEL)
+    source = "preference" if pref else "environment"
+
+    return ModelSettingResponse(model=model, source=source)
+
+
+@router.get(
     "/models/topics-generation",
     response_model=ModelSettingResponse,
     summary="Get topics generation model",

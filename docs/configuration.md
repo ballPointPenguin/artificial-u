@@ -142,7 +142,7 @@ ArtificialU allows configuration of different AI models for various services:
 
 ```python
 # Course generation model
-COURSE_GENERATION_MODEL=gpt-6-luna
+COURSE_GENERATION_MODEL=gemini-3.8-flash
 
 # Department generation model
 DEPARTMENT_GENERATION_MODEL=gpt-6-luna

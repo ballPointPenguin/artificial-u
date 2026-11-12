@@ -87,6 +87,7 @@ export interface Course {
     faculty_name: string | null
   } | null
   tags?: Tag[]
+  topics?: TopicDraft[]
 }
 
 export type CoursesList = PaginatedResponse<Course>
@@ -113,6 +114,7 @@ export interface CourseCreate {
   created_with?: string | null
   connected_course_ids?: number[]
   language?: string | null
+  topics?: TopicDraft[]
 }
 
 export interface CourseUpdate {

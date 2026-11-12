@@ -138,7 +138,7 @@ class Settings(BaseSettings):
     content_model: Optional[str] = None
 
     # Course generation model
-    COURSE_GENERATION_MODEL: str = "gpt-6-luna"
+    COURSE_GENERATION_MODEL: str = "gemini-3.8-flash"
     # Department generation model
     DEPARTMENT_GENERATION_MODEL: str = "gpt-6-luna"
     # Lecture generation model

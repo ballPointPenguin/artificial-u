@@ -305,7 +305,7 @@ export const fr = {
       notesPlaceholder:
         'Ex. Ce cours est enseigné en anglais avec du vocabulaire français intégré. Ne pas générer les leçons entièrement en français.',
       notesHelper:
-        "Notes optionnelles pour guider la génération de contenu. Elles sont transmises à l'IA lors de la génération des sujets et des séances. Non remplies automatiquement par Générer les détails.",
+        "Consignes permanentes optionnelles transmises à l'IA lors de la génération des séances (style narratif, niveau de formalisme, langue). L'IA peut aussi les remplir si votre invite contient des directives particulières.",
       aiPromptLabel: 'Invite de génération IA (optionnel)',
       departmentPlaceholder: '-- Sélectionner un département (optionnel) --',
       professorPlaceholder: '-- Sélectionner un professeur (optionnel) --',
@@ -330,6 +330,30 @@ export const fr = {
       generateDetails: 'Générer les détails',
       updateCourse: 'Mettre à jour le cours',
       saveCourse: 'Enregistrer le cours',
+      syllabusPromptLabel: 'Idée de cours et invite de programme',
+      syllabusPromptPlaceholder:
+        'Décrivez votre idée de cours, les thèmes, penseurs, lectures, le ton ou la portée (ex. : « Canada moderne. Étude interdisciplinaire de l’histoire canadienne depuis 1948, géographie sociopolitique régionale, Premières Nations et migrations... »)',
+      syllabusPromptHelper:
+        "Décrivez ce que vous souhaitez aborder dans ce cours, y compris des notes sur le ton ou la portée. L'IA rédigera la description et le programme hebdomadaire complet pour révision avant tout enregistrement.",
+      advancedOptions: 'Options avancées (Département, Professeur, Structure et Cours associés)',
+      generateSyllabus: 'Générer le programme',
+      generatingSyllabus: 'Rédaction du programme...',
+      fillManuallyInstead: 'Remplir les champs manuellement',
+      usePromptBuilderInstead: 'Revenir au générateur de programme par invite',
+      syllabusPreviewTitle: 'Aperçu du programme hebdomadaire',
+      syllabusPreviewHelper:
+        "Utilisez la zone d'invite ci-dessous pour demander à l'IA d'ajuster la portée, les lectures ou la progression.",
+      expandSyllabus: 'Tout développer',
+      collapseSyllabus: 'Réduire',
+      refinePromptLabel: "Affiner le programme avec l'IA",
+      refinePromptPlaceholder:
+        'ex. : « Réorientez les semaines 4 à 6 vers la géographie urbaine et l’histoire du travail, et passez à 2 séances par semaine. »',
+      refinePromptHelper:
+        'Demandez des modifications sur la portée du cours, la progression hebdomadaire ou les lectures suggérées pour régénérer le brouillon.',
+      refineSyllabus: 'Affiner le programme',
+      refiningSyllabus: 'Affinement du programme...',
+      promptOrTitleRequired:
+        'Veuillez saisir une invite de cours (ou ouvrir les Options avancées pour fournir un titre/une description) avant de générer.',
     },
   },
 

@@ -305,7 +305,7 @@ export const es = {
       notesPlaceholder:
         'Ej. Este curso se imparte en inglés con vocabulario francés integrado. No generar lecciones completamente en francés.',
       notesHelper:
-        'Notas opcionales para guiar la generación de contenido. Se envían a la IA al generar temas y lecciones. No se completan automáticamente con Generar detalles.',
+        'Instrucciones permanentes opcionales que se envían a la IA al generar lecciones (estilo narrativo, uso de fórmulas o mezcla de idiomas). La IA también puede completarlas si su indicación incluye reglas especiales.',
       aiPromptLabel: 'Indicación de generación IA (opcional)',
       departmentPlaceholder: '-- Seleccionar departamento (opcional) --',
       professorPlaceholder: '-- Seleccionar profesor (opcional) --',
@@ -330,6 +330,31 @@ export const es = {
       generateDetails: 'Generar detalles',
       updateCourse: 'Actualizar curso',
       saveCourse: 'Guardar curso',
+      syllabusPromptLabel: 'Idea del curso e indicación del programa',
+      syllabusPromptPlaceholder:
+        'Describa su idea de curso, temas, pensadores, lecturas, tono o alcance (p. ej., "Canadá moderno. Estudio interdisciplinario de la historia canadiense desde 1948, geografía sociopolítica regional, Primeras Naciones y migración...")',
+      syllabusPromptHelper:
+        'Describa lo que desea que cubra el curso, incluidas notas sobre el tono o el alcance. La IA redactará la descripción del curso y el programa semanal completo para su revisión antes de guardar.',
+      advancedOptions:
+        'Opciones avanzadas (Departamento, Profesor, Estructura y Cursos conectados)',
+      generateSyllabus: 'Generar programa',
+      generatingSyllabus: 'Redactando programa...',
+      fillManuallyInstead: 'Completar los campos manualmente',
+      usePromptBuilderInstead: 'Volver al generador de programa por indicación',
+      syllabusPreviewTitle: 'Vista previa del programa semanal',
+      syllabusPreviewHelper:
+        'Use el cuadro de abajo para pedir a la IA que ajuste el alcance, las lecturas o la progresión.',
+      expandSyllabus: 'Expandir todo',
+      collapseSyllabus: 'Contraer',
+      refinePromptLabel: 'Refinar programa con IA',
+      refinePromptPlaceholder:
+        'p. ej., "Enfoque las semanas 4 a 6 en la geografía urbana y la historia laboral, y amplíe a 2 clases por semana."',
+      refinePromptHelper:
+        'Solicite cambios en el alcance del curso, la progresión semanal o las lecturas sugeridas y regenere el borrador.',
+      refineSyllabus: 'Refinar programa',
+      refiningSyllabus: 'Refinando programa...',
+      promptOrTitleRequired:
+        'Ingrese una indicación para el curso (o abra Opciones avanzadas para proporcionar un título/descripción) antes de generar.',
     },
   },
 

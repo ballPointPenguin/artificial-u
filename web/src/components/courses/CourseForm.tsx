@@ -1,11 +1,12 @@
 import type { Component } from 'solid-js'
-import { createEffect, createMemo, createResource, createSignal, Show } from 'solid-js'
+import { createEffect, createMemo, createResource, createSignal, For, Show } from 'solid-js'
 import { courseService } from '../../api/services/course-service.js'
 import { departmentService } from '../../api/services/department-service.js'
 import { professorService } from '../../api/services/professor-service.js'
 import type { Course, CourseGenerateRequest, Department, Professor } from '../../api/types.js'
 import { useAuth } from '../../auth/AuthProvider.js'
 import { useContentLanguage, useTranslations } from '../../i18n'
+import { TopicContentRenderer } from '../topics/TopicContentRenderer.jsx'
 import {
   Alert,
   Button,
@@ -46,6 +47,7 @@ const CourseForm: Component<CourseFormProps> = (props) => {
     notes: null,
     lectures_per_week: null,
     total_weeks: null,
+    topics: [],
     freeform_prompt: '',
     created_with: null,
   })
@@ -53,6 +55,14 @@ const CourseForm: Component<CourseFormProps> = (props) => {
   const [validationErrors, setValidationErrors] = createSignal<Record<string, string>>({})
   const [isGenerating, setIsGenerating] = createSignal(false)
   const [generateError, setGenerateError] = createSignal<string | null>(null)
+  const [hasGeneratedDraft, setHasGeneratedDraft] = createSignal(false)
+  const [isManualMode, setIsManualMode] = createSignal(false)
+  const [showAdvanced, setShowAdvanced] = createSignal(false)
+  const [refinePrompt, setRefinePrompt] = createSignal('')
+  const [isSyllabusExpanded, setIsSyllabusExpanded] = createSignal(false)
+
+  const isEditMode = () => props.course !== undefined
+  const showFullForm = () => isEditMode() || hasGeneratedDraft() || isManualMode()
 
   // Populate form for editing
   createEffect(() => {
@@ -238,31 +248,46 @@ const CourseForm: Component<CourseFormProps> = (props) => {
     }
   }
 
-  const handleGenerate = async () => {
+  const handleGenerate = async (isRefinement = false) => {
+    const currentData = formData()
+    const activePrompt = (isRefinement ? refinePrompt() : currentData.freeform_prompt || '').trim()
+
+    if (
+      !showFullForm() &&
+      !activePrompt &&
+      !currentData.title.trim() &&
+      !currentData.description.trim()
+    ) {
+      setGenerateError(t().courses.form.promptOrTitleRequired)
+      return
+    }
+
     setIsGenerating(true)
     setGenerateError(null)
     setValidationErrors({}) // Clear validation before generation
 
-    const currentData = formData()
+    const partialAttributes: Record<string, unknown> = {
+      ...(currentData.code && { code: currentData.code }),
+      ...(currentData.title && { title: currentData.title }),
+      ...(currentData.department_id && { department_id: currentData.department_id }),
+      ...(currentData.professor_id && { professor_id: currentData.professor_id }),
+      ...(currentData.level && { level: currentData.level }),
+      ...(currentData.description && { description: currentData.description }),
+      ...(currentData.notes && { notes: currentData.notes }),
+      ...(currentData.lectures_per_week && { lectures_per_week: currentData.lectures_per_week }),
+      ...(currentData.total_weeks && { total_weeks: currentData.total_weeks }),
+      language: contentLanguage(),
+      ...(isRefinement &&
+        currentData.topics &&
+        currentData.topics.length > 0 && { topics: currentData.topics }),
+    }
+
     const payload: CourseGenerateRequest = {
-      partial_attributes: {
-        // Only include fields that have values, to guide generation
-        ...(currentData.code && { code: currentData.code }),
-        ...(currentData.title && { title: currentData.title }),
-        ...(currentData.department_id && { department_id: currentData.department_id }),
-        ...(currentData.professor_id && { professor_id: currentData.professor_id }),
-        ...(currentData.level && { level: currentData.level }),
-        // Let description etc. be generated if not filled
-      },
-      ...(currentData.freeform_prompt && { freeform_prompt: currentData.freeform_prompt }),
+      partial_attributes: partialAttributes,
+      ...(activePrompt && { freeform_prompt: activePrompt }),
       ...(currentData.connected_course_ids.length > 0 && {
         connected_course_ids: currentData.connected_course_ids,
       }),
-    }
-
-    // Remove partial_attributes if it's empty
-    if (payload.partial_attributes && Object.keys(payload.partial_attributes).length === 0) {
-      delete payload.partial_attributes
     }
 
     try {
@@ -275,13 +300,19 @@ const CourseForm: Component<CourseFormProps> = (props) => {
         level: generated.level || prev.level,
         professor_id: generated.professor_id,
         description: generated.description || prev.description,
+        notes: generated.notes || prev.notes,
         lectures_per_week: generated.lectures_per_week,
         total_weeks: generated.total_weeks,
+        topics: Array.isArray(generated.topics) ? generated.topics : prev.topics,
         created_with: generated.created_with || prev.created_with,
         connected_course_ids: Array.isArray(generated.connected_course_ids)
           ? generated.connected_course_ids
           : prev.connected_course_ids,
       }))
+      setHasGeneratedDraft(true)
+      if (isRefinement) {
+        setRefinePrompt('')
+      }
     } catch (err) {
       setGenerateError(err instanceof Error ? err.message : t().courses.form.failedToGenerate)
     } finally {
@@ -301,9 +332,12 @@ const CourseForm: Component<CourseFormProps> = (props) => {
       notes: null,
       lectures_per_week: null,
       total_weeks: null,
+      topics: [],
       freeform_prompt: '',
       created_with: null,
     })
+    setRefinePrompt('')
+    setHasGeneratedDraft(false)
     setValidationErrors({})
     setGenerateError(null)
   }
@@ -312,252 +346,613 @@ const CourseForm: Component<CourseFormProps> = (props) => {
 
   return (
     <Form onSubmit={handleSubmit}>
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
-        <FormField
-          label={t().courses.form.codeLabel}
-          name="code"
-          required
-          error={validationErrors().code}
-        >
-          <Input
-            name="code"
-            value={formData().code}
-            onChange={(v) => {
-              handleInputChange('code', v)
-            }}
-            disabled={isDisabled()}
-            required
-          />
-        </FormField>
-        <FormField
-          label={t().courses.form.titleLabel}
-          name="title"
-          required
-          error={validationErrors().title}
-        >
-          <Input
-            name="title"
-            value={formData().title}
-            onChange={(v) => {
-              handleInputChange('title', v)
-            }}
-            disabled={isDisabled()}
-            required
-          />
-        </FormField>
-        <FormField
-          label={t().courses.form.departmentLabel}
-          name="department_id"
-          error={validationErrors().department_id}
-          helperText={
-            formData().department_id === null ? t().courses.form.aiDeterminesDepartment : undefined
-          }
-        >
-          <Select
-            name="department_id"
-            options={departmentsResource() || []}
-            value={formData().department_id === null ? NULL_OPTION_VALUE : formData().department_id}
-            onChange={(v) => {
-              // Convert sentinel value to null, otherwise use the selected value
-              const departmentId =
-                v === NULL_OPTION_VALUE || v === null || v === '' ? null : Number(v)
-              // Guard: Kobalte fires onChange when the controlled value prop changes
-              // programmatically (e.g. when createEffect populates the form from
-              // props.course). In that case formData is already up-to-date and we
-              // must NOT clear the professor that was just populated.
-              if (departmentId === formData().department_id) return
-              handleInputChange('department_id', departmentId)
-              // Clear professor selection when department changes to avoid mismatch
-              setFormData((prev) => ({
-                ...prev,
-                professor_id: null,
-                ...(props.course ? {} : { connected_course_ids: [] }),
-              }))
-            }}
-            placeholder={t().courses.form.departmentPlaceholder}
-            disabled={departmentsResource.loading || isDisabled()}
-          />
-        </FormField>
-        {formData().department_id !== null ? (
+      <Show
+        when={showFullForm()}
+        fallback={
+          <>
+            <FormField
+              label={t().courses.form.syllabusPromptLabel}
+              name="freeform_prompt"
+              helperText={t().courses.form.syllabusPromptHelper}
+              error={validationErrors().freeform_prompt}
+            >
+              <Textarea
+                name="freeform_prompt"
+                rows={4}
+                placeholder={t().courses.form.syllabusPromptPlaceholder}
+                value={formData().freeform_prompt || ''}
+                onChange={(v) => {
+                  handleInputChange('freeform_prompt', v)
+                }}
+                disabled={isDisabled()}
+              />
+            </FormField>
+
+            <div class="my-4 border border-parchment-700/40 rounded-lg bg-obsidian-900/20">
+              <button
+                type="button"
+                class="w-full flex items-center justify-between px-4 py-3 text-left font-serif text-sm text-parchment-200 hover:text-parchment-100 transition-colors cursor-pointer"
+                onClick={() => {
+                  setShowAdvanced((prev) => !prev)
+                }}
+              >
+                <span>{t().courses.form.advancedOptions}</span>
+                <span class="text-xs text-parchment-400">{showAdvanced() ? '▲' : '▼'}</span>
+              </button>
+
+              <Show when={showAdvanced()}>
+                <div class="px-4 pb-4 pt-2 border-t border-parchment-700/30 space-y-4">
+                  <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+                    <FormField
+                      label={t().courses.form.departmentLabel}
+                      name="department_id"
+                      error={validationErrors().department_id}
+                      helperText={
+                        formData().department_id === null
+                          ? t().courses.form.aiDeterminesDepartment
+                          : undefined
+                      }
+                    >
+                      <Select
+                        name="department_id"
+                        options={departmentsResource() || []}
+                        value={
+                          formData().department_id === null
+                            ? NULL_OPTION_VALUE
+                            : formData().department_id
+                        }
+                        onChange={(v) => {
+                          const departmentId =
+                            v === NULL_OPTION_VALUE || v === null || v === '' ? null : Number(v)
+                          if (departmentId === formData().department_id) return
+                          handleInputChange('department_id', departmentId)
+                          setFormData((prev) => ({
+                            ...prev,
+                            professor_id: null,
+                            connected_course_ids: [],
+                          }))
+                        }}
+                        placeholder={t().courses.form.departmentPlaceholder}
+                        disabled={departmentsResource.loading || isDisabled()}
+                      />
+                    </FormField>
+                    {formData().department_id !== null ? (
+                      <FormField
+                        label={t().courses.form.connectedCourses}
+                        name="connected_course_ids"
+                        helperText={t().courses.form.connectedCoursesHelper}
+                      >
+                        <ConnectedCoursesSelect
+                          courses={departmentCoursesResource() || []}
+                          value={visibleConnectedCourseIds()}
+                          onChange={handleConnectedCoursesChange}
+                          disabled={departmentCoursesResource.loading || isDisabled()}
+                        />
+                      </FormField>
+                    ) : null}
+                    <FormField
+                      label={t().courses.form.professorLabel}
+                      name="professor_id"
+                      error={validationErrors().professor_id}
+                      helperText={
+                        formData().professor_id === null
+                          ? t().courses.form.aiDeterminesProfessor
+                          : undefined
+                      }
+                    >
+                      <Select
+                        name="professor_id"
+                        options={professorsResource() || []}
+                        value={
+                          formData().professor_id === null
+                            ? NULL_OPTION_VALUE
+                            : formData().professor_id
+                        }
+                        onChange={(v) => {
+                          const professorId =
+                            v === NULL_OPTION_VALUE || v === null || v === '' ? null : Number(v)
+                          handleInputChange('professor_id', professorId)
+                        }}
+                        placeholder={t().courses.form.professorPlaceholder}
+                        disabled={professorsResource.loading || isDisabled()}
+                      />
+                    </FormField>
+                    <FormField
+                      label={t().courses.form.levelLabel}
+                      name="level"
+                      error={validationErrors().level}
+                      helperText={
+                        !formData().level ? t().courses.form.aiDeterminesLevel : undefined
+                      }
+                    >
+                      <Select
+                        name="level"
+                        options={levelOptions()}
+                        value={formData().level || NULL_OPTION_VALUE}
+                        onChange={(v) => {
+                          const level = v === NULL_OPTION_VALUE ? null : String(v)
+                          handleInputChange('level', level)
+                        }}
+                        placeholder={t().courses.form.levelPlaceholder}
+                        disabled={isDisabled()}
+                      />
+                    </FormField>
+                    <FormField
+                      label={t().courses.form.lecturesPerWeekLabel}
+                      name="lectures_per_week"
+                      error={validationErrors().lectures_per_week}
+                      helperText={t().courses.form.lecturesPerWeekHelper}
+                    >
+                      <Input
+                        name="lectures_per_week"
+                        type="number"
+                        min={1}
+                        max={5}
+                        value={formData().lectures_per_week ?? ''}
+                        onChange={(v) => {
+                          handleInputChange('lectures_per_week', v === '' ? null : Number(v))
+                        }}
+                        disabled={isDisabled()}
+                      />
+                    </FormField>
+                    <FormField
+                      label={t().courses.form.totalWeeksLabel}
+                      name="total_weeks"
+                      error={validationErrors().total_weeks}
+                      helperText={t().courses.form.totalWeeksHelper}
+                    >
+                      <Input
+                        name="total_weeks"
+                        type="number"
+                        min={1}
+                        max={50}
+                        value={formData().total_weeks ?? ''}
+                        onChange={(v) => {
+                          handleInputChange('total_weeks', v === '' ? null : Number(v))
+                        }}
+                        disabled={isDisabled()}
+                      />
+                    </FormField>
+                    <FormField
+                      label={t().courses.form.codeLabel}
+                      name="code"
+                      error={validationErrors().code}
+                    >
+                      <Input
+                        name="code"
+                        value={formData().code}
+                        onChange={(v) => {
+                          handleInputChange('code', v)
+                        }}
+                        disabled={isDisabled()}
+                      />
+                    </FormField>
+                    <FormField
+                      label={t().courses.form.titleLabel}
+                      name="title"
+                      error={validationErrors().title}
+                    >
+                      <Input
+                        name="title"
+                        value={formData().title}
+                        onChange={(v) => {
+                          handleInputChange('title', v)
+                        }}
+                        disabled={isDisabled()}
+                      />
+                    </FormField>
+                  </div>
+
+                  <FormField
+                    label={t().courses.form.notesLabel}
+                    name="notes"
+                    helperText={t().courses.form.notesHelper}
+                    error={validationErrors().notes}
+                  >
+                    <Textarea
+                      name="notes"
+                      rows={2}
+                      placeholder={t().courses.form.notesPlaceholder}
+                      value={formData().notes || ''}
+                      onChange={(v) => {
+                        handleInputChange('notes', v || null)
+                      }}
+                      disabled={isDisabled()}
+                    />
+                  </FormField>
+                </div>
+              </Show>
+            </div>
+
+            <div class="mb-2 flex justify-end">
+              <button
+                type="button"
+                class="text-xs font-serif text-parchment-400 hover:text-parchment-200 underline cursor-pointer"
+                onClick={() => {
+                  setIsManualMode(true)
+                }}
+                disabled={isDisabled()}
+              >
+                {t().courses.form.fillManuallyInstead}
+              </button>
+            </div>
+
+            <Show when={props.error || generateError()}>
+              <Alert variant="danger" class="my-4">
+                {props.error || generateError()}
+              </Alert>
+            </Show>
+
+            <FormActions>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={props.onCancel}
+                disabled={isDisabled()}
+              >
+                {t().common.cancel}
+              </Button>
+              <Button type="button" variant="outline" onClick={handleClear} disabled={isDisabled()}>
+                {t().common.clear}
+              </Button>
+              <MagicButton
+                type="button"
+                variant="primary"
+                onClick={() => {
+                  void handleGenerate(false)
+                }}
+                disabled={isDisabled()}
+                isLoading={isGenerating()}
+                loadingText={t().courses.form.generatingSyllabus}
+              >
+                {t().courses.form.generateSyllabus}
+              </MagicButton>
+            </FormActions>
+          </>
+        }
+      >
+        <Show when={!isEditMode() && !hasGeneratedDraft() && isManualMode()}>
+          <div class="mb-4 flex justify-end">
+            <button
+              type="button"
+              class="text-xs font-serif text-parchment-400 hover:text-parchment-200 underline cursor-pointer"
+              onClick={() => {
+                setIsManualMode(false)
+              }}
+              disabled={isDisabled()}
+            >
+              {t().courses.form.usePromptBuilderInstead}
+            </button>
+          </div>
+        </Show>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
           <FormField
-            label={t().courses.form.connectedCourses}
-            name="connected_course_ids"
-            helperText={t().courses.form.connectedCoursesHelper}
+            label={t().courses.form.codeLabel}
+            name="code"
+            required
+            error={validationErrors().code}
           >
-            <ConnectedCoursesSelect
-              courses={departmentCoursesResource() || []}
-              value={visibleConnectedCourseIds()}
-              onChange={handleConnectedCoursesChange}
-              disabled={departmentCoursesResource.loading || isDisabled()}
+            <Input
+              name="code"
+              value={formData().code}
+              onChange={(v) => {
+                handleInputChange('code', v)
+              }}
+              disabled={isDisabled()}
+              required
             />
           </FormField>
-        ) : null}
+          <FormField
+            label={t().courses.form.titleLabel}
+            name="title"
+            required
+            error={validationErrors().title}
+          >
+            <Input
+              name="title"
+              value={formData().title}
+              onChange={(v) => {
+                handleInputChange('title', v)
+              }}
+              disabled={isDisabled()}
+              required
+            />
+          </FormField>
+          <FormField
+            label={t().courses.form.departmentLabel}
+            name="department_id"
+            error={validationErrors().department_id}
+            helperText={
+              formData().department_id === null
+                ? t().courses.form.aiDeterminesDepartment
+                : undefined
+            }
+          >
+            <Select
+              name="department_id"
+              options={departmentsResource() || []}
+              value={
+                formData().department_id === null ? NULL_OPTION_VALUE : formData().department_id
+              }
+              onChange={(v) => {
+                // Convert sentinel value to null, otherwise use the selected value
+                const departmentId =
+                  v === NULL_OPTION_VALUE || v === null || v === '' ? null : Number(v)
+                // Guard: Kobalte fires onChange when the controlled value prop changes
+                // programmatically (e.g. when createEffect populates the form from
+                // props.course). In that case formData is already up-to-date and we
+                // must NOT clear the professor that was just populated.
+                if (departmentId === formData().department_id) return
+                handleInputChange('department_id', departmentId)
+                // Clear professor selection when department changes to avoid mismatch
+                setFormData((prev) => ({
+                  ...prev,
+                  professor_id: null,
+                  ...(props.course ? {} : { connected_course_ids: [] }),
+                }))
+              }}
+              placeholder={t().courses.form.departmentPlaceholder}
+              disabled={departmentsResource.loading || isDisabled()}
+            />
+          </FormField>
+          {formData().department_id !== null ? (
+            <FormField
+              label={t().courses.form.connectedCourses}
+              name="connected_course_ids"
+              helperText={t().courses.form.connectedCoursesHelper}
+            >
+              <ConnectedCoursesSelect
+                courses={departmentCoursesResource() || []}
+                value={visibleConnectedCourseIds()}
+                onChange={handleConnectedCoursesChange}
+                disabled={departmentCoursesResource.loading || isDisabled()}
+              />
+            </FormField>
+          ) : null}
+          <FormField
+            label={t().courses.form.professorLabel}
+            name="professor_id"
+            error={validationErrors().professor_id}
+            helperText={
+              formData().professor_id === null ? t().courses.form.aiDeterminesProfessor : undefined
+            }
+          >
+            <Select
+              name="professor_id"
+              options={professorsResource() || []}
+              value={formData().professor_id === null ? NULL_OPTION_VALUE : formData().professor_id}
+              onChange={(v) => {
+                // Convert sentinel value to null, otherwise use the selected value
+                const professorId =
+                  v === NULL_OPTION_VALUE || v === null || v === '' ? null : Number(v)
+                handleInputChange('professor_id', professorId)
+              }}
+              placeholder={t().courses.form.professorPlaceholder}
+              disabled={professorsResource.loading || isDisabled()}
+            />
+          </FormField>
+          <FormField
+            label={t().courses.form.levelLabel}
+            name="level"
+            error={validationErrors().level}
+            helperText={!formData().level ? t().courses.form.aiDeterminesLevel : undefined}
+          >
+            <Select
+              name="level"
+              options={levelOptions()}
+              value={formData().level || NULL_OPTION_VALUE}
+              onChange={(v) => {
+                // Convert sentinel value to null, otherwise use the selected string value
+                const level = v === NULL_OPTION_VALUE ? null : String(v)
+                handleInputChange('level', level)
+              }}
+              placeholder={t().courses.form.levelPlaceholder}
+              disabled={isDisabled()}
+            />
+          </FormField>
+          <FormField
+            label={t().courses.form.lecturesPerWeekLabel}
+            name="lectures_per_week"
+            error={validationErrors().lectures_per_week}
+            helperText={t().courses.form.lecturesPerWeekHelper}
+          >
+            <Input
+              name="lectures_per_week"
+              type="number"
+              min={1}
+              max={5}
+              value={formData().lectures_per_week ?? ''}
+              onChange={(v) => {
+                handleInputChange('lectures_per_week', v === '' ? null : Number(v))
+              }}
+              disabled={isDisabled()}
+            />
+          </FormField>
+          <FormField
+            label={t().courses.form.totalWeeksLabel}
+            name="total_weeks"
+            error={validationErrors().total_weeks}
+            helperText={t().courses.form.totalWeeksHelper}
+          >
+            <Input
+              name="total_weeks"
+              type="number"
+              min={1}
+              max={50}
+              value={formData().total_weeks ?? ''}
+              onChange={(v) => {
+                handleInputChange('total_weeks', v === '' ? null : Number(v))
+              }}
+              disabled={isDisabled()}
+            />
+          </FormField>
+        </div>
+
         <FormField
-          label={t().courses.form.professorLabel}
-          name="professor_id"
-          error={validationErrors().professor_id}
-          helperText={
-            formData().professor_id === null ? t().courses.form.aiDeterminesProfessor : undefined
+          label={t().courses.form.descriptionLabel}
+          name="description"
+          required
+          error={validationErrors().description}
+        >
+          <Textarea
+            name="description"
+            rows={4}
+            value={formData().description}
+            onChange={(v) => {
+              handleInputChange('description', v)
+            }}
+            disabled={isDisabled()}
+            required
+          />
+        </FormField>
+
+        <FormField
+          label={t().courses.form.notesLabel}
+          name="notes"
+          helperText={t().courses.form.notesHelper}
+          error={validationErrors().notes}
+        >
+          <Textarea
+            name="notes"
+            rows={3}
+            placeholder={t().courses.form.notesPlaceholder}
+            value={formData().notes || ''}
+            onChange={(v) => {
+              handleInputChange('notes', v || null)
+            }}
+            disabled={isDisabled()}
+          />
+        </FormField>
+
+        <Show
+          when={(formData().topics?.length ?? 0) > 0}
+          fallback={
+            <FormField
+              label={t().courses.form.aiPromptLabel}
+              name="freeform_prompt"
+              helperText={t().courses.form.aiPromptHelper}
+              error={validationErrors().freeform_prompt}
+            >
+              <Textarea
+                name="freeform_prompt"
+                rows={3}
+                value={formData().freeform_prompt || ''}
+                onChange={(v) => {
+                  handleInputChange('freeform_prompt', v)
+                }}
+                disabled={isDisabled()}
+              />
+            </FormField>
           }
         >
-          <Select
-            name="professor_id"
-            options={professorsResource() || []}
-            value={formData().professor_id === null ? NULL_OPTION_VALUE : formData().professor_id}
-            onChange={(v) => {
-              // Convert sentinel value to null, otherwise use the selected value
-              const professorId =
-                v === NULL_OPTION_VALUE || v === null || v === '' ? null : Number(v)
-              handleInputChange('professor_id', professorId)
+          <div class="my-6 space-y-3">
+            <div class="flex flex-col sm:flex-row sm:items-baseline sm:justify-between gap-2">
+              <div>
+                <h3 class="text-lg font-display text-parchment-100">
+                  {t().courses.form.syllabusPreviewTitle} ({formData().topics?.length ?? 0})
+                </h3>
+                <p class="text-sm font-serif text-parchment-400">
+                  {t().courses.form.syllabusPreviewHelper}
+                </p>
+              </div>
+              <button
+                type="button"
+                class="self-start sm:self-auto text-xs font-serif text-mystic-300 hover:text-mystic-200 underline whitespace-nowrap cursor-pointer"
+                onClick={() => {
+                  setIsSyllabusExpanded((prev) => !prev)
+                }}
+              >
+                {isSyllabusExpanded()
+                  ? t().courses.form.collapseSyllabus
+                  : t().courses.form.expandSyllabus}
+              </button>
+            </div>
+            <div
+              class={`rounded-lg border border-parchment-600/60 bg-obsidian-950/35 p-3 space-y-3 ${
+                isSyllabusExpanded()
+                  ? 'overflow-visible'
+                  : 'h-[28rem] min-h-48 max-h-[80vh] overflow-y-scroll resize-y'
+              }`}
+            >
+              <For each={formData().topics}>
+                {(topic) => (
+                  <div class="p-4 rounded-lg border border-parchment-700/40 bg-obsidian-900/30">
+                    <div class="flex items-baseline justify-between gap-2">
+                      <h4 class="font-display text-base text-parchment-100">{topic.title}</h4>
+                      <span class="text-xs font-serif text-mystic-300 whitespace-nowrap">
+                        {t().courseDetail.week} {topic.week}
+                        {(formData().lectures_per_week ?? 1) > 1
+                          ? ` • #${String(topic.order)}`
+                          : ''}
+                      </span>
+                    </div>
+                    <TopicContentRenderer content={topic.content ?? null} class="mt-2 text-sm" />
+                  </div>
+                )}
+              </For>
+            </div>
+          </div>
+
+          <FormField
+            label={t().courses.form.refinePromptLabel}
+            name="refine_prompt"
+            helperText={t().courses.form.refinePromptHelper}
+          >
+            <Textarea
+              name="refine_prompt"
+              rows={3}
+              placeholder={t().courses.form.refinePromptPlaceholder}
+              value={refinePrompt()}
+              onChange={(v) => {
+                setRefinePrompt(v)
+              }}
+              disabled={isDisabled()}
+            />
+          </FormField>
+        </Show>
+
+        {/* Display errors */}
+        <Show when={props.error || generateError()}>
+          <Alert variant="danger" class="my-4">
+            {props.error || generateError()}
+          </Alert>
+        </Show>
+
+        <FormActions>
+          <Button type="button" variant="outline" onClick={props.onCancel} disabled={isDisabled()}>
+            {t().common.cancel}
+          </Button>
+          <Button type="button" variant="outline" onClick={handleClear} disabled={isDisabled()}>
+            {t().common.clear}
+          </Button>
+          <MagicButton
+            type="button"
+            variant="secondary"
+            onClick={() => {
+              void handleGenerate((formData().topics?.length ?? 0) > 0)
             }}
-            placeholder={t().courses.form.professorPlaceholder}
-            disabled={professorsResource.loading || isDisabled()}
-          />
-        </FormField>
-        <FormField
-          label={t().courses.form.levelLabel}
-          name="level"
-          error={validationErrors().level}
-          helperText={!formData().level ? t().courses.form.aiDeterminesLevel : undefined}
-        >
-          <Select
-            name="level"
-            options={levelOptions()}
-            value={formData().level || NULL_OPTION_VALUE}
-            onChange={(v) => {
-              // Convert sentinel value to null, otherwise use the selected string value
-              const level = v === NULL_OPTION_VALUE ? null : String(v)
-              handleInputChange('level', level)
-            }}
-            placeholder={t().courses.form.levelPlaceholder}
             disabled={isDisabled()}
-          />
-        </FormField>
-        <FormField
-          label={t().courses.form.lecturesPerWeekLabel}
-          name="lectures_per_week"
-          error={validationErrors().lectures_per_week}
-          helperText={t().courses.form.lecturesPerWeekHelper}
-        >
-          <Input
-            name="lectures_per_week"
-            type="number"
-            min={1}
-            max={5}
-            value={formData().lectures_per_week ?? ''}
-            onChange={(v) => {
-              handleInputChange('lectures_per_week', v === '' ? null : Number(v))
-            }}
-            disabled={isDisabled()}
-          />
-        </FormField>
-        <FormField
-          label={t().courses.form.totalWeeksLabel}
-          name="total_weeks"
-          error={validationErrors().total_weeks}
-          helperText={t().courses.form.totalWeeksHelper}
-        >
-          <Input
-            name="total_weeks"
-            type="number"
-            min={1}
-            max={50}
-            value={formData().total_weeks ?? ''}
-            onChange={(v) => {
-              handleInputChange('total_weeks', v === '' ? null : Number(v))
-            }}
-            disabled={isDisabled()}
-          />
-        </FormField>
-      </div>
-
-      <FormField
-        label={t().courses.form.descriptionLabel}
-        name="description"
-        required
-        error={validationErrors().description}
-      >
-        <Textarea
-          name="description"
-          rows={4}
-          value={formData().description}
-          onChange={(v) => {
-            handleInputChange('description', v)
-          }}
-          disabled={isDisabled()}
-          required
-        />
-      </FormField>
-
-      <FormField
-        label={t().courses.form.notesLabel}
-        name="notes"
-        helperText={t().courses.form.notesHelper}
-        error={validationErrors().notes}
-      >
-        <Textarea
-          name="notes"
-          rows={3}
-          placeholder={t().courses.form.notesPlaceholder}
-          value={formData().notes || ''}
-          onChange={(v) => {
-            handleInputChange('notes', v || null)
-          }}
-          disabled={isDisabled()}
-        />
-      </FormField>
-
-      <FormField
-        label={t().courses.form.aiPromptLabel}
-        name="freeform_prompt"
-        helperText={t().courses.form.aiPromptHelper}
-        error={validationErrors().freeform_prompt}
-      >
-        <Textarea
-          name="freeform_prompt"
-          rows={3}
-          value={formData().freeform_prompt || ''}
-          onChange={(v) => {
-            handleInputChange('freeform_prompt', v)
-          }}
-          disabled={isDisabled()}
-        />
-      </FormField>
-
-      {/* Display errors */}
-      <Show when={props.error || generateError()}>
-        <Alert variant="danger" class="my-4">
-          {props.error || generateError()}
-        </Alert>
+            isLoading={isGenerating()}
+            loadingText={
+              (formData().topics?.length ?? 0) > 0
+                ? t().courses.form.refiningSyllabus
+                : t().common.generating
+            }
+          >
+            {(formData().topics?.length ?? 0) > 0
+              ? t().courses.form.refineSyllabus
+              : t().courses.form.generateDetails}
+          </MagicButton>
+          <Button type="submit" variant="primary" disabled={isDisabled()}>
+            {props.isSubmitting
+              ? t().common.saving
+              : props.course !== undefined
+                ? t().courses.form.updateCourse
+                : t().courses.form.saveCourse}
+          </Button>
+        </FormActions>
       </Show>
-
-      <FormActions>
-        <Button type="button" variant="outline" onClick={props.onCancel} disabled={isDisabled()}>
-          {t().common.cancel}
-        </Button>
-        <Button type="button" variant="outline" onClick={handleClear} disabled={isDisabled()}>
-          {t().common.clear}
-        </Button>
-        <MagicButton
-          type="button"
-          variant="secondary"
-          onClick={() => {
-            void handleGenerate()
-          }}
-          disabled={isDisabled()}
-          isLoading={isGenerating()}
-          loadingText={t().common.generating}
-        >
-          {t().courses.form.generateDetails}
-        </MagicButton>
-        <Button type="submit" variant="primary" disabled={isDisabled()}>
-          {props.isSubmitting
-            ? t().common.saving
-            : props.course !== undefined
-              ? t().courses.form.updateCourse
-              : t().courses.form.saveCourse}
-        </Button>
-      </FormActions>
     </Form>
   )
 }

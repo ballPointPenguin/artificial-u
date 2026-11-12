@@ -16,6 +16,7 @@ class PreferenceService:
     """Service for managing application and user preferences."""
 
     # Preference scope constants
+    COURSE_GENERATION_MODEL = "COURSE_GENERATION_MODEL"
     LECTURE_GENERATION_MODEL = "LECTURE_GENERATION_MODEL"
     TOPICS_GENERATION_MODEL = "TOPICS_GENERATION_MODEL"
     IMAGE_GENERATION_MODEL = "IMAGE_GENERATION_MODEL"
@@ -67,7 +68,7 @@ class PreferenceService:
             The preference value, or default if not found
         """
         pref = self.repository_factory.preference.get_global(scope)
-        if pref:
+        if pref and isinstance(getattr(pref, "value", None), str):
             return pref.value
         return default
 
@@ -139,6 +140,25 @@ class PreferenceService:
         """
         self.logger.info(f"Setting global lecture generation model to: {model}")
         return self.set_global_preference(self.LECTURE_GENERATION_MODEL, model)
+
+    def get_course_generation_model(self) -> str:
+        """
+        Get the course (and syllabus) generation model to use.
+
+        Consults the global preference first before falling back to the
+        environment setting.
+
+        Returns:
+            The model name to use for course generation
+        """
+        model = self.get_global_preference(self.COURSE_GENERATION_MODEL)
+        if model:
+            self.logger.info(f"Using preference-configured course model: {model}")
+            return model
+
+        model = self.settings.COURSE_GENERATION_MODEL
+        self.logger.info(f"Using environment-configured course model: {model}")
+        return model
 
     def get_topics_generation_model(self) -> str:
         """
