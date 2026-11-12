@@ -8,7 +8,12 @@ separated from the core CRUD operations in TopicService.
 import logging
 from typing import Any, Dict, List, Optional
 
-from artificial_u.models.converters import course_model_to_dict, parse_topic_xml, topics_to_xml
+from artificial_u.models.converters import (
+    course_model_to_dict,
+    parse_topic_xml,
+    parse_topics_xml,
+    topics_to_xml,
+)
 from artificial_u.models.core import Topic
 from artificial_u.models.repositories.factory import RepositoryFactory
 from artificial_u.services.content_service import ContentService
@@ -93,35 +98,40 @@ class TopicGeneratorService:
             existing_topics_by_slot = {
                 (topic.week, topic.order): topic for topic in existing_topics
             }
-            prior_topics_context = []
-            created_topics = []
+            missing_slots = [slot for slot in topic_slots if slot not in existing_topics_by_slot]
             model = self.preference_service.get_topics_generation_model()
 
             self.logger.info(
                 f"Preparing canonical topic generation for {len(topic_slots)} slots "
-                f"({len(existing_topics)} already exist)"
+                f"({len(existing_topics)} already exist, {len(missing_slots)} missing)"
             )
 
-            for week, order in topic_slots:
-                existing_topic = existing_topics_by_slot.get((week, order))
-                if existing_topic:
-                    prior_topics_context.append(self._topic_model_to_prompt_dict(existing_topic))
-                    continue
+            if not missing_slots:
+                return []
 
-                topic_dict = await self._generate_topic_for_slot(
-                    course_data=course_data,
-                    freeform_prompt=freeform_prompt,
-                    prior_topics_context=prior_topics_context,
-                    related_courses_topics_context=related_courses_topics_context,
-                    target_week=week,
-                    target_order=order,
-                    model=model,
-                )
+            existing_topics_context = [
+                self._topic_model_to_prompt_dict(topic) for topic in existing_topics
+            ]
+            generated_topics = await self._generate_topics_batch(
+                course_data=course_data,
+                freeform_prompt=freeform_prompt,
+                existing_topics_context=existing_topics_context,
+                related_courses_topics_context=related_courses_topics_context,
+                missing_slots=missing_slots,
+                existing_topics_by_slot=existing_topics_by_slot,
+                model=model,
+            )
+
+            created_topics = []
+            for topic_dict in generated_topics:
                 created_topic = self._save_topic_dict(
-                    topic_dict, course_id, created_by, model=model, language=course_model.language
+                    topic_dict,
+                    course_id,
+                    created_by,
+                    model=model,
+                    language=course_model.language,
                 )
                 created_topics.append(created_topic)
-                prior_topics_context.append(self._topic_model_to_prompt_dict(created_topic))
 
             self.logger.info(
                 f"Overall success: generated and saved {len(created_topics)} topics for course "
@@ -259,6 +269,179 @@ class TopicGeneratorService:
             return ""
 
         return "\n\n".join(related_sections) + "\n"
+
+    def save_topics_for_course(
+        self,
+        course_id: int,
+        topics_data: List[Dict[str, Any]],
+        created_by: Optional[int] = None,
+        model: Optional[str] = None,
+        language: Optional[str] = None,
+    ) -> List[Topic]:
+        """Persist a list of pre-generated topic dicts (e.g. from an approved course draft)."""
+        resolved_model = model or self.preference_service.get_course_generation_model()
+        saved_topics: List[Topic] = []
+        for idx, raw_topic in enumerate(topics_data):
+            if not isinstance(raw_topic, dict) or not raw_topic.get("title"):
+                continue
+            topic_dict = {
+                "title": str(raw_topic["title"]).strip(),
+                "week": int(raw_topic.get("week") or (idx + 1)),
+                "order": int(raw_topic.get("order") or 1),
+                "content": raw_topic.get("content"),
+            }
+            saved_topics.append(
+                self._save_topic_dict(
+                    topic_dict=topic_dict,
+                    course_id=course_id,
+                    created_by=created_by,
+                    model=resolved_model,
+                    language=language,
+                )
+            )
+        return saved_topics
+
+    async def _generate_topics_batch(
+        self,
+        course_data: Dict[str, Any],
+        freeform_prompt: Optional[str],
+        existing_topics_context: List[Dict[str, Any]],
+        related_courses_topics_context: str,
+        missing_slots: List[tuple[int, int]],
+        existing_topics_by_slot: Dict[tuple[int, int], Topic],
+        model: str,
+    ) -> List[Dict[str, Any]]:
+        """Generate all missing topics for a course in a single LLM call."""
+        existing_topics_xml = (
+            topics_to_xml(existing_topics_context) if existing_topics_context else None
+        )
+
+        language = course_data.get("language") or "en"
+        lang = "en"
+        if language and isinstance(language, str):
+            lang_prefix = language.lower()[:2]
+            if lang_prefix in ("en", "fr"):
+                lang = lang_prefix
+
+        from artificial_u.prompts import get_prompts_for_language
+
+        prompt_module = get_prompts_for_language(lang)
+        topics_prompt = prompt_module.get_topics_prompt(
+            course_data=course_data,
+            freeform_prompt=freeform_prompt,
+            existing_topics_xml=existing_topics_xml,
+            related_courses_topics_context=related_courses_topics_context,
+        )
+        system_prompt = prompt_module.get_system_prompt("topics")
+        self.logger.info(
+            f"Generating {len(missing_slots)} topics in a single batch for course ID "
+            f"{course_data.get('id')}"
+        )
+        raw_response = await self.content_service.generate_text(
+            model=model,
+            prompt=topics_prompt,
+            system_prompt=system_prompt,
+            max_tokens=16384,
+            thinking_level="low",
+        )
+        generated_topics_xml = self._extract_generated_topics_xml(raw_response)
+
+        try:
+            parsed_topics = parse_topics_xml(generated_topics_xml)
+        except ValueError as e:
+            self.logger.error(f"XML parsing error for batch topics: {e}")
+            raise ContentGenerationError(f"Error parsing generated topics XML: {e}") from e
+
+        valid_topics = [t for t in parsed_topics if isinstance(t, dict) and t.get("title")]
+        if not valid_topics:
+            raise ContentGenerationError("Generated topics XML did not include any valid topics")
+
+        return self._match_topics_to_missing_slots(
+            valid_topics=valid_topics,
+            missing_slots=missing_slots,
+            existing_topics_by_slot=existing_topics_by_slot,
+        )
+
+    def _match_topics_to_missing_slots(
+        self,
+        valid_topics: List[Dict[str, Any]],
+        missing_slots: List[tuple[int, int]],
+        existing_topics_by_slot: Dict[tuple[int, int], Topic],
+    ) -> List[Dict[str, Any]]:
+        missing_slot_set = set(missing_slots)
+        assigned_by_slot: Dict[tuple[int, int], Dict[str, Any]] = {}
+        unassigned_topics: List[Dict[str, Any]] = []
+        existing_titles = {
+            t.title.strip().lower() for t in existing_topics_by_slot.values() if t.title
+        }
+
+        for topic in valid_topics:
+            slot = (topic.get("week"), topic.get("order"))
+            if slot in missing_slot_set and slot not in assigned_by_slot:
+                topic["week"], topic["order"] = slot
+                assigned_by_slot[slot] = topic
+            elif slot in existing_topics_by_slot and (
+                topic.get("title", "").strip().lower() in existing_titles
+            ):
+                # Model echoed back an existing topic unchanged; skip it
+                continue
+            else:
+                unassigned_topics.append(topic)
+
+        unassigned_iter = iter(unassigned_topics)
+        final_topics: List[Dict[str, Any]] = []
+        for week, order in missing_slots:
+            if (week, order) in assigned_by_slot:
+                final_topics.append(assigned_by_slot[(week, order)])
+                continue
+            fallback = next(unassigned_iter, None)
+            if fallback is None:
+                break
+            if fallback.get("week") != week or fallback.get("order") != order:
+                self.logger.warning(
+                    "Generated topic returned mismatched positioning; normalizing to "
+                    f"requested slot (expected week={week}, order={order}, "
+                    f"received week={fallback.get('week')}, order={fallback.get('order')})"
+                )
+            fallback["week"] = week
+            fallback["order"] = order
+            final_topics.append(fallback)
+
+        return final_topics
+
+    def _extract_generated_topics_xml(self, raw_response: str) -> str:
+        is_truncated = detect_truncation(raw_response)
+        generated_output = extract_xml_between_tags(raw_response, "output")
+
+        if generated_output:
+            stripped_output = generated_output.strip()
+            if stripped_output.startswith("<topics>") and stripped_output.endswith("</topics>"):
+                return stripped_output
+            inner_topics = extract_xml_between_tags(stripped_output, "topics")
+            if inner_topics:
+                return ensure_xml_wrapper(inner_topics, "topics")
+            if "<topic>" in stripped_output:
+                return ensure_xml_wrapper(stripped_output, "topics")
+
+        stripped_response = raw_response.strip()
+        if stripped_response.startswith("<topics>") and stripped_response.endswith("</topics>"):
+            return stripped_response
+
+        inner_topics = extract_xml_between_tags(raw_response, "topics")
+        if inner_topics:
+            return f"<topics>\n{inner_topics}\n</topics>"
+
+        inner_topic = extract_xml_between_tags(raw_response, "topic")
+        if inner_topic:
+            return f"<topics>\n<topic>\n{inner_topic}\n</topic>\n</topics>"
+
+        error_msg = (
+            f"Could not extract <output> or <topics> tag from response"
+            f"{' (response was truncated)' if is_truncated else ''}:\n"
+            f"{raw_response[:500]}..."
+        )
+        self.logger.error(error_msg)
+        raise ContentGenerationError(error_msg)
 
     async def _generate_topic_for_slot(
         self,

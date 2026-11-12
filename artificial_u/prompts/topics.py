@@ -145,3 +145,106 @@ def get_next_topic_prompt(
         )
     except ValueError as e:
         raise ValueError(f"Error formatting NEXT_TOPIC_PROMPT: {e}")
+
+
+TOPICS_XML_STRUCTURE = f"""<topics>
+  {TOPIC_XML_STRUCTURE}
+</topics>"""
+
+TOPICS_PROMPT = PromptTemplate(
+    template=f"""
+Generate a complete, intellectually grounded week-by-week syllabus of course topics in XML format.
+
+The course has {{lectures_per_week}} topics per week across {{total_weeks}} weeks,
+for {{total_topic_slots}} total topic slots.
+
+Design the Week-by-Week Curriculum:
+- Organize the subject matter into a logical progression of weekly `<topic>` modules covering
+  every missing slot from week 1..{{total_weeks}} and order 1..{{lectures_per_week}}.
+- `<title>`: Assign a clear topic or conceptual theme to each slot that builds toward the course's
+  overarching inquiry.
+- `<content>`:
+  - `<lecture>`: Include a sharp, evocative lecture title or conceptual focus for the session.
+  - `<readings>`: Pair each topic with curated reading suggestions (foundational books, articles,
+    essays, or primary works by relevant scholars, writers, and thinkers).
+  - `<objectives>` (optional) and `<notes>` (optional): Key learning objectives or context.
+
+Tone and Guardrails:
+- Academic and Succinct: Write in an informative, scholarly, and concise voice that prioritizes
+  conceptual structure and intellectual connections over fluff.
+- Content Over Logistics: Focus strictly on the intellectual architecture (themes, lectures, and
+  readings). Do not output administrative boilerplate or filler "recap / summary / course review"
+  topics unless the course description explicitly implies a substantive capstone.
+- Escape XML-sensitive characters inside text nodes, especially `&` (`&amp;`), `<` (`&lt;`), and `>` (`&gt;`).
+
+Required XML Structure:
+{TOPICS_XML_STRUCTURE}
+
+Course Information:
+{{course_xml}}
+
+Note: If the course XML includes a <user_notes> element, those are user-provided notes for this
+course — treat them as important guidance when generating content.
+
+{{existing_topics_context}}
+{{related_courses_topics_context}}
+
+{{freeform_prompt_text}}
+
+Example of a properly formatted topic inside `<topics>`:
+<topics>
+{EXAMPLE_TOPIC}
+</topics>
+
+Wrap your answer in <output> tags, providing only the `<topics>` element containing the `<topic>` items.
+""",
+    required_vars=[
+        "course_xml",
+        "lectures_per_week",
+        "total_weeks",
+        "total_topic_slots",
+        "existing_topics_context",
+        "related_courses_topics_context",
+        "freeform_prompt_text",
+    ],
+)
+
+
+def get_topics_prompt(
+    course_data: Dict[str, Any],
+    *,
+    existing_topics_xml: Optional[str] = None,
+    related_courses_topics_context: Optional[str] = None,
+    freeform_prompt: Optional[str] = None,
+) -> str:
+    """Generate the prompt for the full week-by-week course topics curriculum in one call."""
+    course_xml_str = partial_course_to_xml(course_data)
+    lectures_per_week = int(course_data.get("lectures_per_week") or 1)
+    total_weeks = int(course_data.get("total_weeks") or 1)
+    total_topic_slots = lectures_per_week * total_weeks
+
+    freeform_prompt_text = (
+        f"Additional context/ideas for the topics:\n{freeform_prompt}\n" if freeform_prompt else ""
+    )
+
+    existing_topics_context = ""
+    if existing_topics_xml:
+        existing_topics_context = (
+            f"Topics already established in the course:\n{existing_topics_xml}\n\n"
+            "Generate topics for all remaining (week, order) slots so the full syllabus is "
+            "complete and cohesive. Do not duplicate existing topics.\n"
+        )
+    related_courses_context = related_courses_topics_context or ""
+
+    try:
+        return TOPICS_PROMPT.format(
+            course_xml=course_xml_str,
+            lectures_per_week=lectures_per_week,
+            total_weeks=total_weeks,
+            total_topic_slots=total_topic_slots,
+            existing_topics_context=existing_topics_context,
+            related_courses_topics_context=related_courses_context,
+            freeform_prompt_text=freeform_prompt_text,
+        )
+    except ValueError as e:
+        raise ValueError(f"Error formatting TOPICS_PROMPT: {e}")

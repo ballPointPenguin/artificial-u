@@ -309,7 +309,7 @@ async def test_generate_openai_reasoning_models_use_effort_without_temperature(m
         ("gemini-3.6-flash", True),
         ("gemini-3.5-flash-lite", True),
         ("gemini-3.8-flash", True),
-        ("gemini-3.1-pro-preview", False),
+        ("gemini-4-argon", True),
         ("gemini-3.1-flash-lite", False),
         ("gemini-4.0-flash", True),
         ("claude-sonnet-5-5", False),
@@ -326,6 +326,7 @@ def test_deprecates_gemini_sampling_params(model, expected):
         ("gemini-3.5-flash", True),
         ("gemini-3.6-flash", True),
         ("gemini-3.8-flash", False),
+        ("gemini-4-argon", False),
     ],
 )
 def test_supports_gemini_minimal_thinking_level(model, expected):
@@ -333,7 +334,8 @@ def test_supports_gemini_minimal_thinking_level(model, expected):
 
 
 @pytest.mark.asyncio
-async def test_generate_gemini_rejects_minimal_thinking_level_for_gemini_3_8(monkeypatch):
+@pytest.mark.parametrize("model", ["gemini-3.8-flash", "gemini-4-argon"])
+async def test_generate_gemini_rejects_minimal_thinking_level(monkeypatch, model):
     service = _build_service()
     mock_client = MagicMock()
     monkeypatch.setattr("artificial_u.services.content_service.gemini_client", mock_client)
@@ -341,7 +343,7 @@ async def test_generate_gemini_rejects_minimal_thinking_level_for_gemini_3_8(mon
     with pytest.raises(ValueError, match="does not support thinking_level='minimal'"):
         await service._generate_gemini(
             prompt="Test prompt",
-            model="gemini-3.8-flash",
+            model=model,
             system_prompt=None,
             temperature=None,
             max_tokens=2048,
@@ -353,7 +355,8 @@ async def test_generate_gemini_rejects_minimal_thinking_level_for_gemini_3_8(mon
 
 
 @pytest.mark.asyncio
-async def test_generate_gemini_omits_temperature_for_gemini_3_6_flash(monkeypatch):
+@pytest.mark.parametrize("model", ["gemini-3.8-flash", "gemini-4-argon"])
+async def test_generate_gemini_omits_temperature_for_newer_gemini_models(monkeypatch, model):
     service = _build_service()
 
     part_mock = MagicMock()
@@ -372,7 +375,7 @@ async def test_generate_gemini_omits_temperature_for_gemini_3_6_flash(monkeypatc
 
     result = await service._generate_gemini(
         prompt="Test prompt",
-        model="gemini-3.8-flash",
+        model=model,
         system_prompt="Test system",
         temperature=0.3,
         max_tokens=2048,
@@ -383,7 +386,7 @@ async def test_generate_gemini_omits_temperature_for_gemini_3_6_flash(monkeypatc
     assert result == "hello from gemini"
     call_kwargs = mock_client.aio.models.generate_content.await_args.kwargs
     config = call_kwargs["config"]
-    # Config should not have temperature set because gemini-3.6-flash deprecates sampling params
+    # Config should not have temperature set because newer Gemini models deprecate sampling params
     assert not hasattr(config, "temperature") or getattr(config, "temperature", None) is None
     assert config.max_output_tokens == 2048
     assert (

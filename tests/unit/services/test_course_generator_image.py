@@ -11,7 +11,7 @@ from artificial_u.utils import GenerationError
 
 
 @pytest.mark.asyncio
-async def test_generate_and_set_course_image_updates_course(monkeypatch):
+async def test_generate_and_set_course_image_updates_course():
     course = Course(
         id=7,
         code="TST100",
@@ -53,11 +53,6 @@ async def test_generate_and_set_course_image_updates_course(monkeypatch):
     job_enqueue = MagicMock()
     repo = MagicMock()
 
-    monkeypatch.setattr(
-        "artificial_u.services.course_generator_service.get_settings",
-        lambda: MagicMock(IMAGE_GENERATION_MODEL="gemini-test"),
-    )
-
     svc = CourseGeneratorService(
         course_service=course_service,
         professor_service=professor_service,
@@ -77,7 +72,7 @@ async def test_generate_and_set_course_image_updates_course(monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_generate_and_set_course_image_raises_on_failed_generation(monkeypatch):
+async def test_generate_and_set_course_image_raises_on_failed_generation():
     course = Course(
         id=8,
         code="TST200",
@@ -93,11 +88,6 @@ async def test_generate_and_set_course_image_raises_on_failed_generation(monkeyp
     image_service = MagicMock()
     image_service.generate_course_image = AsyncMock(
         return_value=ImageGenerationResult(success=False, image_keys=[])
-    )
-
-    monkeypatch.setattr(
-        "artificial_u.services.course_generator_service.get_settings",
-        lambda: MagicMock(IMAGE_GENERATION_MODEL="gemini-test"),
     )
 
     svc = CourseGeneratorService(

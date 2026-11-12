@@ -554,6 +554,7 @@ async def enqueue_create_course(
         "lectures_per_week": course_data.lectures_per_week,
         "total_weeks": course_data.total_weeks,
         "connected_course_ids": course_data.connected_course_ids,
+        "topics": course_data.topics,
         "created_by": student.id,
         "created_with": course_data.created_with,
         "language": course_data.language,

@@ -1,3 +1,5 @@
+import type { TopicDraft } from '../../api/types'
+
 // Form data interface for Course creation and editing
 export interface CourseFormData {
   code: string
@@ -10,6 +12,7 @@ export interface CourseFormData {
   notes?: string | null // Optional user notes to guide content generation
   lectures_per_week?: number | null // Optional field
   total_weeks?: number | null // Optional field
+  topics?: TopicDraft[]
 
   // Add any other fields that are part of the form but maybe not directly in CourseCreate/Update initially
   // For example, a freeform prompt for generation if not directly mapping all fields to CourseGenerateRequest.partial_attributes

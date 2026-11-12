@@ -51,6 +51,13 @@ export const preferenceService = {
   },
 
   /**
+   * Get the current course and syllabus generation model
+   */
+  getCourseGenerationModel: (): Promise<ModelSettingResponse> => {
+    return httpClient.get<ModelSettingResponse>(ENDPOINTS.preferences.courseGenerationModel)
+  },
+
+  /**
    * Get the current lecture generation model
    */
   getLectureGenerationModel: (): Promise<ModelSettingResponse> => {

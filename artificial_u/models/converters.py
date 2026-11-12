@@ -562,22 +562,38 @@ def parse_course_xml(course_xml: str) -> Dict[str, Any]:
         course_xml: The XML string to parse
 
     Returns:
-        Dict[str, Any]: The parsed course attributes
+        Dict[str, Any]: The parsed course attributes (including nested topics if present)
 
     Raises:
         ValueError: If the XML is invalid or missing required elements
     """
     try:
-        root = ET.fromstring(course_xml)
-        course_data = {}
+        repaired_xml = _repair_topics_xml(course_xml)
+        root = ET.fromstring(repaired_xml.strip())
+        course_data: Dict[str, Any] = {}
 
         # Process simple text fields
         for field in ["code", "title", "description", "level"]:
             course_data[field] = _parse_text_field(root.find(field))
 
+        # Optional pedagogical/delivery notes (only include when non-empty)
+        notes_val = _parse_text_field(root.find("notes"))
+        if notes_val:
+            course_data["notes"] = notes_val
+
         # Process numeric fields
         for field in ["lectures_per_week", "total_weeks"]:
             course_data[field] = _parse_numeric_field(root.find(field))
+
+        # Process nested topics syllabus if present
+        topics_element = root.find("topics")
+        if topics_element is not None:
+            topics_data: List[Dict[str, Any]] = []
+            for topic in topics_element.findall("topic"):
+                topic_data = parse_topic_xml(ET.tostring(topic, encoding="utf-8").decode())
+                if topic_data.get("title"):
+                    topics_data.append(topic_data)
+            course_data["topics"] = topics_data
 
         return course_data
 

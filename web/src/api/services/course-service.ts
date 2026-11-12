@@ -103,7 +103,9 @@ export const courseService = {
   },
 
   generateCourse: (data: CourseGenerateRequest): Promise<Course> => {
-    return httpClient.post<Course>(ENDPOINTS.courses.generate, data)
+    return httpClient.post<Course>(ENDPOINTS.courses.generate, data, {
+      timeout: TIMEOUT_CONFIG.generation,
+    })
   },
 
   enqueueGenerateCourse: (

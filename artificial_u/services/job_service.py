@@ -166,6 +166,9 @@ class JobService:
         connected_course_ids = payload.get("connected_course_ids")
         if connected_course_ids is not None:
             partial["connected_course_ids"] = connected_course_ids
+        freeform_prompt = payload.get("freeform_prompt")
+        if freeform_prompt is not None and "freeform_prompt" not in partial:
+            partial["freeform_prompt"] = freeform_prompt
         result = await service.generate_course(partial)
         return {"generated_course": result}
 
@@ -193,6 +196,7 @@ class JobService:
         connected_course_ids = payload.get("connected_course_ids")
         language = payload.get("language")
         notes = payload.get("notes")
+        topics_data = payload.get("topics")
 
         if not title or not code or not level:
             raise ValueError("title, code, and level are required to create a course")
@@ -214,16 +218,37 @@ class JobService:
             language=language,
         )
 
-        # After successful course creation, enqueue topic generation
+        # If pre-generated topics were provided with the course draft, save them directly;
+        # otherwise enqueue background topic generation.
         topics_job_id = None
-        try:
-            job_enqueue_service = self._job_enqueue_service_instance()
-            topics_job_id = job_enqueue_service.enqueue_topics_generation(
-                course.id, created_by=created_by, parent_job_id=parent_job_id
-            )
-            self.logger.info(f"Enqueued topic generation for course {course.id}")
-        except Exception as e:
-            self.logger.warning(f"Failed to enqueue topic generation for course {course.id}: {e}")
+        if isinstance(topics_data, list) and len(topics_data) > 0:
+            try:
+                topic_gen_service = self._topic_generator_service_instance()
+                saved_topics = topic_gen_service.save_topics_for_course(
+                    course_id=course.id,
+                    topics_data=topics_data,
+                    created_by=created_by,
+                    model=created_with,
+                    language=course.language,
+                )
+                self.logger.info(
+                    f"Saved {len(saved_topics)} pre-generated topics for course {course.id}"
+                )
+            except Exception as e:
+                self.logger.warning(
+                    f"Failed to save pre-generated topics for course {course.id}: {e}"
+                )
+        else:
+            try:
+                job_enqueue_service = self._job_enqueue_service_instance()
+                topics_job_id = job_enqueue_service.enqueue_topics_generation(
+                    course.id, created_by=created_by, parent_job_id=parent_job_id
+                )
+                self.logger.info(f"Enqueued topic generation for course {course.id}")
+            except Exception as e:
+                self.logger.warning(
+                    f"Failed to enqueue topic generation for course {course.id}: {e}"
+                )
 
         result: Dict[str, Any] = {
             "course_id": course.id,

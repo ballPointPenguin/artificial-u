@@ -420,6 +420,7 @@ const Courses: Component = () => {
       total_weeks: formData.total_weeks ?? undefined,
       created_with: formData.created_with ?? undefined,
       language: contentLanguage(),
+      topics: formData.topics && formData.topics.length > 0 ? formData.topics : undefined,
     }
 
     try {

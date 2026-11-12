@@ -304,7 +304,7 @@ export const en = {
       notesPlaceholder:
         'e.g. This course is taught in English with French vocabulary integrated throughout. Do not generate lectures entirely in French.',
       notesHelper:
-        'Optional notes to guide content generation. These are passed to the AI when generating topics and lectures. Not auto-populated by Generate Details.',
+        'Optional standing instructions passed to the AI when generating lectures (e.g. narrative style, formula density, or language mix). AI may also populate this if your prompt specifies special delivery rules.',
       aiPromptLabel: 'AI Generation Prompt (Optional)',
       departmentPlaceholder: '-- Select Department (Optional) --',
       professorPlaceholder: '-- Select Professor (Optional) --',
@@ -329,6 +329,30 @@ export const en = {
       generateDetails: 'Generate Details',
       updateCourse: 'Update Course',
       saveCourse: 'Save Course',
+      syllabusPromptLabel: 'Course Idea & Syllabus Prompt',
+      syllabusPromptPlaceholder:
+        'Describe your course idea, themes, thinkers, readings, tone, or scope (e.g., "Modern Canada. Interdisciplinary survey of Canadian history since 1948, regional socio-political geography, First Nations, and migration...")',
+      syllabusPromptHelper:
+        'Describe what you want the course to cover, including any notes on tone, scope, or vibe. AI will draft the course description and full weekly syllabus for your review before anything is saved.',
+      advancedOptions: 'Advanced Options (Department, Professor, Structure & Related Courses)',
+      generateSyllabus: 'Generate Syllabus',
+      generatingSyllabus: 'Drafting Syllabus...',
+      fillManuallyInstead: 'Fill in fields manually instead',
+      usePromptBuilderInstead: 'Back to prompt-first syllabus builder',
+      syllabusPreviewTitle: 'Weekly Syllabus Preview',
+      syllabusPreviewHelper:
+        'Use the prompt box below to ask AI to adjust the scope, readings, or progression.',
+      expandSyllabus: 'Expand all',
+      collapseSyllabus: 'Collapse',
+      refinePromptLabel: 'Refine Syllabus with AI',
+      refinePromptPlaceholder:
+        'e.g., "Shift Weeks 4–6 to focus more on urban geography and labor history, and expand to 2 lectures per week."',
+      refinePromptHelper:
+        'Ask for changes to the course scope, weekly progression, or reading suggestions and regenerate the draft.',
+      refineSyllabus: 'Refine Syllabus',
+      refiningSyllabus: 'Refining Syllabus...',
+      promptOrTitleRequired:
+        'Please enter a course prompt (or expand Advanced Options to provide a title/description) before generating.',
     },
   },
 

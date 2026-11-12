@@ -14,7 +14,7 @@ from artificial_u.prompts.professor_image import format_professor_image_prompt
 from artificial_u.prompts.summary import get_summary_prompt
 from artificial_u.prompts.system import get_system_prompt
 from artificial_u.prompts.tags import get_course_tags_prompt
-from artificial_u.prompts.topics import get_next_topic_prompt
+from artificial_u.prompts.topics import get_next_topic_prompt, get_topics_prompt
 
 __all__ = [
     # Base utilities
@@ -38,6 +38,7 @@ __all__ = [
     "get_course_tags_prompt",
     # Topics prompts
     "get_next_topic_prompt",
+    "get_topics_prompt",
     # Language dispatch
     "get_prompts_for_language",
 ]

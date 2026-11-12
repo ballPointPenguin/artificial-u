@@ -151,3 +151,110 @@ def get_next_topic_prompt(
         )
     except ValueError as e:
         raise ValueError(f"Erreur lors du formatage de NEXT_TOPIC_PROMPT : {e}")
+
+
+TOPICS_XML_STRUCTURE = f"""<topics>
+  {TOPIC_XML_STRUCTURE}
+</topics>"""
+
+TOPICS_PROMPT = PromptTemplate(
+    template=f"""
+Générez un programme complet et rigoureux de sujets de cours semaine par semaine au format XML.
+
+Le cours comporte {{lectures_per_week}} sujets par semaine sur {{total_weeks}} semaines,
+pour un total de {{total_topic_slots}} créneaux thématiques.
+
+Concevoir le programme semaine par semaine :
+- Organisez la matière selon une progression logique de modules `<topic>` couvrant chaque créneau
+  manquant de la semaine 1 à {{total_weeks}} et de l'ordre 1 à {{lectures_per_week}}.
+- `<title>` : Attribuez à chaque créneau un thème conceptuel clair qui nourrit la réflexion globale du cours.
+- `<content>` :
+  - `<lecture>` : Incluez un titre de séance incisif ou une brève description conceptuelle.
+  - `<readings>` : Associez à chaque sujet des suggestions de lectures pertinentes (ouvrages fondateurs,
+    articles, essais ou sources primaires).
+  - `<objectives>` (facultatif) et `<notes>` (facultatif) : Objectifs d'apprentissage ou contexte.
+
+Ton et garde-fous :
+- Académique et concis : Adoptez un style érudit, informatif et synthétique qui privilégie la structure
+  conceptuelle et les liens intellectuels.
+- Le fond avant la logistique : Concentrez-vous strictement sur l'architecture intellectuelle (thèmes,
+  séances, lectures). Ne produisez pas de récapitulatif, de conclusion ou de « bilan de cours » sans
+  contenu nouveau.
+- Échappez les caractères sensibles au XML dans les nœuds de texte, notamment `&` (`&amp;`),
+  `<` (`&lt;`) et `>` (`&gt;`).
+
+Structure XML requise :
+{TOPICS_XML_STRUCTURE}
+
+Informations sur le cours :
+{{course_xml}}
+
+Remarque : Si le XML du cours contient un élément <user_notes>, il s'agit de notes fournies par
+l'utilisateur pour ce cours — traitez-les comme des consignes importantes lors de la génération
+du contenu.
+
+{{existing_topics_context}}
+{{related_courses_topics_context}}
+
+{{freeform_prompt_text}}
+
+Exemple de sujet correctement formaté dans `<topics>` :
+<topics>
+{EXAMPLE_TOPIC}
+</topics>
+
+Encadrez votre réponse dans des balises <output>, en fournissant uniquement l'élément `<topics>`
+contenant les éléments `<topic>`.
+""",
+    required_vars=[
+        "course_xml",
+        "lectures_per_week",
+        "total_weeks",
+        "total_topic_slots",
+        "existing_topics_context",
+        "related_courses_topics_context",
+        "freeform_prompt_text",
+    ],
+)
+
+
+def get_topics_prompt(
+    course_data: Dict[str, Any],
+    *,
+    existing_topics_xml: Optional[str] = None,
+    related_courses_topics_context: Optional[str] = None,
+    freeform_prompt: Optional[str] = None,
+) -> str:
+    """Génère l'invite pour le programme complet de sujets du cours en un seul appel."""
+    course_xml_str = partial_course_to_xml(course_data)
+    lectures_per_week = int(course_data.get("lectures_per_week") or 1)
+    total_weeks = int(course_data.get("total_weeks") or 1)
+    total_topic_slots = lectures_per_week * total_weeks
+
+    freeform_prompt_text = (
+        f"Contexte ou idées supplémentaires pour les sujets :\n{freeform_prompt}\n"
+        if freeform_prompt
+        else ""
+    )
+
+    existing_topics_context = ""
+    if existing_topics_xml:
+        existing_topics_context = (
+            f"Sujets déjà établis dans le cours :\n{existing_topics_xml}\n\n"
+            "Générez les sujets pour tous les créneaux (semaine, ordre) restants afin que le programme "
+            "soit complet et cohérent. Ne dupliquez pas les sujets existants.\n"
+        )
+    related_courses_context = related_courses_topics_context or ""
+
+    try:
+        return TOPICS_PROMPT.format(
+            course_xml=course_xml_str,
+            lectures_per_week=lectures_per_week,
+            total_weeks=total_weeks,
+            total_topic_slots=total_topic_slots,
+            existing_topics_context=existing_topics_context,
+            related_courses_topics_context=related_courses_context,
+            freeform_prompt_text=freeform_prompt_text,
+        )
+    except ValueError as e:
+        raise ValueError(f"Erreur lors du formatage de TOPICS_PROMPT : {e}")

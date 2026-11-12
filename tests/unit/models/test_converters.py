@@ -1100,3 +1100,58 @@ def test_parse_topic_xml_with_html_entities():
         "Chinese Economic Reform, 1978–1993. Cambridge University Press."
     )
     assert result["content"]["readings"] == [expected_reading]
+
+
+@pytest.mark.unit
+def test_parse_course_xml_with_nested_topics():
+    """Test parsing course XML containing nested <topics> elements."""
+    course_xml = (
+        "<course>\n"
+        "  <title>Modern Canada: Politics &amp; Society</title>\n"
+        "  <code>POLS340</code>\n"
+        "  <description>An interdisciplinary survey of Canada since 1948.</description>\n"
+        "  <level>Undergraduate</level>\n"
+        "  <lectures_per_week>1</lectures_per_week>\n"
+        "  <total_weeks>2</total_weeks>\n"
+        "  <notes>Focus on bilingual federal-provincial debates.</notes>\n"
+        "  <topics>\n"
+        "    <topic>\n"
+        "      <title>Postwar Confederation &amp; Newfoundland</title>\n"
+        "      <week>1</week>\n"
+        "      <order>1</order>\n"
+        "      <content>\n"
+        "        <lecture>The 1949 Confederation of Newfoundland</lecture>\n"
+        "        <readings>\n"
+        "          <reading>Bothwell, Robert. Canada Since 1945&ndash;Present.</reading>\n"
+        "        </readings>\n"
+        "      </content>\n"
+        "    </topic>\n"
+        "    <topic>\n"
+        "      <title>The Quiet Revolution</title>\n"
+        "      <week>2</week>\n"
+        "      <order>1</order>\n"
+        "      <content>\n"
+        "        <lecture>State Modernization in Quebec</lecture>\n"
+        "        <readings>\n"
+        "          <reading>Dickinson, John &amp; Young, Brian. A Short History of Quebec.</reading>\n"
+        "        </readings>\n"
+        "      </content>\n"
+        "    </topic>\n"
+        "  </topics>\n"
+        "</course>"
+    )
+    result = parse_course_xml(course_xml)
+    assert result["title"] == "Modern Canada: Politics & Society"
+    assert result["code"] == "POLS340"
+    assert result["lectures_per_week"] == 1
+    assert result["total_weeks"] == 2
+    assert result["notes"] == "Focus on bilingual federal-provincial debates."
+    assert len(result["topics"]) == 2
+    assert result["topics"][0]["title"] == "Postwar Confederation & Newfoundland"
+    assert result["topics"][0]["week"] == 1
+    assert result["topics"][0]["order"] == 1
+    assert result["topics"][0]["content"]["readings"] == [
+        "Bothwell, Robert. Canada Since 1945–Present."
+    ]
+    assert result["topics"][1]["title"] == "The Quiet Revolution"
+    assert result["topics"][1]["week"] == 2

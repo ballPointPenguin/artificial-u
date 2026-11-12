@@ -147,3 +147,32 @@ def test_course_prompt_minimal():
     assert "<course>" in prompt
     assert "<no_existing_courses />" in prompt
     assert "<no_connected_courses />" in prompt
+
+
+@pytest.mark.unit
+def test_course_prompt_with_existing_topics_and_related_topics_context():
+    """Test course prompt includes existing draft topics and related courses topics context."""
+    existing_topics = [
+        {
+            "title": "Foundations of Federation",
+            "week": 1,
+            "order": 1,
+            "content": {
+                "lecture": "Confederation and Constitutional Order",
+                "readings": ["Russell, Peter. Constitutional Odyssey."],
+            },
+        }
+    ]
+    prompt = get_course_prompt(
+        department_data={"name": "Political Science", "code": "POLS"},
+        professor_data={},
+        existing_courses=[],
+        partial_course_attrs={"title": "Modern Canada", "code": "POLS340"},
+        freeform_prompt="Expand Week 2 to cover urban geography.",
+        existing_topics=existing_topics,
+        related_courses_topics_context="Related course: Canadian History I\n<topics><topic><title>Pre-1945 Canada</title></topic></topics>",
+    )
+    assert "Current Syllabus Draft Topics" in prompt
+    assert "Foundations of Federation" in prompt
+    assert "Pre-1945 Canada" in prompt
+    assert "Expand Week 2 to cover urban geography." in prompt

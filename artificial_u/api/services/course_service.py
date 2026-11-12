@@ -362,24 +362,12 @@ class CourseApiService(BaseApiService[CoreCourse, CourseResponse, CoursesListRes
                 connected_course_ids=course_data.connected_course_ids,
                 language=course_data.language,
             )
-            # After successful course creation, enqueue topic generation
-            try:
-                from artificial_u.services.job_enqueue_service import JobEnqueueService
-
-                job_enqueue_service = JobEnqueueService(
-                    repository_factory=self.repository_factory,
-                    logger=self.logger,
-                )
-                job_enqueue_service.enqueue_topics_generation(
-                    created_course_model.id,
-                    created_by=created_by,
-                )
-                self.logger.info(f"Enqueued topic generation for course {created_course_model.id}")
-            except Exception as e:
-                self.logger.warning(
-                    f"Failed to enqueue topic generation for course {created_course_model.id}: {e}"
-                )
-                # Don't fail the course creation if topic generation enqueue fails
+            self._save_or_enqueue_course_topics(
+                created_course_model=created_course_model,
+                course_data=course_data,
+                created_by=created_by,
+                created_with=created_with,
+            )
 
             # Convert the returned CourseModel to the API response model
             return self._build_course_response(created_course_model)
@@ -406,6 +394,61 @@ class CourseApiService(BaseApiService[CoreCourse, CourseResponse, CoursesListRes
             self._handle_database_error("create course", e)
         except Exception as e:
             self._handle_general_error("create course", e)
+
+    def _save_or_enqueue_course_topics(
+        self,
+        *,
+        created_course_model: CoreCourse,
+        course_data: CourseCreate,
+        created_by: Optional[int],
+        created_with: Optional[str],
+    ) -> None:
+        """Save pre-generated draft topics directly or enqueue background topic generation."""
+        if isinstance(course_data.topics, list) and len(course_data.topics) > 0:
+            try:
+                from artificial_u.models.core import Topic as CoreTopic
+
+                for idx, raw_topic in enumerate(course_data.topics):
+                    if not isinstance(raw_topic, dict) or not raw_topic.get("title"):
+                        continue
+                    new_topic = CoreTopic(
+                        title=str(raw_topic["title"]).strip(),
+                        course_id=created_course_model.id,
+                        week=int(raw_topic.get("week") or (idx + 1)),
+                        order=int(raw_topic.get("order") or 1),
+                        language=created_course_model.language,
+                        content=raw_topic.get("content"),
+                        created_by=created_by,
+                        created_with=created_with,
+                    )
+                    self.repository_factory.topic.create(new_topic)
+                self.logger.info(
+                    f"Saved {len(course_data.topics)} pre-generated topics for course "
+                    f"{created_course_model.id}"
+                )
+            except Exception as e:
+                self.logger.warning(
+                    f"Failed to save pre-generated topics for course "
+                    f"{created_course_model.id}: {e}"
+                )
+            return
+
+        try:
+            from artificial_u.services.job_enqueue_service import JobEnqueueService
+
+            job_enqueue_service = JobEnqueueService(
+                repository_factory=self.repository_factory,
+                logger=self.logger,
+            )
+            job_enqueue_service.enqueue_topics_generation(
+                created_course_model.id,
+                created_by=created_by,
+            )
+            self.logger.info(f"Enqueued topic generation for course {created_course_model.id}")
+        except Exception as e:
+            self.logger.warning(
+                f"Failed to enqueue topic generation for course {created_course_model.id}: {e}"
+            )
 
     def update_course(
         self, course_id: int, course_data: CourseUpdate, student_id: int, role: str

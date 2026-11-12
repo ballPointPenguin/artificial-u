@@ -76,17 +76,16 @@ def _build_service(
 
 
 @pytest.mark.asyncio
-async def test_generate_topics_for_course_generates_missing_slots_sequentially(monkeypatch):
+async def test_generate_topics_for_course_generates_missing_slots_in_single_batch(monkeypatch):
     service, repository_factory, content_service, created_topics = _build_service()
-    content_service.generate_text.side_effect = [
-        "<output><topic><title>Atmospheric Structure</title><week>1</week><order>1</order></topic></output>",
-        "<output><topic><title>Trace Gases and Water Vapor</title><week>1</week><order>2</order></topic></output>",
-        "<output><topic><title>Radiation and Energy Balance</title><week>2</week><order>1</order></topic></output>",
-        (
-            "<output><topic><title>Cloud Formation and Precipitation</title>"
-            "<week>2</week><order>2</order></topic></output>"
-        ),
-    ]
+    content_service.generate_text.return_value = (
+        "<output><topics>"
+        "<topic><title>Atmospheric Structure</title><week>1</week><order>1</order></topic>"
+        "<topic><title>Trace Gases and Water Vapor</title><week>1</week><order>2</order></topic>"
+        "<topic><title>Radiation and Energy Balance</title><week>2</week><order>1</order></topic>"
+        "<topic><title>Cloud Formation and Precipitation</title><week>2</week><order>2</order></topic>"
+        "</topics></output>"
+    )
 
     topics = await service.generate_topics_for_course(course_id=1, created_by=7)
 
@@ -97,21 +96,16 @@ async def test_generate_topics_for_course_generates_missing_slots_sequentially(m
         "Radiation and Energy Balance",
         "Cloud Formation and Precipitation",
     ]
-    assert content_service.generate_text.await_count == 4
-    for call in content_service.generate_text.await_args_list:
-        assert call.kwargs["model"] == "test-topics-model"
+    assert content_service.generate_text.await_count == 1
+    call = content_service.generate_text.await_args
+    assert call.kwargs["model"] == "test-topics-model"
     assert {t.created_with for t in created_topics} == {"test-topics-model"}
     assert repository_factory.topic.create.call_count == 4
     assert len(created_topics) == 4
 
-    first_prompt = content_service.generate_text.await_args_list[0].kwargs["prompt"]
-    second_prompt = content_service.generate_text.await_args_list[1].kwargs["prompt"]
-    third_prompt = content_service.generate_text.await_args_list[2].kwargs["prompt"]
-
-    assert "Week 1" in first_prompt
-    assert "Topic 2 within that week" in second_prompt
-    assert "Atmospheric Structure" in second_prompt
-    assert "Trace Gases and Water Vapor" in third_prompt
+    prompt = call.kwargs["prompt"]
+    assert "Atmospheric Science" in prompt
+    assert "<topics>" in prompt
 
 
 @pytest.mark.asyncio
@@ -128,24 +122,59 @@ async def test_generate_topics_for_course_reuses_existing_slots_and_normalizes_p
     service, repository_factory, content_service, _ = _build_service(
         existing_topics=[existing_topic]
     )
-    content_service.generate_text.side_effect = [
-        "<output><topic><title>Trace Gases and Water Vapor</title><week>99</week><order>99</order></topic></output>",
-        "<output><topic><title>Radiation and Energy Balance</title><week>2</week><order>1</order></topic></output>",
-        (
-            "<output><topic><title>Cloud Formation and Precipitation</title>"
-            "<week>2</week><order>2</order></topic></output>"
-        ),
-    ]
+    content_service.generate_text.return_value = (
+        "<output><topics>"
+        "<topic><title>Trace Gases and Water Vapor</title><week>99</week><order>99</order></topic>"
+        "<topic><title>Radiation and Energy Balance</title><week>2</week><order>1</order></topic>"
+        "<topic><title>Cloud Formation and Precipitation</title><week>2</week><order>2</order></topic>"
+        "</topics></output>"
+    )
 
     topics = await service.generate_topics_for_course(course_id=1, created_by=7)
 
     assert [(topic.week, topic.order) for topic in topics] == [(1, 2), (2, 1), (2, 2)]
     assert topics[0].title == "Trace Gases and Water Vapor"
-    assert content_service.generate_text.await_count == 3
+    assert content_service.generate_text.await_count == 1
     repository_factory.topic.get_by_course_week_order.assert_any_call(course_id=1, week=1, order=2)
 
-    first_generated_prompt = content_service.generate_text.await_args_list[0].kwargs["prompt"]
-    assert "Atmospheric Structure" in first_generated_prompt
+    generated_prompt = content_service.generate_text.await_args.kwargs["prompt"]
+    assert "Atmospheric Structure" in generated_prompt
+
+
+def test_save_topics_for_course_persists_pre_generated_topics():
+    service, repository_factory, _, created_topics = _build_service()
+    topics_data = [
+        {
+            "title": "Atmospheric Structure",
+            "week": 1,
+            "order": 1,
+            "content": {"lecture": "Vertical Layers", "readings": ["Wallace & Hobbs Ch. 1"]},
+        },
+        {
+            "title": "Trace Gases and Water Vapor",
+            "week": 1,
+            "order": 2,
+            "content": {"lecture": "Composition", "readings": ["Seinfeld & Pandis Ch. 2"]},
+        },
+    ]
+
+    saved = service.save_topics_for_course(
+        course_id=1,
+        topics_data=topics_data,
+        created_by=7,
+        model="gemini-3.8-flash",
+        language="en",
+    )
+
+    assert len(saved) == 2
+    assert repository_factory.topic.create.call_count == 2
+    assert saved[0].title == "Atmospheric Structure"
+    assert saved[0].created_with == "gemini-3.8-flash"
+    assert saved[0].content == {
+        "lecture": "Vertical Layers",
+        "readings": ["Wallace & Hobbs Ch. 1"],
+    }
+    assert len(created_topics) == 2
 
 
 @pytest.mark.asyncio

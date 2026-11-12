@@ -8,7 +8,6 @@ separated from the core CRUD operations in CourseService.
 import logging
 from typing import Any, Dict, List, Optional, Tuple
 
-from artificial_u.config import get_settings
 from artificial_u.models.converters import (
     course_model_to_dict,
     department_model_to_dict,
@@ -16,11 +15,13 @@ from artificial_u.models.converters import (
     extract_xml_content,
     parse_course_xml,
     professor_model_to_dict,
+    topics_to_xml,
 )
 from artificial_u.models.core import Course, Department, Professor
 from artificial_u.models.repositories.factory import RepositoryFactory
 from artificial_u.services.content_service import ContentService
 from artificial_u.services.image_service import ImageService
+from artificial_u.services.preference_service import PreferenceService
 from artificial_u.utils import (
     ContentGenerationError,
     DatabaseError,
@@ -61,13 +62,14 @@ class CourseGeneratorService:
         self.repository_factory = repository_factory
         self.job_enqueue_service = job_enqueue_service
         self.logger = logger or logging.getLogger(__name__)
+        self.preference_service = PreferenceService(repository_factory, logger=self.logger)
 
     async def generate_course(
         self,
         partial_attributes: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         """
-        Generate a course using centralized converters and repository.
+        Generate a course and its weekly syllabus topics using centralized converters and repository.
 
         Args:
             partial_attributes: Optional dictionary of known attributes to guide generation
@@ -109,13 +111,18 @@ class CourseGeneratorService:
                     if course.get("id") not in connected_ids
                 ]
 
+            related_courses_topics_context = self._build_related_courses_topics_context(
+                connected_course_dicts
+            )
+            existing_topics = initial_partial_attributes.get("topics")
+
             # 2. Prepare prompt arguments directly using models and initial attributes
             prompt_attrs = {
                 key: value
                 for key, value in initial_partial_attributes.items()
-                if key not in {"connected_course_ids", "freeform_prompt"}
+                if key not in {"connected_course_ids", "freeform_prompt", "topics"}
             }
-            prompt_args = {
+            prompt_args: Dict[str, Any] = {
                 # Convert models to dicts for XML generation within get_course_prompt
                 "department_data": (
                     enrich_department_dict_with_faculty(
@@ -132,13 +139,25 @@ class CourseGeneratorService:
                 "connected_courses": connected_course_dicts,
                 "partial_course_attrs": prompt_attrs,
                 "freeform_prompt": initial_partial_attributes.get("freeform_prompt"),
+                "existing_topics": existing_topics,
+                "related_courses_topics_context": related_courses_topics_context,
             }
 
-            # 3. Generate and parse content
-            generated_xml_output = await self._generate_and_parse_content(prompt_args)
+            # 3. Generate and parse content using the course generation model
+            model = self.preference_service.get_course_generation_model()
+            generated_xml_output = await self._generate_and_parse_content(prompt_args, model=model)
 
             # 4. Parse XML response into a dictionary
             final_course_data = parse_course_xml(generated_xml_output)
+
+            # Normalize topic week/order numbering if topics were generated
+            if final_course_data.get("topics"):
+                final_course_data["topics"] = self._normalize_generated_topics(
+                    final_course_data["topics"],
+                    lectures_per_week=final_course_data.get("lectures_per_week")
+                    or initial_partial_attributes.get("lectures_per_week")
+                    or 1,
+                )
 
             # 5. Add IDs from fetched models
             if professor_model:
@@ -149,27 +168,26 @@ class CourseGeneratorService:
             # 6. Fill in missing values from initial partial attributes if they weren't generated
             for key, value in initial_partial_attributes.items():
                 if key not in final_course_data or final_course_data[key] is None:
-                    # Avoid re-adding 'topics' if it was in partial_attributes
                     if key != "topics":
                         final_course_data[key] = value
 
             # 7. Set created_with to the model used for generation
-            settings = get_settings()
-            final_course_data["created_with"] = settings.COURSE_GENERATION_MODEL
+            final_course_data["created_with"] = model
 
-            # 8. Filter final dictionary to only include valid Course fields
-            # Get valid fields from Course.__annotations__ or CourseModel.__table__.columns
+            # 8. Filter final dictionary to only include valid Course fields + topics
             from artificial_u.models.database import CourseModel
 
             valid_course_keys = {c.name for c in CourseModel.__table__.columns}
             valid_course_keys.add("connected_course_ids")
+            valid_course_keys.add("topics")
             final_course_data = {
                 k: v for k, v in final_course_data.items() if k in valid_course_keys
             }
 
             self.logger.info(
                 f"Successfully generated course: "
-                f"{final_course_data.get('code')} - {final_course_data.get('title')}"
+                f"{final_course_data.get('code')} - {final_course_data.get('title')} "
+                f"({len(final_course_data.get('topics') or [])} topics)"
             )
             return final_course_data
 
@@ -186,7 +204,80 @@ class CourseGeneratorService:
             self.logger.error(f"Unexpected error during course generation: {e}", exc_info=True)
             raise ContentGenerationError(f"An unexpected error occurred: {e}") from e
 
-    async def _generate_and_parse_content(self, prompt_args: Dict[str, Any]) -> str:
+    def _normalize_generated_topics(
+        self,
+        topics: List[Dict[str, Any]],
+        lectures_per_week: int = 1,
+    ) -> List[Dict[str, Any]]:
+        """Ensure each generated topic dict has valid integer week and order fields."""
+        lpw = max(1, int(lectures_per_week or 1))
+        normalized: List[Dict[str, Any]] = []
+        for idx, topic in enumerate(topics):
+            if not isinstance(topic, dict) or not topic.get("title"):
+                continue
+            default_week = (idx // lpw) + 1
+            default_order = (idx % lpw) + 1
+            week = topic.get("week")
+            order = topic.get("order")
+            normalized.append(
+                {
+                    "title": str(topic["title"]).strip(),
+                    "week": int(week) if isinstance(week, int) and week >= 1 else default_week,
+                    "order": int(order) if isinstance(order, int) and order >= 1 else default_order,
+                    "content": topic.get("content"),
+                }
+            )
+        return normalized
+
+    def _build_related_courses_topics_context(self, connected_courses: List[Dict[str, Any]]) -> str:
+        """Build XML context of topics from connected courses so follow-up courses align."""
+        if not connected_courses:
+            return ""
+
+        sections: List[str] = []
+        for course in connected_courses:
+            course_id = course.get("id")
+            if not course_id:
+                continue
+            try:
+                topics = self.repository_factory.topic.list(course_id=course_id)
+                if not isinstance(topics, list) or not topics:
+                    continue
+                sorted_topics = sorted(
+                    topics,
+                    key=lambda t: (
+                        getattr(t, "week", 0),
+                        getattr(t, "order", 0),
+                        getattr(t, "id", 0) or 0,
+                    ),
+                )
+                topics_xml = topics_to_xml(
+                    [
+                        {
+                            "title": t.title,
+                            "week": t.week,
+                            "order": t.order,
+                            "content": t.content,
+                        }
+                        for t in sorted_topics
+                    ]
+                )
+                sections.append(
+                    "Related course topics (for continuity and to avoid repetition):\n"
+                    f"Related course: {course.get('title', '')}\n"
+                    f"{topics_xml}"
+                )
+            except Exception as e:
+                self.logger.warning(
+                    "Skipping topics for connected course %s in course generation: %s",
+                    course_id,
+                    e,
+                )
+        return "\n\n".join(sections)
+
+    async def _generate_and_parse_content(
+        self, prompt_args: Dict[str, Any], *, model: Optional[str] = None
+    ) -> str:
         """Generate course content and parse the XML response."""
         # Determine language for prompts
         language = prompt_args.get("partial_course_attrs", {}).get("language") or "en"
@@ -201,13 +292,17 @@ class CourseGeneratorService:
         prompt_module = get_prompts_for_language(lang)
         course_prompt = prompt_module.get_course_prompt(**prompt_args)
         system_prompt = prompt_module.get_system_prompt("course")
-        settings = get_settings()
+        resolved_model = model or self.preference_service.get_course_generation_model()
 
-        self.logger.info("Calling content service to generate course...")
+        self.logger.info(
+            f"Calling content service to generate course with model {resolved_model}..."
+        )
         raw_response = await self.content_service.generate_text(
-            model=settings.COURSE_GENERATION_MODEL,
+            model=resolved_model,
             prompt=course_prompt,
             system_prompt=system_prompt,
+            max_tokens=16384,
+            thinking_level="low",
         )
         self.logger.info("Received response from content service.")
 
