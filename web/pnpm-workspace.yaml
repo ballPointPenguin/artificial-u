@@ -1,7 +1,3 @@
-overrides:
-  '@typescript-eslint/utils': ^8.72.1
-  '@typescript-eslint/typescript-estree': ^8.72.1
-
 allowBuilds:
   '@biomejs/biome': true
   '@tailwindcss/oxide': true
