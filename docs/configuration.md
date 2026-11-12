@@ -179,10 +179,16 @@ effort; otherwise the API default is `medium`.
 `LECTURE_GENERATION_MODEL` or the admin settings page. It is handled like the other GPT-6 models
 (no custom temperature; reasoning effort forwarded when set).
 
-`gemini-3.8-flash` is the default Topics model for medium-complexity generation.
-It uses Gemini 3's `thinking_level` control (`low`, `medium`, or `high`); the
-`minimal` level is not supported. Gemini 3.8 rejects sampling parameters, so
+`gemini-3.8-flash` is the default Course and Topics model for medium-complexity generation.
+It uses Gemini's `thinking_level` control (`low`, `medium`, or `high`); the
+`minimal` level is not supported. Gemini 3.8+ and Gemini 4 reject sampling parameters, so
 ArtificialU omits temperature, top-p, and top-k from its requests.
+
+`gemini-4-argon` is also supported as an optional model for content generation
+(`LECTURE_GENERATION_MODEL`, `COURSE_GENERATION_MODEL`, `TOPICS_GENERATION_MODEL`).
+It is not a default anywhere; select it via environment variables or the admin settings page.
+Like `gemini-3.8-flash`, it omits sampling parameters and supports `low`, `medium`, and
+`high` thinking levels (`minimal` is not supported).
 
 For image generation, `gemini-nano-banana-2.1` is the default (it falls back to
 `gemini-3.1-flash-lite-image` if it fails). The

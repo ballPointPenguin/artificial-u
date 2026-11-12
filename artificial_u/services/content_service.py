@@ -63,8 +63,18 @@ def _deprecates_gemini_sampling_params(model: str) -> bool:
 
 
 def _supports_gemini_minimal_thinking_level(model: str) -> bool:
-    """Return whether a Gemini model accepts the ``minimal`` thinking level."""
-    return not model.startswith("gemini-3.8-")
+    """Return whether a Gemini model accepts the ``minimal`` thinking level.
+
+    Starting with Gemini 3.8 Flash and Gemini 4 models (e.g. ``gemini-4-argon``),
+    only ``low``, ``medium``, and ``high`` thinking levels are supported.
+    """
+    match = re.match(r"gemini-(\d+)(?:\.(\d+))?", model or "")
+    if match:
+        major = int(match.group(1))
+        minor = int(match.group(2)) if match.group(2) else 0
+        if (major, minor) >= (3, 8):
+            return False
+    return True
 
 
 class ContentService:
@@ -746,7 +756,7 @@ class ContentService:
         if prefill:
             self.logger.warning("Prefill parameter provided but not supported for Gemini models")
         if thinking_level == "minimal" and not _supports_gemini_minimal_thinking_level(model):
-            raise ValueError("Gemini 3.8 Flash does not support thinking_level='minimal'")
+            raise ValueError(f"Model {model} does not support thinking_level='minimal'")
         try:
             from google.genai import types
 

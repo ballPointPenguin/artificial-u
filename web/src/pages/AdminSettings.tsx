@@ -15,8 +15,8 @@ const SUGGESTED_MODELS = [
   'claude-haiku-4-5',
   'gpt-6.1-sol',
   'gpt-6-luna',
+  'gemini-4-argon',
   'gemini-3.8-flash',
-  'gemini-3.1-pro-preview',
   'grok-4.7',
 ]
 
