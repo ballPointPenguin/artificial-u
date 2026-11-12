@@ -10,7 +10,7 @@ repos:
         exclude: ^(alembic/|scripts/|web/)
 
   - repo: https://github.com/pycqa/flake8
-    rev: 7.4.1
+    rev: 7.5.0
     hooks:
       - id: flake8
         exclude: ^(alembic/|tests/|scripts/|web/)
@@ -28,7 +28,7 @@ repos:
 
   # Syntax/parser target must match pyproject.toml [tool.ruff] (py314).
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.17.3
+    rev: v0.17.4
     hooks:
       - id: ruff-check
         args: [--config, pyproject.toml]
