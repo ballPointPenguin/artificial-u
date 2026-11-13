@@ -427,6 +427,7 @@ def test_create_course(client: TestClient, mock_api_service):
         **new_course_data,
         "notes": None,
         "language": None,
+        "settings": None,
         "created_by": None,
         "created_with": None,
         "image_url": None,

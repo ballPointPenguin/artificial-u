@@ -416,6 +416,9 @@ const Courses: Component = () => {
       professor_id: formData.professor_id ?? undefined,
       description: formData.description,
       notes: formData.notes ?? undefined,
+      settings: formData.lecture_generation_model
+        ? { lecture_generation_model: formData.lecture_generation_model }
+        : undefined,
       lectures_per_week: formData.lectures_per_week ?? undefined,
       total_weeks: formData.total_weeks ?? undefined,
       created_with: formData.created_with ?? undefined,

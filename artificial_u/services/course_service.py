@@ -9,7 +9,7 @@ from artificial_u.models.converters import (
     course_model_to_dict,
     professor_model_to_dict,
 )
-from artificial_u.models.core import Course, Professor
+from artificial_u.models.core import Course, CourseSettings, Professor
 from artificial_u.models.repositories.factory import RepositoryFactory
 from artificial_u.services.professor_service import ProfessorService
 from artificial_u.utils import (
@@ -70,6 +70,7 @@ class CourseService:
         connected_course_ids: Optional[List[int]] = None,
         parent_job_id: Optional[int] = None,
         language: Optional[str] = None,
+        settings: Optional[CourseSettings] = None,
     ) -> Tuple[Course, Professor]:
         """
         Create a new course with optional smart selection for department/professor.
@@ -88,6 +89,7 @@ class CourseService:
             connected_course_ids: List of connected course IDs
             parent_job_id: Optional parent job ID
             language: Optional language/locale of the course
+            settings: Optional per-course settings (e.g. lecture model override)
 
         Returns:
             Tuple: (Course, Professor) - The created course and its professor
@@ -126,6 +128,8 @@ class CourseService:
         course.created_by = created_by
         course.created_with = created_with
         course.notes = notes
+        if settings is not None:
+            course.settings = settings
 
         # Save course
         created_course, created_professor = self._save_course(
@@ -388,6 +392,15 @@ class CourseService:
             if connected_course_ids is not None:
                 connection_update_requested = True
                 requested_connected_course_ids = connected_course_ids
+
+        # Merge settings so only the provided keys change; explicit null clears them all
+        if "settings" in update_data:
+            new_settings = update_data.pop("settings")
+            course.settings = (
+                course.settings.model_copy(update=new_settings)
+                if new_settings is not None
+                else CourseSettings()
+            )
 
         # Update fields (simple approach)
         for key, value in update_data.items():

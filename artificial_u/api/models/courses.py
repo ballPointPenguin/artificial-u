@@ -5,7 +5,9 @@ API models for Course resources.
 from datetime import datetime
 from typing import Any, Dict, List, Literal, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
+
+from artificial_u.models.core import CourseSettings
 
 
 # Base Course model with common fields
@@ -50,6 +52,9 @@ class CourseBase(BaseModel):
         description="Optional user-provided notes to guide content generation for this course",
     )
     language: Optional[str] = Field(None, description="Language code (e.g., 'en', 'fr')")
+    settings: Optional[CourseSettings] = Field(
+        None, description="Per-course settings, e.g. a lecture generation model override"
+    )
     # Attribution (not required for create)
     created_by: Optional[int] = Field(None, description="Student ID who created the course")
     created_with: Optional[str] = Field(None, description="Name of LLM used, if any")
@@ -103,6 +108,13 @@ class CourseUpdate(BaseModel):
         description=(
             "Optional canonical list of connected course IDs. "
             "If explicitly provided as an empty list, existing connections are removed."
+        ),
+    )
+    settings: Optional[CourseSettings] = Field(
+        None,
+        description=(
+            "Per-course settings. Provided keys are merged into the existing "
+            "settings; a null value clears that override."
         ),
     )
 
@@ -178,6 +190,15 @@ class CourseResponse(CourseBase):
         None, description="Department offering the course"
     )
     tags: List[TagBrief] = Field(default_factory=list, description="Subject tags for the course")
+    settings: CourseSettings = Field(
+        default_factory=CourseSettings, description="Per-course settings"
+    )
+
+    @field_validator("settings", mode="before")
+    @classmethod
+    def _default_settings(cls, value):
+        return CourseSettings() if value is None else value
+
     # Audio/Topic Counts
     lectures_with_audio_count: Optional[int] = Field(
         0, description="Number of lectures with audio files"

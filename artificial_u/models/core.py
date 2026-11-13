@@ -5,7 +5,7 @@ Core data models for the ArtificialU system.
 from datetime import datetime
 from typing import Any, Dict, List, Literal, Optional
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class Faculty(BaseModel):
@@ -196,6 +196,22 @@ class Tag(BaseModel):
     created_at: Optional[datetime] = None
 
 
+class CourseSettings(BaseModel):
+    """Per-course settings stored in the courses.settings JSONB column."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    # Overrides the app-wide LECTURE_GENERATION_MODEL (and any user preference)
+    lecture_generation_model: Optional[str] = None
+
+    @field_validator("lecture_generation_model")
+    @classmethod
+    def _blank_to_none(cls, value: Optional[str]) -> Optional[str]:
+        if value is None:
+            return None
+        return value.strip() or None
+
+
 class Course(BaseModel):
     """Course model representing a complete academic course."""
 
@@ -234,6 +250,7 @@ class Course(BaseModel):
     # Album art (AI-generated course thumbnail)
     image_url: Optional[str] = None
     image_created_with: Optional[str] = None
+    settings: CourseSettings = Field(default_factory=CourseSettings)
     # Timestamps
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None

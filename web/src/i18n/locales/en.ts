@@ -305,6 +305,9 @@ export const en = {
         'e.g. This course is taught in English with French vocabulary integrated throughout. Do not generate lectures entirely in French.',
       notesHelper:
         'Optional standing instructions passed to the AI when generating lectures (e.g. narrative style, formula density, or language mix). AI may also populate this if your prompt specifies special delivery rules.',
+      lectureModelLabel: 'Lecture Generation Model (Optional)',
+      lectureModelHelper:
+        'Overrides the app-wide lecture model for this course. Leave blank to use the app default shown.',
       aiPromptLabel: 'AI Generation Prompt (Optional)',
       departmentPlaceholder: '-- Select Department (Optional) --',
       professorPlaceholder: '-- Select Professor (Optional) --',
@@ -660,6 +663,8 @@ export const en = {
     published: 'Published',
     hidden: 'Hidden',
     courseNotes: 'Course Notes',
+    lectureModel: 'Lecture model',
+    lectureModelAppDefault: 'App default',
     editTags: 'Edit Tags',
     tagsEditHeading: 'Edit Tags',
     tagsEditDescription: 'Tags describe the course subjects and power browsing and filtering.',

@@ -76,15 +76,36 @@ def _planned_audio_label(
     return label
 
 
+def _course_lecture_model_override(
+    payload: dict, factory=None, cache: Optional[dict] = None
+) -> Optional[str]:
+    """Lecture model override from the job's course settings, if any."""
+    partial = payload.get("partial_attributes")
+    course_id = _coerce_int(partial.get("course_id")) if isinstance(partial, dict) else None
+    if course_id is None or factory is None:
+        return None
+
+    cache_key = ("course_lecture_model", course_id)
+    if cache is not None and cache_key in cache:
+        return cache[cache_key]
+
+    course = factory.course.get(course_id)
+    model = course.settings.lecture_generation_model if course else None
+    if cache is not None:
+        cache[cache_key] = model
+    return model
+
+
 def _job_model_name(
     kind: str, payload: Any, result: Any = None, factory=None, cache: Optional[dict] = None
 ) -> Optional[str]:
     """
     Best-effort model name for a job. The backend recorded in the job result at
-    generation time takes precedence, then payload-level overrides, then global
-    preference overrides (admin settings), then environment defaults.
+    generation time takes precedence, then payload-level overrides, then course
+    settings overrides (lecture jobs), then global preference overrides (admin
+    settings), then environment defaults.
 
-    ``cache`` memoizes preference lookups across the rows of one request.
+    ``cache`` memoizes preference and course lookups across the rows of one request.
     """
     result = result if isinstance(result, dict) else {}
     recorded = result.get("tts_backend")
@@ -99,6 +120,11 @@ def _job_model_name(
     settings = get_settings()
     if kind == "generate_lecture_audio":
         return _planned_audio_label(payload, settings, factory, cache)
+
+    if kind in ("generate_lecture", "generate_lecture_text_only"):
+        course_model = _course_lecture_model_override(payload, factory, cache)
+        if course_model:
+            return course_model
 
     # Map job kind to (preference_scope, settings_fallback)
     kind_map = {

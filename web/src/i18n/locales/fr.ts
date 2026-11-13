@@ -306,6 +306,9 @@ export const fr = {
         'Ex. Ce cours est enseigné en anglais avec du vocabulaire français intégré. Ne pas générer les leçons entièrement en français.',
       notesHelper:
         "Consignes permanentes optionnelles transmises à l'IA lors de la génération des séances (style narratif, niveau de formalisme, langue). L'IA peut aussi les remplir si votre invite contient des directives particulières.",
+      lectureModelLabel: 'Modèle de génération des cours magistraux (facultatif)',
+      lectureModelHelper:
+        "Remplace le modèle de l'application pour ce cours. Laissez vide pour utiliser le modèle par défaut affiché.",
       aiPromptLabel: 'Invite de génération IA (optionnel)',
       departmentPlaceholder: '-- Sélectionner un département (optionnel) --',
       professorPlaceholder: '-- Sélectionner un professeur (optionnel) --',
@@ -663,6 +666,8 @@ export const fr = {
     published: 'Publié',
     hidden: 'Masqué',
     courseNotes: 'Notes du cours',
+    lectureModel: 'Modèle des cours magistraux',
+    lectureModelAppDefault: "Défaut de l'application",
     editTags: 'Modifier les tags',
     tagsEditHeading: 'Modifier les tags',
     tagsEditDescription:

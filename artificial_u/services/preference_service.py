@@ -99,21 +99,32 @@ class PreferenceService:
         """
         return self.repository_factory.preference.set_user(student_id, scope, value)
 
-    def get_lecture_generation_model(self, student_id: Optional[int] = None) -> str:
+    def get_lecture_generation_model(
+        self, student_id: Optional[int] = None, course_id: Optional[int] = None
+    ) -> str:
         """
         Get the lecture generation model to use.
 
         Checks in this order:
-        1. User-specific preference (if student_id provided)
-        2. Global preference
-        3. Environment variable / settings default
+        1. Course setting override (if course_id provided)
+        2. User-specific preference (if student_id provided)
+        3. Global preference
+        4. Environment variable / settings default
 
         Args:
             student_id: Optional student ID for user-specific preferences
+            course_id: Optional course ID whose settings may override the model
 
         Returns:
             The model name to use for lecture generation
         """
+        if course_id is not None:
+            course = self.repository_factory.course.get(course_id)
+            if course and course.settings.lecture_generation_model:
+                model = course.settings.lecture_generation_model
+                self.logger.info(f"Using course-configured model: {model}")
+                return model
+
         # Check user preference, then global preference
         model = self.get_preference(
             self.LECTURE_GENERATION_MODEL, student_id=student_id, default=None
