@@ -270,6 +270,18 @@ class CourseGenerate(BaseModel):
             "and pass through in generated output."
         ),
     )
+    model: Optional[str] = Field(
+        None,
+        description=(
+            "Optional one-off course generation model; defaults to the configured "
+            "COURSE_GENERATION_MODEL. Not persisted."
+        ),
+    )
+
+    @field_validator("model")
+    @classmethod
+    def _blank_model_to_none(cls, value: Optional[str]) -> Optional[str]:
+        return (value.strip() or None) if value is not None else None
 
 
 # Model for the response of a generated course, allowing partial data

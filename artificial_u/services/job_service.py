@@ -169,7 +169,7 @@ class JobService:
         freeform_prompt = payload.get("freeform_prompt")
         if freeform_prompt is not None and "freeform_prompt" not in partial:
             partial["freeform_prompt"] = freeform_prompt
-        result = await service.generate_course(partial)
+        result = await service.generate_course(partial, model=payload.get("model_name_override"))
         return {"generated_course": result}
 
     async def _handle_create_course(

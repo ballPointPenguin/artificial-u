@@ -305,6 +305,9 @@ export const en = {
         'e.g. This course is taught in English with French vocabulary integrated throughout. Do not generate lectures entirely in French.',
       notesHelper:
         'Optional standing instructions passed to the AI when generating lectures (e.g. narrative style, formula density, or language mix). AI may also populate this if your prompt specifies special delivery rules.',
+      courseModelLabel: 'Course Generation Model (Optional)',
+      courseModelHelper:
+        'Model used to draft this course and its syllabus. Used only for generation and not saved. Leave blank to use the app default shown.',
       lectureModelLabel: 'Lecture Generation Model (Optional)',
       lectureModelHelper:
         'Overrides the app-wide lecture model for this course. Leave blank to use the app default shown.',

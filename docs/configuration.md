@@ -206,6 +206,12 @@ the course's `settings` JSONB column (`{"lecture_generation_model": "..."}`); le
 blank uses the app default. Lecture generation resolves the model in this order: course setting → user
 preference → global preference → `LECTURE_GENERATION_MODEL` environment value.
 
+When creating a course, Advanced Options also accept a one-off course generation model. It is
+sent as `model` on `POST /courses/generate` (or `/courses/generate/enqueue`), used only for
+drafting that course and its syllabus (including refinements), and recorded in the course's
+`created_with`; it is not saved as a setting. Leaving it blank uses `COURSE_GENERATION_MODEL`
+(or the admin preference).
+
 ### Anthropic (Claude) Model Version Compatibility
 
 `ContentService` inspects the Claude model name (e.g. `claude-sonnet-4-6`,

@@ -306,6 +306,9 @@ export const fr = {
         'Ex. Ce cours est enseigné en anglais avec du vocabulaire français intégré. Ne pas générer les leçons entièrement en français.',
       notesHelper:
         "Consignes permanentes optionnelles transmises à l'IA lors de la génération des séances (style narratif, niveau de formalisme, langue). L'IA peut aussi les remplir si votre invite contient des directives particulières.",
+      courseModelLabel: 'Modèle de génération du cours (facultatif)',
+      courseModelHelper:
+        'Modèle utilisé pour rédiger ce cours et son programme. Utilisé uniquement pour la génération et non enregistré. Laissez vide pour utiliser le modèle par défaut affiché.',
       lectureModelLabel: 'Modèle de génération des cours magistraux (facultatif)',
       lectureModelHelper:
         "Remplace le modèle de l'application pour ce cours. Laissez vide pour utiliser le modèle par défaut affiché.",

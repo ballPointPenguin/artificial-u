@@ -11,6 +11,7 @@ export interface CourseFormData {
   description: string
   notes?: string | null // Optional user notes to guide content generation
   lecture_generation_model?: string | null // Course override; null uses the app default
+  course_generation_model?: string | null // One-off model for syllabus generation; not saved
   lectures_per_week?: number | null // Optional field
   total_weeks?: number | null // Optional field
   topics?: TopicDraft[]

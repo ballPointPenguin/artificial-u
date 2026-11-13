@@ -507,6 +507,8 @@ async def enqueue_generate_course(
         "freeform_prompt": generation_data.freeform_prompt,
         "connected_course_ids": generation_data.connected_course_ids,
     }
+    if generation_data.model:
+        payload["model_name_override"] = generation_data.model
     row = repository_factory.job.create(
         kind="generate_course",
         payload=payload,

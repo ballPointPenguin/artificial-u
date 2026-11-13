@@ -306,6 +306,9 @@ export const es = {
         'Ej. Este curso se imparte en inglés con vocabulario francés integrado. No generar lecciones completamente en francés.',
       notesHelper:
         'Instrucciones permanentes opcionales que se envían a la IA al generar lecciones (estilo narrativo, uso de fórmulas o mezcla de idiomas). La IA también puede completarlas si su indicación incluye reglas especiales.',
+      courseModelLabel: 'Modelo de Generación del Curso (Opcional)',
+      courseModelHelper:
+        'Modelo usado para redactar este curso y su programa. Solo se usa en la generación y no se guarda. Déjalo vacío para usar el predeterminado mostrado.',
       lectureModelLabel: 'Modelo de Generación de Clases (Opcional)',
       lectureModelHelper:
         'Reemplaza el modelo de clases de la aplicación para este curso. Déjalo vacío para usar el predeterminado mostrado.',
