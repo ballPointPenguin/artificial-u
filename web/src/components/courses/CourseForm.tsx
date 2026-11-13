@@ -2,6 +2,7 @@ import type { Component } from 'solid-js'
 import { createEffect, createMemo, createResource, createSignal, For, Show } from 'solid-js'
 import { courseService } from '../../api/services/course-service.js'
 import { departmentService } from '../../api/services/department-service.js'
+import { preferenceService } from '../../api/services/preference-service.js'
 import { professorService } from '../../api/services/professor-service.js'
 import type { Course, CourseGenerateRequest, Department, Professor } from '../../api/types.js'
 import { useAuth } from '../../auth/AuthProvider.js'
@@ -20,7 +21,7 @@ import {
 } from '../ui'
 import type { SelectOption } from '../ui/Select.js'
 import ConnectedCoursesSelect from './ConnectedCoursesSelect.jsx'
-import LectureModelField from './LectureModelField.jsx'
+import ModelOverrideField from './ModelOverrideField.jsx'
 import type { CourseFormData } from './types.js'
 
 interface CourseFormProps {
@@ -47,6 +48,7 @@ const CourseForm: Component<CourseFormProps> = (props) => {
     description: '',
     notes: null,
     lecture_generation_model: null,
+    course_generation_model: null,
     lectures_per_week: null,
     total_weeks: null,
     topics: [],
@@ -291,6 +293,7 @@ const CourseForm: Component<CourseFormProps> = (props) => {
       ...(currentData.connected_course_ids.length > 0 && {
         connected_course_ids: currentData.connected_course_ids,
       }),
+      ...(currentData.course_generation_model && { model: currentData.course_generation_model }),
     }
 
     try {
@@ -334,6 +337,7 @@ const CourseForm: Component<CourseFormProps> = (props) => {
       description: '',
       notes: null,
       lecture_generation_model: null,
+      course_generation_model: null,
       lectures_per_week: null,
       total_weeks: null,
       topics: [],
@@ -565,7 +569,23 @@ const CourseForm: Component<CourseFormProps> = (props) => {
                     />
                   </FormField>
 
-                  <LectureModelField
+                  <ModelOverrideField
+                    name="course_generation_model"
+                    label={t().courses.form.courseModelLabel}
+                    helperText={t().courses.form.courseModelHelper}
+                    loadDefault={preferenceService.getCourseGenerationModel}
+                    value={formData().course_generation_model}
+                    onChange={(v) => {
+                      handleInputChange('course_generation_model', v)
+                    }}
+                    disabled={isDisabled()}
+                  />
+
+                  <ModelOverrideField
+                    name="lecture_generation_model"
+                    label={t().courses.form.lectureModelLabel}
+                    helperText={t().courses.form.lectureModelHelper}
+                    loadDefault={preferenceService.getLectureGenerationModel}
                     value={formData().lecture_generation_model}
                     onChange={(v) => {
                       handleInputChange('lecture_generation_model', v)
@@ -837,7 +857,11 @@ const CourseForm: Component<CourseFormProps> = (props) => {
           />
         </FormField>
 
-        <LectureModelField
+        <ModelOverrideField
+          name="lecture_generation_model"
+          label={t().courses.form.lectureModelLabel}
+          helperText={t().courses.form.lectureModelHelper}
+          loadDefault={preferenceService.getLectureGenerationModel}
           value={formData().lecture_generation_model}
           onChange={(v) => {
             handleInputChange('lecture_generation_model', v)

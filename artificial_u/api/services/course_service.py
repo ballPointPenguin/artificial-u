@@ -828,7 +828,7 @@ class CourseApiService(BaseApiService[CoreCourse, CourseResponse, CoursesListRes
 
             # Call the generator service to generate the course content dictionary
             generated_dict = await self.generator_service.generate_course(
-                partial_attributes=partial_attrs
+                partial_attributes=partial_attrs, model=generation_data.model
             )
 
             # Ensure 'id' is present for the response model, even if it's a placeholder

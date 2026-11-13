@@ -304,6 +304,9 @@ export const zh = {
       notesPlaceholder: '例如：本课程以英语授课，并融入法语词汇。请勿将课程全部以法语生成。',
       notesHelper:
         '生成讲座时传递给AI的可选常驻说明（例如叙事风格、公式密度或语言混用）。如果您的提示词包含特殊授课要求，AI也可能自动提炼填写。',
+      courseModelLabel: '课程生成模型（可选）',
+      courseModelHelper:
+        '用于起草本课程及其教学大纲的模型。仅用于生成，不会保存。留空则使用显示的应用默认值。',
       lectureModelLabel: '讲座生成模型（可选）',
       lectureModelHelper: '为本课程覆盖全站讲座模型。留空则使用显示的应用默认值。',
       aiPromptLabel: 'AI生成提示（可选）',

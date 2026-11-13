@@ -172,6 +172,8 @@ export interface CourseGenerateRequest {
   partial_attributes?: Record<string, unknown>
   freeform_prompt?: string
   connected_course_ids?: number[]
+  /** One-off course generation model; defaults to COURSE_GENERATION_MODEL */
+  model?: string
 }
 
 // Department types

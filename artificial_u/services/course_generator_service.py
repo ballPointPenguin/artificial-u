@@ -67,6 +67,7 @@ class CourseGeneratorService:
     async def generate_course(
         self,
         partial_attributes: Optional[Dict[str, Any]] = None,
+        model: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
         Generate a course and its weekly syllabus topics using centralized converters and repository.
@@ -74,6 +75,8 @@ class CourseGeneratorService:
         Args:
             partial_attributes: Optional dictionary of known attributes to guide generation
                                 or fill in the blanks.
+            model: Optional model for this generation only; defaults to the configured
+                   course generation model.
 
         Returns:
             Dict[str, Any]: The generated course attributes (including topics).
@@ -143,8 +146,8 @@ class CourseGeneratorService:
                 "related_courses_topics_context": related_courses_topics_context,
             }
 
-            # 3. Generate and parse content using the course generation model
-            model = self.preference_service.get_course_generation_model()
+            # 3. Generate and parse content using the requested or configured model
+            model = model or self.preference_service.get_course_generation_model()
             generated_xml_output = await self._generate_and_parse_content(prompt_args, model=model)
 
             # 4. Parse XML response into a dictionary
