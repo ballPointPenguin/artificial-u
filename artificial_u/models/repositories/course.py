@@ -4,7 +4,7 @@ from sqlalchemy import ColumnElement, func, not_, or_
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import joinedload, selectinload
 
-from artificial_u.models.core import Course, Student, Tag
+from artificial_u.models.core import Course, CourseSettings, Student, Tag
 from artificial_u.models.database import (
     CourseConnectionModel,
     CourseModel,
@@ -65,6 +65,10 @@ class CourseRepository(BaseRepository):
         if language is not None and not isinstance(language, str):
             language = None
 
+        settings = getattr(db_course, "settings", None)
+        if not isinstance(settings, dict):
+            settings = {}
+
         return Course(
             id=db_course.id,
             code=db_course.code,
@@ -82,6 +86,7 @@ class CourseRepository(BaseRepository):
             created_with=db_course.created_with,
             image_url=db_course.image_url,
             image_created_with=db_course.image_created_with,
+            settings=CourseSettings.model_validate(settings),
             created_at=db_course.created_at,
             updated_at=db_course.updated_at,
             student=course_student,
@@ -122,6 +127,7 @@ class CourseRepository(BaseRepository):
                 created_with=course.created_with,
                 image_url=getattr(course, "image_url", None),
                 image_created_with=getattr(course, "image_created_with", None),
+                settings=course.settings.model_dump(exclude_none=True),
             )
 
             session.add(db_course)
@@ -202,6 +208,8 @@ class CourseRepository(BaseRepository):
                 db_course.image_url = getattr(course, "image_url", None)
             if hasattr(db_course, "image_created_with"):
                 db_course.image_created_with = getattr(course, "image_created_with", None)
+            # Assign a fresh dict so SQLAlchemy detects the JSONB change
+            db_course.settings = course.settings.model_dump(exclude_none=True)
 
             session.commit()
             session.refresh(db_course)

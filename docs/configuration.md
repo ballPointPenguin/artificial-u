@@ -200,6 +200,12 @@ Admins can override the image model without a redeploy from the admin Settings p
 (global `IMAGE_GENERATION_MODEL` preference); it takes precedence over the environment
 value.
 
+The lecture model can also be overridden per course. Course owners (and admins) set it in
+the course form (under Advanced Options when creating, or when editing), which stores it in
+the course's `settings` JSONB column (`{"lecture_generation_model": "..."}`); leaving it
+blank uses the app default. Lecture generation resolves the model in this order: course setting → user
+preference → global preference → `LECTURE_GENERATION_MODEL` environment value.
+
 ### Anthropic (Claude) Model Version Compatibility
 
 `ContentService` inspects the Claude model name (e.g. `claude-sonnet-4-6`,

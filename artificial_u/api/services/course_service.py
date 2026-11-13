@@ -361,6 +361,7 @@ class CourseApiService(BaseApiService[CoreCourse, CourseResponse, CoursesListRes
                 created_with=created_with,
                 connected_course_ids=course_data.connected_course_ids,
                 language=course_data.language,
+                settings=course_data.settings,
             )
             self._save_or_enqueue_course_topics(
                 created_course_model=created_course_model,

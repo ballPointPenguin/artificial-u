@@ -110,9 +110,11 @@ class LectureGeneratorService:
             f"{list(partial_attributes.keys())}"
         )
 
-        # Get the lecture generation model from preferences or settings
+        # Get the lecture generation model from course settings, preferences or settings
         student_id = partial_attributes.get("created_by")
-        model = self.preference_service.get_lecture_generation_model(student_id=student_id)
+        model = self.preference_service.get_lecture_generation_model(
+            student_id=student_id, course_id=partial_attributes.get("course_id")
+        )
 
         try:
             # Process models and prepare data for generation

@@ -432,6 +432,7 @@ const CourseDetail: Component = () => {
       professor_id: formData.professor_id ?? undefined,
       description: formData.description,
       notes: formData.notes ?? undefined,
+      settings: { lecture_generation_model: formData.lecture_generation_model ?? null },
       lectures_per_week: formData.lectures_per_week ?? undefined,
       total_weeks: formData.total_weeks ?? undefined,
       // topics are not part of CourseUpdate in types.ts, handle separately if needed
@@ -784,6 +785,15 @@ const CourseDetail: Component = () => {
                           <span class="text-parchment-300">{t().courseDetail.totalWeeks}:</span>{' '}
                           <span class="text-parchment-100">{course().total_weeks}</span>
                         </p>
+                        <Show when={auth.canModify(course().created_by)}>
+                          <p>
+                            <span class="text-parchment-300">{t().courseDetail.lectureModel}:</span>{' '}
+                            <span class="text-parchment-100 font-mono text-sm">
+                              {course().settings?.lecture_generation_model ??
+                                t().courseDetail.lectureModelAppDefault}
+                            </span>
+                          </p>
+                        </Show>
                       </div>
                     </div>
 

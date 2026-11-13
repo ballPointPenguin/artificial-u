@@ -45,6 +45,11 @@ export interface TagsListResponse {
 // Course types
 export type CourseStatus = 'hidden' | 'published'
 
+/** Per-course settings; an unset lecture model means the app default is used. */
+export interface CourseSettings {
+  lecture_generation_model?: string | null
+}
+
 export interface Course {
   id: number
   code: string
@@ -62,6 +67,7 @@ export interface Course {
   created_with?: string | null
   image_url?: string | null
   image_created_with?: string | null
+  settings?: CourseSettings
   created_at?: string | null
   updated_at?: string | null
   lectures_with_audio_count?: number
@@ -115,6 +121,7 @@ export interface CourseCreate {
   connected_course_ids?: number[]
   language?: string | null
   topics?: TopicDraft[]
+  settings?: CourseSettings
 }
 
 export interface CourseUpdate {
@@ -129,6 +136,7 @@ export interface CourseUpdate {
   total_weeks?: number
   status?: CourseStatus
   connected_course_ids?: number[]
+  settings?: CourseSettings
 }
 
 export interface CoursesListResponse {

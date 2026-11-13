@@ -20,6 +20,7 @@ import {
 } from '../ui'
 import type { SelectOption } from '../ui/Select.js'
 import ConnectedCoursesSelect from './ConnectedCoursesSelect.jsx'
+import LectureModelField from './LectureModelField.jsx'
 import type { CourseFormData } from './types.js'
 
 interface CourseFormProps {
@@ -45,6 +46,7 @@ const CourseForm: Component<CourseFormProps> = (props) => {
     professor_id: null,
     description: '',
     notes: null,
+    lecture_generation_model: null,
     lectures_per_week: null,
     total_weeks: null,
     topics: [],
@@ -77,6 +79,7 @@ const CourseForm: Component<CourseFormProps> = (props) => {
         professor_id: c.professor_id,
         description: c.description || '',
         notes: c.notes || null,
+        lecture_generation_model: c.settings?.lecture_generation_model ?? null,
         lectures_per_week: c.lectures_per_week,
         total_weeks: c.total_weeks,
         freeform_prompt: '', // Reset generate prompt on edit
@@ -330,6 +333,7 @@ const CourseForm: Component<CourseFormProps> = (props) => {
       professor_id: null,
       description: '',
       notes: null,
+      lecture_generation_model: null,
       lectures_per_week: null,
       total_weeks: null,
       topics: [],
@@ -560,6 +564,14 @@ const CourseForm: Component<CourseFormProps> = (props) => {
                       disabled={isDisabled()}
                     />
                   </FormField>
+
+                  <LectureModelField
+                    value={formData().lecture_generation_model}
+                    onChange={(v) => {
+                      handleInputChange('lecture_generation_model', v)
+                    }}
+                    disabled={isDisabled()}
+                  />
                 </div>
               </Show>
             </div>
@@ -824,6 +836,14 @@ const CourseForm: Component<CourseFormProps> = (props) => {
             disabled={isDisabled()}
           />
         </FormField>
+
+        <LectureModelField
+          value={formData().lecture_generation_model}
+          onChange={(v) => {
+            handleInputChange('lecture_generation_model', v)
+          }}
+          disabled={isDisabled()}
+        />
 
         <Show
           when={(formData().topics?.length ?? 0) > 0}

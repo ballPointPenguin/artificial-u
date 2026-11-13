@@ -47,6 +47,8 @@ class CourseModel(Base):
     created_with = Column(String, nullable=True)
     image_url = Column(String, nullable=True)
     image_created_with = Column(String, nullable=True)
+    # Per-course settings (see core.CourseSettings), e.g. a lecture model override
+    settings = Column(JSONB, nullable=False, default=dict, server_default=text("'{}'::jsonb"))
     created_at = Column(DateTime, nullable=False, default=datetime.now)
     updated_at = Column(DateTime, nullable=False, default=datetime.now)
 

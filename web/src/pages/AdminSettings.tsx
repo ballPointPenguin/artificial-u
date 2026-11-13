@@ -5,20 +5,7 @@ import {
 } from '../api/services/elevenlabs-admin-service'
 import { type ModelSettingResponse, preferenceService } from '../api/services/preference-service'
 import { Button, Card, FormField, Input } from '../components/ui'
-
-/** Well-known model identifiers shown as quick-pick suggestions. */
-const SUGGESTED_MODELS = [
-  'claude-opus-5-5',
-  'claude-opus-5',
-  'claude-sonnet-5-5',
-  'claude-sonnet-5',
-  'claude-haiku-4-5',
-  'gpt-6.1-sol',
-  'gpt-6-luna',
-  'gemini-4-argon',
-  'gemini-3.8-flash',
-  'grok-4.7',
-]
+import { SUGGESTED_MODELS } from '../utils/models'
 
 /** Image generation models shown as quick picks (Gemini image models and GPT Image). */
 const SUGGESTED_IMAGE_MODELS = [

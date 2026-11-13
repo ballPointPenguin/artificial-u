@@ -304,6 +304,8 @@ export const zh = {
       notesPlaceholder: '例如：本课程以英语授课，并融入法语词汇。请勿将课程全部以法语生成。',
       notesHelper:
         '生成讲座时传递给AI的可选常驻说明（例如叙事风格、公式密度或语言混用）。如果您的提示词包含特殊授课要求，AI也可能自动提炼填写。',
+      lectureModelLabel: '讲座生成模型（可选）',
+      lectureModelHelper: '为本课程覆盖全站讲座模型。留空则使用显示的应用默认值。',
       aiPromptLabel: 'AI生成提示（可选）',
       departmentPlaceholder: '-- 选择系（可选）--',
       professorPlaceholder: '-- 选择教授（可选）--',
@@ -649,6 +651,8 @@ export const zh = {
     published: '已发布',
     hidden: '隐藏',
     courseNotes: '课程备注',
+    lectureModel: '讲座模型',
+    lectureModelAppDefault: '应用默认',
     editTags: '编辑标签',
     tagsEditHeading: '编辑标签',
     tagsEditDescription: '标签描述课程主题，用于浏览和筛选。',
