@@ -18,7 +18,7 @@ The AWS infrastructure is defined as code using the Python CDK and consists of t
 - **Amazon CloudFront**: A global Content Delivery Network (CDN) that provides the public entry point to the application. It is configured with two origins:
     1. The frontend S3 bucket (default behavior) to serve the web application.
     2. The public ALB to route `/api/*` requests and `/share/*` unfurl pages to the backend ECS service.
-  - SPA fallback responses route S3 `403` and `404` responses to `index.html`.
+  - A CloudFront Function on the default (S3) behavior serves `index.html` for SPA routes: any path whose last segment has no file extension. It does not run on `/api/*` or `/share/*`, so API errors reach the client with their real status and JSON body.
   - PWA shell files (`index.html`, `sw.js`, Workbox files, `manifest.json`, etc.) use a no-cache policy, while versioned static assets use optimized caching.
 - **AWS WAF**: A CloudFront-scoped web ACL provides basic application-layer protection using AWS managed rule groups and a simple blanket per-IP rate limit.
 - **Route 53 and ACM**: A hosted zone for `artificial-u.com`, alias records for the apex and `www`, and a DNS-validated certificate in `us-east-1`.
@@ -345,9 +345,11 @@ to finish inside ECS without fighting CDN-enforced limits.
 
 ### Direct URL Access Returns 404
 
-If accessing routes like `/professors` directly returns a 404 or shows an S3 error, the CloudFront custom error responses are not configured. This has been fixed in the latest CDK stack.
+If accessing routes like `/professors` directly returns an S3 error (`AccessDenied`), the SPA fallback function (`SpaFallbackFunction` in the CDK stack) is not attached to the distribution's default behavior, or the route's last path segment contains a dot and is being treated as a file.
 
-After deploying the fix, you may need to invalidate the CloudFront cache:
+A request for a file that does not exist (for example an old hashed asset) returns S3's 403 rather than the SPA shell. That is expected.
+
+After deploying a fix, you may need to invalidate the CloudFront cache:
 
 ```bash
 # Get distribution ID
