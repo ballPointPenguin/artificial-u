@@ -5,13 +5,38 @@ This module provides functions to configure CORS middleware for different enviro
 """
 
 import logging
+import re
+from typing import List, Optional, Tuple
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from artificial_u.api.config import get_settings
+from artificial_u.config import get_settings
 
 logger = logging.getLogger("artificial_u")
+
+
+_SUBDOMAIN_PATTERN = r"[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*"
+
+
+def split_origins(origins: List[str]) -> Tuple[List[str], Optional[str]]:
+    """Split configured origins into exact origins and a regex for wildcard entries.
+
+    Starlette matches ``allow_origins`` exactly, so an entry such as
+    ``https://*.example.com`` has to be expressed through ``allow_origin_regex``.
+
+    Returns:
+        (exact origins, regex matching every wildcard entry or None if there are none)
+    """
+    exact = [origin for origin in origins if "*" not in origin]
+    wildcard_patterns = [
+        re.escape(origin).replace(r"\*", _SUBDOMAIN_PATTERN)
+        for origin in origins
+        if "*" in origin and origin != "*"
+    ]
+    if "*" in origins:
+        exact.append("*")
+    return exact, "|".join(wildcard_patterns) or None
 
 
 def setup_cors(app: FastAPI) -> None:
@@ -25,12 +50,11 @@ def setup_cors(app: FastAPI) -> None:
     """
     settings = get_settings()
 
-    # Get allowed origins from settings
-    allowed_origins = settings.cors_origins
+    allowed_origins, allowed_origin_regex = split_origins(settings.cors_origins)
 
     # Log CORS configuration
     if settings.environment == "development":
-        logger.info(f"CORS configured for development with origins: {allowed_origins}")
+        logger.info(f"CORS configured for development with origins: {settings.cors_origins}")
     else:
         logger.info(f"CORS configured for {settings.environment}")
 
@@ -38,6 +62,7 @@ def setup_cors(app: FastAPI) -> None:
     app.add_middleware(
         CORSMiddleware,
         allow_origins=allowed_origins,
+        allow_origin_regex=allowed_origin_regex,
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],

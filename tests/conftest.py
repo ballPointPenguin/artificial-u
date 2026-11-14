@@ -8,6 +8,7 @@ import os
 import pytest
 from dotenv import load_dotenv
 from sqlalchemy import create_engine
+from sqlalchemy.engine import make_url
 
 from artificial_u.models.database import Base
 
@@ -16,45 +17,45 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-def pytest_configure(config):
-    """Configure pytest with custom markers."""
-    config.addinivalue_line("markers", "unit: mark test as a unit test")
-    config.addinivalue_line("markers", "integration: mark test as an integration test")
-    config.addinivalue_line("markers", "asyncio: mark test as an async test")
+def _is_test_database(db_url: str) -> bool:
+    """Only databases whose name ends in ``_test`` may be dropped and recreated."""
+    return (make_url(db_url).database or "").endswith("_test")
 
 
 def pytest_sessionstart(session):
     """
     Initialize test environment before tests.
 
-    This is the best place to set up the test database once before all tests run.
+    When the run is selected with exactly ``-m integration``, the test database schema is
+    dropped and recreated once up front. Any other marker expression (including
+    ``-m "not integration"``) leaves the database alone.
     """
-    # Load test environment variables
-    load_dotenv(".env.test")
+    # Load test environment variables; .env.test wins over anything exported in the shell
+    load_dotenv(".env.test", override=True)
 
-    # Check if integration tests will be run
-    if session.config.getoption("markexpr") and "integration" in session.config.getoption(
-        "markexpr"
-    ):
-        logger.info("Setting up test database for integration tests")
+    if (session.config.getoption("markexpr") or "").strip() != "integration":
+        logger.info("Skipping test database setup (not running integration tests)")
+        return
 
-        # Get database URL from environment
-        db_url = os.environ.get(
-            "DATABASE_URL",
-            "postgresql://postgres:postgres@localhost:5432/artificial_u_test",
+    db_url = os.environ.get(
+        "DATABASE_URL",
+        "postgresql://postgres:postgres@localhost:5432/artificial_u_test",
+    )
+    if not _is_test_database(db_url):
+        raise pytest.UsageError(
+            "Refusing to reset the schema: DATABASE_URL does not point at a database whose "
+            "name ends in '_test'."
         )
 
-        try:
-            # Create engine and tables
-            engine = create_engine(db_url)
-            Base.metadata.drop_all(engine)
-            Base.metadata.create_all(engine)
-            logger.info("Test database initialized successfully.")
-        except Exception as e:
-            logger.error(f"Failed to initialize test database: {str(e)}")
-            logger.warning("Integration tests requiring database may fail!")
-    else:
-        logger.info("Skipping test database setup (not running integration tests)")
+    logger.info("Setting up test database for integration tests")
+    try:
+        engine = create_engine(db_url)
+        Base.metadata.drop_all(engine)
+        Base.metadata.create_all(engine)
+        logger.info("Test database initialized successfully.")
+    except Exception as e:
+        logger.error(f"Failed to initialize test database: {str(e)}")
+        logger.warning("Integration tests requiring database may fail!")
 
 
 @pytest.fixture(scope="session")

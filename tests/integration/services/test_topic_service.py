@@ -22,13 +22,9 @@ def repository_factory():
 
 @pytest.fixture
 def department_service(repository_factory):
-    """Create a DepartmentService with mocked dependent services."""
-    professor_service_mock = MagicMock()
-    course_service_mock = MagicMock()
+    """Create a DepartmentService."""
     return DepartmentService(
         repository_factory=repository_factory,
-        professor_service=professor_service_mock,
-        course_service=course_service_mock,
         logger=logging.getLogger(__name__),
     )
 
@@ -187,134 +183,6 @@ class TestTopicService:
         assert retrieved.order == 1
 
     @pytest.mark.asyncio
-    async def test_create_topics_batch(
-        self,
-        topic_service,
-        course_service,
-        department_service,
-        professor_service,
-        repository_factory,
-        sample_faculties,
-    ):
-        """Test creating multiple topics in a batch."""
-        # First create a department
-        department = department_service.create_department(
-            name="Computer Science",
-            code="CS",
-            faculty_id=sample_faculties["Engineering"],
-        )
-
-        # Then create a professor
-        professor = professor_service.create_professor(
-            Professor(
-                name="Dr. Alan Turing",
-                title="Professor",
-                department_id=department.id,
-                specialization="Computation Theory",
-                gender="Male",
-            )
-        )
-
-        # Create a course
-        course_result = await course_service.create_course(
-            title="Introduction to Programming",
-            code="CS101",
-            department_id=department.id,
-            level="Undergraduate",
-            professor_id=professor.id,
-        )
-        course = course_result[0]
-
-        # Create multiple topics
-        topics = [
-            Topic(
-                title="Topic 1",
-                course_id=course.id,
-                week=1,
-                order=1,
-                language="en",
-            ),
-            Topic(
-                title="Topic 2",
-                course_id=course.id,
-                week=1,
-                order=2,
-                language="en",
-            ),
-        ]
-
-        created_topics = topic_service.create_topics(topics)
-
-        # Verify all topics were created with IDs
-        assert len(created_topics) == 2
-        for topic in created_topics:
-            assert topic.id is not None
-
-        # Verify the topics can be retrieved
-        for topic in created_topics:
-            retrieved = topic_service.get_topic(topic.id)
-            assert retrieved.id == topic.id
-            assert retrieved.title == topic.title
-
-    @pytest.mark.asyncio
-    async def test_get_topic_by_course_week_order(
-        self,
-        topic_service,
-        course_service,
-        department_service,
-        professor_service,
-        repository_factory,
-        sample_faculties,
-    ):
-        """Test getting a topic by course ID, week, and order."""
-        # First create a department
-        department = department_service.create_department(
-            name="Computer Science",
-            code="CS",
-            faculty_id=sample_faculties["Engineering"],
-        )
-
-        # Then create a professor
-        professor = professor_service.create_professor(
-            Professor(
-                name="Dr. Alan Turing",
-                title="Professor",
-                department_id=department.id,
-                specialization="Computation Theory",
-                gender="Male",
-            )
-        )
-
-        # Create a course
-        course_result = await course_service.create_course(
-            title="Introduction to Programming",
-            code="CS101",
-            department_id=department.id,
-            level="Undergraduate",
-            professor_id=professor.id,
-        )
-        course = course_result[0]
-
-        # Create a topic
-        topic = topic_service.create_topic(
-            title="Advanced Python",
-            course_id=course.id,
-            week=2,
-            order=1,
-        )
-
-        # Retrieve by course, week, and order
-        retrieved = topic_service.get_topic_by_course_week_order(
-            course_id=course.id,
-            week=2,
-            order=1,
-        )
-
-        assert retrieved is not None
-        assert retrieved.id == topic.id
-        assert retrieved.title == "Advanced Python"
-
-    @pytest.mark.asyncio
     async def test_list_topics_by_course(
         self,
         topic_service,
@@ -373,55 +241,6 @@ class TestTopicService:
         topics = topic_service.list_topics_by_course(course_id=course1.id)
         assert len(topics) >= 2  # At least our 2 topics (could be more if DB has existing data)
         assert all(t.course_id == course1.id for t in topics)
-
-    @pytest.mark.asyncio
-    async def test_list_topics_by_course_week(
-        self,
-        topic_service,
-        course_service,
-        department_service,
-        professor_service,
-        repository_factory,
-        sample_faculties,
-    ):
-        """Test listing topics for a specific course and week."""
-        # First create a department
-        department = department_service.create_department(
-            name="Computer Science",
-            code="CS",
-            faculty_id=sample_faculties["Engineering"],
-        )
-
-        # Then create a professor
-        professor = professor_service.create_professor(
-            Professor(
-                name="Dr. Alan Turing",
-                title="Professor",
-                department_id=department.id,
-                specialization="Computation Theory",
-                gender="Male",
-            )
-        )
-
-        # Create a course
-        course_result = await course_service.create_course(
-            title="Introduction to Programming",
-            code="CS101",
-            department_id=department.id,
-            level="Undergraduate",
-            professor_id=professor.id,
-        )
-        course = course_result[0]
-
-        # Create topics for different weeks
-        topic_service.create_topic(title="Week 1 Topic", course_id=course.id, week=1, order=1)
-        topic_service.create_topic(title="Week 2 Topic", course_id=course.id, week=2, order=1)
-        topic_service.create_topic(title="Week 1 Topic 2", course_id=course.id, week=1, order=2)
-
-        # List topics for week 1
-        topics = topic_service.list_topics_by_course_week(course_id=course.id, week=1)
-        assert len(topics) >= 2  # At least our 2 topics for week 1
-        assert all(t.week == 1 for t in topics)
 
     @pytest.mark.asyncio
     async def test_update_topic(
@@ -537,73 +356,6 @@ class TestTopicService:
 
         # Verify it's gone
         assert topic_service.get_topic(topic.id) is None
-
-    @pytest.mark.asyncio
-    async def test_delete_topics_by_course(
-        self,
-        topic_service,
-        course_service,
-        department_service,
-        professor_service,
-        repository_factory,
-        sample_faculties,
-    ):
-        """Test deleting all topics for a course."""
-        # First create a department
-        department = department_service.create_department(
-            name="Computer Science",
-            code="CS",
-            faculty_id=sample_faculties["Engineering"],
-        )
-
-        # Then create a professor
-        professor = professor_service.create_professor(
-            Professor(
-                name="Dr. Alan Turing",
-                title="Professor",
-                department_id=department.id,
-                specialization="Computation Theory",
-                gender="Male",
-            )
-        )
-
-        # Create two courses
-        course1_result = await course_service.create_course(
-            title="Introduction to Programming",
-            code="CS101",
-            department_id=department.id,
-            level="Undergraduate",
-            professor_id=professor.id,
-        )
-        course1 = course1_result[0]
-
-        course2_result = await course_service.create_course(
-            title="Advanced Programming",
-            code="CS201",
-            department_id=department.id,
-            level="Undergraduate",
-            professor_id=professor.id,
-        )
-        course2 = course2_result[0]
-
-        # Create topics for course 1
-        topic_service.create_topic(title="Topic 1", course_id=course1.id, week=1, order=1)
-        topic_service.create_topic(title="Topic 2", course_id=course1.id, week=1, order=2)
-        topic_service.create_topic(
-            title="Topic 3", course_id=course2.id, week=1, order=1
-        )  # Different course
-
-        # Delete topics for course 1
-        count = topic_service.delete_topics_by_course(course_id=course1.id)
-        assert count >= 2  # At least our 2 topics were deleted
-
-        # Verify topics for course 1 are gone
-        topics = topic_service.list_topics_by_course(course_id=course1.id)
-        assert len(topics) == 0
-
-        # Verify topics for course 2 still exist
-        topics = topic_service.list_topics_by_course(course_id=course2.id)
-        assert len(topics) >= 1
 
     def test_error_handling(self, topic_service):
         """Test error handling in topic operations."""

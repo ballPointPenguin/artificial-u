@@ -374,13 +374,6 @@ The audio processing system consists of specialized components working together:
 - **Response Processing**: Formats and validates AI responses
 - **Context Management**: Maintains conversation history
 
-#### UniversitySystem
-
-- **Central Orchestrator**: Integrates all service components
-- **Workflow Management**: Coordinates multi-step operations
-- **State Management**: Tracks generation progress
-- **Error Recovery**: Handles failures gracefully
-
 ### Repository Pattern
 
 - **Factory Pattern**: Centralized repository creation

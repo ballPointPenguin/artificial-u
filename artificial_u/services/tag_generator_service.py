@@ -7,19 +7,19 @@ French courses get French tags — never translations).
 """
 
 import logging
-from typing import List, Optional
+from typing import List
 
 from artificial_u.config import get_settings
 from artificial_u.models.converters import course_model_to_dict, parse_tags_xml
 from artificial_u.models.core import Tag
 from artificial_u.models.repositories.factory import RepositoryFactory
+from artificial_u.prompts import get_prompts_for_language, resolve_prompt_language
 from artificial_u.services.content_service import ContentService
 from artificial_u.utils import (
     ContentGenerationError,
     CourseNotFoundError,
     detect_truncation,
-    ensure_xml_wrapper,
-    extract_xml_between_tags,
+    extract_root_xml,
 )
 
 # Existing vocabulary passed to the prompt, most-used first
@@ -68,7 +68,7 @@ class TagGeneratorService:
         if not course_model:
             raise CourseNotFoundError(f"Course with ID {course_id} not found")
 
-        language = self._resolve_language(course_model.language)
+        language = resolve_prompt_language(course_model.language)
         course_data = course_model_to_dict(course_model)
 
         department_name = None
@@ -87,8 +87,6 @@ class TagGeneratorService:
         existing_tags = self.repository_factory.tag.list_top_names(
             language=language, limit=VOCABULARY_LIMIT
         )
-
-        from artificial_u.prompts import get_prompts_for_language
 
         prompt_module = get_prompts_for_language(language)
         prompt = prompt_module.get_course_tags_prompt(
@@ -134,23 +132,10 @@ class TagGeneratorService:
         )
         return saved
 
-    def _resolve_language(self, language: Optional[str]) -> str:
-        """Map a course language to a supported tag/prompt universe."""
-        if language and isinstance(language, str):
-            prefix = language.lower()[:2]
-            if prefix in ("en", "fr"):
-                return prefix
-        return "en"
-
     def _parse_tag_names(self, raw_response: str) -> List[str]:
         """Extract the <tags> block from the LLM response and parse names."""
         is_truncated = detect_truncation(raw_response)
-        tags_output = extract_xml_between_tags(raw_response, "output")
-
-        if not tags_output:
-            inner_content = extract_xml_between_tags(raw_response, "tags")
-            if inner_content is not None:
-                tags_output = f"<tags>\n{inner_content}\n</tags>"
+        tags_output = extract_root_xml(raw_response, "tags", allow_empty=True)
 
         if not tags_output:
             error_msg = (
@@ -162,7 +147,7 @@ class TagGeneratorService:
             raise ContentGenerationError(error_msg)
 
         try:
-            return parse_tags_xml(ensure_xml_wrapper(tags_output, "tags"))
+            return parse_tags_xml(tags_output)
         except ValueError as e:
             self.logger.error("XML parsing error for course tags: %s", e)
             raise ContentGenerationError(f"Error parsing generated tags XML: {e}") from e

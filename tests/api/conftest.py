@@ -1,10 +1,23 @@
 import pytest
 from fastapi.testclient import TestClient
 
-from artificial_u.api.app import app, create_application
+from artificial_u.api.app import app
 from artificial_u.api.dependencies import ensure_student
-from artificial_u.api.security.auth0 import mock_require_auth, require_auth
+from artificial_u.api.security.auth0 import require_auth
 from artificial_u.models.core import Student
+
+MOCK_JWT_PAYLOAD = {
+    "sub": "test-user-123",
+    "email": "test@example.com",
+    "name": "Test User",
+    "nickname": "testuser",
+    "scope": "read:courses write:courses",
+}
+
+
+def mock_require_auth() -> dict:
+    """Mock authentication that returns a test JWT payload."""
+    return MOCK_JWT_PAYLOAD
 
 
 def mock_ensure_student() -> Student:
@@ -31,9 +44,3 @@ def client():
         yield client
     # Clean up overrides after test
     app.dependency_overrides.clear()
-
-
-@pytest.fixture
-def test_app():
-    """Create a fresh instance of the FastAPI application for testing."""
-    return create_application()

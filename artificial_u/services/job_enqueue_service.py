@@ -24,6 +24,30 @@ class JobEnqueueService:
         self.repository_factory = repository_factory
         self.logger = logger or logging.getLogger(__name__)
 
+    def _enqueue(
+        self,
+        kind: str,
+        payload: dict,
+        *,
+        label: str,
+        subject: str,
+        parent_job_id: Optional[int] = None,
+    ) -> int:
+        """Create a job row and return its ID. ``None`` payload values are dropped."""
+        try:
+            job = self.repository_factory.job.create(
+                kind=kind,
+                payload={key: value for key, value in payload.items() if value is not None},
+                parent_job_id=parent_job_id,
+            )
+        except Exception as e:
+            error_msg = f"Failed to enqueue {label} job for {subject}: {e}"
+            self.logger.error(error_msg, exc_info=True)
+            raise DatabaseError(error_msg) from e
+
+        self.logger.info("Enqueued %s job %d for %s", label, job.id, subject)
+        return job.id
+
     def enqueue_professor_image_generation(
         self,
         professor_id: int,
@@ -32,25 +56,13 @@ class JobEnqueueService:
         parent_job_id: Optional[int] = None,
     ) -> int:
         """Enqueue a background job to generate an image for the professor."""
-        try:
-            job = self.repository_factory.job.create(
-                kind="generate_professor_image",
-                payload={"professor_id": professor_id, "aspect_ratio": aspect_ratio},
-                parent_job_id=parent_job_id,
-            )
-            self.logger.info(
-                "Enqueued professor image generation job %d for professor %d",
-                job.id,
-                professor_id,
-            )
-            return job.id
-        except Exception as e:
-            error_msg = (
-                f"Failed to enqueue professor image generation job "
-                f"for professor {professor_id}: {e}"
-            )
-            self.logger.error(error_msg, exc_info=True)
-            raise DatabaseError(error_msg) from e
+        return self._enqueue(
+            "generate_professor_image",
+            {"professor_id": professor_id, "aspect_ratio": aspect_ratio},
+            label="professor image generation",
+            subject=f"professor {professor_id}",
+            parent_job_id=parent_job_id,
+        )
 
     def enqueue_course_image_generation(
         self,
@@ -60,20 +72,13 @@ class JobEnqueueService:
         parent_job_id: Optional[int] = None,
     ) -> int:
         """Enqueue a background job to generate album art for a course."""
-        try:
-            job = self.repository_factory.job.create(
-                kind="generate_course_image",
-                payload={"course_id": course_id, "aspect_ratio": aspect_ratio},
-                parent_job_id=parent_job_id,
-            )
-            self.logger.info(
-                "Enqueued course image generation job %d for course %d", job.id, course_id
-            )
-            return job.id
-        except Exception as e:
-            error_msg = f"Failed to enqueue course image generation job for course {course_id}: {e}"
-            self.logger.error(error_msg, exc_info=True)
-            raise DatabaseError(error_msg) from e
+        return self._enqueue(
+            "generate_course_image",
+            {"course_id": course_id, "aspect_ratio": aspect_ratio},
+            label="course image generation",
+            subject=f"course {course_id}",
+            parent_job_id=parent_job_id,
+        )
 
     def enqueue_lecture_summary_generation(
         self,
@@ -83,25 +88,9 @@ class JobEnqueueService:
         parent_job_id: Optional[int] = None,
     ) -> Optional[int]:
         """Enqueue a background job to generate a lecture summary."""
-        if get_settings().testing:
-            self.logger.debug("Skipping lecture summary job enqueue: running in test mode")
-            return None
-
-        try:
-            payload: dict = {"lecture_id": lecture_id}
-            if topic_id is not None:
-                payload["topic_id"] = topic_id
-            job = self.repository_factory.job.create(
-                kind="generate_lecture_summary",
-                payload=payload,
-                parent_job_id=parent_job_id,
-            )
-            self.logger.info("Enqueued lecture summary job %d for lecture %d", job.id, lecture_id)
-            return job.id
-        except Exception as e:
-            error_msg = f"Failed to enqueue lecture summary job for lecture {lecture_id}: {e}"
-            self.logger.error(error_msg, exc_info=True)
-            raise DatabaseError(error_msg) from e
+        return self._enqueue_for_lecture(
+            "generate_lecture_summary", "lecture summary", lecture_id, topic_id, parent_job_id
+        )
 
     def enqueue_lecture_audio_generation(
         self,
@@ -111,25 +100,9 @@ class JobEnqueueService:
         parent_job_id: Optional[int] = None,
     ) -> Optional[int]:
         """Enqueue a background job to generate lecture audio."""
-        if get_settings().testing:
-            self.logger.debug("Skipping lecture audio job enqueue: running in test mode")
-            return None
-
-        try:
-            payload: dict = {"lecture_id": lecture_id}
-            if topic_id is not None:
-                payload["topic_id"] = topic_id
-            job = self.repository_factory.job.create(
-                kind="generate_lecture_audio",
-                payload=payload,
-                parent_job_id=parent_job_id,
-            )
-            self.logger.info("Enqueued lecture audio job %d for lecture %d", job.id, lecture_id)
-            return job.id
-        except Exception as e:
-            error_msg = f"Failed to enqueue lecture audio job for lecture {lecture_id}: {e}"
-            self.logger.error(error_msg, exc_info=True)
-            raise DatabaseError(error_msg) from e
+        return self._enqueue_for_lecture(
+            "generate_lecture_audio", "lecture audio", lecture_id, topic_id, parent_job_id
+        )
 
     def enqueue_lecture_timeline_generation(
         self,
@@ -139,49 +112,9 @@ class JobEnqueueService:
         parent_job_id: Optional[int] = None,
     ) -> Optional[int]:
         """Enqueue a background job to generate a lecture timeline (forced alignment)."""
-        if get_settings().testing:
-            self.logger.debug("Skipping lecture timeline job enqueue: running in test mode")
-            return None
-
-        try:
-            payload: dict = {"lecture_id": lecture_id}
-            if topic_id is not None:
-                payload["topic_id"] = topic_id
-            job = self.repository_factory.job.create(
-                kind="generate_lecture_timeline",
-                payload=payload,
-                parent_job_id=parent_job_id,
-            )
-            self.logger.info("Enqueued lecture timeline job %d for lecture %d", job.id, lecture_id)
-            return job.id
-        except Exception as e:
-            error_msg = f"Failed to enqueue lecture timeline job for lecture {lecture_id}: {e}"
-            self.logger.error(error_msg, exc_info=True)
-            raise DatabaseError(error_msg) from e
-
-    def enqueue_lecture_images_generation(
-        self,
-        lecture_id: int,
-        *,
-        parent_job_id: Optional[int] = None,
-    ) -> Optional[int]:
-        """Enqueue a background job to generate a lecture images timeline + slide images."""
-        if get_settings().testing:
-            self.logger.debug("Skipping lecture images job enqueue: running in test mode")
-            return None
-
-        try:
-            job = self.repository_factory.job.create(
-                kind="generate_lecture_images",
-                payload={"lecture_id": lecture_id},
-                parent_job_id=parent_job_id,
-            )
-            self.logger.info("Enqueued lecture images job %d for lecture %d", job.id, lecture_id)
-            return job.id
-        except Exception as e:
-            error_msg = f"Failed to enqueue lecture images job for lecture {lecture_id}: {e}"
-            self.logger.error(error_msg, exc_info=True)
-            raise DatabaseError(error_msg) from e
+        return self._enqueue_for_lecture(
+            "generate_lecture_timeline", "lecture timeline", lecture_id, topic_id, parent_job_id
+        )
 
     def enqueue_tags_generation(
         self,
@@ -191,25 +124,9 @@ class JobEnqueueService:
         parent_job_id: Optional[int] = None,
     ) -> Optional[int]:
         """Enqueue a background job to generate tags for a course."""
-        if get_settings().testing:
-            self.logger.debug("Skipping tags generation job enqueue: running in test mode")
-            return None
-
-        try:
-            payload: dict = {"course_id": course_id}
-            if created_by is not None:
-                payload["created_by"] = created_by
-            job = self.repository_factory.job.create(
-                kind="generate_tags_for_course",
-                payload=payload,
-                parent_job_id=parent_job_id,
-            )
-            self.logger.info("Enqueued tags generation job %d for course %d", job.id, course_id)
-            return job.id
-        except Exception as e:
-            error_msg = f"Failed to enqueue tags generation job for course {course_id}: {e}"
-            self.logger.error(error_msg, exc_info=True)
-            raise DatabaseError(error_msg) from e
+        return self._enqueue_for_course(
+            "generate_tags_for_course", "tags generation", course_id, created_by, parent_job_id
+        )
 
     def enqueue_topics_generation(
         self,
@@ -219,22 +136,49 @@ class JobEnqueueService:
         parent_job_id: Optional[int] = None,
     ) -> Optional[int]:
         """Enqueue a background job to generate topics for a course."""
-        if get_settings().testing:
-            self.logger.debug("Skipping topics generation job enqueue: running in test mode")
-            return None
+        return self._enqueue_for_course(
+            "generate_topics_for_course", "topics generation", course_id, created_by, parent_job_id
+        )
 
-        try:
-            payload: dict = {"course_id": course_id}
-            if created_by is not None:
-                payload["created_by"] = created_by
-            job = self.repository_factory.job.create(
-                kind="generate_topics_for_course",
-                payload=payload,
-                parent_job_id=parent_job_id,
-            )
-            self.logger.info("Enqueued topics generation job %d for course %d", job.id, course_id)
-            return job.id
-        except Exception as e:
-            error_msg = f"Failed to enqueue topics generation job for course {course_id}: {e}"
-            self.logger.error(error_msg, exc_info=True)
-            raise DatabaseError(error_msg) from e
+    def _enqueue_for_lecture(
+        self,
+        kind: str,
+        label: str,
+        lecture_id: int,
+        topic_id: Optional[int],
+        parent_job_id: Optional[int],
+    ) -> Optional[int]:
+        if self._skip_in_tests(label):
+            return None
+        return self._enqueue(
+            kind,
+            {"lecture_id": lecture_id, "topic_id": topic_id},
+            label=label,
+            subject=f"lecture {lecture_id}",
+            parent_job_id=parent_job_id,
+        )
+
+    def _enqueue_for_course(
+        self,
+        kind: str,
+        label: str,
+        course_id: int,
+        created_by: Optional[int],
+        parent_job_id: Optional[int],
+    ) -> Optional[int]:
+        if self._skip_in_tests(label):
+            return None
+        return self._enqueue(
+            kind,
+            {"course_id": course_id, "created_by": created_by},
+            label=label,
+            subject=f"course {course_id}",
+            parent_job_id=parent_job_id,
+        )
+
+    def _skip_in_tests(self, label: str) -> bool:
+        """Follow-up jobs for lectures and courses are not enqueued in test mode."""
+        if get_settings().testing:
+            self.logger.debug("Skipping %s job enqueue: running in test mode", label)
+            return True
+        return False

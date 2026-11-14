@@ -35,27 +35,6 @@ export const topicService = {
     return httpClient.delete(ENDPOINTS.topics.detail(topicId))
   },
 
-  generateTopicsForCourse: (
-    courseId: number,
-    data?: TopicsGenerateRequest,
-    onTimeout?: () => void
-  ): Promise<Topic[]> => {
-    let queryString = ''
-    if (data?.freeform_prompt) {
-      const queryParams = new URLSearchParams()
-      queryParams.set('freeform_prompt', data.freeform_prompt)
-      queryString = `?${queryParams.toString()}`
-    }
-    const requestBody =
-      data && !data.freeform_prompt ? data : data?.freeform_prompt ? {} : undefined
-
-    return httpClient.postWithExtendedTimeout<Topic[]>(
-      `${ENDPOINTS.topics.generateForCourse(courseId)}${queryString}`,
-      requestBody,
-      { timeout: TIMEOUT_CONFIG.generation, onTimeout }
-    )
-  },
-
   generateSingleTopicForCourse: (
     courseId: number,
     data: TopicGenerateSingleRequest,

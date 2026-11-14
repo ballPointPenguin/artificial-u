@@ -20,6 +20,19 @@ SIGNUP_BONUS_COINS = 50
 class StudentRepository(BaseRepository):
     """Repository for Student operations."""
 
+    @staticmethod
+    def _to_model(db_student: StudentModel) -> Student:
+        """Convert a database row to a core Student."""
+        return Student(
+            id=db_student.id,
+            name=db_student.name,
+            email=db_student.email,
+            auth0_sub=db_student.auth0_sub,
+            role=db_student.role,
+            coins=db_student.coins,
+            is_active=db_student.is_active,
+        )
+
     def _ensure_unique_email(
         self, session, email: Optional[str], exclude_student_id: Optional[int] = None
     ) -> None:
@@ -48,15 +61,7 @@ class StudentRepository(BaseRepository):
             db_student = session.get(StudentModel, student_id)
             if not db_student:
                 return None
-            return Student(
-                id=db_student.id,
-                name=db_student.name,
-                email=db_student.email,
-                auth0_sub=db_student.auth0_sub,
-                role=db_student.role,
-                coins=db_student.coins,
-                is_active=db_student.is_active,
-            )
+            return self._to_model(db_student)
 
     def get_by_auth0_sub(self, auth0_sub: str) -> Optional[Student]:
         with self.get_session() as session:
@@ -65,15 +70,7 @@ class StudentRepository(BaseRepository):
             )
             if not db_student:
                 return None
-            return Student(
-                id=db_student.id,
-                name=db_student.name,
-                email=db_student.email,
-                auth0_sub=db_student.auth0_sub,
-                role=db_student.role,
-                coins=db_student.coins,
-                is_active=db_student.is_active,
-            )
+            return self._to_model(db_student)
 
     def create(self, *, name: str, email: Optional[str], auth0_sub: Optional[str]) -> Student:
         with self.get_session() as session:
@@ -93,15 +90,7 @@ class StudentRepository(BaseRepository):
                 db_student.id,
                 SIGNUP_BONUS_COINS,
             )
-            return Student(
-                id=db_student.id,
-                name=db_student.name,
-                email=db_student.email,
-                auth0_sub=db_student.auth0_sub,
-                role=db_student.role,
-                coins=db_student.coins,
-                is_active=db_student.is_active,
-            )
+            return self._to_model(db_student)
 
     def get_by_email(self, email: str) -> Optional[Student]:
         """Get a student by email (case-insensitive)."""
@@ -115,15 +104,7 @@ class StudentRepository(BaseRepository):
             )
             if not db_student:
                 return None
-            return Student(
-                id=db_student.id,
-                name=db_student.name,
-                email=db_student.email,
-                auth0_sub=db_student.auth0_sub,
-                role=db_student.role,
-                coins=db_student.coins,
-                is_active=db_student.is_active,
-            )
+            return self._to_model(db_student)
 
     def link_auth0_sub(self, student_id: int, auth0_sub: str) -> Student:
         """Link an Auth0 sub to an existing student account."""
@@ -134,15 +115,7 @@ class StudentRepository(BaseRepository):
             db_student.auth0_sub = auth0_sub
             session.commit()
             session.refresh(db_student)
-            return Student(
-                id=db_student.id,
-                name=db_student.name,
-                email=db_student.email,
-                auth0_sub=db_student.auth0_sub,
-                role=db_student.role,
-                coins=db_student.coins,
-                is_active=db_student.is_active,
-            )
+            return self._to_model(db_student)
 
     def get_or_create_by_auth0(
         self,
@@ -183,18 +156,7 @@ class StudentRepository(BaseRepository):
         with self.get_session() as session:
             db_students = session.query(StudentModel).all()
 
-            return [
-                Student(
-                    id=db_student.id,
-                    name=db_student.name,
-                    email=db_student.email,
-                    auth0_sub=db_student.auth0_sub,
-                    role=db_student.role,
-                    coins=db_student.coins,
-                    is_active=db_student.is_active,
-                )
-                for db_student in db_students
-            ]
+            return [self._to_model(db_student) for db_student in db_students]
 
     def update(self, student: Student) -> Student:
         """
@@ -226,15 +188,7 @@ class StudentRepository(BaseRepository):
 
             session.commit()
             session.refresh(db_student)
-            return Student(
-                id=db_student.id,
-                name=db_student.name,
-                email=db_student.email,
-                auth0_sub=db_student.auth0_sub,
-                role=db_student.role,
-                coins=db_student.coins,
-                is_active=db_student.is_active,
-            )
+            return self._to_model(db_student)
 
     def update_fields(self, student_id: int, update_data: Dict[str, any]) -> Optional[Student]:
         """
@@ -274,15 +228,7 @@ class StudentRepository(BaseRepository):
             session.commit()
             session.refresh(db_student)
 
-            return Student(
-                id=db_student.id,
-                name=db_student.name,
-                email=db_student.email,
-                auth0_sub=db_student.auth0_sub,
-                role=db_student.role,
-                coins=db_student.coins,
-                is_active=db_student.is_active,
-            )
+            return self._to_model(db_student)
 
     def deduct_coins(self, student_id: int, amount: int) -> Student:
         """
@@ -312,15 +258,7 @@ class StudentRepository(BaseRepository):
             session.commit()
             session.refresh(db_student)
 
-            return Student(
-                id=db_student.id,
-                name=db_student.name,
-                email=db_student.email,
-                auth0_sub=db_student.auth0_sub,
-                role=db_student.role,
-                coins=db_student.coins,
-                is_active=db_student.is_active,
-            )
+            return self._to_model(db_student)
 
     def add_coins(self, student_id: int, amount: int) -> Student:
         """
@@ -345,15 +283,7 @@ class StudentRepository(BaseRepository):
             session.commit()
             session.refresh(db_student)
 
-            return Student(
-                id=db_student.id,
-                name=db_student.name,
-                email=db_student.email,
-                auth0_sub=db_student.auth0_sub,
-                role=db_student.role,
-                coins=db_student.coins,
-                is_active=db_student.is_active,
-            )
+            return self._to_model(db_student)
 
     def delete(self, student_id: int) -> bool:
         """
@@ -405,12 +335,4 @@ class StudentRepository(BaseRepository):
             session.commit()
             session.refresh(db_student)
 
-            return Student(
-                id=db_student.id,
-                name=db_student.name,
-                email=db_student.email,
-                auth0_sub=db_student.auth0_sub,
-                role=db_student.role,
-                coins=db_student.coins,
-                is_active=db_student.is_active,
-            )
+            return self._to_model(db_student)

@@ -2,7 +2,7 @@
 Unit Tests for the lecture API endpoints, mocking the service layer.
 """
 
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import MagicMock
 
 import pytest
 from fastapi.testclient import TestClient
@@ -10,7 +10,6 @@ from fastapi.testclient import TestClient
 from artificial_u.api.models.lectures import (
     Lecture,
     LectureCreate,
-    LectureGenerate,
     LectureListResponse,
     LectureUpdate,
 )
@@ -50,9 +49,6 @@ def mock_api_service(monkeypatch):
         "create_lecture": MagicMock(),
         "update_lecture": MagicMock(),
         "delete_lecture": MagicMock(),
-        "get_lecture_content": MagicMock(),
-        "get_lecture_audio_url": MagicMock(),
-        "generate_lecture": AsyncMock(),
     }
 
     # --- Configure Mock Return Values ---
@@ -116,47 +112,6 @@ def mock_api_service(monkeypatch):
 
     mock_service["delete_lecture"].side_effect = _mock_delete_lecture
 
-    # GET Lecture Content
-    def _mock_get_lecture_content(lecture_id: int):
-        lecture = next(
-            (lecture for lecture in sample_lectures_base if lecture.id == lecture_id), None
-        )
-        return lecture.content if lecture else None
-
-    mock_service["get_lecture_content"].side_effect = _mock_get_lecture_content
-
-    # GET Lecture Audio URL
-    def _mock_get_lecture_audio_url(lecture_id: int):
-        lecture = next(
-            (lecture for lecture in sample_lectures_base if lecture.id == lecture_id), None
-        )
-        return lecture.audio_url if lecture else None
-
-    mock_service["get_lecture_audio_url"].side_effect = _mock_get_lecture_audio_url
-
-    # GENERATE Lecture
-    generated_lecture_mock = Lecture(
-        id=sample_lectures_base[0].id,
-        course_id=sample_lectures_base[0].course_id,
-        topic_id=sample_lectures_base[0].topic_id,
-        title=sample_lectures_base[0].title,
-        revision=sample_lectures_base[0].revision,
-        content=sample_lectures_base[0].content,
-        summary=sample_lectures_base[0].summary,
-        audio_url=sample_lectures_base[0].audio_url,
-        audio_download_url=sample_lectures_base[0].audio_download_url,
-        transcript_url=sample_lectures_base[0].transcript_url,
-        timeline_url=sample_lectures_base[0].timeline_url,
-        images_timeline_url=sample_lectures_base[0].images_timeline_url,
-        word_count=sample_lectures_base[0].word_count,
-        created_by=sample_lectures_base[0].created_by,
-        created_with=sample_lectures_base[0].created_with,
-        created_at=None,
-        updated_at=None,
-        student=None,
-    )
-    mock_service["generate_lecture"].return_value = generated_lecture_mock
-
     # --- Apply Patches ---
     base_path = "artificial_u.api.services.LectureApiService"
     monkeypatch.setattr(f"{base_path}.list_lectures", mock_service["list_lectures"])
@@ -164,9 +119,6 @@ def mock_api_service(monkeypatch):
     monkeypatch.setattr(f"{base_path}.create_lecture", mock_service["create_lecture"])
     monkeypatch.setattr(f"{base_path}.update_lecture", mock_service["update_lecture"])
     monkeypatch.setattr(f"{base_path}.delete_lecture", mock_service["delete_lecture"])
-    monkeypatch.setattr(f"{base_path}.get_lecture_content", mock_service["get_lecture_content"])
-    monkeypatch.setattr(f"{base_path}.get_lecture_audio_url", mock_service["get_lecture_audio_url"])
-    monkeypatch.setattr(f"{base_path}.generate_lecture", mock_service["generate_lecture"])
 
     return mock_service
 
@@ -269,40 +221,6 @@ def test_get_lecture(client: TestClient, mock_api_service):
 
 
 @pytest.mark.unit
-def test_get_lecture_content(client: TestClient, mock_api_service):
-    """Test getting lecture content."""
-    # Test valid ID
-    response = client.get("/api/v1/lectures/1/content")
-    assert response.status_code == 200
-    assert response.text == sample_lectures_base[0].content
-    mock_api_service["get_lecture_content"].assert_called_once_with(1)
-
-    # Test invalid ID
-    mock_api_service["get_lecture_content"].reset_mock()
-    mock_api_service["get_lecture_content"].return_value = None
-    response = client.get("/api/v1/lectures/999/content")
-    assert response.status_code == 404
-    mock_api_service["get_lecture_content"].assert_called_once_with(999)
-
-
-@pytest.mark.unit
-def test_get_lecture_audio(client: TestClient, mock_api_service):
-    """Test getting lecture audio URL."""
-    # Currently the audio endpoint returns 404 for all requests as it's not fully implemented
-    mock_api_service["get_lecture_audio_url"].return_value = None
-
-    response = client.get("/api/v1/lectures/1/audio")
-    assert response.status_code == 404
-    mock_api_service["get_lecture_audio_url"].assert_called_once_with(1)
-
-    # Test another ID to ensure consistent behavior
-    mock_api_service["get_lecture_audio_url"].reset_mock()
-    response = client.get("/api/v1/lectures/2/audio")
-    assert response.status_code == 404
-    mock_api_service["get_lecture_audio_url"].assert_called_once_with(2)
-
-
-@pytest.mark.unit
 def test_create_lecture(client: TestClient, mock_api_service):
     """Test creating a new lecture."""
     new_lecture_data = {
@@ -395,44 +313,3 @@ def test_delete_lecture(client: TestClient, mock_api_service):
     response = client.delete("/api/v1/lectures/999")
     assert response.status_code == 404
     mock_api_service["delete_lecture"].assert_called_once_with(999, 1, "admin")
-
-
-@pytest.mark.unit
-def test_download_lecture_content(client: TestClient, mock_api_service):
-    """Test downloading lecture content as text file."""
-    # Test valid ID
-    response = client.get("/api/v1/lectures/1/content/download")
-    assert response.status_code == 200
-    assert response.text == sample_lectures_base[0].content
-    assert response.headers["content-type"] == "text/plain; charset=utf-8"
-    mock_api_service["get_lecture_content"].assert_called_once_with(1)
-
-    # Test invalid ID
-    mock_api_service["get_lecture_content"].reset_mock()
-    mock_api_service["get_lecture_content"].return_value = None
-    response = client.get("/api/v1/lectures/999/content/download")
-    assert response.status_code == 404
-    mock_api_service["get_lecture_content"].assert_called_once_with(999)
-
-
-@pytest.mark.unit
-def test_generate_lecture(client: TestClient, mock_api_service):
-    """Test generating lecture data using AI."""
-    generation_data = {
-        "partial_attributes": {"course_id": 1, "topic_id": 50},
-        "freeform_prompt": "Generate a lecture about testing",
-    }
-
-    response = client.post("/api/v1/lectures/generate", json=generation_data)
-    assert response.status_code == 200
-    data = response.json()
-    assert "id" in data
-    assert "content" in data
-    assert "summary" in data
-    assert "topic_id" in data
-    assert data["topic_id"] == sample_lectures_base[0].topic_id
-
-    mock_api_service["generate_lecture"].assert_called_once()
-    call_args = mock_api_service["generate_lecture"].call_args[0]
-    assert isinstance(call_args[0], LectureGenerate)
-    assert call_args[0].model_dump() == generation_data

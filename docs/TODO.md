@@ -1,66 +1,49 @@
 # Current Tasks
 
-- [x] Display lecture durations
-- [ ] Sort and filter professors
-- [ ] Easy Course Generation UI (single prompt field, no form)
-- [ ] Encourage more foreign and older professors
-- [ ] Dev: Troubleshoot the "too many connections" errors
-- [ ] Enable Private content (paid students only?)
-- [ ] Browser Notifications for jobs
-- [ ] Action buttons on Topics List
-- [ ] Indicate # of generated lectures for a topic
-- [ ] Generated image model attribution
-- [ ] Dev: Better handling of job lifecycles with uvicore reboots
-- [ ] Global UI indication of jobs running
-- [ ] FAQ on About page
-- [ ] Invite codes / Promo codes -> Coins
-- [ ] Enable purchases and subscriptions for coins
-- [ ] Consider storing full-text of prompts used per record.
-- [ ] User Interests
-- [ ] Rating & Feedback system
-- [ ] Coins/Tuition in UI
-- [ ] Enable structured imports of syllabi
-- [ ] Enable import of courses with assets and related data
-- [ ] Content checking for user input (toxicity, stupidity, typos)
-- [ ] Spell checking for user input
-- [ ] Normalize user input
-- [ ] Wabi-Sabi theme to be more wabi-sabi-esque
-- [ ] Advanced ElevenLabs voice controls
-- [ ] Volume normalization
-- [ ] Playlists support
-- [ ] Bookmarking courses
-- [ ] Lecture Configuration Options
-- [ ] Model Selection UI
-- [ ] Consider utilizing some Open models in production
-- [ ] Student Profile to show history of generations/expenses
+- [ ] a11y audit and improvements
 - [ ] Admin UI of student accounts and activity
+- [ ] Advanced ElevenLabs voice controls
 - [ ] Apply for a grant - feature for students to receive coins
+- [ ] Audit used and unused routes and route actions
+- [ ] Automated versioning
+- [ ] Bookmarking courses
+- [ ] Browser Notifications for jobs
+- [ ] Changelog / Release Notes
+- [ ] Coins/Tuition in UI
+- [ ] consider offline use potential
+- [ ] Consider utilizing some Open models in production
+- [ ] Content checking for user input (toxicity, stupidity, typos)
+- [ ] Dev: Better handling of job lifecycles with uvicore reboots
 - [ ] Enable multi-department courses
 - [ ] Enable multi-department professors
 - [ ] Enable multi-professor courses
-- [ ] Update stylebook
-- [ ] Frontend tests
+- [ ] Enable purchases and subscriptions for coins
 - [ ] End-to-end tests
-- [ ] update configuration.md
-- [ ] a11y audit and improvements
-- [ ] Audit used and unused routes and route actions
-- [ ] responsive+mobile audit and improvements
-- [ ] consider PWC and app-ification potential
-- [ ] consider offline use potential
-- [ ] Fully support French
-- [ ] Fully support Spanish
-- [ ] Fully support Chinese
+- [ ] Frontend tests
 - [ ] Fully support Arabic (rtl)
-- [ ] Student Project Portal
-- [ ] Quiz and Exam generation
-- [ ] UI for progress tracking
+- [ ] Fully support Chinese
+- [ ] Fully support Spanish
 - [ ] Gamification badges and achievements
-- [ ] Student Forum (discourse.org maybe)
-- [ ] Student Profile avatars (generated with prompts)
 - [ ] Include information about copyright and usage restrictions
 - [ ] Include information about privacy and data protection
-- [ ] Changelog / Release Notes
-- [ ] Automated versioning
+- [ ] Invite codes / Promo codes -> Coins
+- [ ] Lecture Configuration Options
+- [ ] Normalize user input
+- [ ] Playlists support
+- [ ] Quiz and Exam generation
+- [ ] Rating & Feedback system
+- [ ] responsive+mobile audit and improvements
+- [ ] Sort and filter professors
+- [ ] Spell checking for user input
+- [ ] Student Forum (discourse.org maybe)
+- [ ] Student Profile avatars (generated with prompts)
+- [ ] Student Profile to show history of generations/expenses
+- [ ] Student Project Portal
+- [ ] UI for progress tracking
+- [ ] Update stylebook
+- [ ] User Interests
+- [ ] Volume normalization
+- [ ] Wabi-Sabi theme to be more wabi-sabi-esque
 
 ## Completed Tasks
 
@@ -116,3 +99,18 @@
 - [x] Re-Write Home and About pages
 - [x] General UI Cleanup
 - [x] Web-based audio player
+- [x] Action buttons on Topics List
+- [x] consider PWC and app-ification potential
+- [x] Consider storing full-text of prompts used per record.
+- [x] Dev: Troubleshoot the "too many connections" errors
+- [x] Display lecture durations
+- [x] Easy Course Generation UI (single prompt field, no form)
+- [x] Enable import of courses with assets and related data
+- [x] Enable Private content (paid students only?)
+- [x] Enable structured imports of syllabi
+- [x] FAQ on About page
+- [x] Fully support French
+- [x] Generated image model attribution
+- [x] Global UI indication of jobs running
+- [x] Model Selection UI
+- [x] update configuration.md

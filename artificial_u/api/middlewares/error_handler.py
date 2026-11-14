@@ -6,7 +6,6 @@ from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException
 
 from artificial_u.api.models.errors import ErrorDetail, ErrorResponse
-from artificial_u.api.utils.exceptions import APIError
 
 logger = logging.getLogger("api")
 
@@ -15,34 +14,6 @@ def add_error_handlers(app: FastAPI) -> None:
     """
     Adds error handlers to FastAPI application
     """
-
-    @app.exception_handler(APIError)
-    async def handle_api_error(request: Request, exc: APIError) -> JSONResponse:
-        """Handler for custom API exceptions"""
-        logger.error(
-            f"API Error: {exc.message} - Code: {exc.error_code}",
-            extra={
-                "status_code": exc.status_code,
-                "error_code": exc.error_code,
-                "path": request.url.path,
-                "method": request.method,
-                "details": exc.details,
-            },
-        )
-
-        details = None
-        if exc.details:
-            details = [ErrorDetail(**detail) for detail in exc.details]
-
-        return JSONResponse(
-            status_code=exc.status_code,
-            content=ErrorResponse(
-                status_code=exc.status_code,
-                error_code=exc.error_code,
-                message=exc.message,
-                details=details,
-            ).model_dump(),
-        )
 
     @app.exception_handler(RequestValidationError)
     async def handle_validation_error(

@@ -308,3 +308,45 @@ async def test_generate_tags_for_course_requires_course_id():
     service = JobService(repository_factory=FakeRepositoryFactory(), logger=MagicMock())
     with pytest.raises(ValueError):
         await service._handle_generate_tags_for_course({})
+
+
+def _course_job_service(save_topics):
+    """JobService whose course creation succeeds and whose topic saving is controllable."""
+    service = JobService(FakeRepositoryFactory(), logger=MagicMock())
+    course = SimpleNamespace(id=31, code="TST300", department_id=4, language="en")
+    course_service = MagicMock()
+    course_service.create_course = AsyncMock(return_value=(course, SimpleNamespace(id=8)))
+    topic_generator = MagicMock()
+    topic_generator.save_topics_for_course = save_topics
+    service._course_service_instance = MagicMock(return_value=course_service)
+    service._topic_generator_service_instance = MagicMock(return_value=topic_generator)
+    return service
+
+
+COURSE_PAYLOAD = {
+    "title": "Test Course",
+    "code": "TST300",
+    "level": "Undergraduate",
+    "topics": [{"title": "Intro", "week": 1, "order": 1}],
+}
+
+
+@pytest.mark.asyncio
+async def test_create_course_saves_pre_generated_topics():
+    save_topics = MagicMock(return_value=[SimpleNamespace(id=1)])
+    service = _course_job_service(save_topics)
+
+    result = await service.dispatch("create_course", dict(COURSE_PAYLOAD))
+
+    assert result["course_id"] == 31
+    save_topics.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_create_course_fails_without_retry_when_topics_cannot_be_saved():
+    from artificial_u.utils import NonRetryableJobError
+
+    service = _course_job_service(MagicMock(side_effect=RuntimeError("db unavailable")))
+
+    with pytest.raises(NonRetryableJobError, match="Course 31 .*db unavailable"):
+        await service.dispatch("create_course", dict(COURSE_PAYLOAD))

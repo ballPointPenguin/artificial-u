@@ -17,8 +17,8 @@ from sqlalchemy.engine.url import make_url
 
 from artificial_u.models.database import Base
 
-# Load test environment variables
-load_dotenv(".env.test")
+# Load test environment variables; .env.test wins over anything exported in the shell
+load_dotenv(".env.test", override=True)
 
 # Get database URL from environment
 db_url_str = os.environ.get(
@@ -28,6 +28,10 @@ db_url_str = os.environ.get(
 
 db_url = make_url(db_url_str)
 db_name = db_url.database
+
+# This script drops and recreates every table, so only ever point it at a test database
+if not (db_name or "").endswith("_test"):
+    sys.exit(f"Refusing to reset '{db_name}': the database name must end in '_test'.")
 
 # Connect to the default 'postgres' database to create the test database.
 # This is necessary because the test database might not exist yet.

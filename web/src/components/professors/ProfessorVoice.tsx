@@ -394,6 +394,7 @@ const ProfessorVoice: Component = () => {
         voice_id: voice.id,
         tts_backend: 'mistral',
         language: currentLocale(),
+        professor_id: professorId() ?? undefined,
       })
       setPreviewAudioUri(resp.audio_data_uri)
     } catch (e) {
@@ -411,6 +412,7 @@ const ProfessorVoice: Component = () => {
         voice_id: voice.id,
         tts_backend: 'xai',
         language: currentLocale(),
+        professor_id: professorId() ?? undefined,
       })
       setPreviewAudioUri(resp.audio_data_uri)
     } catch (e) {
@@ -428,6 +430,7 @@ const ProfessorVoice: Component = () => {
         voice_id: voice.id,
         tts_backend: 'qwen',
         language: currentLocale(),
+        professor_id: professorId() ?? undefined,
       })
       setPreviewAudioUri(resp.audio_data_uri)
     } catch (e) {
@@ -543,6 +546,7 @@ const ProfessorVoice: Component = () => {
         voice_id: voice.external_id,
         tts_backend: 'mistral',
         language: currentLocale(),
+        professor_id: professorId() ?? undefined,
       })
       setCurrentMistralPreviewUri(resp.audio_data_uri)
     } catch (e) {

@@ -57,7 +57,7 @@ def test_generation_falls_back_when_v4_fails():
         return b"audio"
 
     service.convert_text_to_speech = fake_convert
-    audio = service.generate_lecture_audio(LECTURE, PROFESSOR, voice_id="abc")
+    audio = service.synthesize_lecture_audio(LECTURE, PROFESSOR, voice_id="abc").audio
 
     assert audio == b"audio"
     assert calls == ["eleven_v4", "eleven_multilingual_v2"]
@@ -87,7 +87,7 @@ def test_explicit_model_is_not_retried():
     service = make_service()
     service.convert_text_to_speech = MagicMock(side_effect=RuntimeError("boom"))
     with pytest.raises(AudioProcessingError):
-        service.generate_lecture_audio(LECTURE, PROFESSOR, voice_id="abc", model_id="eleven_v4")
+        service.synthesize_lecture_audio(LECTURE, PROFESSOR, voice_id="abc", model_id="eleven_v4")
     assert service.convert_text_to_speech.call_count == 1
 
 
@@ -95,7 +95,7 @@ def test_non_elevenlabs_backend_is_untouched():
     service = make_service()
     service.backend.backend_name = "mistral"
     service.convert_text_to_speech = MagicMock(return_value=b"audio")
-    service.generate_lecture_audio(LECTURE, PROFESSOR, voice_id="abc")
+    service.synthesize_lecture_audio(LECTURE, PROFESSOR, voice_id="abc")
     assert service.convert_text_to_speech.call_args.kwargs["model_id"] is None
 
 

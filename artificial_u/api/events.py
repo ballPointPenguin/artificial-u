@@ -5,7 +5,7 @@ from typing import Any, AsyncIterator, Dict, Iterable, Optional, Set
 
 from starlette.requests import Request
 
-from artificial_u.api.config import get_settings
+from artificial_u.config import get_settings
 
 _STREAM_CLOSED = object()
 
@@ -118,7 +118,6 @@ async def sse_stream(  # noqa: C901
     lecture_id: Optional[int] = None,
     topic_id: Optional[int] = None,
     kinds: Optional[Iterable[str]] = None,
-    heartbeat_secs: int = 5,
 ) -> AsyncIterator[str]:
     """Yield Server-Sent Events strings filtered by optional params.
 

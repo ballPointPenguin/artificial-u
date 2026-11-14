@@ -184,3 +184,75 @@ def test_jobs_summary_clamps_window(client: TestClient, mock_repository_factory)
 
     client.get("/api/v1/jobs/summary?window_hours=9999")
     mock_repository_factory.job.dashboard_stats.assert_called_once_with(window_hours=168)
+
+
+def _as_creator(student_id: int):
+    """Make the request come from a non-admin creator with the given student ID."""
+    from artificial_u.api.app import app
+    from artificial_u.api.dependencies import ensure_student
+    from artificial_u.models.core import Student
+
+    app.dependency_overrides[ensure_student] = lambda: Student(
+        id=student_id,
+        name="Creator",
+        email="creator@example.com",
+        auth0_sub=f"creator-{student_id}",
+        role="creator",
+        coins=10,
+        is_active=True,
+    )
+
+
+@pytest.mark.unit
+def test_admin_can_cancel_any_job(client: TestClient, mock_repository_factory):
+    mock_repository_factory.job.get.return_value = _job_row(5, status="queued", payload={})
+
+    response = client.post("/api/v1/jobs/5/cancel")
+
+    assert response.status_code == 200
+    assert response.json() == {"id": 5, "status": "cancelled"}
+    mock_repository_factory.job.mark_cancelled.assert_called_once_with(5)
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize(
+    "payload",
+    [
+        {"course_id": 3, "created_by": 42},
+        {"partial_attributes": {"topic_id": 9, "created_by": 42}},
+    ],
+)
+def test_requester_can_cancel_their_own_job(client: TestClient, mock_repository_factory, payload):
+    _as_creator(42)
+    mock_repository_factory.job.get.return_value = _job_row(6, status="queued", payload=payload)
+
+    response = client.post("/api/v1/jobs/6/cancel")
+
+    assert response.status_code == 200
+    mock_repository_factory.job.mark_cancelled.assert_called_once_with(6)
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize(
+    "payload",
+    [
+        {"course_id": 3, "created_by": 7},  # someone else's job
+        {"lecture_id": 11},  # no requester recorded
+        {"created_by": "admin@example.com"},  # not a student ID
+    ],
+)
+def test_non_admin_cannot_cancel_other_jobs(client: TestClient, mock_repository_factory, payload):
+    _as_creator(42)
+    mock_repository_factory.job.get.return_value = _job_row(7, status="queued", payload=payload)
+
+    response = client.post("/api/v1/jobs/7/cancel")
+
+    assert response.status_code == 403
+    mock_repository_factory.job.mark_cancelled.assert_not_called()
+
+
+@pytest.mark.unit
+def test_cancel_unknown_job_is_404(client: TestClient, mock_repository_factory):
+    mock_repository_factory.job.get.return_value = None
+
+    assert client.post("/api/v1/jobs/999/cancel").status_code == 404

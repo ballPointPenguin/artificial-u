@@ -16,6 +16,7 @@ from artificial_u.models.converters import (
 )
 from artificial_u.models.core import Topic
 from artificial_u.models.repositories.factory import RepositoryFactory
+from artificial_u.prompts import get_prompts_for_language, resolve_prompt_language
 from artificial_u.services.content_service import ContentService
 from artificial_u.services.preference_service import PreferenceService
 from artificial_u.utils import (
@@ -24,6 +25,7 @@ from artificial_u.utils import (
     DatabaseError,
     detect_truncation,
     ensure_xml_wrapper,
+    extract_root_xml,
     extract_xml_between_tags,
 )
 
@@ -37,7 +39,6 @@ class TopicGeneratorService:
         course_service,
         content_service: ContentService,
         repository_factory: RepositoryFactory,
-        job_enqueue_service,
         logger=None,
     ):
         """
@@ -48,14 +49,12 @@ class TopicGeneratorService:
             course_service: Course management service
             content_service: Content generation service
             repository_factory: Repository factory instance
-            job_enqueue_service: Job enqueueing service for background tasks
             logger: Optional logger instance
         """
         self.topic_service = topic_service
         self.course_service = course_service
         self.content_service = content_service
         self.repository_factory = repository_factory
-        self.job_enqueue_service = job_enqueue_service
         self.logger = logger or logging.getLogger(__name__)
         self.preference_service = PreferenceService(repository_factory, logger=self.logger)
 
@@ -317,13 +316,7 @@ class TopicGeneratorService:
         )
 
         language = course_data.get("language") or "en"
-        lang = "en"
-        if language and isinstance(language, str):
-            lang_prefix = language.lower()[:2]
-            if lang_prefix in ("en", "fr"):
-                lang = lang_prefix
-
-        from artificial_u.prompts import get_prompts_for_language
+        lang = resolve_prompt_language(language)
 
         prompt_module = get_prompts_for_language(lang)
         topics_prompt = prompt_module.get_topics_prompt(
@@ -458,13 +451,7 @@ class TopicGeneratorService:
 
         # Determine language for prompts
         language = course_data.get("language") or "en"
-        lang = "en"
-        if language and isinstance(language, str):
-            lang_prefix = language.lower()[:2]
-            if lang_prefix in ("en", "fr"):
-                lang = lang_prefix
-
-        from artificial_u.prompts import get_prompts_for_language
+        lang = resolve_prompt_language(language)
 
         prompt_module = get_prompts_for_language(lang)
         topic_prompt = prompt_module.get_next_topic_prompt(
@@ -515,16 +502,7 @@ class TopicGeneratorService:
 
     def _extract_generated_topic_xml(self, raw_response: str) -> str:
         is_truncated = detect_truncation(raw_response)
-        generated_topic_output = extract_xml_between_tags(raw_response, "output")
-
-        if not generated_topic_output:
-            stripped_response = raw_response.strip()
-            if stripped_response.startswith("<topic>") and stripped_response.endswith("</topic>"):
-                generated_topic_output = stripped_response
-            else:
-                inner_content = extract_xml_between_tags(raw_response, "topic")
-                if inner_content:
-                    generated_topic_output = f"<topic>\n{inner_content}\n</topic>"
+        generated_topic_output = extract_root_xml(raw_response, "topic")
 
         if not generated_topic_output:
             error_msg = (
@@ -535,7 +513,7 @@ class TopicGeneratorService:
             self.logger.error(error_msg)
             raise ContentGenerationError(error_msg)
 
-        return ensure_xml_wrapper(generated_topic_output, "topic")
+        return generated_topic_output
 
     def _save_topic_dict(
         self,
@@ -558,6 +536,13 @@ class TopicGeneratorService:
             order=order,
         )
         if existing_topic:
+            # Lectures belong to their topic, so a topic that has one is never replaced
+            if self.repository_factory.lecture.list_by_topic(existing_topic.id):
+                raise DatabaseError(
+                    f"Cannot replace topic '{existing_topic.title}' (course={course_id}, "
+                    f"week={week}, order={order}): it already has a lecture. Delete the "
+                    "lecture first, or edit the topic instead."
+                )
             self.logger.info(
                 f"Replacing existing topic '{existing_topic.title}' "
                 f"(course={course_id}, week={week}, order={order}) with '{title}'"

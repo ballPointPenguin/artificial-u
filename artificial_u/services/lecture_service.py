@@ -127,37 +127,6 @@ class LectureService:
             raise LectureNotFoundError(error_msg)
         return lecture
 
-    def get_lecture_by_course_week_order(
-        self, course_id: int, week_number: int, order_in_week: int
-    ) -> Lecture:
-        """
-        Get a specific lecture by its position in a course.
-
-        Args:
-            course_id: ID of the course
-            week_number: Week number in the course
-            order_in_week: Order of the lecture within the week
-
-        Returns:
-            Lecture: The lecture object
-
-        Raises:
-            LectureNotFoundError: If lecture not found
-        """
-        lecture = self.repository_factory.lecture.get_by_course_week_order(
-            course_id=course_id,
-            week_number=week_number,
-            order_in_week=order_in_week,
-        )
-        if not lecture:
-            error_msg = (
-                f"Lecture not found for course {course_id}, "
-                f"week {week_number}, order {order_in_week}"
-            )
-            self.logger.error(error_msg)
-            raise LectureNotFoundError(error_msg)
-        return lecture
-
     def list_lectures(
         self,
         page: int = 1,

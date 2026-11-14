@@ -6,13 +6,10 @@ Provides low-level access to the ElevenLabs API for text-to-speech and voice man
 
 import logging
 import os
-import sys
 import time
 from typing import Any, Callable, Dict, List, Optional, Tuple, TypeVar
-from unittest.mock import MagicMock
 
 import httpx
-from elevenlabs import play
 from elevenlabs.client import ElevenLabs
 
 from artificial_u.config import get_settings
@@ -38,9 +35,6 @@ class ElevenLabsClient:
     # ElevenLabs API base URL
     BASE_URL = "https://api.elevenlabs.io/v1"
 
-    # Shared voices API endpoint
-    SHARED_VOICES_URL = f"{BASE_URL}/shared-voices"
-
     # Maximum retries for API calls
     MAX_RETRIES = 3
 
@@ -61,24 +55,14 @@ class ElevenLabsClient:
         """
         self.logger = logging.getLogger(__name__)
 
-        # Check if we're in a test environment
-        self._in_test_env = os.environ.get("TESTING") == "true" or "pytest" in sys.modules
-
         primary_key = api_key or os.environ.get("ELEVENLABS_API_KEY")
         if not primary_key:
-            if self._in_test_env:
-                # Use a dummy key in test environment
-                primary_key = "test_elevenlabs_key"
-                self.logger.info("Using test API key in test environment")
-            else:
-                # Only raise error in production
-                raise ValueError("ElevenLabs API key is required")
+            raise ValueError("ElevenLabs API key is required")
 
         settings = get_settings()
         if alt_api_key is None and primary_key == settings.ELEVENLABS_API_KEY:
             alt_api_key = settings.ELEVENLABS_API_KEY_ALT
 
-        self._primary_key = primary_key
         self._alt_key = alt_api_key or None
         self._failover = (
             get_key_manager(primary_key, self._alt_key)
@@ -97,13 +81,8 @@ class ElevenLabsClient:
             self.client = ElevenLabs(api_key=api_key)
             self.logger.debug("Successfully initialized ElevenLabs client")
         except Exception as e:
-            if self._in_test_env:
-                self.logger.info(f"Test environment: Mocking ElevenLabs client due to error: {e}")
-                # Create a dummy client for testing
-                self.client = MagicMock()
-            else:
-                self.logger.error(f"Failed to initialize ElevenLabs client: {e}")
-                raise
+            self.logger.error(f"Failed to initialize ElevenLabs client: {e}")
+            raise
 
         # Headers for API requests
         self.headers = {
@@ -161,16 +140,6 @@ class ElevenLabsClient:
                     f"the alternate account (custom voices are not shared): {e}"
                 ) from e
             raise
-
-    """
-    Get details of a specific voice by ElevenLabs voice ID.
-
-    Args:
-        el_voice_id: ElevenLabs Voice ID of the voice to retrieve
-
-    Returns:
-        Voice details or None if not found
-    """
 
     def get_el_voice(
         self, el_voice_id: str, search_shared: bool = True
@@ -504,35 +473,6 @@ class ElevenLabsClient:
             self.logger.error(f"Error retrieving premade voices: {e}")
             return []
 
-    def test_connection(self) -> Dict[str, Any]:
-        """
-        Tests the connection to ElevenLabs API and verifies authentication.
-
-        Returns:
-            Dictionary with connection status and API information
-        """
-        try:
-            # Try to get user info as a connectivity test
-            user_info = self.client.user.get()
-
-            # Try to get available voices
-            voices = self.client.voices.get_all()
-            voice_count = len(voices.voices) if hasattr(voices, "voices") else 0
-
-            return {
-                "status": "connected",
-                "subscription_tier": (
-                    getattr(user_info.subscription, "tier", "unknown")
-                    if hasattr(user_info, "subscription")
-                    else "unknown"
-                ),
-                "available_voices": voice_count,
-                "api_version": getattr(self.client, "version", "unknown"),
-            }
-        except Exception as e:
-            self.logger.error(f"Connection test failed: {str(e)}")
-            return {"status": "error", "error": str(e)}
-
     def text_to_speech(
         self,
         text: str,
@@ -611,27 +551,6 @@ class ElevenLabsClient:
                 len(audio_data),
                 text_len,
             )
-
-    def get_user_info(self) -> Dict[str, Any]:
-        """
-        Get information about the current ElevenLabs user.
-
-        Returns:
-            Dictionary with user information
-        """
-        try:
-            user = self.client.user.get()
-
-            return {
-                "tier": (user.subscription.tier if hasattr(user, "subscription") else "unknown"),
-                "character_limit": getattr(user.subscription, "character_limit", 0),
-                "character_count": getattr(user.subscription, "character_count", 0),
-                "available_characters": getattr(user.subscription, "character_limit", 0)
-                - getattr(user.subscription, "character_count", 0),
-            }
-        except Exception as e:
-            self.logger.error(f"Error retrieving user info: {e}")
-            return {}
 
     def get_subscription_status(self) -> Dict[str, Any]:
         """
@@ -772,19 +691,6 @@ class ElevenLabsClient:
             raise
         except Exception as e:
             self.logger.error("Failed to save voice to library: %s", e)
-            raise
-
-    def play_audio(self, audio_data: bytes) -> None:
-        """
-        Play audio using the ElevenLabs play function.
-
-        Args:
-            audio_data: Audio data as bytes
-        """
-        try:
-            play(audio_data)
-        except Exception as e:
-            self.logger.error(f"Error playing audio: {e}")
             raise
 
     def forced_alignment(

@@ -134,7 +134,8 @@ def test_backend_ignores_unrelated_kwargs(mock_api):
 
 
 @pytest.mark.unit
-def test_factory_creates_qwen_backend():
+def test_factory_creates_qwen_backend(monkeypatch):
+    monkeypatch.setenv("ALIBABA_WORKSPACE_ID", "ws1")
     backend = create_tts_backend(backend_name="qwen", api_key="key")
     assert isinstance(backend, QwenTTSBackend)
     assert backend.backend_name == "qwen"

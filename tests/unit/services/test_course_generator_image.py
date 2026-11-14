@@ -50,7 +50,6 @@ async def test_generate_and_set_course_image_updates_course():
         return_value="https://storage.example/img.png"
     )
 
-    job_enqueue = MagicMock()
     repo = MagicMock()
 
     svc = CourseGeneratorService(
@@ -59,7 +58,6 @@ async def test_generate_and_set_course_image_updates_course():
         content_service=MagicMock(),
         image_service=image_service,
         repository_factory=repo,
-        job_enqueue_service=job_enqueue,
         logger=MagicMock(),
     )
 
@@ -69,6 +67,43 @@ async def test_generate_and_set_course_image_updates_course():
     call_kw = course_service.update_course.call_args[0][1]
     assert call_kw["image_url"] == "https://storage.example/img.png"
     assert call_kw["image_created_with"] == "gemini-test"
+
+
+@pytest.mark.asyncio
+async def test_generate_and_set_course_image_records_fallback_model():
+    """When a fallback model produced the image, that model is recorded, not the default."""
+    course = Course(
+        id=9, code="TST300", title="Test", description="Desc", department_id=1, level="Ugrad"
+    )
+    course_service = MagicMock()
+    course_service.get_course.return_value = course
+    course_service.update_course = MagicMock(return_value=course)
+
+    image_service = MagicMock()
+    image_service.model_name = "gemini-test"
+    image_service.generate_course_image = AsyncMock(
+        return_value=ImageGenerationResult(
+            success=True, image_keys=["abc.png"], model_name="gpt-image-2.5-flare"
+        )
+    )
+    image_service.storage_service.images_bucket = "images"
+    image_service.storage_service.get_file_url = MagicMock(
+        return_value="https://storage.example/img.png"
+    )
+
+    svc = CourseGeneratorService(
+        course_service=course_service,
+        professor_service=MagicMock(),
+        content_service=MagicMock(),
+        image_service=image_service,
+        repository_factory=MagicMock(),
+        logger=MagicMock(),
+    )
+
+    await svc.generate_and_set_course_image(9)
+
+    attributes = course_service.update_course.call_args[0][1]
+    assert attributes["image_created_with"] == "gpt-image-2.5-flare"
 
 
 @pytest.mark.asyncio
@@ -96,7 +131,6 @@ async def test_generate_and_set_course_image_raises_on_failed_generation():
         content_service=MagicMock(),
         image_service=image_service,
         repository_factory=MagicMock(),
-        job_enqueue_service=MagicMock(),
         logger=MagicMock(),
     )
 

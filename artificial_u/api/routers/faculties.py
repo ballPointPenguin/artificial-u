@@ -2,6 +2,8 @@
 Faculty router for handling faculty-related API endpoints.
 """
 
+import logging
+
 from fastapi import APIRouter, Depends, Query
 
 from artificial_u.api.dependencies import get_repository_factory
@@ -28,8 +30,6 @@ def get_faculty_api_service(
     Returns:
         FacultyApiService instance
     """
-    import logging
-
     return FacultyApiService(
         repository_factory=repository_factory,
         logger=logging.getLogger("artificial_u.api.services.faculty_service"),

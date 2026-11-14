@@ -26,8 +26,6 @@ class TopicBase(BaseModel):
 class TopicCreate(TopicBase):
     """Model for creating a new topic."""
 
-    pass
-
 
 class TopicUpdate(BaseModel):
     """Model for updating topic details (all fields optional)."""
@@ -78,15 +76,6 @@ class TopicListResponse(BaseModel):
     page: int = Field(..., description="Current page number")
     size: int = Field(..., description="Number of items per page")
     pages: int = Field(..., description="Total number of pages")
-
-
-class TopicGenerate(BaseModel):
-    """Model for requesting topic generation for a course."""
-
-    course_id: int = Field(..., description="ID of the course for which to generate topics")
-    freeform_prompt: Optional[str] = Field(
-        None, description="Optional freeform text prompt for additional guidance."
-    )
 
 
 class TopicGenerateSingle(BaseModel):

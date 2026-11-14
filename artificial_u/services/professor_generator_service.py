@@ -11,15 +11,16 @@ import xml.etree.ElementTree as ET
 from typing import Any, Dict, Optional
 
 from artificial_u.config import get_settings
-from artificial_u.models.converters import extract_xml_content
 from artificial_u.models.core import Professor
 from artificial_u.models.repositories.factory import RepositoryFactory
+from artificial_u.prompts import get_prompts_for_language, resolve_prompt_language
 from artificial_u.services.content_service import ContentService
 from artificial_u.services.image_service import ImageService
 from artificial_u.utils import (
     ContentGenerationError,
     DatabaseError,
     GenerationError,
+    extract_root_xml,
 )
 
 
@@ -32,7 +33,6 @@ class ProfessorGeneratorService:
         content_service: ContentService,
         image_service: ImageService,
         repository_factory: RepositoryFactory,
-        job_enqueue_service,
         logger=None,
     ):
         """
@@ -43,14 +43,12 @@ class ProfessorGeneratorService:
             content_service: Content generation service
             image_service: Image generation service
             repository_factory: Repository factory instance
-            job_enqueue_service: Job enqueueing service for background tasks
             logger: Optional logger instance
         """
         self.professor_service = professor_service
         self.content_service = content_service
         self.image_service = image_service
         self.repository_factory = repository_factory
-        self.job_enqueue_service = job_enqueue_service
         self.logger = logger or logging.getLogger(__name__)
 
     # --- Generation Methods --- #
@@ -88,11 +86,7 @@ class ProfessorGeneratorService:
 
         # Determine language for prompts
         language = partial_attributes.get("language") or "en"
-        lang = "en"
-        if language and isinstance(language, str):
-            lang_prefix = language.lower()[:2]
-            if lang_prefix in ("en", "fr"):
-                lang = lang_prefix
+        lang = resolve_prompt_language(language)
 
         # --- 2. Prepare Prompt --- #
         prompt = self._prepare_professor_generation_prompt(
@@ -171,7 +165,8 @@ class ProfessorGeneratorService:
 
         # Update the professor record with the new image URL and model used
         try:
-            model_name = self.image_service.model_name
+            # A fallback model may have produced the image; record the one that did
+            model_name = result.model_name or self.image_service.model_name
             updated_professor = self.professor_service.update_professor(
                 professor_id=professor_id,
                 attributes={
@@ -187,22 +182,6 @@ class ProfessorGeneratorService:
             # Re-raise errors from the update step
             self.logger.error(f"Failed to update professor {professor_id} with image URL: {e}")
             raise
-
-    def enqueue_professor_image_generation(
-        self, professor_id: int, aspect_ratio: str = "1:1"
-    ) -> None:
-        """
-        Enqueue a background job to generate an image for the professor.
-
-        Args:
-            professor_id: The ID of the professor
-            aspect_ratio: The desired aspect ratio for the image
-
-        Raises:
-            DatabaseError: If job enqueueing fails
-        """
-        # Delegate to the centralized job enqueueing service
-        self.job_enqueue_service.enqueue_professor_image_generation(professor_id, aspect_ratio)
 
     # --- Helper Methods --- #
 
@@ -223,8 +202,6 @@ class ProfessorGeneratorService:
         settings = get_settings()
 
         try:
-            from artificial_u.prompts import get_prompts_for_language
-
             prompt_module = get_prompts_for_language(language)
             generated_content = await self.content_service.generate_text(
                 prompt=prompt,
@@ -323,8 +300,6 @@ class ProfessorGeneratorService:
         if freeform_prompt:
             self.logger.debug(f"Freeform prompt: {freeform_prompt}")
 
-        from artificial_u.prompts import get_prompts_for_language
-
         prompt_module = get_prompts_for_language(language)
 
         # Pass potentially None values to the prompt function
@@ -338,30 +313,7 @@ class ProfessorGeneratorService:
         """Parses the AI-generated XML content to extract professor attributes."""
         self.logger.debug(f"Attempting to parse generated content:\n{generated_content}")
 
-        # Simplified XML extraction logic
-        generated_xml_output = None
-
-        # First try to extract from <output> tags
-        generated_xml_output = extract_xml_content(generated_content, "output")
-        if generated_xml_output:
-            self.logger.info("Successfully extracted content from <output> tags")
-        else:
-            self.logger.info("<output> tag not found, trying direct <professor> extraction...")
-
-            # Check if the response directly contains <professor>...</professor>
-            if generated_content.strip().startswith(
-                "<professor>"
-            ) and generated_content.strip().endswith("</professor>"):
-                # Use the raw response directly
-                generated_xml_output = generated_content.strip()
-                self.logger.info("Using raw response as it contains valid <professor> structure")
-            else:
-                # Try to extract inner content and wrap it
-                inner_content = extract_xml_content(generated_content, "professor")
-                if inner_content:
-                    generated_xml_output = f"<professor>\n{inner_content}\n</professor>"
-                    self.logger.info("Extracted <professor> inner content and wrapped it")
-
+        generated_xml_output = extract_root_xml(generated_content, "professor")
         if not generated_xml_output:
             error_msg = (
                 "Could not extract <output> or <professor> tag from response:\n"
@@ -369,11 +321,6 @@ class ProfessorGeneratorService:
             )
             self.logger.error(error_msg)
             raise ContentGenerationError(error_msg)
-
-        # Ensure the extracted content has the proper <professor> wrapper
-        if not generated_xml_output.strip().startswith("<professor>"):
-            self.logger.warning("Wrapping extracted content in <professor> tags")
-            generated_xml_output = f"<professor>\n{generated_xml_output}\n</professor>"
 
         try:
             # Parse the processed text which should now be a valid XML doc with one root

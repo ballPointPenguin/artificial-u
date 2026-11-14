@@ -46,14 +46,6 @@ class VoiceResponse(VoiceBase):
         from_attributes = True
 
 
-class VoiceListResponse(BaseModel):
-    items: List[VoiceResponse] = Field(..., description="List of voices")
-    total: int = Field(..., description="Total number of matching voices")
-    page: int = Field(..., description="Current page number")
-    size: int = Field(..., description="Number of items per page")
-    pages: int = Field(..., description="Total number of pages")
-
-
 class VoiceDesignPreview(BaseModel):
     """A single audio preview returned by the ElevenLabs Voice Design API."""
 

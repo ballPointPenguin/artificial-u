@@ -3,7 +3,7 @@ Topic API service for handling topic operations in the API layer.
 """
 
 import logging
-from typing import List, Optional
+from typing import Optional
 
 from fastapi import HTTPException, status
 
@@ -11,15 +11,17 @@ from artificial_u.api.models.topics import (
     Topic,
     TopicCreate,
     TopicDraft,
-    TopicGenerate,
     TopicGenerateSingle,
     TopicListResponse,
     TopicUpdate,
 )
+from artificial_u.api.security.auth0 import verify_asset_ownership
 from artificial_u.api.services.base_service import BaseApiService
 from artificial_u.models.core import Topic as CoreTopic
 from artificial_u.models.repositories import RepositoryFactory
 from artificial_u.services import TopicService as CoreTopicService
+from artificial_u.services.content_service import ContentService
+from artificial_u.services.topic_generator_service import TopicGeneratorService
 from artificial_u.utils import (
     ContentGenerationError,
     CourseNotFoundError,
@@ -45,16 +47,6 @@ class TopicApiService(BaseApiService[CoreTopic, Topic, TopicListResponse]):
         self.core_service = core_topic_service
 
         # Initialize generator service for AI generation workflows
-        from artificial_u.services.content_service import ContentService
-        from artificial_u.services.job_enqueue_service import JobEnqueueService
-        from artificial_u.services.topic_generator_service import TopicGeneratorService
-
-        # Create job enqueue service for background processing
-        job_enqueue_service = JobEnqueueService(
-            repository_factory=repository_factory,
-            logger=self.logger,
-        )
-
         # Create content service for TopicGeneratorService dependency
         content_service = ContentService(logger=self.logger)
 
@@ -63,7 +55,6 @@ class TopicApiService(BaseApiService[CoreTopic, Topic, TopicListResponse]):
             course_service=course_service,
             content_service=content_service,
             repository_factory=repository_factory,
-            job_enqueue_service=job_enqueue_service,
             logger=self.logger,
         )
 
@@ -151,8 +142,6 @@ class TopicApiService(BaseApiService[CoreTopic, Topic, TopicListResponse]):
                 raise TopicNotFoundError(f"Topic with ID {topic_id} not found for update.")
 
             # Verify ownership (admins can modify any topic, creators only their own)
-            from artificial_u.api.security.auth0 import verify_asset_ownership
-
             verify_asset_ownership(student_id, core_topic_to_update.created_by, role, "topic")
 
             # Create a new CoreTopic instance with updated fields
@@ -197,8 +186,6 @@ class TopicApiService(BaseApiService[CoreTopic, Topic, TopicListResponse]):
                 raise TopicNotFoundError(f"Topic with ID {topic_id} not found for deletion.")
 
             # Verify ownership (admins can delete any topic, creators only their own)
-            from artificial_u.api.security.auth0 import verify_asset_ownership
-
             verify_asset_ownership(student_id, topic_model.created_by, role, "topic")
 
             deleted = self.core_service.delete_topic(topic_id)
@@ -218,34 +205,6 @@ class TopicApiService(BaseApiService[CoreTopic, Topic, TopicListResponse]):
             self._handle_database_error("delete topic", e)
         except Exception as e:
             self._handle_general_error("delete topic", e)
-
-    async def generate_topics_for_course(
-        self, generation_data: TopicGenerate, created_by: int = None
-    ) -> List[Topic]:
-        """Generate topics for a course using the generator service."""
-        try:
-            self.logger.info(
-                f"API Service: Generating topics for course ID: {generation_data.course_id}"
-            )
-            core_topics = await self.generator_service.generate_topics_for_course(
-                course_id=generation_data.course_id,
-                freeform_prompt=generation_data.freeform_prompt,
-                created_by=created_by,
-            )
-            return [Topic.model_validate(topic) for topic in core_topics]
-        except CourseNotFoundError as e:
-            self.logger.warning(f"Course not found for topic generation: {e}")
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
-        except ContentGenerationError as e:
-            self.logger.error(f"Content generation error for topics: {e}", exc_info=True)
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Content generation error: {str(e)[:500]}",  # Truncate long messages
-            )
-        except DatabaseError as e:
-            self._handle_database_error("generate topics for course", e)
-        except Exception as e:
-            self._handle_general_error("generate topics for course", e)
 
     async def generate_topic_for_course_slot(
         self,

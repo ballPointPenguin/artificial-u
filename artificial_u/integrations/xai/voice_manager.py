@@ -10,7 +10,6 @@ custom voices, so this is read-only.
 
 import logging
 import os
-import sys
 import time
 from typing import Any, Dict, List, Optional
 
@@ -34,14 +33,9 @@ class XAIVoiceManager:
         self.logger = logger or logging.getLogger(__name__)
         settings = get_settings()
 
-        in_test_env = os.environ.get("TESTING") == "true" or "pytest" in sys.modules
-
         self.api_key = api_key or os.environ.get("XAI_API_KEY") or settings.XAI_API_KEY
         if not self.api_key:
-            if in_test_env:
-                self.api_key = "test_xai_key"
-            else:
-                raise ValueError("xAI API key is required for voice management")
+            raise ValueError("xAI API key is required for voice management")
 
         self.base_url = (base_url or settings.XAI_TTS_BASE_URL).rstrip("/")
 

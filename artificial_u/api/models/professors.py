@@ -51,14 +51,10 @@ class ProfessorBase(BaseModel):
 class ProfessorCreate(ProfessorBase):
     """Model for creating a new professor."""
 
-    pass
-
 
 # Professor update model
 class ProfessorUpdate(ProfessorBase):
     """Model for updating an existing professor."""
-
-    pass
 
 
 # Professor generation model
@@ -144,12 +140,3 @@ class ProfessorCoursesResponse(BaseModel):
     professor_id: int = Field(..., description="ID of the professor")
     courses: List[CourseBrief] = Field(..., description="List of courses taught by the professor")
     total: int = Field(..., description="Total number of courses")
-
-
-# Professor's lectures response model
-class ProfessorLecturesResponse(BaseModel):
-    """Model for professor's lectures response."""
-
-    professor_id: int = Field(..., description="ID of the professor")
-    lectures: List[LectureBrief] = Field(..., description="List of lectures by the professor")
-    total: int = Field(..., description="Total number of lectures")

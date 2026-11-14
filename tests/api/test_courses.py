@@ -66,7 +66,6 @@ def mock_api_service(monkeypatch):
     mock_service = {
         "get_courses": MagicMock(),
         "get_course": MagicMock(),
-        "get_course_by_code": MagicMock(),
         "create_course": AsyncMock(),  # Now async
         "update_course": MagicMock(),
         "delete_course": MagicMock(),
@@ -91,10 +90,6 @@ def mock_api_service(monkeypatch):
     mock_service["get_course"].side_effect = _mock_get_course
 
     # GET Course by Code
-    def _mock_get_course_by_code(code):
-        return next((c for c in sample_courses_base if c.code == code), None)
-
-    mock_service["get_course_by_code"].side_effect = _mock_get_course_by_code
 
     # CREATE Course
     def _mock_create_course(course_data: CourseCreate, created_by: int):
@@ -184,7 +179,6 @@ def mock_api_service(monkeypatch):
     base_path = "artificial_u.api.services.CourseApiService"
     monkeypatch.setattr(f"{base_path}.get_courses", mock_service["get_courses"])
     monkeypatch.setattr(f"{base_path}.get_course", mock_service["get_course"])
-    monkeypatch.setattr(f"{base_path}.get_course_by_code", mock_service["get_course_by_code"])
     monkeypatch.setattr(f"{base_path}.create_course", mock_service["create_course"])
     monkeypatch.setattr(f"{base_path}.update_course", mock_service["update_course"])
     monkeypatch.setattr(f"{base_path}.delete_course", mock_service["delete_course"])
@@ -368,25 +362,6 @@ def test_get_course(client: TestClient, mock_api_service):
     response = client.get("/api/v1/courses/999")
     assert response.status_code == 404  # Router should raise 404
     mock_api_service["get_course"].assert_called_once_with(999)
-
-
-@pytest.mark.unit
-def test_get_course_by_code(client: TestClient, mock_api_service):
-    """Test getting a single course by code."""
-    target_code = sample_courses_base[1].code  # COURSE201
-    # Test valid code
-    response = client.get(f"/api/v1/courses/code/{target_code}")
-    assert response.status_code == 200
-    assert response.json()["code"] == target_code
-    assert response.json()["id"] == sample_courses_base[1].id
-    mock_api_service["get_course_by_code"].assert_called_once_with(target_code)
-
-    # Test invalid code
-    mock_api_service["get_course_by_code"].reset_mock()
-    mock_api_service["get_course_by_code"].return_value = None
-    response = client.get("/api/v1/courses/code/INVALID99")
-    assert response.status_code == 404
-    mock_api_service["get_course_by_code"].assert_called_once_with("INVALID99")
 
 
 @pytest.mark.unit

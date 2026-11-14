@@ -5,12 +5,13 @@ from typing import Any, Dict, Optional
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import StreamingResponse
 from fastapi.security import HTTPAuthorizationCredentials
-from pydantic import BaseModel
 
-from artificial_u.api.dependencies import get_repository_factory
+from artificial_u.api.dependencies import ensure_student, get_repository_factory
 from artificial_u.api.events import JobEventHub, sse_stream
-from artificial_u.api.security.auth0 import require_auth
+from artificial_u.api.security.auth0 import require_auth, verify_asset_ownership
+from artificial_u.api.utils.jobs import job_summary
 from artificial_u.config import get_settings
+from artificial_u.models.core import Student
 from artificial_u.models.repositories.factory import RepositoryFactory
 from artificial_u.services.tts_service import configured_tts_model
 
@@ -236,13 +237,7 @@ def _job_link_path(  # noqa: C901
 
 def _job_row_response(r, factory=None, cache: Optional[dict] = None) -> dict:
     return {
-        "id": r.id,
-        "kind": r.kind,
-        "status": r.status,
-        "attempts": r.attempts,
-        "max_attempts": r.max_attempts,
-        "priority": r.priority,
-        "run_after": r.run_after,
+        **job_summary(r),
         "created_at": r.created_at,
         "updated_at": r.updated_at,
         "last_error": r.last_error,
@@ -282,14 +277,6 @@ def _active_job_snapshot(
     return [_job_row_response(row, factory, cache) for row in rows]
 
 
-class EnqueueJob(BaseModel):
-    kind: str
-    payload: Dict[str, Any]
-    # When omitted, the priority is derived from the job kind (see job_priorities).
-    priority: Optional[int] = None
-    max_attempts: int = 2
-
-
 async def _publish_job_event(request: Request, event: Dict[str, Any]) -> None:
     """Best-effort publish of a job event to the SSE hub.
 
@@ -304,41 +291,6 @@ async def _publish_job_event(request: Request, event: Dict[str, Any]) -> None:
         await hub.publish(event)
     except Exception:  # noqa: BLE001
         logging.getLogger(__name__).debug("Failed to publish job event", exc_info=True)
-
-
-@router.post("", dependencies=[Depends(require_auth)])
-async def enqueue(
-    job: EnqueueJob,
-    request: Request,
-    repository_factory: RepositoryFactory = Depends(get_repository_factory),
-):
-    repo = repository_factory.job
-    row = await asyncio.to_thread(
-        repo.create,
-        kind=job.kind,
-        payload=job.payload,
-        priority=job.priority,
-        max_attempts=job.max_attempts,
-    )
-    await _publish_job_event(
-        request,
-        {
-            "id": row.id,
-            "kind": row.kind,
-            "status": "queued",
-            "payload": row.payload,
-        },
-    )
-
-    return {
-        "id": row.id,
-        "kind": row.kind,
-        "status": row.status,
-        "attempts": row.attempts,
-        "max_attempts": row.max_attempts,
-        "priority": row.priority,
-        "run_after": row.run_after,
-    }
 
 
 @router.get("", dependencies=[Depends(require_auth)])
@@ -471,16 +423,45 @@ def get_job_children(
     return [_job_row_response(r, repository_factory, cache) for r in rows]
 
 
-@router.post("/{job_id}/cancel", dependencies=[Depends(require_auth)])
+def _job_owner_id(payload: Any) -> Optional[int]:
+    """Student ID of whoever requested the job, when the payload records one.
+
+    Jobs have no owner column. Generation jobs carry the requesting student's ID as
+    ``created_by``, either at the top level or inside ``partial_attributes``; jobs that
+    only reference an asset (audio, timeline, images) carry none.
+    """
+    if not isinstance(payload, dict):
+        return None
+    for source in (payload, payload.get("partial_attributes")):
+        if isinstance(source, dict):
+            created_by = source.get("created_by")
+            if isinstance(created_by, int) and not isinstance(created_by, bool):
+                return created_by
+    return None
+
+
+@router.post(
+    "/{job_id}/cancel",
+    summary="Cancel a job",
+    description=(
+        "Cancel a queued or running job. Allowed for admins, and for the student who "
+        "requested the job when the job records one."
+    ),
+    responses={403: {"description": "Not an admin and not the job's requester"}},
+)
 async def cancel_job(
     job_id: int,
     request: Request,
     repository_factory: RepositoryFactory = Depends(get_repository_factory),
+    student: Student = Depends(ensure_student),
 ):
     repo = repository_factory.job
     row = await asyncio.to_thread(repo.get, job_id)
     if not row:
         raise HTTPException(404, "job not found")
+
+    verify_asset_ownership(student.id, _job_owner_id(row.payload), student.role, "job")
+
     if row.status in ("done", "failed", "cancelled"):
         return {"id": row.id, "status": row.status}
 

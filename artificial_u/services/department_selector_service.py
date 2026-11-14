@@ -7,16 +7,18 @@ delegate to DepartmentGeneratorService to create a new one.
 """
 
 import logging
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 from artificial_u.config import get_settings
 from artificial_u.models.converters import (
     department_model_to_dict,
     enrich_department_dict_with_faculty,
 )
+from artificial_u.models.core import Department
 from artificial_u.models.repositories.factory import RepositoryFactory
-from artificial_u.prompts.selection import get_department_selection_prompt, parse_selection_decision
+from artificial_u.prompts.selection import get_department_selection_prompt
 from artificial_u.services.content_service import ContentService
+from artificial_u.services.selection import ask_for_decision, parse_entity_selection
 from artificial_u.utils import (
     ContentGenerationError,
     DatabaseError,
@@ -47,12 +49,16 @@ class DepartmentSelectorService:
         self.department_generator_service = department_generator_service
         self.logger = logger or logging.getLogger(__name__)
 
-    async def resolve_department(self, course_attributes: Dict[str, Any]) -> int:
+    async def resolve_department(
+        self, course_attributes: Dict[str, Any], language: Optional[str] = None
+    ) -> int:
         """
         Resolve department for a course by selecting existing or generating new.
 
         Args:
             course_attributes: Dictionary containing course details
+            language: Language of the course; a newly generated department is written in
+                and tagged with this language
 
         Returns:
             int: Department ID (either selected from existing or newly generated)
@@ -81,9 +87,6 @@ class DepartmentSelectorService:
             )
 
             if decision["action"] == "SELECT":
-                if decision["entity_id"] is None:
-                    raise ContentGenerationError("SELECT decision returned null entity_id")
-
                 self.logger.info(
                     f"Selected existing department {decision['entity_id']}: {decision['reasoning']}"
                 )
@@ -98,7 +101,8 @@ class DepartmentSelectorService:
                 # Note: generate_department already handles faculty lookup and conversion
                 # It will raise ContentGenerationError if faculty is not found
                 department_attrs = await self.department_generator_service.generate_department(
-                    freeform_prompt=freeform_prompt
+                    freeform_prompt=freeform_prompt,
+                    language=language,
                 )
 
                 # Verify faculty_id is set (should be handled by generator service)
@@ -119,13 +123,12 @@ class DepartmentSelectorService:
                     raise ContentGenerationError(error_msg)
 
                 # Create the department using the core service
-                from artificial_u.models.core import Department
-
                 department = Department(
                     name=department_attrs["name"],
                     code=department_attrs["code"],
                     faculty_id=faculty_id,
                     description=department_attrs["description"],
+                    language=language,
                 )
 
                 created_department = self.repository_factory.department.create(department)
@@ -159,42 +162,15 @@ class DepartmentSelectorService:
         Raises:
             ContentGenerationError: If AI call or parsing fails
         """
-        try:
-            # Generate selection prompt
-            prompt = get_department_selection_prompt(
-                course_attributes=course_attributes,
-                existing_departments=existing_departments,
-            )
-
-            settings = get_settings()
-
-            # Call AI for decision
-            self.logger.info("Calling AI for department selection decision...")
-            response = await self.content_service.generate_text(
-                prompt=prompt,
-                model=settings.DEPARTMENT_GENERATION_MODEL,
-                # Removing system_prompt as it may add extra text that interferes with parsing
-            )
-            self.logger.info("Received AI response for department selection")
-
-            if not response:
-                raise ContentGenerationError("AI returned empty response for department selection")
-
-            # Parse the decision
-            decision = parse_selection_decision(response)
-
-            # Validate decision
-            if decision["action"] not in ["SELECT", "GENERATE"]:
-                raise ContentGenerationError(f"Invalid action in decision: {decision['action']}")
-
-            if decision["action"] == "SELECT" and decision["entity_id"] is None:
-                raise ContentGenerationError("SELECT action must include valid entity_id")
-
-            return decision
-
-        except ContentGenerationError:
-            raise
-        except Exception as e:
-            error_msg = f"Failed to get AI selection decision: {e}"
-            self.logger.error(error_msg, exc_info=True)
-            raise ContentGenerationError(error_msg) from e
+        prompt = get_department_selection_prompt(
+            course_attributes=course_attributes,
+            existing_departments=existing_departments,
+        )
+        return await ask_for_decision(
+            self.content_service,
+            prompt=prompt,
+            model=get_settings().DEPARTMENT_GENERATION_MODEL,
+            parse=parse_entity_selection,
+            label="department",
+            logger=self.logger,
+        )

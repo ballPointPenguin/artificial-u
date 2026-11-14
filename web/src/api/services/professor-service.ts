@@ -8,7 +8,6 @@ import type {
   ProfessorCoursesResponse,
   ProfessorCreate,
   ProfessorGenerateRequest,
-  ProfessorLecturesResponse,
   ProfessorsListResponse,
   ProfessorUpdate,
 } from '../types.js'
@@ -58,10 +57,6 @@ export const professorService = {
     return httpClient.get<ProfessorCoursesResponse>(ENDPOINTS.professors.courses(professorId))
   },
 
-  getProfessorLectures: (professorId: number): Promise<ProfessorLecturesResponse> => {
-    return httpClient.get<ProfessorLecturesResponse>(ENDPOINTS.professors.lectures(professorId))
-  },
-
   generateProfessorImage: (professorId: number): Promise<Professor> => {
     return httpClient.post<Professor>(
       ENDPOINTS.professors.generateImage(professorId),
@@ -70,12 +65,6 @@ export const professorService = {
         timeout: TIMEOUT_CONFIG.generation,
       }
     )
-  },
-
-  generateProfessor: (data: ProfessorGenerateRequest): Promise<Professor> => {
-    return httpClient.post<Professor>(ENDPOINTS.professors.generate, data, {
-      timeout: TIMEOUT_CONFIG.generation,
-    })
   },
 
   enqueueGenerateProfessor: (
@@ -90,20 +79,6 @@ export const professorService = {
     run_after?: string
   }> => {
     return httpClient.post(ENDPOINTS.professors.enqueueGenerate, data)
-  },
-
-  enqueueGenerateProfessorImage: (
-    professorId: number
-  ): Promise<{
-    id: number
-    kind: string
-    status: string
-    attempts: number
-    max_attempts: number
-    priority?: number
-    run_after?: string
-  }> => {
-    return httpClient.post(ENDPOINTS.professors.enqueueGenerateImage(professorId), {})
   },
 
   assignVoiceToProfessor: (professorId: number): Promise<Professor> => {

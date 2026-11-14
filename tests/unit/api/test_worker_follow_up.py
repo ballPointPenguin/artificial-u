@@ -82,3 +82,41 @@ async def test_build_audio_payload_returns_none_when_no_lecture_for_topic():
     )
 
     assert payload is None
+
+
+async def _fail_job(exc: Exception, *, attempts: int = 1, max_attempts: int = 3):
+    """Run the worker's failure handling for a job and return (repo, published events)."""
+    from unittest.mock import AsyncMock, MagicMock
+
+    worker = _make_worker({})
+    worker._publish_event = AsyncMock()
+    repo = MagicMock()
+
+    await worker._handle_exception(
+        repo, 7, "create_course", {}, attempts, max_attempts, exc, duration_ms=12
+    )
+    return repo, worker._publish_event
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_failed_job_with_attempts_left_is_requeued():
+    repo, publish = await _fail_job(RuntimeError("provider timeout"))
+
+    job_id, attempts, max_attempts = repo.mark_failed_or_retry.call_args.args
+    assert (job_id, attempts, max_attempts) == (7, 1, 3)
+    assert publish.call_args.args[2] == "queued"
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_non_retryable_failure_fails_the_job_immediately():
+    from artificial_u.utils import NonRetryableJobError
+
+    repo, publish = await _fail_job(NonRetryableJobError("course created, topics were not"))
+
+    # Reported as out of attempts, so the repository marks it failed instead of requeueing
+    job_id, attempts, max_attempts = repo.mark_failed_or_retry.call_args.args
+    assert (job_id, attempts, max_attempts) == (7, 3, 3)
+    assert repo.mark_failed_or_retry.call_args.kwargs["last_error"].startswith("course created")
+    assert publish.call_args.args[2] == "failed"

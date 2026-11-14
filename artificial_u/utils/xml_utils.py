@@ -258,24 +258,30 @@ def extract_xml_between_tags(text: str, tag_name: str) -> Optional[str]:
     return match.group(1).strip() if match else None
 
 
-def calculate_estimated_tokens(
-    items_per_week: int = 3,
-    total_weeks: int = 10,
-    tokens_per_item: int = 200,
-    max_tokens: int = 16384,
-) -> int:
+def extract_root_xml(
+    raw_response: str, root_tag: str, *, allow_empty: bool = False
+) -> Optional[str]:
     """
-    Calculate estimated tokens needed for content generation.
+    Find the ``<root_tag>`` document in an LLM response.
+
+    Models are asked to answer inside ``<output>`` tags but do not always comply, so this
+    accepts, in order: the content of ``<output>``, or a bare ``<root_tag>...</root_tag>``
+    anywhere in the response.
 
     Args:
-        items_per_week: Number of items (topics/lectures) per week
-        total_weeks: Total number of weeks
-        tokens_per_item: Estimated tokens per item
-        max_tokens: Maximum token limit
+        raw_response: The raw model response
+        root_tag: Name of the expected root element (e.g. "course")
+        allow_empty: Whether an empty ``<root_tag></root_tag>`` counts as found
 
     Returns:
-        int: Estimated tokens needed, capped at max_tokens
+        Optional[str]: The document wrapped in ``<root_tag>``, or None if it is not there
     """
-    total_items = items_per_week * total_weeks
-    estimated_tokens = min(total_items * tokens_per_item, max_tokens)
-    return estimated_tokens
+    output = extract_xml_between_tags(raw_response, "output")
+    if output:
+        return ensure_xml_wrapper(output, root_tag)
+
+    inner = extract_xml_between_tags(raw_response, root_tag)
+    if inner or (allow_empty and inner is not None):
+        return f"<{root_tag}>\n{inner}\n</{root_tag}>"
+
+    return None

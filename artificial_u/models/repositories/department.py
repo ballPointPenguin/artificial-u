@@ -12,6 +12,20 @@ from artificial_u.models.repositories.base import BaseRepository
 class DepartmentRepository(BaseRepository):
     """Repository for Department operations."""
 
+    @staticmethod
+    def _to_model(row: DepartmentModel) -> Department:
+        """Convert a database row to a core Department."""
+        return Department(
+            id=row.id,
+            name=row.name,
+            code=row.code,
+            faculty_id=row.faculty_id,
+            description=row.description,
+            language=row.language,
+            created_at=row.created_at,
+            updated_at=row.updated_at,
+        )
+
     def create(self, department: Department) -> Department:
         """Create a new department."""
         with self.get_session() as session:
@@ -40,16 +54,7 @@ class DepartmentRepository(BaseRepository):
             if not db_department:
                 return None
 
-            return Department(
-                id=db_department.id,
-                name=db_department.name,
-                code=db_department.code,
-                faculty_id=db_department.faculty_id,
-                description=db_department.description,
-                language=db_department.language,
-                created_at=db_department.created_at,
-                updated_at=db_department.updated_at,
-            )
+            return self._to_model(db_department)
 
     def get_by_code(self, code: str) -> Optional[Department]:
         """Get a department by code."""
@@ -59,16 +64,7 @@ class DepartmentRepository(BaseRepository):
             if not db_department:
                 return None
 
-            return Department(
-                id=db_department.id,
-                name=db_department.name,
-                code=db_department.code,
-                faculty_id=db_department.faculty_id,
-                description=db_department.description,
-                language=db_department.language,
-                created_at=db_department.created_at,
-                updated_at=db_department.updated_at,
-            )
+            return self._to_model(db_department)
 
     def list(
         self,
@@ -86,19 +82,7 @@ class DepartmentRepository(BaseRepository):
 
             db_departments = query.all()
 
-            return [
-                Department(
-                    id=d.id,
-                    name=d.name,
-                    code=d.code,
-                    faculty_id=d.faculty_id,
-                    description=d.description,
-                    language=d.language,
-                    created_at=d.created_at,
-                    updated_at=d.updated_at,
-                )
-                for d in db_departments
-            ]
+            return [self._to_model(d) for d in db_departments]
 
     def update(self, department: Department) -> Department:
         """Update a department."""

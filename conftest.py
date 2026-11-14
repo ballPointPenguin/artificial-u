@@ -4,23 +4,13 @@ Ensures tests use the proper environment settings.
 """
 
 import os
-import sys
 
 import pytest
 
-# Import the settings (this will auto-load .env.test in test environments)
-from artificial_u.config.settings import get_settings
-
-# Ensure environment is correctly set up for tests
-# For automated tests, make sure TESTING flag is set
+# Mark the process as a test run before any application module reads its settings
 os.environ["TESTING"] = "true"
-print("Using TEST environment variables for automated tests")
 
-
-# Check if we're running unit tests
-def is_unit_test():
-    """Check if we're running unit tests"""
-    return any(arg in sys.argv for arg in ["-m unit", "unit"])
+from artificial_u.config.settings import get_settings  # noqa: E402
 
 
 @pytest.fixture(scope="session", autouse=True)

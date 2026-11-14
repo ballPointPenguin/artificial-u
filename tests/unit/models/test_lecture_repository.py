@@ -134,6 +134,22 @@ class TestLectureRepository:
         query_mock.options.assert_called_once()  # Verify joinedload was called
         query_mock.filter_by.assert_called_once_with(id=999)
 
+    def test_list_all_revisions_by_topic(
+        self, lecture_repository, mock_session, sample_lecture_model
+    ):
+        """Every revision row for the topic is returned, ordered by revision."""
+        query_mock = mock_session.query.return_value
+        query_mock.filter.return_value = query_mock
+        query_mock.order_by.return_value = query_mock
+        query_mock.all.return_value = [sample_lecture_model, sample_lecture_model]
+
+        result = lecture_repository.list_all_revisions_by_topic(1)
+
+        assert len(result) == 2
+        assert all(lecture.topic_id == 1 for lecture in result)
+        mock_session.query.assert_called_once_with(LectureModel)
+        query_mock.order_by.assert_called_once()
+
     def test_get_content(self, lecture_repository, mock_session, sample_lecture_model):
         """Test getting lecture content."""
         # Configure mock behavior

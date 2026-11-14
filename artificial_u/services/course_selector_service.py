@@ -17,6 +17,7 @@ from artificial_u.prompts.course_selection import (
     parse_course_selection_decision,
 )
 from artificial_u.services.content_service import ContentService
+from artificial_u.services.selection import ask_for_decision
 from artificial_u.utils import ContentGenerationError
 
 
@@ -180,34 +181,16 @@ class CourseSelectorService:
         Raises:
             ContentGenerationError: If AI call or parsing fails
         """
-        try:
-            # Generate selection prompt
-            prompt = get_course_selection_prompt(
-                user_query=user_query,
-                existing_courses=existing_courses,
-            )
-
-            settings = get_settings()
-
-            # Call AI for decision (reuse course generation model as discussed)
-            self.logger.info("Calling AI for course selection decision...")
-            response = await self.content_service.generate_text(
-                prompt=prompt,
-                model=settings.COURSE_GENERATION_MODEL,
-            )
-            self.logger.info("Received AI response for course selection")
-
-            if not response:
-                raise ContentGenerationError("AI returned empty response for course selection")
-
-            # Parse the decision
-            decision = parse_course_selection_decision(response)
-
-            return decision
-
-        except ContentGenerationError:
-            raise
-        except Exception as e:
-            error_msg = f"Failed to get AI selection decision: {e}"
-            self.logger.error(error_msg, exc_info=True)
-            raise ContentGenerationError(error_msg) from e
+        prompt = get_course_selection_prompt(
+            user_query=user_query,
+            existing_courses=existing_courses,
+        )
+        # Course matching reuses the course generation model
+        return await ask_for_decision(
+            self.content_service,
+            prompt=prompt,
+            model=get_settings().COURSE_GENERATION_MODEL,
+            parse=parse_course_selection_decision,
+            label="course",
+            logger=self.logger,
+        )

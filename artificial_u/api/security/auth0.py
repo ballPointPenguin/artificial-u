@@ -8,7 +8,7 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import jwt
 from jose.exceptions import ExpiredSignatureError, JWTClaimsError, JWTError
 
-from artificial_u.config.settings import get_settings
+from artificial_u.config import get_settings
 
 auth_scheme = HTTPBearer(auto_error=True)
 optional_auth_scheme = HTTPBearer(auto_error=False)
@@ -133,32 +133,6 @@ def optional_auth(
         return None
 
 
-# Mock JWT payload for testing
-MOCK_JWT_PAYLOAD = {
-    "sub": "test-user-123",
-    "email": "test@example.com",
-    "name": "Test User",
-    "nickname": "testuser",
-    "scope": "read:courses write:courses read:professors write:professors read:departments write:departments "
-    + "read:lectures write:lectures read:topics write:topics",
-}
-
-
-def mock_require_auth() -> Dict[str, Any]:
-    """Mock authentication function that returns test JWT payload."""
-    return MOCK_JWT_PAYLOAD
-
-
-def require_scope(scope: str):
-    def _checker(payload: Dict[str, Any] = Depends(require_auth)) -> Dict[str, Any]:
-        scopes = (payload.get("scope") or "").split()
-        if scope not in scopes:
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Insufficient scope")
-        return payload
-
-    return _checker
-
-
 def require_role(min_role: str):
     """
     Dependency factory that checks if user has the required role.
@@ -270,46 +244,6 @@ def can_modify_asset(student_id: int, created_by: Optional[int], role: str) -> b
 
     # Non-admins can only modify their own assets
     return student_id == created_by
-
-
-def require_asset_ownership(asset_name: str = "asset"):
-    """
-    Dependency factory that validates asset ownership before modification.
-
-    Use this in edit/delete endpoints to ensure users can only modify
-    assets they own (unless they're admins).
-
-    Usage:
-        @router.delete("/{course_id}")
-        async def delete_course(
-            course_id: int,
-            student: Student = Depends(ensure_student),
-            course: Course = Depends(get_course),  # Custom dependency that fetches course
-            _: None = Depends(require_asset_ownership("course"))
-        ):
-            # course is already verified to be owned by student (or student is admin)
-            ...
-
-    Args:
-        asset_name: Name of the asset type for error messages
-
-    Returns:
-        Dependency function that validates ownership
-
-    Raises:
-        HTTPException: 403 if user cannot modify the asset
-    """
-    from artificial_u.models.core import Student
-
-    def _checker(student: Student, asset_created_by: Optional[int]) -> None:
-        if not can_modify_asset(student.id, asset_created_by, student.role):
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail=f"You do not have permission to modify this {asset_name}. "
-                f"Only the creator or an admin can modify it.",
-            )
-
-    return _checker
 
 
 def verify_asset_ownership(

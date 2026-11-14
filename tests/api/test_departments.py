@@ -71,7 +71,6 @@ def mock_api_service(monkeypatch):
         "delete_department": MagicMock(),  # Sync
         "get_department_professors": MagicMock(),  # Sync
         "get_department_courses": MagicMock(),  # Sync
-        "get_department_by_code": MagicMock(),  # Sync
         # "generate_department": AsyncMock(), # Keep AsyncMock if/when added
     }
 
@@ -175,10 +174,6 @@ def mock_api_service(monkeypatch):
     mock_service["get_department_courses"].side_effect = _mock_get_department_courses
 
     # GET Department by Code
-    def _mock_get_department_by_code(code: str):
-        return next((d for d in sample_departments_base if d.code == code), None)
-
-    mock_service["get_department_by_code"].side_effect = _mock_get_department_by_code
 
     # --- Apply Patches ---
     monkeypatch.setattr(
@@ -208,10 +203,6 @@ def mock_api_service(monkeypatch):
     monkeypatch.setattr(
         "artificial_u.api.services.DepartmentApiService.get_department_courses",
         mock_service["get_department_courses"],
-    )
-    monkeypatch.setattr(
-        "artificial_u.api.services.DepartmentApiService.get_department_by_code",
-        mock_service["get_department_by_code"],
     )
     # Patch generate_department if testing it:
     # monkeypatch.setattr(
@@ -470,28 +461,6 @@ def test_get_department_courses(client: TestClient, mock_api_service):
     response = client.get("/api/v1/departments/999/courses")
     assert response.status_code == 404
     mock_api_service["get_department_courses"].assert_called_with(999, viewer=None)
-
-
-@pytest.mark.unit
-def test_get_department_by_code(client: TestClient, mock_api_service):
-    """Test getting department by code relies on mocked service."""
-    # Test with valid code
-    target_code = "TD1"
-    expected_dept = sample_departments_base[0]
-    mock_api_service["get_department_by_code"].return_value = expected_dept
-
-    response = client.get(f"/api/v1/departments/code/{target_code}")
-    assert response.status_code == 200
-    assert response.json()["code"] == target_code
-    assert response.json()["id"] == expected_dept.id
-    mock_api_service["get_department_by_code"].assert_called_once_with(target_code)
-
-    # Test with invalid code
-    mock_api_service["get_department_by_code"].reset_mock()
-    mock_api_service["get_department_by_code"].return_value = None
-    response = client.get("/api/v1/departments/code/INVALID")
-    assert response.status_code == 404
-    mock_api_service["get_department_by_code"].assert_called_once_with("INVALID")
 
 
 # Note: Tests for the duplicate /professors and /courses endpoints defined later in the router

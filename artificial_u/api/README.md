@@ -20,7 +20,6 @@ The API follows REST principles with resource-based URLs, appropriate HTTP metho
 ```
 api/
 ├── app.py             # Main FastAPI application factory
-├── config.py          # API-specific configuration
 ├── models/            # Pydantic models for request/response data
 ├── routers/           # Route definitions organized by resource
 ├── services/          # Business logic and database operations
@@ -38,7 +37,6 @@ The API implements a comprehensive error handling system that provides consisten
 - **Error Codes**: Specific error codes to identify different error types
 - **Detailed Error Messages**: Helpful error messages for troubleshooting
 - **Validation Error Details**: Field-level validation errors with clear messages
-- **Exception Hierarchy**: Custom exception classes for different error types
 
 For more details, see the [Error Handling Documentation](../../docs/error_handling.md).
 
@@ -68,10 +66,7 @@ The API includes a structured logging system to capture important events and err
 
 ```bash
 # Start the API with hot reloading
-python -m artificial_u.api
-
-# Or use uvicorn directly
-uvicorn artificial_u.api.app:app --reload
+uv run uvicorn artificial_u.api.app:app --reload
 ```
 
 ### API Documentation

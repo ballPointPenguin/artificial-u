@@ -12,7 +12,7 @@ Every piece of lecture content carries a label indicating which model produced i
 
 Text content is generated primarily using models from [Anthropic](https://www.anthropic.com), a company whose stated mission is the responsible development and maintenance of advanced AI for the long-term benefit of humanity. Anthropic publishes substantial documentation on their safety research, evaluation methodology, and model behavior — we encourage the curious to read it. While we don't have any special relationship with Anthropic, we've favored their models partly for technical reasons and partly because their public commitments to responsible AI development align reasonably well with the spirit of this project.
 
-Other LLM providers — Google Gemini, OpenAI, and locally-hosted models via Ollama — are also supported and may be used. The specific model is always disclosed alongside the content.
+Other LLM providers — Google Gemini, OpenAI, and xAI — are also supported and may be used. The specific model is always disclosed alongside the content.
 
 We do not fine-tune, train, or otherwise modify the models we use. We write prompts; the model generates text. The distinction matters: we have no access to the model's weights, no visibility into its training data, and no ability to audit what it knows or doesn't know.
 

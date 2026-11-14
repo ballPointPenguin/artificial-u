@@ -1,8 +1,13 @@
 """Course selection prompt templates for quickstart wizard."""
 
+import logging
+import xml.etree.ElementTree as ET
 from typing import Any, Dict, List
 
 from artificial_u.prompts.base import PromptTemplate
+from artificial_u.prompts.selection import decision_xml_root
+
+logger = logging.getLogger(__name__)
 
 # XML structure for course selection decision
 COURSE_SELECTION_STRUCTURE = """
@@ -133,62 +138,6 @@ def get_course_selection_prompt(
     )
 
 
-def _extract_decision_xml(ai_response: str) -> str:
-    """Extract decision XML from AI response with fallback for truncated responses.
-
-    Args:
-        ai_response: Raw AI response containing <decision> XML
-
-    Returns:
-        Extracted decision XML content
-
-    Raises:
-        ValueError: If no decision tag can be found
-    """
-    import logging
-    import re
-
-    from artificial_u.models.converters import extract_xml_content
-
-    logger = logging.getLogger(__name__)
-
-    decision_xml = extract_xml_content(ai_response, "decision")
-
-    # Fallback for truncated responses
-    if not decision_xml:
-        logger.warning("Full <decision> extraction failed, trying fallback for truncated response")
-        partial_match = re.search(r"<decision>\s*(.*?)(?:</decision>|$)", ai_response, re.DOTALL)
-        if partial_match:
-            decision_xml = partial_match.group(1).strip()
-        else:
-            raise ValueError(f"No <decision> tag found in AI response: {ai_response[:200]}...")
-
-    return decision_xml
-
-
-def _prepare_xml_for_parsing(decision_xml: str) -> str:
-    """Prepare decision XML for parsing, handling truncated reasoning tags.
-
-    Args:
-        decision_xml: Raw decision XML content
-
-    Returns:
-        Well-formed XML string ready for parsing
-    """
-    import logging
-
-    logger = logging.getLogger(__name__)
-
-    xml_to_parse = f"<decision>{decision_xml}</decision>"
-
-    # Handle truncated reasoning
-    if not decision_xml.strip().endswith(">") and "</reasoning>" not in decision_xml:
-        xml_to_parse = f"<decision>{decision_xml}</reasoning></decision>"
-        logger.warning("Added missing </reasoning> tag for truncated response")
-
-    return xml_to_parse
-
-
 def _parse_course_ids(course_ids_text: str) -> List[int]:
     """Parse comma-separated course IDs from text.
 
@@ -198,10 +147,6 @@ def _parse_course_ids(course_ids_text: str) -> List[int]:
     Returns:
         List of integer course IDs
     """
-    import logging
-
-    logger = logging.getLogger(__name__)
-
     course_ids = []
     if course_ids_text:
         for id_str in course_ids_text.split(","):
@@ -248,15 +193,8 @@ def parse_course_selection_decision(ai_response: str) -> Dict[str, Any]:
     Raises:
         ValueError: If the response cannot be parsed
     """
-    import xml.etree.ElementTree as ET
-
     try:
-        # Extract and prepare XML
-        decision_xml = _extract_decision_xml(ai_response)
-        xml_to_parse = _prepare_xml_for_parsing(decision_xml)
-
-        # Parse XML
-        root = ET.fromstring(xml_to_parse)
+        root = decision_xml_root(ai_response)
 
         # Extract components
         action_elem = root.find("action")

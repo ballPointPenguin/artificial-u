@@ -7,7 +7,6 @@ raw audio bytes (mp3 by default). Uses httpx directly rather than an SDK.
 
 import logging
 import os
-import sys
 import time
 from typing import Any, Dict, Optional
 
@@ -47,15 +46,9 @@ class XAITTSClient:
         self.logger = logger or logging.getLogger(__name__)
         settings = get_settings()
 
-        in_test_env = os.environ.get("TESTING") == "true" or "pytest" in sys.modules
-
         self.api_key = api_key or os.environ.get("XAI_API_KEY") or settings.XAI_API_KEY
         if not self.api_key:
-            if in_test_env:
-                self.api_key = "test_xai_key"
-                self.logger.info("Using test API key in test environment")
-            else:
-                raise ValueError("xAI API key is required for TTS")
+            raise ValueError("xAI API key is required for TTS")
 
         self.base_url = (base_url or settings.XAI_TTS_BASE_URL).rstrip("/")
 

@@ -42,13 +42,9 @@ def content_service():
 
 @pytest.fixture
 def department_service(repository_factory):
-    """Create a DepartmentService with mocked dependent services."""
-    professor_service = MagicMock()
-    course_service = MagicMock()
+    """Create a DepartmentService."""
     return DepartmentService(
         repository_factory=repository_factory,
-        professor_service=professor_service,
-        course_service=course_service,
         logger=logging.getLogger(__name__),
     )
 

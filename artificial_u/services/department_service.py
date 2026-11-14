@@ -25,8 +25,6 @@ class DepartmentService:
     def __init__(
         self,
         repository_factory: RepositoryFactory,
-        professor_service,
-        course_service,
         logger=None,
     ):
         """
@@ -34,13 +32,9 @@ class DepartmentService:
 
         Args:
             repository_factory: Repository factory instance
-            professor_service: Professor management service
-            course_service: Course management service
             logger: Optional logger instance
         """
         self.repository_factory = repository_factory
-        self.professor_service = professor_service
-        self.course_service = course_service
         self.logger = logger or logging.getLogger(__name__)
 
     # --- CRUD Methods --- #
@@ -105,26 +99,6 @@ class DepartmentService:
         department = self.repository_factory.department.get(department_id)
         if not department:
             error_msg = f"Department with ID {department_id} not found"
-            self.logger.error(error_msg)
-            raise DepartmentNotFoundError(error_msg)
-        return department
-
-    def get_department_by_code(self, code: str) -> Department:
-        """
-        Get a department by its code.
-
-        Args:
-            code: Department code to look up
-
-        Returns:
-            Department: The department object
-
-        Raises:
-            DepartmentNotFoundError: If department not found
-        """
-        department = self.repository_factory.department.get_by_code(code)
-        if not department:
-            error_msg = f"Department with code {code} not found"
             self.logger.error(error_msg)
             raise DepartmentNotFoundError(error_msg)
         return department

@@ -36,10 +36,6 @@ class ElevenLabsTTSBackend:
     def backend_name(self) -> str:
         return "elevenlabs"
 
-    @property
-    def default_voice_settings(self) -> Dict[str, Any]:
-        return self.DEFAULT_VOICE_SETTINGS.copy()
-
     def text_to_speech(
         self,
         text: str,

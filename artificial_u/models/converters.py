@@ -7,7 +7,7 @@ import re
 import xml.etree.ElementTree as ET
 from typing import Any, Dict, List, Optional
 
-from artificial_u.models.core import Course, Department, Lecture, Professor, Topic
+from artificial_u.models.core import Course, Department, Professor, Topic
 
 # --- Helper Functions --- #
 
@@ -84,13 +84,6 @@ def course_model_to_dict(course: Optional[Course]) -> Dict[str, Any]:
     if not course:
         return {}
     return course.model_dump(exclude_none=True)
-
-
-def lecture_model_to_dict(lecture: Optional[Lecture]) -> Dict[str, Any]:
-    """Convert Lecture Pydantic model to dictionary."""
-    if not lecture:
-        return {}
-    return lecture.model_dump(exclude_none=True)
 
 
 def topic_model_to_dict(topic: Optional[Topic]) -> Dict[str, Any]:
@@ -458,22 +451,6 @@ def partial_department_to_xml(
 # --- XML Parsing Functions --- #
 
 
-def extract_xml_content(text: str, tag_name: str) -> Optional[str]:
-    """Extract content from XML tags.
-
-    Args:
-        text: Text containing XML tags
-        tag_name: The name of the XML tag to extract
-
-    Returns:
-        Optional[str]: Extracted content or None if not found
-    """
-    pattern = rf"<{tag_name}>\s*(.*?)\s*</{tag_name}>"
-    match = re.search(pattern, text, re.DOTALL)
-
-    return match.group(1).strip() if match else None
-
-
 def _parse_text_field(element: Optional[ET.Element]) -> Optional[str]:
     """Parse a simple text field from an Element."""
     if element is not None and element.text:
@@ -681,8 +658,6 @@ def _repair_topics_xml(xml_str: str) -> str:
     Returns:
         str: Repaired XML string
     """
-    import html
-    import re
 
     # Fix common mismatched closing tags
     # Special case: <order>X</content> means close order AND open content
@@ -814,89 +789,6 @@ def parse_department_xml(department_xml: str) -> Dict[str, Any]:
         raise ValueError(f"Error parsing department XML: {e}")
 
 
-def parse_professor_xml(professor_xml: str) -> Dict[str, Any]:
-    """Parse professor XML from LLM response into a dictionary.
-
-    Args:
-        professor_xml: The XML string to parse
-
-    Returns:
-        Dict[str, Any]: The parsed professor attributes
-
-    Raises:
-        ValueError: If the XML is invalid or missing required elements
-    """
-    try:
-        root = ET.fromstring(professor_xml.strip())
-        # The root element should be the professor
-        if root.tag != "professor":
-            raise ValueError("Root element must be <professor>")
-
-        professor_data = {}
-
-        # Process simple text fields
-        for field in [
-            "name",
-            "title",
-            "accent",
-            "background",
-            "description",
-            "gender",
-            "personality",
-            "specialization",
-            "teaching_style",
-        ]:
-            professor_data[field] = _parse_text_field(root.find(field))
-
-        # Process numeric fields
-        professor_data["age"] = _parse_numeric_field(root.find("age"))
-
-        return professor_data
-
-    except ET.ParseError as e:
-        raise ValueError(f"Invalid XML format: {e}")
-    except Exception as e:
-        raise ValueError(f"Error parsing professor XML: {e}")
-
-
-def _repair_lecture_xml(xml_str: str) -> str:
-    """Repair common XML issues in lecture XML.
-
-    Args:
-        xml_str: The potentially malformed XML string
-
-    Returns:
-        str: Repaired XML string
-    """
-    import html
-
-    # Fix common HTML entities that might not be properly escaped
-    xml_str = xml_str.replace("&amp;", "&")  # Temporarily simplify
-    xml_str = html.escape(xml_str, quote=False)  # Re-escape properly
-
-    # Fix common unclosed tags by ensuring proper nesting
-    # Count opening and closing tags
-    title_open = xml_str.count("<title>")
-    title_close = xml_str.count("</title>")
-    content_open = xml_str.count("<content>")
-    content_close = xml_str.count("</content>")
-
-    # Add missing closing tags
-    if title_open > title_close:
-        # Find position to insert </title> - before <content> or at end
-        content_pos = xml_str.find("<content>")
-        if content_pos > 0:
-            xml_str = xml_str[:content_pos] + "</title>" + xml_str[content_pos:]
-        else:
-            xml_str = xml_str.replace("</lecture>", "</title></lecture>")
-
-    if content_open > content_close:
-        # Add missing </content> before </lecture>
-        xml_str = xml_str.replace("</lecture>", "</content></lecture>")
-
-    return xml_str
-
-
 def _extract_lecture_xml_portion(lecture_xml: str) -> str:
     """Extract the <lecture>...</lecture> portion from the response.
 
@@ -948,13 +840,7 @@ def _parse_lecture_xml_with_et(lecture_only_xml: str) -> Dict[str, Any]:
         ET.ParseError: If XML parsing fails
         ValueError: If structure is invalid
     """
-    # Try to parse as-is first
-    try:
-        root = ET.fromstring(lecture_only_xml.strip())
-    except ET.ParseError:
-        # Try to repair common issues
-        lecture_only_xml = _repair_lecture_xml(lecture_only_xml)
-        root = ET.fromstring(lecture_only_xml.strip())
+    root = ET.fromstring(lecture_only_xml.strip())
 
     # The root element should be the lecture
     if root.tag != "lecture":
@@ -981,9 +867,6 @@ def _parse_lecture_xml_with_regex(lecture_xml: str) -> Dict[str, Any]:
     Raises:
         ValueError: If no content could be extracted
     """
-    import html
-    import re
-
     lecture_data = {}
 
     # Try to extract title with regex (handle unclosed tags)
@@ -1021,7 +904,7 @@ def parse_lecture_xml(lecture_xml: str) -> Dict[str, Any]:
 
     This function is robust and extracts only the <lecture> portion from the response,
     ignoring any content before or after the lecture tags (like outlines or other text).
-    It also attempts to repair common XML issues.
+    If the XML is malformed it falls back to regex extraction of the title and content.
 
     Args:
         lecture_xml: The XML string to parse (may contain extra content)

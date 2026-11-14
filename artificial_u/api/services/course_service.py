@@ -19,11 +19,13 @@ from artificial_u.api.models.courses import (
     ProfessorBrief,
     StudentBrief,
 )
+from artificial_u.api.security.auth0 import verify_asset_ownership
 from artificial_u.api.services.base_service import BaseApiService
 from artificial_u.models.core import Course as CoreCourse
 from artificial_u.models.core import Department as CoreDepartment
 from artificial_u.models.core import Professor as CoreProfessor
 from artificial_u.models.core import Student as CoreStudent
+from artificial_u.models.core import Topic as CoreTopic
 
 # Import RepositoryFactory directly instead of legacy Repository wrapper
 from artificial_u.models.repositories import RepositoryFactory
@@ -34,6 +36,10 @@ from artificial_u.services import (
     ProfessorService,
     StorageService,
 )
+from artificial_u.services.course_generator_service import (
+    CourseGeneratorService,
+)
+from artificial_u.services.job_enqueue_service import JobEnqueueService
 from artificial_u.utils import (
     ContentGenerationError,
     CourseNotFoundError,
@@ -76,24 +82,12 @@ class CourseApiService(BaseApiService[CoreCourse, CourseResponse, CoursesListRes
         self.core_service = course_service
 
         # Initialize generator service for AI generation workflows
-        from artificial_u.services.course_generator_service import (
-            CourseGeneratorService,
-        )
-        from artificial_u.services.job_enqueue_service import JobEnqueueService
-
-        # Create job enqueue service for background processing
-        job_enqueue_service = JobEnqueueService(
-            repository_factory=repository_factory,
-            logger=self.logger,
-        )
-
         self.generator_service = CourseGeneratorService(
             course_service=self.core_service,
             professor_service=professor_service,
             content_service=content_service,
             image_service=image_service,
             repository_factory=repository_factory,
-            job_enqueue_service=job_enqueue_service,
             logger=self.logger,
         )
         # Keep reference to core professor service if needed for direct lookups
@@ -147,86 +141,6 @@ class CourseApiService(BaseApiService[CoreCourse, CourseResponse, CoursesListRes
         course_data["student"] = student_brief.model_dump() if student_brief else None
 
         return CourseResponse.model_validate(course_data)
-
-    def _filter_courses(
-        self,
-        courses: List[dict],
-        professor_id: Optional[int] = None,
-        level: Optional[str] = None,
-        title: Optional[str] = None,
-        created_by: Optional[int] = None,
-    ) -> List[dict]:
-        """Apply additional filters to courses list."""
-        filtered_courses = courses
-
-        if professor_id:
-            filtered_courses = [
-                item
-                for item in filtered_courses
-                if item.get("course", {}).get("professor_id") == professor_id
-            ]
-        if level:
-            filtered_courses = [
-                item for item in filtered_courses if item.get("course", {}).get("level") == level
-            ]
-        if title:
-            filtered_courses = [
-                item
-                for item in filtered_courses
-                if title.lower() in item.get("course", {}).get("title", "").lower()
-            ]
-        if created_by is not None:
-            filtered_courses = [
-                item
-                for item in filtered_courses
-                if item.get("course", {}).get("created_by") == created_by
-            ]
-
-        return filtered_courses
-
-    def _sort_courses(
-        self,
-        courses: List[dict],
-        sort_by: Optional[str] = None,
-        order: Optional[str] = "desc",
-    ) -> List[dict]:
-        """Apply sorting to courses list."""
-        if not sort_by:
-            return courses
-
-        reverse = order == "desc"
-        valid_sort_fields = [
-            "code",
-            "title",
-            "level",
-            "updated_at",
-            "created_at",
-        ]
-
-        if sort_by in valid_sort_fields:
-            return sorted(
-                courses,
-                key=lambda item: item.get("course", {}).get(sort_by) or "",
-                reverse=reverse,
-            )
-
-        return courses
-
-    def _convert_to_course_responses(self, items: List[dict]) -> List[CourseResponse]:
-        """Convert course items to CourseResponse models."""
-        course_responses = []
-        for item in items:
-            if "course" in item:
-                course_data = item["course"].copy()
-                # Add related information if available
-                if "student" in item and item["student"]:
-                    course_data["student"] = item["student"]
-                if "professor" in item and item["professor"]:
-                    course_data["professor"] = item["professor"]
-                if "department" in item and item["department"]:
-                    course_data["department"] = item["department"]
-                course_responses.append(CourseResponse.model_validate(course_data))
-        return course_responses
 
     def get_courses(
         self,
@@ -317,23 +231,6 @@ class CourseApiService(BaseApiService[CoreCourse, CourseResponse, CoursesListRes
         except Exception as e:
             self._handle_general_error("get course", e)
 
-    def get_course_by_code(self, code: str) -> CourseResponse:
-        """
-        Get a course by its course code using the core service.
-        """
-        try:
-            course_model = self.core_service.get_course_by_code(code)
-            return self._build_course_response(course_model)
-        except CourseNotFoundError:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Course with code '{code}' not found",
-            )
-        except DatabaseError as e:
-            self._handle_database_error("get course by code", e)
-        except Exception as e:
-            self._handle_general_error("get course by code", e)
-
     async def create_course(
         self,
         course_data: CourseCreate,
@@ -407,8 +304,6 @@ class CourseApiService(BaseApiService[CoreCourse, CourseResponse, CoursesListRes
         """Save pre-generated draft topics directly or enqueue background topic generation."""
         if isinstance(course_data.topics, list) and len(course_data.topics) > 0:
             try:
-                from artificial_u.models.core import Topic as CoreTopic
-
                 for idx, raw_topic in enumerate(course_data.topics):
                     if not isinstance(raw_topic, dict) or not raw_topic.get("title"):
                         continue
@@ -435,8 +330,6 @@ class CourseApiService(BaseApiService[CoreCourse, CourseResponse, CoursesListRes
             return
 
         try:
-            from artificial_u.services.job_enqueue_service import JobEnqueueService
-
             job_enqueue_service = JobEnqueueService(
                 repository_factory=self.repository_factory,
                 logger=self.logger,
@@ -472,8 +365,6 @@ class CourseApiService(BaseApiService[CoreCourse, CourseResponse, CoursesListRes
             course_model = self.core_service.get_course(course_id)
 
             # Verify ownership (admins can modify any course, creators only their own)
-            from artificial_u.api.security.auth0 import verify_asset_ownership
-
             verify_asset_ownership(student_id, course_model.created_by, role, "course")
 
             # Core service expects a dictionary of fields to update
@@ -518,8 +409,6 @@ class CourseApiService(BaseApiService[CoreCourse, CourseResponse, CoursesListRes
             course_model = self.core_service.get_course(course_id)
 
             # Verify ownership (admins can delete any course, creators only their own)
-            from artificial_u.api.security.auth0 import verify_asset_ownership
-
             verify_asset_ownership(student_id, course_model.created_by, role, "course")
 
             # Core service returns True on success
@@ -568,8 +457,6 @@ class CourseApiService(BaseApiService[CoreCourse, CourseResponse, CoursesListRes
             course_model = self.core_service.get_course(course_id)
 
             # Verify ownership (admins can publish any course, creators only their own)
-            from artificial_u.api.security.auth0 import verify_asset_ownership
-
             verify_asset_ownership(student_id, course_model.created_by, role, "course")
 
             # Check if already published
@@ -607,8 +494,6 @@ class CourseApiService(BaseApiService[CoreCourse, CourseResponse, CoursesListRes
         try:
             course_model = self.core_service.get_course(course_id)
 
-            from artificial_u.api.security.auth0 import verify_asset_ownership
-
             verify_asset_ownership(student_id, course_model.created_by, role, "course")
 
             updated_course = await self.generator_service.generate_and_set_course_image(
@@ -620,6 +505,10 @@ class CourseApiService(BaseApiService[CoreCourse, CourseResponse, CoursesListRes
 
         except CourseNotFoundError:
             return None
+
+        except HTTPException:
+            # Ownership failures (403) must reach the client unchanged
+            raise
 
         except Exception as e:
             self.logger.error(

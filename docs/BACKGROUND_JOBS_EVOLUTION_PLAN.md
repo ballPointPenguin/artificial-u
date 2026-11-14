@@ -42,7 +42,7 @@ refactors.
 
 ### 1.3 CloudWatch custom metrics (emitted from the app) - DONE
 
-- `jobs.queued`, `jobs.running`, `jobs.failed_last_hour`, `jobs.avg_wait_seconds` (sourced from `summary_counts` + timing deltas).
+- `jobs.queued`, `jobs.running`, `jobs.failed_last_hour`, `jobs.avg_wait_seconds` (sourced from job-table counts + timing deltas).
 - `sse.active_streams`, `sse.publish_dropped` (add a counter where `publish` hits a full queue).
 - Emit via `boto3` `PutMetricData` on a 60s tick from a single worker task (avoid duplicate publishes across processes by gating on `pid == lowest_pid` or just tagging by pid and summing in CloudWatch).
 

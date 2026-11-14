@@ -24,7 +24,7 @@ def _credentials():
 def test_existing_student_skips_userinfo(monkeypatch):
     existing = SimpleNamespace(id=1)
     get_user_info = MagicMock()
-    monkeypatch.setattr(auth0, "get_user_info", get_user_info)
+    monkeypatch.setattr(dependencies, "get_user_info", get_user_info)
     factory = _factory(existing=existing)
 
     result = dependencies._get_or_create_student_from_payload(
@@ -39,7 +39,7 @@ def test_existing_student_skips_userinfo(monkeypatch):
 @pytest.mark.unit
 def test_new_student_seeded_from_userinfo(monkeypatch):
     monkeypatch.setattr(
-        auth0,
+        dependencies,
         "get_user_info",
         lambda _token: {"email": "a@example.com", "email_verified": True, "name": "Ada"},
     )

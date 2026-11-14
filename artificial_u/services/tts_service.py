@@ -11,7 +11,7 @@ import shutil
 import subprocess
 import tempfile
 from dataclasses import dataclass
-from typing import Any, Dict, Optional, Union
+from typing import Any, Dict, Optional
 
 from artificial_u.audio.speech_processor import SpeechProcessor
 from artificial_u.config import get_settings
@@ -54,48 +54,25 @@ class TTSService:
 
     def __init__(
         self,
-        backend: Optional[TTSBackend] = None,
+        backend: TTSBackend,
         speech_processor: Optional[SpeechProcessor] = None,
         repository_factory=None,
         logger=None,
-        # Legacy kwargs for backward compatibility
-        api_key: Optional[str] = None,
-        client=None,
     ):
         """
         Initialize the TTS service.
 
         Args:
-            backend: TTS backend to use. If not provided, creates an ElevenLabs
-                backend using api_key or settings.
+            backend: TTS backend to use.
             speech_processor: Optional speech processor instance.
             repository_factory: Optional repository factory instance.
             logger: Optional logger instance.
-            api_key: Legacy param - ElevenLabs API key (used if backend is None).
-            client: Legacy param - ElevenLabsClient instance (used if backend is None).
         """
         self.logger = logger or logging.getLogger(__name__)
         self.repository_factory = repository_factory
         self.speech_processor = speech_processor or SpeechProcessor(logger=self.logger)
         self.settings = get_settings()
-
-        # Resolve the backend
-        if backend is not None:
-            self.backend = backend
-        elif client is not None:
-            # Legacy path: wrap an existing ElevenLabsClient
-            from artificial_u.integrations.tts.elevenlabs_backend import ElevenLabsTTSBackend
-
-            self.backend = ElevenLabsTTSBackend(client=client, logger=self.logger)
-        else:
-            # Default: create backend from settings
-            from artificial_u.integrations.tts.factory import create_tts_backend
-
-            self.backend = create_tts_backend(
-                backend_name=self.settings.tts_backend or "elevenlabs",
-                api_key=api_key,
-                logger=self.logger,
-            )
+        self.backend = backend
 
     def convert_text_to_speech(
         self,
@@ -103,10 +80,7 @@ class TTSService:
         voice_id: str,
         chunk_size: int = 4000,
         language: Optional[str] = None,
-        # Legacy kwargs preserved for backward compatibility
-        el_voice_id: Optional[str] = None,
         model_id: Optional[str] = None,
-        voice_settings: Optional[Dict[str, float]] = None,
     ) -> bytes:
         """
         Convert text to speech using the configured backend.
@@ -117,16 +91,12 @@ class TTSService:
             chunk_size: Maximum size of text chunks.
             language: Optional output language (BCP-47). Passed to backends that
                 accept one (e.g. xAI); ignored by others.
-            el_voice_id: Legacy alias for voice_id.
             model_id: Optional model override (passed to backend).
-            voice_settings: Optional voice settings (passed to backend).
 
         Returns:
             Audio data as bytes.
         """
-        # Support legacy callers passing el_voice_id
-        effective_voice_id = voice_id or el_voice_id
-        if not effective_voice_id:
+        if not voice_id:
             raise ValueError("voice_id is required")
 
         # Normalize text using the explicit per-backend processing path.
@@ -150,8 +120,6 @@ class TTSService:
         backend_kwargs: Dict[str, Any] = {}
         if model_id:
             backend_kwargs["model_id"] = model_id
-        if voice_settings:
-            backend_kwargs["voice_settings"] = voice_settings
         if language:
             # Backends that don't accept a language kwarg ignore it (they read
             # only their own keys from **kwargs).
@@ -175,7 +143,7 @@ class TTSService:
             try:
                 audio_data = self.backend.text_to_speech(
                     text=chunk,
-                    voice_id=effective_voice_id,
+                    voice_id=voice_id,
                     **backend_kwargs,
                 )
                 audio_segments.append(audio_data)
@@ -282,16 +250,11 @@ class TTSService:
                 except Exception as e:
                     self.logger.debug("Error cleaning up temp dir: %s", e)
 
-    def generate_lecture_audio(self, *args: Any, **kwargs: Any) -> bytes:
-        """Generate audio for a lecture; see ``synthesize_lecture_audio``."""
-        return self.synthesize_lecture_audio(*args, **kwargs).audio
-
     def synthesize_lecture_audio(
         self,
         lecture: Lecture,
         professor: Professor,
         voice_id: Optional[str] = None,
-        el_voice_id: Optional[str] = None,
         model_id: Optional[str] = None,
         language: Optional[str] = None,
     ) -> LectureAudio:
@@ -302,7 +265,6 @@ class TTSService:
             lecture: Lecture to generate audio for.
             professor: Professor delivering the lecture.
             voice_id: Provider-specific voice identifier.
-            el_voice_id: Legacy alias for voice_id (ElevenLabs voice ID).
             model_id: Optional model override.
             language: Optional output language (BCP-47); passed to backends
                 that accept one (e.g. xAI).
@@ -311,7 +273,7 @@ class TTSService:
             The audio and the model that produced it (None if the backend's model
             isn't known).
         """
-        effective_voice_id = voice_id or el_voice_id or self._voice_id_for_professor(professor)
+        effective_voice_id = voice_id or self._voice_id_for_professor(professor)
 
         # Resolve the best model this voice supports
         auto_model = self.backend.backend_name == "elevenlabs" and model_id is None
@@ -427,31 +389,3 @@ class TTSService:
 
         configured = self.settings.TTS_VOICE_MODEL
         return FALLBACK_MODEL if configured in UNGATED_MODELS else configured
-
-    def play_audio(self, audio_source: Union[bytes, str]) -> None:
-        """Play audio data or a file."""
-        if isinstance(audio_source, str) and os.path.exists(audio_source):
-            try:
-                with open(audio_source, "rb") as f:
-                    audio_data = f.read()
-            except Exception as e:
-                raise AudioProcessingError(f"Failed to read audio file {audio_source}: {e}")
-        elif isinstance(audio_source, bytes):
-            audio_data = audio_source
-        else:
-            raise TypeError("audio_source must be bytes or a string path to an existing file")
-
-        # play_audio is ElevenLabs-specific
-        if hasattr(self.backend, "client") and hasattr(self.backend.client, "play_audio"):
-            try:
-                self.backend.client.play_audio(audio_data)
-            except Exception as e:
-                raise AudioProcessingError(f"Failed to play audio: {e}")
-        else:
-            self.logger.warning("play_audio not supported by %s backend", self.backend.backend_name)
-
-    def test_connection(self) -> Dict[str, Any]:
-        """Test connection to the TTS service."""
-        if hasattr(self.backend, "client") and hasattr(self.backend.client, "test_connection"):
-            return self.backend.client.test_connection()
-        return {"status": "ok", "backend": self.backend.backend_name}

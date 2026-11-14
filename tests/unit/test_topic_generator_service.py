@@ -5,6 +5,7 @@ import pytest
 
 from artificial_u.models.core import Course, Topic
 from artificial_u.services.topic_generator_service import TopicGeneratorService
+from artificial_u.utils import DatabaseError
 
 
 def _build_service(
@@ -68,7 +69,6 @@ def _build_service(
         course_service=course_service,
         content_service=content_service,
         repository_factory=repository_factory,
-        job_enqueue_service=MagicMock(),
         logger=MagicMock(),
     )
 
@@ -207,3 +207,40 @@ async def test_generate_topic_for_course_slot_includes_related_course_topics_con
     assert "Related course topics" in prompt
     assert "Related course: Advanced Atmospheric Dynamics" in prompt
     assert "Geostrophic Balance" in prompt
+
+
+def _existing_topic():
+    return Topic(id=50, title="Old Topic", course_id=1, week=1, order=1)
+
+
+def test_save_topics_refuses_to_replace_a_topic_that_has_a_lecture():
+    service, repository_factory, _, created_topics = _build_service()
+    repository_factory.topic.get_by_course_week_order.return_value = _existing_topic()
+    repository_factory.lecture.list_by_topic.return_value = [SimpleNamespace(id=9)]
+
+    with pytest.raises(DatabaseError, match="already has a lecture"):
+        service.save_topics_for_course(
+            course_id=1,
+            topics_data=[{"title": "New Topic", "week": 1, "order": 1}],
+            created_by=7,
+            model="test-model",
+        )
+
+    repository_factory.topic.delete.assert_not_called()
+    assert created_topics == []
+
+
+def test_save_topics_replaces_a_topic_without_lectures():
+    service, repository_factory, _, created_topics = _build_service()
+    repository_factory.topic.get_by_course_week_order.return_value = _existing_topic()
+    repository_factory.lecture.list_by_topic.return_value = []
+
+    saved = service.save_topics_for_course(
+        course_id=1,
+        topics_data=[{"title": "New Topic", "week": 1, "order": 1}],
+        created_by=7,
+        model="test-model",
+    )
+
+    repository_factory.topic.delete.assert_called_once_with(50)
+    assert [topic.title for topic in saved] == ["New Topic"]

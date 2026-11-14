@@ -409,19 +409,6 @@ class Preference(BaseModel):
     updated_at: Optional[datetime] = None
 
 
-class PreferenceCreate(BaseModel):
-    """Request model for creating or updating a preference."""
-
-    scope: str = Field(..., description="The preference scope/key")
-    value: str = Field(..., description="The preference value")
-    is_global: bool = Field(
-        default=False, description="Whether this is a global preference (admin only)"
-    )
-    student_id: Optional[int] = Field(
-        default=None, description="Student ID for user-specific preferences"
-    )
-
-
 class FeaturedItem(BaseModel):
     """A featured item displayed on the homepage."""
 

@@ -225,6 +225,7 @@ class TestProfessorRepository:
         mock_prof.voice_id = 1
         mock_prof.tts_backend = None
         mock_prof.language = None
+        mock_prof.image_created_with = None
         mock_prof.created_by = None
         mock_prof.created_with = None
 

@@ -16,14 +16,14 @@ from artificial_u.api.models import (
     ProfessorCoursesResponse,
     ProfessorCreate,
     ProfessorGenerate,
-    ProfessorLecturesResponse,
     ProfessorResponse,
     ProfessorsListResponse,
     ProfessorUpdate,
 )
 from artificial_u.api.security.auth0 import require_coins, require_role
 from artificial_u.api.services import ProfessorApiService
-from artificial_u.config.settings import get_settings
+from artificial_u.api.utils.jobs import job_summary
+from artificial_u.config import get_settings
 from artificial_u.models.core import Student
 from artificial_u.models.repositories.factory import RepositoryFactory
 
@@ -270,33 +270,6 @@ async def get_professor_courses(
     return response
 
 
-@router.get(
-    "/{professor_id}/lectures",
-    response_model=ProfessorLecturesResponse,
-    summary="Get professor's lectures",
-    description="Get lectures by a specific professor.",
-    responses={404: {"description": "Professor not found"}},
-)
-async def get_professor_lectures(
-    professor_id: int = Path(..., description="The ID of the professor"),
-    service: ProfessorApiService = Depends(get_professor_api_service),
-    student: Optional[Student] = Depends(optional_student),
-):
-    """
-    Get lectures by a specific professor.
-
-    - **professor_id**: The unique identifier of the professor
-    - Returns a list of lectures by the professor across all their courses
-    """
-    response = service.get_professor_lectures(professor_id, viewer=student)
-    if not response:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Professor with ID {professor_id} not found",
-        )
-    return response
-
-
 @router.post(
     "/{professor_id}/generate-image",
     response_model=ProfessorResponse,
@@ -352,40 +325,6 @@ async def generate_professor_image(
 
 
 @router.post(
-    "/generate",
-    response_model=ProfessorResponse,
-    # Use 200 as we're returning the generated data, not creating a resource yet
-    status_code=status.HTTP_200_OK,
-    summary="Generate professor profile",
-    description="Generates a professor profile using AI based on any provided details.",
-    responses={
-        500: {"description": "Profile generation failed"},
-    },
-    dependencies=[require_coins(cost=get_settings().COIN_COST_PROFESSOR_GENERATION)],
-)
-async def generate_professor(
-    generation_data: ProfessorGenerate,  # Updated model
-    service: ProfessorApiService = Depends(get_professor_api_service),
-):
-    """
-    Generate a professor profile using AI.
-
-    Accepts an optional dictionary of partial attributes to guide the generation.
-    If no attributes are provided, a completely new profile will be invented.
-    If attributes like `department_id` are provided without `department_name`,
-    the service will attempt to look up the name.
-
-    Args:
-        generation_data: Contains optional `partial_attributes` dictionary.
-
-    Returns:
-        The generated professor profile data (not saved to the database).
-    """
-    # The service method already handles exceptions and converts to HTTPException
-    return await service.generate_professor(generation_data)
-
-
-@router.post(
     "/generate/enqueue",
     status_code=status.HTTP_202_ACCEPTED,
     summary="Enqueue professor generation job",
@@ -405,56 +344,4 @@ async def enqueue_generate_professor(
     }
     payload = {k: v for k, v in payload.items() if v is not None}
     row = repository_factory.job.create(kind="generate_professor", payload=payload)
-    return {
-        "id": row.id,
-        "kind": row.kind,
-        "status": row.status,
-        "attempts": row.attempts,
-        "max_attempts": row.max_attempts,
-        "priority": row.priority,
-        "run_after": row.run_after,
-    }
-
-
-@router.post(
-    "/{professor_id}/generate-image/enqueue",
-    status_code=status.HTTP_202_ACCEPTED,
-    summary="Enqueue professor image generation job",
-    description=(
-        "Enqueue an async job to generate a professor image. Returns a job id to poll via "
-        "GET /api/v1/jobs/{id}. Only the creator or an admin can modify a professor."
-    ),
-    responses={
-        404: {"description": "Professor not found"},
-        403: {"description": "Forbidden - user doesn't own this professor"},
-    },
-    dependencies=[require_coins(cost=get_settings().COIN_COST_PROFESSOR_IMAGE)],
-)
-async def enqueue_generate_professor_image(
-    professor_id: int = Path(..., description="The ID of the professor to generate an image for"),
-    repository_factory: RepositoryFactory = Depends(get_repository_factory),
-    student: Student = Depends(ensure_student),
-):
-    # First, verify ownership
-    professor = repository_factory.professor.get(professor_id)
-    if not professor:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Professor with ID {professor_id} not found",
-        )
-
-    from artificial_u.api.security.auth0 import verify_asset_ownership
-
-    verify_asset_ownership(student.id, professor.created_by, student.role, "professor")
-
-    payload = {"professor_id": professor_id}
-    row = repository_factory.job.create(kind="generate_professor_image", payload=payload)
-    return {
-        "id": row.id,
-        "kind": row.kind,
-        "status": row.status,
-        "attempts": row.attempts,
-        "max_attempts": row.max_attempts,
-        "priority": row.priority,
-        "run_after": row.run_after,
-    }
+    return job_summary(row)

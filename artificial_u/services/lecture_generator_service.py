@@ -7,10 +7,16 @@ and background job enqueueing.
 """
 
 import asyncio
+import json
 import logging
+import os
+import re
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
+from artificial_u.audio import ID3Tagger
 from artificial_u.config import get_settings
+from artificial_u.integrations import elevenlabs
+from artificial_u.integrations.tts.factory import create_tts_backend
 from artificial_u.models.converters import (
     course_model_to_dict,
     parse_lecture_xml,
@@ -19,6 +25,12 @@ from artificial_u.models.converters import (
     topics_model_to_dict,
 )
 from artificial_u.models.core import Lecture
+from artificial_u.models.database import LectureModel  # Keep import local for clarity
+from artificial_u.prompts import get_prompts_for_language, resolve_prompt_language
+from artificial_u.services.preference_service import PreferenceService
+from artificial_u.services.storage_service import StorageService
+from artificial_u.services.tts_service import TTSService
+from artificial_u.services.voice_service import VoiceService
 from artificial_u.utils import (
     ContentGenerationError,
     DatabaseError,
@@ -28,6 +40,7 @@ from artificial_u.utils import (
     extract_partial_xml_content,
     extract_xml_between_tags,
 )
+from artificial_u.utils.xml_utils import close_unclosed_tags
 
 if TYPE_CHECKING:
     from artificial_u.services.tts_service import LectureAudio
@@ -77,8 +90,6 @@ class LectureGeneratorService:
 
         # Initialize preference service or create one
         if preference_service is None:
-            from artificial_u.services.preference_service import PreferenceService
-
             self.preference_service = PreferenceService(repository_factory, logger=self.logger)
         else:
             self.preference_service = preference_service
@@ -169,8 +180,6 @@ class LectureGeneratorService:
                     final_lecture_data[key] = partial_attributes[key]
 
             # Filter final_lecture_data to include only valid LectureModel fields
-            from artificial_u.models.database import LectureModel  # Keep import local for clarity
-
             valid_lecture_keys = {c.name for c in LectureModel.__table__.columns}
             final_lecture_data = {
                 k: v for k, v in final_lecture_data.items() if k in valid_lecture_keys
@@ -279,18 +288,13 @@ class LectureGeneratorService:
         if revision is not None:
             return revision
 
-        try:
-            # Get the maximum revision for this specific topic
-            topic_lectures = self.repository_factory.lecture.list_by_topic(
-                generated_dict.get("topic_id")
-            )
-            max_revision = (
-                max([lecture.revision for lecture in topic_lectures]) if topic_lectures else 0
-            )
-            return max_revision + 1
-        except Exception:
-            # Fallback to 1 if we can't calculate
-            return 1
+        # One more than the latest existing revision for this topic. A lookup failure
+        # propagates: guessing 1 would create a second "revision 1" for the topic.
+        topic_lectures = self.repository_factory.lecture.list_by_topic(
+            generated_dict.get("topic_id")
+        )
+        max_revision = max((lecture.revision for lecture in topic_lectures), default=0)
+        return max_revision + 1
 
     def _create_lecture_from_generated_data(
         self, generated_dict: Dict[str, Any], revision: int
@@ -308,6 +312,10 @@ class LectureGeneratorService:
             created_by=generated_dict.get("created_by"),
             created_with=generated_dict.get("created_with"),  # Use the model from generated_dict
         )
+
+    def _storage(self) -> StorageService:
+        """The injected storage service, or a default one when none was provided."""
+        return self.storage_service or StorageService(logger=self.logger)
 
     async def _upload_and_update_transcript(
         self, saved_lecture: Lecture, generated_dict: Dict[str, Any]
@@ -397,13 +405,7 @@ class LectureGeneratorService:
 
         # Determine language for prompts
         language = getattr(lecture, "language", None) or "en"
-        lang = "en"
-        if language and isinstance(language, str):
-            lang_prefix = language.lower()[:2]
-            if lang_prefix in ("en", "fr"):
-                lang = lang_prefix
-
-        from artificial_u.prompts import get_prompts_for_language
+        lang = resolve_prompt_language(language)
 
         prompt_module = get_prompts_for_language(lang)
         prompt = prompt_module.get_summary_prompt(lecture_content=lecture.content)
@@ -458,8 +460,6 @@ class LectureGeneratorService:
         )
 
         # 4b. Extract audio duration
-        from artificial_u.audio import ID3Tagger
-
         tagger = ID3Tagger(logger=self.logger)
         duration_seconds = tagger.get_duration_seconds(audio_bytes)
 
@@ -523,11 +523,7 @@ class LectureGeneratorService:
 
         # 2. Stream the existing audio file from storage to a temp file (avoids
         # loading 20+ MB into Python heap, which malloc never returns to the OS).
-        import os
-
-        from artificial_u.services.storage_service import StorageService
-
-        storage_service = StorageService(logger=self.logger)
+        storage_service = self._storage()
 
         bucket, object_key = storage_service.parse_storage_url(lecture.audio_url)
         if not bucket or not object_key:
@@ -628,13 +624,7 @@ class LectureGeneratorService:
         """Generate lecture content and parse the XML response."""
         # Determine language for prompts
         language = prompt_args.get("course_data", {}).get("language") or "en"
-        lang = "en"
-        if language and isinstance(language, str):
-            lang_prefix = language.lower()[:2]
-            if lang_prefix in ("en", "fr"):
-                lang = lang_prefix
-
-        from artificial_u.prompts import get_prompts_for_language
+        lang = resolve_prompt_language(language)
 
         prompt_module = get_prompts_for_language(lang)
         lecture_prompt = prompt_module.get_lecture_prompt(**prompt_args)
@@ -686,16 +676,12 @@ class LectureGeneratorService:
                     )
                     if not generated_xml_output:
                         # Try a simpler extraction for lecture content
-                        import re
-
                         lecture_match = re.search(
                             r"<lecture>.*?<content>(.*)", raw_response, re.DOTALL
                         )
                         if lecture_match:
                             content = lecture_match.group(1)
                             # Close unclosed tags
-                            from artificial_u.utils.xml_utils import close_unclosed_tags
-
                             content = close_unclosed_tags(content)
                             if not content.endswith("</content>"):
                                 content += "</content>"
@@ -785,8 +771,10 @@ class LectureGeneratorService:
                 return professor_model_to_dict(professor) if professor else {}
             return {}
         except Exception as e:
-            self.logger.warning(f"Error fetching professor for course {course_id}: {e}")
-            return {}  # Return empty dict on error as per original logic
+            # Without the professor the lecture would be written with no persona; fail
+            # instead so the job can be retried.
+            self.logger.error(f"Error fetching professor for course {course_id}: {e}")
+            raise DatabaseError(f"Error fetching professor for course {course_id}: {e}") from e
 
     def _get_current_topic_data_for_generation(
         self, topic_id: int, course_id: int
@@ -855,10 +843,16 @@ class LectureGeneratorService:
                         f"Error fetching topic {lec_model.topic_id} for existing lecture "
                         f"{lec_model.id}: {topic_e}"
                     )
+                    raise
         except Exception as e:
-            self.logger.warning(
+            # Earlier lectures give the new one its continuity; fail rather than write
+            # a lecture that ignores them.
+            self.logger.error(
                 f"Error fetching or processing existing lectures for course {course_id}: {e}"
             )
+            raise DatabaseError(
+                f"Error fetching existing lectures for course {course_id}: {e}"
+            ) from e
         return existing_lectures_list_of_dicts
 
     def _get_all_course_topics_data_for_generation(self, course_id: int) -> List[Dict[str, Any]]:
@@ -867,8 +861,8 @@ class LectureGeneratorService:
             topics_core_models = self.topic_service.list_topics_by_course(course_id)
             return topics_model_to_dict(topics_core_models)
         except Exception as e:
-            self.logger.warning(f"Error fetching all topics for course {course_id}: {e}")
-            return []  # Return empty list on error as per original logic
+            self.logger.error(f"Error fetching all topics for course {course_id}: {e}")
+            raise DatabaseError(f"Error fetching topics for course {course_id}: {e}") from e
 
     async def _upload_transcript_and_get_url(
         self,
@@ -959,9 +953,6 @@ class LectureGeneratorService:
 
         if not voice_identifier:
             # Auto-assign via VoiceService (currently only supports ElevenLabs)
-            from artificial_u.integrations import elevenlabs
-            from artificial_u.services.voice_service import VoiceService
-
             settings = get_settings()
             elevenlabs_client = None
             if settings.ELEVENLABS_API_KEY:
@@ -986,19 +977,10 @@ class LectureGeneratorService:
 
         return voice_identifier, voice_id, backend_name
 
-    # Backward-compatible alias
-    def _ensure_professor_el_voice_id(self, professor) -> tuple[str, Optional[int]]:
-        """Legacy wrapper - returns (el_voice_id, voice_id)."""
-        voice_id_str, db_voice_id, _ = self._ensure_professor_voice(professor)
-        return voice_id_str, db_voice_id
-
     def _generate_audio(
         self, lecture, professor, el_voice_id: str, backend_name: str = "elevenlabs"
     ) -> "LectureAudio":
         """Use TTSService to generate audio (and note the model used) for a lecture."""
-        from artificial_u.integrations.tts.factory import create_tts_backend
-        from artificial_u.services.tts_service import TTSService
-
         backend = create_tts_backend(backend_name=backend_name, logger=self.logger)
 
         tts_service = TTSService(
@@ -1017,9 +999,7 @@ class LectureGeneratorService:
 
     async def _upload_audio_and_get_url(self, course, topic, audio_bytes: bytes) -> str:
         """Upload audio to storage and return the public URL."""
-        from artificial_u.services.storage_service import StorageService
-
-        storage_service = StorageService(logger=self.logger)
+        storage_service = self._storage()
         course_code = getattr(course, "code", str(course.id))
         week = getattr(topic, "week", 1)
         number = getattr(topic, "order", 1)
@@ -1045,12 +1025,6 @@ class LectureGeneratorService:
         audio_path must be a local file path; the file is read-only here and
         deletion is the caller's responsibility.
         """
-        import json
-
-        from artificial_u.config import get_settings
-        from artificial_u.integrations import elevenlabs
-        from artificial_u.services.storage_service import StorageService
-
         settings = get_settings()
         if not settings.ELEVENLABS_API_KEY:
             self.logger.warning("No ElevenLabs API key, skipping forced alignment")
@@ -1083,7 +1057,7 @@ class LectureGeneratorService:
         timeline_data = {"events": events}
         timeline_json = json.dumps(timeline_data, ensure_ascii=False).encode("utf-8")
 
-        storage_service = StorageService(logger=self.logger)
+        storage_service = self._storage()
         course_code = getattr(course, "code", str(course.id))
         week = getattr(topic, "week", 1)
         number = getattr(topic, "order", 1)
@@ -1111,9 +1085,6 @@ class LectureGeneratorService:
         self, lecture, course, topic, audio_bytes: bytes, tts_backend: str = "elevenlabs"
     ) -> bytes:
         """Add ID3 metadata tags to audio bytes."""
-        from artificial_u.audio import ID3Tagger
-        from artificial_u.config import get_settings
-
         try:
             tagger = ID3Tagger(logger=self.logger)
 

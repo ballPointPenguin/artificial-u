@@ -4,24 +4,27 @@ API router for voice-related operations.
 
 import base64
 import logging
-from math import ceil
 from typing import Optional
 
 from fastapi import APIRouter, Body, Depends, HTTPException, Path, Query
 from pydantic import BaseModel, Field
 
-from artificial_u.api.dependencies import get_voice_service
+from artificial_u.api.dependencies import ensure_student, get_repository_factory, get_voice_service
 from artificial_u.api.models.voice import (
     ManualVoiceAssignmentRequest,
     VoiceCloneToMistralRequest,
     VoiceDesignPreview,
     VoiceDesignPreviewsResponse,
     VoiceDesignSaveRequest,
-    VoiceListResponse,
     VoiceResponse,
 )
-from artificial_u.api.security.auth0 import require_auth
+from artificial_u.api.security.auth0 import require_auth, verify_asset_ownership
+from artificial_u.integrations.mistral.voice_manager import MistralVoiceManager
+from artificial_u.integrations.qwen.voice_manager import QwenVoiceManager
 from artificial_u.integrations.tts import TTSBackend, create_tts_backend
+from artificial_u.integrations.xai.voice_manager import XAIVoiceManager
+from artificial_u.models.core import Student
+from artificial_u.models.repositories.factory import RepositoryFactory
 from artificial_u.services.voice_service import LOCALIZED_PREVIEW_TEXTS, VoiceService
 
 logger = logging.getLogger(__name__)
@@ -33,18 +36,44 @@ router = APIRouter(
 )
 
 
-@router.post("/{professor_id}/assign_voice", status_code=204, dependencies=[Depends(require_auth)])
-async def manual_assign_voice(
+# The handlers in this module are plain ``def`` on purpose: they make blocking provider and
+# database calls, so FastAPI runs them in its threadpool instead of on the event loop that
+# the job worker and SSE streams share.
+
+
+def _require_professor_access(
+    professor_id: int, repository_factory: RepositoryFactory, student: Student
+) -> None:
+    """Allow only the professor's creator or an admin to change the professor's voice.
+
+    Professors without a recorded creator can only be changed by admins.
+    """
+    professor = repository_factory.professor.get(professor_id)
+    if not professor:
+        raise HTTPException(status_code=404, detail=f"Professor with ID {professor_id} not found")
+    verify_asset_ownership(student.id, professor.created_by, student.role, "professor")
+
+
+OWNER_OR_ADMIN = {403: {"description": "Not the professor's creator and not an admin"}}
+
+
+@router.post("/{professor_id}/assign_voice", status_code=204, responses=OWNER_OR_ADMIN)
+def manual_assign_voice(
     professor_id: int = Path(..., description="ID of the professor to assign voice to"),
     assignment_request: ManualVoiceAssignmentRequest = Body(...),
     voice_service: VoiceService = Depends(get_voice_service),
+    repository_factory: RepositoryFactory = Depends(get_repository_factory),
+    student: Student = Depends(ensure_student),
 ):
     """
     Manually assign a voice to a professor.
 
     Accepts either `external_id` + `tts_backend` (preferred) or legacy
-    `el_voice_id` for backward compatibility.
+    `el_voice_id` for backward compatibility. Only the professor's creator or an
+    admin may do this.
     """
+    _require_professor_access(professor_id, repository_factory, student)
+
     # Resolve the effective external_id: prefer new field, fall back to legacy
     external_id = assignment_request.external_id or assignment_request.el_voice_id
     if not external_id:
@@ -66,8 +95,7 @@ async def manual_assign_voice(
             # Generic path: look up by backend + external_id in the DB
             voice_service.manual_voice_assignment_generic(professor_id, external_id, tts_backend)
     except ValueError as e:
-        # Use 400 instead of 404 to avoid CloudFront's error response
-        # converting it to index.html (CloudFront converts 404/403 to 200+index.html for SPA)
+        # The service raises ValueError for an unknown voice and for invalid input alike
         raise HTTPException(status_code=400, detail=str(e))
     return
 
@@ -80,12 +108,14 @@ async def manual_assign_voice(
 @router.post(
     "/design/previews",
     response_model=VoiceDesignPreviewsResponse,
-    dependencies=[Depends(require_auth)],
+    responses=OWNER_OR_ADMIN,
 )
-async def generate_voice_design_previews(
+def generate_voice_design_previews(
     professor_id: int = Body(..., embed=True),
     language: Optional[str] = Body(None, embed=True),
     voice_service: VoiceService = Depends(get_voice_service),
+    repository_factory: RepositoryFactory = Depends(get_repository_factory),
+    student: Student = Depends(ensure_student),
 ):
     """Generate Voice Design audio previews for a professor.
 
@@ -96,6 +126,8 @@ async def generate_voice_design_previews(
     The client should present the previews to the user and call
     ``POST /design/save`` with the chosen ``generated_voice_id``.
     """
+    _require_professor_access(professor_id, repository_factory, student)
+
     try:
         previews = voice_service.generate_voice_design_previews(professor_id, language=language)
         return VoiceDesignPreviewsResponse(previews=[VoiceDesignPreview(**p) for p in previews])
@@ -109,11 +141,13 @@ async def generate_voice_design_previews(
 @router.post(
     "/design/save",
     response_model=VoiceResponse,
-    dependencies=[Depends(require_auth)],
+    responses=OWNER_OR_ADMIN,
 )
-async def save_voice_design(
+def save_voice_design(
     request: VoiceDesignSaveRequest = Body(...),
     voice_service: VoiceService = Depends(get_voice_service),
+    repository_factory: RepositoryFactory = Depends(get_repository_factory),
+    student: Student = Depends(ensure_student),
 ):
     """Save a selected Voice Design preview to the ElevenLabs library.
 
@@ -121,6 +155,8 @@ async def save_voice_design(
     voice library, creates a ``Voice`` record in the database, and assigns
     the voice to the professor.
     """
+    _require_professor_access(request.professor_id, repository_factory, student)
+
     try:
         voice = voice_service.save_designed_voice(
             professor_id=request.professor_id,
@@ -139,11 +175,13 @@ async def save_voice_design(
 @router.post(
     "/clone-to-mistral",
     response_model=VoiceResponse,
-    dependencies=[Depends(require_auth)],
+    responses=OWNER_OR_ADMIN,
 )
-async def clone_voice_to_mistral(
+def clone_voice_to_mistral(
     request: VoiceCloneToMistralRequest = Body(...),
     voice_service: VoiceService = Depends(get_voice_service),
+    repository_factory: RepositoryFactory = Depends(get_repository_factory),
+    student: Student = Depends(ensure_student),
 ):
     """Clone a professor's current ElevenLabs voice into the Mistral voice library.
 
@@ -151,6 +189,8 @@ async def clone_voice_to_mistral(
     voice clone sample.  The professor is re-associated with the resulting Mistral
     voice; the original ElevenLabs voice record is left intact.
     """
+    _require_professor_access(request.professor_id, repository_factory, student)
+
     try:
         voice = voice_service.clone_elevenlabs_voice_to_mistral(request.professor_id)
         return VoiceResponse(**voice)
@@ -161,59 +201,8 @@ async def clone_voice_to_mistral(
         raise HTTPException(status_code=502, detail=f"Voice cloning failed: {e}")
 
 
-@router.get("/", response_model=VoiceListResponse)
-async def list_voices(
-    gender: Optional[str] = Query(None, description="Filter by gender"),
-    accent: Optional[str] = Query(None, description="Filter by accent"),
-    age: Optional[str] = Query(None, description="Filter by age"),
-    language: Optional[str] = Query(None, description="Filter by language (default: 'en')"),
-    use_case: Optional[str] = Query(None, description="Filter by use case"),
-    category: Optional[str] = Query(None, description="Filter by category"),
-    tts_backend: Optional[str] = Query(None, description="Filter by TTS backend"),
-    limit: int = Query(100, ge=1, le=1000, description="Maximum number of results"),
-    offset: int = Query(0, ge=0, description="Offset for pagination"),
-    voice_service: VoiceService = Depends(get_voice_service),
-):
-    """
-    List available voices with optional filtering and pagination.
-    """
-    voices_data = voice_service.list_available_voices(
-        gender=gender,
-        accent=accent,
-        age=age,
-        language=language,
-        use_case=use_case,
-        category=category,
-        limit=limit,
-        offset=offset,
-        tts_backend=tts_backend,
-    )
-
-    total_count = voice_service.count_available_voices(
-        gender=gender,
-        accent=accent,
-        age=age,
-        language=language,
-        use_case=use_case,
-        category=category,
-        tts_backend=tts_backend,
-    )
-
-    # Calculate pagination values
-    page = offset // limit + 1
-    pages = ceil(total_count / limit) if total_count > 0 else 1
-
-    return VoiceListResponse(
-        items=[VoiceResponse(**voice) for voice in voices_data],
-        total=total_count,
-        page=page,
-        size=limit,
-        pages=pages,
-    )
-
-
 @router.get("/{voice_id}", response_model=VoiceResponse)
-async def get_voice(
+def get_voice(
     voice_id: int = Path(..., description="Database ID of the voice to retrieve"),
     voice_service: VoiceService = Depends(get_voice_service),
 ):
@@ -223,51 +212,6 @@ async def get_voice(
     voice = voice_service.get_voice_by_id(voice_id)
     if not voice:
         raise HTTPException(status_code=404, detail="Voice not found")
-    return VoiceResponse(**voice)
-
-
-@router.get("/by_external/{backend}/{external_id:path}", response_model=VoiceResponse)
-async def get_voice_by_external_id(
-    backend: str = Path(..., description="TTS backend (e.g., 'elevenlabs', 'mistral')"),
-    external_id: str = Path(..., description="Provider-specific voice identifier"),
-    voice_service: VoiceService = Depends(get_voice_service),
-):
-    """
-    Get a voice by its TTS backend and external identifier.
-
-    For ElevenLabs voices this is the el_voice_id. For Mistral voices
-    this is the preset name or custom voice ID.
-    """
-    if backend == "elevenlabs":
-        voice = voice_service.get_voice_by_el_id(external_id)
-    else:
-        voice_obj = voice_service.repository_factory.voice.get_by_external_id(backend, external_id)
-        voice = voice_obj.model_dump() if voice_obj else None
-
-    if not voice:
-        raise HTTPException(status_code=404, detail="Voice not found")
-    if "id" not in voice or voice.get("id") is None:
-        raise HTTPException(status_code=502, detail="Voice fetched but not persisted")
-    return VoiceResponse(**voice)
-
-
-@router.get("/by_el/{el_voice_id}", response_model=VoiceResponse)
-async def get_voice_by_elevenlabs_id(
-    el_voice_id: str = Path(..., description="ElevenLabs voice_id to retrieve"),
-    voice_service: VoiceService = Depends(get_voice_service),
-):
-    """
-    Get a specific voice by its ElevenLabs voice_id. If not present in DB,
-    fetch from ElevenLabs, persist, and return the DB-backed record.
-
-    Legacy endpoint — prefer /by_external/elevenlabs/{external_id}.
-    """
-    voice = voice_service.get_voice_by_el_id(el_voice_id)
-    if not voice:
-        raise HTTPException(status_code=404, detail="Voice not found")
-    # Ensure response includes DB id
-    if "id" not in voice or voice.get("id") is None:
-        raise HTTPException(status_code=502, detail="Voice fetched but not persisted")
     return VoiceResponse(**voice)
 
 
@@ -298,7 +242,7 @@ class MistralVoiceCatalogResponse(BaseModel):
     response_model=MistralVoiceCatalogResponse,
     dependencies=[Depends(require_auth)],
 )
-async def list_mistral_catalog(
+def list_mistral_catalog(
     language: Optional[str] = Query(None, description="Filter by language prefix (e.g. 'en')"),
     gender: Optional[str] = Query(None, description="Filter by gender"),
 ):
@@ -309,8 +253,6 @@ async def list_mistral_catalog(
     voice ``id`` (UUID) as the ``voice_id`` when previewing or assigning.
     """
     try:
-        from artificial_u.integrations.mistral.voice_manager import MistralVoiceManager
-
         mgr = MistralVoiceManager()
         raw_voices = mgr.list_voices(limit=100)
     except Exception as e:
@@ -366,7 +308,7 @@ class XaiVoiceCatalogResponse(BaseModel):
     response_model=XaiVoiceCatalogResponse,
     dependencies=[Depends(require_auth)],
 )
-async def list_xai_catalog(
+def list_xai_catalog(
     language: Optional[str] = Query(None, description="Filter by language prefix (e.g. 'fr')"),
     gender: Optional[str] = Query(None, description="Filter by gender"),
 ):
@@ -378,8 +320,6 @@ async def list_xai_catalog(
     fresh each time so newly added xAI voices appear automatically.
     """
     try:
-        from artificial_u.integrations.xai.voice_manager import XAIVoiceManager
-
         mgr = XAIVoiceManager()
         raw_voices = mgr.list_voices()
     except Exception as e:
@@ -436,7 +376,7 @@ class QwenVoiceCatalogResponse(BaseModel):
     response_model=QwenVoiceCatalogResponse,
     dependencies=[Depends(require_auth)],
 )
-async def list_qwen_catalog(
+def list_qwen_catalog(
     language: Optional[str] = Query(None, description="Filter by language prefix (e.g. 'en')"),
     gender: Optional[str] = Query(None, description="Filter by gender"),
 ):
@@ -448,8 +388,6 @@ async def list_qwen_catalog(
     **not** stored in our database; the frontend uses the Qwen voice ``id`` as
     the ``voice_id`` when previewing or assigning.
     """
-    from artificial_u.integrations.qwen.voice_manager import QwenVoiceManager
-
     raw_voices = QwenVoiceManager().list_voices()
 
     items: list[QwenVoiceCatalogItem] = []
@@ -498,6 +436,13 @@ class VoicePreviewRequest(BaseModel):
         None,
         description="Optional language prefix of the user ('en', 'fr', 'es', 'zh').",
     )
+    professor_id: Optional[int] = Field(
+        None,
+        description=(
+            "Professor the voice is being auditioned for. The caller must be that "
+            "professor's creator or an admin; without it the preview is admin-only."
+        ),
+    )
 
 
 class VoicePreviewResponse(BaseModel):
@@ -505,16 +450,27 @@ class VoicePreviewResponse(BaseModel):
     text: str = Field(..., description="The text that was spoken.")
 
 
-@router.post("/preview", response_model=VoicePreviewResponse, dependencies=[Depends(require_auth)])
-async def preview_voice(
+@router.post("/preview", response_model=VoicePreviewResponse, responses=OWNER_OR_ADMIN)
+def preview_voice(
     request: VoicePreviewRequest = Body(...),
+    repository_factory: RepositoryFactory = Depends(get_repository_factory),
+    student: Student = Depends(ensure_student),
 ):
     """
     Generate a short TTS audio sample for a given voice.
 
     Returns the audio as a base64 data-URI string so the frontend can play
-    it directly without storing a file.
+    it directly without storing a file. Each preview is a paid provider call, so it
+    is limited to the creator of the professor being worked on, or an admin.
     """
+    if request.professor_id is not None:
+        _require_professor_access(request.professor_id, repository_factory, student)
+    elif student.role != "admin":
+        raise HTTPException(
+            status_code=403,
+            detail="Voice previews that are not for a specific professor are limited to admins.",
+        )
+
     if request.text:
         text = request.text
     else:

@@ -100,30 +100,6 @@ class TopicService:
             self.logger.error(error_msg, exc_info=True)
             raise DatabaseError(error_msg) from e
 
-    def create_topics(self, topics: List[Topic]) -> List[Topic]:
-        """
-        Create multiple topics in a single transaction.
-
-        Args:
-            topics: List of Topic objects to create
-
-        Returns:
-            List[Topic]: List of created topics
-
-        Raises:
-            DatabaseError: If there's an error saving to the database
-        """
-        self.logger.info(f"Creating {len(topics)} new topics")
-
-        try:
-            topics = self.repository_factory.topic.create_batch(topics)
-            self.logger.info(f"Successfully created {len(topics)} topics")
-            return topics
-        except Exception as e:
-            error_msg = f"Failed to save topics: {str(e)}"
-            self.logger.error(error_msg, exc_info=True)
-            raise DatabaseError(error_msg) from e
-
     def get_topic(self, topic_id: int) -> Optional[Topic]:
         """
         Get a topic by ID.
@@ -135,29 +111,6 @@ class TopicService:
             Optional[Topic]: The topic object if found, None otherwise
         """
         return self.repository_factory.topic.get(topic_id)
-
-    def get_topic_by_course_week_order(
-        self,
-        course_id: int,
-        week: int,
-        order: int,
-    ) -> Optional[Topic]:
-        """
-        Get a topic by course ID, week, and order.
-
-        Args:
-            course_id: ID of the course
-            week: Week number
-            order: Order within the week
-
-        Returns:
-            Optional[Topic]: The topic object if found, None otherwise
-        """
-        return self.repository_factory.topic.get_by_course_week_order(
-            course_id=course_id,
-            week=week,
-            order=order,
-        )
 
     def list_topics_by_course(self, course_id: int) -> List[Topic]:
         """
@@ -175,29 +128,6 @@ class TopicService:
         try:
             topics = self.repository_factory.topic.list_by_course(course_id)
             self.logger.debug(f"Found {len(topics)} topics for course {course_id}")
-            return topics
-        except Exception as e:
-            error_msg = f"Failed to list topics: {str(e)}"
-            self.logger.error(error_msg)
-            raise DatabaseError(error_msg) from e
-
-    def list_topics_by_course_week(self, course_id: int, week: int) -> List[Topic]:
-        """
-        List all topics for a specific course and week.
-
-        Args:
-            course_id: ID of the course
-            week: Week number
-
-        Returns:
-            List[Topic]: List of topics for the course and week
-
-        Raises:
-            DatabaseError: If there's an error retrieving from the database
-        """
-        try:
-            topics = self.repository_factory.topic.list_by_course_week(course_id, week)
-            self.logger.debug(f"Found {len(topics)} topics for course {course_id}, week {week}")
             return topics
         except Exception as e:
             error_msg = f"Failed to list topics: {str(e)}"
@@ -236,7 +166,7 @@ class TopicService:
 
     def delete_topic(self, topic_id: int) -> bool:
         """
-        Delete a topic and its lectures.
+        Delete a topic and all of its lectures (every revision, with their stored assets).
 
         Args:
             topic_id: ID of the topic to delete
@@ -249,7 +179,9 @@ class TopicService:
         """
         try:
             lecture_service = self._get_lecture_service()
-            lectures = lecture_service.list_lectures(topic_id=topic_id)
+            # Every revision must go: lectures.topic_id is NOT NULL, so a leftover older
+            # revision would make the topic delete fail after the latest one is gone.
+            lectures = self.repository_factory.lecture.list_all_revisions_by_topic(topic_id)
             for lecture in lectures:
                 if lecture.id is None:
                     self.logger.warning(
@@ -269,27 +201,5 @@ class TopicService:
             return result
         except Exception as e:
             error_msg = f"Failed to delete topic: {str(e)}"
-            self.logger.error(error_msg)
-            raise DatabaseError(error_msg) from e
-
-    def delete_topics_by_course(self, course_id: int) -> int:
-        """
-        Delete all topics for a specific course.
-
-        Args:
-            course_id: ID of the course whose topics should be deleted
-
-        Returns:
-            int: Number of topics deleted
-
-        Raises:
-            DatabaseError: If there's an error deleting from the database
-        """
-        try:
-            count = self.repository_factory.topic.delete_by_course(course_id)
-            self.logger.info(f"Deleted {count} topics for course {course_id}")
-            return count
-        except Exception as e:
-            error_msg = f"Failed to delete topics: {str(e)}"
             self.logger.error(error_msg)
             raise DatabaseError(error_msg) from e

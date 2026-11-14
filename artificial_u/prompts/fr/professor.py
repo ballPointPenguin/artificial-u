@@ -7,17 +7,17 @@ from artificial_u.prompts.base import PromptTemplate
 
 PROFESSOR_XML_STRUCTURE = (
     "<professor>\n"
-    "  <name>[GÉNÉRER]</name>\n"
-    "  <title>[GÉNÉRER]</title>\n"
-    "  <department_name>[GÉNÉRER]</department_name>\n"
-    "  <specialization>[GÉNÉRER]</specialization>\n"
-    "  <gender>[GÉNÉRER]</gender>\n"
-    "  <age>[GÉNÉRER]</age>\n"
-    "  <accent>[GÉNÉRER]</accent>\n"
-    "  <description>[GÉNÉRER]</description>\n"
-    "  <background>[GÉNÉRER]</background>\n"
-    "  <personality>[GÉNÉRER]</personality>\n"
-    "  <teaching_style>[GÉNÉRER]</teaching_style>\n"
+    "  <name>[GENERATE]</name>\n"
+    "  <title>[GENERATE]</title>\n"
+    "  <department_name>[GENERATE]</department_name>\n"
+    "  <specialization>[GENERATE]</specialization>\n"
+    "  <gender>[GENERATE]</gender>\n"
+    "  <age>[GENERATE]</age>\n"
+    "  <accent>[GENERATE]</accent>\n"
+    "  <description>[GENERATE]</description>\n"
+    "  <background>[GENERATE]</background>\n"
+    "  <personality>[GENERATE]</personality>\n"
+    "  <teaching_style>[GENERATE]</teaching_style>\n"
     "</professor>"
 )
 
@@ -45,13 +45,13 @@ PARTIAL_PROFESSOR_PROMPT = PromptTemplate(
     template=f"""
 {{freeform_prompt_text}}
 Complétez le profil de professeur ci-dessous.
-Utilisez les informations déjà fournies. Pour les champs marqués [GÉNÉRER], inventez
+Utilisez les informations déjà fournies. Pour les champs marqués [GENERATE], inventez
 des valeurs réalistes et cohérentes.
 
 Professeurs déjà présents dans l'université (pour le contexte et éviter les répétitions) :
 {{existing_professors_xml}}
 
-Informations partielles fournies (utilisez-les si disponibles, générez pour [GÉNÉRER]) :
+Informations partielles fournies (utilisez-les si disponibles, générez pour [GENERATE]) :
 {{partial_profile_xml}}
 
 Format de sortie souhaité (remplissez tous les espaces réservés) :

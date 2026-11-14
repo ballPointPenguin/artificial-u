@@ -5,7 +5,7 @@ Wraps MistralTTSClient to conform to the TTSBackend protocol.
 """
 
 import logging
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 from artificial_u.config import get_settings
 from artificial_u.integrations.mistral.tts_client import MistralTTSClient
@@ -31,10 +31,6 @@ class MistralTTSBackend:
     @property
     def backend_name(self) -> str:
         return "mistral"
-
-    @property
-    def default_voice_settings(self) -> Dict[str, Any]:
-        return {}
 
     def text_to_speech(
         self,

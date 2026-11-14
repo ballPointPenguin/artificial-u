@@ -272,6 +272,8 @@ async def test_generate_course_image_falls_back_to_alternate_model_and_openai(mo
         "gemini-3.1-flash-image",
         "gpt-image-2.5-flare",
     ]
+    # The result reports the model that actually produced the image
+    assert result.model_name == "gpt-image-2.5-flare"
 
 
 @pytest.mark.asyncio
@@ -451,7 +453,7 @@ async def test_generate_professor_image_returns_last_failure_when_all_attempts_f
 
 
 def test_default_image_model_is_nano_banana_2_1():
-    from artificial_u.config.settings import Settings
+    from artificial_u.config import Settings
 
     assert Settings.model_fields["IMAGE_GENERATION_MODEL"].default == "gemini-nano-banana-2.1"
 

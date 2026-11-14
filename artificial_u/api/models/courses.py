@@ -71,8 +71,6 @@ class CourseBase(BaseModel):
 class CourseCreate(CourseBase):
     """Model for creating a new course."""
 
-    pass
-
 
 # Course update model
 class CourseUpdate(BaseModel):

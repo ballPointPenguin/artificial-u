@@ -12,10 +12,10 @@ from artificial_u.prompts.base import PromptTemplate
 DEPARTMENT_XML_STRUCTURE = """
 <output>
   <department>
-    <name>[GÉNÉRER]</name>
-    <code>[GÉNÉRER]</code>
-    <faculty>[GÉNÉRER]</faculty>
-    <description>[GÉNÉRER]</description>
+    <name>[GENERATE]</name>
+    <code>[GENERATE]</code>
+    <faculty>[GENERATE]</faculty>
+    <description>[GENERATE]</description>
   </department>
 </output>
 """
@@ -26,9 +26,9 @@ Générez un nouveau profil de département en respectant cette structure XML :
 {DEPARTMENT_XML_STRUCTURE}
 
 Instructions :
-- Tous les champs (avec [GÉNÉRER]) doivent être renseignés avec des valeurs générées.
+- Tous les champs (avec [GENERATE]) doivent être renseignés avec des valeurs générées.
 - Si un champ dans 'Informations partielles sur le département' contient déjà une valeur
-  (pas [GÉNÉRER]), copiez cette valeur exactement dans votre sortie — ne la remplacez pas.
+  (pas [GENERATE]), copiez cette valeur exactement dans votre sortie — ne la remplacez pas.
 - Assurez-vous que <name> et <code> soient uniques par rapport à ceux listés sous
   <existing_departments> (vérification insensible à la casse).
 - <code> doit être une abréviation courte et mémorable (2 à 8 lettres majuscules).

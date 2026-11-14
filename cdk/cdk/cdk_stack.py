@@ -21,6 +21,18 @@ from aws_cdk import aws_ssm as ssm
 from aws_cdk import aws_wafv2 as wafv2
 from constructs import Construct
 
+# CloudFront Function (viewer request) attached to the frontend bucket behavior
+SPA_FALLBACK_FUNCTION_CODE = """
+function handler(event) {
+    var request = event.request;
+    var lastSegment = request.uri.substring(request.uri.lastIndexOf('/') + 1);
+    if (lastSegment.indexOf('.') === -1) {
+        request.uri = '/index.html';
+    }
+    return request;
+}
+""".strip()
+
 
 class CdkStack(Stack):
     def __init__(self, scope: Construct, construct_id: str, **kwargs) -> None:
@@ -490,6 +502,19 @@ class CdkStack(Stack):
             ],
         )
 
+        # SPA routing for the frontend bucket. Client-side routes such as /professors/12 are
+        # not objects in S3, so requests whose last path segment has no file extension are
+        # served index.html. Requests for files pass through unchanged, and a missing file
+        # returns S3's own error instead of the SPA shell. This runs only on the default
+        # behavior, so API and share-page responses reach the client untouched.
+        spa_fallback_function = cloudfront.Function(
+            self,
+            "SpaFallbackFunction",
+            comment="Serve index.html for SPA routes (paths without a file extension)",
+            runtime=cloudfront.FunctionRuntime.JS_2_0,
+            code=cloudfront.FunctionCode.from_inline(SPA_FALLBACK_FUNCTION_CODE),
+        )
+
         # 12. Create a CloudFront distribution
         distribution = cloudfront.Distribution(
             self,
@@ -500,8 +525,16 @@ class CdkStack(Stack):
             default_behavior=cloudfront.BehaviorOptions(
                 origin=origins.S3BucketOrigin.with_origin_access_identity(frontend_bucket),
                 viewer_protocol_policy=cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
-                # Use CACHING_OPTIMIZED for general assets but respect origin cache headers
+                # Use CACHING_OPTIMIZED for general assets but respect origin cache headers.
+                # index.html is uploaded with "no-cache, no-store", so SPA routes rewritten
+                # to it are cached for this policy's 1-second minimum only.
                 cache_policy=cloudfront.CachePolicy.CACHING_OPTIMIZED,
+                function_associations=[
+                    cloudfront.FunctionAssociation(
+                        function=spa_fallback_function,
+                        event_type=cloudfront.FunctionEventType.VIEWER_REQUEST,
+                    )
+                ],
             ),
             # Route API calls to the internal ALB
             additional_behaviors={
@@ -556,22 +589,9 @@ class CdkStack(Stack):
                 ),
             },
             default_root_object="index.html",
-            # Custom error response for SPA routing
-            # When S3 returns 404 (e.g., for /professors), serve index.html instead
-            error_responses=[
-                cloudfront.ErrorResponse(
-                    http_status=404,
-                    response_http_status=200,
-                    response_page_path="/index.html",
-                    ttl=cdk.Duration.seconds(0),
-                ),
-                cloudfront.ErrorResponse(
-                    http_status=403,
-                    response_http_status=200,
-                    response_page_path="/index.html",
-                    ttl=cdk.Duration.seconds(0),
-                ),
-            ],
+            # No distribution-wide error responses: they would also rewrite 403/404
+            # responses from /api/* and /share/* into the SPA shell. SPA routing is handled
+            # by the viewer-request function on the default (S3) behavior instead.
         )
 
         # 11 (cont.). Deploy the frontend assets and invalidate CloudFront

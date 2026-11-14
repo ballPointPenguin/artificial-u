@@ -11,7 +11,7 @@ fi
 
 # Initialize database (create DB if needed, then run alembic migrations)
 if [ -n "$DATABASE_URL" ]; then
-  echo "[entrypoint] Initializing database with DATABASE_URL=$DATABASE_URL"
+  echo "[entrypoint] Initializing database"
   python scripts/initialize_db.py -y
 else
   echo "[entrypoint] WARNING: DATABASE_URL is not set; skipping DB initialization"

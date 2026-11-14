@@ -12,6 +12,18 @@ from artificial_u.models.repositories.base import BaseRepository
 class FacultyRepository(BaseRepository):
     """Repository for Faculty operations."""
 
+    @staticmethod
+    def _to_model(row: FacultyModel) -> Faculty:
+        """Convert a database row to a core Faculty."""
+        return Faculty(
+            id=row.id,
+            name=row.name,
+            description=row.description,
+            language=row.language,
+            created_at=row.created_at,
+            updated_at=row.updated_at,
+        )
+
     def create(self, faculty: Faculty) -> Faculty:
         """Create a new faculty."""
         with self.get_session() as session:
@@ -38,14 +50,7 @@ class FacultyRepository(BaseRepository):
             if not db_faculty:
                 return None
 
-            return Faculty(
-                id=db_faculty.id,
-                name=db_faculty.name,
-                description=db_faculty.description,
-                language=db_faculty.language,
-                created_at=db_faculty.created_at,
-                updated_at=db_faculty.updated_at,
-            )
+            return self._to_model(db_faculty)
 
     def get_by_name(self, name: str) -> Optional[Faculty]:
         """Get a faculty by name."""
@@ -55,14 +60,7 @@ class FacultyRepository(BaseRepository):
             if not db_faculty:
                 return None
 
-            return Faculty(
-                id=db_faculty.id,
-                name=db_faculty.name,
-                description=db_faculty.description,
-                language=db_faculty.language,
-                created_at=db_faculty.created_at,
-                updated_at=db_faculty.updated_at,
-            )
+            return self._to_model(db_faculty)
 
     def get_by_name_and_language(self, name: str, language: str) -> Optional[Faculty]:
         """Get a faculty by name and language (for idempotent seeding)."""
@@ -72,14 +70,7 @@ class FacultyRepository(BaseRepository):
             if not db_faculty:
                 return None
 
-            return Faculty(
-                id=db_faculty.id,
-                name=db_faculty.name,
-                description=db_faculty.description,
-                language=db_faculty.language,
-                created_at=db_faculty.created_at,
-                updated_at=db_faculty.updated_at,
-            )
+            return self._to_model(db_faculty)
 
     def list(self, language: Optional[str] = None) -> List[Faculty]:
         """List faculties, optionally filtered by language."""
@@ -89,17 +80,7 @@ class FacultyRepository(BaseRepository):
                 query = query.filter_by(language=language)
             db_faculties = query.all()
 
-            return [
-                Faculty(
-                    id=f.id,
-                    name=f.name,
-                    description=f.description,
-                    language=f.language,
-                    created_at=f.created_at,
-                    updated_at=f.updated_at,
-                )
-                for f in db_faculties
-            ]
+            return [self._to_model(f) for f in db_faculties]
 
     def update(self, faculty: Faculty) -> Faculty:
         """Update a faculty."""
