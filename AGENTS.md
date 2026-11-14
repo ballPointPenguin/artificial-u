@@ -66,6 +66,7 @@ pnpm format           # Format with BiomeJS
 pnpm test             # Run tests
 pnpm test:watch       # Watch mode
 pnpm test:coverage    # Coverage report
+pnpm test:e2e         # Read-only browser smoke tests (Playwright; needs API + pnpm dev running)
 ```
 
 ### Docker Services
@@ -334,6 +335,28 @@ When adding features:
 6. Support all theme variants (dark-academia, vaporwave, etc.)
 7. Add route protection with `RequireAuth` for authenticated pages
 
+## Browser Automation
+
+To look at the running app in a real browser, use the Playwright CLI with the dedicated
+automation accounts. Full details and rules are in `docs/BROWSER_AUTOMATION.md`.
+
+```bash
+scripts/agent-browser.sh local-viewer        # sign in; prints account, role, coins
+playwright-cli -s=local-viewer goto http://localhost:5173/courses
+playwright-cli -s=local-viewer snapshot      # then find / click / screenshot / console / requests
+playwright-cli close-all
+```
+
+Sessions: `local-viewer`, `local-creator` (need the local stack running), `prod-viewer`,
+`prod-creator`. Add `--read-only` to block every non-GET API request in the browser.
+
+- Default to a viewer session. Viewers cannot trigger generation; the API refuses it.
+- Generation calls paid providers. With a creator session, start a generation only when the
+  user asked for that specific action, and never in a loop.
+- On production, create, edit or delete only on an explicit request.
+- Never use an admin login for automation, and never put credentials or anything from
+  `.playwright/auth/` into chat, commits or logs.
+
 ## Environment Variables
 
 Required in `.env` file:
@@ -371,3 +394,4 @@ Frontend requires `.env.local` in `web/` directory with Auth0 and API URL config
 - `docs/AUTHENTICATION.md`: Auth0 integration details
 - `web/STYLE_GUIDE.md`: Frontend styling guidelines
 - `docs/refactor.md`: Open follow-ups and decisions from the 2026 cleanup
+- `docs/BROWSER_AUTOMATION.md`: Driving the web app with the Playwright CLI and the automation accounts
