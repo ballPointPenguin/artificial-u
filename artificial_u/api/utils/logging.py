@@ -5,7 +5,7 @@ import sys
 from logging.handlers import RotatingFileHandler
 from typing import Any, Dict
 
-from artificial_u.api.config import Settings
+from artificial_u.config import Settings
 
 
 class JsonFormatter(logging.Formatter):

@@ -4,7 +4,7 @@ TTS backend protocol definition.
 All TTS providers must implement this interface.
 """
 
-from typing import Any, Dict, Protocol
+from typing import Any, Protocol
 
 
 class TTSBackend(Protocol):
@@ -33,9 +33,4 @@ class TTSBackend(Protocol):
     @property
     def backend_name(self) -> str:
         """Return the backend identifier (e.g., 'elevenlabs', 'mistral')."""
-        ...
-
-    @property
-    def default_voice_settings(self) -> Dict[str, Any]:
-        """Return default voice settings for this backend."""
         ...

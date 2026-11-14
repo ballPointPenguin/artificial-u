@@ -16,7 +16,6 @@ from artificial_u.api.models.topics import (
     Topic,
     TopicCreate,
     TopicDraft,
-    TopicGenerate,
     TopicGenerateSingle,
     TopicListResponse,
     TopicUpdate,
@@ -33,7 +32,6 @@ def mock_api_service(monkeypatch):
     mock_service.list_topics_by_course = MagicMock()
     mock_service.update_topic = MagicMock()
     mock_service.delete_topic = MagicMock()
-    mock_service.generate_topics_for_course = AsyncMock()  # This one remains async
     mock_service.generate_topic_for_course_slot = AsyncMock()
 
     base_path = "artificial_u.api.services.topic_service.TopicApiService"
@@ -43,9 +41,6 @@ def mock_api_service(monkeypatch):
     monkeypatch.setattr(f"{base_path}.list_topics_by_course", mock_service.list_topics_by_course)
     monkeypatch.setattr(f"{base_path}.update_topic", mock_service.update_topic)
     monkeypatch.setattr(f"{base_path}.delete_topic", mock_service.delete_topic)
-    monkeypatch.setattr(
-        f"{base_path}.generate_topics_for_course", mock_service.generate_topics_for_course
-    )
     monkeypatch.setattr(
         f"{base_path}.generate_topic_for_course_slot",
         mock_service.generate_topic_for_course_slot,
@@ -252,98 +247,6 @@ def test_delete_topic_not_found(client: TestClient, mock_api_service: MagicMock)
 
 # Test data for generation endpoint
 BASE_COURSE_TOPICS_URL = "/api/v1/courses"
-
-
-# Tests for /courses/{course_id}/topics/generate
-@pytest.mark.unit  # Added unit marker
-def test_generate_topics_for_course_success(client: TestClient, mock_api_service: MagicMock):
-    """Test successfully generating topics for a course."""
-    freeform_prompt = "Focus on practical applications"
-    generation_data_obj = TopicGenerate(course_id=SAMPLE_COURSE_ID, freeform_prompt=freeform_prompt)
-
-    topic_item_1 = Topic(
-        id=1, title="Generated Topic 1", course_id=SAMPLE_COURSE_ID, week=1, order=1
-    )
-    topic_item_2 = Topic(
-        id=2, title="Generated Topic 2", course_id=SAMPLE_COURSE_ID, week=1, order=2
-    )
-    expected_topics = [topic_item_1, topic_item_2]
-
-    mock_api_service.generate_topics_for_course.return_value = expected_topics
-
-    url = f"{BASE_COURSE_TOPICS_URL}/{SAMPLE_COURSE_ID}/topics/generate"
-    params = {"freeform_prompt": freeform_prompt}
-    response = client.post(url, params=params)
-
-    assert response.status_code == status.HTTP_200_OK
-    assert response.json() == [topic.model_dump() for topic in expected_topics]
-    mock_api_service.generate_topics_for_course.assert_called_once_with(
-        generation_data_obj, created_by=1
-    )
-
-
-@pytest.mark.unit  # Added unit marker
-def test_generate_topics_for_course_no_prompt(client: TestClient, mock_api_service: MagicMock):
-    """Test generating topics for a course without an optional prompt."""
-    generation_data_obj = TopicGenerate(course_id=SAMPLE_COURSE_ID, freeform_prompt=None)
-    expected_topic = Topic(
-        id=1, title="Generated Topic No Prompt", course_id=SAMPLE_COURSE_ID, week=1, order=1
-    )
-    mock_api_service.generate_topics_for_course.return_value = [expected_topic]
-
-    url = f"{BASE_COURSE_TOPICS_URL}/{SAMPLE_COURSE_ID}/topics/generate"
-    # No params needed if freeform_prompt is None, as Query(None...) handles it
-    response = client.post(url)
-
-    assert response.status_code == status.HTTP_200_OK
-    assert response.json() == [expected_topic.model_dump()]
-    mock_api_service.generate_topics_for_course.assert_called_once_with(
-        generation_data_obj, created_by=1
-    )
-
-
-@pytest.mark.unit  # Added unit marker
-def test_generate_topics_for_course_course_not_found(
-    client: TestClient, mock_api_service: MagicMock
-):
-    """Test generating topics for a course that does not exist."""
-    error_message = "Course not found"
-    status_code = status.HTTP_404_NOT_FOUND
-    mock_api_service.generate_topics_for_course.side_effect = HTTPException(
-        status_code=status_code, detail=error_message
-    )
-
-    response = client.post(f"{BASE_COURSE_TOPICS_URL}/{SAMPLE_COURSE_ID}/topics/generate")
-
-    assert response.status_code == status_code
-    assert response.json() == {
-        "message": error_message,
-        "details": None,
-        "error_code": "HTTP_ERROR",
-        "status_code": status_code,
-    }
-
-
-@pytest.mark.unit  # Added unit marker
-def test_generate_topics_for_course_generation_error(
-    client: TestClient, mock_api_service: MagicMock
-):
-    """Test topic generation when a content generation error occurs."""
-    error_message = "Content generation error"
-    status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
-    mock_api_service.generate_topics_for_course.side_effect = HTTPException(
-        status_code=status_code, detail=error_message
-    )
-
-    response = client.post(f"{BASE_COURSE_TOPICS_URL}/{SAMPLE_COURSE_ID}/topics/generate")
-
-    assert response.status_code == status_code
-    assert response.json() == {
-        "message": error_message,
-        "details": None,
-        "error_code": "HTTP_ERROR",
-        "status_code": status_code,
-    }
 
 
 @pytest.mark.unit

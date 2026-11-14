@@ -58,26 +58,15 @@ class DepartmentApiService(
         # Initialize core service (CRUD only) with correct dependencies
         self.core_service = DepartmentService(
             repository_factory=repository_factory,
-            professor_service=professor_service,
-            course_service=course_service,
             logger=self.logger,
         )
 
         # Initialize generator service for AI generation workflows
         from artificial_u.services.department_generator_service import DepartmentGeneratorService
-        from artificial_u.services.job_enqueue_service import JobEnqueueService
-
-        # Create job enqueue service for background processing
-        job_enqueue_service = JobEnqueueService(
-            repository_factory=repository_factory,
-            logger=self.logger,
-        )
 
         self.generator_service = DepartmentGeneratorService(
-            department_service=self.core_service,
             content_service=content_service,
             repository_factory=repository_factory,
-            job_enqueue_service=job_enqueue_service,
             logger=self.logger,
         )
 
@@ -172,24 +161,6 @@ class DepartmentApiService(
         """
         try:
             department = self.core_service.get_department(department_id)
-            if not department:
-                return None
-            return self._enrich_department_with_faculty(department)
-        except Exception:
-            return None
-
-    def get_department_by_code(self, code: str) -> Optional[DepartmentResponse]:
-        """
-        Get a department by its code.
-
-        Args:
-            code: Department code (e.g., "CS" for Computer Science)
-
-        Returns:
-            DepartmentResponse or None if not found
-        """
-        try:
-            department = self.core_service.get_department_by_code(code)
             if not department:
                 return None
             return self._enrich_department_with_faculty(department)

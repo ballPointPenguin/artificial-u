@@ -1,11 +1,59 @@
+import functools
 import logging
+import random
 from typing import Any, Dict, Optional
 
 from artificial_u.config import get_settings
+from artificial_u.integrations import elevenlabs
 from artificial_u.models.repositories.factory import RepositoryFactory
+from artificial_u.services.content_service import ContentService
+from artificial_u.services.course_export_service import CourseExportService
+from artificial_u.services.course_generator_service import CourseGeneratorService
+from artificial_u.services.course_import_service import CourseImportService, ImportCancelled
+from artificial_u.services.course_service import CourseService
+from artificial_u.services.department_generator_service import DepartmentGeneratorService
+from artificial_u.services.department_selector_service import DepartmentSelectorService
+from artificial_u.services.image_service import ImageService
+from artificial_u.services.job_enqueue_service import JobEnqueueService
+from artificial_u.services.lecture_generator_service import LectureGeneratorService
 from artificial_u.services.lecture_images_generator_service import (
     DEFAULT_LECTURE_IMAGE_ASPECT_RATIO,
+    LectureImagesGeneratorService,
 )
+from artificial_u.services.lecture_service import LectureService
+from artificial_u.services.preference_service import PreferenceService
+from artificial_u.services.professor_generator_service import ProfessorGeneratorService
+from artificial_u.services.professor_selector_service import ProfessorSelectorService
+from artificial_u.services.professor_service import ProfessorService
+from artificial_u.services.storage_service import StorageService
+from artificial_u.services.tag_generator_service import TagGeneratorService
+from artificial_u.services.topic_generator_service import TopicGeneratorService
+from artificial_u.services.topic_service import TopicService
+from artificial_u.services.voice_service import VoiceService
+
+
+def _require(payload: Dict[str, Any], key: str) -> Any:
+    """Return payload[key], raising ValueError when it is missing or None."""
+    value = payload.get(key)
+    if value is None:
+        raise ValueError(f"{key} is required")
+    return value
+
+
+def _lazy(build):
+    """Cache a zero-argument builder method's result on the instance after the first call."""
+    attr = f"_cached{build.__name__}"
+
+    @functools.wraps(build)
+    def wrapper(self):
+        try:
+            return getattr(self, attr)
+        except AttributeError:
+            value = build(self)
+            setattr(self, attr, value)
+            return value
+
+    return wrapper
 
 
 class JobService:
@@ -24,27 +72,6 @@ class JobService:
         self.repository_factory = repository_factory
         self.settings = get_settings()
         self.logger = logger or logging.getLogger(__name__)
-
-        # Lazily initialized service instances
-        self._content_service = None
-        self._storage_service = None
-        self._image_service = None
-        self._voice_service = None
-        self._job_enqueue_service = None
-        self._professor_service = None
-        self._professor_generator_service = None
-        self._course_service = None
-        self._course_generator_service = None
-        self._course_export_service = None
-        self._course_import_service = None
-        self._department_service = None
-        self._department_generator_service = None
-        self._topic_service = None
-        self._topic_generator_service = None
-        self._tag_generator_service = None
-        self._lecture_service = None
-        self._lecture_generator_service = None
-        self._lecture_images_generator_service = None
 
     # ---- Public API ----
 
@@ -77,8 +104,6 @@ class JobService:
 
     @staticmethod
     def compute_backoff_seconds(attempts: int) -> float:
-        import random
-
         base = min(2**attempts, 60)
         jitter = random.uniform(0, 0.25 * base)
         return base + jitter
@@ -134,9 +159,7 @@ class JobService:
     def _get_handler(self, kind: str):
         return {
             # Generation tasks (lightweight return values; some persist internally)
-            "generate_course": self._handle_generate_course,
             "create_course": self._handle_create_course,
-            "generate_department": self._handle_generate_department,
             "generate_professor": self._handle_generate_professor,
             "generate_topics_for_course": self._handle_generate_topics_for_course,
             "generate_tags_for_course": self._handle_generate_tags_for_course,
@@ -157,20 +180,6 @@ class JobService:
             # Quickstart tasks
             "quickstart_start": self._handle_quickstart_start,
         }.get(kind)
-
-    async def _handle_generate_course(
-        self, payload: Dict[str, Any], parent_job_id: Optional[int] = None
-    ) -> Dict[str, Any]:
-        service = self._course_generator_service_instance()
-        partial = dict(payload.get("partial_attributes") or {})
-        connected_course_ids = payload.get("connected_course_ids")
-        if connected_course_ids is not None:
-            partial["connected_course_ids"] = connected_course_ids
-        freeform_prompt = payload.get("freeform_prompt")
-        if freeform_prompt is not None and "freeform_prompt" not in partial:
-            partial["freeform_prompt"] = freeform_prompt
-        result = await service.generate_course(partial, model=payload.get("model_name_override"))
-        return {"generated_course": result}
 
     async def _handle_create_course(
         self, payload: Dict[str, Any], parent_job_id: Optional[int] = None
@@ -259,18 +268,6 @@ class JobService:
             result["topics_job_id"] = topics_job_id
         return result
 
-    async def _handle_generate_department(
-        self, payload: Dict[str, Any], parent_job_id: Optional[int] = None
-    ) -> Dict[str, Any]:
-        service = self._department_generator_service_instance()
-        partial = payload.get("partial_attributes") or {}
-        freeform = payload.get("freeform_prompt")
-        result = await service.generate_department(
-            partial_attributes=partial,
-            freeform_prompt=freeform,
-        )
-        return {"generated_department": result}
-
     async def _handle_generate_professor(
         self, payload: Dict[str, Any], parent_job_id: Optional[int] = None
     ) -> Dict[str, Any]:
@@ -287,11 +284,9 @@ class JobService:
         self, payload: Dict[str, Any], parent_job_id: Optional[int] = None
     ) -> Dict[str, Any]:
         service = self._topic_generator_service_instance()
-        course_id = payload.get("course_id")
+        course_id = _require(payload, "course_id")
         freeform = payload.get("freeform_prompt")
         created_by = payload.get("created_by")
-        if course_id is None:
-            raise ValueError("course_id is required")
         topics = await service.generate_topics_for_course(course_id, freeform, created_by)
         return {
             "created_topics": [
@@ -310,9 +305,7 @@ class JobService:
         self, payload: Dict[str, Any], parent_job_id: Optional[int] = None
     ) -> Dict[str, Any]:
         service = self._tag_generator_service_instance()
-        course_id = payload.get("course_id")
-        if course_id is None:
-            raise ValueError("course_id is required")
+        course_id = _require(payload, "course_id")
         tags = await service.generate_tags_for_course(course_id)
         return {
             "course_id": course_id,
@@ -411,9 +404,7 @@ class JobService:
         self, payload: Dict[str, Any], parent_job_id: Optional[int] = None
     ) -> Dict[str, Any]:
         service = self._lecture_generator_service_instance()
-        lecture_id = payload.get("lecture_id")
-        if lecture_id is None:
-            raise ValueError("lecture_id is required")
+        lecture_id = _require(payload, "lecture_id")
         result = await service.generate_lecture_summary(lecture_id)
         return result
 
@@ -421,9 +412,7 @@ class JobService:
         self, payload: Dict[str, Any], parent_job_id: Optional[int] = None
     ) -> Dict[str, Any]:
         service = self._lecture_generator_service_instance()
-        lecture_id = payload.get("lecture_id")
-        if lecture_id is None:
-            raise ValueError("lecture_id is required")
+        lecture_id = _require(payload, "lecture_id")
         result = await service.generate_lecture_audio(lecture_id, parent_job_id=parent_job_id)
         return result
 
@@ -431,9 +420,7 @@ class JobService:
         self, payload: Dict[str, Any], parent_job_id: Optional[int] = None
     ) -> Dict[str, Any]:
         service = self._lecture_generator_service_instance()
-        lecture_id = payload.get("lecture_id")
-        if lecture_id is None:
-            raise ValueError("lecture_id is required")
+        lecture_id = _require(payload, "lecture_id")
         result = await service.generate_lecture_timeline(lecture_id)
         lecture = self.repository_factory.lecture.get(lecture_id)
         if payload.get("remap_images_timeline", True) and getattr(
@@ -454,9 +441,7 @@ class JobService:
         self, payload: Dict[str, Any], parent_job_id: Optional[int] = None
     ) -> Dict[str, Any]:
         service = self._lecture_images_generator_service_instance()
-        lecture_id = payload.get("lecture_id")
-        if lecture_id is None:
-            raise ValueError("lecture_id is required")
+        lecture_id = _require(payload, "lecture_id")
         result = await service.remap_lecture_images_timeline(
             lecture_id,
             interval_sec=self._lecture_image_interval_sec_from_payload(payload),
@@ -469,9 +454,7 @@ class JobService:
         self, payload: Dict[str, Any], parent_job_id: Optional[int] = None
     ) -> Dict[str, Any]:
         service = self._lecture_images_generator_service_instance()
-        lecture_id = payload.get("lecture_id")
-        if lecture_id is None:
-            raise ValueError("lecture_id is required")
+        lecture_id = _require(payload, "lecture_id")
         interval_sec = self._lecture_image_interval_sec_from_payload(payload)
         aspect_ratio = payload.get("aspect_ratio", DEFAULT_LECTURE_IMAGE_ASPECT_RATIO)
         model_name_override = payload.get("model_name_override")
@@ -486,6 +469,12 @@ class JobService:
         )
         if cleanup_result is not None:
             result["deleted_existing_images"] = cleanup_result.get("deleted", 0)
+        return self._enqueue_slide_chain(result, parent_job_id)
+
+    def _enqueue_slide_chain(
+        self, result: Dict[str, Any], parent_job_id: Optional[int]
+    ) -> Dict[str, Any]:
+        """Enqueue the first slide job of a planned chain and record it on the result."""
         slide_payloads = result.pop("slide_payloads", [])
         first_slide_payload = self._build_lecture_slide_chain(
             slide_payloads,
@@ -509,45 +498,22 @@ class JobService:
         self, payload: Dict[str, Any], parent_job_id: Optional[int] = None
     ) -> Dict[str, Any]:
         service = self._lecture_images_generator_service_instance()
-        lecture_id = payload.get("lecture_id")
-        if lecture_id is None:
-            raise ValueError("lecture_id is required")
+        lecture_id = _require(payload, "lecture_id")
 
         result = await service.resume_lecture_images(
             lecture_id,
             aspect_ratio=payload.get("aspect_ratio", DEFAULT_LECTURE_IMAGE_ASPECT_RATIO),
             model_name_override=payload.get("model_name_override"),
         )
-        slide_payloads = result.pop("slide_payloads", [])
-        first_slide_payload = self._build_lecture_slide_chain(
-            slide_payloads,
-            chain_parent_job_id=parent_job_id,
-        )
-        job_ids = []
-        if first_slide_payload:
-            row = self.repository_factory.job.create(
-                kind="generate_lecture_slide",
-                payload=first_slide_payload,
-                parent_job_id=parent_job_id,
-            )
-            job_ids.append(row.id)
-
-        result["enqueued"] = len(job_ids)
-        result["chain_remaining"] = max(0, len(slide_payloads) - len(job_ids))
-        result["slide_job_ids"] = job_ids
-        return result
+        return self._enqueue_slide_chain(result, parent_job_id)
 
     async def _handle_generate_lecture_slide(
         self, payload: Dict[str, Any], parent_job_id: Optional[int] = None
     ) -> Dict[str, Any]:
         service = self._lecture_images_generator_service_instance()
-        lecture_id = payload.get("lecture_id")
-        slot_idx = payload.get("slot_idx")
+        lecture_id = _require(payload, "lecture_id")
+        slot_idx = _require(payload, "slot_idx")
         object_key = payload.get("object_key")
-        if lecture_id is None:
-            raise ValueError("lecture_id is required")
-        if slot_idx is None:
-            raise ValueError("slot_idx is required")
         if not object_key:
             raise ValueError("object_key is required")
 
@@ -576,10 +542,8 @@ class JobService:
         self, payload: Dict[str, Any], parent_job_id: Optional[int] = None
     ) -> Dict[str, Any]:
         service = self._professor_generator_service_instance()
-        professor_id = payload.get("professor_id")
+        professor_id = _require(payload, "professor_id")
         aspect_ratio = payload.get("aspect_ratio", "1:1")
-        if professor_id is None:
-            raise ValueError("professor_id is required")
         updated = await service.generate_and_set_professor_image(
             professor_id=professor_id, aspect_ratio=aspect_ratio
         )
@@ -589,10 +553,8 @@ class JobService:
         self, payload: Dict[str, Any], parent_job_id: Optional[int] = None
     ) -> Dict[str, Any]:
         service = self._course_generator_service_instance()
-        course_id = payload.get("course_id")
+        course_id = _require(payload, "course_id")
         aspect_ratio = payload.get("aspect_ratio", "1:1")
-        if course_id is None:
-            raise ValueError("course_id is required")
         updated = await service.generate_and_set_course_image(
             course_id=course_id, aspect_ratio=aspect_ratio
         )
@@ -603,9 +565,7 @@ class JobService:
     ) -> Dict[str, Any]:
         """Export a course with all related data and assets."""
         service = self._course_export_service_instance()
-        course_id = payload.get("course_id")
-        if course_id is None:
-            raise ValueError("course_id is required")
+        course_id = _require(payload, "course_id")
         result = await service.export_course(course_id)
         return result
 
@@ -613,8 +573,6 @@ class JobService:
         self, payload: Dict[str, Any], parent_job_id: Optional[int] = None
     ) -> Dict[str, Any]:
         """Import a previously uploaded course archive from the exports bucket."""
-        from artificial_u.services.course_import_service import ImportCancelled
-
         upload_key = payload.get("upload_key")
         if not upload_key:
             raise ValueError("upload_key is required")
@@ -701,306 +659,189 @@ class JobService:
             "course_description": course.description or "",
         }
 
-    # ---- Service builders (lazy) ----
+    # ---- Service builders (each service is built on first use, then reused) ----
 
+    @_lazy
     def _content_service_instance(self):
-        if self._content_service is None:
-            from artificial_u.services.content_service import ContentService
+        return ContentService(logger=self.logger)
 
-            self._content_service = ContentService(
-                logger=self.logger,
-            )
-        return self._content_service
-
+    @_lazy
     def _storage_service_instance(self):
-        if self._storage_service is None:
-            from artificial_u.services.storage_service import StorageService
+        return StorageService(logger=self.logger)
 
-            self._storage_service = StorageService(logger=self.logger)
-        return self._storage_service
-
+    @_lazy
     def _image_service_instance(self):
-        if self._image_service is None:
-            from artificial_u.services.image_service import ImageService
-            from artificial_u.services.preference_service import PreferenceService
+        return ImageService(
+            storage_service=self._storage_service_instance(),
+            preference_service=PreferenceService(self.repository_factory),
+        )
 
-            self._image_service = ImageService(
-                storage_service=self._storage_service_instance(),
-                preference_service=PreferenceService(self.repository_factory),
-            )
-        return self._image_service
-
+    @_lazy
     def _voice_service_instance(self):
-        if self._voice_service is None:
-            from artificial_u.services.voice_service import VoiceService
+        return VoiceService(
+            repository_factory=self.repository_factory,
+            client=self._get_elevenlabs_client(),
+            logger=self.logger,
+        )
 
-            # Create ElevenLabs client with API key if available
-            elevenlabs_client = self._get_elevenlabs_client()
-
-            self._voice_service = VoiceService(
-                repository_factory=self.repository_factory,
-                client=elevenlabs_client,
-                logger=self.logger,
-            )
-        return self._voice_service
-
+    @_lazy
     def _job_enqueue_service_instance(self):
-        if self._job_enqueue_service is None:
-            from artificial_u.services.job_enqueue_service import JobEnqueueService
+        return JobEnqueueService(
+            repository_factory=self.repository_factory,
+            logger=self.logger,
+        )
 
-            self._job_enqueue_service = JobEnqueueService(
-                repository_factory=self.repository_factory,
-                logger=self.logger,
-            )
-        return self._job_enqueue_service
-
+    @_lazy
     def _professor_service_instance(self):
-        if self._professor_service is None:
-            from artificial_u.services.professor_service import ProfessorService
+        return ProfessorService(
+            repository_factory=self.repository_factory,
+            voice_service=self._voice_service_instance(),
+            job_enqueue_service=self._job_enqueue_service_instance(),
+            logger=self.logger,
+        )
 
-            self._professor_service = ProfessorService(
-                repository_factory=self.repository_factory,
-                voice_service=self._voice_service_instance(),
-                job_enqueue_service=self._job_enqueue_service_instance(),
-                logger=self.logger,
-            )
-        return self._professor_service
-
+    @_lazy
     def _professor_generator_service_instance(self):
-        if self._professor_generator_service is None:
-            from artificial_u.services.professor_generator_service import (
-                ProfessorGeneratorService,
-            )
+        return ProfessorGeneratorService(
+            professor_service=self._professor_service_instance(),
+            content_service=self._content_service_instance(),
+            image_service=self._image_service_instance(),
+            repository_factory=self.repository_factory,
+            logger=self.logger,
+        )
 
-            self._professor_generator_service = ProfessorGeneratorService(
-                professor_service=self._professor_service_instance(),
-                content_service=self._content_service_instance(),
-                image_service=self._image_service_instance(),
-                repository_factory=self.repository_factory,
-                job_enqueue_service=self._job_enqueue_service_instance(),
-                logger=self.logger,
-            )
-        return self._professor_generator_service
-
+    @_lazy
     def _course_service_instance(self):
-        if self._course_service is None:
-            from artificial_u.services.course_service import CourseService
+        return CourseService(
+            repository_factory=self.repository_factory,
+            professor_service=self._professor_service_instance(),
+            department_selector_service=self._department_selector_service_instance(),
+            professor_selector_service=self._professor_selector_service_instance(),
+            job_enqueue_service=self._job_enqueue_service_instance(),
+            logger=self.logger,
+        )
 
-            self._course_service = CourseService(
-                repository_factory=self.repository_factory,
-                professor_service=self._professor_service_instance(),
-                department_selector_service=self._department_selector_service_instance(),
-                professor_selector_service=self._professor_selector_service_instance(),
-                job_enqueue_service=self._job_enqueue_service_instance(),
-                logger=self.logger,
-            )
-        return self._course_service
-
+    @_lazy
     def _topic_service_instance(self):
-        if self._topic_service is None:
-            from artificial_u.services.topic_service import TopicService
+        return TopicService(
+            repository_factory=self.repository_factory,
+            logger=self.logger,
+        )
 
-            self._topic_service = TopicService(
-                repository_factory=self.repository_factory,
-                logger=self.logger,
-            )
-        return self._topic_service
-
+    @_lazy
     def _lecture_service_instance(self):
-        if self._lecture_service is None:
-            from artificial_u.services.lecture_service import LectureService
+        return LectureService(
+            repository_factory=self.repository_factory,
+            logger=self.logger,
+        )
 
-            self._lecture_service = LectureService(
-                repository_factory=self.repository_factory,
-                logger=self.logger,
-            )
-        return self._lecture_service
-
+    @_lazy
     def _lecture_generator_service_instance(self):
-        if self._lecture_generator_service is None:
-            from artificial_u.services.lecture_generator_service import (
-                LectureGeneratorService,
-            )
+        return LectureGeneratorService(
+            lecture_service=self._lecture_service_instance(),
+            content_service=self._content_service_instance(),
+            course_service=self._course_service_instance(),
+            professor_service=self._professor_service_instance(),
+            repository_factory=self.repository_factory,
+            topic_service=self._topic_service_instance(),
+            job_enqueue_service=self._job_enqueue_service_instance(),
+            storage_service=self._storage_service_instance(),
+            logger=self.logger,
+        )
 
-            self._lecture_generator_service = LectureGeneratorService(
-                lecture_service=self._lecture_service_instance(),
-                content_service=self._content_service_instance(),
-                course_service=self._course_service_instance(),
-                professor_service=self._professor_service_instance(),
-                repository_factory=self.repository_factory,
-                topic_service=self._topic_service_instance(),
-                job_enqueue_service=self._job_enqueue_service_instance(),
-                storage_service=self._storage_service_instance(),
-                logger=self.logger,
-            )
-        return self._lecture_generator_service
-
+    @_lazy
     def _lecture_images_generator_service_instance(self):
-        if self._lecture_images_generator_service is None:
-            from artificial_u.services.lecture_images_generator_service import (
-                LectureImagesGeneratorService,
-            )
+        return LectureImagesGeneratorService(
+            lecture_service=self._lecture_service_instance(),
+            course_service=self._course_service_instance(),
+            topic_service=self._topic_service_instance(),
+            professor_service=self._professor_service_instance(),
+            storage_service=self._storage_service_instance(),
+            image_service=self._image_service_instance(),
+            logger=self.logger,
+        )
 
-            self._lecture_images_generator_service = LectureImagesGeneratorService(
-                lecture_service=self._lecture_service_instance(),
-                course_service=self._course_service_instance(),
-                topic_service=self._topic_service_instance(),
-                professor_service=self._professor_service_instance(),
-                storage_service=self._storage_service_instance(),
-                image_service=self._image_service_instance(),
-                logger=self.logger,
-            )
-        return self._lecture_images_generator_service
-
-    def _department_service_instance(self):
-        if self._department_service is None:
-            from artificial_u.services.department_service import DepartmentService
-
-            self._department_service = DepartmentService(
-                repository_factory=self.repository_factory,
-                professor_service=self._professor_service_instance(),
-                course_service=self._course_service_instance(),
-                logger=self.logger,
-            )
-        return self._department_service
-
+    @_lazy
     def _course_generator_service_instance(self):
-        if self._course_generator_service is None:
-            from artificial_u.services.course_generator_service import (
-                CourseGeneratorService,
-            )
+        return CourseGeneratorService(
+            course_service=self._course_service_instance(),
+            professor_service=self._professor_service_instance(),
+            content_service=self._content_service_instance(),
+            image_service=self._image_service_instance(),
+            repository_factory=self.repository_factory,
+            logger=self.logger,
+        )
 
-            self._course_generator_service = CourseGeneratorService(
-                course_service=self._course_service_instance(),
-                professor_service=self._professor_service_instance(),
-                content_service=self._content_service_instance(),
-                image_service=self._image_service_instance(),
-                repository_factory=self.repository_factory,
-                job_enqueue_service=self._job_enqueue_service_instance(),
-                logger=self.logger,
-            )
-        return self._course_generator_service
-
+    @_lazy
     def _course_import_service_instance(self):
-        if self._course_import_service is None:
-            from artificial_u.services.course_import_service import (
-                CourseImportService,
-            )
+        return CourseImportService(
+            repository_factory=self.repository_factory,
+            storage_service=self._storage_service_instance(),
+            logger=self.logger,
+        )
 
-            self._course_import_service = CourseImportService(
-                repository_factory=self.repository_factory,
-                storage_service=self._storage_service_instance(),
-                logger=self.logger,
-            )
-        return self._course_import_service
-
+    @_lazy
     def _course_export_service_instance(self):
-        if self._course_export_service is None:
-            from artificial_u.services.course_export_service import (
-                CourseExportService,
-            )
+        return CourseExportService(
+            repository_factory=self.repository_factory,
+            storage_service=self._storage_service_instance(),
+            logger=self.logger,
+        )
 
-            self._course_export_service = CourseExportService(
-                repository_factory=self.repository_factory,
-                storage_service=self._storage_service_instance(),
-                logger=self.logger,
-            )
-        return self._course_export_service
-
+    @_lazy
     def _department_generator_service_instance(self):
-        if self._department_generator_service is None:
-            from artificial_u.services.department_generator_service import (
-                DepartmentGeneratorService,
-            )
+        return DepartmentGeneratorService(
+            content_service=self._content_service_instance(),
+            repository_factory=self.repository_factory,
+            logger=self.logger,
+        )
 
-            # Note: Avoid injecting DepartmentService here to prevent a dependency cycle:
-            # CourseService -> DepartmentSelectorService -> DepartmentGeneratorService
-            # -> DepartmentService -> CourseService. DepartmentGeneratorService does not
-            # currently use department_service, so pass None.
-            self._department_generator_service = DepartmentGeneratorService(
-                department_service=None,  # break circular dependency
-                content_service=self._content_service_instance(),
-                repository_factory=self.repository_factory,
-                job_enqueue_service=self._job_enqueue_service_instance(),
-                logger=self.logger,
-            )
-        return self._department_generator_service
-
+    @_lazy
     def _department_selector_service_instance(self):
-        if (
-            not hasattr(self, "_department_selector_service")
-            or self._department_selector_service is None
-        ):
-            from artificial_u.services.department_selector_service import (
-                DepartmentSelectorService,
-            )
+        return DepartmentSelectorService(
+            content_service=self._content_service_instance(),
+            repository_factory=self.repository_factory,
+            department_generator_service=self._department_generator_service_instance(),
+            logger=self.logger,
+        )
 
-            self._department_selector_service = DepartmentSelectorService(
-                content_service=self._content_service_instance(),
-                repository_factory=self.repository_factory,
-                department_generator_service=self._department_generator_service_instance(),
-                logger=self.logger,
-            )
-        return self._department_selector_service
-
+    @_lazy
     def _professor_selector_service_instance(self):
-        if (
-            not hasattr(self, "_professor_selector_service")
-            or self._professor_selector_service is None
-        ):
-            from artificial_u.services.professor_selector_service import (
-                ProfessorSelectorService,
-            )
+        return ProfessorSelectorService(
+            content_service=self._content_service_instance(),
+            repository_factory=self.repository_factory,
+            professor_generator_service=self._professor_generator_service_instance(),
+            professor_service=self._professor_service_instance(),
+            logger=self.logger,
+        )
 
-            self._professor_selector_service = ProfessorSelectorService(
-                content_service=self._content_service_instance(),
-                repository_factory=self.repository_factory,
-                professor_generator_service=self._professor_generator_service_instance(),
-                professor_service=self._professor_service_instance(),
-                logger=self.logger,
-            )
-        return self._professor_selector_service
-
+    @_lazy
     def _topic_generator_service_instance(self):
-        if self._topic_generator_service is None:
-            from artificial_u.services.topic_generator_service import (
-                TopicGeneratorService,
-            )
+        return TopicGeneratorService(
+            topic_service=self._topic_service_instance(),
+            course_service=self._course_service_instance(),
+            content_service=self._content_service_instance(),
+            repository_factory=self.repository_factory,
+            logger=self.logger,
+        )
 
-            self._topic_generator_service = TopicGeneratorService(
-                topic_service=self._topic_service_instance(),
-                course_service=self._course_service_instance(),
-                content_service=self._content_service_instance(),
-                repository_factory=self.repository_factory,
-                job_enqueue_service=self._job_enqueue_service_instance(),
-                logger=self.logger,
-            )
-        return self._topic_generator_service
-
+    @_lazy
     def _tag_generator_service_instance(self):
-        if self._tag_generator_service is None:
-            from artificial_u.services.tag_generator_service import TagGeneratorService
-
-            self._tag_generator_service = TagGeneratorService(
-                course_service=self._course_service_instance(),
-                content_service=self._content_service_instance(),
-                repository_factory=self.repository_factory,
-                logger=self.logger,
-            )
-        return self._tag_generator_service
+        return TagGeneratorService(
+            course_service=self._course_service_instance(),
+            content_service=self._content_service_instance(),
+            repository_factory=self.repository_factory,
+            logger=self.logger,
+        )
 
     def _get_elevenlabs_client(self):
         """Get ElevenLabs client with API key if available."""
-        from artificial_u.config import get_settings
-        from artificial_u.integrations import elevenlabs
-
-        settings = get_settings()
-        if not settings.ELEVENLABS_API_KEY:
+        if not self.settings.ELEVENLABS_API_KEY:
             self.logger.warning("ElevenLabs API key not found - voice services may be limited")
             return None
 
         try:
-            return elevenlabs.ElevenLabsClient(api_key=settings.ELEVENLABS_API_KEY)
+            return elevenlabs.ElevenLabsClient(api_key=self.settings.ELEVENLABS_API_KEY)
         except Exception as e:
             self.logger.error(f"Failed to create ElevenLabs client: {e}")
             return None

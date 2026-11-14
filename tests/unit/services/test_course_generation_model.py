@@ -22,7 +22,6 @@ def generator(monkeypatch):
         content_service=MagicMock(),
         image_service=MagicMock(),
         repository_factory=MagicMock(),
-        job_enqueue_service=MagicMock(),
         logger=MagicMock(),
     )
     svc._process_models_for_generation = AsyncMock(return_value=(None, None, []))

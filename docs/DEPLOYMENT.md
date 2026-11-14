@@ -332,10 +332,9 @@ as a `504 Gateway Timeout`, regardless of the SolidJS client's configured timeou
 
 **How to address it:**
 
-- Keep slow AI workflows off synchronous routes. Instead of calling
-  `/api/v1/professors/generate`, enqueue work via `/api/v1/professors/generate/enqueue`
-  (or the generic `/api/v1/jobs` endpoint) and let the in-process worker complete it in
-  the background. See `docs/JOB_MANAGEMENT.md` for details.
+- Keep slow AI workflows off synchronous routes. Enqueue work via the `.../enqueue`
+  endpoints (for example `/api/v1/professors/generate/enqueue`) and let the in-process
+  worker complete it in the background.
 - Surface progress via the Jobs UI / SSE hub or by polling `GET /api/v1/jobs/{id}` until
   it reaches `done`.
 - If you must keep a synchronous code path for development, guard it so it is not used

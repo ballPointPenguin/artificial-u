@@ -23,13 +23,6 @@ export interface ModelSettingResponse {
 
 export const preferenceService = {
   /**
-   * List all global preferences (Admin only)
-   */
-  listGlobal: (): Promise<Preference[]> => {
-    return httpClient.get<Preference[]>(ENDPOINTS.preferences.listGlobal)
-  },
-
-  /**
    * Get a specific global preference (Admin only)
    */
   getGlobal: (scope: string): Promise<Preference> => {

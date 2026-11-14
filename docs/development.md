@@ -155,7 +155,6 @@ make services-down      # Stop Docker services
 # Application
 make run-api            # Run the FastAPI application
 make run-api-no-reload  # Run the FastAPI application without auto-reload
-make cli CLI="--help"   # Run CLI commands
 ```
 
 ### Quick Development Workflow

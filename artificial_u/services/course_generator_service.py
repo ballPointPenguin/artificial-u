@@ -12,13 +12,13 @@ from artificial_u.models.converters import (
     course_model_to_dict,
     department_model_to_dict,
     enrich_department_dict_with_faculty,
-    extract_xml_content,
     parse_course_xml,
     professor_model_to_dict,
     topics_to_xml,
 )
 from artificial_u.models.core import Course, Department, Professor
 from artificial_u.models.repositories.factory import RepositoryFactory
+from artificial_u.prompts import get_prompts_for_language, resolve_prompt_language
 from artificial_u.services.content_service import ContentService
 from artificial_u.services.image_service import ImageService
 from artificial_u.services.preference_service import PreferenceService
@@ -27,6 +27,7 @@ from artificial_u.utils import (
     DatabaseError,
     GenerationError,
     ProfessorNotFoundError,
+    extract_xml_between_tags,
 )
 
 
@@ -40,7 +41,6 @@ class CourseGeneratorService:
         content_service: ContentService,
         image_service: ImageService,
         repository_factory: RepositoryFactory,
-        job_enqueue_service,
         logger=None,
     ):
         """
@@ -52,7 +52,6 @@ class CourseGeneratorService:
             content_service: Content generation service
             repository_factory: Repository factory instance
             image_service: Image generation and storage service
-            job_enqueue_service: Job enqueueing service for background tasks
             logger: Optional logger instance
         """
         self.course_service = course_service
@@ -60,7 +59,6 @@ class CourseGeneratorService:
         self.content_service = content_service
         self.image_service = image_service
         self.repository_factory = repository_factory
-        self.job_enqueue_service = job_enqueue_service
         self.logger = logger or logging.getLogger(__name__)
         self.preference_service = PreferenceService(repository_factory, logger=self.logger)
 
@@ -284,13 +282,7 @@ class CourseGeneratorService:
         """Generate course content and parse the XML response."""
         # Determine language for prompts
         language = prompt_args.get("partial_course_attrs", {}).get("language") or "en"
-        lang = "en"
-        if language and isinstance(language, str):
-            lang_prefix = language.lower()[:2]
-            if lang_prefix in ("en", "fr"):
-                lang = lang_prefix
-
-        from artificial_u.prompts import get_prompts_for_language
+        lang = resolve_prompt_language(language)
 
         prompt_module = get_prompts_for_language(lang)
         course_prompt = prompt_module.get_course_prompt(**prompt_args)
@@ -313,7 +305,7 @@ class CourseGeneratorService:
         generated_xml_output = None
 
         # First try to extract from <output> tags
-        generated_xml_output = extract_xml_content(raw_response, "output")
+        generated_xml_output = extract_xml_between_tags(raw_response, "output")
         if generated_xml_output:
             self.logger.info("Successfully extracted content from <output> tags")
         else:
@@ -328,7 +320,7 @@ class CourseGeneratorService:
                 self.logger.info("Using raw response as it contains valid <course> structure")
             else:
                 # Try to extract inner content and wrap it
-                inner_content = extract_xml_content(raw_response, "course")
+                inner_content = extract_xml_between_tags(raw_response, "course")
                 if inner_content:
                     generated_xml_output = f"<course>\n{inner_content}\n</course>"
                     self.logger.info("Extracted <course> inner content and wrapped it")

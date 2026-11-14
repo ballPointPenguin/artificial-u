@@ -13,7 +13,6 @@ import httpx
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials
 
-from artificial_u.api.config import get_settings
 from artificial_u.api.security.auth0 import auth_scheme, optional_auth, require_auth
 from artificial_u.api.services import (
     CourseApiService,
@@ -22,17 +21,15 @@ from artificial_u.api.services import (
     ProfessorApiService,
     TopicApiService,
 )
+from artificial_u.config import get_settings
 from artificial_u.integrations import elevenlabs
-from artificial_u.integrations.tts import TTSBackend, create_tts_backend
 from artificial_u.models.core import Student
 from artificial_u.models.repositories import RepositoryFactory
 from artificial_u.services import (
     ContentService,
     CourseService,
     DepartmentSelectorService,
-    DepartmentService,
     ImageService,
-    LectureService,
     ProfessorSelectorService,
     ProfessorService,
     StorageService,
@@ -231,35 +228,6 @@ def get_elevenlabs_client() -> Optional[elevenlabs.ElevenLabsClient]:
     )
 
 
-def get_voice_mapper() -> elevenlabs.VoiceMapper:
-    """
-    Get a voice mapper instance
-
-    Returns:
-        VoiceMapper instance
-    """
-    return elevenlabs.VoiceMapper(
-        logger=logging.getLogger("artificial_u.integrations.elevenlabs.voice_mapper"),
-    )
-
-
-def get_tts_backend(backend_name: Optional[str] = None) -> TTSBackend:
-    """
-    Get a TTS backend instance.
-
-    Args:
-        backend_name: Backend to use ("elevenlabs", "mistral").
-            Defaults to the system-wide tts_backend setting.
-
-    Returns:
-        TTSBackend implementation
-    """
-    return create_tts_backend(
-        backend_name=backend_name,
-        logger=logging.getLogger("artificial_u.integrations.tts"),
-    )
-
-
 def get_voice_service(
     repository_factory: RepositoryFactory = Depends(get_repository_factory),
     elevenlabs_client: Optional[elevenlabs.ElevenLabsClient] = Depends(get_elevenlabs_client),
@@ -343,7 +311,7 @@ def get_course_service(
 
     # Get generator services
     department_generator_service = get_department_generator_service(
-        repository_factory, content_service, get_job_enqueue_service(repository_factory)
+        repository_factory, content_service
     )
     professor_generator_service = get_professor_generator_service(
         repository_factory,
@@ -378,48 +346,6 @@ def get_course_service(
     )
 
 
-def get_department_service(
-    repository_factory: RepositoryFactory = Depends(get_repository_factory),
-    professor_service: ProfessorService = Depends(get_professor_service),
-    course_service: CourseService = Depends(get_course_service),
-) -> DepartmentService:
-    """
-    Get a department service instance.
-
-    Args:
-        repository_factory: Repository factory
-        professor_service: Professor service
-        course_service: Course service
-
-    Returns:
-        DepartmentService instance
-    """
-    return DepartmentService(
-        repository_factory=repository_factory,
-        professor_service=professor_service,
-        course_service=course_service,
-        logger=logging.getLogger("artificial_u.services.department_service"),
-    )
-
-
-def get_lecture_service(
-    repository_factory: RepositoryFactory = Depends(get_repository_factory),
-) -> LectureService:
-    """
-    Get a lecture service instance.
-
-    Args:
-        repository_factory: Repository factory
-
-    Returns:
-        LectureService instance
-    """
-    return LectureService(
-        repository_factory=repository_factory,
-        logger=logging.getLogger("artificial_u.services.lecture_service"),
-    )
-
-
 def get_topic_service(
     repository_factory: RepositoryFactory = Depends(get_repository_factory),
 ) -> TopicService:
@@ -441,7 +367,6 @@ def get_topic_service(
 def get_department_generator_service(
     repository_factory: RepositoryFactory = Depends(get_repository_factory),
     content_service: ContentService = Depends(get_content_service),
-    job_enqueue_service: JobEnqueueService = Depends(get_job_enqueue_service),
 ):
     """
     Get a department generator service instance.
@@ -449,7 +374,6 @@ def get_department_generator_service(
     Args:
         repository_factory: Repository factory
         content_service: Content service
-        job_enqueue_service: Job enqueue service
 
     Returns:
         DepartmentGeneratorService instance
@@ -457,20 +381,10 @@ def get_department_generator_service(
     from artificial_u.services.department_generator_service import (
         DepartmentGeneratorService,
     )
-    from artificial_u.services.department_service import DepartmentService
-
-    department_service = DepartmentService(
-        repository_factory=repository_factory,
-        professor_service=None,  # Not needed for generation
-        course_service=None,  # Not needed for generation
-        logger=logging.getLogger("artificial_u.services.department_service"),
-    )
 
     return DepartmentGeneratorService(
-        department_service=department_service,
         content_service=content_service,
         repository_factory=repository_factory,
-        job_enqueue_service=job_enqueue_service,
         logger=logging.getLogger("artificial_u.services.department_generator_service"),
     )
 
@@ -510,59 +424,7 @@ def get_professor_generator_service(
         content_service=content_service,
         image_service=image_service,
         repository_factory=repository_factory,
-        job_enqueue_service=job_enqueue_service,
         logger=logging.getLogger("artificial_u.services.professor_generator_service"),
-    )
-
-
-def get_department_selector_service(
-    content_service: ContentService = Depends(get_content_service),
-    repository_factory: RepositoryFactory = Depends(get_repository_factory),
-    department_generator_service=Depends(get_department_generator_service),
-) -> DepartmentSelectorService:
-    """
-    Get a department selector service instance.
-
-    Args:
-        content_service: Content service
-        repository_factory: Repository factory
-        department_generator_service: Department generator service
-
-    Returns:
-        DepartmentSelectorService instance
-    """
-    return DepartmentSelectorService(
-        content_service=content_service,
-        repository_factory=repository_factory,
-        department_generator_service=department_generator_service,
-        logger=logging.getLogger("artificial_u.services.department_selector_service"),
-    )
-
-
-def get_professor_selector_service(
-    content_service: ContentService = Depends(get_content_service),
-    repository_factory: RepositoryFactory = Depends(get_repository_factory),
-    professor_generator_service=Depends(get_professor_generator_service),
-    professor_service: ProfessorService = Depends(get_professor_service),
-) -> ProfessorSelectorService:
-    """
-    Get a professor selector service instance.
-
-    Args:
-        content_service: Content service
-        repository_factory: Repository factory
-        professor_generator_service: Professor generator service
-        professor_service: Professor service (for creating generated professors)
-
-    Returns:
-        ProfessorSelectorService instance
-    """
-    return ProfessorSelectorService(
-        content_service=content_service,
-        repository_factory=repository_factory,
-        professor_generator_service=professor_generator_service,
-        professor_service=professor_service,
-        logger=logging.getLogger("artificial_u.services.professor_selector_service"),
     )
 
 

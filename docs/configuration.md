@@ -46,18 +46,6 @@ You can specify a custom environment file using the `ENV_FILE` environment varia
 ENV_FILE=.env.staging python app.py
 ```
 
-## Content Generation Configuration
-
-ArtificialU supports multiple backends for content generation:
-
-```python
-# Backend: 'anthropic' or 'openai' or 'gemini'
-content_backend=anthropic
-
-# Model to use with the chosen backend
-content_model=claude-sonnet-5-5
-```
-
 ## Storage Configuration
 
 ArtificialU provides a unified storage interface for both local development (RustFS, S3-compatible) and production (AWS S3):
@@ -360,7 +348,6 @@ TESTING=true
 | `ALIBABA_WORKSPACE_ID` | Model Studio workspace ID; the Qwen TTS endpoint is `https://{ALIBABA_WORKSPACE_ID}.{ALIBABA_TTS_REGION}.maas.aliyuncs.com`. Required for the Qwen backend | None | No |
 | `GOOGLE_API_KEY` | API key for Google | None | No |
 | `OPENAI_API_KEY` | API key for OpenAI | None | No |
-| `CONTENT_LOGS_PATH` | (Deprecated) Path for content generation logs | `content_logs` | No |
 | `LOG_LEVEL` | Logging level | `INFO` | No |
 | `DIAG_PROCESS_METRICS` | Enable process-level diagnostic telemetry (`1` on; `0` or unset off) | `0` (off) | No |
 | `DIAG_PROCESS_METRICS_INTERVAL_SEC` | Telemetry interval in seconds when `DIAG_PROCESS_METRICS=1` | `30` | No |
@@ -369,8 +356,6 @@ TESTING=true
 | `DIAG_CLOUDWATCH_METRICS_INTERVAL_SEC` | Emission interval in seconds when enabled | `60` | No |
 | `CLOUDWATCH_NAMESPACE` | CloudWatch metrics namespace | `ArtificialU` | No |
 | `DIAG_TRACEMALLOC` | Enable one-off tracemalloc baseline + SIGUSR1 diffs (`1` on; `0` or unset off) | `0` (off) | No |
-| `content_backend` | Backend for content generation | `anthropic` | No |
-| `content_model` | Model for chosen backend | Depends on backend | No |
 | `COURSE_GENERATION_MODEL` | Model for course generation | `gpt-6-luna` | No |
 | `DEPARTMENT_GENERATION_MODEL` | Model for department generation | `gpt-6-luna` | No |
 | `LECTURE_GENERATION_MODEL` | Model for lecture generation | `claude-sonnet-5-5` | No |

@@ -30,21 +30,13 @@ The properties of an error response are:
 
 ## Error Codes
 
-The API uses standardized error codes to identify different types of errors. The full list of error codes can be found in `artificial_u/api/models/error_codes.py`.
+The `error_code` field is set by the handlers in `artificial_u/api/middlewares/error_handler.py`:
 
-Common error codes include:
-
-| Error Code | Description |
-|------------|-------------|
-| INTERNAL_ERROR | An unexpected internal server error occurred. |
-| BAD_REQUEST | The request was invalid or cannot be served. |
-| VALIDATION_ERROR | The request data failed validation checks. |
-| NOT_FOUND | The requested resource was not found. |
-| UNAUTHORIZED | Authentication is required to access this resource. |
-| FORBIDDEN | You don't have permission to access this resource. |
-| CONFLICT | The request conflicts with the current state of the resource. |
-
-Resource-specific error codes follow the pattern `{RESOURCE_TYPE}_NOT_FOUND`, e.g. `PROFESSOR_NOT_FOUND`.
+| Error Code | When |
+|------------|------|
+| VALIDATION_ERROR | Request data failed validation (422); `details` lists the offending fields. |
+| HTTP_ERROR | An endpoint raised `HTTPException`; `status_code` and `message` carry the specifics. |
+| INTERNAL_ERROR | An unhandled exception occurred (500). |
 
 ## HTTP Status Codes
 
@@ -60,63 +52,22 @@ The API uses standard HTTP status codes to indicate the success or failure of a 
 - `422 Unprocessable Entity`: The request was well-formed but contained invalid parameters.
 - `500 Internal Server Error`: An unexpected error occurred on the server.
 
-## Exception Hierarchy
+## Raising Errors in Code
 
-The API uses a hierarchy of exception classes to represent different error types:
-
-- `APIError`: Base exception class for all API errors.
-  - `BadRequestError`: Invalid request data (400).
-  - `NotFoundError`: Resource not found (404).
-  - `ValidationError`: Data validation failure (422).
-  - `UnauthorizedError`: Authentication required (401).
-  - `ForbiddenError`: Permission denied (403).
-  - `ConflictError`: Resource conflict (409).
-  - `ServerError`: Internal server error (500).
-
-## Using Error Utilities
-
-### Raising Errors in Code
-
-To raise a consistent error in your code, use the exception classes from `artificial_u.api.utils.exceptions`:
+Routers and API services raise FastAPI's `HTTPException`; the error handler converts it to the
+standard response format:
 
 ```python
-from artificial_u.api.utils.exceptions import NotFoundError
+from fastapi import HTTPException, status
 
-# Raise a basic not found error
-raise NotFoundError(message="Professor not found", error_code="PROFESSOR_NOT_FOUND")
-
-# Include additional details
-raise ValidationError(
-    message="Invalid professor data",
-    error_code="VALIDATION_ERROR",
-    details=[
-        {"loc": ["body", "name"], "msg": "Name too short", "type": "value_error.any_str.min_length"}
-    ]
+raise HTTPException(
+    status_code=status.HTTP_404_NOT_FOUND,
+    detail=f"Professor with ID {professor_id} not found",
 )
 ```
 
-### Helper Functions
-
-The API provides utility functions in `artificial_u.api.utils.errors` to simplify common error handling patterns:
-
-```python
-from artificial_u.api.utils.errors import raise_not_found
-
-# Simple resource not found
-raise_not_found("professor", professor_id)
-
-# Convert Pydantic validation errors to API validation errors
-from artificial_u.api.utils.errors import handle_pydantic_validation_error
-from pydantic import ValidationError as PydanticValidationError
-
-try:
-    # Some Pydantic validation
-    Professor(**data)
-except PydanticValidationError as e:
-    # Convert to API validation error
-    api_error = handle_pydantic_validation_error(e)
-    raise api_error
-```
+API services that extend `BaseApiService` can use `_handle_database_error` and
+`_handle_general_error` to log an unexpected failure and raise a 500.
 
 ## Request Tracing
 

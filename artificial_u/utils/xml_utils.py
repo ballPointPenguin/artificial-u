@@ -256,26 +256,3 @@ def extract_xml_between_tags(text: str, tag_name: str) -> Optional[str]:
     match = re.search(pattern, text, re.DOTALL)
 
     return match.group(1).strip() if match else None
-
-
-def calculate_estimated_tokens(
-    items_per_week: int = 3,
-    total_weeks: int = 10,
-    tokens_per_item: int = 200,
-    max_tokens: int = 16384,
-) -> int:
-    """
-    Calculate estimated tokens needed for content generation.
-
-    Args:
-        items_per_week: Number of items (topics/lectures) per week
-        total_weeks: Total number of weeks
-        tokens_per_item: Estimated tokens per item
-        max_tokens: Maximum token limit
-
-    Returns:
-        int: Estimated tokens needed, capped at max_tokens
-    """
-    total_items = items_per_week * total_weeks
-    estimated_tokens = min(total_items * tokens_per_item, max_tokens)
-    return estimated_tokens

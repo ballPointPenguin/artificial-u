@@ -11,7 +11,7 @@ import logging
 import os
 import tempfile
 import uuid
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Optional, Tuple
 from urllib.parse import urlencode, urlparse
 
 from botocore.exceptions import ClientError
@@ -400,18 +400,6 @@ class StorageService:
             self.logger.error("Error streaming file to tempfile: %s", e)
             return None, None
 
-    async def download_audio_file(self, object_name: str) -> Tuple[Optional[bytes], Optional[str]]:
-        """
-        Download an audio file from storage.
-
-        Args:
-            object_name: Object key/name
-
-        Returns:
-            Tuple of (file_data, content_type)
-        """
-        return await self.download_file(self.audio_bucket, object_name)
-
     async def download_lecture_file(
         self, object_name: str
     ) -> Tuple[Optional[bytes], Optional[str]]:
@@ -470,53 +458,6 @@ class StorageService:
             Success flag
         """
         return await asyncio.to_thread(self.delete_file_sync, bucket, object_name)
-
-    async def list_files(
-        self, bucket: str, prefix: Optional[str] = None, max_keys: int = 1000
-    ) -> List[Dict[str, Any]]:
-        """
-        List files in a bucket.
-
-        Args:
-            bucket: Bucket name
-            prefix: Optional prefix to filter by
-            max_keys: Maximum number of keys to return
-
-        Returns:
-            List of file objects with metadata
-        """
-        try:
-            # Prepare list parameters
-            params = {"Bucket": bucket, "MaxKeys": max_keys}
-            if prefix:
-                params["Prefix"] = prefix
-
-            # List objects (blocking)
-            response = await asyncio.to_thread(self.client.list_objects_v2, **params)
-
-            # Process results
-            files = []
-            if "Contents" in response:
-                for obj in response["Contents"]:
-                    # Get additional metadata (blocking)
-                    head = await asyncio.to_thread(
-                        self.client.head_object, Bucket=bucket, Key=obj["Key"]
-                    )
-
-                    files.append(
-                        {
-                            "key": obj["Key"],
-                            "size": obj["Size"],
-                            "last_modified": obj["LastModified"],
-                            "content_type": head.get("ContentType", "application/octet-stream"),
-                            "url": self.get_file_url(bucket, obj["Key"]),
-                        }
-                    )
-
-            return files
-        except Exception as e:
-            self.logger.error(f"Error listing files: {str(e)}")
-            return []
 
     def generate_audio_key(
         self,

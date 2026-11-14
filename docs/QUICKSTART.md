@@ -72,7 +72,6 @@ When the user accepts the professor:
 | Endpoint | Method | Description |
 |----------|--------|-------------|
 | `/quickstart/match-courses` | POST | Match user query to existing courses using LLM |
-| `/quickstart/start` | POST | Create course with smart selection (sync, may timeout) |
 | `/quickstart/start/enqueue` | POST | Enqueue course creation job (async, recommended) |
 | `/quickstart/professor/{id}` | GET | Get professor details for review |
 | `/quickstart/generate-intro-audio` | POST | Generate ephemeral voice preview |

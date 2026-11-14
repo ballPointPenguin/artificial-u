@@ -9,15 +9,14 @@ import os
 import sys
 from enum import Enum
 from functools import lru_cache
-from typing import Any, Dict, List, Optional
+from typing import List, Optional
 
-from pydantic import Field, field_validator, model_validator
+from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from sqlalchemy.engine import make_url
 
 from artificial_u.config.defaults import (
     DEFAULT_ALIBABA_TTS_REGION,
-    DEFAULT_CONTENT_BACKEND,
-    DEFAULT_CONTENT_LOGS_PATH,
     DEFAULT_DB_MAX_OVERFLOW,
     DEFAULT_DB_POOL_PRE_PING,
     DEFAULT_DB_POOL_RECYCLE,
@@ -61,10 +60,6 @@ class Settings(BaseSettings):
     # Environment identification
     environment: Environment = Environment.DEVELOPMENT
     testing: bool = Field(default=False, description="Flag indicating whether app is in test mode")
-
-    # API settings
-    api_prefix: str = "/api/v1"
-    debug: bool = False
 
     # CORS settings
     cors_origins: List[str] = Field(
@@ -113,9 +108,6 @@ class Settings(BaseSettings):
     AUTH0_AUDIENCE: Optional[str] = None
     AUTH0_ALG: str = "RS256"
 
-    # Temporary storage paths
-    CONTENT_LOGS_PATH: str = DEFAULT_CONTENT_LOGS_PATH
-
     # Storage settings for S3/MinIO
     STORAGE_TYPE: str = DEFAULT_STORAGE_TYPE  # "minio" or "s3"
     STORAGE_ENDPOINT_URL: str = DEFAULT_STORAGE_ENDPOINT_URL
@@ -132,10 +124,6 @@ class Settings(BaseSettings):
     STORAGE_IMAGES_BUCKET: str = DEFAULT_STORAGE_IMAGES_BUCKET
     STORAGE_EXPORTS_BUCKET: str = DEFAULT_STORAGE_EXPORTS_BUCKET
     STORAGE_CONTENT_LOGS_BUCKET: str = DEFAULT_STORAGE_CONTENT_LOGS_BUCKET
-
-    # Content generation settings
-    content_backend: str = DEFAULT_CONTENT_BACKEND
-    content_model: Optional[str] = None
 
     # Course generation model
     COURSE_GENERATION_MODEL: str = "gemini-3.8-flash"
@@ -210,38 +198,6 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
-    def __hash__(self) -> int:
-        """Make Settings hashable for use with lru_cache."""
-        # Use a simple stable string representation for hashing
-        # Include only the key parameters that should make a settings instance unique
-        return hash(f"{self.environment}:{self.DATABASE_URL}:{self.content_backend}")
-
-    def __eq__(self, other):
-        """Implement equality check required for hashable objects."""
-        if not isinstance(other, Settings):
-            return False
-        return (
-            self.environment == other.environment
-            and self.DATABASE_URL == other.DATABASE_URL
-            and self.content_backend == other.content_backend
-        )
-
-    @field_validator("content_model")
-    @classmethod
-    def set_default_model(cls, v, info):
-        """Set default model based on backend if not provided"""
-        if v is None:
-            backend = info.data.get("content_backend")
-            if backend == "openai":
-                return "gpt-6-luna"
-            elif backend == "gemini":
-                return "gemini-3.8-flash"
-            elif backend == "anthropic":
-                return "claude-sonnet-5-5"
-            else:
-                return "gpt-6-luna"
-        return v
-
     @model_validator(mode="after")
     def setup_environment(self) -> "Settings":
         """Set up environment-specific configurations"""
@@ -252,8 +208,6 @@ class Settings(BaseSettings):
         elif os.environ.get("ENV") == "production":
             self.environment = Environment.PRODUCTION
 
-        # Create storage directories
-        self.create_directories()
         return self
 
     def is_test_environment(self) -> bool:
@@ -264,10 +218,7 @@ class Settings(BaseSettings):
             or any(arg in sys.argv for arg in ["-m", "pytest", "test"])
         )
 
-    def create_directories(self) -> None:
-        """Create necessary temporary directories for the application"""
         # Note: Content logs are now stored in S3/MinIO buckets, not local files
-        pass
 
     def setup_logging(self) -> logging.Logger:
         """Set up logging based on configuration"""
@@ -278,57 +229,17 @@ class Settings(BaseSettings):
         )
         return logging.getLogger("artificial_u")
 
-    def get_config_dict(self) -> Dict[str, Any]:
-        """Get configuration as a dictionary"""
-        return {
-            "environment": self.environment,
-            "db_url": self.DATABASE_URL,
-            "content_backend": self.content_backend,
-            "content_model": self.content_model,
-            "content_logs_path": self.CONTENT_LOGS_PATH,
-            "anthropic_api_key": self.ANTHROPIC_API_KEY,
-            "tts_backend": self.tts_backend,
-            "elevenlabs_api_key": self.ELEVENLABS_API_KEY,
-            "mistral_api_key": self.MISTRAL_API_KEY,
-            "xai_api_key": self.XAI_API_KEY,
-            "alibaba_api_key": self.ALIBABA_API_KEY,
-            "google_api_key": self.GOOGLE_API_KEY,
-            "openai_api_key": self.OPENAI_API_KEY,
-            "storage_type": self.STORAGE_TYPE,
-            "storage_endpoint_url": self.STORAGE_ENDPOINT_URL,
-            "storage_public_url": self.STORAGE_PUBLIC_URL,
-            "storage_region": self.STORAGE_REGION,
-            "storage_audio_bucket": self.STORAGE_AUDIO_BUCKET,
-            "storage_lectures_bucket": self.STORAGE_LECTURES_BUCKET,
-            "storage_images_bucket": self.STORAGE_IMAGES_BUCKET,
-            "storage_exports_bucket": self.STORAGE_EXPORTS_BUCKET,
-            "storage_content_logs_bucket": self.STORAGE_CONTENT_LOGS_BUCKET,
-            "lecture_word_count": self.LECTURE_WORD_COUNT,
-            "lecture_image_interval_sec": self.LECTURE_IMAGE_INTERVAL_SEC,
-            "coin_cost_course_generation": self.COIN_COST_COURSE_GENERATION,
-            "coin_cost_lecture_generation": self.COIN_COST_LECTURE_GENERATION,
-            "coin_cost_lecture_audio": self.COIN_COST_LECTURE_AUDIO,
-            "coin_cost_lecture_summary": self.COIN_COST_LECTURE_SUMMARY,
-            "coin_cost_topic_generation": self.COIN_COST_TOPIC_GENERATION,
-            "coin_cost_professor_generation": self.COIN_COST_PROFESSOR_GENERATION,
-            "coin_cost_professor_image": self.COIN_COST_PROFESSOR_IMAGE,
-            "coin_cost_course_image": self.COIN_COST_COURSE_IMAGE,
-            "coin_cost_department_generation": self.COIN_COST_DEPARTMENT_GENERATION,
-        }
-
     def log_configuration(self) -> None:
         """Log the current configuration"""
         logger = logging.getLogger("artificial_u")
         logger.info(f"Environment: {self.environment}")
-        logger.info(f"Using database: {self.DATABASE_URL}")
-        logger.info(f"Content backend: {self.content_backend}")
-        if self.content_model:
-            logger.info(f"Content model: {self.content_model}")
+        database_url = make_url(self.DATABASE_URL).render_as_string(hide_password=True)
+        logger.info(f"Using database: {database_url}")
         logger.info(f"TTS backend: {self.tts_backend}")
         logger.info(f"Storage type: {self.STORAGE_TYPE}")
         if self.STORAGE_TYPE == "minio":
-            logger.info(f"MinIO endpoint: {self.STORAGE_ENDPOINT_URL}")
-            logger.info(f"MinIO public URL: {self.STORAGE_PUBLIC_URL}")
+            logger.info(f"Storage endpoint: {self.STORAGE_ENDPOINT_URL}")
+            logger.info(f"Storage public URL: {self.STORAGE_PUBLIC_URL}")
 
 
 @lru_cache
@@ -370,8 +281,3 @@ def get_settings() -> Settings:
         settings.log_configuration()
 
     return settings
-
-
-def clear_settings_cache():
-    """Clear the settings cache for testing or debugging purposes."""
-    get_settings.cache_clear()

@@ -160,16 +160,6 @@ run-api-no-reload: ## Run the FastAPI application without auto-reload
 	@echo "$(GREEN)Starting FastAPI application (no reload)...$(NC)"
 	@$(UV) run uvicorn $(PROJECT_NAME).api.app:app --host 0.0.0.0 --port $(FASTAPI_PORT)
 
-.PHONY: run-worker
-run-worker: ## Run the background worker
-	@echo "$(GREEN)Starting background worker...$(NC)"
-	@$(UV) run python -m $(PROJECT_NAME).api.worker
-
-.PHONY: cli
-cli: ## Run the CLI (use CLI=<command> for specific commands)
-	@echo "$(GREEN)Running CLI command: $(CLI)$(NC)"
-	@$(UV) run artificial_u $(CLI)
-
 # Pre-commit
 .PHONY: pre-commit
 pre-commit: ## Run pre-commit hooks on all files
@@ -209,7 +199,7 @@ dev-setup: setup services-up db-setup ## Complete development setup
 	@echo "$(YELLOW)Next steps:$(NC)"
 	@echo "  1. Copy .env.example to .env and add your API keys"
 	@echo "  2. Run 'make run-api' to start the application"
-	@echo "  3. Run 'make cli CLI=\"--help\"' to explore CLI commands"
+	@echo "  3. Run 'cd web && pnpm dev' to start the frontend"
 
 .PHONY: ci
 ci: deps-sync lint test ## Run CI pipeline locally

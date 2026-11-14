@@ -12,8 +12,6 @@ from artificial_u.api.models.professors import (
     LectureBrief,
     ProfessorCoursesResponse,
     ProfessorCreate,
-    ProfessorGenerate,
-    ProfessorLecturesResponse,
     ProfessorResponse,
     ProfessorsListResponse,
     ProfessorUpdate,
@@ -73,9 +71,7 @@ def mock_api_service(monkeypatch):
         "update_professor": MagicMock(),
         "delete_professor": MagicMock(),
         "get_professor_courses": MagicMock(),
-        "get_professor_lectures": MagicMock(),
         "generate_professor_image": AsyncMock(),
-        "generate_professor": AsyncMock(),
     }
 
     # --- Configure Mock Return Values ---
@@ -135,18 +131,6 @@ def mock_api_service(monkeypatch):
 
     mock_service["get_professor_courses"].side_effect = _mock_get_professor_courses
 
-    # GET Professor Lectures
-    def _mock_get_professor_lectures(professor_id: int, viewer=None):
-        if professor_id in [p.id for p in sample_professors_base]:
-            return ProfessorLecturesResponse(
-                professor_id=professor_id,
-                lectures=sample_lectures_brief_base,
-                total=len(sample_lectures_brief_base),
-            )
-        return None
-
-    mock_service["get_professor_lectures"].side_effect = _mock_get_professor_lectures
-
     # GENERATE Professor Image
     def _mock_generate_professor_image(professor_id: int, student_id: int, role: str):
         if professor_id in [p.id for p in sample_professors_base]:
@@ -158,9 +142,6 @@ def mock_api_service(monkeypatch):
 
     mock_service["generate_professor_image"].side_effect = _mock_generate_professor_image
 
-    # GENERATE Professor
-    mock_service["generate_professor"].return_value = sample_professors_base[0]
-
     # --- Apply Patches ---
     base_path = "artificial_u.api.services.ProfessorApiService"
     monkeypatch.setattr(f"{base_path}.get_professors", mock_service["get_professors"])
@@ -170,12 +151,8 @@ def mock_api_service(monkeypatch):
     monkeypatch.setattr(f"{base_path}.delete_professor", mock_service["delete_professor"])
     monkeypatch.setattr(f"{base_path}.get_professor_courses", mock_service["get_professor_courses"])
     monkeypatch.setattr(
-        f"{base_path}.get_professor_lectures", mock_service["get_professor_lectures"]
-    )
-    monkeypatch.setattr(
         f"{base_path}.generate_professor_image", mock_service["generate_professor_image"]
     )
-    monkeypatch.setattr(f"{base_path}.generate_professor", mock_service["generate_professor"])
 
     return mock_service
 
@@ -390,27 +367,6 @@ def test_get_professor_courses(client: TestClient, mock_api_service):
 
 
 @pytest.mark.unit
-def test_get_professor_lectures(client: TestClient, mock_api_service):
-    """Test getting lectures for a professor."""
-    # Test valid ID
-    response = client.get("/api/v1/professors/1/lectures")
-    assert response.status_code == 200
-    data = response.json()
-    assert data["professor_id"] == 1
-    assert len(data["lectures"]) == len(sample_lectures_brief_base)
-    assert data["total"] == len(sample_lectures_brief_base)
-    assert data["lectures"][0]["title"] == sample_lectures_brief_base[0].title
-    mock_api_service["get_professor_lectures"].assert_called_once_with(1, viewer=None)
-
-    # Test invalid ID
-    mock_api_service["get_professor_lectures"].reset_mock()
-    mock_api_service["get_professor_lectures"].return_value = None
-    response = client.get("/api/v1/professors/999/lectures")
-    assert response.status_code == 404
-    mock_api_service["get_professor_lectures"].assert_called_once_with(999, viewer=None)
-
-
-@pytest.mark.unit
 def test_generate_professor_image(client: TestClient, mock_api_service):
     """Test generating an image for a professor."""
     # Test successful generation
@@ -427,23 +383,3 @@ def test_generate_professor_image(client: TestClient, mock_api_service):
     response = client.post("/api/v1/professors/999/generate-image")
     assert response.status_code == 404
     mock_api_service["generate_professor_image"].assert_called_once_with(999, 1, "admin")
-
-
-@pytest.mark.unit
-def test_generate_professor(client: TestClient, mock_api_service):
-    """Test generating professor data using AI."""
-    generation_data = {
-        "partial_attributes": {"department_id": 1, "specialization": "Testing"},
-        "freeform_prompt": "Generate a professor specializing in software testing",
-    }
-
-    response = client.post("/api/v1/professors/generate", json=generation_data)
-    assert response.status_code == 200
-    assert "id" in response.json()
-    assert "name" in response.json()
-    assert "specialization" in response.json()
-
-    mock_api_service["generate_professor"].assert_called_once()
-    call_args = mock_api_service["generate_professor"].call_args[0]
-    assert isinstance(call_args[0], ProfessorGenerate)
-    assert call_args[0].model_dump() == generation_data

@@ -2,7 +2,7 @@
 Preferences router for handling global and user preferences.
 """
 
-from typing import List, Optional
+from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Path, status
 from pydantic import BaseModel, Field
@@ -40,34 +40,6 @@ class ModelSettingResponse(BaseModel):
 
     model: str = Field(..., description="The current model")
     source: str = Field(..., description="Source of the model setting (preference or environment)")
-
-
-@router.get(
-    "/global",
-    response_model=List[PreferenceResponse],
-    summary="List all global preferences",
-    description="Get all global application preferences. Admin only.",
-    dependencies=[require_role("admin")],
-)
-def list_global_preferences(
-    repository_factory: RepositoryFactory = Depends(get_repository_factory),
-):
-    """
-    List all global preferences.
-
-    Requires admin role.
-    """
-    prefs = repository_factory.preference.list_all(is_global=True)
-    return [
-        PreferenceResponse(
-            id=pref.id,
-            student_id=pref.student_id,
-            scope=pref.scope,
-            value=pref.value,
-            is_global=pref.is_global,
-        )
-        for pref in prefs
-    ]
 
 
 @router.get(

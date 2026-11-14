@@ -4,15 +4,12 @@ Professor service for handling business logic related to professors.
 
 from typing import Optional
 
-from fastapi import HTTPException, status
+from fastapi import HTTPException
 
 from artificial_u.api.models.professors import (
     CourseBrief,
-    LectureBrief,
     ProfessorCoursesResponse,
     ProfessorCreate,
-    ProfessorGenerate,
-    ProfessorLecturesResponse,
     ProfessorResponse,
     ProfessorsListResponse,
     ProfessorUpdate,
@@ -29,9 +26,7 @@ from artificial_u.services import (
     VoiceService,
 )
 from artificial_u.utils import (
-    ContentGenerationError,
     DatabaseError,
-    GenerationError,
     ProfessorNotFoundError,
 )
 
@@ -84,7 +79,6 @@ class ProfessorApiService(BaseApiService[CoreProfessor, ProfessorResponse, Profe
             content_service=content_service,
             image_service=image_service,
             repository_factory=repository_factory,
-            job_enqueue_service=job_enqueue_service,
             logger=self.logger,
         )
 
@@ -125,8 +119,6 @@ class ProfessorApiService(BaseApiService[CoreProfessor, ProfessorResponse, Profe
         if language is not None:
             filters["language"] = language
 
-        # Call core service directly with filters
-        # (not using _standard_list_operation because it doesn't forward filters properly)
         try:
             # Call core service directly with filters
             all_professors = self.core_service.list_professors(
@@ -328,51 +320,6 @@ class ProfessorApiService(BaseApiService[CoreProfessor, ProfessorResponse, Profe
         except ProfessorNotFoundError:
             return None
 
-    def get_professor_lectures(
-        self, professor_id: int, viewer: Optional[Student] = None
-    ) -> Optional[ProfessorLecturesResponse]:
-        """
-        Get lectures by a professor in courses that `viewer` may discover.
-
-        Args:
-            professor_id: ID of the professor
-            viewer: The requesting student, if authenticated
-
-        Returns:
-            ProfessorLecturesResponse or None if professor not found
-        """
-        try:
-            # First check if professor exists
-            self.core_service.get_professor(professor_id)
-
-            # Get lectures by professor using the lecture repository
-            lectures = self.repository_factory.lecture.list(
-                professor_id=professor_id, course_filter=discoverable_courses(viewer)
-            )
-
-            # Convert to brief format
-            lecture_briefs = [
-                LectureBrief(
-                    id=lecture.id,
-                    course_id=lecture.course_id,
-                    topic_id=lecture.topic_id,
-                    title=lecture.title,
-                    summary=lecture.summary,
-                    audio_url=lecture.audio_url,
-                    timeline_url=lecture.timeline_url,
-                    images_timeline_url=getattr(lecture, "images_timeline_url", None),
-                )
-                for lecture in lectures
-            ]
-
-            return ProfessorLecturesResponse(
-                professor_id=professor_id,
-                lectures=lecture_briefs,
-                total=len(lecture_briefs),
-            )
-        except ProfessorNotFoundError:
-            return None
-
     async def generate_professor_image(
         self, professor_id: int, student_id: int, role: str
     ) -> Optional[ProfessorResponse]:
@@ -412,65 +359,16 @@ class ProfessorApiService(BaseApiService[CoreProfessor, ProfessorResponse, Profe
         except ProfessorNotFoundError:
             return None
 
+        except HTTPException:
+            # Ownership failures (403) must reach the client unchanged
+            raise
+
         except Exception as e:
-            # Log the exception
             self.logger.error(
                 f"Error generating image for professor {professor_id}: {e}",
                 exc_info=True,
             )
             return None
-
-    async def generate_professor(self, generation_data: ProfessorGenerate) -> ProfessorResponse:
-        """
-        Generate a professor profile using AI based on provided partial data.
-
-        Args:
-            generation_data: Input data containing optional partial attributes.
-
-        Returns:
-            ProfessorResponse: The generated professor profile (not saved).
-        """
-        log_attrs = (
-            list(generation_data.partial_attributes.keys())
-            if generation_data.partial_attributes
-            else "None"
-        )
-        self.logger.info(
-            f"Received request to generate professor with partial attributes: {log_attrs}"
-        )
-        try:
-            # Pass the partial attributes dictionary (or empty dict) to the core service
-            partial_attrs = generation_data.partial_attributes or {}
-            # Add freeform prompt if the model includes it (assuming ProfessorGenerate might)
-            if hasattr(generation_data, "freeform_prompt") and generation_data.freeform_prompt:
-                partial_attrs["freeform_prompt"] = generation_data.freeform_prompt
-
-            generated_dict = await self.generator_service.generate_professor(
-                partial_attributes=partial_attrs
-            )
-
-            # Convert the dictionary to the API response model
-            # Add placeholder ID and validate
-            generated_dict["id"] = -1  # Placeholder for validation
-            response = ProfessorResponse.model_validate(generated_dict)
-
-            self.logger.info(f"Successfully generated professor data: {response.name}")
-            return response
-
-        except (ContentGenerationError, DatabaseError, ValueError, GenerationError) as e:
-            # Include GenerationError if core service can raise it specifically
-            self.logger.error(f"Professor generation failed: {e}", exc_info=True)
-            # Re-raise as HTTPException for the API layer
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Failed to generate professor data: {e}",
-            )
-        except Exception as e:
-            self.logger.error(f"Unexpected error during professor generation: {e}", exc_info=True)
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=("An unexpected error occurred during profile generation."),
-            )
 
     def assign_voice_to_professor(
         self, professor_id: int, student_id: int, role: str

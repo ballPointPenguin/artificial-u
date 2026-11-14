@@ -103,6 +103,8 @@ def update_current_student_profile(
             coins=updated_student.coins,
             is_active=updated_student.is_active,
         )
+    except HTTPException:
+        raise
     except ValueError as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,

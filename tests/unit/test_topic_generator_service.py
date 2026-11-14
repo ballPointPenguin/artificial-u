@@ -68,7 +68,6 @@ def _build_service(
         course_service=course_service,
         content_service=content_service,
         repository_factory=repository_factory,
-        job_enqueue_service=MagicMock(),
         logger=MagicMock(),
     )
 

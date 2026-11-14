@@ -3,9 +3,9 @@ Job repository implementing enqueue, reservation (skip locked), state transition
 """
 
 import datetime as dt
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 
-from sqlalchemy import and_, asc, desc, func, select, text, update
+from sqlalchemy import and_, desc, func, select, text, update
 
 from artificial_u.models.database import JobModel
 from artificial_u.models.job_priorities import priority_for_kind
@@ -109,28 +109,6 @@ class JobRepository(BaseRepository):
             stmt = stmt.order_by(desc(JobModel.id)).limit(limit)
             return list(session.execute(stmt).scalars())
 
-    def reserve_one_skip_locked(self) -> Optional[JobModel]:
-        now = self._now()
-        with self.get_session() as session:
-            stmt = (
-                select(JobModel)
-                .where(and_(JobModel.status == "queued", JobModel.run_after <= now))
-                .order_by(desc(JobModel.priority), asc(JobModel.id))
-                .with_for_update(skip_locked=True)
-                .limit(1)
-            )
-            row = session.execute(stmt).scalars().first()
-            if not row:
-                return None
-            # transition to running and increment attempts
-            session.execute(
-                update(JobModel)
-                .where(JobModel.id == row.id)
-                .values(status="running", attempts=JobModel.attempts + 1, updated_at=now)
-            )
-            session.commit()
-            return self.get(row.id)
-
     def reserve_one_skip_locked_atomic(self) -> Optional[JobModel]:
         """
         Atomically reserve a single queued job using a CTE and SKIP LOCKED.
@@ -214,13 +192,6 @@ class JobRepository(BaseRepository):
                 .values(status="cancelled", updated_at=now)
             )
             session.commit()
-
-    def summary_counts(self) -> List[Tuple[str, int]]:
-        with self.get_session() as session:
-            rows = session.execute(
-                select(JobModel.status, func.count()).group_by(JobModel.status)
-            ).all()
-            return [(r[0], r[1]) for r in rows]
 
     def telemetry_summary(self) -> Dict[str, Any]:
         """

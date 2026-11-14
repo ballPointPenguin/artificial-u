@@ -349,10 +349,6 @@ export interface LectureGenerateRequest {
   freeform_prompt?: string
 }
 
-export interface AudioRedirectResponse {
-  url: string
-}
-
 // Professor types
 export interface Professor {
   id: number
@@ -436,12 +432,6 @@ export interface ProfessorCourseBrief {
 export interface ProfessorCoursesResponse {
   professor_id: number
   courses: ProfessorCourseBrief[]
-  total: number
-}
-
-export interface ProfessorLecturesResponse {
-  professor_id: number
-  lectures: LectureBrief[]
   total: number
 }
 
@@ -549,29 +539,10 @@ export interface Voice {
   cloned_from: number | null
 }
 
-export interface PaginatedVoices {
-  items: Voice[]
-  total: number
-  limit: number
-  offset: number
-}
-
 export interface ManualVoiceAssignmentPayload {
   external_id: string
   tts_backend?: string
   el_voice_id?: string
-}
-
-export interface VoiceListParams {
-  gender?: string
-  accent?: string
-  age?: string
-  language?: string
-  use_case?: string
-  category?: string
-  tts_backend?: string
-  limit?: number
-  offset?: number
 }
 
 // Mistral voice catalog (on-demand from Mistral API, not stored in DB)

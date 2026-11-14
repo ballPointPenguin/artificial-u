@@ -15,6 +15,41 @@ from artificial_u.utils import DependencyError
 class ProfessorRepository(BaseRepository):
     """Repository for Professor operations."""
 
+    @staticmethod
+    def _to_model(db_professor: ProfessorModel, include_student: bool = False) -> Professor:
+        """Convert a database row to a core Professor."""
+        student = None
+        if include_student and db_professor.student:
+            student = {
+                "id": db_professor.student.id,
+                "name": db_professor.student.name,
+                "email": db_professor.student.email,
+            }
+        return Professor(
+            id=db_professor.id,
+            name=db_professor.name or "",
+            title=db_professor.title,
+            accent=db_professor.accent,
+            age=db_professor.age,
+            background=db_professor.background,
+            description=db_professor.description,
+            gender=db_professor.gender,
+            personality=db_professor.personality,
+            specialization=db_professor.specialization,
+            teaching_style=db_professor.teaching_style,
+            image_url=db_professor.image_url,
+            image_created_with=db_professor.image_created_with,
+            department_id=db_professor.department_id,
+            voice_id=db_professor.voice_id,
+            tts_backend=db_professor.tts_backend,
+            language=db_professor.language,
+            created_by=db_professor.created_by,
+            created_with=db_professor.created_with,
+            created_at=db_professor.created_at,
+            updated_at=db_professor.updated_at,
+            student=student,
+        )
+
     def create(self, professor: Professor) -> Professor:
         """Create a new professor."""
         with self.get_session() as session:
@@ -59,39 +94,7 @@ class ProfessorRepository(BaseRepository):
             if not db_professor:
                 return None
 
-            # Build student dict if present
-            student_dict = None
-            if db_professor.student:
-                student_dict = {
-                    "id": db_professor.student.id,
-                    "name": db_professor.student.name,
-                    "email": db_professor.student.email,
-                }
-
-            return Professor(
-                id=db_professor.id,
-                name=db_professor.name,
-                title=db_professor.title,
-                accent=db_professor.accent,
-                age=db_professor.age,
-                background=db_professor.background,
-                description=db_professor.description,
-                gender=db_professor.gender,
-                personality=db_professor.personality,
-                specialization=db_professor.specialization,
-                teaching_style=db_professor.teaching_style,
-                image_url=db_professor.image_url,
-                image_created_with=db_professor.image_created_with,
-                department_id=db_professor.department_id,
-                voice_id=db_professor.voice_id,
-                tts_backend=db_professor.tts_backend,
-                language=db_professor.language,
-                created_by=db_professor.created_by,
-                created_with=db_professor.created_with,
-                created_at=db_professor.created_at,
-                updated_at=db_professor.updated_at,
-                student=student_dict,
-            )
+            return self._to_model(db_professor, include_student=True)
 
     def list(self, language: Optional[str] = None) -> List[Professor]:
         """List professors with optional language filter."""
@@ -101,30 +104,7 @@ class ProfessorRepository(BaseRepository):
                 query = query.filter_by(language=language)
             db_professors = query.all()
 
-            return [
-                Professor(
-                    id=p.id,
-                    name=p.name,
-                    title=p.title,
-                    accent=p.accent,
-                    age=p.age,
-                    background=p.background,
-                    description=p.description,
-                    gender=p.gender,
-                    personality=p.personality,
-                    specialization=p.specialization,
-                    teaching_style=p.teaching_style,
-                    image_url=p.image_url,
-                    image_created_with=p.image_created_with,
-                    department_id=p.department_id,
-                    voice_id=p.voice_id,
-                    tts_backend=p.tts_backend,
-                    language=p.language,
-                    created_by=p.created_by,
-                    created_with=p.created_with,
-                )
-                for p in db_professors
-            ]
+            return [self._to_model(p) for p in db_professors]
 
     def update(self, professor: Professor) -> Professor:
         """Update an existing professor."""
@@ -182,28 +162,7 @@ class ProfessorRepository(BaseRepository):
             session.commit()
             session.refresh(db_professor)
 
-            # Convert to core model and return
-            return Professor(
-                id=db_professor.id,
-                name=db_professor.name,
-                title=db_professor.title,
-                accent=db_professor.accent,
-                age=db_professor.age,
-                background=db_professor.background,
-                description=db_professor.description,
-                gender=db_professor.gender,
-                personality=db_professor.personality,
-                specialization=db_professor.specialization,
-                teaching_style=db_professor.teaching_style,
-                image_url=db_professor.image_url,
-                department_id=db_professor.department_id,
-                voice_id=db_professor.voice_id,
-                tts_backend=db_professor.tts_backend,
-                created_by=db_professor.created_by,
-                created_with=db_professor.created_with,
-                created_at=db_professor.created_at,
-                updated_at=db_professor.updated_at,
-            )
+            return self._to_model(db_professor)
 
     def delete(self, professor_id: int) -> bool:
         """
@@ -243,35 +202,7 @@ class ProfessorRepository(BaseRepository):
                 session.query(ProfessorModel).filter_by(department_id=department_id).all()
             )
 
-            return [
-                Professor(
-                    **{
-                        # Required fields
-                        "id": p.id,
-                        "name": p.name or "",
-                        # Optional fields with defaults
-                        "title": getattr(p, "title", None),
-                        "accent": getattr(p, "accent", None),
-                        "age": getattr(p, "age", None),
-                        "background": getattr(p, "background", None),
-                        "description": getattr(p, "description", None),
-                        "gender": getattr(p, "gender", None),
-                        "personality": getattr(p, "personality", None),
-                        "specialization": getattr(p, "specialization", None),
-                        "teaching_style": getattr(p, "teaching_style", None),
-                        "image_url": getattr(p, "image_url", None),
-                        "department_id": getattr(p, "department_id", None),
-                        "voice_id": getattr(p, "voice_id", None),
-                        "tts_backend": getattr(p, "tts_backend", None),
-                        "language": getattr(p, "language", None),
-                        "created_by": getattr(p, "created_by", None),
-                        "created_with": getattr(p, "created_with", None),
-                        "created_at": getattr(p, "created_at", None),
-                        "updated_at": getattr(p, "updated_at", None),
-                    }
-                )
-                for p in db_professors
-            ]
+            return [self._to_model(p) for p in db_professors]
 
     def list_by_faculty(self, faculty_id: int) -> List[Professor]:
         """List all professors in departments belonging to a specific faculty."""
@@ -287,32 +218,4 @@ class ProfessorRepository(BaseRepository):
                 .all()
             )
 
-            return [
-                Professor(
-                    **{
-                        # Required fields
-                        "id": p.id,
-                        "name": p.name or "",
-                        # Optional fields with defaults
-                        "title": getattr(p, "title", None),
-                        "accent": getattr(p, "accent", None),
-                        "age": getattr(p, "age", None),
-                        "background": getattr(p, "background", None),
-                        "description": getattr(p, "description", None),
-                        "gender": getattr(p, "gender", None),
-                        "personality": getattr(p, "personality", None),
-                        "specialization": getattr(p, "specialization", None),
-                        "teaching_style": getattr(p, "teaching_style", None),
-                        "image_url": getattr(p, "image_url", None),
-                        "department_id": getattr(p, "department_id", None),
-                        "voice_id": getattr(p, "voice_id", None),
-                        "tts_backend": getattr(p, "tts_backend", None),
-                        "language": getattr(p, "language", None),
-                        "created_by": getattr(p, "created_by", None),
-                        "created_with": getattr(p, "created_with", None),
-                        "created_at": getattr(p, "created_at", None),
-                        "updated_at": getattr(p, "updated_at", None),
-                    }
-                )
-                for p in db_professors
-            ]
+            return [self._to_model(p) for p in db_professors]

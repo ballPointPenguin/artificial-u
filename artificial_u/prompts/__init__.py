@@ -1,47 +1,13 @@
 """Prompt module for Artificial-U.
 
-This module contains template classes and utilities for managing prompts
-used across the Artificial-U system.
+Prompt builders live in the submodules (``artificial_u.prompts.lecture`` etc.); this
+package provides language dispatch for services that generate content in the course's
+language.
 """
 
-from artificial_u.prompts.base import PromptTemplate
-from artificial_u.prompts.course import get_course_prompt
-from artificial_u.prompts.course_image import format_course_image_prompt
-from artificial_u.prompts.department import get_department_prompt
-from artificial_u.prompts.lecture import get_lecture_prompt
-from artificial_u.prompts.professor import get_professor_prompt
-from artificial_u.prompts.professor_image import format_professor_image_prompt
-from artificial_u.prompts.summary import get_summary_prompt
-from artificial_u.prompts.system import get_system_prompt
-from artificial_u.prompts.tags import get_course_tags_prompt
-from artificial_u.prompts.topics import get_next_topic_prompt, get_topics_prompt
+from typing import Optional
 
-__all__ = [
-    # Base utilities
-    "PromptTemplate",
-    # Course prompts
-    "get_course_prompt",
-    # Department prompts
-    "get_department_prompt",
-    # Image prompts
-    "format_course_image_prompt",
-    "format_professor_image_prompt",
-    # Lecture prompts
-    "get_lecture_prompt",
-    # Professor prompts
-    "get_professor_prompt",
-    # Summary prompts
-    "get_summary_prompt",
-    # System prompts
-    "get_system_prompt",
-    # Tags prompts
-    "get_course_tags_prompt",
-    # Topics prompts
-    "get_next_topic_prompt",
-    "get_topics_prompt",
-    # Language dispatch
-    "get_prompts_for_language",
-]
+__all__ = ["SUPPORTED_LANGUAGES", "get_prompts_for_language", "resolve_prompt_language"]
 
 # Registry of supported language codes
 SUPPORTED_LANGUAGES = ("en", "fr")
@@ -75,3 +41,15 @@ def get_prompts_for_language(language: str = "en"):
         f"Unsupported prompt language: '{language}'. "
         f"Supported languages: {', '.join(SUPPORTED_LANGUAGES)}"
     )
+
+
+def resolve_prompt_language(language: Optional[str]) -> str:
+    """Map a stored language value (e.g. "fr", "fr-CA", None) to a supported prompt language.
+
+    Falls back to English for anything unsupported.
+    """
+    if language and isinstance(language, str):
+        prefix = language.lower()[:2]
+        if prefix in SUPPORTED_LANGUAGES:
+            return prefix
+    return "en"

@@ -33,7 +33,8 @@ from artificial_u.api.models.course_import import (
 )
 from artificial_u.api.security.auth0 import require_coins, require_role
 from artificial_u.api.services import CourseApiService
-from artificial_u.config.settings import get_settings
+from artificial_u.api.utils.jobs import job_summary
+from artificial_u.config import get_settings
 from artificial_u.models.core import Student
 from artificial_u.models.repositories.factory import RepositoryFactory
 from artificial_u.services.course_import_service import (
@@ -144,31 +145,6 @@ async def get_course(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Course with ID {course_id} not found.",
-        )
-    return response_data
-
-
-@router.get(
-    "/code/{code}",
-    response_model=CourseResponse,
-    summary="Get course by code",
-    description="Get detailed information about a specific course by its code.",
-    responses={404: {"description": "Course not found"}},
-)
-async def get_course_by_code(
-    code: str = Path(..., description="The code of the course to retrieve"),
-    course_service: CourseApiService = Depends(get_course_api_service),
-):
-    """
-    Get detailed information about a specific course by its code.
-    """
-    # Service raises HTTPException on not found or errors (if implemented)
-    # Add check for None response
-    response_data = course_service.get_course_by_code(code)
-    if response_data is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Course with code {code} not found.",
         )
     return response_data
 
@@ -486,45 +462,6 @@ async def generate_course(
 
 
 @router.post(
-    "/generate/enqueue",
-    status_code=status.HTTP_202_ACCEPTED,
-    summary="Enqueue course generation job",
-    description=(
-        "Enqueue an async job to generate course data using AI. Returns a job id to poll via "
-        "GET /api/v1/jobs/{id}."
-    ),
-    dependencies=[require_coins(cost=get_settings().COIN_COST_COURSE_GENERATION)],
-)
-async def enqueue_generate_course(
-    generation_data: CourseGenerate,
-    repository_factory: RepositoryFactory = Depends(get_repository_factory),
-):
-    """
-    Enqueue a job with kind 'generate_course'. The payload mirrors CourseGenerate.
-    """
-    payload = {
-        "partial_attributes": generation_data.partial_attributes or {},
-        "freeform_prompt": generation_data.freeform_prompt,
-        "connected_course_ids": generation_data.connected_course_ids,
-    }
-    if generation_data.model:
-        payload["model_name_override"] = generation_data.model
-    row = repository_factory.job.create(
-        kind="generate_course",
-        payload=payload,
-    )
-    return {
-        "id": row.id,
-        "kind": row.kind,
-        "status": row.status,
-        "attempts": row.attempts,
-        "max_attempts": row.max_attempts,
-        "priority": row.priority,
-        "run_after": row.run_after,
-    }
-
-
-@router.post(
     "/create/enqueue",
     status_code=status.HTTP_202_ACCEPTED,
     summary="Enqueue smart course creation job",
@@ -565,15 +502,7 @@ async def enqueue_create_course(
         kind="create_course",
         payload=payload,
     )
-    return {
-        "id": row.id,
-        "kind": row.kind,
-        "status": row.status,
-        "attempts": row.attempts,
-        "max_attempts": row.max_attempts,
-        "priority": row.priority,
-        "run_after": row.run_after,
-    }
+    return job_summary(row)
 
 
 @router.post(
@@ -627,13 +556,7 @@ async def export_course(
     )
 
     return {
-        "id": row.id,
-        "kind": row.kind,
-        "status": row.status,
-        "attempts": row.attempts,
-        "max_attempts": row.max_attempts,
-        "priority": row.priority,
-        "run_after": row.run_after,
+        **job_summary(row),
         "message": f"Course export job enqueued. Poll GET /api/v1/jobs/{row.id} for status and download URL.",
     }
 
@@ -718,15 +641,7 @@ async def import_course(
         payload={"upload_key": key, "resolutions": resolutions, "student_id": student.id},
         max_attempts=1,
     )
-    return {
-        "id": row.id,
-        "kind": row.kind,
-        "status": row.status,
-        "attempts": row.attempts,
-        "max_attempts": row.max_attempts,
-        "priority": row.priority,
-        "run_after": row.run_after,
-    }
+    return job_summary(row)
 
 
 @router.delete(
@@ -825,12 +740,4 @@ async def enqueue_generate_course_tags(
         kind="generate_tags_for_course",
         payload={"course_id": course_id, "created_by": student.id},
     )
-    return {
-        "id": row.id,
-        "kind": row.kind,
-        "status": row.status,
-        "attempts": row.attempts,
-        "max_attempts": row.max_attempts,
-        "priority": row.priority,
-        "run_after": row.run_after,
-    }
+    return job_summary(row)

@@ -57,10 +57,6 @@ export const courseService = {
     return httpClient.get<Course>(ENDPOINTS.courses.detail(courseId))
   },
 
-  getCourseByCode: (code: string): Promise<Course> => {
-    return httpClient.get<Course>(ENDPOINTS.courses.code(code))
-  },
-
   createCourse: (data: CourseCreate): Promise<Course> => {
     return httpClient.post<Course>(ENDPOINTS.courses.list, data)
   },
@@ -106,20 +102,6 @@ export const courseService = {
     return httpClient.post<Course>(ENDPOINTS.courses.generate, data, {
       timeout: TIMEOUT_CONFIG.generation,
     })
-  },
-
-  enqueueGenerateCourse: (
-    data: CourseGenerateRequest
-  ): Promise<{
-    id: number
-    kind: string
-    status: string
-    attempts: number
-    max_attempts: number
-    priority?: number
-    run_after?: string
-  }> => {
-    return httpClient.post(ENDPOINTS.courses.enqueueGenerate, data)
   },
 
   enqueueCreateCourse: (

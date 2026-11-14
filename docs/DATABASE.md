@@ -177,10 +177,11 @@ python scripts/rebuild_dev_db.py
 
 ## Testing
 
-When running tests, the test database is automatically created and migrations are applied:
+Integration tests use a separate `artificial_u_test` database. Create it and build the schema
+directly from the SQLAlchemy models (no migrations are run) with:
 
 ```sh
-python scripts/setup_test_db.py
+uv run python scripts/setup_test_db.py
 ```
 
 ## How It Works

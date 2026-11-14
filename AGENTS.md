@@ -9,7 +9,7 @@ ArtificialU is an AI-powered educational content platform that generates univers
 - **Backend**: Python 3.14 with FastAPI, PostgreSQL, SQLAlchemy
 - **Frontend**: SolidJS with TypeScript, TailwindCSS v4, Auth0
 - **AI Integration**: Anthropic Claude, Google Gemini, OpenAI
-- **TTS Services**: ElevenLabs
+- **TTS Services**: ElevenLabs, Mistral, xAI, Qwen (pluggable backends)
 - **Storage**: RustFS (dev, S3-compatible) / S3 (prod)
 - **Job Processing**: Custom async worker with PostgreSQL-backed queue
 
@@ -20,12 +20,6 @@ ArtificialU is an AI-powered educational content platform that generates univers
 All Python commands use `uv` for environment management:
 
 ```bash
-# Run CLI commands
-uv run artificial_u --help
-uv run artificial_u list-courses
-uv run artificial_u create-course -d "Computer Science" -t "AI" -c "CS101"
-uv run artificial_u create-audio -c "CS101" -w 1 -n 1
-
 # Testing
 uv run pytest                    # All tests
 uv run pytest -m unit            # Unit tests only
@@ -135,8 +129,8 @@ artificial_u/
 │   └── security/     # Auth0 JWT validation
 ├── models/           # SQLAlchemy models & repositories
 ├── services/         # Core business logic
-├── audio/            # TTS processing (SpeechProcessor, VoiceMapper)
-├── integrations/     # External APIs (Anthropic, ElevenLabs, etc.)
+├── audio/            # Audio text processing and ID3 tagging (SpeechProcessor, ID3Tagger)
+├── integrations/     # External APIs (LLM clients, TTS backends, VoiceMapper)
 ├── prompts/          # AI prompt templates
 ├── config/           # Configuration management
 └── utils/            # Shared utilities
@@ -197,10 +191,9 @@ Tests are organized by pytest markers:
 
 - `@pytest.mark.unit`: Isolated unit tests
 - `@pytest.mark.integration`: Database/external service integration
-- `@pytest.mark.e2e`: End-to-end workflows
-- `@pytest.mark.api`: API endpoint tests
 - `@pytest.mark.slow`: Long-running tests
-- `@pytest.mark.demo`: Demonstration tests
+
+API endpoint tests live in `tests/api/` and are not marked; plain `uv run pytest` runs everything.
 
 Integration tests require the test database:
 
@@ -211,8 +204,8 @@ uv run pytest -m integration
 
 ## Key Configuration Files
 
-- **pyproject.toml**: Python project metadata, dependencies, tool configs (black, isort, mypy, pytest)
-- **pytest.ini**: Additional pytest configuration
+- **pyproject.toml**: Python project metadata, dependencies, tool configs (black, isort, mypy)
+- **pytest.ini**: pytest configuration (markers, warning filters)
 - **.flake8**: Flake8 linting rules
 - **.pre-commit-config.yaml**: Pre-commit hooks
 - **alembic.ini**: Database migration configuration
@@ -319,7 +312,7 @@ When adding new endpoints:
 4. Use core services from `artificial_u/services/` for domain logic
 5. Repository methods in `artificial_u/models/` for data access
 6. Queue long operations as background jobs
-7. Write integration tests in `tests/integration/api/`
+7. Write API tests in `tests/api/`
 
 All API responses should:
 

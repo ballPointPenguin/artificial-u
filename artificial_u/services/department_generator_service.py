@@ -12,16 +12,14 @@ from artificial_u.config import get_settings
 from artificial_u.models.converters import (
     department_model_to_dict,
     enrich_department_dict_with_faculty,
-    extract_xml_content,
     parse_department_xml,
 )
 from artificial_u.models.repositories.factory import RepositoryFactory
-from artificial_u.prompts import (
-    get_prompts_for_language,
-)
+from artificial_u.prompts import get_prompts_for_language, resolve_prompt_language
 from artificial_u.services.content_service import ContentService
 from artificial_u.utils import (
     ContentGenerationError,
+    extract_xml_between_tags,
 )
 
 
@@ -30,26 +28,20 @@ class DepartmentGeneratorService:
 
     def __init__(
         self,
-        department_service,
         content_service: ContentService,
         repository_factory: RepositoryFactory,
-        job_enqueue_service,
         logger=None,
     ):
         """
         Initialize the department generator service.
 
         Args:
-            department_service: Core department service for CRUD operations
             content_service: Content generation service
             repository_factory: Repository factory instance
-            job_enqueue_service: Job enqueueing service for background tasks
             logger: Optional logger instance
         """
-        self.department_service = department_service
         self.content_service = content_service
         self.repository_factory = repository_factory
-        self.job_enqueue_service = job_enqueue_service
         self.logger = logger or logging.getLogger(__name__)
 
     async def generate_department(
@@ -232,7 +224,7 @@ class DepartmentGeneratorService:
             ContentGenerationError: If generation or parsing fails
         """
         # Get the prompt using the language-appropriate module
-        prompts_module = get_prompts_for_language(language)
+        prompts_module = get_prompts_for_language(resolve_prompt_language(language))
         prompt = prompts_module.get_department_prompt(
             existing_departments=existing_departments_dicts,
             existing_faculties=existing_faculties_dicts,
@@ -255,7 +247,7 @@ class DepartmentGeneratorService:
             raise ContentGenerationError("Content service returned empty response")
 
         # Extract XML content if wrapped in output tags
-        xml_content = extract_xml_content(response, "output")
+        xml_content = extract_xml_between_tags(response, "output")
         if not xml_content:
             xml_content = response  # Use full response if no output tags
 

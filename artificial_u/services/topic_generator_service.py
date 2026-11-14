@@ -16,6 +16,7 @@ from artificial_u.models.converters import (
 )
 from artificial_u.models.core import Topic
 from artificial_u.models.repositories.factory import RepositoryFactory
+from artificial_u.prompts import get_prompts_for_language, resolve_prompt_language
 from artificial_u.services.content_service import ContentService
 from artificial_u.services.preference_service import PreferenceService
 from artificial_u.utils import (
@@ -37,7 +38,6 @@ class TopicGeneratorService:
         course_service,
         content_service: ContentService,
         repository_factory: RepositoryFactory,
-        job_enqueue_service,
         logger=None,
     ):
         """
@@ -48,14 +48,12 @@ class TopicGeneratorService:
             course_service: Course management service
             content_service: Content generation service
             repository_factory: Repository factory instance
-            job_enqueue_service: Job enqueueing service for background tasks
             logger: Optional logger instance
         """
         self.topic_service = topic_service
         self.course_service = course_service
         self.content_service = content_service
         self.repository_factory = repository_factory
-        self.job_enqueue_service = job_enqueue_service
         self.logger = logger or logging.getLogger(__name__)
         self.preference_service = PreferenceService(repository_factory, logger=self.logger)
 
@@ -317,13 +315,7 @@ class TopicGeneratorService:
         )
 
         language = course_data.get("language") or "en"
-        lang = "en"
-        if language and isinstance(language, str):
-            lang_prefix = language.lower()[:2]
-            if lang_prefix in ("en", "fr"):
-                lang = lang_prefix
-
-        from artificial_u.prompts import get_prompts_for_language
+        lang = resolve_prompt_language(language)
 
         prompt_module = get_prompts_for_language(lang)
         topics_prompt = prompt_module.get_topics_prompt(
@@ -458,13 +450,7 @@ class TopicGeneratorService:
 
         # Determine language for prompts
         language = course_data.get("language") or "en"
-        lang = "en"
-        if language and isinstance(language, str):
-            lang_prefix = language.lower()[:2]
-            if lang_prefix in ("en", "fr"):
-                lang = lang_prefix
-
-        from artificial_u.prompts import get_prompts_for_language
+        lang = resolve_prompt_language(language)
 
         prompt_module = get_prompts_for_language(lang)
         topic_prompt = prompt_module.get_next_topic_prompt(

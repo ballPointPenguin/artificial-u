@@ -144,23 +144,6 @@ class MistralVoiceManager:
         self.logger.info("Created Mistral voice: %s (id=%s)", name, result.get("id"))
         return result
 
-    def delete_voice(self, voice_id: str) -> bool:
-        """Delete a custom voice.
-
-        Args:
-            voice_id: The Mistral voice ID to delete.
-
-        Returns:
-            True if deleted successfully.
-        """
-        try:
-            self._client.audio.voices.delete(voice_id=voice_id)
-            self.logger.info("Deleted Mistral voice: %s", voice_id)
-            return True
-        except Exception as e:
-            self.logger.error("Failed to delete Mistral voice %s: %s", voice_id, e)
-            return False
-
     def _voice_to_dict(self, voice: Any) -> Dict[str, Any]:
         """Convert an SDK voice response object to a plain dict."""
         result: Dict[str, Any] = {}

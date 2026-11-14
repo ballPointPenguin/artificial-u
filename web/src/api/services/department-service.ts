@@ -39,10 +39,6 @@ export const departmentService = {
     return httpClient.get<Department>(ENDPOINTS.departments.detail(departmentId))
   },
 
-  getDepartmentByCode: (code: string): Promise<Department> => {
-    return httpClient.get<Department>(ENDPOINTS.departments.code(code))
-  },
-
   createDepartment: (data: DepartmentCreate): Promise<Department> => {
     return httpClient.post<Department>(ENDPOINTS.departments.list, data)
   },
@@ -66,19 +62,5 @@ export const departmentService = {
 
   generateDepartment: (data: DepartmentGenerateRequest): Promise<Department> => {
     return httpClient.post<Department>(ENDPOINTS.departments.generate, data)
-  },
-
-  enqueueGenerateDepartment: (
-    data: DepartmentGenerateRequest
-  ): Promise<{
-    id: number
-    kind: string
-    status: string
-    attempts: number
-    max_attempts: number
-    priority?: number
-    run_after?: string
-  }> => {
-    return httpClient.post(ENDPOINTS.departments.enqueueGenerate, data)
   },
 }

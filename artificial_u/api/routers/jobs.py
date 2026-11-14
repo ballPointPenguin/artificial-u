@@ -5,11 +5,11 @@ from typing import Any, Dict, Optional
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import StreamingResponse
 from fastapi.security import HTTPAuthorizationCredentials
-from pydantic import BaseModel
 
 from artificial_u.api.dependencies import get_repository_factory
 from artificial_u.api.events import JobEventHub, sse_stream
 from artificial_u.api.security.auth0 import require_auth
+from artificial_u.api.utils.jobs import job_summary
 from artificial_u.config import get_settings
 from artificial_u.models.repositories.factory import RepositoryFactory
 from artificial_u.services.tts_service import configured_tts_model
@@ -236,13 +236,7 @@ def _job_link_path(  # noqa: C901
 
 def _job_row_response(r, factory=None, cache: Optional[dict] = None) -> dict:
     return {
-        "id": r.id,
-        "kind": r.kind,
-        "status": r.status,
-        "attempts": r.attempts,
-        "max_attempts": r.max_attempts,
-        "priority": r.priority,
-        "run_after": r.run_after,
+        **job_summary(r),
         "created_at": r.created_at,
         "updated_at": r.updated_at,
         "last_error": r.last_error,
@@ -282,14 +276,6 @@ def _active_job_snapshot(
     return [_job_row_response(row, factory, cache) for row in rows]
 
 
-class EnqueueJob(BaseModel):
-    kind: str
-    payload: Dict[str, Any]
-    # When omitted, the priority is derived from the job kind (see job_priorities).
-    priority: Optional[int] = None
-    max_attempts: int = 2
-
-
 async def _publish_job_event(request: Request, event: Dict[str, Any]) -> None:
     """Best-effort publish of a job event to the SSE hub.
 
@@ -304,41 +290,6 @@ async def _publish_job_event(request: Request, event: Dict[str, Any]) -> None:
         await hub.publish(event)
     except Exception:  # noqa: BLE001
         logging.getLogger(__name__).debug("Failed to publish job event", exc_info=True)
-
-
-@router.post("", dependencies=[Depends(require_auth)])
-async def enqueue(
-    job: EnqueueJob,
-    request: Request,
-    repository_factory: RepositoryFactory = Depends(get_repository_factory),
-):
-    repo = repository_factory.job
-    row = await asyncio.to_thread(
-        repo.create,
-        kind=job.kind,
-        payload=job.payload,
-        priority=job.priority,
-        max_attempts=job.max_attempts,
-    )
-    await _publish_job_event(
-        request,
-        {
-            "id": row.id,
-            "kind": row.kind,
-            "status": "queued",
-            "payload": row.payload,
-        },
-    )
-
-    return {
-        "id": row.id,
-        "kind": row.kind,
-        "status": row.status,
-        "attempts": row.attempts,
-        "max_attempts": row.max_attempts,
-        "priority": row.priority,
-        "run_after": row.run_after,
-    }
 
 
 @router.get("", dependencies=[Depends(require_auth)])

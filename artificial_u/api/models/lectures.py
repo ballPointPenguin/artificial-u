@@ -54,8 +54,6 @@ class LectureBase(BaseModel):
 class LectureCreate(LectureBase):
     """Model for creating a new lecture."""
 
-    pass
-
 
 class LectureUpdate(BaseModel):
     """Model for updating lecture details (all fields optional)."""

@@ -15,14 +15,14 @@ from artificial_u.api.models.topics import (
     Topic,
     TopicCreate,
     TopicDraft,
-    TopicGenerate,
     TopicGenerateSingle,
     TopicListResponse,
     TopicUpdate,
 )
 from artificial_u.api.security.auth0 import require_coins, require_role
 from artificial_u.api.services.topic_service import TopicApiService
-from artificial_u.config.settings import get_settings
+from artificial_u.api.utils.jobs import job_summary
+from artificial_u.config import get_settings
 from artificial_u.models.core import Student
 from artificial_u.models.repositories.factory import RepositoryFactory
 
@@ -142,29 +142,6 @@ course_topics_router = APIRouter(
 
 
 @course_topics_router.post(
-    "/generate",
-    response_model=List[Topic],
-    status_code=status.HTTP_200_OK,
-    summary="Generate topics for a course",
-    description="Generates a list of topics for a specified course using AI.",
-    dependencies=[require_coins(cost=get_settings().COIN_COST_TOPIC_GENERATION)],
-)
-async def generate_topics_for_course(
-    course_id: int = Path(..., description="The ID of the course to generate topics for"),
-    freeform_prompt: Optional[str] = Query(None, description="Optional prompt for generation"),
-    topic_service: TopicApiService = Depends(get_topic_api_service),
-    student=Depends(ensure_student),
-):
-    """Generate and save topics for a given course ID."""
-    # The API model TopicGenerate includes course_id, but path param is more RESTful here.
-    # We can construct the TopicGenerate object in the service or pass params directly
-    # if core service allows.
-    # Current TopicApiService.generate_topics_for_course expects a TopicGenerate object.
-    generation_data = TopicGenerate(course_id=course_id, freeform_prompt=freeform_prompt)
-    return await topic_service.generate_topics_for_course(generation_data, created_by=student.id)
-
-
-@course_topics_router.post(
     "/generate-single",
     response_model=TopicDraft,
     status_code=status.HTTP_200_OK,
@@ -200,23 +177,16 @@ async def enqueue_generate_topics_for_course(
     course_id: int = Path(..., description="The ID of the course to generate topics for"),
     freeform_prompt: Optional[str] = Query(None, description="Optional prompt for generation"),
     repository_factory: RepositoryFactory = Depends(get_repository_factory),
+    student: Student = Depends(ensure_student),
 ):
-    payload: Dict[str, Any] = {"course_id": course_id}
+    payload: Dict[str, Any] = {"course_id": course_id, "created_by": student.id}
     if freeform_prompt:
         payload["freeform_prompt"] = freeform_prompt
     row = repository_factory.job.create(
         kind="generate_topics_for_course",
         payload=payload,
     )
-    return {
-        "id": row.id,
-        "kind": row.kind,
-        "status": row.status,
-        "attempts": row.attempts,
-        "max_attempts": row.max_attempts,
-        "priority": row.priority,
-        "run_after": row.run_after,
-    }
+    return job_summary(row)
 
 
 # Batch generation endpoints (admin-only)
@@ -336,7 +306,12 @@ def generate_remaining_lectures(
     follow_up_ids = remaining[1:]
 
     payload: Dict[str, Any] = {
-        "partial_attributes": {"topic_id": first_topic_id, "course_id": topic.course_id},
+        "partial_attributes": {
+            "topic_id": first_topic_id,
+            "course_id": topic.course_id,
+            # The lecture generator reads the creator's student ID from here
+            "created_by": student.id,
+        },
         "created_by": student.email,
     }
 
@@ -346,7 +321,7 @@ def generate_remaining_lectures(
             "remaining_topic_ids": follow_up_ids,
             "course_id": topic.course_id,
             "created_by": student.email,
-            "partial_attributes": {"course_id": topic.course_id},
+            "partial_attributes": {"course_id": topic.course_id, "created_by": student.id},
         }
 
     row = repository_factory.job.create(
@@ -355,13 +330,7 @@ def generate_remaining_lectures(
     )
 
     return {
-        "id": row.id,
-        "kind": row.kind,
-        "status": row.status,
-        "attempts": row.attempts,
-        "max_attempts": row.max_attempts,
-        "priority": row.priority,
-        "run_after": row.run_after,
+        **job_summary(row),
         "total_topics": len(remaining),
         "message": f"Queued batch generation for {len(remaining)} lectures",
     }
@@ -426,13 +395,7 @@ def regenerate_remaining_audio(
     )
 
     return {
-        "id": row.id,
-        "kind": row.kind,
-        "status": row.status,
-        "attempts": row.attempts,
-        "max_attempts": row.max_attempts,
-        "priority": row.priority,
-        "run_after": row.run_after,
+        **job_summary(row),
         "total_lectures": len(topic_ids_with_lectures),
         "message": f"Queued batch audio regeneration for {len(topic_ids_with_lectures)} lectures",
     }
@@ -496,13 +459,7 @@ def generate_remaining_timelines(
     )
 
     return {
-        "id": row.id,
-        "kind": row.kind,
-        "status": row.status,
-        "attempts": row.attempts,
-        "max_attempts": row.max_attempts,
-        "priority": row.priority,
-        "run_after": row.run_after,
+        **job_summary(row),
         "total_lectures": len(topic_ids_with_audio),
         "message": f"Queued batch timeline generation for {len(topic_ids_with_audio)} lectures",
     }
@@ -545,7 +502,12 @@ def regenerate_remaining_lectures(
     follow_up_ids = remaining[1:]
 
     payload: Dict[str, Any] = {
-        "partial_attributes": {"topic_id": first_topic_id, "course_id": topic.course_id},
+        "partial_attributes": {
+            "topic_id": first_topic_id,
+            "course_id": topic.course_id,
+            # The lecture generator reads the creator's student ID from here
+            "created_by": student.id,
+        },
         "created_by": student.email,
     }
 
@@ -555,7 +517,7 @@ def regenerate_remaining_lectures(
             "remaining_topic_ids": follow_up_ids,
             "course_id": topic.course_id,
             "created_by": student.email,
-            "partial_attributes": {"course_id": topic.course_id},
+            "partial_attributes": {"course_id": topic.course_id, "created_by": student.id},
         }
 
     row = repository_factory.job.create(
@@ -564,13 +526,7 @@ def regenerate_remaining_lectures(
     )
 
     return {
-        "id": row.id,
-        "kind": row.kind,
-        "status": row.status,
-        "attempts": row.attempts,
-        "max_attempts": row.max_attempts,
-        "priority": row.priority,
-        "run_after": row.run_after,
+        **job_summary(row),
         "total_topics": len(remaining),
         "message": f"Queued batch regeneration for {len(remaining)} lectures",
     }

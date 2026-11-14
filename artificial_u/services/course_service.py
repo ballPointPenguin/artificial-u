@@ -5,10 +5,6 @@ Course management service for ArtificialU.
 import logging
 from typing import Any, Dict, List, Optional, Tuple
 
-from artificial_u.models.converters import (
-    course_model_to_dict,
-    professor_model_to_dict,
-)
 from artificial_u.models.core import Course, CourseSettings, Professor
 from artificial_u.models.repositories.factory import RepositoryFactory
 from artificial_u.services.professor_service import ProfessorService
@@ -274,95 +270,6 @@ class CourseService:
             self.logger.error(error_msg)
             raise CourseNotFoundError(error_msg)
         return course
-
-    def get_course_by_code(self, course_code: str) -> Course:
-        """
-        Get a course by its code.
-
-        Args:
-            course_code: Course code to look up
-
-        Returns:
-            Course: The course object
-
-        Raises:
-            CourseNotFoundError: If course not found
-        """
-        course = self.repository_factory.course.get_by_code(course_code)
-        if not course:
-            error_msg = f"Course with code {course_code} not found"
-            self.logger.error(error_msg)
-            raise CourseNotFoundError(error_msg)
-        return course
-
-    def list_courses(self, department_id: Optional[int] = None) -> List[Dict[str, Any]]:
-        """
-        List all courses with professor and student information, using repository factory.
-
-        Args:
-            department_id: Optional department ID to filter by.
-
-        Returns:
-            List[Dict]: List of courses with professor and student information.
-        """
-        self.logger.info(
-            f"Listing courses{f' for department {department_id}' if department_id else ''}"
-        )
-
-        try:
-            courses = self.repository_factory.course.list(department_id=department_id)
-            result = []
-            for course in courses:
-                professor = None
-                if course.professor_id:
-                    professor = self.repository_factory.professor.get(course.professor_id)
-
-                department = None
-                if course.department_id:
-                    department = self.repository_factory.department.get(course.department_id)
-
-                student = None
-                if course.created_by:
-                    student = self.repository_factory.student.get(course.created_by)
-
-                faculty_name = None
-                if department and department.faculty_id:
-                    faculty = self.repository_factory.faculty.get(department.faculty_id)
-                    if faculty:
-                        faculty_name = faculty.name
-
-                result.append(
-                    {
-                        "course": course_model_to_dict(course),
-                        "professor": professor_model_to_dict(professor) if professor else None,
-                        "department": (
-                            {
-                                "id": department.id,
-                                "name": department.name,
-                                "code": department.code,
-                                "faculty_id": department.faculty_id,
-                                "faculty_name": faculty_name,
-                            }
-                            if department
-                            else None
-                        ),
-                        "student": (
-                            {
-                                "id": student.id,
-                                "name": student.name,
-                                "email": student.email,
-                            }
-                            if student
-                            else None
-                        ),
-                    }
-                )
-            self.logger.debug(f"Found {len(result)} courses")
-            return result
-        except Exception as e:
-            error_msg = f"Failed to list courses: {str(e)}"
-            self.logger.error(error_msg, exc_info=True)
-            raise DatabaseError(error_msg) from e
 
     def update_course(self, course_id: int, update_data: Dict[str, Any]) -> Course:
         """

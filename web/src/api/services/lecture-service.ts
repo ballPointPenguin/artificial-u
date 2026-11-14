@@ -1,11 +1,10 @@
 /**
  * Lecture service
  */
-import { createUrl, httpClient } from '../client'
+import { httpClient } from '../client'
 import { ENDPOINTS, TIMEOUT_CONFIG } from '../config'
 import type {
   AdminLectureListResponse,
-  AudioRedirectResponse,
   Lecture,
   LectureCreate,
   LectureGenerateRequest,
@@ -63,33 +62,6 @@ export const lectureService = {
 
   getLecture: (lectureId: number): Promise<Lecture> => {
     return httpClient.get<Lecture>(ENDPOINTS.lectures.detail(lectureId))
-  },
-
-  getLectureContent: async (lectureId: number): Promise<string> => {
-    const url = createUrl(ENDPOINTS.lectures.content(lectureId))
-    const response = await fetch(url)
-    if (!response.ok) {
-      throw new Error(
-        `Failed to fetch lecture content: ${response.statusText} (status: ${String(response.status)})`
-      )
-    }
-    return response.text()
-  },
-
-  getLectureAudioUrl: (lectureId: number): Promise<AudioRedirectResponse> => {
-    return httpClient.get<AudioRedirectResponse>(ENDPOINTS.lectures.audio(lectureId))
-  },
-
-  /**
-   * Trigger generation of lecture audio. No body required.
-   * Uses extended timeout similar to other generation actions.
-   */
-  generateLectureAudio: (lectureId: number, onTimeout?: () => void): Promise<Lecture> => {
-    return httpClient.postWithExtendedTimeout<Lecture>(
-      ENDPOINTS.lectures.generateAudio(lectureId),
-      undefined,
-      { timeout: TIMEOUT_CONFIG.generation, onTimeout }
-    )
   },
 
   /**
@@ -176,27 +148,6 @@ export const lectureService = {
     return httpClient.delete<null>(ENDPOINTS.lectures.detail(lectureId))
   },
 
-  downloadLectureContent: async (lectureId: number): Promise<string> => {
-    const url = createUrl(ENDPOINTS.lectures.download(lectureId))
-    const response = await fetch(url)
-    if (!response.ok) {
-      throw new Error(
-        `Failed to download lecture content: ${response.statusText} (status: ${String(response.status)})`
-      )
-    }
-    return response.text()
-  },
-
-  /**
-   * Generate lecture with extended timeout for long-running operations
-   */
-  generateLecture: (data: LectureGenerateRequest, onTimeout?: () => void): Promise<Lecture> => {
-    return httpClient.postWithExtendedTimeout<Lecture>(ENDPOINTS.lectures.generate, data, {
-      timeout: TIMEOUT_CONFIG.generation,
-      onTimeout,
-    })
-  },
-
   /**
    * Enqueue lecture generation job (async). Returns a job stub with id.
    */
@@ -212,21 +163,6 @@ export const lectureService = {
     run_after?: string
   }> => {
     return httpClient.post(ENDPOINTS.lectures.enqueueGenerate, data)
-  },
-
-  /**
-   * Generate lecture text only with extended timeout for long-running operations.
-   * This generates only the lecture text content without automatically triggering
-   * audio or summary generation.
-   */
-  generateLectureTextOnly: (
-    data: LectureGenerateRequest,
-    onTimeout?: () => void
-  ): Promise<Lecture> => {
-    return httpClient.postWithExtendedTimeout<Lecture>(ENDPOINTS.lectures.generateTextOnly, data, {
-      timeout: TIMEOUT_CONFIG.generation,
-      onTimeout,
-    })
   },
 
   /**

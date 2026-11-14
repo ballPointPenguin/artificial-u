@@ -24,14 +24,10 @@ class DepartmentBase(BaseModel):
 class DepartmentCreate(DepartmentBase):
     """Model for creating a new department."""
 
-    pass
-
 
 # Department update model
 class DepartmentUpdate(DepartmentBase):
     """Model for updating an existing department."""
-
-    pass
 
 
 # Department generation model

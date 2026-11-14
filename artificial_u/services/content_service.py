@@ -4,16 +4,14 @@ import re
 from datetime import datetime
 from typing import Optional
 
-import anthropic
 import openai
-from google.api_core import exceptions as google_exceptions
+from google.genai import types
 
 from artificial_u.config import get_settings
 from artificial_u.integrations import anthropic_client, gemini_client, openai_client, xai_client
 from artificial_u.services.storage_service import StorageService
 from artificial_u.utils.exceptions import ContentGenerationError
 
-# TODO: Make these configurable
 DEFAULT_TEMPERATURE = 0.3
 DEFAULT_MAX_TOKENS = 4096  # Increased from 1024 to allow for longer responses like topic lists
 # Effort controls overall token spend on supported Claude models (Opus 4.5+, Sonnet 4.6+).
@@ -85,18 +83,9 @@ class ContentService:
 
     def __init__(self, logger=None, storage_service: Optional[StorageService] = None):
         self.logger = logger or logging.getLogger(__name__)
-        # Get settings instance
-        settings = get_settings()
-        self.default_backend = settings.content_backend
-        self.default_model = settings.content_model
 
-        # Initialize storage service for content logs
+        # Storage service for content logs
         self.storage_service = storage_service or StorageService(logger=self.logger)
-
-        self.logger.info(
-            f"ContentService initialized with default backend: {self.default_backend}, "
-            f"default model: {self.default_model}"
-        )
 
     def _determine_backend(self, model: str) -> str:
         """
@@ -127,91 +116,10 @@ class ContentService:
         else:
             return "openai"  # Default assumption, adjust as needed
 
-    def _categorize_error(self, error: Exception, backend: str) -> str:
-        """
-        Categorize an error to determine if it's retryable.
-
-        Returns:
-            str: 'transient', 'rate_limited', 'permanent', or 'configuration'
-        """
-        if backend == "anthropic":
-            return self._categorize_anthropic_error(error)
-        elif backend in ("openai", "xai"):
-            # xAI is called through the OpenAI SDK, so it raises the same exception types
-            return self._categorize_openai_error(error)
-        elif backend == "gemini":
-            return self._categorize_gemini_error(error)
-
-        # Default to transient for unknown errors (optimistic retrying)
-        return "transient"
-
-    def _categorize_anthropic_error(self, error: Exception) -> str:
-        """Categorize Anthropic-specific errors."""
-        if isinstance(error, anthropic.InternalServerError):
-            # 529 errors are transient overloaded errors
-            if hasattr(error, "response") and error.response and error.response.status_code == 529:
-                return "transient"
-            return "transient"
-        elif isinstance(error, anthropic.RateLimitError):
-            return "rate_limited"
-        elif isinstance(error, anthropic.APITimeoutError):
-            return "transient"
-        elif isinstance(error, anthropic.APIConnectionError):
-            return "transient"
-        elif isinstance(error, anthropic.BadRequestError):
-            return "permanent"
-        elif isinstance(error, anthropic.AuthenticationError):
-            return "configuration"
-        elif isinstance(error, anthropic.PermissionDeniedError):
-            return "configuration"
-
-        # Check for 529 in error message as fallback
-        error_str = str(error)
-        if "529" in error_str and "overloaded" in error_str.lower():
-            return "transient"
-
-        return "transient"
-
-    def _categorize_openai_error(self, error: Exception) -> str:
-        """Categorize OpenAI-specific errors."""
-        if isinstance(error, openai.APITimeoutError):
-            return "transient"
-        elif isinstance(error, openai.RateLimitError):
-            return "rate_limited"
-        elif isinstance(error, openai.APIConnectionError):
-            return "transient"
-        elif isinstance(error, openai.InternalServerError):
-            return "transient"
-        elif isinstance(error, openai.BadRequestError):
-            return "permanent"
-        elif isinstance(error, openai.AuthenticationError):
-            return "configuration"
-        elif isinstance(error, openai.PermissionDeniedError):
-            return "configuration"
-
-        return "transient"
-
-    def _categorize_gemini_error(self, error: Exception) -> str:
-        """Categorize Gemini-specific errors."""
-        if isinstance(error, google_exceptions.ServiceUnavailable):
-            return "transient"
-        elif isinstance(error, google_exceptions.TooManyRequests):
-            return "rate_limited"
-        elif isinstance(error, google_exceptions.InternalServerError):
-            return "transient"
-        elif isinstance(error, google_exceptions.BadRequest):
-            return "permanent"
-        elif isinstance(error, google_exceptions.Unauthenticated):
-            return "configuration"
-        elif isinstance(error, google_exceptions.PermissionDenied):
-            return "configuration"
-
-        return "transient"
-
     async def generate_text(
         self,
         prompt: str,
-        model: Optional[str] = None,
+        model: str,
         system_prompt: Optional[str] = None,
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
@@ -220,12 +128,12 @@ class ContentService:
         effort: Optional[str] = None,
     ) -> str:
         """
-        Generates text based on the provided prompt using the specified or default model.
+        Generates text based on the provided prompt using the specified model.
 
         Args:
             prompt: The main text prompt for generation.
-            model: The specific model name to use (e.g., 'claude-sonnet-5-5',
-            'gpt-6-luna', 'gemini-3.8-flash'). If None, uses the default model from settings.
+            model: The model name to use (e.g., 'claude-sonnet-5-5', 'gpt-6-luna',
+            'gemini-3.8-flash'). The backend is derived from the model name.
             system_prompt: An optional system prompt or instruction for the model.
             temperature: Optional temperature for sampling (model-dependent, default varies).
             max_tokens: Optional maximum number of tokens to generate
@@ -242,57 +150,38 @@ class ContentService:
             The generated text content as a string.
 
         Raises:
-            ValueError: If the specified or default model is not supported or configured.
-            NotImplementedError: If the backend for the model is not implemented.
+            ValueError: If the model is an image model.
             ContentGenerationError: If the content generation fails.
         """
-        target_model = model or self.default_model
-        if not target_model:
-            self.logger.error("No model specified and no default model configured.")
-            raise ValueError("No model specified and no default model configured.")
-
-        self.logger.info(
-            f"Generating text for prompt: '{prompt[:500]}...' using model: {target_model}"
-        )
+        self.logger.info(f"Generating text for prompt: '{prompt[:500]}...' using model: {model}")
 
         # Determine backend based on model name
-        backend = self._determine_backend(target_model)
-
-        # Map backends to their respective generation methods
-        backend_methods = {
+        backend = self._determine_backend(model)
+        generation_method = {
             "anthropic": self._generate_anthropic,
             "openai": self._generate_openai,
             "xai": self._generate_xai,
             "gemini": self._generate_gemini,
-        }
-
-        # Get the appropriate generation method
-        if backend not in backend_methods:
-            self.logger.error(f"Unsupported backend: {backend} for model {target_model}")
-            raise NotImplementedError(f"Backend '{backend}' is not implemented.")
+        }[backend]
 
         try:
-            generation_method = backend_methods[backend]
             return await generation_method(
                 prompt,
-                target_model,
+                model,
                 system_prompt,
                 temperature,
                 max_tokens,
                 prefill,
-                backend=backend,
                 thinking_level=thinking_level,
                 effort=effort,
             )
         except Exception as e:
             self.logger.error(
-                f"Error generating text with model {target_model} (backend {backend}): {e}",
+                f"Error generating text with model {model} (backend {backend}): {e}",
                 exc_info=True,
             )
             # Re-raise as a generic ContentGenerationError to be handled by the caller
-            raise ContentGenerationError(
-                f"Failed to generate content with model {target_model}."
-            ) from e
+            raise ContentGenerationError(f"Failed to generate content with model {model}.") from e
 
     async def _log_content(
         self,
@@ -389,14 +278,6 @@ class ContentService:
         else:
             minor = int(minor_or_date)
         return (major, minor)
-
-    @staticmethod
-    def _parse_claude_tier(model: str) -> Optional[str]:
-        """Parse the model tier (e.g. "sonnet", "opus", "haiku") from a Claude
-        model name. Returns ``None`` for unrecognized patterns.
-        """
-        match = re.match(r"claude-([a-zA-Z]+)-\d", model)
-        return match.group(1) if match else None
 
     def _is_prefill_supported(self, model: str) -> bool:
         """Check if a Claude model supports assistant message prefill.
@@ -501,54 +382,50 @@ class ContentService:
         # Claude 4.7+ (incl. Opus 4.8) reject temperature/top_p/top_k with a 400 error.
         use_sampling_params = self._supports_sampling_params(model)
 
-        try:
-            messages = [{"role": "user", "content": prompt}]
+        messages = [{"role": "user", "content": prompt}]
 
-            if use_prefill:
-                messages.append({"role": "assistant", "content": prefill})
+        if use_prefill:
+            messages.append({"role": "assistant", "content": prefill})
 
-            request_params = {
-                "model": model,
-                "max_tokens": max_tokens if max_tokens is not None else DEFAULT_MAX_TOKENS,
-                "messages": messages,
-                "system": system_prompt,
-            }
+        request_params = {
+            "model": model,
+            "max_tokens": max_tokens if max_tokens is not None else DEFAULT_MAX_TOKENS,
+            "messages": messages,
+            "system": system_prompt,
+        }
 
-            if use_sampling_params:
-                request_params["temperature"] = (
-                    temperature if temperature is not None else DEFAULT_TEMPERATURE
-                )
-            else:
-                self.logger.info(
-                    f"Sampling params (temperature) not supported for model {model} "
-                    "(Claude 4.7+), skipping."
-                )
+        if use_sampling_params:
+            request_params["temperature"] = (
+                temperature if temperature is not None else DEFAULT_TEMPERATURE
+            )
+        else:
+            self.logger.info(
+                f"Sampling params (temperature) not supported for model {model} "
+                "(Claude 4.7+), skipping."
+            )
 
-            # Effort controls overall token spend on supported models; default to medium
-            # for content generation rather than the API default of "high".
-            effective_effort = None
-            if self._supports_effort(model):
-                effective_effort = effort or DEFAULT_ANTHROPIC_EFFORT
-                request_params["output_config"] = {"effort": effective_effort}
-            elif effort:
-                self.logger.info(
-                    f"Effort not supported for model {model}, skipping (requested: {effort})."
-                )
+        # Effort controls overall token spend on supported models; default to medium
+        # for content generation rather than the API default of "high".
+        effective_effort = None
+        if self._supports_effort(model):
+            effective_effort = effort or DEFAULT_ANTHROPIC_EFFORT
+            request_params["output_config"] = {"effort": effective_effort}
+        elif effort:
+            self.logger.info(
+                f"Effort not supported for model {model}, skipping (requested: {effort})."
+            )
 
-            # Claude 5 thinks by default even without a `thinking` field, and thinking
-            # tokens count against max_tokens. Turn off up-front thinking so behavior
-            # and budgeting stay consistent with earlier Claude models. Sonnet 5.5
-            # rejects "disabled" and uses "between_tools"; Opus 5.5 cannot turn
-            # adaptive thinking off.
-            thinking_type = self._upfront_thinking_type(model, effective_effort)
-            disable_thinking = thinking_type is not None
-            if thinking_type:
-                request_params["thinking"] = {"type": thinking_type}
+        # Claude 5 thinks by default even without a `thinking` field, and thinking
+        # tokens count against max_tokens. Turn off up-front thinking so behavior
+        # and budgeting stay consistent with earlier Claude models. Sonnet 5.5
+        # rejects "disabled" and uses "between_tools"; Opus 5.5 cannot turn
+        # adaptive thinking off.
+        thinking_type = self._upfront_thinking_type(model, effective_effort)
+        disable_thinking = thinking_type is not None
+        if thinking_type:
+            request_params["thinking"] = {"type": thinking_type}
 
-            response = await anthropic_client.messages.create(**request_params)
-        except anthropic.APIError as e:
-            # Let the retry logic handle this
-            raise e
+        response = await anthropic_client.messages.create(**request_params)
 
         # Handle refusal stop reason (Claude 4.5+)
         if response.stop_reason == "refusal":
@@ -644,11 +521,7 @@ class ContentService:
             # Log the specific error details for bad requests
             self.logger.error(f"OpenAI BadRequestError for model {model}: {str(e)}")
             self.logger.error(f"Request parameters used: {completion_params}")
-            raise e
-        except openai.APIError as e:
-            # Let the retry logic handle this
-            self.logger.error(f"OpenAI API error for model {model}: {str(e)}")
-            raise e
+            raise
 
         self.logger.info(f"Received response from OpenAI: {response_text[:500]}")
 
@@ -687,12 +560,8 @@ class ContentService:
         if temperature is not None:
             completion_params["temperature"] = temperature
 
-        try:
-            response = await xai_client.chat.completions.create(**completion_params)
-            response_text = self._extract_openai_text(response)
-        except openai.APIError as e:
-            self.logger.error(f"xAI API error for model {model}: {str(e)}")
-            raise e
+        response = await xai_client.chat.completions.create(**completion_params)
+        response_text = self._extract_openai_text(response)
 
         self.logger.info(f"Received response from xAI: {response_text[:500]}")
 
@@ -718,28 +587,11 @@ class ContentService:
         return messages
 
     def _extract_openai_text(self, response) -> str:
-        """Extract assistant text from OpenAI ChatCompletion response robustly."""
+        """Extract assistant text from a ChatCompletion response ("" when there is none)."""
         try:
             return response.choices[0].message.content or ""
         except Exception:
-            pass
-        try:
-            msg = response.choices[0].message
-            content = getattr(msg, "content", None)
-            if isinstance(content, list):
-                parts = []
-                for part in content:
-                    text_val = None
-                    if isinstance(part, dict):
-                        text_val = part.get("text") or part.get("output_text")
-                    else:
-                        text_val = getattr(part, "text", None)
-                    if text_val:
-                        parts.append(text_val)
-                return "\n".join(parts)
-        except Exception:
-            pass
-        return ""
+            return ""
 
     async def _generate_gemini(  # noqa: C901
         self,
@@ -757,83 +609,75 @@ class ContentService:
             self.logger.warning("Prefill parameter provided but not supported for Gemini models")
         if thinking_level == "minimal" and not _supports_gemini_minimal_thinking_level(model):
             raise ValueError(f"Model {model} does not support thinking_level='minimal'")
-        try:
-            from google.genai import types
+        # Build the content list with proper Part structure
+        contents = [types.Part.from_text(text=prompt)]
 
-            # Build the content list with proper Part structure
-            contents = [types.Part.from_text(text=prompt)]
+        # Gemini 3.x are reasoning models: "thinking" tokens are billed against
+        # max_output_tokens, and Google recommends keeping temperature at the
+        # default of 1.0 (lower values can trigger looping / degraded reasoning,
+        # which in turn burns the output budget and truncates the response).
+        is_gemini_3_plus = _is_gemini_3_plus(model)
 
-            # Gemini 3.x are reasoning models: "thinking" tokens are billed against
-            # max_output_tokens, and Google recommends keeping temperature at the
-            # default of 1.0 (lower values can trigger looping / degraded reasoning,
-            # which in turn burns the output budget and truncates the response).
-            is_gemini_3_plus = _is_gemini_3_plus(model)
+        # Create generation config with max_output_tokens
+        config_params = {
+            "max_output_tokens": max_tokens if max_tokens is not None else DEFAULT_MAX_TOKENS,
+        }
 
-            # Create generation config with max_output_tokens
-            config_params = {
-                "max_output_tokens": max_tokens if max_tokens is not None else DEFAULT_MAX_TOKENS,
-            }
-
-            # Sampling parameters (temperature, top_p, top_k) are deprecated starting
-            # with Gemini 3.6 Flash and Gemini 3.5 Flash-Lite. Omit temperature for models
-            # that deprecate it to avoid errors or ignored parameter warnings.
-            if not _deprecates_gemini_sampling_params(model):
-                if temperature is not None:
-                    effective_temperature = temperature
-                elif is_gemini_3_plus:
-                    effective_temperature = 1.0
-                else:
-                    effective_temperature = DEFAULT_TEMPERATURE
-                config_params["temperature"] = effective_temperature
-
-            # Control reasoning effort on models that support it (Gemini 3+). Using a
-            # lower thinking level reserves more of the output budget for the visible
-            # response and reduces the risk of MAX_TOKENS truncation.
-            if thinking_level and is_gemini_3_plus:
-                config_params["thinking_config"] = types.ThinkingConfig(
-                    thinking_level=thinking_level
-                )
-
-            # Add system instruction to config if provided
-            if system_prompt:
-                config_params["system_instruction"] = system_prompt
-
-            generation_config = types.GenerateContentConfig(**config_params)
-
-            # Call the API with the config containing all parameters
-            response = await gemini_client.aio.models.generate_content(
-                model=model,
-                contents=contents,
-                config=generation_config,
-            )
-
-            # Handle response parsing robustly. Reasoning models may split the answer
-            # across multiple parts and include separate "thought" parts, so we
-            # concatenate every visible (non-thought) text part rather than only
-            # reading the first one.
-            response_text = ""
-            if getattr(response, "candidates", None):
-                candidate = response.candidates[0]
-                content = getattr(candidate, "content", None)
-                parts = getattr(content, "parts", None) if content else None
-                if parts:
-                    response_text = "".join(
-                        part.text
-                        for part in parts
-                        if getattr(part, "text", None) and not getattr(part, "thought", False)
-                    )
-                if not response_text:
-                    # An empty body with a MAX_TOKENS finish reason means the budget
-                    # was exhausted (often by thinking). Surface it to aid debugging.
-                    finish_reason = getattr(candidate, "finish_reason", None)
-                    self.logger.warning(
-                        f"No visible text in Gemini response (finish_reason={finish_reason})"
-                    )
+        # Sampling parameters (temperature, top_p, top_k) are deprecated starting
+        # with Gemini 3.6 Flash and Gemini 3.5 Flash-Lite. Omit temperature for models
+        # that deprecate it to avoid errors or ignored parameter warnings.
+        if not _deprecates_gemini_sampling_params(model):
+            if temperature is not None:
+                effective_temperature = temperature
+            elif is_gemini_3_plus:
+                effective_temperature = 1.0
             else:
-                self.logger.warning("No candidates found in Gemini response")
-        except (google_exceptions.GoogleAPICallError, Exception) as e:
-            # Let the retry logic handle this
-            raise e
+                effective_temperature = DEFAULT_TEMPERATURE
+            config_params["temperature"] = effective_temperature
+
+        # Control reasoning effort on models that support it (Gemini 3+). Using a
+        # lower thinking level reserves more of the output budget for the visible
+        # response and reduces the risk of MAX_TOKENS truncation.
+        if thinking_level and is_gemini_3_plus:
+            config_params["thinking_config"] = types.ThinkingConfig(thinking_level=thinking_level)
+
+        # Add system instruction to config if provided
+        if system_prompt:
+            config_params["system_instruction"] = system_prompt
+
+        generation_config = types.GenerateContentConfig(**config_params)
+
+        # Call the API with the config containing all parameters
+        response = await gemini_client.aio.models.generate_content(
+            model=model,
+            contents=contents,
+            config=generation_config,
+        )
+
+        # Handle response parsing robustly. Reasoning models may split the answer
+        # across multiple parts and include separate "thought" parts, so we
+        # concatenate every visible (non-thought) text part rather than only
+        # reading the first one.
+        response_text = ""
+        if getattr(response, "candidates", None):
+            candidate = response.candidates[0]
+            content = getattr(candidate, "content", None)
+            parts = getattr(content, "parts", None) if content else None
+            if parts:
+                response_text = "".join(
+                    part.text
+                    for part in parts
+                    if getattr(part, "text", None) and not getattr(part, "thought", False)
+                )
+            if not response_text:
+                # An empty body with a MAX_TOKENS finish reason means the budget
+                # was exhausted (often by thinking). Surface it to aid debugging.
+                finish_reason = getattr(candidate, "finish_reason", None)
+                self.logger.warning(
+                    f"No visible text in Gemini response (finish_reason={finish_reason})"
+                )
+        else:
+            self.logger.warning("No candidates found in Gemini response")
 
         self.logger.info(f"Received response from Gemini: {response_text[:500]}")
 

@@ -79,10 +79,6 @@ web/src/
 All Python commands use `uv` for environment management:
 
 ```bash
-# Run CLI commands
-uv run artificial_u --help
-uv run artificial_u list-courses
-
 # Testing
 uv run pytest                    # All tests
 uv run pytest -m unit            # Unit tests only
@@ -103,8 +99,8 @@ uv run python scripts/run_alembic.py upgrade head  # Run migrations
 # API server
 uv run uvicorn artificial_u.api.app:app --reload --host 0.0.0.0 --port 8000
 
-# Background worker
-uv run python -m artificial_u.api.worker
+# Background jobs: the worker runs inside the API server process (started in the app lifespan);
+# there is no separate worker command
 ```
 
 ### Frontend (SolidJS)
@@ -170,10 +166,9 @@ Tests are organized by pytest markers:
 
 - `@pytest.mark.unit`: Isolated unit tests
 - `@pytest.mark.integration`: Database/external service integration
-- `@pytest.mark.e2e`: End-to-end workflows
-- `@pytest.mark.api`: API endpoint tests
 - `@pytest.mark.slow`: Long-running tests
-- `@pytest.mark.demo`: Demonstration tests
+
+API endpoint tests live in `tests/api/` and are not marked; plain `uv run pytest` runs everything.
 
 **Integration tests require test database setup:**
 
@@ -192,7 +187,7 @@ When adding new API endpoints:
 4. Use core services from `artificial_u/services/` for domain logic
 5. Database access via repository methods in `artificial_u/models/`
 6. Queue long operations as background jobs
-7. Write integration tests in `tests/integration/api/`
+7. Write API tests in `tests/api/`
 
 **API Response Standards:**
 
@@ -295,7 +290,7 @@ When adding frontend features:
 
 ## Configuration Files Reference
 
-- `pyproject.toml`: Python project metadata, dependencies, tool configs (black, isort, mypy, pytest)
+- `pyproject.toml`: Python project metadata, dependencies, tool configs (black, isort, mypy)
 - `pytest.ini`: Additional pytest configuration
 - `.flake8`: Flake8 linting rules
 - `.pre-commit-config.yaml`: Pre-commit hooks

@@ -4,7 +4,6 @@ API router for voice-related operations.
 
 import base64
 import logging
-from math import ceil
 from typing import Optional
 
 from fastapi import APIRouter, Body, Depends, HTTPException, Path, Query
@@ -17,7 +16,6 @@ from artificial_u.api.models.voice import (
     VoiceDesignPreview,
     VoiceDesignPreviewsResponse,
     VoiceDesignSaveRequest,
-    VoiceListResponse,
     VoiceResponse,
 )
 from artificial_u.api.security.auth0 import require_auth
@@ -161,57 +159,6 @@ async def clone_voice_to_mistral(
         raise HTTPException(status_code=502, detail=f"Voice cloning failed: {e}")
 
 
-@router.get("/", response_model=VoiceListResponse)
-async def list_voices(
-    gender: Optional[str] = Query(None, description="Filter by gender"),
-    accent: Optional[str] = Query(None, description="Filter by accent"),
-    age: Optional[str] = Query(None, description="Filter by age"),
-    language: Optional[str] = Query(None, description="Filter by language (default: 'en')"),
-    use_case: Optional[str] = Query(None, description="Filter by use case"),
-    category: Optional[str] = Query(None, description="Filter by category"),
-    tts_backend: Optional[str] = Query(None, description="Filter by TTS backend"),
-    limit: int = Query(100, ge=1, le=1000, description="Maximum number of results"),
-    offset: int = Query(0, ge=0, description="Offset for pagination"),
-    voice_service: VoiceService = Depends(get_voice_service),
-):
-    """
-    List available voices with optional filtering and pagination.
-    """
-    voices_data = voice_service.list_available_voices(
-        gender=gender,
-        accent=accent,
-        age=age,
-        language=language,
-        use_case=use_case,
-        category=category,
-        limit=limit,
-        offset=offset,
-        tts_backend=tts_backend,
-    )
-
-    total_count = voice_service.count_available_voices(
-        gender=gender,
-        accent=accent,
-        age=age,
-        language=language,
-        use_case=use_case,
-        category=category,
-        tts_backend=tts_backend,
-    )
-
-    # Calculate pagination values
-    page = offset // limit + 1
-    pages = ceil(total_count / limit) if total_count > 0 else 1
-
-    return VoiceListResponse(
-        items=[VoiceResponse(**voice) for voice in voices_data],
-        total=total_count,
-        page=page,
-        size=limit,
-        pages=pages,
-    )
-
-
 @router.get("/{voice_id}", response_model=VoiceResponse)
 async def get_voice(
     voice_id: int = Path(..., description="Database ID of the voice to retrieve"),
@@ -223,51 +170,6 @@ async def get_voice(
     voice = voice_service.get_voice_by_id(voice_id)
     if not voice:
         raise HTTPException(status_code=404, detail="Voice not found")
-    return VoiceResponse(**voice)
-
-
-@router.get("/by_external/{backend}/{external_id:path}", response_model=VoiceResponse)
-async def get_voice_by_external_id(
-    backend: str = Path(..., description="TTS backend (e.g., 'elevenlabs', 'mistral')"),
-    external_id: str = Path(..., description="Provider-specific voice identifier"),
-    voice_service: VoiceService = Depends(get_voice_service),
-):
-    """
-    Get a voice by its TTS backend and external identifier.
-
-    For ElevenLabs voices this is the el_voice_id. For Mistral voices
-    this is the preset name or custom voice ID.
-    """
-    if backend == "elevenlabs":
-        voice = voice_service.get_voice_by_el_id(external_id)
-    else:
-        voice_obj = voice_service.repository_factory.voice.get_by_external_id(backend, external_id)
-        voice = voice_obj.model_dump() if voice_obj else None
-
-    if not voice:
-        raise HTTPException(status_code=404, detail="Voice not found")
-    if "id" not in voice or voice.get("id") is None:
-        raise HTTPException(status_code=502, detail="Voice fetched but not persisted")
-    return VoiceResponse(**voice)
-
-
-@router.get("/by_el/{el_voice_id}", response_model=VoiceResponse)
-async def get_voice_by_elevenlabs_id(
-    el_voice_id: str = Path(..., description="ElevenLabs voice_id to retrieve"),
-    voice_service: VoiceService = Depends(get_voice_service),
-):
-    """
-    Get a specific voice by its ElevenLabs voice_id. If not present in DB,
-    fetch from ElevenLabs, persist, and return the DB-backed record.
-
-    Legacy endpoint — prefer /by_external/elevenlabs/{external_id}.
-    """
-    voice = voice_service.get_voice_by_el_id(el_voice_id)
-    if not voice:
-        raise HTTPException(status_code=404, detail="Voice not found")
-    # Ensure response includes DB id
-    if "id" not in voice or voice.get("id") is None:
-        raise HTTPException(status_code=502, detail="Voice fetched but not persisted")
     return VoiceResponse(**voice)
 
 

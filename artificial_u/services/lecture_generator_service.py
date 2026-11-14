@@ -19,6 +19,7 @@ from artificial_u.models.converters import (
     topics_model_to_dict,
 )
 from artificial_u.models.core import Lecture
+from artificial_u.prompts import get_prompts_for_language, resolve_prompt_language
 from artificial_u.utils import (
     ContentGenerationError,
     DatabaseError,
@@ -397,13 +398,7 @@ class LectureGeneratorService:
 
         # Determine language for prompts
         language = getattr(lecture, "language", None) or "en"
-        lang = "en"
-        if language and isinstance(language, str):
-            lang_prefix = language.lower()[:2]
-            if lang_prefix in ("en", "fr"):
-                lang = lang_prefix
-
-        from artificial_u.prompts import get_prompts_for_language
+        lang = resolve_prompt_language(language)
 
         prompt_module = get_prompts_for_language(lang)
         prompt = prompt_module.get_summary_prompt(lecture_content=lecture.content)
@@ -628,13 +623,7 @@ class LectureGeneratorService:
         """Generate lecture content and parse the XML response."""
         # Determine language for prompts
         language = prompt_args.get("course_data", {}).get("language") or "en"
-        lang = "en"
-        if language and isinstance(language, str):
-            lang_prefix = language.lower()[:2]
-            if lang_prefix in ("en", "fr"):
-                lang = lang_prefix
-
-        from artificial_u.prompts import get_prompts_for_language
+        lang = resolve_prompt_language(language)
 
         prompt_module = get_prompts_for_language(lang)
         lecture_prompt = prompt_module.get_lecture_prompt(**prompt_args)
@@ -985,12 +974,6 @@ class LectureGeneratorService:
                 raise DatabaseError("Failed to select or resolve a voice ID")
 
         return voice_identifier, voice_id, backend_name
-
-    # Backward-compatible alias
-    def _ensure_professor_el_voice_id(self, professor) -> tuple[str, Optional[int]]:
-        """Legacy wrapper - returns (el_voice_id, voice_id)."""
-        voice_id_str, db_voice_id, _ = self._ensure_professor_voice(professor)
-        return voice_id_str, db_voice_id
 
     def _generate_audio(
         self, lecture, professor, el_voice_id: str, backend_name: str = "elevenlabs"

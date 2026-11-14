@@ -14,10 +14,6 @@ DEFAULT_DB_POOL_TIMEOUT = 30  # Seconds to wait for a connection from pool
 DEFAULT_DB_POOL_RECYCLE = 1800  # Recycle connections after 30 minutes (avoids stale connections)
 DEFAULT_DB_POOL_PRE_PING = True  # Test connections before use (handles RDS failovers)
 
-# Content generation defaults
-DEFAULT_CONTENT_BACKEND = "anthropic"
-DEFAULT_CONTENT_LOGS_PATH = "content_logs"
-
 # TTS defaults
 DEFAULT_TTS_BACKEND = "elevenlabs"
 DEFAULT_XAI_BASE_URL = "https://api.x.ai/v1"

@@ -5,7 +5,6 @@ Utility modules for the ArtificialU system.
 from artificial_u.utils.exceptions import (
     ArtificialUException,
     AudioProcessingError,
-    ConfigurationError,
     ContentGenerationError,
     CourseNotFoundError,
     DatabaseError,
@@ -17,7 +16,6 @@ from artificial_u.utils.exceptions import (
     TopicNotFoundError,
 )
 from artificial_u.utils.xml_utils import (
-    calculate_estimated_tokens,
     close_unclosed_tags,
     detect_truncation,
     ensure_xml_wrapper,
@@ -31,7 +29,6 @@ __all__ = [
     # Exceptions
     "ArtificialUException",
     "AudioProcessingError",
-    "ConfigurationError",
     "ContentGenerationError",
     "CourseNotFoundError",
     "DatabaseError",
@@ -42,7 +39,6 @@ __all__ = [
     "ProfessorNotFoundError",
     "TopicNotFoundError",
     # XML utilities
-    "calculate_estimated_tokens",
     "close_unclosed_tags",
     "detect_truncation",
     "ensure_xml_wrapper",

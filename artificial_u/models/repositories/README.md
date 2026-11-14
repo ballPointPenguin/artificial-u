@@ -73,36 +73,7 @@ factory.course      # CourseRepository
 factory.lecture     # LectureRepository
 factory.voice       # VoiceRepository
 
-# Create tables if they don't exist
-factory.create_tables()
-
 # Example usage
 departments = factory.department.list()
 voices = factory.voice.list(gender="female")
 ```
-
-## Test Suite Migration
-
-Integration tests and support files have been updated to use the new RepositoryFactory nested interface. Please update any direct repository calls in your tests accordingly. For example:
-
-- Replace `repository.create_professor(entity)` with `repository.professor.create(entity)`
-- Replace `repository.get_professor(id)` with `repository.professor.get(id)`
-- Replace `repository.list_professors()` with `repository.professor.list()`
-- Replace `repository.create_course(entity)` with `repository.course.create(entity)`
-- Replace `repository.get_course(id)` with `repository.course.get(id)`
-- Replace `repository.get_course_by_code(code)` with `repository.course.get_by_code(code)`
-- Replace `repository.list_courses()` with `repository.course.list()`
-- Replace `repository.create_lecture(entity)` with `repository.lecture.create(entity)`
-- Replace `repository.get_lecture(id)` with `repository.lecture.get(id)`
-- Replace `repository.get_lecture_by_course_week_order(course_id, week, order)` with `repository.lecture.get_by_course_week_order(course_id, week, order)`
-- Replace `repository.list_lectures_by_course(course_id)` with `repository.lecture.list_by_course(course_id)`
-
-### Legacy UniversitySystem Methods
-
-In addition to repository calls, some tests use legacy UniversitySystem methods (e.g., `create_professor`, `create_course`, and `generate_lecture`). These methods have been monkey patched to internally delegate to the new RepositoryFactory interface:
-
-- `create_professor` now wraps `repository.professor.create`
-- `create_course` now wraps `repository.course.create`
-- `generate_lecture` now wraps `repository.lecture.create`
-
-Make sure your test environment is configured to use these updated calls.

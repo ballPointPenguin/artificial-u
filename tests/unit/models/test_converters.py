@@ -13,13 +13,10 @@ from artificial_u.models.converters import (
     department_model_to_dict,
     department_to_xml,
     departments_to_xml,
-    extract_xml_content,
-    lecture_model_to_dict,
     lectures_to_xml,
     parse_course_xml,
     parse_department_xml,
     parse_lecture_xml,
-    parse_professor_xml,
     parse_topic_xml,
     parse_topics_xml,
     partial_course_to_xml,
@@ -38,10 +35,10 @@ from artificial_u.models.converters import (
 from artificial_u.models.core import (
     Course,
     Department,
-    Lecture,
     Professor,
     Topic,
 )
+from artificial_u.utils.xml_utils import extract_xml_between_tags
 
 
 @pytest.mark.unit
@@ -146,46 +143,6 @@ def test_course_model_to_dict():
     expected_partial = course_partial.model_dump(exclude_none=True)
     assert result_partial == expected_partial
     assert "description" not in result_partial
-
-
-@pytest.mark.unit
-def test_lecture_model_to_dict():
-    """Test converting a lecture Pydantic model to a dictionary."""
-    # Test with None
-    assert lecture_model_to_dict(None) == {}
-
-    # Test with a populated Pydantic model
-    lecture_data = {
-        "id": 1,
-        "revision": 1,
-        "title": "Lecture 1",
-        "content": "Lecture content here.",
-        "summary": "Lecture summary.",
-        "audio_url": "http://example.com/audio.mp3",
-        "transcript_url": "http://example.com/transcript.txt",
-        "course_id": 10,
-        "topic_id": 20,
-    }
-    lecture = Lecture(**lecture_data)
-    result = lecture_model_to_dict(lecture)
-    expected = lecture.model_dump(exclude_none=True)
-    assert result == expected
-
-    lecture_partial_data = {
-        "id": 2,
-        "course_id": 11,
-        "topic_id": 22,
-        "content": "Partial content",
-        "summary": None,
-        "title": None,
-    }
-    lecture_partial = Lecture(**lecture_partial_data)
-    result_partial = lecture_model_to_dict(lecture_partial)
-    expected_partial = lecture_partial.model_dump(exclude_none=True)
-    assert result_partial == expected_partial
-    assert "summary" not in result_partial
-    assert "title" not in result_partial
-    assert "revision" not in result_partial  # Default is None, so excluded
 
 
 @pytest.mark.unit
@@ -832,56 +789,19 @@ def test_parse_topics_xml():
 
 
 @pytest.mark.unit
-def test_parse_professor_xml():
-    """Test parsing professor XML into a dictionary."""
-    # Create a valid professor XML
-    professor_xml = """
-    <professor>
-      <name>Dr. Jane Smith</name>
-      <title>Associate Professor</title>
-      <accent>American</accent>
-      <age>35</age>
-      <background>PhD from Stanford</background>
-      <description>Expert in Machine Learning</description>
-      <gender>Female</gender>
-      <personality>Engaging</personality>
-      <specialization>Machine Learning</specialization>
-      <teaching_style>Interactive</teaching_style>
-    </professor>
-    """
-
-    result = parse_professor_xml(professor_xml)
-
-    assert result["name"] == "Dr. Jane Smith"
-    assert result["title"] == "Associate Professor"
-    assert result["accent"] == "American"
-    assert result["age"] == 35
-    assert result["background"] == "PhD from Stanford"
-    assert result["description"] == "Expert in Machine Learning"
-    assert result["gender"] == "Female"
-    assert result["personality"] == "Engaging"
-    assert result["specialization"] == "Machine Learning"
-    assert result["teaching_style"] == "Interactive"
-
-    # Test error handling
-    with pytest.raises(ValueError):
-        parse_professor_xml("<invalid>XML</with>")
-
-
-@pytest.mark.unit
 def test_extract_xml_content():
-    # Test the extract_xml_content function
+    # Test the extract_xml_between_tags function
     text = "<test>content</test>"
-    result = extract_xml_content(text, "test")
+    result = extract_xml_between_tags(text, "test")
     assert result == "content"
 
     # Test with nested tags
     text = "<outer><inner>content</inner></outer>"
-    result = extract_xml_content(text, "outer")
+    result = extract_xml_between_tags(text, "outer")
     assert result == "<inner>content</inner>"
 
     # Test with no match
-    result = extract_xml_content(text, "nonexistent")
+    result = extract_xml_between_tags(text, "nonexistent")
     assert result is None
 
 

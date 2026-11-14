@@ -18,7 +18,6 @@ from fastapi import (
     UploadFile,
     status,
 )
-from fastapi.responses import JSONResponse, PlainTextResponse
 from pydantic import BaseModel, Field
 from sqlalchemy import asc, desc, func
 
@@ -40,8 +39,9 @@ from artificial_u.api.models import (
 )
 from artificial_u.api.security.auth0 import require_coins, require_role
 from artificial_u.api.services import LectureApiService
+from artificial_u.api.utils.jobs import job_summary
 from artificial_u.audio import ID3Tagger
-from artificial_u.config.settings import get_settings
+from artificial_u.config import get_settings
 from artificial_u.models.core import Student
 from artificial_u.models.database import (
     CourseModel,
@@ -420,70 +420,6 @@ async def get_lecture(
     return lecture
 
 
-@router.get(
-    "/{lecture_id}/content",
-    response_class=PlainTextResponse,
-    summary="Get lecture content",
-    description="Get the full text content of a specific lecture.",
-    responses={404: {"description": "Lecture not found"}},
-)
-async def get_lecture_content(
-    lecture_id: int = Path(..., description="The ID of the lecture"),
-    lecture_service: LectureApiService = Depends(get_lecture_api_service),
-):
-    """
-    Get the full text content of a specific lecture.
-    """
-    content = lecture_service.get_lecture_content(lecture_id)
-    if content is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Content for lecture with ID {lecture_id} not found",
-        )
-    return content
-
-
-@router.get(
-    "/{lecture_id}/audio",
-    summary="Get lecture audio",
-    description="Get the audio version of a specific lecture.",
-    responses={
-        404: {"description": "Lecture not found or has no audio"},
-        307: {"description": "Temporary redirect to storage URL"},
-    },
-)
-async def get_lecture_audio(
-    lecture_id: int = Path(..., description="The ID of the lecture"),
-    lecture_service: LectureApiService = Depends(get_lecture_api_service),
-):
-    """
-    Get the audio version of a specific lecture.
-
-    - **lecture_id**: The unique identifier of the lecture
-    - Returns a redirect to the storage URL where the audio file is stored
-    """
-    audio_url = lecture_service.get_lecture_audio_url(lecture_id)
-    if not audio_url:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Audio for lecture with ID {lecture_id} not found",
-        )
-
-    # If it's a storage URL (starting with http:// or https://), redirect to it
-    if audio_url.startswith("http://") or audio_url.startswith("https://"):
-        return JSONResponse(
-            status_code=status.HTTP_307_TEMPORARY_REDIRECT,
-            content={"url": audio_url},
-            headers={"Location": audio_url},
-        )
-
-    # If audio_url exists but is not a valid http/https url, treat as not found/invalid
-    raise HTTPException(
-        status_code=status.HTTP_404_NOT_FOUND,
-        detail=f"Audio URL for lecture {lecture_id} is invalid or not found.",
-    )
-
-
 @router.post(
     "",
     response_model=Lecture,
@@ -577,68 +513,6 @@ async def delete_lecture(
     # FastAPI will handle the 204 status code automatically based on the decorator
 
 
-@router.get(
-    "/{lecture_id}/content/download",
-    response_class=PlainTextResponse,
-    summary="Download lecture content as text file",
-    description="Download the full text content of a specific lecture as a text file.",
-    responses={
-        404: {"description": "Lecture not found"},
-        200: {"content": {"text/plain": {}}},
-    },
-)
-async def download_lecture_content(
-    lecture_id: int = Path(..., description="The ID of the lecture"),
-    lecture_service: LectureApiService = Depends(get_lecture_api_service),
-):
-    """
-    Download the full text content of a specific lecture as a text file.
-
-    - **lecture_id**: The unique identifier of the lecture
-    - Returns the lecture content as plain text
-    """
-    content = lecture_service.get_lecture_content(lecture_id)
-    if content is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Content for lecture with ID {lecture_id} not found",
-        )
-
-    # Return the content string directly
-    return content
-
-
-@router.post(
-    "/{lecture_id}/generate-audio",
-    response_model=Lecture,
-    status_code=status.HTTP_200_OK,
-    summary="Generate lecture audio",
-    description=(
-        "Triggers generation of audio for the specified lecture and returns the updated lecture. "
-        "Only the creator or an admin can modify a lecture."
-    ),
-    responses={
-        404: {"description": "Lecture not found"},
-        403: {"description": "Forbidden - user doesn't own this lecture"},
-        500: {"description": "Audio generation failed"},
-    },
-    dependencies=[require_coins(cost=get_settings().COIN_COST_LECTURE_AUDIO)],
-)
-async def generate_lecture_audio(
-    lecture_id: int = Path(..., description="The ID of the lecture to generate audio for"),
-    lecture_service: LectureApiService = Depends(get_lecture_api_service),
-    student: Student = Depends(ensure_student),
-):
-    """
-    Generate audio for a specific lecture.
-
-    - **lecture_id**: The unique identifier of the lecture
-    - Triggers an audio generation process and returns the updated lecture
-    - Requires ownership verification - only the lecture creator or admin can generate audio
-    """
-    return await lecture_service.generate_lecture_audio(lecture_id, student.id, student.role)
-
-
 @router.post(
     "/{lecture_id}/generate-audio/enqueue",
     status_code=status.HTTP_202_ACCEPTED,
@@ -678,15 +552,7 @@ async def enqueue_generate_lecture_audio(
         kind="generate_lecture_audio",
         payload=payload,
     )
-    return {
-        "id": row.id,
-        "kind": row.kind,
-        "status": row.status,
-        "attempts": row.attempts,
-        "max_attempts": row.max_attempts,
-        "priority": row.priority,
-        "run_after": row.run_after,
-    }
+    return job_summary(row)
 
 
 @router.post(
@@ -727,15 +593,7 @@ async def enqueue_generate_lecture_timeline(
         kind="generate_lecture_timeline",
         payload=payload,
     )
-    return {
-        "id": row.id,
-        "kind": row.kind,
-        "status": row.status,
-        "attempts": row.attempts,
-        "max_attempts": row.max_attempts,
-        "priority": row.priority,
-        "run_after": row.run_after,
-    }
+    return job_summary(row)
 
 
 @router.post(
@@ -778,15 +636,7 @@ async def enqueue_generate_lecture_images(
         kind="generate_lecture_images",
         payload=payload,
     )
-    return {
-        "id": row.id,
-        "kind": row.kind,
-        "status": row.status,
-        "attempts": row.attempts,
-        "max_attempts": row.max_attempts,
-        "priority": row.priority,
-        "run_after": row.run_after,
-    }
+    return job_summary(row)
 
 
 @router.post(
@@ -824,15 +674,7 @@ async def enqueue_resume_lecture_images(
         kind="resume_lecture_images",
         payload={"lecture_id": lecture_id},
     )
-    return {
-        "id": row.id,
-        "kind": row.kind,
-        "status": row.status,
-        "attempts": row.attempts,
-        "max_attempts": row.max_attempts,
-        "priority": row.priority,
-        "run_after": row.run_after,
-    }
+    return job_summary(row)
 
 
 @router.post(
@@ -1131,68 +973,6 @@ async def clear_lecture_summary(
 
 
 @router.post(
-    "/generate",
-    response_model=Lecture,
-    status_code=status.HTTP_200_OK,
-    summary="Generate lecture data",
-    description="Generates lecture data using AI based on partial attributes.",
-    responses={
-        500: {"description": "Lecture generation failed"},
-    },
-    dependencies=[require_coins(cost=get_settings().COIN_COST_LECTURE_GENERATION)],
-)
-async def generate_lecture(
-    generation_data: LectureGenerate,
-    lecture_service: LectureApiService = Depends(get_lecture_api_service),
-):
-    """
-    Generate lecture data using AI.
-
-    Accepts optional partial attributes and a freeform prompt to guide generation.
-
-    Args:
-        generation_data: Contains optional partial_attributes and freeform_prompt.
-
-    Returns:
-        The generated lecture data (not saved to the database).
-    """
-    return await lecture_service.generate_lecture(generation_data)
-
-
-@router.post(
-    "/generate/text-only",
-    response_model=Lecture,
-    status_code=status.HTTP_200_OK,
-    summary="Generate lecture text only",
-    description=(
-        "Generates lecture text content using AI based on partial attributes, "
-        "without automatically enqueueing audio or summary generation jobs."
-    ),
-    responses={
-        500: {"description": "Lecture text generation failed"},
-    },
-    dependencies=[require_coins(cost=get_settings().COIN_COST_LECTURE_GENERATION)],
-)
-async def generate_lecture_text_only(
-    generation_data: LectureGenerate,
-    lecture_service: LectureApiService = Depends(get_lecture_api_service),
-):
-    """
-    Generate lecture text content using AI.
-
-    This endpoint generates only the lecture text content and saves it to the database,
-    without automatically triggering audio or summary generation jobs.
-
-    Args:
-        generation_data: Contains optional partial_attributes and freeform_prompt.
-
-    Returns:
-        The generated and saved lecture data.
-    """
-    return await lecture_service.generate_lecture_text_only(generation_data)
-
-
-@router.post(
     "/generate/enqueue",
     status_code=status.HTTP_202_ACCEPTED,
     summary="Enqueue lecture generation job",
@@ -1227,15 +1007,7 @@ async def enqueue_generate_lecture(
         kind="generate_lecture",
         payload=payload,
     )
-    return {
-        "id": row.id,
-        "kind": row.kind,
-        "status": row.status,
-        "attempts": row.attempts,
-        "max_attempts": row.max_attempts,
-        "priority": row.priority,
-        "run_after": row.run_after,
-    }
+    return job_summary(row)
 
 
 @router.post(
@@ -1275,12 +1047,4 @@ async def enqueue_generate_lecture_text_only(
         kind="generate_lecture_text_only",
         payload=payload,
     )
-    return {
-        "id": row.id,
-        "kind": row.kind,
-        "status": row.status,
-        "attempts": row.attempts,
-        "max_attempts": row.max_attempts,
-        "priority": row.priority,
-        "run_after": row.run_after,
-    }
+    return job_summary(row)

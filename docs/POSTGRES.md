@@ -10,7 +10,7 @@ The easiest way to run PostgreSQL for development is using the provided Docker C
 2. Start the PostgreSQL container:
 
 ```bash
-docker-compose up -d
+docker compose up -d
 ```
 
 This will start a PostgreSQL instance with the following configuration:
@@ -42,7 +42,7 @@ DATABASE_URL=postgresql://postgres:postgres@localhost:5432/artificial_u_dev
 After setting up the PostgreSQL container, you need to initialize the database schema:
 
 ```bash
-python initialize_db.py
+uv run python scripts/initialize_db.py
 ```
 
 This script will create all the necessary tables and indices in your PostgreSQL database.
@@ -54,7 +54,7 @@ This script will create all the necessary tables and indices in your PostgreSQL 
 To run manual SQL commands or inspect the database:
 
 ```bash
-docker-compose exec postgres psql -U postgres -d artificial_u_dev
+docker compose exec postgres psql -U postgres -d artificial_u_dev
 ```
 
 ### Basic PostgreSQL Commands
@@ -84,13 +84,13 @@ If you encounter connection issues:
 1. Verify the PostgreSQL container is running:
 
 ```bash
-docker-compose ps
+docker compose ps
 ```
 
 2. Check the container logs:
 
 ```bash
-docker-compose logs postgres
+docker compose logs postgres
 ```
 
 3. Verify your DATABASE_URL is correct in the .env file

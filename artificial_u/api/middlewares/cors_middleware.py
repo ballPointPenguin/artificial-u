@@ -9,7 +9,7 @@ import logging
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from artificial_u.api.config import get_settings
+from artificial_u.config import get_settings
 
 logger = logging.getLogger("artificial_u")
 

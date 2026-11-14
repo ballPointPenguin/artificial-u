@@ -4,8 +4,8 @@ from typing import Optional
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 
-from artificial_u.api.config import Settings, get_settings
 from artificial_u.api.dependencies import get_repository_factory
+from artificial_u.config import Settings, get_settings
 from artificial_u.models.repositories import RepositoryFactory
 
 router = APIRouter(prefix="/health", tags=["Health"])

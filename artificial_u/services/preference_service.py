@@ -8,7 +8,6 @@ import logging
 from typing import Optional
 
 from artificial_u.config import get_settings
-from artificial_u.models.core import Preference
 from artificial_u.models.repositories import RepositoryFactory
 
 
@@ -72,33 +71,6 @@ class PreferenceService:
             return pref.value
         return default
 
-    def set_global_preference(self, scope: str, value: str) -> Preference:
-        """
-        Set a global preference.
-
-        Args:
-            scope: The preference scope/key
-            value: The preference value
-
-        Returns:
-            The created or updated Preference object
-        """
-        return self.repository_factory.preference.set_global(scope, value)
-
-    def set_user_preference(self, student_id: int, scope: str, value: str) -> Preference:
-        """
-        Set a user-specific preference.
-
-        Args:
-            student_id: ID of the student
-            scope: The preference scope/key
-            value: The preference value
-
-        Returns:
-            The created or updated Preference object
-        """
-        return self.repository_factory.preference.set_user(student_id, scope, value)
-
     def get_lecture_generation_model(
         self, student_id: Optional[int] = None, course_id: Optional[int] = None
     ) -> str:
@@ -138,19 +110,6 @@ class PreferenceService:
         model = self.settings.LECTURE_GENERATION_MODEL
         self.logger.info(f"Using environment-configured model: {model}")
         return model
-
-    def set_lecture_generation_model(self, model: str) -> Preference:
-        """
-        Set the global lecture generation model preference.
-
-        Args:
-            model: The model name (e.g., "claude-sonnet-5-5")
-
-        Returns:
-            The created or updated Preference object
-        """
-        self.logger.info(f"Setting global lecture generation model to: {model}")
-        return self.set_global_preference(self.LECTURE_GENERATION_MODEL, model)
 
     def get_course_generation_model(self) -> str:
         """

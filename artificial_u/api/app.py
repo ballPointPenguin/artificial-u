@@ -11,14 +11,12 @@ from artificial_u.api.cloudwatch_metrics import (
     cloudwatch_metrics_interval_sec,
     cloudwatch_metrics_loop,
 )
-from artificial_u.api.config import get_settings
 from artificial_u.api.dependencies import get_repository_factory
 from artificial_u.api.events import JobEventHub
 from artificial_u.api.middlewares.cors_middleware import setup_cors
 from artificial_u.api.middlewares.error_handler import add_error_handlers
 from artificial_u.api.middlewares.logging_middleware import LoggingMiddleware
 from artificial_u.api.routers.admin_elevenlabs import router as admin_elevenlabs_router
-from artificial_u.api.routers.auth import router as auth_router
 from artificial_u.api.routers.courses import router as courses_router
 from artificial_u.api.routers.departments import router as departments_router
 from artificial_u.api.routers.faculties import router as faculties_router
@@ -46,6 +44,7 @@ from artificial_u.api.tracemalloc_diag import (
 )
 from artificial_u.api.utils.logging import setup_logging
 from artificial_u.api.worker import Worker
+from artificial_u.config import get_settings
 from artificial_u.config.settings import Environment
 from artificial_u.services.http_client import close_shared_async_client
 
@@ -173,7 +172,6 @@ def create_application() -> FastAPI:
     # Include routers with proper prefixes
     app.include_router(index_router, prefix="/api")
     app.include_router(health_router, prefix="/api/v1")
-    app.include_router(auth_router, prefix="/api/v1")
     app.include_router(courses_router, prefix="/api/v1")
     app.include_router(departments_router, prefix="/api/v1")
     app.include_router(faculties_router, prefix="/api/v1")

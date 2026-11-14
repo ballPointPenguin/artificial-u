@@ -40,14 +40,9 @@ def repository_factory():
 
 @pytest.fixture
 def department_service(repository_factory):
-    """Create a DepartmentService with mocked dependent services."""
-    professor_service_mock = MagicMock()
-    course_service_mock = MagicMock()
-
+    """Create a DepartmentService."""
     return DepartmentService(
         repository_factory=repository_factory,
-        professor_service=professor_service_mock,
-        course_service=course_service_mock,
         logger=logging.getLogger(__name__),
     )
 

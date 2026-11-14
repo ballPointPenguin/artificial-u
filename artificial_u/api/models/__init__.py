@@ -34,10 +34,6 @@ from artificial_u.api.models.departments import (
 from artificial_u.api.models.departments import ProfessorBrief as DepartmentProfessorBrief
 
 # Error model
-from artificial_u.api.models.error_codes import (
-    ErrorCode,
-    get_error_description,
-)
 from artificial_u.api.models.errors import (
     ErrorDetail,
     ErrorResponse,
@@ -69,7 +65,6 @@ from artificial_u.api.models.professors import (
     ProfessorCoursesResponse,
     ProfessorCreate,
     ProfessorGenerate,
-    ProfessorLecturesResponse,
     ProfessorResponse,
     ProfessorsListResponse,
     ProfessorUpdate,
@@ -88,7 +83,6 @@ from artificial_u.api.models.quickstart import (
     QuickstartProfessorResponse,
     QuickstartRegenerateProfessorRequest,
     QuickstartStartRequest,
-    QuickstartStartResponse,
 )
 
 # Student model
@@ -105,7 +99,6 @@ from artificial_u.api.models.topics import (
     Topic,
     TopicBase,
     TopicCreate,
-    TopicGenerate,
     TopicListResponse,
     TopicUpdate,
 )
@@ -114,7 +107,6 @@ from artificial_u.api.models.topics import (
 from artificial_u.api.models.voice import (
     ManualVoiceAssignmentRequest,
     VoiceBase,
-    VoiceListResponse,
     VoiceResponse,
 )
 
@@ -158,7 +150,6 @@ __all__ = [
     "ProfessorCourseBrief",
     "ProfessorLectureBrief",
     "ProfessorCoursesResponse",
-    "ProfessorLecturesResponse",
     # Lecture model
     "LectureBase",
     "LectureCreate",
@@ -173,12 +164,10 @@ __all__ = [
     "TopicCreate",
     "TopicUpdate",
     "Topic",
-    "TopicGenerate",
     "TopicListResponse",
     # Voice model
     "VoiceBase",
     "VoiceResponse",
-    "VoiceListResponse",
     "ManualVoiceAssignmentRequest",
     # Student model
     "StudentResponse",
@@ -189,15 +178,12 @@ __all__ = [
     # Error codes
     "ErrorDetail",
     "ErrorResponse",
-    "ErrorCode",
-    "get_error_description",
     # Quickstart model
     "QuickstartCourseBrief",
     "QuickstartProfessorDetail",
     "QuickstartMatchRequest",
     "QuickstartMatchResponse",
     "QuickstartStartRequest",
-    "QuickstartStartResponse",
     "QuickstartProfessorResponse",
     "QuickstartProfessorActionRequest",
     "QuickstartRegenerateProfessorRequest",

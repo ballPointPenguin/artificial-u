@@ -14,7 +14,6 @@ import type {
   QuickstartProfessorResponse,
   QuickstartRegenerateProfessorRequest,
   QuickstartStartRequest,
-  QuickstartStartResponse,
 } from '../types.js'
 
 export const quickstartService = {
@@ -24,15 +23,6 @@ export const quickstartService = {
    */
   matchCourses: (data: QuickstartMatchRequest): Promise<QuickstartMatchResponse> => {
     return httpClient.post<QuickstartMatchResponse>(ENDPOINTS.quickstart.matchCourses, data)
-  },
-
-  /**
-   * Start the quickstart course creation flow (synchronous).
-   * Creates a new course with smart department/professor selection.
-   * WARNING: This can timeout behind CloudFront. Use enqueueStart for production.
-   */
-  start: (data: QuickstartStartRequest): Promise<QuickstartStartResponse> => {
-    return httpClient.post<QuickstartStartResponse>(ENDPOINTS.quickstart.start, data)
   },
 
   /**

@@ -50,7 +50,6 @@ async def test_generate_and_set_course_image_updates_course():
         return_value="https://storage.example/img.png"
     )
 
-    job_enqueue = MagicMock()
     repo = MagicMock()
 
     svc = CourseGeneratorService(
@@ -59,7 +58,6 @@ async def test_generate_and_set_course_image_updates_course():
         content_service=MagicMock(),
         image_service=image_service,
         repository_factory=repo,
-        job_enqueue_service=job_enqueue,
         logger=MagicMock(),
     )
 
@@ -96,7 +94,6 @@ async def test_generate_and_set_course_image_raises_on_failed_generation():
         content_service=MagicMock(),
         image_service=image_service,
         repository_factory=MagicMock(),
-        job_enqueue_service=MagicMock(),
         logger=MagicMock(),
     )
 

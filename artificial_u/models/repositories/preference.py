@@ -129,50 +129,6 @@ class PreferenceRepository(BaseRepository):
             session.refresh(db_pref)
             return self._to_preference(db_pref)
 
-    def set_user(self, student_id: int, scope: str, value: str) -> Preference:
-        """
-        Set or update a user-specific preference.
-
-        Args:
-            student_id: ID of the student
-            scope: The preference scope/key
-            value: The preference value
-
-        Returns:
-            The created or updated Preference object
-        """
-        with self.get_session() as session:
-            # Check if preference exists
-            db_pref = (
-                session.query(PreferenceModel)
-                .filter(
-                    and_(
-                        PreferenceModel.student_id == student_id,
-                        PreferenceModel.scope == scope,
-                        PreferenceModel.is_global == False,  # noqa: E712
-                    )
-                )
-                .first()
-            )
-
-            if db_pref:
-                # Update existing
-                db_pref.value = value
-                db_pref.updated_at = datetime.now()
-            else:
-                # Create new
-                db_pref = PreferenceModel(
-                    student_id=student_id,
-                    scope=scope,
-                    value=value,
-                    is_global=False,
-                )
-                session.add(db_pref)
-
-            session.commit()
-            session.refresh(db_pref)
-            return self._to_preference(db_pref)
-
     def list_all(self, is_global: Optional[bool] = None) -> List[Preference]:
         """
         List all preferences, optionally filtered by is_global.

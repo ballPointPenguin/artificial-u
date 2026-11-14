@@ -10,8 +10,8 @@ from fastapi import APIRouter, Depends, Request
 from fastapi.responses import HTMLResponse, Response
 from PIL import Image
 
-from artificial_u.api.config import Settings, get_settings
 from artificial_u.api.dependencies import get_http_client, get_repository_factory
+from artificial_u.config import Settings, get_settings
 from artificial_u.models.repositories import RepositoryFactory
 from artificial_u.services.storage_service import StorageService
 

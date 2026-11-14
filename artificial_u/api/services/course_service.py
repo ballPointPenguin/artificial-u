@@ -79,13 +79,6 @@ class CourseApiService(BaseApiService[CoreCourse, CourseResponse, CoursesListRes
         from artificial_u.services.course_generator_service import (
             CourseGeneratorService,
         )
-        from artificial_u.services.job_enqueue_service import JobEnqueueService
-
-        # Create job enqueue service for background processing
-        job_enqueue_service = JobEnqueueService(
-            repository_factory=repository_factory,
-            logger=self.logger,
-        )
 
         self.generator_service = CourseGeneratorService(
             course_service=self.core_service,
@@ -93,7 +86,6 @@ class CourseApiService(BaseApiService[CoreCourse, CourseResponse, CoursesListRes
             content_service=content_service,
             image_service=image_service,
             repository_factory=repository_factory,
-            job_enqueue_service=job_enqueue_service,
             logger=self.logger,
         )
         # Keep reference to core professor service if needed for direct lookups
@@ -147,86 +139,6 @@ class CourseApiService(BaseApiService[CoreCourse, CourseResponse, CoursesListRes
         course_data["student"] = student_brief.model_dump() if student_brief else None
 
         return CourseResponse.model_validate(course_data)
-
-    def _filter_courses(
-        self,
-        courses: List[dict],
-        professor_id: Optional[int] = None,
-        level: Optional[str] = None,
-        title: Optional[str] = None,
-        created_by: Optional[int] = None,
-    ) -> List[dict]:
-        """Apply additional filters to courses list."""
-        filtered_courses = courses
-
-        if professor_id:
-            filtered_courses = [
-                item
-                for item in filtered_courses
-                if item.get("course", {}).get("professor_id") == professor_id
-            ]
-        if level:
-            filtered_courses = [
-                item for item in filtered_courses if item.get("course", {}).get("level") == level
-            ]
-        if title:
-            filtered_courses = [
-                item
-                for item in filtered_courses
-                if title.lower() in item.get("course", {}).get("title", "").lower()
-            ]
-        if created_by is not None:
-            filtered_courses = [
-                item
-                for item in filtered_courses
-                if item.get("course", {}).get("created_by") == created_by
-            ]
-
-        return filtered_courses
-
-    def _sort_courses(
-        self,
-        courses: List[dict],
-        sort_by: Optional[str] = None,
-        order: Optional[str] = "desc",
-    ) -> List[dict]:
-        """Apply sorting to courses list."""
-        if not sort_by:
-            return courses
-
-        reverse = order == "desc"
-        valid_sort_fields = [
-            "code",
-            "title",
-            "level",
-            "updated_at",
-            "created_at",
-        ]
-
-        if sort_by in valid_sort_fields:
-            return sorted(
-                courses,
-                key=lambda item: item.get("course", {}).get(sort_by) or "",
-                reverse=reverse,
-            )
-
-        return courses
-
-    def _convert_to_course_responses(self, items: List[dict]) -> List[CourseResponse]:
-        """Convert course items to CourseResponse models."""
-        course_responses = []
-        for item in items:
-            if "course" in item:
-                course_data = item["course"].copy()
-                # Add related information if available
-                if "student" in item and item["student"]:
-                    course_data["student"] = item["student"]
-                if "professor" in item and item["professor"]:
-                    course_data["professor"] = item["professor"]
-                if "department" in item and item["department"]:
-                    course_data["department"] = item["department"]
-                course_responses.append(CourseResponse.model_validate(course_data))
-        return course_responses
 
     def get_courses(
         self,
@@ -316,23 +228,6 @@ class CourseApiService(BaseApiService[CoreCourse, CourseResponse, CoursesListRes
             self._handle_database_error("get course", e)
         except Exception as e:
             self._handle_general_error("get course", e)
-
-    def get_course_by_code(self, code: str) -> CourseResponse:
-        """
-        Get a course by its course code using the core service.
-        """
-        try:
-            course_model = self.core_service.get_course_by_code(code)
-            return self._build_course_response(course_model)
-        except CourseNotFoundError:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Course with code '{code}' not found",
-            )
-        except DatabaseError as e:
-            self._handle_database_error("get course by code", e)
-        except Exception as e:
-            self._handle_general_error("get course by code", e)
 
     async def create_course(
         self,
@@ -620,6 +515,10 @@ class CourseApiService(BaseApiService[CoreCourse, CourseResponse, CoursesListRes
 
         except CourseNotFoundError:
             return None
+
+        except HTTPException:
+            # Ownership failures (403) must reach the client unchanged
+            raise
 
         except Exception as e:
             self.logger.error(

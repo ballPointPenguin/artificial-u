@@ -4,7 +4,6 @@ Ensures tests use the proper environment settings.
 """
 
 import os
-import sys
 
 import pytest
 
@@ -15,12 +14,6 @@ from artificial_u.config.settings import get_settings
 # For automated tests, make sure TESTING flag is set
 os.environ["TESTING"] = "true"
 print("Using TEST environment variables for automated tests")
-
-
-# Check if we're running unit tests
-def is_unit_test():
-    """Check if we're running unit tests"""
-    return any(arg in sys.argv for arg in ["-m unit", "unit"])
 
 
 @pytest.fixture(scope="session", autouse=True)

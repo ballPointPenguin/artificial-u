@@ -93,17 +93,6 @@ class QuickstartMatchResponse(BaseModel):
     reasoning: str = Field(..., description="Explanation of the matching decision")
 
 
-class QuickstartStartResponse(BaseModel):
-    """Response model for starting quickstart flow."""
-
-    course_id: int = Field(..., description="ID of the created or existing course")
-    professor_id: int = Field(..., description="ID of the assigned professor")
-    department_id: int = Field(..., description="ID of the department")
-    course_title: str = Field(..., description="Title of the course")
-    course_code: str = Field(..., description="Code of the course")
-    course_description: str = Field(..., description="Description of the course")
-
-
 class ProfessorDetail(BaseModel):
     """Detailed professor information for quickstart review."""
 
@@ -146,11 +135,3 @@ class QuickstartFinalizeResponse(BaseModel):
     course_id: int = Field(..., description="ID of the finalized course")
     topics_job_id: int = Field(..., description="Job ID for topic generation")
     message: str = Field(..., description="Status message")
-
-
-class JobStatus(BaseModel):
-    """Status of a background job."""
-
-    id: int
-    kind: str
-    status: str
