@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import html
 import io
 from typing import Optional
@@ -60,8 +61,52 @@ def _top_crop_to_aspect(img: Image.Image, *, aspect_w: int, aspect_h: int) -> Im
     return img.crop((0, 0, w, new_h))
 
 
+def _allowed_http_hosts(settings: Settings) -> set[str]:
+    """Hosts the OG image proxy may fetch from over HTTP(S): only our own public site."""
+    urls = (settings.PUBLIC_WEB_URL, settings.PUBLIC_OG_DEFAULT_IMAGE_URL)
+    return {urlparse(url).netloc for url in urls if url and urlparse(url).netloc}
+
+
+async def _load_og_source(
+    src: str, storage: StorageService, http_client: httpx.AsyncClient, settings: Settings
+) -> Optional[bytes]:
+    """Load the source image for an OG card, or None if it is missing or not allowed.
+
+    ``src`` is caller-supplied, so only two kinds of source are accepted: an object in
+    our images bucket, or an HTTP(S) URL on our own public site (the default icon).
+    """
+    bucket, key = storage.parse_storage_url(src)
+    if bucket and key:
+        if bucket != storage.images_bucket:
+            return None
+        data, _content_type = await storage.download_file(bucket, key)
+        return data
+
+    parsed = urlparse(src)
+    if parsed.scheme not in {"http", "https"} or parsed.netloc not in _allowed_http_hosts(settings):
+        return None
+    try:
+        resp = await http_client.get(src, timeout=10.0)
+        resp.raise_for_status()
+        return resp.content
+    except Exception:
+        return None
+
+
+def _render_og_card(data: bytes) -> bytes:
+    """Crop to 1200x630 (keeping the top) and encode as a compact JPEG."""
+    with Image.open(io.BytesIO(data)) as im:
+        im = im.convert("RGB")
+        im = _top_crop_to_aspect(im, aspect_w=1200, aspect_h=630)
+        im = im.resize((1200, 630), Image.Resampling.LANCZOS)
+
+        out = io.BytesIO()
+        im.save(out, format="JPEG", quality=75, optimize=True, progressive=True)
+        return out.getvalue()
+
+
 @router.get("/share/og-image")
-async def share_og_image(  # noqa: C901
+async def share_og_image(
     src: str = "",
     http_client: httpx.AsyncClient = Depends(get_http_client),
 ):
@@ -76,56 +121,25 @@ async def share_og_image(  # noqa: C901
     src = (src or "").strip() or fallback_src
 
     storage = StorageService()
-    bucket, key = storage.parse_storage_url(src)
-    data: bytes | None = None
-
-    if bucket and key:
-        data, _content_type = await storage.download_file(bucket, key)
-    else:
-        # Fallback: allow HTTP(S) URLs (e.g. app-served icons or CDN assets)
-        parsed = urlparse(src)
-        if parsed.scheme in {"http", "https"}:
-            try:
-                resp = await http_client.get(src, timeout=10.0)
-                resp.raise_for_status()
-                data = resp.content
-            except Exception:
-                data = None
-
+    data = await _load_og_source(src, storage, http_client, settings)
     if not data and src != fallback_src:
         # Last-chance fallback to the default image
-        bucket, key = storage.parse_storage_url(fallback_src)
-        if bucket and key:
-            data, _content_type = await storage.download_file(bucket, key)
-        else:
-            parsed = urlparse(fallback_src)
-            if parsed.scheme in {"http", "https"}:
-                try:
-                    resp = await http_client.get(fallback_src, timeout=10.0)
-                    resp.raise_for_status()
-                    data = resp.content
-                except Exception:
-                    data = None
+        data = await _load_og_source(fallback_src, storage, http_client, settings)
 
     if not data:
         return Response(status_code=404)
 
     try:
-        with Image.open(io.BytesIO(data)) as im:
-            im = im.convert("RGB")
-            im = _top_crop_to_aspect(im, aspect_w=1200, aspect_h=630)
-            im = im.resize((1200, 630), Image.Resampling.LANCZOS)
-
-            out = io.BytesIO()
-            im.save(out, format="JPEG", quality=75, optimize=True, progressive=True)
-            out.seek(0)
-            return Response(
-                content=out.read(),
-                media_type="image/jpeg",
-                headers={"Cache-Control": "public, max-age=86400"},
-            )
+        # Image decoding and resizing is CPU-bound; keep it off the event loop
+        card = await asyncio.to_thread(_render_og_card, data)
     except Exception:
         return Response(status_code=500)
+
+    return Response(
+        content=card,
+        media_type="image/jpeg",
+        headers={"Cache-Control": "public, max-age=86400"},
+    )
 
 
 def _share_html(

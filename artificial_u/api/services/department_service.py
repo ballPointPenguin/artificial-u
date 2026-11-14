@@ -23,6 +23,7 @@ from artificial_u.models.core import Student
 from artificial_u.models.repositories import RepositoryFactory
 from artificial_u.models.visibility import discoverable_courses
 from artificial_u.services import ContentService, CourseService, DepartmentService, ProfessorService
+from artificial_u.services.department_generator_service import DepartmentGeneratorService
 from artificial_u.utils import (
     ContentGenerationError,
     DatabaseError,
@@ -62,8 +63,6 @@ class DepartmentApiService(
         )
 
         # Initialize generator service for AI generation workflows
-        from artificial_u.services.department_generator_service import DepartmentGeneratorService
-
         self.generator_service = DepartmentGeneratorService(
             content_service=content_service,
             repository_factory=repository_factory,

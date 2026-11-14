@@ -19,11 +19,13 @@ from artificial_u.api.models.courses import (
     ProfessorBrief,
     StudentBrief,
 )
+from artificial_u.api.security.auth0 import verify_asset_ownership
 from artificial_u.api.services.base_service import BaseApiService
 from artificial_u.models.core import Course as CoreCourse
 from artificial_u.models.core import Department as CoreDepartment
 from artificial_u.models.core import Professor as CoreProfessor
 from artificial_u.models.core import Student as CoreStudent
+from artificial_u.models.core import Topic as CoreTopic
 
 # Import RepositoryFactory directly instead of legacy Repository wrapper
 from artificial_u.models.repositories import RepositoryFactory
@@ -34,6 +36,10 @@ from artificial_u.services import (
     ProfessorService,
     StorageService,
 )
+from artificial_u.services.course_generator_service import (
+    CourseGeneratorService,
+)
+from artificial_u.services.job_enqueue_service import JobEnqueueService
 from artificial_u.utils import (
     ContentGenerationError,
     CourseNotFoundError,
@@ -76,10 +82,6 @@ class CourseApiService(BaseApiService[CoreCourse, CourseResponse, CoursesListRes
         self.core_service = course_service
 
         # Initialize generator service for AI generation workflows
-        from artificial_u.services.course_generator_service import (
-            CourseGeneratorService,
-        )
-
         self.generator_service = CourseGeneratorService(
             course_service=self.core_service,
             professor_service=professor_service,
@@ -302,8 +304,6 @@ class CourseApiService(BaseApiService[CoreCourse, CourseResponse, CoursesListRes
         """Save pre-generated draft topics directly or enqueue background topic generation."""
         if isinstance(course_data.topics, list) and len(course_data.topics) > 0:
             try:
-                from artificial_u.models.core import Topic as CoreTopic
-
                 for idx, raw_topic in enumerate(course_data.topics):
                     if not isinstance(raw_topic, dict) or not raw_topic.get("title"):
                         continue
@@ -330,8 +330,6 @@ class CourseApiService(BaseApiService[CoreCourse, CourseResponse, CoursesListRes
             return
 
         try:
-            from artificial_u.services.job_enqueue_service import JobEnqueueService
-
             job_enqueue_service = JobEnqueueService(
                 repository_factory=self.repository_factory,
                 logger=self.logger,
@@ -367,8 +365,6 @@ class CourseApiService(BaseApiService[CoreCourse, CourseResponse, CoursesListRes
             course_model = self.core_service.get_course(course_id)
 
             # Verify ownership (admins can modify any course, creators only their own)
-            from artificial_u.api.security.auth0 import verify_asset_ownership
-
             verify_asset_ownership(student_id, course_model.created_by, role, "course")
 
             # Core service expects a dictionary of fields to update
@@ -413,8 +409,6 @@ class CourseApiService(BaseApiService[CoreCourse, CourseResponse, CoursesListRes
             course_model = self.core_service.get_course(course_id)
 
             # Verify ownership (admins can delete any course, creators only their own)
-            from artificial_u.api.security.auth0 import verify_asset_ownership
-
             verify_asset_ownership(student_id, course_model.created_by, role, "course")
 
             # Core service returns True on success
@@ -463,8 +457,6 @@ class CourseApiService(BaseApiService[CoreCourse, CourseResponse, CoursesListRes
             course_model = self.core_service.get_course(course_id)
 
             # Verify ownership (admins can publish any course, creators only their own)
-            from artificial_u.api.security.auth0 import verify_asset_ownership
-
             verify_asset_ownership(student_id, course_model.created_by, role, "course")
 
             # Check if already published
@@ -501,8 +493,6 @@ class CourseApiService(BaseApiService[CoreCourse, CourseResponse, CoursesListRes
         """
         try:
             course_model = self.core_service.get_course(course_id)
-
-            from artificial_u.api.security.auth0 import verify_asset_ownership
 
             verify_asset_ownership(student_id, course_model.created_by, role, "course")
 

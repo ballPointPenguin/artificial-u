@@ -67,3 +67,13 @@ class TopicNotFoundError(ArtificialUException):
     """Raised when a topic cannot be found."""
 
     pass
+
+
+class NonRetryableJobError(ArtificialUException):
+    """Raised by a job handler when running the job again cannot succeed.
+
+    The worker marks the job as failed immediately instead of scheduling a retry. Use it
+    when part of the work has already been committed and a second run would collide with it.
+    """
+
+    pass

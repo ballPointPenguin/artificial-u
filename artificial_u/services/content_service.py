@@ -175,6 +175,10 @@ class ContentService:
                 thinking_level=thinking_level,
                 effort=effort,
             )
+        except ContentGenerationError as e:
+            # Already specific (e.g. the model refused); keep its message for the job error
+            self.logger.error(f"Content generation failed with model {model}: {e}")
+            raise
         except Exception as e:
             self.logger.error(
                 f"Error generating text with model {model} (backend {backend}): {e}",

@@ -12,11 +12,14 @@ from typing import Any, Dict, Optional
 from artificial_u.config import get_settings
 from artificial_u.models.converters import (
     department_model_to_dict,
+    enrich_department_dict_with_faculty,
     professor_model_to_dict,
 )
+from artificial_u.models.core import Professor
 from artificial_u.models.repositories.factory import RepositoryFactory
-from artificial_u.prompts.selection import get_professor_selection_prompt, parse_selection_decision
+from artificial_u.prompts.selection import get_professor_selection_prompt
 from artificial_u.services.content_service import ContentService
+from artificial_u.services.selection import ask_for_decision, parse_entity_selection
 from artificial_u.utils import (
     ContentGenerationError,
     DatabaseError,
@@ -98,9 +101,6 @@ class ProfessorSelectorService:
             )
 
             if decision["action"] == "SELECT":
-                if decision["entity_id"] is None:
-                    raise ContentGenerationError("SELECT decision returned null entity_id")
-
                 self.logger.info(
                     f"Selected existing professor {decision['entity_id']}: {decision['reasoning']}"
                 )
@@ -116,12 +116,12 @@ class ProfessorSelectorService:
                     partial_attributes={
                         "freeform_prompt": freeform_prompt,
                         "department_id": department_id,
+                        # Generate the profile in the course's language
+                        "language": language,
                     }
                 )
 
                 # Create the professor using the core service
-                from artificial_u.models.core import Professor
-
                 professor = Professor(
                     name=professor_attrs["name"],
                     title=professor_attrs["title"],
@@ -171,47 +171,18 @@ class ProfessorSelectorService:
         Raises:
             ContentGenerationError: If AI call or parsing fails
         """
-        try:
-            # Generate selection prompt
-            from artificial_u.models.converters import enrich_department_dict_with_faculty
-
-            prompt = get_professor_selection_prompt(
-                course_attributes=course_attributes,
-                department_data=enrich_department_dict_with_faculty(
-                    department_model_to_dict(department), self.repository_factory
-                ),
-                existing_professors=existing_professors,
-            )
-
-            settings = get_settings()
-
-            # Call AI for decision
-            self.logger.info("Calling AI for professor selection decision...")
-            response = await self.content_service.generate_text(
-                prompt=prompt,
-                model=settings.PROFESSOR_GENERATION_MODEL,
-                # Removing system_prompt as it may add extra text that interferes with parsing
-            )
-            self.logger.info("Received AI response for professor selection")
-
-            if not response:
-                raise ContentGenerationError("AI returned empty response for professor selection")
-
-            # Parse the decision
-            decision = parse_selection_decision(response)
-
-            # Validate decision
-            if decision["action"] not in ["SELECT", "GENERATE"]:
-                raise ContentGenerationError(f"Invalid action in decision: {decision['action']}")
-
-            if decision["action"] == "SELECT" and decision["entity_id"] is None:
-                raise ContentGenerationError("SELECT action must include valid entity_id")
-
-            return decision
-
-        except ContentGenerationError:
-            raise
-        except Exception as e:
-            error_msg = f"Failed to get AI selection decision: {e}"
-            self.logger.error(error_msg, exc_info=True)
-            raise ContentGenerationError(error_msg) from e
+        prompt = get_professor_selection_prompt(
+            course_attributes=course_attributes,
+            department_data=enrich_department_dict_with_faculty(
+                department_model_to_dict(department), self.repository_factory
+            ),
+            existing_professors=existing_professors,
+        )
+        return await ask_for_decision(
+            self.content_service,
+            prompt=prompt,
+            model=get_settings().PROFESSOR_GENERATION_MODEL,
+            parse=parse_entity_selection,
+            label="professor",
+            logger=self.logger,
+        )

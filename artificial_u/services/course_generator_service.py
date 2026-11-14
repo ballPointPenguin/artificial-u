@@ -17,6 +17,7 @@ from artificial_u.models.converters import (
     topics_to_xml,
 )
 from artificial_u.models.core import Course, Department, Professor
+from artificial_u.models.database import CourseModel
 from artificial_u.models.repositories.factory import RepositoryFactory
 from artificial_u.prompts import get_prompts_for_language, resolve_prompt_language
 from artificial_u.services.content_service import ContentService
@@ -27,7 +28,7 @@ from artificial_u.utils import (
     DatabaseError,
     GenerationError,
     ProfessorNotFoundError,
-    extract_xml_between_tags,
+    extract_root_xml,
 )
 
 
@@ -176,8 +177,6 @@ class CourseGeneratorService:
             final_course_data["created_with"] = model
 
             # 8. Filter final dictionary to only include valid Course fields + topics
-            from artificial_u.models.database import CourseModel
-
             valid_course_keys = {c.name for c in CourseModel.__table__.columns}
             valid_course_keys.add("connected_course_ids")
             valid_course_keys.add("topics")
@@ -301,30 +300,7 @@ class CourseGeneratorService:
         )
         self.logger.info("Received response from content service.")
 
-        # Simplified XML extraction logic
-        generated_xml_output = None
-
-        # First try to extract from <output> tags
-        generated_xml_output = extract_xml_between_tags(raw_response, "output")
-        if generated_xml_output:
-            self.logger.info("Successfully extracted content from <output> tags")
-        else:
-            self.logger.info("<output> tag not found, trying direct <course> extraction...")
-
-            # Check if the response directly contains <course>...</course>
-            if raw_response.strip().startswith("<course>") and raw_response.strip().endswith(
-                "</course>"
-            ):
-                # Use the raw response directly
-                generated_xml_output = raw_response.strip()
-                self.logger.info("Using raw response as it contains valid <course> structure")
-            else:
-                # Try to extract inner content and wrap it
-                inner_content = extract_xml_between_tags(raw_response, "course")
-                if inner_content:
-                    generated_xml_output = f"<course>\n{inner_content}\n</course>"
-                    self.logger.info("Extracted <course> inner content and wrapped it")
-
+        generated_xml_output = extract_root_xml(raw_response, "course")
         if not generated_xml_output:
             error_msg = f"Could not extract <output> or <course> tag from response:\n{raw_response}"
             self.logger.error(error_msg)
@@ -512,7 +488,8 @@ class CourseGeneratorService:
         image_key = self._validate_course_image_result(result, course_id)
         image_url = self._get_course_image_url_from_key(image_key, course_id)
 
-        model_name = self.image_service.model_name
+        # A fallback model may have produced the image; record the one that did
+        model_name = result.model_name or self.image_service.model_name
         try:
             updated = self.course_service.update_course(
                 course_id,

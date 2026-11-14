@@ -37,7 +37,7 @@ from artificial_u.api.models import (
     LectureListResponse,
     LectureUpdate,
 )
-from artificial_u.api.security.auth0 import require_coins, require_role
+from artificial_u.api.security.auth0 import require_coins, require_role, verify_asset_ownership
 from artificial_u.api.services import LectureApiService
 from artificial_u.api.utils.jobs import job_summary
 from artificial_u.audio import ID3Tagger
@@ -80,12 +80,10 @@ class RecentLectureResponse(BaseModel):
     created_at: Optional[str] = None
 
 
-# Create the router with dependencies that will be applied to all routes
 router = APIRouter(
     prefix="/lectures",
     tags=["lectures"],
     responses={404: {"description": "Not found"}},
-    dependencies=[Depends(get_lecture_api_service)],
 )
 
 
@@ -540,8 +538,6 @@ async def enqueue_generate_lecture_audio(
         )
 
     # Verify ownership
-    from artificial_u.api.security.auth0 import verify_asset_ownership
-
     verify_asset_ownership(student.id, lecture.created_by, student.role, "lecture")
 
     payload = {"lecture_id": lecture_id}

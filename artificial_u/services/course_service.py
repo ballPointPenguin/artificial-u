@@ -101,7 +101,9 @@ class CourseService:
         }
 
         # Resolve department and professor IDs (with smart selection if needed)
-        resolved_department_id = await self._resolve_department_id(department_id, course_attributes)
+        resolved_department_id = await self._resolve_department_id(
+            department_id, course_attributes, language=language
+        )
         resolved_professor_id = await self._resolve_professor_id(
             professor_id, course_attributes, resolved_department_id, created_by, language=language
         )
@@ -140,14 +142,19 @@ class CourseService:
         return created_course, created_professor
 
     async def _resolve_department_id(
-        self, department_id: Optional[int], course_attributes: dict
+        self,
+        department_id: Optional[int],
+        course_attributes: dict,
+        language: Optional[str] = None,
     ) -> int:
         """Resolve department ID using smart selection if needed."""
         if department_id:
             return department_id
 
         self.logger.info("Department ID not provided, using smart selection")
-        return await self.department_selector_service.resolve_department(course_attributes)
+        return await self.department_selector_service.resolve_department(
+            course_attributes, language=language
+        )
 
     async def _resolve_professor_id(
         self,

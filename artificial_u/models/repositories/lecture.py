@@ -56,6 +56,66 @@ class LectureRepository(BaseRepository):
             student=student_dict,
         )
 
+    @staticmethod
+    def _student_dict(db_lecture: LectureModel) -> Optional[Dict[str, Any]]:
+        """Attribution details of the lecture's creator, if any."""
+        student = db_lecture.student
+        if not student:
+            return None
+        return {"id": student.id, "name": student.name, "email": student.email}
+
+    @staticmethod
+    def _latest_revisions(session, course_id: Optional[int] = None):
+        """Subquery of (topic_id, max_revision), optionally limited to one course."""
+        query = session.query(
+            LectureModel.topic_id, func.max(LectureModel.revision).label("max_revision")
+        )
+        if course_id is not None:
+            query = query.filter(LectureModel.course_id == course_id)
+        return query.group_by(LectureModel.topic_id).subquery()
+
+    @staticmethod
+    def _is_latest(latest_revisions):
+        """Join condition keeping only each topic's latest lecture revision."""
+        return (LectureModel.topic_id == latest_revisions.c.topic_id) & (
+            LectureModel.revision == latest_revisions.c.max_revision
+        )
+
+    @staticmethod
+    def _apply_filters(
+        query,
+        *,
+        course_id: Optional[int],
+        professor_id: Optional[int],
+        topic_id: Optional[int],
+        search_query: Optional[str],
+        course_filter: Optional[ColumnElement[bool]],
+    ):
+        """Apply the list/count filters to a lecture query."""
+        if course_id is not None:
+            query = query.filter(LectureModel.course_id == course_id)
+
+        if professor_id is not None or course_filter is not None:
+            query = query.join(CourseModel, LectureModel.course_id == CourseModel.id)
+        if professor_id is not None:
+            query = query.filter(CourseModel.professor_id == professor_id)
+        if course_filter is not None:
+            query = query.filter(course_filter)
+
+        if topic_id is not None:
+            query = query.filter(LectureModel.topic_id == topic_id)
+
+        if search_query:
+            # Search in content, summary, and title
+            query = query.filter(
+                or_(
+                    LectureModel.content.ilike(f"%{search_query}%"),
+                    LectureModel.summary.ilike(f"%{search_query}%"),
+                    LectureModel.title.ilike(f"%{search_query}%"),
+                )
+            )
+        return query
+
     def create(self, lecture: Lecture) -> Lecture:
         """Create a new lecture."""
         with self.get_session() as session:
@@ -118,16 +178,7 @@ class LectureRepository(BaseRepository):
             if not db_lecture:
                 return None
 
-            # Build student dict if present
-            student_dict = None
-            if db_lecture.student:
-                student_dict = {
-                    "id": db_lecture.student.id,
-                    "name": db_lecture.student.name,
-                    "email": db_lecture.student.email,
-                }
-
-            return self._to_model(db_lecture, student_dict)
+            return self._to_model(db_lecture, self._student_dict(db_lecture))
 
     def get_content(self, lecture_id: int) -> Optional[str]:
         """
@@ -166,21 +217,11 @@ class LectureRepository(BaseRepository):
             List[Lecture]: List of lectures for the specified course (latest revision per topic)
         """
         with self.get_session() as session:
-            # Subquery to get the latest revision for each topic
-            latest_revisions = (
-                session.query(
-                    LectureModel.topic_id, func.max(LectureModel.revision).label("max_revision")
-                )
-                .filter(LectureModel.course_id == course_id)
-                .group_by(LectureModel.topic_id)
-                .subquery()
-            )
+            latest_revisions = self._latest_revisions(session, course_id=course_id)
 
             # Query to get lectures with the latest revision
             query = session.query(LectureModel).join(
-                latest_revisions,
-                (LectureModel.topic_id == latest_revisions.c.topic_id)
-                & (LectureModel.revision == latest_revisions.c.max_revision),
+                latest_revisions, self._is_latest(latest_revisions)
             )
             # Eager-load student relationship for attribution metadata
             query = query.options(joinedload(LectureModel.student))
@@ -189,15 +230,7 @@ class LectureRepository(BaseRepository):
 
             results: List[Lecture] = []
             for lecture in db_lectures:
-                student_dict = None
-                if lecture.student:
-                    student_dict = {
-                        "id": lecture.student.id,
-                        "name": lecture.student.name,
-                        "email": lecture.student.email,
-                    }
-
-                results.append(self._to_model(lecture, student_dict))
+                results.append(self._to_model(lecture, self._student_dict(lecture)))
 
             return results
 
@@ -233,16 +266,22 @@ class LectureRepository(BaseRepository):
             if not db_lecture:
                 return []
 
-            # Build student dict if present
-            student_dict = None
-            if db_lecture.student:
-                student_dict = {
-                    "id": db_lecture.student.id,
-                    "name": db_lecture.student.name,
-                    "email": db_lecture.student.email,
-                }
+            return [self._to_model(db_lecture, self._student_dict(db_lecture))]
 
-            return [self._to_model(db_lecture, student_dict)]
+    def list_all_revisions_by_topic(self, topic_id: int) -> List[Lecture]:
+        """
+        List every lecture revision for a topic, oldest first.
+
+        Unlike ``list`` and ``list_by_topic``, this does not collapse to the latest revision.
+        """
+        with self.get_session() as session:
+            db_lectures = (
+                session.query(LectureModel)
+                .filter(LectureModel.topic_id == topic_id)
+                .order_by(LectureModel.revision)
+                .all()
+            )
+            return [self._to_model(db_lecture) for db_lecture in db_lectures]
 
     def count(
         self,
@@ -266,45 +305,21 @@ class LectureRepository(BaseRepository):
             int: Total count of latest revision lectures matching the filters
         """
         with self.get_session() as session:
-            # Subquery to get the latest revision for each topic
-            latest_revisions = (
-                session.query(
-                    LectureModel.topic_id, func.max(LectureModel.revision).label("max_revision")
-                )
-                .group_by(LectureModel.topic_id)
-                .subquery()
-            )
+            latest_revisions = self._latest_revisions(session)
 
             # Query to count lectures with the latest revision
             query = session.query(LectureModel).join(
-                latest_revisions,
-                (LectureModel.topic_id == latest_revisions.c.topic_id)
-                & (LectureModel.revision == latest_revisions.c.max_revision),
+                latest_revisions, self._is_latest(latest_revisions)
             )
 
-            # Apply filters
-            if course_id is not None:
-                query = query.filter(LectureModel.course_id == course_id)
-
-            if professor_id is not None or course_filter is not None:
-                query = query.join(CourseModel, LectureModel.course_id == CourseModel.id)
-            if professor_id is not None:
-                query = query.filter(CourseModel.professor_id == professor_id)
-            if course_filter is not None:
-                query = query.filter(course_filter)
-
-            if topic_id is not None:
-                query = query.filter(LectureModel.topic_id == topic_id)
-
-            if search_query:
-                # Search in content, summary, and title
-                query = query.filter(
-                    or_(
-                        LectureModel.content.ilike(f"%{search_query}%"),
-                        LectureModel.summary.ilike(f"%{search_query}%"),
-                        LectureModel.title.ilike(f"%{search_query}%"),
-                    )
-                )
+            query = self._apply_filters(
+                query,
+                course_id=course_id,
+                professor_id=professor_id,
+                topic_id=topic_id,
+                search_query=search_query,
+                course_filter=course_filter,
+            )
 
             return query.count()
 
@@ -335,45 +350,24 @@ class LectureRepository(BaseRepository):
             List[Lecture]: List of lectures (latest revision per topic)
         """
         with self.get_session() as session:
-            # Subquery to get the latest revision for each topic
-            latest_revisions = (
-                session.query(
-                    LectureModel.topic_id, func.max(LectureModel.revision).label("max_revision")
-                )
-                .group_by(LectureModel.topic_id)
-                .subquery()
-            )
+            latest_revisions = self._latest_revisions(session)
 
             # Query to get lectures with the latest revision
             query = session.query(LectureModel).join(
-                latest_revisions,
-                (LectureModel.topic_id == latest_revisions.c.topic_id)
-                & (LectureModel.revision == latest_revisions.c.max_revision),
+                latest_revisions, self._is_latest(latest_revisions)
             )
 
-            # Apply filters
-            if course_id is not None:
-                query = query.filter(LectureModel.course_id == course_id)
+            query = self._apply_filters(
+                query,
+                course_id=course_id,
+                professor_id=professor_id,
+                topic_id=topic_id,
+                search_query=search_query,
+                course_filter=course_filter,
+            )
 
-            if professor_id is not None or course_filter is not None:
-                query = query.join(CourseModel, LectureModel.course_id == CourseModel.id)
-            if professor_id is not None:
-                query = query.filter(CourseModel.professor_id == professor_id)
-            if course_filter is not None:
-                query = query.filter(course_filter)
-
-            if topic_id is not None:
-                query = query.filter(LectureModel.topic_id == topic_id)
-
-            if search_query:
-                # Search in content, summary, and title
-                query = query.filter(
-                    or_(
-                        LectureModel.content.ilike(f"%{search_query}%"),
-                        LectureModel.summary.ilike(f"%{search_query}%"),
-                        LectureModel.title.ilike(f"%{search_query}%"),
-                    )
-                )
+            # Eager-load student for attribution metadata (avoids one query per lecture)
+            query = query.options(joinedload(LectureModel.student))
 
             # Apply pagination
             offset = (page - 1) * size
@@ -384,15 +378,7 @@ class LectureRepository(BaseRepository):
 
             results: List[Lecture] = []
             for lecture in db_lectures:
-                student_dict = None
-                if lecture.student:
-                    student_dict = {
-                        "id": lecture.student.id,
-                        "name": lecture.student.name,
-                        "email": lecture.student.email,
-                    }
-
-                results.append(self._to_model(lecture, student_dict))
+                results.append(self._to_model(lecture, self._student_dict(lecture)))
 
             return results
 
@@ -414,14 +400,7 @@ class LectureRepository(BaseRepository):
             List[Dict]: List of lecture brief dictionaries with keys: id, course_id, topic_id, title, summary
         """
         with self.get_session() as session:
-            # Subquery to get the latest revision for each topic
-            latest_revisions = (
-                session.query(
-                    LectureModel.topic_id, func.max(LectureModel.revision).label("max_revision")
-                )
-                .group_by(LectureModel.topic_id)
-                .subquery()
-            )
+            latest_revisions = self._latest_revisions(session)
 
             # Query to get only the fields needed for LectureBrief
             query = session.query(
@@ -434,11 +413,7 @@ class LectureRepository(BaseRepository):
                 LectureModel.transcript_url,
                 LectureModel.timeline_url,
                 LectureModel.images_timeline_url,
-            ).join(
-                latest_revisions,
-                (LectureModel.topic_id == latest_revisions.c.topic_id)
-                & (LectureModel.revision == latest_revisions.c.max_revision),
-            )
+            ).join(latest_revisions, self._is_latest(latest_revisions))
 
             # Apply course_id filter (required)
             if course_id is not None:

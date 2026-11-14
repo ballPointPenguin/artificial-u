@@ -166,7 +166,7 @@ class TopicService:
 
     def delete_topic(self, topic_id: int) -> bool:
         """
-        Delete a topic and its lectures.
+        Delete a topic and all of its lectures (every revision, with their stored assets).
 
         Args:
             topic_id: ID of the topic to delete
@@ -179,7 +179,9 @@ class TopicService:
         """
         try:
             lecture_service = self._get_lecture_service()
-            lectures = lecture_service.list_lectures(topic_id=topic_id)
+            # Every revision must go: lectures.topic_id is NOT NULL, so a leftover older
+            # revision would make the topic delete fail after the latest one is gone.
+            lectures = self.repository_factory.lecture.list_all_revisions_by_topic(topic_id)
             for lecture in lectures:
                 if lecture.id is None:
                     self.logger.warning(

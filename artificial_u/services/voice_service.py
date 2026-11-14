@@ -798,8 +798,6 @@ class VoiceService:
             external_id: Provider-specific voice identifier
             tts_backend: TTS backend name (e.g., "mistral")
         """
-        from artificial_u.models.core import Voice
-
         voice = self.repository_factory.voice.get_by_external_id(tts_backend, external_id)
         if not voice:
             voice = Voice(

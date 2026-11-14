@@ -12,6 +12,7 @@ from artificial_u.utils.exceptions import (
     DependencyError,
     GenerationError,
     LectureNotFoundError,
+    NonRetryableJobError,
     ProfessorNotFoundError,
     TopicNotFoundError,
 )
@@ -22,6 +23,7 @@ from artificial_u.utils.xml_utils import (
     extract_complete_elements,
     extract_metadata,
     extract_partial_xml_content,
+    extract_root_xml,
     extract_xml_between_tags,
 )
 
@@ -36,6 +38,7 @@ __all__ = [
     "DependencyError",
     "GenerationError",
     "LectureNotFoundError",
+    "NonRetryableJobError",
     "ProfessorNotFoundError",
     "TopicNotFoundError",
     # XML utilities
@@ -45,5 +48,6 @@ __all__ = [
     "extract_complete_elements",
     "extract_metadata",
     "extract_partial_xml_content",
+    "extract_root_xml",
     "extract_xml_between_tags",
 ]

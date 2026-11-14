@@ -463,3 +463,29 @@ async def test_generate_xai_ignores_unsupported_effort_and_requires_key(monkeypa
     monkeypatch.setattr("artificial_u.services.content_service.xai_client", mock_client)
     await service._generate_xai("p", "grok-4.7", None, None, None, None, effort="max")
     assert "reasoning_effort" not in mock_client.chat.completions.create.await_args.kwargs
+
+
+@pytest.mark.asyncio
+async def test_generate_text_keeps_specific_generation_errors(monkeypatch):
+    """A refusal reported by a backend is not replaced by the generic failure message."""
+    from artificial_u.utils.exceptions import ContentGenerationError
+
+    service = _build_service()
+    refusal = ContentGenerationError("Model claude-x refused to generate the requested content")
+    monkeypatch.setattr(service, "_generate_anthropic", AsyncMock(side_effect=refusal))
+
+    with pytest.raises(ContentGenerationError, match="refused"):
+        await service.generate_text("prompt", model="claude-x")
+
+
+@pytest.mark.asyncio
+async def test_generate_text_wraps_unexpected_errors(monkeypatch):
+    from artificial_u.utils.exceptions import ContentGenerationError
+
+    service = _build_service()
+    monkeypatch.setattr(
+        service, "_generate_anthropic", AsyncMock(side_effect=RuntimeError("socket closed"))
+    )
+
+    with pytest.raises(ContentGenerationError, match="Failed to generate content"):
+        await service.generate_text("prompt", model="claude-x")

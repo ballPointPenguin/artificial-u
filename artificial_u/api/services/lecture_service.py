@@ -6,13 +6,15 @@ from typing import Optional
 
 from fastapi import HTTPException, status
 
-# Import API models directly
 from artificial_u.api.models.lectures import (
     Lecture,
     LectureCreate,
     LectureListResponse,
     LectureUpdate,
 )
+
+# Import API models directly
+from artificial_u.api.security.auth0 import verify_asset_ownership
 from artificial_u.api.services.base_service import BaseApiService
 from artificial_u.models.core import Lecture as CoreLecture
 from artificial_u.models.core import Student
@@ -27,6 +29,10 @@ from artificial_u.services import (
 )
 from artificial_u.services import LectureService as CoreLectureService  # Rename to avoid conflict
 from artificial_u.services import ProfessorService, TopicService
+from artificial_u.services.job_enqueue_service import JobEnqueueService
+from artificial_u.services.lecture_generator_service import (
+    LectureGeneratorService,
+)
 from artificial_u.utils import (
     ContentGenerationError,
     DatabaseError,
@@ -69,11 +75,6 @@ class LectureApiService(BaseApiService[CoreLecture, Lecture, LectureListResponse
         )
 
         # Initialize generator service for AI generation workflows
-        from artificial_u.services.job_enqueue_service import JobEnqueueService
-        from artificial_u.services.lecture_generator_service import (
-            LectureGeneratorService,
-        )
-
         # Create job enqueue service for background processing
         job_enqueue_service = JobEnqueueService(
             repository_factory=repository_factory,
@@ -288,8 +289,6 @@ class LectureApiService(BaseApiService[CoreLecture, Lecture, LectureListResponse
             lecture_model = self.core_service.get_lecture(lecture_id)
 
             # Verify ownership (admins can modify any lecture, creators only their own)
-            from artificial_u.api.security.auth0 import verify_asset_ownership
-
             verify_asset_ownership(student_id, lecture_model.created_by, role, "lecture")
 
             # Update lecture using core service
@@ -332,8 +331,6 @@ class LectureApiService(BaseApiService[CoreLecture, Lecture, LectureListResponse
             lecture_model = self.core_service.get_lecture(lecture_id)
 
             # Verify ownership (admins can delete any lecture, creators only their own)
-            from artificial_u.api.security.auth0 import verify_asset_ownership
-
             verify_asset_ownership(student_id, lecture_model.created_by, role, "lecture")
 
             deleted = self.core_service.delete_lecture(lecture_id)

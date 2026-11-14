@@ -31,7 +31,7 @@ from artificial_u.api.models.course_import import (
     ImportAnalysisResponse,
     ImportRequest,
 )
-from artificial_u.api.security.auth0 import require_coins, require_role
+from artificial_u.api.security.auth0 import require_coins, require_role, verify_asset_ownership
 from artificial_u.api.services import CourseApiService
 from artificial_u.api.utils.jobs import job_summary
 from artificial_u.config import get_settings
@@ -688,8 +688,6 @@ async def update_course_tags(
     repository_factory: RepositoryFactory = Depends(get_repository_factory),
     student: Student = Depends(ensure_student),
 ):
-    from artificial_u.api.security.auth0 import verify_asset_ownership
-
     course = repository_factory.course.get(course_id)
     if not course:
         raise HTTPException(
@@ -726,8 +724,6 @@ async def enqueue_generate_course_tags(
     repository_factory: RepositoryFactory = Depends(get_repository_factory),
     student: Student = Depends(ensure_student),
 ):
-    from artificial_u.api.security.auth0 import verify_asset_ownership
-
     course = repository_factory.course.get(course_id)
     if not course:
         raise HTTPException(

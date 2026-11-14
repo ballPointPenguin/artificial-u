@@ -19,8 +19,7 @@ from artificial_u.utils import (
     ContentGenerationError,
     CourseNotFoundError,
     detect_truncation,
-    ensure_xml_wrapper,
-    extract_xml_between_tags,
+    extract_root_xml,
 )
 
 # Existing vocabulary passed to the prompt, most-used first
@@ -136,12 +135,7 @@ class TagGeneratorService:
     def _parse_tag_names(self, raw_response: str) -> List[str]:
         """Extract the <tags> block from the LLM response and parse names."""
         is_truncated = detect_truncation(raw_response)
-        tags_output = extract_xml_between_tags(raw_response, "output")
-
-        if not tags_output:
-            inner_content = extract_xml_between_tags(raw_response, "tags")
-            if inner_content is not None:
-                tags_output = f"<tags>\n{inner_content}\n</tags>"
+        tags_output = extract_root_xml(raw_response, "tags", allow_empty=True)
 
         if not tags_output:
             error_msg = (
@@ -153,7 +147,7 @@ class TagGeneratorService:
             raise ContentGenerationError(error_msg)
 
         try:
-            return parse_tags_xml(ensure_xml_wrapper(tags_output, "tags"))
+            return parse_tags_xml(tags_output)
         except ValueError as e:
             self.logger.error("XML parsing error for course tags: %s", e)
             raise ContentGenerationError(f"Error parsing generated tags XML: {e}") from e

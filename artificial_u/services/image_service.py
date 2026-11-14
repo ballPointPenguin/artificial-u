@@ -1,9 +1,10 @@
+import base64
 import json
 import logging
 import uuid
 from datetime import datetime
 from enum import Enum
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Tuple
 
 import httpx  # Added httpx import
 import openai  # Added openai import
@@ -17,6 +18,7 @@ from tenacity import (
     wait_exponential,
 )
 
+from artificial_u.config import get_settings
 from artificial_u.integrations import gemini_client, openai_client
 from artificial_u.models.core import Course, Professor
 from artificial_u.prompts.course_image import format_course_image_prompt
@@ -31,7 +33,10 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-# Mapping for OpenAI DALL-E 3 sizes based on common aspect ratios
+# OpenAI image model used as the last-resort fallback when the Gemini models fail
+OPENAI_FALLBACK_IMAGE_MODEL = "gpt-image-2.5-flare"
+
+# Mapping for OpenAI image sizes based on common aspect ratios
 # Add more mappings if other models/ratios are supported
 OPENAI_ASPECT_RATIO_TO_SIZE = {
     "1:1": "1024x1024",
@@ -83,11 +88,17 @@ class ImageGenerationResult:
     """Result container for image generation attempts."""
 
     def __init__(
-        self, success: bool, image_keys: List[str] = None, error: ImageGenerationError = None
+        self,
+        success: bool,
+        image_keys: List[str] = None,
+        error: ImageGenerationError = None,
+        model_name: Optional[str] = None,
     ):
         self.success = success
         self.image_keys = image_keys or []
         self.error = error
+        # The model that handled this attempt (may be a fallback, not the configured default)
+        self.model_name = model_name
 
 
 # Supported `image_size` values per Gemini image model, smallest first. Requesting an
@@ -140,8 +151,6 @@ class ImageService:
         self.storage_service = storage_service
         self.http_client = http_client or get_shared_async_client()
 
-        from artificial_u.config import get_settings
-
         self.settings = get_settings()
         self.preference_service = preference_service
 
@@ -160,7 +169,7 @@ class ImageService:
         """Determine the backend based on the model name."""
         if model_name.startswith("gemini-"):
             return "gemini"
-        elif model_name in {"gpt-image-2", "gpt-image-2.5-flare"}:
+        elif model_name in {"gpt-image-2", OPENAI_FALLBACK_IMAGE_MODEL}:
             return "openai"
         logger.error(f"Unsupported image generation model: {model_name}")
         raise ValueError(f"Unsupported image generation model: {model_name}")
@@ -417,7 +426,7 @@ class ImageService:
     async def _generate_openai_image(
         self, *, model_name: str, prompt: str, aspect_ratio: str
     ) -> List[bytes]:
-        """Generates image(s) using the OpenAI (DALL-E) backend."""
+        """Generates image(s) using the OpenAI image backend."""
         # Step 1: Call the OpenAI API
         response = await self._call_openai_api(
             model_name=model_name, prompt=prompt, aspect_ratio=aspect_ratio
@@ -446,8 +455,6 @@ class ImageService:
             elif method == "base64":
                 # Decode base64 data
                 try:
-                    import base64
-
                     image_bytes = base64.b64decode(data)
                     image_data_list.append(image_bytes)
                 except Exception as e:
@@ -546,30 +553,34 @@ class ImageService:
                 if uploaded_keys:
                     logger.info(f"Successfully generated {len(uploaded_keys)} image(s)")
                     # Log the prompt after successful generation
-                    await self._log_image_prompt(prompt, aspect_ratio, image_keys=uploaded_keys)
-                    return ImageGenerationResult(success=True, image_keys=uploaded_keys)
+                    await self._log_image_prompt(
+                        prompt, aspect_ratio, image_keys=uploaded_keys, model_name=model_name
+                    )
+                    return ImageGenerationResult(
+                        success=True, image_keys=uploaded_keys, model_name=model_name
+                    )
                 else:
                     # Log the prompt even if upload failed (generation succeeded)
-                    await self._log_image_prompt(prompt, aspect_ratio)
+                    await self._log_image_prompt(prompt, aspect_ratio, model_name=model_name)
                     error = ImageGenerationError(
                         "Image generation succeeded but upload failed",
                         ImageGenerationErrorType.TRANSIENT,
                         backend=backend,
                     )
-                    return ImageGenerationResult(success=False, error=error)
+                    return ImageGenerationResult(success=False, error=error, model_name=model_name)
             else:
                 # Log the prompt even if no image data was returned
-                await self._log_image_prompt(prompt, aspect_ratio)
+                await self._log_image_prompt(prompt, aspect_ratio, model_name=model_name)
                 error = ImageGenerationError(
                     f"Backend {backend} returned no image data",
                     ImageGenerationErrorType.BACKEND_UNAVAILABLE,
                     backend=backend,
                 )
-                return ImageGenerationResult(success=False, error=error)
+                return ImageGenerationResult(success=False, error=error, model_name=model_name)
 
         except Exception as e:
             # Log the prompt even on failure
-            await self._log_image_prompt(prompt, aspect_ratio)
+            await self._log_image_prompt(prompt, aspect_ratio, model_name=model_name)
             error = ImageGenerationError(
                 f"Image generation failed: {str(e)}",
                 self._categorize_error(e, backend),
@@ -578,7 +589,7 @@ class ImageService:
             )
 
             logger.error(f"Image generation failed completely: {error}")
-            return ImageGenerationResult(success=False, error=error)
+            return ImageGenerationResult(success=False, error=error, model_name=model_name)
 
     async def _upload_images(self, image_bytes_list: List[bytes]) -> List[str]:
         """Upload image bytes to storage and return the keys."""
@@ -616,6 +627,8 @@ class ImageService:
         prompt: str,
         aspect_ratio: str,
         image_keys: Optional[List[str]] = None,
+        *,
+        model_name: Optional[str] = None,
     ) -> None:
         """Log the image generation prompt to storage.
 
@@ -623,15 +636,18 @@ class ImageService:
             prompt: The image generation prompt
             aspect_ratio: The aspect ratio used for generation
             image_keys: Optional list of generated image keys (for reference only)
+            model_name: The model this attempt used (defaults to the configured model)
         """
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
+        model_name = model_name or self.model_name
+        backend = self._determine_backend(model_name)
 
         # Structure the log data hierarchically (similar to content logs but without response)
         log_data = {
             "metadata": {
                 "timestamp": timestamp,
-                "backend": self.backend,
-                "model": self.model_name,
+                "backend": backend,
+                "model": model_name,
                 "settings": {
                     "aspect_ratio": aspect_ratio,
                 },
@@ -646,7 +662,7 @@ class ImageService:
             log_data["metadata"]["image_keys"] = image_keys
 
         # Create a unique filename for this generation
-        filename = f"image_{timestamp}_{self.backend}_{self.model_name.replace('/', '_')}.json"
+        filename = f"image_{timestamp}_{backend}_{model_name.replace('/', '_')}.json"
 
         try:
             # Convert log data to JSON bytes
@@ -665,6 +681,82 @@ class ImageService:
                 logger.error(f"Failed to upload image prompt log: {filename}")
         except Exception as e:
             logger.error(f"Failed to save image prompt log {filename}: {str(e)}")
+
+    def _fallback_attempts(self, primary_model: str) -> List[Dict[str, Any]]:
+        """Progressive attempts for prompt-only image generation.
+
+        The primary model with the original text, then with sanitized wording, then the
+        sibling Gemini image model, then (if configured) OpenAI as a last resort.
+        """
+        attempts: List[Dict[str, Any]] = [
+            {"model_name": primary_model, "sanitize": False, "desc": "original text"},
+            {"model_name": primary_model, "sanitize": True, "desc": "sanitized safety keywords"},
+        ]
+
+        sibling = None
+        if primary_model == "gemini-3.1-flash-lite-image":
+            sibling = "gemini-3.1-flash-image"
+        elif primary_model in {"gemini-3.1-flash-image", "gemini-nano-banana-2.1"}:
+            sibling = "gemini-3.1-flash-lite-image"
+        if sibling:
+            attempts.append(
+                {
+                    "model_name": sibling,
+                    "sanitize": True,
+                    "desc": f"fallback to {sibling}, sanitized text",
+                }
+            )
+
+        if self.settings.OPENAI_API_KEY:
+            attempts.append(
+                {
+                    "model_name": OPENAI_FALLBACK_IMAGE_MODEL,
+                    "sanitize": True,
+                    "desc": f"last resort fallback to {OPENAI_FALLBACK_IMAGE_MODEL}, sanitized text",
+                }
+            )
+        return attempts
+
+    async def _generate_with_fallbacks(
+        self,
+        *,
+        subject: str,
+        build_prompt: Callable[[bool], str],
+        aspect_ratio: str,
+    ) -> ImageGenerationResult:
+        """Run the fallback ladder until an attempt yields an image.
+
+        Args:
+            subject: What is being illustrated, for log lines (e.g. "course 12")
+            build_prompt: Returns the prompt, given whether to sanitize the wording
+            aspect_ratio: Desired aspect ratio
+
+        Returns:
+            The first successful result, or the last failure. ``model_name`` on the
+            result is the model that handled that attempt.
+        """
+        attempts = self._fallback_attempts(self.model_name)
+        result: Optional[ImageGenerationResult] = None
+        for i, config in enumerate(attempts, 1):
+            curr_model = config["model_name"]
+            step = f"[Image step {i}/{len(attempts)}] {subject}"
+            logger.info(f"{step}: attempting generation via {curr_model} ({config['desc']})...")
+
+            result = await self.generate_image(
+                prompt=build_prompt(config["sanitize"]),
+                aspect_ratio=aspect_ratio,
+                model_name_override=curr_model,
+            )
+            result.model_name = result.model_name or curr_model
+
+            if result.success and result.image_keys:
+                logger.info(f"{step}: succeeded (model: {curr_model}): {result.image_keys[0]}")
+                return result
+
+            logger.warning(f"{step}: failed via {curr_model}: {result.error}")
+
+        logger.error(f"All {len(attempts)} image generation attempts failed for {subject}.")
+        return result
 
     async def generate_course_image(
         self,
@@ -692,87 +784,13 @@ class ImageService:
         Returns:
             An ImageGenerationResult object with success/failure information.
         """
-        cid = getattr(course, "id", None)
-        primary_model = self.model_name
-
-        # Define progressive attempts to successfully generate the course image.
-        attempts = [
-            {"model_name": primary_model, "sanitize": False, "desc": "original text"},
-            {
-                "model_name": primary_model,
-                "sanitize": True,
-                "desc": "sanitized safety keywords",
-            },
-        ]
-
-        # Tiered fallback to the sibling Gemini image model if the primary is failing.
-        if primary_model == "gemini-3.1-flash-lite-image":
-            attempts.append(
-                {
-                    "model_name": "gemini-3.1-flash-image",
-                    "sanitize": True,
-                    "desc": "fallback to gemini-3.1-flash-image, sanitized text",
-                }
-            )
-        elif primary_model in {"gemini-3.1-flash-image", "gemini-nano-banana-2.1"}:
-            attempts.append(
-                {
-                    "model_name": "gemini-3.1-flash-lite-image",
-                    "sanitize": True,
-                    "desc": "fallback to gemini-3.1-flash-lite-image, sanitized text",
-                }
-            )
-
-        # Final fallback to OpenAI's fast, high-quality GPT Image 2.5 Flare.
-        if self.settings.OPENAI_API_KEY:
-            attempts.append(
-                {
-                    "model_name": "gpt-image-2.5-flare",
-                    "sanitize": True,
-                    "desc": "last resort fallback to gpt-image-2, sanitized text",
-                }
-            )
-
-        logger.info(
-            f"Generating course album art for course {cid} ({getattr(course, 'title', '?')})"
+        return await self._generate_with_fallbacks(
+            subject=f"course {getattr(course, 'id', None)} ({getattr(course, 'title', '?')})",
+            build_prompt=lambda sanitize: format_course_image_prompt(
+                course, professor=professor, aspect_ratio=aspect_ratio, sanitize=sanitize
+            ),
+            aspect_ratio=aspect_ratio,
         )
-
-        result: Optional[ImageGenerationResult] = None
-        for i, config in enumerate(attempts, 1):
-            curr_model = config["model_name"]
-            prompt = format_course_image_prompt(
-                course,
-                professor=professor,
-                aspect_ratio=aspect_ratio,
-                sanitize=config["sanitize"],
-            )
-
-            logger.info(
-                f"[Course-Image Step {i}/{len(attempts)}] course {cid} "
-                f"attempting generation via {curr_model} ({config['desc']})..."
-            )
-
-            result = await self.generate_image(
-                prompt=prompt,
-                aspect_ratio=aspect_ratio,
-                model_name_override=curr_model,
-            )
-
-            if result.success:
-                if i > 1:
-                    logger.info(
-                        f"Course {cid} album art succeeded on step {i}/{len(attempts)} "
-                        f"(model: {curr_model})"
-                    )
-                return result
-
-            logger.warning(
-                f"[Course-Image Step {i}/{len(attempts)}] course {cid} failed via "
-                f"{curr_model}: {result.error}"
-            )
-
-        logger.error(f"All {len(attempts)} album art generation attempts failed for course {cid}.")
-        return result
 
     async def generate_professor_image(
         self, professor: Professor, aspect_ratio: str = "1:1"
@@ -797,89 +815,15 @@ class ImageService:
         Returns:
             An ImageGenerationResult object with success/failure information.
         """
-        pid = getattr(professor, "id", None)
-        primary_model = self.model_name
-
-        # Define progressive attempts to successfully generate the professor image.
-        attempts = [
-            {"model_name": primary_model, "sanitize": False, "desc": "original text"},
-            {
-                "model_name": primary_model,
-                "sanitize": True,
-                "desc": "sanitized safety keywords",
-            },
-        ]
-
-        # Tiered fallback to the sibling Gemini image model if the primary is failing.
-        if primary_model == "gemini-3.1-flash-lite-image":
-            attempts.append(
-                {
-                    "model_name": "gemini-3.1-flash-image",
-                    "sanitize": True,
-                    "desc": "fallback to gemini-3.1-flash-image, sanitized text",
-                }
-            )
-        elif primary_model in {"gemini-3.1-flash-image", "gemini-nano-banana-2.1"}:
-            attempts.append(
-                {
-                    "model_name": "gemini-3.1-flash-lite-image",
-                    "sanitize": True,
-                    "desc": "fallback to gemini-3.1-flash-lite-image, sanitized text",
-                }
-            )
-
-        # Final fallback to OpenAI's fast, high-quality GPT Image 2.5 Flare.
-        if self.settings.OPENAI_API_KEY:
-            attempts.append(
-                {
-                    "model_name": "gpt-image-2.5-flare",
-                    "sanitize": True,
-                    "desc": "last resort fallback to gpt-image-2, sanitized text",
-                }
-            )
-
-        logger.info(f"Generating image for professor {pid} ({getattr(professor, 'name', '?')})")
-
-        result: Optional[ImageGenerationResult] = None
-        for i, config in enumerate(attempts, 1):
-            curr_model = config["model_name"]
-            prompt = format_professor_image_prompt(
-                professor,
-                aspect_ratio=aspect_ratio,
-                sanitize=config["sanitize"],
-            )
-
-            logger.info(
-                f"[Professor-Image Step {i}/{len(attempts)}] professor {pid} "
-                f"attempting generation via {curr_model} ({config['desc']})..."
-            )
-
-            result = await self.generate_image(
-                prompt=prompt,
-                aspect_ratio=aspect_ratio,
-                model_name_override=curr_model,
-            )
-
-            if result.success and result.image_keys:
-                if i > 1:
-                    logger.info(
-                        f"Professor {pid} image succeeded on step {i}/{len(attempts)} "
-                        f"(model: {curr_model})"
-                    )
-                else:
-                    logger.info(
-                        f"Successfully generated image for professor {pid}: "
-                        f"{result.image_keys[0]}"
-                    )
-                return result
-
-            logger.warning(
-                f"[Professor-Image Step {i}/{len(attempts)}] professor {pid} failed via "
-                f"{curr_model}: {result.error}"
-            )
-
-        logger.error(f"All {len(attempts)} image generation attempts failed for professor {pid}.")
-        return result
+        return await self._generate_with_fallbacks(
+            subject=(
+                f"professor {getattr(professor, 'id', None)} ({getattr(professor, 'name', '?')})"
+            ),
+            build_prompt=lambda sanitize: format_professor_image_prompt(
+                professor, aspect_ratio=aspect_ratio, sanitize=sanitize
+            ),
+            aspect_ratio=aspect_ratio,
+        )
 
     async def generate_lecture_slide_image(
         self,
@@ -984,7 +928,7 @@ class ImageService:
         if self.settings.OPENAI_API_KEY:
             attempts.append(
                 {
-                    "model_name": "gpt-image-2.5-flare",
+                    "model_name": OPENAI_FALLBACK_IMAGE_MODEL,
                     "use_prof_ref": False,
                     "use_slide_refs": False,
                     "sanitize": True,
@@ -1064,7 +1008,9 @@ class ImageService:
                             f"Successfully generated and uploaded slide for slot {slot_idx} "
                             f"on step {i}/{len(attempts)} (model: {curr_model})"
                         )
-                        await self._log_image_prompt(prompt, aspect_ratio, image_keys=[object_name])
+                        await self._log_image_prompt(
+                            prompt, aspect_ratio, image_keys=[object_name], model_name=curr_model
+                        )
                         return url
                     else:
                         raise RuntimeError(f"Step {i} succeeded but storage upload failed")
@@ -1086,5 +1032,6 @@ class ImageService:
         await self._log_image_prompt(
             f"FAILED_ALL_ATTEMPTS: {chunk_text[:150]}...",
             aspect_ratio,
+            model_name=primary_model,
         )
         raise last_error or RuntimeError("All image generation attempts failed")

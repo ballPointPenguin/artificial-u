@@ -24,12 +24,10 @@ from artificial_u.api.services import DepartmentApiService
 from artificial_u.config import get_settings
 from artificial_u.models.core import Student
 
-# Create the router with dependencies that will be applied to all routes
 router = APIRouter(
     prefix="/departments",
     tags=["departments"],
     responses={404: {"description": "Not found"}},
-    dependencies=[Depends(get_department_api_service)],
 )
 
 

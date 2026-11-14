@@ -38,15 +38,7 @@ def get_current_student_profile(student=Depends(ensure_student)):
 
     Returns the student's name, email, and other profile information.
     """
-    return StudentResponse(
-        id=student.id,
-        name=student.name,
-        email=student.email,
-        auth0_sub=student.auth0_sub,
-        role=student.role,
-        coins=student.coins,
-        is_active=student.is_active,
-    )
+    return StudentResponse.model_validate(student)
 
 
 @router.patch(
@@ -74,15 +66,7 @@ def update_current_student_profile(
 
     if not update_dict:
         # No fields to update
-        return StudentResponse(
-            id=student.id,
-            name=student.name,
-            email=student.email,
-            auth0_sub=student.auth0_sub,
-            role=student.role,
-            coins=student.coins,
-            is_active=student.is_active,
-        )
+        return StudentResponse.model_validate(student)
 
     try:
         # Update the student
@@ -94,15 +78,7 @@ def update_current_student_profile(
                 detail="Student not found",
             )
 
-        return StudentResponse(
-            id=updated_student.id,
-            name=updated_student.name,
-            email=updated_student.email,
-            auth0_sub=updated_student.auth0_sub,
-            role=updated_student.role,
-            coins=updated_student.coins,
-            is_active=updated_student.is_active,
-        )
+        return StudentResponse.model_validate(updated_student)
     except HTTPException:
         raise
     except ValueError as e:
@@ -167,18 +143,7 @@ def list_students(
     paginated_students = filtered_students[start_idx:end_idx]
 
     # Convert to response models
-    items = [
-        StudentResponse(
-            id=student.id,
-            name=student.name,
-            email=student.email,
-            auth0_sub=student.auth0_sub,
-            role=student.role,
-            coins=student.coins,
-            is_active=student.is_active,
-        )
-        for student in paginated_students
-    ]
+    items = [StudentResponse.model_validate(student) for student in paginated_students]
 
     return StudentsListResponse(
         items=items,
@@ -212,15 +177,7 @@ def update_student_role(
     try:
         updated_student = student_repo.update_role(student_id, role_data.role)
 
-        return StudentResponse(
-            id=updated_student.id,
-            name=updated_student.name,
-            email=updated_student.email,
-            auth0_sub=updated_student.auth0_sub,
-            role=updated_student.role,
-            coins=updated_student.coins,
-            is_active=updated_student.is_active,
-        )
+        return StudentResponse.model_validate(updated_student)
     except ValueError as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -259,15 +216,7 @@ def add_student_coins(
     try:
         updated_student = student_repo.add_coins(student_id, coins_data.amount)
 
-        return StudentResponse(
-            id=updated_student.id,
-            name=updated_student.name,
-            email=updated_student.email,
-            auth0_sub=updated_student.auth0_sub,
-            role=updated_student.role,
-            coins=updated_student.coins,
-            is_active=updated_student.is_active,
-        )
+        return StudentResponse.model_validate(updated_student)
     except ValueError as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,

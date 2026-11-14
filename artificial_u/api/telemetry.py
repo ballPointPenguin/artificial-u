@@ -3,6 +3,7 @@ import gc
 import json
 import logging
 import os
+import resource
 import sys
 import threading
 from datetime import datetime, timezone
@@ -43,8 +44,6 @@ def _get_rss_bytes_fallback() -> Optional[int]:
 
     # Fallback: resource.getrusage (ru_maxrss)
     try:
-        import resource
-
         ru_maxrss = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
         # On Linux, ru_maxrss is kilobytes. On macOS, it is bytes.
         if sys.platform.startswith("linux"):

@@ -14,6 +14,7 @@ from artificial_u.api.models.professors import (
     ProfessorsListResponse,
     ProfessorUpdate,
 )
+from artificial_u.api.security.auth0 import verify_asset_ownership
 from artificial_u.api.services.base_service import BaseApiService
 from artificial_u.models.core import Professor as CoreProfessor
 from artificial_u.models.core import Student
@@ -25,6 +26,8 @@ from artificial_u.services import (
     ProfessorService,
     VoiceService,
 )
+from artificial_u.services.job_enqueue_service import JobEnqueueService
+from artificial_u.services.professor_generator_service import ProfessorGeneratorService
 from artificial_u.utils import (
     DatabaseError,
     ProfessorNotFoundError,
@@ -56,8 +59,6 @@ class ProfessorApiService(BaseApiService[CoreProfessor, ProfessorResponse, Profe
         self.repository_factory = repository_factory
 
         # Initialize job enqueue service for background processing
-        from artificial_u.services.job_enqueue_service import JobEnqueueService
-
         job_enqueue_service = JobEnqueueService(
             repository_factory=repository_factory,
             logger=self.logger,
@@ -72,8 +73,6 @@ class ProfessorApiService(BaseApiService[CoreProfessor, ProfessorResponse, Profe
         )
 
         # Initialize generator service for AI generation workflows
-        from artificial_u.services.professor_generator_service import ProfessorGeneratorService
-
         self.generator_service = ProfessorGeneratorService(
             professor_service=self.core_service,
             content_service=content_service,
@@ -236,8 +235,6 @@ class ProfessorApiService(BaseApiService[CoreProfessor, ProfessorResponse, Profe
             professor_model = self.core_service.get_professor(professor_id)
 
             # Verify ownership (admins can modify any professor, creators only their own)
-            from artificial_u.api.security.auth0 import verify_asset_ownership
-
             verify_asset_ownership(student_id, professor_model.created_by, role, "professor")
 
             # Extract non-None values for update
@@ -273,8 +270,6 @@ class ProfessorApiService(BaseApiService[CoreProfessor, ProfessorResponse, Profe
             professor_model = self.core_service.get_professor(professor_id)
 
             # Verify ownership (admins can delete any professor, creators only their own)
-            from artificial_u.api.security.auth0 import verify_asset_ownership
-
             verify_asset_ownership(student_id, professor_model.created_by, role, "professor")
 
             return self.core_service.delete_professor(professor_id)
@@ -342,8 +337,6 @@ class ProfessorApiService(BaseApiService[CoreProfessor, ProfessorResponse, Profe
             professor_model = self.core_service.get_professor(professor_id)
 
             # Verify ownership (admins can modify any professor, creators only their own)
-            from artificial_u.api.security.auth0 import verify_asset_ownership
-
             verify_asset_ownership(student_id, professor_model.created_by, role, "professor")
 
             # Call the generator service method
@@ -392,8 +385,6 @@ class ProfessorApiService(BaseApiService[CoreProfessor, ProfessorResponse, Profe
             professor_model = self.core_service.get_professor(professor_id)
 
             # Verify ownership (admins can modify any professor, creators only their own)
-            from artificial_u.api.security.auth0 import verify_asset_ownership
-
             verify_asset_ownership(student_id, professor_model.created_by, role, "professor")
 
             updated_professor = self.core_service.assign_voice_to_professor(professor_id)

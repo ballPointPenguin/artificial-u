@@ -13,7 +13,7 @@ import httpx
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials
 
-from artificial_u.api.security.auth0 import auth_scheme, optional_auth, require_auth
+from artificial_u.api.security.auth0 import auth_scheme, get_user_info, optional_auth, require_auth
 from artificial_u.api.services import (
     CourseApiService,
     DepartmentApiService,
@@ -36,9 +36,15 @@ from artificial_u.services import (
     TopicService,
     VoiceService,
 )
+from artificial_u.services.department_generator_service import (
+    DepartmentGeneratorService,
+)
 from artificial_u.services.http_client import get_shared_async_client
 from artificial_u.services.job_enqueue_service import JobEnqueueService
 from artificial_u.services.preference_service import PreferenceService
+from artificial_u.services.professor_generator_service import (
+    ProfessorGeneratorService,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -80,8 +86,6 @@ def _get_or_create_student_from_payload(
     Returns:
         Student model instance
     """
-    from artificial_u.api.security.auth0 import get_user_info
-
     sub = payload.get("sub")
     if not isinstance(sub, str) or not sub:
         raise HTTPException(
@@ -378,10 +382,6 @@ def get_department_generator_service(
     Returns:
         DepartmentGeneratorService instance
     """
-    from artificial_u.services.department_generator_service import (
-        DepartmentGeneratorService,
-    )
-
     return DepartmentGeneratorService(
         content_service=content_service,
         repository_factory=repository_factory,
@@ -407,10 +407,6 @@ def get_professor_generator_service(
     Returns:
         ProfessorGeneratorService instance
     """
-    from artificial_u.services.professor_generator_service import (
-        ProfessorGeneratorService,
-    )
-
     # We need the core professor service for generation, but it depends on voice_service
     # We'll get it via dependency injection
     professor_service = get_professor_service(
@@ -433,7 +429,6 @@ def get_professor_api_service(
     content_service: ContentService = Depends(get_content_service),
     image_service: ImageService = Depends(get_image_service),
     voice_service: VoiceService = Depends(get_voice_service),
-    logger=logging.getLogger("artificial_u.api.services.lecture_service"),
 ) -> ProfessorApiService:
     """
     Get a professor API service instance.
@@ -443,7 +438,6 @@ def get_professor_api_service(
         content_service: Content service
         image_service: Image service
         voice_service: Voice service
-        logger: Logger for the service
 
     Returns:
         ProfessorApiService instance
@@ -453,7 +447,7 @@ def get_professor_api_service(
         content_service=content_service,
         image_service=image_service,
         voice_service=voice_service,
-        logger=logger,
+        logger=logging.getLogger("artificial_u.api.services.professor_service"),
     )
 
 

@@ -15,10 +15,13 @@ from artificial_u.api.models.topics import (
     TopicListResponse,
     TopicUpdate,
 )
+from artificial_u.api.security.auth0 import verify_asset_ownership
 from artificial_u.api.services.base_service import BaseApiService
 from artificial_u.models.core import Topic as CoreTopic
 from artificial_u.models.repositories import RepositoryFactory
 from artificial_u.services import TopicService as CoreTopicService
+from artificial_u.services.content_service import ContentService
+from artificial_u.services.topic_generator_service import TopicGeneratorService
 from artificial_u.utils import (
     ContentGenerationError,
     CourseNotFoundError,
@@ -44,9 +47,6 @@ class TopicApiService(BaseApiService[CoreTopic, Topic, TopicListResponse]):
         self.core_service = core_topic_service
 
         # Initialize generator service for AI generation workflows
-        from artificial_u.services.content_service import ContentService
-        from artificial_u.services.topic_generator_service import TopicGeneratorService
-
         # Create content service for TopicGeneratorService dependency
         content_service = ContentService(logger=self.logger)
 
@@ -142,8 +142,6 @@ class TopicApiService(BaseApiService[CoreTopic, Topic, TopicListResponse]):
                 raise TopicNotFoundError(f"Topic with ID {topic_id} not found for update.")
 
             # Verify ownership (admins can modify any topic, creators only their own)
-            from artificial_u.api.security.auth0 import verify_asset_ownership
-
             verify_asset_ownership(student_id, core_topic_to_update.created_by, role, "topic")
 
             # Create a new CoreTopic instance with updated fields
@@ -188,8 +186,6 @@ class TopicApiService(BaseApiService[CoreTopic, Topic, TopicListResponse]):
                 raise TopicNotFoundError(f"Topic with ID {topic_id} not found for deletion.")
 
             # Verify ownership (admins can delete any topic, creators only their own)
-            from artificial_u.api.security.auth0 import verify_asset_ownership
-
             verify_asset_ownership(student_id, topic_model.created_by, role, "topic")
 
             deleted = self.core_service.delete_topic(topic_id)

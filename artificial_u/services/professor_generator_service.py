@@ -20,7 +20,7 @@ from artificial_u.utils import (
     ContentGenerationError,
     DatabaseError,
     GenerationError,
-    extract_xml_between_tags,
+    extract_root_xml,
 )
 
 
@@ -165,7 +165,8 @@ class ProfessorGeneratorService:
 
         # Update the professor record with the new image URL and model used
         try:
-            model_name = self.image_service.model_name
+            # A fallback model may have produced the image; record the one that did
+            model_name = result.model_name or self.image_service.model_name
             updated_professor = self.professor_service.update_professor(
                 professor_id=professor_id,
                 attributes={
@@ -312,30 +313,7 @@ class ProfessorGeneratorService:
         """Parses the AI-generated XML content to extract professor attributes."""
         self.logger.debug(f"Attempting to parse generated content:\n{generated_content}")
 
-        # Simplified XML extraction logic
-        generated_xml_output = None
-
-        # First try to extract from <output> tags
-        generated_xml_output = extract_xml_between_tags(generated_content, "output")
-        if generated_xml_output:
-            self.logger.info("Successfully extracted content from <output> tags")
-        else:
-            self.logger.info("<output> tag not found, trying direct <professor> extraction...")
-
-            # Check if the response directly contains <professor>...</professor>
-            if generated_content.strip().startswith(
-                "<professor>"
-            ) and generated_content.strip().endswith("</professor>"):
-                # Use the raw response directly
-                generated_xml_output = generated_content.strip()
-                self.logger.info("Using raw response as it contains valid <professor> structure")
-            else:
-                # Try to extract inner content and wrap it
-                inner_content = extract_xml_between_tags(generated_content, "professor")
-                if inner_content:
-                    generated_xml_output = f"<professor>\n{inner_content}\n</professor>"
-                    self.logger.info("Extracted <professor> inner content and wrapped it")
-
+        generated_xml_output = extract_root_xml(generated_content, "professor")
         if not generated_xml_output:
             error_msg = (
                 "Could not extract <output> or <professor> tag from response:\n"
@@ -343,11 +321,6 @@ class ProfessorGeneratorService:
             )
             self.logger.error(error_msg)
             raise ContentGenerationError(error_msg)
-
-        # Ensure the extracted content has the proper <professor> wrapper
-        if not generated_xml_output.strip().startswith("<professor>"):
-            self.logger.warning("Wrapping extracted content in <professor> tags")
-            generated_xml_output = f"<professor>\n{generated_xml_output}\n</professor>"
 
         try:
             # Parse the processed text which should now be a valid XML doc with one root

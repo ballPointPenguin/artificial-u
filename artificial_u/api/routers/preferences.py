@@ -65,13 +65,7 @@ def get_global_preference(
             detail=f"Global preference '{scope}' not found",
         )
 
-    return PreferenceResponse(
-        id=pref.id,
-        student_id=pref.student_id,
-        scope=pref.scope,
-        value=pref.value,
-        is_global=pref.is_global,
-    )
+    return PreferenceResponse.model_validate(pref, from_attributes=True)
 
 
 @router.put(
@@ -93,13 +87,7 @@ def set_global_preference(
     """
     try:
         pref = repository_factory.preference.set_global(scope, update_data.value)
-        return PreferenceResponse(
-            id=pref.id,
-            student_id=pref.student_id,
-            scope=pref.scope,
-            value=pref.value,
-            is_global=pref.is_global,
-        )
+        return PreferenceResponse.model_validate(pref, from_attributes=True)
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -129,6 +117,14 @@ def delete_global_preference(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Global preference '{scope}' not found",
         )
+
+
+def _global_model_setting(
+    repository_factory: RepositoryFactory, model: str, scope: str
+) -> ModelSettingResponse:
+    """Describe a globally configured model and whether a preference overrides the setting."""
+    overridden = repository_factory.preference.get_global(scope) is not None
+    return ModelSettingResponse(model=model, source="preference" if overridden else "environment")
 
 
 @router.get(
@@ -173,12 +169,10 @@ def get_course_generation_model(
     Course models are global (not per-student). Returns the model name and the
     source (preference or environment).
     """
-    pref_service = PreferenceService(repository_factory)
-    model = pref_service.get_course_generation_model()
-    pref = repository_factory.preference.get_global(PreferenceService.COURSE_GENERATION_MODEL)
-    source = "preference" if pref else "environment"
-
-    return ModelSettingResponse(model=model, source=source)
+    model = PreferenceService(repository_factory).get_course_generation_model()
+    return _global_model_setting(
+        repository_factory, model, PreferenceService.COURSE_GENERATION_MODEL
+    )
 
 
 @router.get(
@@ -197,12 +191,10 @@ def get_topics_generation_model(
     Topics models are global (not per-student). Returns the model name and the
     source (preference or environment).
     """
-    pref_service = PreferenceService(repository_factory)
-    model = pref_service.get_topics_generation_model()
-    pref = repository_factory.preference.get_global(PreferenceService.TOPICS_GENERATION_MODEL)
-    source = "preference" if pref else "environment"
-
-    return ModelSettingResponse(model=model, source=source)
+    model = PreferenceService(repository_factory).get_topics_generation_model()
+    return _global_model_setting(
+        repository_factory, model, PreferenceService.TOPICS_GENERATION_MODEL
+    )
 
 
 @router.get(
@@ -221,9 +213,7 @@ def get_image_generation_model(
     Image models are global (not per-student). Returns the model name and the
     source (preference or environment).
     """
-    pref_service = PreferenceService(repository_factory)
-    model = pref_service.get_image_generation_model()
-    pref = repository_factory.preference.get_global(PreferenceService.IMAGE_GENERATION_MODEL)
-    source = "preference" if pref else "environment"
-
-    return ModelSettingResponse(model=model, source=source)
+    model = PreferenceService(repository_factory).get_image_generation_model()
+    return _global_model_setting(
+        repository_factory, model, PreferenceService.IMAGE_GENERATION_MODEL
+    )

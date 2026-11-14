@@ -7,6 +7,11 @@ from typing import Any, Dict
 
 from artificial_u.config import Settings
 
+# Attributes every LogRecord has; anything else on a record was passed via ``extra=``
+_STANDARD_RECORD_ATTRS = frozenset(
+    vars(logging.LogRecord("", logging.INFO, "", 0, "", (), None))
+) | {"message", "asctime", "taskName"}
+
 
 class JsonFormatter(logging.Formatter):
     """
@@ -26,13 +31,10 @@ class JsonFormatter(logging.Formatter):
             "line": record.lineno,
         }
 
-        # Add extra fields from the record
-        if hasattr(record, "request_id"):
-            log_data["request_id"] = record.request_id
-
-        # Add any other extra fields
-        if hasattr(record, "extra"):
-            for key, value in record.extra.items():
+        # Fields passed via ``logger.info(..., extra={...})`` are set as attributes on the
+        # record; emit them without letting them overwrite the core fields above
+        for key, value in vars(record).items():
+            if key not in _STANDARD_RECORD_ATTRS and key not in log_data:
                 log_data[key] = value
 
         # Add exception info if present
@@ -43,7 +45,7 @@ class JsonFormatter(logging.Formatter):
                 "traceback": self.formatException(record.exc_info),
             }
 
-        return json.dumps(log_data)
+        return json.dumps(log_data, default=str)
 
 
 def setup_logging(settings: Settings) -> None:

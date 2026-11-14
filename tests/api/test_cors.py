@@ -6,6 +6,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from artificial_u.api.app import app
+from artificial_u.api.middlewares.cors_middleware import split_origins
 
 
 @pytest.mark.unit
@@ -70,3 +71,40 @@ def test_cors_from_disallowed_origin():
 
     assert response.status_code == 200
     assert "Access-Control-Allow-Origin" not in response.headers
+
+
+@pytest.mark.unit
+def test_cors_allows_configured_wildcard_subdomain():
+    """An origin under a configured ``https://*.domain`` entry is allowed."""
+    client = TestClient(app)
+
+    response = client.get("/api/v1/health", headers={"Origin": "https://www.artificial-u.com"})
+
+    assert response.headers["Access-Control-Allow-Origin"] == "https://www.artificial-u.com"
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize(
+    "origin",
+    [
+        "https://evil.example.com",
+        "https://artificial-u.com.evil.example.com",
+        "https://evilartificial-u.com",
+        "http://www.artificial-u.com",
+    ],
+)
+def test_cors_rejects_origins_outside_the_wildcard(origin):
+    client = TestClient(app)
+
+    response = client.get("/api/v1/health", headers={"Origin": origin})
+
+    assert "Access-Control-Allow-Origin" not in response.headers
+
+
+@pytest.mark.unit
+def test_split_origins_separates_wildcards():
+    exact, regex = split_origins(["http://localhost:5173", "https://*.example.com"])
+
+    assert exact == ["http://localhost:5173"]
+    assert regex == r"https://[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.example\.com"
+    assert split_origins(["http://localhost:5173"]) == (["http://localhost:5173"], None)

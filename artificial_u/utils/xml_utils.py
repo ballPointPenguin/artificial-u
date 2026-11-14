@@ -256,3 +256,32 @@ def extract_xml_between_tags(text: str, tag_name: str) -> Optional[str]:
     match = re.search(pattern, text, re.DOTALL)
 
     return match.group(1).strip() if match else None
+
+
+def extract_root_xml(
+    raw_response: str, root_tag: str, *, allow_empty: bool = False
+) -> Optional[str]:
+    """
+    Find the ``<root_tag>`` document in an LLM response.
+
+    Models are asked to answer inside ``<output>`` tags but do not always comply, so this
+    accepts, in order: the content of ``<output>``, or a bare ``<root_tag>...</root_tag>``
+    anywhere in the response.
+
+    Args:
+        raw_response: The raw model response
+        root_tag: Name of the expected root element (e.g. "course")
+        allow_empty: Whether an empty ``<root_tag></root_tag>`` counts as found
+
+    Returns:
+        Optional[str]: The document wrapped in ``<root_tag>``, or None if it is not there
+    """
+    output = extract_xml_between_tags(raw_response, "output")
+    if output:
+        return ensure_xml_wrapper(output, root_tag)
+
+    inner = extract_xml_between_tags(raw_response, root_tag)
+    if inner or (allow_empty and inner is not None):
+        return f"<{root_tag}>\n{inner}\n</{root_tag}>"
+
+    return None
