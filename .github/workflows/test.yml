@@ -7,6 +7,11 @@ on:
       - main
     paths:
       - "artificial_u/**"
+      - "tests/**"
+      - "scripts/**"
+      - "alembic/**"
+      - "conftest.py"
+      - "pytest.ini"
       - "pyproject.toml"
       - "uv.lock"
       - ".github/workflows/test.yml"
@@ -15,6 +20,11 @@ on:
       - main
     paths:
       - "artificial_u/**"
+      - "tests/**"
+      - "scripts/**"
+      - "alembic/**"
+      - "conftest.py"
+      - "pytest.ini"
       - "pyproject.toml"
       - "uv.lock"
       - ".github/workflows/test.yml"

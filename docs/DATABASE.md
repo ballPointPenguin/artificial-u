@@ -151,11 +151,11 @@ uv run python scripts/run_alembic.py upgrade head
 | Situation | Suggested approach |
 | --- | --- |
 | Wrong migration, only on your machine | `downgrade -1`, fix migration, `upgrade head` |
-| Need a clean slate locally | `rebuild_dev_db.py` (see below) — faster than stepping to `base` |
+| Need a clean slate locally | `rebuild_dev_db.py` (see below): drops the database and re-applies every migration |
 | Bad migration merged to `main`, not yet in production | `downgrade` on affected DBs, revert the migration commit, redeploy |
 | Bad migration already in production with data | Snapshot DB, assess data loss from `downgrade()`, often prefer a **new forward migration** to fix the schema rather than rolling back |
 
-For local development, if the database is disposable and you want to reset everything including migration history, use [Totally Rebuild the Dev Database](#totally-rebuild-the-dev-database) instead of manual rollbacks.
+For local development, if the database is disposable and you want an empty schema, use [Rebuild the Dev Database](#rebuild-the-dev-database) instead of manual rollbacks.
 
 ### Verify After Rollback
 
@@ -165,14 +165,17 @@ uv run python scripts/run_alembic.py current
 
 The reported revision should match your target. Run the application or relevant tests to confirm the schema matches expectations.
 
-## Totally Rebuild the Dev Database
+## Rebuild the Dev Database
 
-Warning: This is only for development/greenfield phase.
+Warning: this deletes all data in your development database.
 
-This will delete all existing migrations and the database, and create a new one.
+The script drops the database, recreates it, and applies every migration from the first to the
+latest. Migration files are not changed. It refuses to run against a database that is not on
+your machine unless you pass `--allow-remote`.
 
 ```sh
-python scripts/rebuild_dev_db.py
+uv run python scripts/rebuild_dev_db.py
+uv run python scripts/seed_data.py   # restore the default faculties
 ```
 
 ## Testing

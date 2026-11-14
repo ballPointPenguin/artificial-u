@@ -40,4 +40,12 @@ node_modules/
 content_logs/
 docs/
 examples/
-samples/
+
+# Not needed at runtime: frontend, tests, CI config, local data
+web/
+tests/
+conftest.py
+pytest.ini
+.env.*
+.github/
+backups/

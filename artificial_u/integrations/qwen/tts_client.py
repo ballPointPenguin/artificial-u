@@ -9,7 +9,6 @@ ALIBABA_API_KEY must belong to the same region (e.g. Singapore, ap-southeast-1).
 
 import logging
 import os
-import sys
 import time
 from typing import Any, Optional
 
@@ -50,24 +49,15 @@ class QwenTTSClient:
         self.logger = logger or logging.getLogger(__name__)
         settings = get_settings()
 
-        in_test_env = os.environ.get("TESTING") == "true" or "pytest" in sys.modules
-
         self.api_key = api_key or os.environ.get("ALIBABA_API_KEY") or settings.ALIBABA_API_KEY
         if not self.api_key:
-            if in_test_env:
-                self.api_key = "test_alibaba_key"
-                self.logger.info("Using test API key in test environment")
-            else:
-                raise ValueError("Alibaba API key is required for Qwen TTS")
+            raise ValueError("Alibaba API key is required for Qwen TTS")
 
         self.workspace_id = (
             workspace_id or os.environ.get("ALIBABA_WORKSPACE_ID") or settings.ALIBABA_WORKSPACE_ID
         )
         if not self.workspace_id:
-            if in_test_env:
-                self.workspace_id = "test-workspace"
-            else:
-                raise ValueError("ALIBABA_WORKSPACE_ID is required for Qwen TTS")
+            raise ValueError("ALIBABA_WORKSPACE_ID is required for Qwen TTS")
 
         self.region = region or settings.ALIBABA_TTS_REGION
         self.default_model = settings.TTS_QWEN_MODEL

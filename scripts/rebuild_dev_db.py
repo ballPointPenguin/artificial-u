@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
 """
-Script to rebuild the development database and recreate initial Alembic migration.
-Only for use in development/greenfield phase.
+Reset the local development database: drop it, recreate it, and apply all migrations.
+
+Every row is lost. The Alembic migration files are not touched; the schema is rebuilt by
+running the existing migrations from the first to the latest. Run `scripts/seed_data.py`
+afterwards to restore the default faculties.
 """
 
 import argparse
-import glob
 import logging
 import os
 import subprocess
@@ -15,205 +17,123 @@ from pathlib import Path
 import sqlalchemy
 from dotenv import load_dotenv
 from sqlalchemy import text
+from sqlalchemy.engine import URL, make_url
 
-# Configure logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
-# Get the project root directory
 project_root = Path(__file__).parent.parent
-versions_dir = project_root / "alembic" / "versions"
+
+# Hosts that can only be a developer's own database (docker compose exposes "postgres")
+LOCAL_HOSTS = {"localhost", "127.0.0.1", "::1", "postgres"}
 
 
 def parse_args():
     """Parse command line arguments."""
-    parser = argparse.ArgumentParser(
-        description="Rebuild development database and recreate initial migration"
-    )
-    parser.add_argument("--db-url", help="PostgreSQL connection URL")
+    parser = argparse.ArgumentParser(description="Drop, recreate and migrate the dev database")
+    parser.add_argument("--db-url", help="PostgreSQL connection URL (default: DATABASE_URL)")
     parser.add_argument("--yes", "-y", action="store_true", help="Skip confirmation prompt")
+    parser.add_argument(
+        "--allow-remote",
+        action="store_true",
+        help="Allow a database that is not on this machine (never use for production)",
+    )
     return parser.parse_args()
 
 
-def get_database_name(db_url):
-    """Extract database name from connection URL."""
-    if "postgresql://" in db_url:
-        return db_url.split("/")[-1]
-    return None
-
-
-def drop_database(db_url, logger):
-    """Drop the database if it exists."""
-    db_name = get_database_name(db_url)
-    if not db_name:
-        logger.error(f"Invalid database URL format: {db_url}")
-        return False
-
-    # Create a connection URL to postgres database
-    postgres_url = db_url.rsplit("/", 1)[0] + "/postgres"
+def recreate_database(url: URL) -> bool:
+    """Drop the database if it exists, then create it empty."""
+    db_name = url.database
+    quoted_name = '"' + db_name.replace('"', '""') + '"'
 
     try:
-        # Connect to postgres database
-        engine = sqlalchemy.create_engine(postgres_url)
+        # DROP/CREATE DATABASE cannot run inside a transaction or against the target itself
+        engine = sqlalchemy.create_engine(
+            url.set(database="postgres"), isolation_level="AUTOCOMMIT"
+        )
         with engine.connect() as conn:
-            # Don't automatically commit transactions
-            conn.execution_options(isolation_level="AUTOCOMMIT")
-
-            # Check if database exists
-            result = conn.execute(text(f"SELECT 1 FROM pg_database WHERE datname = '{db_name}'"))
-            exists = result.scalar() == 1
+            exists = conn.execute(
+                text("SELECT 1 FROM pg_database WHERE datname = :name"), {"name": db_name}
+            ).scalar()
 
             if exists:
                 logger.info(f"Dropping database {db_name}")
-                # Make sure there are no active connections
                 conn.execute(
                     text(
-                        f"SELECT pg_terminate_backend(pg_stat_activity.pid) "
-                        f"FROM pg_stat_activity WHERE pg_stat_activity.datname = '{db_name}' "
-                        f"AND pid <> pg_backend_pid()"
-                    )
+                        "SELECT pg_terminate_backend(pid) FROM pg_stat_activity "
+                        "WHERE datname = :name AND pid <> pg_backend_pid()"
+                    ),
+                    {"name": db_name},
                 )
-                conn.execute(text(f"DROP DATABASE {db_name}"))
-                logger.info(f"Database {db_name} dropped successfully")
+                conn.execute(text(f"DROP DATABASE {quoted_name}"))
             else:
                 logger.info(f"Database {db_name} does not exist, nothing to drop")
 
-            # Create the database
             logger.info(f"Creating database {db_name}")
-            conn.execute(text(f"CREATE DATABASE {db_name}"))
-            logger.info(f"Database {db_name} created successfully")
-
+            conn.execute(text(f"CREATE DATABASE {quoted_name}"))
+        engine.dispose()
         return True
     except Exception as e:
-        logger.error(f"Error recreating database: {str(e)}")
+        logger.error(f"Error recreating database: {e}")
         return False
 
 
-def delete_migration_files(logger):
-    """Delete all migration files in the alembic/versions directory."""
+def apply_migrations(url: URL) -> bool:
+    """Apply every Alembic migration to the freshly created database."""
     try:
-        migration_files = glob.glob(str(versions_dir / "*.py"))
-        if migration_files:
-            for file in migration_files:
-                logger.info(f"Deleting migration file: {file}")
-                os.remove(file)
-            logger.info("All migration files deleted successfully")
-        else:
-            logger.info("No migration files to delete")
-        return True
-    except Exception as e:
-        logger.error(f"Error deleting migration files: {str(e)}")
-        return False
-
-
-def create_initial_migration(logger):
-    """Create a fresh initial migration."""
-    try:
-        logger.info("Creating fresh initial migration")
-        result = subprocess.run(
-            ["alembic", "revision", "--autogenerate", "-m", "Initial migration"],
-            check=True,
-            capture_output=True,
-            text=True,
-        )
-        logger.info(f"Migration created successfully: {result.stdout}")
-        return True
-    except subprocess.CalledProcessError as e:
-        logger.error(f"Error creating migration: {e.stderr}")
-        return False
-    except Exception as e:
-        logger.error(f"Unexpected error creating migration: {str(e)}")
-        return False
-
-
-def apply_migration(logger):
-    """Apply the new migration."""
-    try:
-        logger.info("Applying migration")
-        result = subprocess.run(
+        logger.info("Applying migrations")
+        subprocess.run(
             ["alembic", "upgrade", "head"],
             check=True,
             capture_output=True,
             text=True,
+            cwd=project_root,
+            env={**os.environ, "DATABASE_URL": url.render_as_string(hide_password=False)},
         )
-        logger.info(f"Migration applied successfully: {result.stdout}")
+        logger.info("Migrations applied")
         return True
     except subprocess.CalledProcessError as e:
-        logger.error(f"Error applying migration: {e.stderr}")
+        logger.error(f"Error applying migrations: {e.stderr}")
         return False
-    except Exception as e:
-        logger.error(f"Unexpected error applying migration: {str(e)}")
-        return False
-
-
-def create_fts_index(logger):
-    """Run the FTS index creation script."""
-    try:
-        logger.info("Creating FTS index")
-        # Use the existing script
-        result = subprocess.run(
-            ["python", str(project_root / "scripts" / "create_fts_index.py")],
-            check=True,
-            capture_output=True,
-            text=True,
-        )
-        logger.info(f"FTS index created successfully: {result.stdout}")
-        return True
-    except subprocess.CalledProcessError as e:
-        logger.error(f"Error creating FTS index: {e.stderr}")
-        return False
-    except Exception as e:
-        logger.error(f"Unexpected error creating FTS index: {str(e)}")
+    except FileNotFoundError:
+        logger.error("alembic not found; run this script with 'uv run python'")
         return False
 
 
 def main():
-    """Main function to rebuild the database and migrations."""
-    # Load environment variables
     load_dotenv()
-
-    # Parse arguments
     args = parse_args()
 
-    # Get database URL
     db_url = args.db_url or os.environ.get("DATABASE_URL")
     if not db_url:
         logger.error("PostgreSQL connection URL not provided. Set DATABASE_URL or use --db-url")
         sys.exit(1)
 
-    # Show warning and confirm
-    if not args.yes:
-        print("\n*** WARNING: This will completely reset your development database ***")
-        print(f"Database: {db_url}")
-        print("All data will be lost, and Alembic migrations will be recreated from scratch.")
-        print("This should ONLY be used during greenfield development.")
-        response = input("\nContinue? (y/n): ")
+    url = make_url(db_url)
+    if not url.database:
+        logger.error("The database URL does not name a database")
+        sys.exit(1)
+    if url.host not in LOCAL_HOSTS and not args.allow_remote:
+        logger.error(
+            f"Refusing to drop a database on '{url.host}'. This script is for local "
+            "development databases; pass --allow-remote if you really mean it."
+        )
+        sys.exit(1)
 
-        if response.lower() != "y":
+    if not args.yes:
+        print("\n*** WARNING: This will drop and recreate your development database ***")
+        print(f"Database: {url.render_as_string(hide_password=True)}")
+        print("All data will be lost. Migration files are left as they are.")
+        if input("\nContinue? (y/n): ").lower() != "y":
             print("Operation cancelled.")
             sys.exit(0)
 
-    # Drop and recreate database
-    if not drop_database(db_url, logger):
+    if not recreate_database(url):
+        sys.exit(1)
+    if not apply_migrations(url):
         sys.exit(1)
 
-    # Delete migration files
-    if not delete_migration_files(logger):
-        sys.exit(1)
-
-    # Create fresh migration
-    if not create_initial_migration(logger):
-        sys.exit(1)
-
-    # Apply migration
-    if not apply_migration(logger):
-        sys.exit(1)
-
-    # Create FTS index
-    if not create_fts_index(logger):
-        sys.exit(1)
-
-    logger.info("Development database rebuild completed successfully!")
+    logger.info("Development database rebuilt. Run scripts/seed_data.py to seed faculties.")
 
 
 if __name__ == "__main__":

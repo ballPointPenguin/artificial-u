@@ -6,10 +6,8 @@ Provides low-level access to the ElevenLabs API for text-to-speech and voice man
 
 import logging
 import os
-import sys
 import time
 from typing import Any, Callable, Dict, List, Optional, Tuple, TypeVar
-from unittest.mock import MagicMock
 
 import httpx
 from elevenlabs.client import ElevenLabs
@@ -57,18 +55,9 @@ class ElevenLabsClient:
         """
         self.logger = logging.getLogger(__name__)
 
-        # Check if we're in a test environment
-        self._in_test_env = os.environ.get("TESTING") == "true" or "pytest" in sys.modules
-
         primary_key = api_key or os.environ.get("ELEVENLABS_API_KEY")
         if not primary_key:
-            if self._in_test_env:
-                # Use a dummy key in test environment
-                primary_key = "test_elevenlabs_key"
-                self.logger.info("Using test API key in test environment")
-            else:
-                # Only raise error in production
-                raise ValueError("ElevenLabs API key is required")
+            raise ValueError("ElevenLabs API key is required")
 
         settings = get_settings()
         if alt_api_key is None and primary_key == settings.ELEVENLABS_API_KEY:
@@ -92,13 +81,8 @@ class ElevenLabsClient:
             self.client = ElevenLabs(api_key=api_key)
             self.logger.debug("Successfully initialized ElevenLabs client")
         except Exception as e:
-            if self._in_test_env:
-                self.logger.info(f"Test environment: Mocking ElevenLabs client due to error: {e}")
-                # Create a dummy client for testing
-                self.client = MagicMock()
-            else:
-                self.logger.error(f"Failed to initialize ElevenLabs client: {e}")
-                raise
+            self.logger.error(f"Failed to initialize ElevenLabs client: {e}")
+            raise
 
         # Headers for API requests
         self.headers = {

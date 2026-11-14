@@ -11,6 +11,7 @@ from enum import Enum
 from functools import lru_cache
 from typing import List, Optional
 
+from dotenv import load_dotenv
 from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from sqlalchemy.engine import make_url
@@ -176,6 +177,11 @@ class Settings(BaseSettings):
     COIN_COST_COURSE_IMAGE: int = 2
     COIN_COST_DEPARTMENT_GENERATION: int = 0
 
+    # Threads FastAPI may use for sync (`def`) route handlers and dependencies. Kept below
+    # the connection pool (DB_POOL_SIZE + DB_MAX_OVERFLOW) minus WORKER_MAX_CONCURRENCY so
+    # request threads and background jobs never wait on each other for a connection.
+    API_THREADPOOL_SIZE: int = 12
+
     # Async worker and rate limiting
     WORKER_POLL_IDLE_SEC: float = 0.75
     WORKER_VISIBILITY_TIMEOUT_SEC: int = 2100
@@ -212,11 +218,7 @@ class Settings(BaseSettings):
 
     def is_test_environment(self) -> bool:
         """Check if running in a test environment"""
-        return (
-            os.environ.get("TESTING") == "true"
-            or "pytest" in sys.modules
-            or any(arg in sys.argv for arg in ["-m", "pytest", "test"])
-        )
+        return _running_tests()
 
         # Note: Content logs are now stored in S3/MinIO buckets, not local files
 
@@ -242,6 +244,11 @@ class Settings(BaseSettings):
             logger.info(f"Storage public URL: {self.STORAGE_PUBLIC_URL}")
 
 
+def _running_tests() -> bool:
+    """True under pytest or when TESTING=true is set explicitly."""
+    return os.environ.get("TESTING") == "true" or "pytest" in sys.modules
+
+
 @lru_cache
 def get_settings() -> Settings:
     """
@@ -251,18 +258,11 @@ def get_settings() -> Settings:
     # Determine which .env file to load based on environment
     env_file = ".env"
 
-    # Check if we're in a test environment
-    if "pytest" in sys.modules or any(arg in sys.argv for arg in ["-m", "pytest", "test"]):
-        # For tests, prefer the test environment configuration
+    # Tests use .env.test, and its values win over anything already in the environment
+    if _running_tests():
         if os.path.exists(".env.test"):
             env_file = ".env.test"
-            # Load and set environment variables from .env.test
-            with open(env_file, "r") as f:
-                for line in f:
-                    line = line.strip()
-                    if line and not line.startswith("#"):
-                        key, value = line.split("=", 1)
-                        os.environ[key.strip()] = value.strip()
+            load_dotenv(env_file, override=True)
         os.environ["TESTING"] = "true"
 
     # Check for explicit environment override

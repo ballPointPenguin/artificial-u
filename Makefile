@@ -118,7 +118,7 @@ db-migrate: ## Run database migrations
 	@echo "$(GREEN)Migrations complete!$(NC)"
 
 .PHONY: db-rebuild-dev
-db-rebuild-dev: ## Rebuild development database
+db-rebuild-dev: ## Drop, recreate and migrate the development database (all data is lost)
 	@echo "$(GREEN)Rebuilding development database...$(NC)"
 	@$(UV) run python scripts/rebuild_dev_db.py
 	@echo "$(GREEN)Development database rebuilt!$(NC)"
