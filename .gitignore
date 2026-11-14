@@ -64,3 +64,7 @@ cdk.out/
 
 # Claude Code: share skills/settings, keep personal overrides local
 .claude/settings.local.json
+
+# Browser automation (Playwright CLI): page snapshots, traces, saved logins, local credentials
+.playwright-cli/
+.playwright/auth/
