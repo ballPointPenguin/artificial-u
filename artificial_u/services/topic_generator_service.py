@@ -25,6 +25,7 @@ from artificial_u.utils import (
     DatabaseError,
     detect_truncation,
     ensure_xml_wrapper,
+    extract_root_xml,
     extract_xml_between_tags,
 )
 
@@ -501,16 +502,7 @@ class TopicGeneratorService:
 
     def _extract_generated_topic_xml(self, raw_response: str) -> str:
         is_truncated = detect_truncation(raw_response)
-        generated_topic_output = extract_xml_between_tags(raw_response, "output")
-
-        if not generated_topic_output:
-            stripped_response = raw_response.strip()
-            if stripped_response.startswith("<topic>") and stripped_response.endswith("</topic>"):
-                generated_topic_output = stripped_response
-            else:
-                inner_content = extract_xml_between_tags(raw_response, "topic")
-                if inner_content:
-                    generated_topic_output = f"<topic>\n{inner_content}\n</topic>"
+        generated_topic_output = extract_root_xml(raw_response, "topic")
 
         if not generated_topic_output:
             error_msg = (
@@ -521,7 +513,7 @@ class TopicGeneratorService:
             self.logger.error(error_msg)
             raise ContentGenerationError(error_msg)
 
-        return ensure_xml_wrapper(generated_topic_output, "topic")
+        return generated_topic_output
 
     def _save_topic_dict(
         self,
@@ -544,6 +536,13 @@ class TopicGeneratorService:
             order=order,
         )
         if existing_topic:
+            # Lectures belong to their topic, so a topic that has one is never replaced
+            if self.repository_factory.lecture.list_by_topic(existing_topic.id):
+                raise DatabaseError(
+                    f"Cannot replace topic '{existing_topic.title}' (course={course_id}, "
+                    f"week={week}, order={order}): it already has a lecture. Delete the "
+                    "lecture first, or edit the topic instead."
+                )
             self.logger.info(
                 f"Replacing existing topic '{existing_topic.title}' "
                 f"(course={course_id}, week={week}, order={order}) with '{title}'"

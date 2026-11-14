@@ -6,11 +6,12 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import StreamingResponse
 from fastapi.security import HTTPAuthorizationCredentials
 
-from artificial_u.api.dependencies import get_repository_factory
+from artificial_u.api.dependencies import ensure_student, get_repository_factory
 from artificial_u.api.events import JobEventHub, sse_stream
-from artificial_u.api.security.auth0 import require_auth
+from artificial_u.api.security.auth0 import require_auth, verify_asset_ownership
 from artificial_u.api.utils.jobs import job_summary
 from artificial_u.config import get_settings
+from artificial_u.models.core import Student
 from artificial_u.models.repositories.factory import RepositoryFactory
 from artificial_u.services.tts_service import configured_tts_model
 
@@ -422,16 +423,45 @@ def get_job_children(
     return [_job_row_response(r, repository_factory, cache) for r in rows]
 
 
-@router.post("/{job_id}/cancel", dependencies=[Depends(require_auth)])
+def _job_owner_id(payload: Any) -> Optional[int]:
+    """Student ID of whoever requested the job, when the payload records one.
+
+    Jobs have no owner column. Generation jobs carry the requesting student's ID as
+    ``created_by``, either at the top level or inside ``partial_attributes``; jobs that
+    only reference an asset (audio, timeline, images) carry none.
+    """
+    if not isinstance(payload, dict):
+        return None
+    for source in (payload, payload.get("partial_attributes")):
+        if isinstance(source, dict):
+            created_by = source.get("created_by")
+            if isinstance(created_by, int) and not isinstance(created_by, bool):
+                return created_by
+    return None
+
+
+@router.post(
+    "/{job_id}/cancel",
+    summary="Cancel a job",
+    description=(
+        "Cancel a queued or running job. Allowed for admins, and for the student who "
+        "requested the job when the job records one."
+    ),
+    responses={403: {"description": "Not an admin and not the job's requester"}},
+)
 async def cancel_job(
     job_id: int,
     request: Request,
     repository_factory: RepositoryFactory = Depends(get_repository_factory),
+    student: Student = Depends(ensure_student),
 ):
     repo = repository_factory.job
     row = await asyncio.to_thread(repo.get, job_id)
     if not row:
         raise HTTPException(404, "job not found")
+
+    verify_asset_ownership(student.id, _job_owner_id(row.payload), student.role, "job")
+
     if row.status in ("done", "failed", "cancelled"):
         return {"id": row.id, "status": row.status}
 

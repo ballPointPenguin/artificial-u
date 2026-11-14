@@ -16,8 +16,11 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from artificial_u.api.dependencies import (
     ensure_student,
     get_content_service,
+    get_http_client,
+    get_image_service,
     get_professor_service,
     get_repository_factory,
+    get_storage_service,
 )
 from artificial_u.api.models.quickstart import (
     CourseBrief,
@@ -33,17 +36,20 @@ from artificial_u.api.models.quickstart import (
     QuickstartRegenerateProfessorRequest,
     QuickstartStartRequest,
 )
-from artificial_u.api.security.auth0 import require_coins, require_role
+from artificial_u.api.security.auth0 import require_coins, require_role, verify_asset_ownership
 from artificial_u.api.utils.jobs import job_summary
 from artificial_u.config import get_settings
 from artificial_u.integrations.tts import create_tts_backend
-from artificial_u.models.core import Student
+from artificial_u.models.core import Professor, Student
 from artificial_u.models.repositories.factory import RepositoryFactory
 from artificial_u.services import (
     ContentService,
     ProfessorService,
 )
 from artificial_u.services.course_selector_service import CourseSelectorService
+from artificial_u.services.professor_generator_service import (
+    ProfessorGeneratorService,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -63,6 +69,38 @@ def get_course_selector_service(
         content_service=content_service,
         repository_factory=repository_factory,
         logger=logging.getLogger("artificial_u.services.course_selector_service"),
+    )
+
+
+def _professor_review_response(
+    repository_factory: RepositoryFactory, professor, course
+) -> QuickstartProfessorResponse:
+    """Build the professor review payload, including the assigned voice's preview URL."""
+    voice_preview_url = None
+    if professor.voice_id:
+        voice = repository_factory.voice.get(professor.voice_id)
+        if voice:
+            voice_preview_url = voice.preview_url
+
+    return QuickstartProfessorResponse(
+        professor=ProfessorDetail(
+            id=professor.id,
+            name=professor.name,
+            title=professor.title,
+            specialization=professor.specialization,
+            description=professor.description,
+            personality=professor.personality,
+            teaching_style=professor.teaching_style,
+            background=professor.background,
+            gender=professor.gender,
+            age=professor.age,
+            accent=professor.accent,
+            image_url=professor.image_url,
+            voice_preview_url=voice_preview_url,
+            voice_id=professor.voice_id,
+        ),
+        course_id=course.id,
+        course_title=course.title,
     )
 
 
@@ -139,7 +177,7 @@ async def match_courses(
     ),
     dependencies=[require_role("creator")],
 )
-async def enqueue_start_quickstart(
+def enqueue_start_quickstart(
     request: QuickstartStartRequest,
     repository_factory: RepositoryFactory = Depends(get_repository_factory),
     student: Student = Depends(ensure_student),
@@ -173,7 +211,7 @@ async def enqueue_start_quickstart(
     description="Get detailed professor information for the quickstart review step.",
     dependencies=[require_role("creator")],
 )
-async def get_professor_for_review(
+def get_professor_for_review(
     professor_id: int,
     course_id: int,
     repository_factory: RepositoryFactory = Depends(get_repository_factory),
@@ -199,33 +237,7 @@ async def get_professor_for_review(
             detail=f"Course with ID {course_id} not found",
         )
 
-    # Get voice preview URL if voice is assigned
-    voice_preview_url = None
-    if professor.voice_id:
-        voice = repository_factory.voice.get(professor.voice_id)
-        if voice:
-            voice_preview_url = voice.preview_url
-
-    return QuickstartProfessorResponse(
-        professor=ProfessorDetail(
-            id=professor.id,
-            name=professor.name,
-            title=professor.title,
-            specialization=professor.specialization,
-            description=professor.description,
-            personality=professor.personality,
-            teaching_style=professor.teaching_style,
-            background=professor.background,
-            gender=professor.gender,
-            age=professor.age,
-            accent=professor.accent,
-            image_url=professor.image_url,
-            voice_preview_url=voice_preview_url,
-            voice_id=professor.voice_id,
-        ),
-        course_id=course.id,
-        course_title=course.title,
-    )
+    return _professor_review_response(repository_factory, professor, course)
 
 
 @router.post(
@@ -238,7 +250,7 @@ async def get_professor_for_review(
     ),
     dependencies=[require_role("creator")],
 )
-async def generate_intro_audio(
+def generate_intro_audio(
     request: IntroAudioRequest,
     repository_factory: RepositoryFactory = Depends(get_repository_factory),
     student: Student = Depends(ensure_student),
@@ -324,7 +336,7 @@ async def generate_intro_audio(
     description="Regenerates the professor's image while keeping other attributes.",
     dependencies=[require_coins(cost=get_settings().COIN_COST_PROFESSOR_IMAGE)],
 )
-async def regenerate_professor_image(
+def regenerate_professor_image(
     request: QuickstartProfessorActionRequest,
     repository_factory: RepositoryFactory = Depends(get_repository_factory),
     student: Student = Depends(ensure_student),
@@ -335,8 +347,6 @@ async def regenerate_professor_image(
     Enqueues a job to generate a new image for the professor.
     Returns the professor details (image_url will be updated asynchronously).
     """
-    from artificial_u.api.security.auth0 import verify_asset_ownership
-
     professor = repository_factory.professor.get(request.professor_id)
     if not professor:
         raise HTTPException(
@@ -361,33 +371,7 @@ async def regenerate_professor_image(
     )
     logger.info(f"Enqueued professor image generation job {job.id}")
 
-    # Get voice preview URL
-    voice_preview_url = None
-    if professor.voice_id:
-        voice = repository_factory.voice.get(professor.voice_id)
-        if voice:
-            voice_preview_url = voice.preview_url
-
-    return QuickstartProfessorResponse(
-        professor=ProfessorDetail(
-            id=professor.id,
-            name=professor.name,
-            title=professor.title,
-            specialization=professor.specialization,
-            description=professor.description,
-            personality=professor.personality,
-            teaching_style=professor.teaching_style,
-            background=professor.background,
-            gender=professor.gender,
-            age=professor.age,
-            accent=professor.accent,
-            image_url=professor.image_url,  # Will be updated by job
-            voice_preview_url=voice_preview_url,
-            voice_id=professor.voice_id,
-        ),
-        course_id=course.id,
-        course_title=course.title,
-    )
+    return _professor_review_response(repository_factory, professor, course)
 
 
 @router.post(
@@ -397,7 +381,7 @@ async def regenerate_professor_image(
     description="Reassigns a voice to the professor using the voice mapping algorithm.",
     dependencies=[require_role("creator")],
 )
-async def reassign_professor_voice(
+def reassign_professor_voice(
     request: QuickstartProfessorActionRequest,
     repository_factory: RepositoryFactory = Depends(get_repository_factory),
     professor_service: ProfessorService = Depends(get_professor_service),
@@ -409,8 +393,6 @@ async def reassign_professor_voice(
     Uses the VoiceMapper to select a new appropriate voice based on
     the professor's attributes (gender, accent, age).
     """
-    from artificial_u.api.security.auth0 import verify_asset_ownership
-
     professor = repository_factory.professor.get(request.professor_id)
     if not professor:
         raise HTTPException(
@@ -438,33 +420,7 @@ async def reassign_professor_voice(
                 detail="Failed to reassign voice",
             )
 
-        # Get voice preview URL
-        voice_preview_url = None
-        if updated_professor.voice_id:
-            voice = repository_factory.voice.get(updated_professor.voice_id)
-            if voice:
-                voice_preview_url = voice.preview_url
-
-        return QuickstartProfessorResponse(
-            professor=ProfessorDetail(
-                id=updated_professor.id,
-                name=updated_professor.name,
-                title=updated_professor.title,
-                specialization=updated_professor.specialization,
-                description=updated_professor.description,
-                personality=updated_professor.personality,
-                teaching_style=updated_professor.teaching_style,
-                background=updated_professor.background,
-                gender=updated_professor.gender,
-                age=updated_professor.age,
-                accent=updated_professor.accent,
-                image_url=updated_professor.image_url,
-                voice_preview_url=voice_preview_url,
-                voice_id=updated_professor.voice_id,
-            ),
-            course_id=course.id,
-            course_title=course.title,
-        )
+        return _professor_review_response(repository_factory, updated_professor, course)
 
     except Exception as e:
         logger.error(f"Error reassigning voice: {e}", exc_info=True)
@@ -494,12 +450,6 @@ async def regenerate_professor(
     Creates a new professor (with voice and image) and assigns them to the course.
     The old professor is not deleted (they may be used by other courses).
     """
-    from artificial_u.api.security.auth0 import verify_asset_ownership
-    from artificial_u.models.core import Professor
-    from artificial_u.services.professor_generator_service import (
-        ProfessorGeneratorService,
-    )
-
     course = repository_factory.course.get(request.course_id)
     if not course:
         raise HTTPException(
@@ -512,12 +462,6 @@ async def regenerate_professor(
 
     try:
         # Generate new professor
-        from artificial_u.api.dependencies import (
-            get_http_client,
-            get_image_service,
-            get_storage_service,
-        )
-
         image_service = get_image_service(get_storage_service(), get_http_client())
 
         professor_generator = ProfessorGeneratorService(
@@ -559,33 +503,7 @@ async def regenerate_professor(
         course.professor_id = created_professor.id
         repository_factory.course.update(course)
 
-        # Get voice preview URL
-        voice_preview_url = None
-        if created_professor.voice_id:
-            voice = repository_factory.voice.get(created_professor.voice_id)
-            if voice:
-                voice_preview_url = voice.preview_url
-
-        return QuickstartProfessorResponse(
-            professor=ProfessorDetail(
-                id=created_professor.id,
-                name=created_professor.name,
-                title=created_professor.title,
-                specialization=created_professor.specialization,
-                description=created_professor.description,
-                personality=created_professor.personality,
-                teaching_style=created_professor.teaching_style,
-                background=created_professor.background,
-                gender=created_professor.gender,
-                age=created_professor.age,
-                accent=created_professor.accent,
-                image_url=created_professor.image_url,
-                voice_preview_url=voice_preview_url,
-                voice_id=created_professor.voice_id,
-            ),
-            course_id=course.id,
-            course_title=course.title,
-        )
+        return _professor_review_response(repository_factory, created_professor, course)
 
     except Exception as e:
         logger.error(f"Error regenerating professor: {e}", exc_info=True)
@@ -605,7 +523,7 @@ async def regenerate_professor(
     ),
     dependencies=[require_role("creator")],
 )
-async def finalize_quickstart(
+def finalize_quickstart(
     request: QuickstartFinalizeRequest,
     repository_factory: RepositoryFactory = Depends(get_repository_factory),
     student: Student = Depends(ensure_student),
@@ -619,8 +537,6 @@ async def finalize_quickstart(
 
     The course remains hidden until explicitly published.
     """
-    from artificial_u.api.security.auth0 import verify_asset_ownership
-
     course = repository_factory.course.get(request.course_id)
     if not course:
         raise HTTPException(

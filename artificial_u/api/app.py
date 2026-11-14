@@ -4,6 +4,7 @@ import os
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import asynccontextmanager
 
+import anyio.to_thread
 from fastapi import Depends, FastAPI
 
 from artificial_u.api.cloudwatch_metrics import (
@@ -86,11 +87,13 @@ def create_application() -> FastAPI:
                 cloudwatch_metrics_loop(app, interval_sec=cloudwatch_metrics_interval_sec())
             )
 
-        # Increase default executor for blocking offloads
-        loop = asyncio.get_running_loop()
-        if not hasattr(app.state, "default_executor"):
-            app.state.default_executor = ThreadPoolExecutor(max_workers=8)
-        loop.set_default_executor(app.state.default_executor)
+        # Dedicated executor for blocking offloads (asyncio.to_thread). It belongs to this
+        # event loop, which shuts it down when it closes, so build a new one per startup
+        # rather than reusing an executor a previous loop has already shut down.
+        asyncio.get_running_loop().set_default_executor(ThreadPoolExecutor(max_workers=8))
+
+        # Cap the threadpool that runs sync route handlers (see API_THREADPOOL_SIZE)
+        anyio.to_thread.current_default_thread_limiter().total_tokens = settings.API_THREADPOOL_SIZE
         await worker.start()
 
         if tracemalloc_enabled():

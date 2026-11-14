@@ -13,6 +13,7 @@ from artificial_u.api.events import JobEventHub
 from artificial_u.config import get_settings
 from artificial_u.models.repositories.factory import RepositoryFactory
 from artificial_u.services.job_service import JobService
+from artificial_u.utils import NonRetryableJobError
 
 
 def _job_log_extra(
@@ -392,6 +393,10 @@ class Worker:
         )
         self.logger.error(error_msg, exc_info=True, extra=extra)
         delay = self.job_service.compute_backoff_seconds(attempts)
+
+        if isinstance(exc, NonRetryableJobError):
+            # The handler says another run cannot succeed: fail now, whatever the budget
+            attempts = max_attempts
 
         if attempts < max_attempts:
             self.logger.info(

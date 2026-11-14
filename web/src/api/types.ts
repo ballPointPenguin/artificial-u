@@ -620,6 +620,8 @@ export interface VoicePreviewRequest {
   tts_backend?: string
   text?: string
   language?: string
+  /** Professor the voice is auditioned for; without it the preview is admin-only. */
+  professor_id?: number
 }
 
 export interface VoicePreviewResponse {

@@ -30,6 +30,7 @@ from artificial_u.services.tag_generator_service import TagGeneratorService
 from artificial_u.services.topic_generator_service import TopicGeneratorService
 from artificial_u.services.topic_service import TopicService
 from artificial_u.services.voice_service import VoiceService
+from artificial_u.utils import NonRetryableJobError
 
 
 def _require(payload: Dict[str, Any], key: str) -> Any:
@@ -228,12 +229,13 @@ class JobService:
         )
 
         # If pre-generated topics were provided with the course draft, save them directly;
-        # otherwise enqueue background topic generation.
+        # otherwise enqueue background topic generation. The course is already committed,
+        # and its code is unique, so a retry could only fail on a duplicate: report the
+        # real problem and fail the job once.
         topics_job_id = None
-        if isinstance(topics_data, list) and len(topics_data) > 0:
-            try:
-                topic_gen_service = self._topic_generator_service_instance()
-                saved_topics = topic_gen_service.save_topics_for_course(
+        try:
+            if isinstance(topics_data, list) and len(topics_data) > 0:
+                saved_topics = self._topic_generator_service_instance().save_topics_for_course(
                     course_id=course.id,
                     topics_data=topics_data,
                     created_by=created_by,
@@ -243,21 +245,16 @@ class JobService:
                 self.logger.info(
                     f"Saved {len(saved_topics)} pre-generated topics for course {course.id}"
                 )
-            except Exception as e:
-                self.logger.warning(
-                    f"Failed to save pre-generated topics for course {course.id}: {e}"
-                )
-        else:
-            try:
-                job_enqueue_service = self._job_enqueue_service_instance()
-                topics_job_id = job_enqueue_service.enqueue_topics_generation(
+            else:
+                topics_job_id = self._job_enqueue_service_instance().enqueue_topics_generation(
                     course.id, created_by=created_by, parent_job_id=parent_job_id
                 )
                 self.logger.info(f"Enqueued topic generation for course {course.id}")
-            except Exception as e:
-                self.logger.warning(
-                    f"Failed to enqueue topic generation for course {course.id}: {e}"
-                )
+        except Exception as e:
+            raise NonRetryableJobError(
+                f"Course {course.id} ({course.code}) was created, but its topics were not: {e}. "
+                "Generate topics for the course to finish setting it up."
+            ) from e
 
         result: Dict[str, Any] = {
             "course_id": course.id,
