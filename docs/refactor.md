@@ -1,17 +1,18 @@
 # Refactor Notes
 
-Follow-ups from the November 2026 cleanup pass (branch `cleanup/dead-code-and-dry`), which removed
-the CLI, the Ollama leftovers, about twenty unused endpoints and a lot of dead code. Everything
-here was found during that pass and deliberately left alone. Items marked *unverified* come from
-reading the code only; nothing was run to confirm them.
+Follow-ups from the November 2026 cleanup (branch `cleanup/dead-code-and-dry`). The first pass
+removed the CLI, the Ollama leftovers, about twenty unused endpoints and a lot of dead code. A
+second pass worked through this list and fixed everything that did not need a product or
+operations decision. What remains is below. Items marked *unverified* come from reading the code
+only.
 
 ## TODO: lecture generation should use the lecture model if set
 
 Applies to both paths:
 
 - **Batch:** `POST /topics/{id}/generate-remaining-lectures` and
-  `/regenerate-remaining-lectures` in `artificial_u/api/routers/topics.py`, chained by the
-  worker's follow-up logic in `artificial_u/api/worker.py`.
+  `/regenerate-remaining-lectures` (`_enqueue_lecture_chain` in
+  `artificial_u/api/routers/topics.py`), chained by the worker's follow-up logic.
 - **Single:** `POST /lectures/generate/enqueue` and `/lectures/generate/text-only/enqueue` in
   `artificial_u/api/routers/lectures.py`.
 
@@ -25,168 +26,148 @@ How the model is chosen today (`PreferenceService.get_lecture_generation_model`,
 
 Things to check or change:
 
-- Batch jobs only started carrying the creator's student ID (`partial_attributes.created_by`) in
-  the cleanup. Before that, step 2 never applied to batch generation; now it does. Decide whether
-  that is wanted.
-- No test runs a batch or single job end to end and asserts which model was used.
-  `tests/unit/services/test_course_settings.py` covers the course setting itself.
+- Step 2 is effectively dead. Nothing in the code can write a per-student preference (only
+  `PreferenceRepository.set_global` exists), so it only applies to rows inserted by hand. Either
+  add a way to set it or drop the step.
+- Batch jobs now carry the creator's student ID (`partial_attributes.created_by`), the same as
+  single jobs. `tests/api/test_topic_batches.py` covers the payload. No test runs a job end to
+  end and asserts which model was used.
 - The jobs list reports a model per job (`_job_model_name` in `artificial_u/api/routers/jobs.py`)
-  using course setting, then the *global* preference, then the setting. It skips the student
-  preference, so the label can differ from the model that actually ran.
+  using course setting, then the global preference, then the setting. It never consults a
+  student preference, so if step 2 is kept the label can differ from the model that ran.
 - `_job_model_name` also shows `payload.model_name_override` for any job kind, but
-  `_handle_generate_lecture` in `artificial_u/services/job_service.py` never reads that key. If a
-  per-job lecture model is wanted, it has to be threaded through there.
+  `_handle_generate_lecture` in `artificial_u/services/job_service.py` never reads that key. A
+  per-job lecture model would have to be threaded through there.
 
-## Found but not fixed
+## Needs a decision
 
-### Bugs
+These were left alone because the right change depends on what you want.
 
-- **Wrong image model recorded.** When the OpenAI fallback produces an image,
-  `image_created_with` is still set from `image_service.model_name` (the Gemini default) in
-  `professor_generator_service.py` and `course_generator_service.py`, and `_log_image_prompt`
-  logs the default too. `ImageGenerationResult` has no model field; adding one fixes both.
-- **Deleting a topic with several lecture revisions** (*unverified*). `TopicService.delete_topic`
-  lists lectures through `repository.lecture.list`, which returns only the latest revision per
-  topic. Older revisions stay, and deleting the topic then hits the `lectures.topic_id` foreign
-  key, after the latest lecture and its files are already gone. `LectureRepository.delete_by_topic`
-  exists and is only used by tests. `topic_generator_service.py` has the same exposure.
-- **`JsonFormatter` drops every `extra=` field.** `artificial_u/api/utils/logging.py` reads
-  `record.extra`, which never exists (logging copies the keys onto the record). The structured
-  job fields the worker logs for CloudWatch Logs Insights are lost; only `request_id` survives.
-- **French prompts use a different placeholder** (*effect unverified*). The templates in
-  `prompts/fr/professor.py` and `prompts/fr/department.py` tell the model to fill `[GÉNÉRER]`
-  fields, while the XML they embed and the parsers in `models/converters.py` use `[GENERATE]`.
-- **Selectors drop the course language.** `ProfessorSelectorService` omits `language` from the
-  attributes it passes to the generator, and `DepartmentSelectorService` creates departments
-  without one, so a French course gets an English professor profile and department.
-- **xAI TTS never receives a language.** No caller passes `language=` to
-  `TTSService.synthesize_lecture_audio`.
+### Failure handling
 
-### Security and access
-
-- **`GET /share/og-image` fetches any URL for unauthenticated callers.** `src` is caller-supplied
-  in `artificial_u/api/routers/share.py`, with no host allowlist or size cap. Only our own image
-  URLs are ever passed legitimately. *Unverified* whether CloudFront or network rules limit this.
-- **Missing role or ownership checks** (*intent unverified*). In `routers/voices.py`,
-  `POST /voices/{professor_id}/assign_voice` changes any professor's voice, and the design,
-  clone and preview endpoints trigger paid provider calls, all with only authentication.
-  `routers/jobs.py` lets any authenticated user cancel any job.
-- **`.dockerignore`** does not exclude `.env.test`, `tests/`, `web/` or `backups/`, so the API
-  image ships them.
-
-### Tooling hazards
-
-- **`scripts/rebuild_dev_db.py`** (`make db-rebuild-dev`) deletes every file in
-  `alembic/versions/` and autogenerates a single "Initial migration".
-- **CI path filters.** `test.yml` and `test-quick.yml` only trigger on `artificial_u/**`,
-  `pyproject.toml` and `uv.lock`. A PR that touches only `tests/`, `scripts/`, `alembic/` or
-  `pytest.ini` runs no tests.
-- **Test mode is guessed from `sys.argv`.** `config/settings.py` switches to `.env.test` when any
-  argument is `-m`, `pytest` or `test`, and overwrites `os.environ` from it.
-- **Production code detects pytest.** `integrations/elevenlabs/client.py` imports `MagicMock` and
-  swaps it in when SDK init fails under test; the xAI and Qwen clients substitute dummy keys.
+- **API services returning `None` on database errors**, which routers report as 404, and
+  `integrations/elevenlabs/client.py` turning any API error into `None` or an empty list. Fixing
+  either changes status codes and what callers see during an outage. See "Domain exception
+  handlers" below.
 - **`models/engine.py`** returns the first engine created regardless of the `db_url` passed
-  later, so a second URL in the same process is silently ignored.
+  later. Raise, warn, or key the engine by URL?
 
-### Errors that hide failures
+### Operations
 
-- `job_service.py`: a failure to save pre-generated topics is logged as a warning and the job
-  still succeeds, leaving a course with no topics and no fallback job.
-- `lecture_generator_service.py`: `_calculate_revision_number` returns `1` on any exception, and
-  database errors while loading the professor, prior lectures or topic list return empty values,
-  so a lecture is generated without that context and reported as a success.
-- API services in `artificial_u/api/services/` return `None` or `False` on database errors, which
-  routers then report as 404.
-- `integrations/elevenlabs/client.py` turns any API error into `None` or an empty list, so callers
-  cannot tell an outage from "no voices".
-- The CORS entry `https://*.artificial-u.com` in `config/settings.py` matches nothing, because
-  Starlette's `allow_origins` is exact-match (*unverified*, from its documented behaviour).
+- **Remaining `async def` routes that never `await`.** `routers/voices.py` and
+  `routers/quickstart.py` are converted to plain `def`, and FastAPI's threadpool is capped by
+  `API_THREADPOOL_SIZE` (12): below the 15-connection pool, leaving 3 connections for the job
+  worker. About 50 handlers in the other routers still run synchronous database calls on the
+  event loop. They are short, so the benefit is smaller, but the same change applies. If
+  `DB_POOL_SIZE`, `DB_MAX_OVERFLOW` or `WORKER_MAX_CONCURRENCY` change, keep
+  `API_THREADPOOL_SIZE` at or below pool minus worker concurrency.
+- **xAI TTS language.** The xAI backend detects the language from the text
+  (`XAI_TTS_LANGUAGE=auto`); no caller passes the lecture's language. Passing it would be
+  explicit but would override the setting.
+- **`scripts/create_fts_index.py`** creates an index no query uses, and nothing calls the script
+  any more; *unverified* whether production has the index. The backfill scripts wired into
+  `scripts/docker-entrypoint.sh` are being kept for now.
+- **CI rewrites `.env.test`.** `test.yml` and `test-quick.yml` overwrite the committed file with
+  heredocs. Dropping them would leave one source of truth, but they add storage and Auth0 values
+  the committed file lacks.
 
-## Optional refactors
+### Housekeeping
 
-Roughly ordered by value.
+- **Endpoints with no frontend caller that were kept:** `POST /courses` and
+  `POST /tags/backfill/enqueue`.
+- **Repository methods used only by tests:** `LectureRepository.get_content`, `get_audio_url`,
+  `get_transcript_url`, and `TopicRepository.create_batch`, `list_by_course_week`. Removing them
+  means editing the broader integration tests that call them.
+
+## Optional refactors still open
+
+No decision needed; these are larger or lower-value than what was done.
 
 ### API layer
 
-- **Blocking work in `async def` routes.** Most route handlers never `await` and run synchronous
-  SQLAlchemy or provider HTTP calls on the event loop that the in-process worker and SSE streams
-  share. The worst are in `routers/voices.py` and `routers/quickstart.py` (TTS and ElevenLabs
-  calls). Making the no-`await` handlers plain `def` moves them to FastAPI's threadpool; check
-  the DB pool size against the threadpool first.
 - **Domain exception handlers.** Registering handlers for `*NotFoundError` and `DatabaseError`
   would let services raise, removing about 40 try/except blocks and the "re-query to tell 404
-  from 500" code in the routers.
+  from 500" code in the routers. Changes failure-path status codes.
 - **`get_or_404` with ownership check.** The "fetch, 404, `verify_asset_ownership`" block appears
-  at about 21 sites, each with a function-local import.
-- **Response models built field by field.** `StudentResponse` (6 times in `routers/students.py`),
-  `ProfessorDetail` plus voice-preview lookup (4 times in `routers/quickstart.py`),
-  `PreferenceResponse` (3 times), and the share-page blocks in `routers/share.py`.
+  at about 20 sites. The 404 messages differ slightly between them.
+- **Unreachable branches.** Router checks for a `None` the service never returns
+  (`routers/courses.py`, `routers/lectures.py`). The mocked API tests encode the `None` contract
+  and would need to raise 404 instead.
 - **Pagination.** Eight list models repeat `items/total/page/size/pages`; a generic `Page[T]`
-  would replace them. `StudentBrief` is defined four times with identical fields.
-- **Near-duplicate handlers.** The batch endpoints in `routers/topics.py` and the audio/timeline
-  payload builders in `api/worker.py`.
-- **Service wiring.** `api/dependencies.py` calls dependency functions directly, and the API
-  services build their own core and generator services, so several objects are constructed more
-  than once per request. Router-level dependencies in `routers/lectures.py` and
-  `routers/departments.py` build the whole graph for endpoints that never use it.
-- **Unreachable branches.** Router checks for a `None` that the service can never return, and
-  not-found checks after get-or-raise calls in the generator services.
+  would replace them but renames OpenAPI schemas. `StudentBrief` is defined four times.
+- **Worker payload builders.** `_build_audio_payload` and `_build_timeline_payload`, and
+  `_handle_timeout` and `_handle_exception`, in `api/worker.py` are near-duplicates.
+- **Service wiring.** `api/dependencies.py` still calls some dependency functions directly, and
+  the API services build their own core and generator services, so several objects are
+  constructed more than once per request.
+- **Environment variables read outside `Settings`** in `api/worker.py`, `api/app.py`,
+  `api/utils/logging.py`, `api/tracemalloc_diag.py` and `api/cloudwatch_metrics.py`.
 
 ### Services
 
-- **Image generation fallback ladder** is written three times in `image_service.py`, and
-  `generate_course_image` and `generate_professor_image` differ only in prompt and labels.
-- **LLM response XML extraction** ("try `<output>`, else raw root, else re-wrap, else raise") is
-  repeated in every generator service.
+- **Lecture slide images** still carry their own copy of the fallback ladder in
+  `ImageService.generate_lecture_slide_image` (it differs in reference-image handling).
+- **Lecture and topic-list XML extraction** still have their own sequences with truncation
+  recovery; the other generators now share `extract_root_xml`.
 - **`ContentService` provider branches** repeat the token and temperature defaults and the
-  "log, store content log, return" tail four times.
+  "log, store content log, return" tail four times. The unit tests call the provider methods
+  directly, so changing their return shape means rewriting those tests.
 - **Lecture asset cleanup** is written four times, and the `course_code / week / order` storage
   key parts are derived six times with slightly different fallbacks.
-- **`LectureGeneratorService`** builds new `StorageService` instances instead of using the one
-  injected into it.
-- **Selector services.** `_make_selection_decision` is the same method in the department,
-  professor and course selectors apart from prompt, model and label.
-- **Function-local imports.** About 60 remain across `services/` with no circular-import reason.
+- **Not-found checks after get-or-raise calls** in the generator services cannot fire, and
+  `TopicService.get_topic` returns `None` where its siblings raise.
 
 ### Models, integrations and prompts
 
 - **TTS clients.** The Mistral, xAI, Qwen and ElevenLabs clients each have their own retry loop
   and "audio unexpectedly small" warning, and API keys are resolved at three layers.
 - **French prompt modules** duplicate the English builder functions; only the strings differ.
-- **`LectureRepository`** repeats its latest-revision subquery four times, and `list()` loads
-  `lecture.student` per row.
 - **`models/converters.py`** has six identical `model_dump` wrappers and five "field or marker"
   loops with subtly different emptiness tests.
-- **Repository methods used only by tests:** `LectureRepository.get_content`, `get_audio_url`,
-  `get_transcript_url`, and `TopicRepository.create_batch`, `list_by_course_week`.
 
-### Repo housekeeping
+## Resolved in the second pass
 
-- **Agent instruction files.** `AGENTS.md` and `.github/copilot-instructions.md` are drifting
-  copies of `CLAUDE.md`.
-- **`.env.test` is loaded five ways**: a hand parser and pydantic in `config/settings.py`,
-  `tests/conftest.py`, `scripts/setup_test_db.py`, and CI heredocs that overwrite the file.
-- **One-off scripts still wired in.** The backfill scripts behind env flags in
-  `scripts/docker-entrypoint.sh` and the "TEMPORARY" flags in `cdk/cdk/cdk_stack.py` look
-  finished. `scripts/create_fts_index.py` creates an index no query uses.
-- **Endpoints with no frontend caller that were kept:** `POST /courses` and
-  `POST /tags/backfill/enqueue`.
-- **Environment variables read outside `Settings`** in `api/worker.py`, `api/app.py`,
-  `api/utils/logging.py`, `api/tracemalloc_diag.py` and `api/cloudwatch_metrics.py`.
+Kept for reference; see the git history for details.
+
+- **Bugs:** the image model recorded for professors and courses is now the one that produced the
+  image; deleting a topic removes every lecture revision; `JsonFormatter` emits `extra=` fields;
+  French professor and department prompts use the `[GENERATE]` placeholder the parser knows; the
+  course language reaches generated departments and professors; a failed revision lookup no
+  longer produces a second "revision 1"; model refusals keep their message in job errors; eight
+  professor routes no longer expose a stray `logger` query parameter; the wildcard CORS origin
+  matches subdomains.
+- **Security and tooling:** `/share/og-image` only reads our images bucket and our public site;
+  `.dockerignore` keeps tests, the frontend and `.env.*` out of the image; CI runs on changes to
+  tests, scripts and migrations; test mode is no longer guessed from `sys.argv`;
+  `scripts/setup_test_db.py` refuses databases not named `*_test`; provider clients no longer
+  detect pytest or import `MagicMock`.
+- **CloudFront:** the distribution-wide error responses that turned every 403 and 404
+  (including those from `/api/*`) into `200` + `index.html` are replaced by a CloudFront
+  Function that serves `index.html` for SPA routes on the frontend behavior only. Takes
+  effect on the next `cdk deploy`. SPA routes must not end in a segment containing a dot.
+- **Decisions applied:** the voice endpoints that change a professor's voice or make paid
+  provider calls are limited to the professor's creator and admins (admin-only when the
+  professor has no recorded creator, or a preview names no professor); cancelling a job is
+  limited to admins and the student recorded in the job's payload; replacing a topic that already has a lecture is refused; lecture generation
+  fails when the professor, earlier lectures or topic list cannot be loaded; a course-creation
+  job whose topics cannot be saved fails once, without retry (`NonRetryableJobError`);
+  `scripts/rebuild_dev_db.py` no longer touches migration files and refuses non-local databases;
+  `AGENTS.md` and `.github/copilot-instructions.md` are generated copies of `CLAUDE.md`.
+- **Refactors:** one fallback ladder for course and professor images; `extract_root_xml` in four
+  generators; one decision step for the three selector services
+  (`artificial_u/services/selection.py`); one implementation for the batch lecture endpoints;
+  shared query helpers and an eager-loaded creator in `LectureRepository`; `model_validate` for
+  student and preference responses; one professor review response in the quickstart router;
+  function-local imports hoisted across `api/` and `services/`; router-wide service construction
+  removed from the lectures and departments routers.
 
 ## mypy status
 
-mypy is not run in CI. `uv run mypy artificial_u` reports 515 errors after the cleanup, down from
-710 on `main` before it; the drop came from deleting code, not from fixing types.
+mypy is not run in CI. `uv run mypy artificial_u` reports 485 errors, down from 710 on `main`
+before the cleanup; the drop came from deleting and consolidating code, not from fixing types.
 
-| Error code | Count |
-|------------|-------|
-| `arg-type` | 260 |
-| `assignment` | 141 |
-| `no-any-return` | 49 |
-| everything else | 65 |
-
-About half of the errors (261) are in `artificial_u/models/repositories/`, and 263 mention
-`Column[...]`. They come from the SQLAlchemy models in `models/database.py` using untyped
-`Column(...)` declarations, so every attribute read or write looks like a `Column` to mypy.
-Moving the models to `Mapped[...]` / `mapped_column` would clear most of them in one change.
+Most of the errors are `arg-type` and `assignment`, about half are in
+`artificial_u/models/repositories/`, and about half mention `Column[...]`. They come from the
+SQLAlchemy models in `models/database.py` using untyped `Column(...)` declarations, so every
+attribute read or write looks like a `Column` to mypy. Moving the models to `Mapped[...]` /
+`mapped_column` would clear most of them in one change.

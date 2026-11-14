@@ -1,6 +1,7 @@
 # AGENTS.md
 
-This file provides guidance to Codex (Codex.ai/code) when working with code in this repository.
+This file provides guidance to AI coding agents when working with code in this repository.
+It mirrors `CLAUDE.md`; keep the two in sync.
 
 ## Project Overview
 
@@ -8,7 +9,7 @@ ArtificialU is an AI-powered educational content platform that generates univers
 
 - **Backend**: Python 3.14 with FastAPI, PostgreSQL, SQLAlchemy
 - **Frontend**: SolidJS with TypeScript, TailwindCSS v4, Auth0
-- **AI Integration**: Anthropic Claude, Google Gemini, OpenAI
+- **AI Integration**: Anthropic Claude, Google Gemini, OpenAI, xAI Grok
 - **TTS Services**: ElevenLabs, Mistral, xAI, Qwen (pluggable backends)
 - **Storage**: RustFS (dev, S3-compatible) / S3 (prod)
 - **Job Processing**: Custom async worker with PostgreSQL-backed queue
@@ -219,7 +220,7 @@ uv run pytest -m integration
 **Python:**
 
 - Python 3.14 only (`requires-python`, `.python-version`, CI, and CDK deployment)
-- Line length: 100 characters (black, isort, flake8)
+- Line length: 100 characters (black, isort); flake8 allows up to 120
 - Type hints encouraged (mypy runs on `artificial_u/` directory)
 - Black formatting with isort for imports
 - Pre-commit hooks run black, isort, flake8
@@ -290,7 +291,7 @@ Use an empty `revision` (without `--autogenerate`) only for changes autogenerate
 
 - `scripts/initialize_db.py`: Setup development database
 - `scripts/setup_test_db.py`: Setup test database
-- `scripts/rebuild_dev_db.py`: Rebuild dev database from scratch
+- `scripts/rebuild_dev_db.py`: Drop, recreate and migrate the local dev database (all data is lost; migration files are untouched)
 - `scripts/run_alembic.py`: Wrapper for alembic commands with proper environment
 
 ## Audio Processing Pipeline
@@ -339,6 +340,7 @@ Required in `.env` file:
 
 - `ANTHROPIC_API_KEY`: Anthropic Claude API key
 - `ELEVENLABS_API_KEY`: ElevenLabs TTS API key
+- `ELEVENLABS_API_KEY_ALT` (optional): second ElevenLabs account used while the primary's quota is exhausted
 - `ALIBABA_API_KEY`: Alibaba Cloud API key (TTS when using Qwen backend)
 - `MISTRAL_API_KEY`: Mistral API key (TTS when using Mistral backend)
 - `XAI_API_KEY`: xAI API key (TTS when using xAI/Grok backend)
@@ -368,3 +370,4 @@ Frontend requires `.env.local` in `web/` directory with Auth0 and API URL config
 - `docs/POSTGRES.md`: Database setup and management
 - `docs/AUTHENTICATION.md`: Auth0 integration details
 - `web/STYLE_GUIDE.md`: Frontend styling guidelines
+- `docs/refactor.md`: Open follow-ups and decisions from the 2026 cleanup
