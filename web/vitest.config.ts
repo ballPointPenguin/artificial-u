@@ -1,5 +1,5 @@
 import solid from 'vite-plugin-solid'
-import { defineConfig } from 'vitest/config'
+import { configDefaults, defineConfig } from 'vitest/config'
 
 export default defineConfig({
   plugins: [solid()],
@@ -7,6 +7,8 @@ export default defineConfig({
     environment: 'jsdom',
     globals: true,
     setupFiles: ['./src/test/setup.ts'],
+    // Playwright specs in e2e/ run with `pnpm test:e2e`, not vitest
+    exclude: [...configDefaults.exclude, 'e2e/**'],
     // Add ThreadLocal to fix solidjs/testing-library
     deps: {
       inline: [/solid-js/],

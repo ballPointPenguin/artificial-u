@@ -93,6 +93,11 @@ test-cov: ## Run tests with coverage report
 	@echo "$(GREEN)Running tests with coverage...$(NC)"
 	@$(UV) run pytest --cov=$(PROJECT_NAME) --cov-report=html --cov-report=term
 
+.PHONY: test-e2e
+test-e2e: ## Run read-only browser smoke tests (needs the API and `pnpm dev` running)
+	@echo "$(GREEN)Running browser smoke tests...$(NC)"
+	@cd web && pnpm test:e2e
+
 .PHONY: test-verbose
 test-verbose: ## Run tests with verbose output
 	@echo "$(GREEN)Running tests with verbose output...$(NC)"

@@ -4,8 +4,7 @@ How a coding agent (or you) drives the web app in a real browser: to check a cha
 a bug, or review a page. It uses the [Playwright CLI](https://github.com/microsoft/playwright-cli)
 with dedicated low-privilege accounts, so browsing cannot run up provider bills by accident.
 
-This is for interactive work. Automated end-to-end tests are not set up yet; see
-`docs/refactor.md`.
+The same engine runs a small suite of read-only smoke tests; see [Smoke tests](#smoke-tests).
 
 ## Setup
 
@@ -95,6 +94,28 @@ Never sign these sessions in with an admin account: admins bypass coin checks en
 - Do not paste credentials, tokens or the contents of `.playwright/auth/` into chat, commits,
   issues or logs.
 - Close sessions when done (`playwright-cli close-all`).
+
+## Smoke tests
+
+`web/e2e/` holds Playwright tests that walk the public pages as an anonymous visitor: home,
+browse, the course catalogue and a course, a lecture with audio playback, search, departments,
+the login prompt on protected pages, the static pages, and two API checks.
+
+```bash
+cd web
+pnpm exec playwright install chromium                 # once
+pnpm test:e2e                                         # local stack; API and `pnpm dev` running
+E2E_BASE_URL=https://artificial-u.com pnpm test:e2e   # production
+pnpm test:e2e:report                                  # open the HTML report of the last run
+```
+
+They are safe to run anywhere. There is no login, and a fixture in `e2e/fixtures.ts` refuses
+every non-GET API request inside the browser and fails the test that made it. They assume only
+that at least one published course exists; the lecture test finds a lecture with audio through
+the API and skips if there is none.
+
+Not covered yet: anything behind a login, and create/edit/generate flows. Those need recorded
+provider responses so they can run without paid calls.
 
 ## Troubleshooting
 

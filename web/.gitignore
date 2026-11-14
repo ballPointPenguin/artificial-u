@@ -32,3 +32,8 @@ dist-ssr
 dist
 dist-ssr
 dev-dist
+
+# Playwright
+test-results
+playwright-report
+blob-report

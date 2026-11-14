@@ -65,6 +65,7 @@ pnpm format           # Format with BiomeJS
 pnpm test             # Run tests
 pnpm test:watch       # Watch mode
 pnpm test:coverage    # Coverage report
+pnpm test:e2e         # Read-only browser smoke tests (Playwright; needs API + pnpm dev running)
 ```
 
 ### Docker Services

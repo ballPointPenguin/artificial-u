@@ -5,7 +5,7 @@ import tseslint from 'typescript-eslint'
 
 export default tseslint.config(
   // 1. Global ignores
-  { ignores: ['dist/', 'dev-dist/', 'node_modules/'] },
+  { ignores: ['dist/', 'dev-dist/', 'node_modules/', 'test-results/', 'playwright-report/'] },
 
   // 2. Base ESLint recommended rules (applies globally)
   eslintJs.configs.recommended,
@@ -53,5 +53,16 @@ export default tseslint.config(
     },
     // These files ONLY inherit rules from step 2 (eslintJs.configs.recommended)
     // No type-aware rules from the 'extends' in step 3 are applied here.
+  },
+
+  // 5. Playwright end-to-end tests and config (run in Node; callbacks run in the browser)
+  {
+    files: ['e2e/**/*.ts', 'playwright.config.ts'],
+    extends: [...tseslint.configs.recommended],
+    languageOptions: {
+      globals: {
+        ...globals.node,
+      },
+    },
   }
 )

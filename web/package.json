@@ -15,7 +15,9 @@
     "format": "biome check --write .",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "test:e2e": "playwright test",
+    "test:e2e:report": "playwright show-report"
   },
   "dependencies": {
     "@auth0/auth0-spa-js": "^2.30.0",
@@ -31,9 +33,11 @@
     "@biomejs/biome": "^2.6.6",
     "@eslint/js": "^10.0.1",
     "@kobalte/tailwindcss": "^0.9.0",
+    "@playwright/test": "^1.65.1",
     "@solidjs/testing-library": "^0.8.10",
     "@tailwindcss/vite": "^4.3.5",
     "@testing-library/jest-dom": "^7.0.1",
+    "@types/node": "^26.6.6",
     "@typescript/native": "npm:typescript@~7.0.2",
     "@vitest/coverage-v8": "^5.1.0",
     "baseline-browser-mapping": "^2.11.35",
