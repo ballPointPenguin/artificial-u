@@ -32,7 +32,7 @@ def _build_service():
     [
         ("claude-sonnet-4-6", (4, 6)),
         ("claude-opus-4-8", (4, 8)),
-        ("claude-haiku-4-5", (4, 5)),
+        ("claude-haiku-5-5", (5, 5)),
         ("claude-sonnet-5", (5, 0)),
         ("claude-opus-5", (5, 0)),
         ("claude-opus-5-5", (5, 5)),
@@ -40,7 +40,7 @@ def _build_service():
         ("claude-sonnet-5-5-20260928", (5, 5)),
         ("claude-sonnet-5-1", (5, 1)),
         ("claude-sonnet-5-20260601", (5, 0)),
-        ("gpt-5.6", None),
+        ("gpt-6.2-sol", None),
     ],
 )
 def test_parse_claude_version(model, expected):
@@ -58,6 +58,7 @@ class TestVersionGatedFeatures:
             ("claude-opus-4-8", False),
             ("claude-sonnet-5", False),  # Sonnet 5 also rejects prefill
             ("claude-sonnet-5-5", False),  # Sonnet 5.5 also rejects prefill
+            ("claude-haiku-5-5", False),  # Haiku 5.5 also rejects prefill
         ],
     )
     def test_is_prefill_supported(self, model, expected):
@@ -70,6 +71,7 @@ class TestVersionGatedFeatures:
             ("claude-opus-4-8", False),  # 4.7+ rejects sampling params
             ("claude-sonnet-5", False),  # Sonnet 5 also rejects sampling params
             ("claude-sonnet-5-5", False),  # Sonnet 5.5 also rejects sampling params
+            ("claude-haiku-5-5", False),  # Haiku 5.5 also rejects sampling params
         ],
     )
     def test_supports_sampling_params(self, model, expected):
@@ -82,6 +84,7 @@ class TestVersionGatedFeatures:
             ("claude-opus-4-8", True),
             ("claude-sonnet-5", True),
             ("claude-sonnet-5-5", True),
+            ("claude-haiku-5-5", True),
         ],
     )
     def test_supports_effort(self, model, expected):
@@ -94,6 +97,7 @@ class TestVersionGatedFeatures:
             ("claude-opus-4-8", False),  # thinking off by default (adaptive requires opt-in)
             ("claude-sonnet-5", True),  # adaptive thinking on by default
             ("claude-sonnet-5-5", True),
+            ("claude-haiku-5-5", True),
             ("claude-sonnet-5-1", True),
             ("claude-opus-5", True),  # adaptive thinking on by default
             ("claude-opus-5-5", True),
@@ -107,6 +111,7 @@ class TestVersionGatedFeatures:
         [
             ("claude-opus-5", True),
             ("claude-sonnet-5", True),
+            ("claude-haiku-5-5", True),
             ("claude-opus-5-5", False),
             ("claude-opus-5-5-20260922", False),
             ("claude-sonnet-5-5", False),
@@ -246,17 +251,66 @@ async def test_generate_anthropic_uses_sampling_params_for_sonnet_4_6(monkeypatc
     assert call_kwargs["temperature"] == pytest.approx(0.3)
 
 
+@pytest.mark.asyncio
+async def test_generate_anthropic_disables_thinking_for_haiku_5_5(monkeypatch):
+    service = _build_service()
+
+    mock_response = MagicMock()
+    mock_response.stop_reason = "end_turn"
+    mock_response.content = [SimpleNamespace(type="text", text="hello world")]
+
+    mock_client = MagicMock()
+    mock_client.messages.create = AsyncMock(return_value=mock_response)
+    monkeypatch.setattr("artificial_u.services.content_service.anthropic_client", mock_client)
+
+    await service._generate_anthropic(
+        "prompt", "claude-haiku-5-5", "system", None, None, None, effort=None
+    )
+
+    call_kwargs = mock_client.messages.create.await_args.kwargs
+    assert call_kwargs["thinking"] == {"type": "disabled"}
+    assert "temperature" not in call_kwargs
+    assert call_kwargs["output_config"] == {"effort": "medium"}
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("effort", ["xhigh", "max"])
+async def test_generate_anthropic_skips_disabled_thinking_for_haiku_5_5_at_high_efforts(
+    monkeypatch, effort
+):
+    service = _build_service()
+
+    mock_response = MagicMock()
+    mock_response.stop_reason = "end_turn"
+    mock_response.content = [SimpleNamespace(type="text", text="hello world")]
+
+    mock_client = MagicMock()
+    mock_client.messages.create = AsyncMock(return_value=mock_response)
+    monkeypatch.setattr("artificial_u.services.content_service.anthropic_client", mock_client)
+
+    await service._generate_anthropic(
+        "prompt", "claude-haiku-5-5", "system", None, None, None, effort=effort
+    )
+
+    call_kwargs = mock_client.messages.create.await_args.kwargs
+    assert "thinking" not in call_kwargs
+    assert call_kwargs["output_config"] == {"effort": effort}
+
+
 @pytest.mark.parametrize(
     "model,expected",
     [
-        ("gpt-5.6-luna", True),
-        ("gpt-5.6-sol", True),
-        ("gpt-5.6", True),
         ("gpt-6-luna", True),
         ("gpt-6-sol", True),
         ("gpt-6.1-sol", True),
+        ("gpt-6.2-sol", True),
+        ("gpt-6.2", False),
         ("gpt-6.1", False),
         ("gpt-6", False),
+        ("gpt-5.6-luna", False),
+        ("gpt-5.6-sol", False),
+        ("gpt-5.6-terra", False),
+        ("gpt-5.6", False),
         ("gpt-5.5", False),
     ],
 )
@@ -265,9 +319,7 @@ def test_is_gpt_reasoning_model(model, expected):
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize(
-    "model", ["gpt-5.6-luna", "gpt-5.6-sol", "gpt-5.6", "gpt-6-luna", "gpt-6-sol", "gpt-6.1-sol"]
-)
+@pytest.mark.parametrize("model", ["gpt-6-luna", "gpt-6-sol", "gpt-6.1-sol", "gpt-6.2-sol"])
 async def test_generate_openai_reasoning_models_use_effort_without_temperature(monkeypatch, model):
     service = _build_service()
 
@@ -290,7 +342,9 @@ async def test_generate_openai_reasoning_models_use_effort_without_temperature(m
     [
         ("gemini-3.6-flash", True),
         ("gemini-3.5-flash-lite", True),
-        ("gemini-3.8-flash", True),
+        ("gemini-4-hydrogen", True),
+        ("gemini-4-neon", True),
+        ("gemini-4-carbon", True),
         ("gemini-4-argon", True),
         ("gemini-3.1-flash-lite", False),
         ("gemini-4.0-flash", True),
@@ -307,7 +361,9 @@ def test_deprecates_gemini_sampling_params(model, expected):
     [
         ("gemini-3.5-flash", True),
         ("gemini-3.6-flash", True),
-        ("gemini-3.8-flash", False),
+        ("gemini-4-hydrogen", False),
+        ("gemini-4-neon", False),
+        ("gemini-4-carbon", False),
         ("gemini-4-argon", False),
     ],
 )
@@ -316,7 +372,9 @@ def test_supports_gemini_minimal_thinking_level(model, expected):
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("model", ["gemini-3.8-flash", "gemini-4-argon"])
+@pytest.mark.parametrize(
+    "model", ["gemini-4-hydrogen", "gemini-4-neon", "gemini-4-carbon", "gemini-4-argon"]
+)
 async def test_generate_gemini_rejects_minimal_thinking_level(monkeypatch, model):
     service = _build_service()
     mock_client = MagicMock()
@@ -337,7 +395,9 @@ async def test_generate_gemini_rejects_minimal_thinking_level(monkeypatch, model
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("model", ["gemini-3.8-flash", "gemini-4-argon"])
+@pytest.mark.parametrize(
+    "model", ["gemini-4-hydrogen", "gemini-4-neon", "gemini-4-carbon", "gemini-4-argon"]
+)
 async def test_generate_gemini_omits_temperature_for_newer_gemini_models(monkeypatch, model):
     service = _build_service()
 

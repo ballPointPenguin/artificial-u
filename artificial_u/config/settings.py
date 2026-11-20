@@ -127,7 +127,7 @@ class Settings(BaseSettings):
     STORAGE_CONTENT_LOGS_BUCKET: str = DEFAULT_STORAGE_CONTENT_LOGS_BUCKET
 
     # Course generation model
-    COURSE_GENERATION_MODEL: str = "gemini-3.8-flash"
+    COURSE_GENERATION_MODEL: str = "gemini-4-hydrogen"
     # Department generation model
     DEPARTMENT_GENERATION_MODEL: str = "gpt-6-luna"
     # Lecture generation model
@@ -137,7 +137,7 @@ class Settings(BaseSettings):
     # Professor generation model
     PROFESSOR_GENERATION_MODEL: str = "gpt-6-luna"
     # Topics generation model
-    TOPICS_GENERATION_MODEL: str = "gemini-3.8-flash"
+    TOPICS_GENERATION_MODEL: str = "gemini-4-hydrogen"
     # Course tags generation model
     TAGS_GENERATION_MODEL: str = "gpt-6-luna"
     # Image generation model
