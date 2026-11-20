@@ -162,14 +162,14 @@ def test_save_topics_for_course_persists_pre_generated_topics():
         course_id=1,
         topics_data=topics_data,
         created_by=7,
-        model="gemini-3.8-flash",
+        model="gemini-4-hydrogen",
         language="en",
     )
 
     assert len(saved) == 2
     assert repository_factory.topic.create.call_count == 2
     assert saved[0].title == "Atmospheric Structure"
-    assert saved[0].created_with == "gemini-3.8-flash"
+    assert saved[0].created_with == "gemini-4-hydrogen"
     assert saved[0].content == {
         "lecture": "Vertical Layers",
         "readings": ["Wallace & Hobbs Ch. 1"],

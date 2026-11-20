@@ -289,7 +289,7 @@ class CdkStack(Stack):
             "STORAGE_LECTURES_BUCKET": lectures_bucket.bucket_name,
             "STORAGE_REGION": self.region,
             "STORAGE_TYPE": "s3",
-            "TOPICS_GENERATION_MODEL": "gemini-3.8-flash",
+            "TOPICS_GENERATION_MODEL": "gemini-4-hydrogen",
             "TTS_VOICE_MODEL": "eleven_v4",
             # Database connection pool settings (conservative for db.t4g.small ~110 max_connections)
             # These ensure the app uses a shared connection pool and doesn't exhaust RDS connections

@@ -22,7 +22,7 @@ DEFAULT_ANTHROPIC_EFFORT = "medium"
 
 def _is_gpt_reasoning_model(model: str) -> bool:
     """Return whether a model supports GPT reasoning controls in Chat Completions."""
-    return bool(re.match(r"gpt-(?:5\.6|6-(?:sol|luna)|6\.1-sol)(?:-|$)", model or ""))
+    return bool(re.match(r"gpt-6(?:\.[12]-sol|-(?:sol|luna))(?:-|$)", model or ""))
 
 
 # Reasoning effort levels accepted by Grok reasoning models; anything else is not forwarded.
@@ -63,8 +63,9 @@ def _deprecates_gemini_sampling_params(model: str) -> bool:
 def _supports_gemini_minimal_thinking_level(model: str) -> bool:
     """Return whether a Gemini model accepts the ``minimal`` thinking level.
 
-    Starting with Gemini 3.8 Flash and Gemini 4 models (e.g. ``gemini-4-argon``),
-    only ``low``, ``medium``, and ``high`` thinking levels are supported.
+    Gemini 4 models (e.g. ``gemini-4-hydrogen``, ``gemini-4-neon``,
+    ``gemini-4-carbon``, ``gemini-4-argon``) support ``low``, ``medium``,
+    ``high``, and ``xhigh`` thinking levels; ``minimal`` is rejected.
     """
     match = re.match(r"gemini-(\d+)(?:\.(\d+))?", model or "")
     if match:
@@ -133,7 +134,7 @@ class ContentService:
         Args:
             prompt: The main text prompt for generation.
             model: The model name to use (e.g., 'claude-sonnet-5-5', 'gpt-6-luna',
-            'gemini-3.8-flash'). The backend is derived from the model name.
+            'gemini-4-hydrogen'). The backend is derived from the model name.
             system_prompt: An optional system prompt or instruction for the model.
             temperature: Optional temperature for sampling (model-dependent, default varies).
             max_tokens: Optional maximum number of tokens to generate
@@ -141,10 +142,10 @@ class ContentService:
             prefill: Optional assistant message prefill content (Anthropic only).
             Claude will continue from where this prefill text ends.
             thinking_level: Optional reasoning effort for Gemini 3+ models
-            ('minimal', 'low', 'medium', 'high'). Ignored by other backends/models.
+            ('minimal', 'low', 'medium', 'high', 'xhigh'). Ignored by other backends/models.
             effort: Optional effort level for supported Anthropic and OpenAI reasoning models
             ('none', 'low', 'medium', 'high', 'xhigh', 'max'). Controls overall token spend.
-            Defaults to 'medium' for supported Claude and GPT-5.6/GPT-6 models. Ignored otherwise.
+            Defaults to 'medium' for supported Claude and GPT-6 models. Ignored otherwise.
 
         Returns:
             The generated text content as a string.
@@ -351,6 +352,9 @@ class ContentService:
         tokens count against ``max_tokens``. Content generation turns that off:
 
         - Claude Sonnet 5 and Claude Opus 5 accept ``"disabled"``.
+        - Claude Haiku 5.5 accepts ``"disabled"`` at ``high`` effort or below;
+          at ``xhigh`` or ``max``, ``"disabled"`` is rejected with a 400, so
+          adaptive thinking is left on.
         - Claude Sonnet 5.5 rejects ``"disabled"`` with a 400 and uses
           ``"between_tools"``, which is valid only at ``high`` effort or below.
           At ``xhigh`` or ``max``, adaptive thinking is left on.
@@ -368,6 +372,14 @@ class ContentService:
                 )
                 return None
             return "between_tools"
+        if model.startswith("claude-haiku-5-5") and effort in ("xhigh", "max"):
+            self.logger.info(
+                "disabled thinking is not accepted at effort %s for %s; "
+                "leaving adaptive thinking on.",
+                effort,
+                model,
+            )
+            return None
         if self._supports_disabling_thinking(model):
             return "disabled"
         return None
@@ -421,9 +433,10 @@ class ContentService:
 
         # Claude 5 thinks by default even without a `thinking` field, and thinking
         # tokens count against max_tokens. Turn off up-front thinking so behavior
-        # and budgeting stay consistent with earlier Claude models. Sonnet 5.5
-        # rejects "disabled" and uses "between_tools"; Opus 5.5 cannot turn
-        # adaptive thinking off.
+        # and budgeting stay consistent with earlier Claude models. Haiku 5.5
+        # accepts "disabled" at high effort or below; Sonnet 5.5 rejects
+        # "disabled" and uses "between_tools"; Opus 5.5 cannot turn adaptive
+        # thinking off.
         thinking_type = self._upfront_thinking_type(model, effective_effort)
         disable_thinking = thinking_type is not None
         if thinking_type:
@@ -503,7 +516,7 @@ class ContentService:
                 )
                 self.logger.debug(f"Using max_tokens parameter for model {model}")
 
-            # GPT-5.6/GPT-6 reasoning models do not accept a custom
+            # GPT-6 reasoning models do not accept a custom
             # temperature. Prompting and reasoning effort control their behavior.
             if _is_gpt_reasoning_model(model):
                 self.logger.debug(f"Skipping temperature parameter for {model} (not supported)")
@@ -512,7 +525,7 @@ class ContentService:
                     temperature if temperature is not None else DEFAULT_TEMPERATURE
                 )
 
-            # GPT-5.6 and GPT-6 Luna and Sol (including GPT-6.1 Sol) support reasoning effort
+            # GPT-6 Luna and Sol (including GPT-6.1 Sol and GPT-6.2 Sol) support reasoning effort
             # through Chat Completions. Their documented default is medium, so only forward an
             # explicit caller preference.
             effort = kwargs.get("effort")

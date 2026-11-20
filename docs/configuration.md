@@ -130,7 +130,7 @@ ArtificialU allows configuration of different AI models for various services:
 
 ```python
 # Course generation model
-COURSE_GENERATION_MODEL=gemini-3.8-flash
+COURSE_GENERATION_MODEL=gemini-4-hydrogen
 
 # Department generation model
 DEPARTMENT_GENERATION_MODEL=gpt-6-luna
@@ -142,7 +142,7 @@ LECTURE_GENERATION_MODEL=claude-sonnet-5-5
 PROFESSOR_GENERATION_MODEL=gpt-6-luna
 
 # Topics generation model
-TOPICS_GENERATION_MODEL=gemini-3.8-flash
+TOPICS_GENERATION_MODEL=gemini-4-hydrogen
 
 # Image generation model (Gemini image models, gpt-image-2, or gpt-image-2.5-flare)
 IMAGE_GENERATION_MODEL=gemini-nano-banana-2.1
@@ -162,21 +162,16 @@ for text generation. When calling `ContentService.generate_text()` directly, pas
 `effort` (`none`, `low`, `medium`, `high`, `xhigh`, or `max`) to set GPT-6 reasoning
 effort; otherwise the API default is `medium`.
 
-`gpt-6.1-sol` is also supported as an optional model for lecture content generation
-(1.05M-token context, 128K max output). It is not a default anywhere; select it via
-`LECTURE_GENERATION_MODEL` or the admin settings page. It is handled like the other GPT-6 models
-(no custom temperature; reasoning effort forwarded when set).
+`gpt-6.1-sol` and `gpt-6.2-sol` are also supported as optional models for lecture content generation.
+They are not defaults anywhere; select them via `LECTURE_GENERATION_MODEL` or the admin settings page.
+They are handled like the other GPT-6 models (no custom temperature; reasoning effort forwarded when set).
 
-`gemini-3.8-flash` is the default Course and Topics model for medium-complexity generation.
-It uses Gemini's `thinking_level` control (`low`, `medium`, or `high`); the
-`minimal` level is not supported. Gemini 3.8+ and Gemini 4 reject sampling parameters, so
-ArtificialU omits temperature, top-p, and top-k from its requests.
-
-`gemini-4-argon` is also supported as an optional model for content generation
-(`LECTURE_GENERATION_MODEL`, `COURSE_GENERATION_MODEL`, `TOPICS_GENERATION_MODEL`).
-It is not a default anywhere; select it via environment variables or the admin settings page.
-Like `gemini-3.8-flash`, it omits sampling parameters and supports `low`, `medium`, and
-`high` thinking levels (`minimal` is not supported).
+`gemini-4-hydrogen` is the default Course and Topics model for fast, cost-effective generation.
+`gemini-4-neon`, `gemini-4-carbon`, and `gemini-4-argon` are also supported as optional Gemini 4
+models for content generation (`LECTURE_GENERATION_MODEL`, `COURSE_GENERATION_MODEL`,
+`TOPICS_GENERATION_MODEL`). Gemini 4 models use Gemini's `thinking_level` control (`low`,
+`medium`, `high`, or `xhigh`; `minimal` is not supported) and omit sampling parameters
+(temperature, top-p, and top-k) from requests.
 
 For image generation, `gemini-nano-banana-2.1` is the default (it falls back to
 `gemini-3.1-flash-lite-image` if it fails). The
@@ -220,10 +215,12 @@ for API differences across model generations, so callers can swap
   `thinking` field required), and thinking tokens count against `max_tokens`.
   To keep output budgets predictable, `ContentService` turns off up-front
   thinking. Claude Sonnet 5 and Claude Opus 5 accept
-  `thinking: {"type": "disabled"}`. Claude Sonnet 5.5 rejects `disabled` with a
-  400 and uses `thinking: {"type": "between_tools"}`, which is valid at `high`
-  effort or below (the content-generation default is `medium`). At `xhigh` or
-  `max`, adaptive thinking is left on. Claude Opus 5.5 requires adaptive
+  `thinking: {"type": "disabled"}`. Claude Haiku 5.5 accepts
+  `thinking: {"type": "disabled"}` at `high` effort or below, and leaves
+  adaptive thinking on at `xhigh` or `max`. Claude Sonnet 5.5 rejects `disabled`
+  with a 400 and uses `thinking: {"type": "between_tools"}`, which is valid at
+  `high` effort or below (the content-generation default is `medium`). At `xhigh`
+  or `max`, adaptive thinking is left on. Claude Opus 5.5 requires adaptive
   thinking, so the field is omitted for `claude-opus-5-5` and its snapshots.
   Responses are read by content-block `type`, so leading `thinking` blocks are
   skipped.
@@ -356,11 +353,11 @@ TESTING=true
 | `DIAG_CLOUDWATCH_METRICS_INTERVAL_SEC` | Emission interval in seconds when enabled | `60` | No |
 | `CLOUDWATCH_NAMESPACE` | CloudWatch metrics namespace | `ArtificialU` | No |
 | `DIAG_TRACEMALLOC` | Enable one-off tracemalloc baseline + SIGUSR1 diffs (`1` on; `0` or unset off) | `0` (off) | No |
-| `COURSE_GENERATION_MODEL` | Model for course generation | `gpt-6-luna` | No |
+| `COURSE_GENERATION_MODEL` | Model for course generation | `gemini-4-hydrogen` | No |
 | `DEPARTMENT_GENERATION_MODEL` | Model for department generation | `gpt-6-luna` | No |
 | `LECTURE_GENERATION_MODEL` | Model for lecture generation | `claude-sonnet-5-5` | No |
 | `LECTURE_SUMMARY_MODEL` | Model for lecture summary generation | `gpt-6-luna` | No |
-| `TOPICS_GENERATION_MODEL` | Model for topics generation | `gemini-3.8-flash` | No |
+| `TOPICS_GENERATION_MODEL` | Model for topics generation | `gemini-4-hydrogen` | No |
 | `PROFESSOR_GENERATION_MODEL` | Model for professor generation | `gpt-6-luna` | No |
 | `IMAGE_GENERATION_MODEL` | Model for image generation (`gemini-3.1-flash-lite-image`, `gemini-3.1-flash-image`, `gemini-3-pro-image`) | `gemini-3.1-flash-lite-image` | No |
 | `TTS_VOICE_MODEL` | Model for text-to-speech voice | `eleven_v4` | No |
