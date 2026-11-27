@@ -1,6 +1,5 @@
 import { useNavigate, useParams } from '@solidjs/router'
 import { type Component, createSignal, For, Show } from 'solid-js'
-import { createResource } from '../utils/create-resource.js'
 import { departmentService } from '../api/services/department-service.js'
 import type {
   DepartmentCoursesResponse,
@@ -11,6 +10,7 @@ import { RequireRole } from '../auth/RequireRole'
 import DepartmentForm from '../components/departments/DepartmentForm.js'
 import { Button, ConfirmationModal } from '../components/ui'
 import { useTranslations } from '../i18n/index.js'
+import { createResource } from '../utils/create-resource.js'
 
 // Courses List Component
 const CoursesList: Component<{
@@ -319,11 +319,7 @@ const DepartmentDetail = () => {
             <div class="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
               <div class="bg-arcanum-900 border border-parchment-800/30 rounded-lg p-6">
                 <h2 class="text-xl font-semibold mb-4">{t().departmentDetail.courses}</h2>
-                <CoursesList
-                  courses={courses}
-                  loading={courses.loading}
-                  error={courses.error as unknown}
-                />
+                <CoursesList courses={courses} loading={courses.loading} error={courses.error} />
               </div>
 
               <div class="bg-arcanum-900 border border-parchment-800/30 rounded-lg p-6">
@@ -331,7 +327,7 @@ const DepartmentDetail = () => {
                 <ProfessorsList
                   professors={professors}
                   loading={professors.loading}
-                  error={professors.error as unknown}
+                  error={professors.error}
                 />
               </div>
             </div>

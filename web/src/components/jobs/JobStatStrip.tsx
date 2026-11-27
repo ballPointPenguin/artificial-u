@@ -36,13 +36,15 @@ export default function JobStatStrip(props: JobStatStripProps) {
               onClick={() => {
                 props.onToggleStatus(entry.status)
               }}
-              class="arcane-card p-3 text-center cursor-pointer transition-all"
-              class={{
-                'ring-2 ring-primary': props.activeStatus === entry.status,
-                'opacity-60':
-                  props.activeStatus !== undefined && props.activeStatus !== entry.status,
-              }}
-              aria-pressed={props.activeStatus === entry.status}
+              class={[
+                'arcane-card p-3 text-center cursor-pointer transition-all',
+                {
+                  'ring-2 ring-primary': props.activeStatus === entry.status,
+                  'opacity-60':
+                    props.activeStatus !== undefined && props.activeStatus !== entry.status,
+                },
+              ]}
+              aria-pressed={props.activeStatus === entry.status ? 'true' : 'false'}
             >
               <div class={`stat-number-sm ${entry.accent}`}>
                 {props.summary?.counts[entry.status] ?? 0}

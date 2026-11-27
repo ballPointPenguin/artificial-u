@@ -1,6 +1,5 @@
 import { useNavigate, useParams } from '@solidjs/router'
-import { type Component, createSignal, For, type Resource, Show } from 'solid-js'
-import { createResource } from '../../utils/create-resource.js'
+import { type Component, createSignal, For, Show } from 'solid-js'
 import { departmentService } from '../../api/services/department-service.js'
 import { professorService } from '../../api/services/professor-service.js'
 import { getVoice } from '../../api/services/voice-service.js'
@@ -13,6 +12,7 @@ import type {
 import { useAuth } from '../../auth/AuthProvider'
 import { RequireRole } from '../../auth/RequireRole'
 import { useTranslations } from '../../i18n'
+import { createResource, type Resource } from '../../utils/create-resource.js'
 import { Alert, Button, ConfirmationModal, LoadingSpinner, MagicButton, MetadataInfo } from '../ui'
 import ProfessorForm, { type ProfessorFormData } from './ProfessorForm.js'
 
@@ -188,7 +188,7 @@ const VoiceProfileSection: Component<{
             <p class="text-sm text-muted italic">{t().professorDetail.loadingVoice}</p>
           </Show>
 
-          <Show when={props.voiceResource.error as unknown}>
+          <Show when={props.voiceResource.error}>
             <p class="text-sm text-danger">
               {t().professorDetail.errorLoadingVoice}{' '}
               {props.voiceResource.error instanceof Error
@@ -639,7 +639,7 @@ export default function ProfessorDetail() {
               <ProfessorCourses
                 coursesResource={coursesResource}
                 loading={coursesResource.loading}
-                error={coursesResource.error as unknown}
+                error={coursesResource.error}
               />
             </div>
           </Show>

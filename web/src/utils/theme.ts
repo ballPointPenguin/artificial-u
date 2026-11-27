@@ -1,5 +1,4 @@
-import { createEffect, createRoot, createSignal } from 'solid-js'
-import { createStore } from 'solid-js'
+import { createEffect, createRoot, createSignal, createStore } from 'solid-js'
 
 // Theme types
 export type ThemeMode = 'dark-academia' | 'vaporwave' | 'wabi-sabi' | 'biophilia'

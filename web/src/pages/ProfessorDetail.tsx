@@ -1,4 +1,3 @@
-
 import ProfessorDetail from '../components/professors/ProfessorDetail'
 import { ShareButton } from '../components/ui'
 import { useTranslations } from '../i18n'

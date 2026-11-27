@@ -1,10 +1,48 @@
-import tailwindcss from '@tailwindcss/vite'
-import { defineConfig } from 'vite'
-import { VitePWA } from 'vite-plugin-pwa'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 import solid from '@solidjs/vite-plugin'
+import tailwindcss from '@tailwindcss/vite'
+import { defineConfig, type Plugin } from 'vite'
+import { VitePWA } from 'vite-plugin-pwa'
+
+const rootDir = path.dirname(fileURLToPath(import.meta.url))
+const splitPropsShim = path.resolve(rootDir, 'src/shims/split-props.ts')
+
+/**
+ * lucide-solid@1.x still imports Solid 1 APIs (`solid-js/web`, `splitProps`,
+ * `Context.Provider`). Rewrite those until an official Solid 2 release ships.
+ */
+function lucideSolidSolid2Compat(): Plugin {
+  return {
+    name: 'lucide-solid-solid2-compat',
+    enforce: 'pre',
+    transform(code, id) {
+      if (!id.includes(`${path.sep}lucide-solid${path.sep}`)) return null
+      let next = code
+      next = next.replaceAll(`from "solid-js/web"`, `from "@solidjs/web"`)
+      next = next.replaceAll(`from 'solid-js/web'`, `from '@solidjs/web'`)
+      next = next.replace(
+        /import\s*\{([^}]*)\}\s*from\s*["']solid-js["']\s*;?/,
+        (match, imports: string) => {
+          if (!imports.includes('splitProps')) return match
+          const cleaned = imports
+            .split(',')
+            .map((part) => part.trim())
+            .filter((part) => part && part !== 'splitProps')
+            .join(', ')
+          const solidImport = cleaned ? `import { ${cleaned} } from "solid-js";\n` : ''
+          return `${solidImport}import { splitProps } from ${JSON.stringify(splitPropsShim)};`
+        }
+      )
+      next = next.replace(/(\w+)\.Provider\b/g, '$1')
+      return next === code ? null : next
+    },
+  }
+}
 
 export default defineConfig(({ mode }) => ({
   plugins: [
+    lucideSolidSolid2Compat(),
     solid(),
     tailwindcss(),
     VitePWA({

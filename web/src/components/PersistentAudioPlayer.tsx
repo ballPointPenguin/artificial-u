@@ -192,12 +192,14 @@ export const PersistentAudioPlayer: Component = () => {
     <Show when={player.currentTrack()}>
       {(track) => (
         <div
-          class="w-full border-t border-parchment-800/50 bg-parchment-950/95 backdrop-blur-sm shadow-2xl"
-          class={{
-            // Hide the mini-bar entirely while the Now Playing sheet is open.
-            // The <audio> element is still present in the DOM, so playback continues.
-            hidden: player.isExpanded(),
-          }}
+          class={[
+            'w-full border-t border-parchment-800/50 bg-parchment-950/95 backdrop-blur-sm shadow-2xl',
+            {
+              // Hide the mini-bar entirely while the Now Playing sheet is open.
+              // The <audio> element is still present in the DOM, so playback continues.
+              hidden: player.isExpanded(),
+            },
+          ]}
           aria-hidden={player.isExpanded() ? 'true' : 'false'}
         >
           {/* Action cluster (expand + close) */}

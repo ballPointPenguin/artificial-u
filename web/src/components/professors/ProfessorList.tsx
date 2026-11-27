@@ -1,7 +1,7 @@
 import { createEffect, For, Show } from 'solid-js'
-import { createResource } from '../../utils/create-resource.js'
 import { professorService } from '../../api/services/professor-service.js'
 import type { Professor } from '../../api/types.js'
+import { createResource } from '../../utils/create-resource.js'
 import ProfessorListItem from '../professors/ProfessorListItem.js'
 
 export default function ProfessorList() {

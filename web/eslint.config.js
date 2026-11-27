@@ -43,16 +43,29 @@ export default tseslint.config(
     },
   },
 
-  // 4. Configuration for Project Root Config Files (*.js, *.cjs, vite.config.ts)
+  // 4. Configuration for Project Root Config Files (*.js, *.cjs)
   {
-    files: ['eslint.config.js', '*.cjs', 'vite.config.ts'],
+    files: ['eslint.config.js', '*.cjs'],
     languageOptions: {
       globals: {
         ...globals.node, // Node globals for config files
       },
     },
-    // These files ONLY inherit rules from step 2 (eslintJs.configs.recommended)
-    // No type-aware rules from the 'extends' in step 3 are applied here.
+  },
+
+  // 4b. Vite / Vitest TypeScript config files
+  {
+    files: ['vite.config.ts', 'vitest.config.ts'],
+    extends: [...tseslint.configs.recommended],
+    languageOptions: {
+      parserOptions: {
+        project: './tsconfig.node.json',
+        tsconfigRootDir: import.meta.dirname,
+      },
+      globals: {
+        ...globals.node,
+      },
+    },
   },
 
   // 5. Playwright end-to-end tests and config (run in Node; callbacks run in the browser)

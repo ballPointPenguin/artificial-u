@@ -1,6 +1,5 @@
 import { useParams } from '@solidjs/router'
 import { createMemo, createSignal, Show } from 'solid-js'
-import { createResource } from '../utils/create-resource.js'
 import { courseService } from '../api/services/course-service.js'
 import { lectureService } from '../api/services/lecture-service.js'
 import { topicService } from '../api/services/topic-service.js'
@@ -12,6 +11,7 @@ import { TopicForm } from '../components/topics/TopicForm.jsx'
 import { Alert, Button, MetadataInfo, ShareButton } from '../components/ui'
 import { useTranslations } from '../i18n/index.js'
 import { useAudioPlayer } from '../utils/audio-player-context.jsx'
+import { createResource } from '../utils/create-resource.js'
 import { createJobTracker, getJobMessage } from '../utils/job-management.js'
 
 const TopicDetail = () => {
@@ -425,7 +425,7 @@ const TopicDetail = () => {
                         </div>
                       </div>
 
-                      <div class="lg:col-span-1" class={{ 'mt-6 lg:mt-0': !nowPlayingOpen() }}>
+                      <div class={['lg:col-span-1', { 'mt-6 lg:mt-0': !nowPlayingOpen() }]}>
                         <LectureSection
                           lecture={lecture}
                           courseId={courseId()}

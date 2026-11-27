@@ -1,4 +1,5 @@
-import { type JSX, omit } from 'solid-js'
+import { type JSX } from '@solidjs/web'
+import { omit } from 'solid-js'
 
 interface CardProps {
   class?: string
@@ -8,20 +9,19 @@ interface CardProps {
 }
 
 export function Card(props: CardProps) {
-  const local = props
   const others = omit(props, 'class', 'children', 'hover', 'bordered')
 
   return (
     <div
       class={[
         'bg-surface rounded-sm overflow-hidden',
-        local.bordered ? 'border border-border/30' : '',
-        local.hover ? 'transition-all duration-300 hover:shadow-arcane' : '',
-        local.class || '',
+        props.bordered ? 'border border-border/30' : '',
+        props.hover ? 'transition-all duration-300 hover:shadow-arcane' : '',
+        props.class || '',
       ].join(' ')}
       {...others}
     >
-      {local.children}
+      {props.children}
     </div>
   )
 }

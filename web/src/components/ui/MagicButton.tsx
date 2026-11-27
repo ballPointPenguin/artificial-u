@@ -1,4 +1,5 @@
-import { type JSX, merge, Show, omit } from 'solid-js'
+import { type JSX } from '@solidjs/web'
+import { merge, omit, Show } from 'solid-js'
 import { Button } from './Button'
 import './MagicButton.css'
 
@@ -22,20 +23,29 @@ export function MagicButton(props: MagicButtonProps) {
   }
   const merged = merge(defaults, props)
 
-  const local = merged
-  const others = omit(merged, 'class', 'children', 'isLoading', 'loadingText', 'iconOnly', 'disabled')
+  const others = omit(
+    merged,
+    'class',
+    'children',
+    'isLoading',
+    'loadingText',
+    'iconOnly',
+    'disabled'
+  )
 
   return (
     <Button
       {...others}
-      disabled={local.disabled}
-      class={`relative overflow-hidden magic-button group ${local.class || ''}`}
+      disabled={merged.disabled}
+      class={`relative overflow-hidden magic-button group ${
+        typeof merged.class === 'string' ? merged.class : ''
+      }`}
     >
       <span class="relative z-10 flex items-center gap-2">
         <span class="inline-block align-middle magic-icon magic-button-icon">
           <svg
             xmlns="http://www.w3.org/2000/svg"
-            class={`w-5 h-5 transition-transform duration-500 ${local.disabled ? '' : 'group-hover:rotate-12'}`}
+            class={`w-5 h-5 transition-transform duration-500 ${merged.disabled ? '' : 'group-hover:rotate-12'}`}
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -50,24 +60,24 @@ export function MagicButton(props: MagicButtonProps) {
           </svg>
         </span>
 
-        <Show when={!local.iconOnly} fallback={<span class="sr-only">{local.children}</span>}>
+        <Show when={!merged.iconOnly} fallback={<span class="sr-only">{merged.children}</span>}>
           <span>
             <Show
-              when={!local.isLoading}
+              when={!merged.isLoading}
               fallback={
                 <span class="flex items-center gap-1">
                   <span class="inline-block w-4 h-4 border-2 rounded-full animate-spin magic-button-spinner" />
-                  {local.loadingText || 'Loading...'}
+                  {merged.loadingText || 'Loading...'}
                 </span>
               }
             >
-              {local.children}
+              {merged.children}
             </Show>
           </span>
         </Show>
       </span>
 
-      <Show when={!local.disabled}>
+      <Show when={!merged.disabled}>
         <span class="absolute -inset-px rounded overflow-hidden">
           <span class="absolute inset-0 opacity-50 group-hover:opacity-100 transition-opacity duration-500 magic-sparkle-overlay" />
           <span class="absolute h-10 w-10 -top-5 -left-5 rounded-full blur-xl transform scale-0 group-hover:scale-100 transition-transform duration-700 magic-sparkle-pulse-1" />

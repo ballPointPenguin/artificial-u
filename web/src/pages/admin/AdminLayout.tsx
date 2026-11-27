@@ -71,7 +71,7 @@ export default function AdminLayout(props: RouteSectionProps) {
                 type="button"
                 class="rounded-md border border-border bg-muted/20 px-3 py-2 text-sm font-medium hover:bg-muted/30"
                 onClick={() => setMobileOpen((v) => !v)}
-                aria-expanded={mobileOpen()}
+                aria-expanded={mobileOpen() ? 'true' : 'false'}
               >
                 {activeLabel()}
               </button>

@@ -1,4 +1,3 @@
-
 import { Show } from 'solid-js'
 import type { Professor } from '../../api/types'
 

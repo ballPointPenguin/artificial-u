@@ -1,9 +1,9 @@
 import { useSearchParams } from '@solidjs/router'
 import { type Component, For, Show } from 'solid-js'
-import { createResource } from '../../utils/create-resource.js'
 import { lectureService } from '../../api/services/lecture-service'
 import type { AdminLectureListItem } from '../../api/types'
 import { Button } from '../../components/ui'
+import { createResource } from '../../utils/create-resource.js'
 import { formatDate } from '../../utils/formatDate'
 
 type SortField =

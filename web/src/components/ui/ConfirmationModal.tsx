@@ -1,5 +1,5 @@
 import * as Dialog from '@kobalte/core/dialog'
-import type { JSX } from 'solid-js'
+import type { JSX } from '@solidjs/web'
 import { Button } from './Button'
 
 interface ConfirmationModalProps {

@@ -1,4 +1,3 @@
-
 import { createMemo, Show } from 'solid-js'
 import type { JobRow } from '../../api/services/jobs-service'
 import { getJobKindLabel } from '../../utils/job-management'

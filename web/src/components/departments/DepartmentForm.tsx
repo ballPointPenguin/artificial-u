@@ -1,9 +1,10 @@
-import { createEffect, createSignal, type JSX, Show } from 'solid-js'
-import { createResource } from '../../utils/create-resource.js'
+import { type JSX } from '@solidjs/web'
+import { createEffect, createSignal, Show } from 'solid-js'
 import { departmentService } from '../../api/services/department-service.js'
 import { facultyService } from '../../api/services/faculty-service.js'
 import type { Department, DepartmentGenerateRequest } from '../../api/types.js'
 import { useContentLanguage, useTranslations } from '../../i18n'
+import { createResource } from '../../utils/create-resource.js'
 import {
   Alert,
   Button,

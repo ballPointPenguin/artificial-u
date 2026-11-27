@@ -1,6 +1,5 @@
 import { useNavigate, useSearchParams } from '@solidjs/router'
 import { type Component, createSignal, For, Show } from 'solid-js'
-import { createResource } from '../utils/create-resource.js'
 import { courseService } from '../api/services/course-service.js'
 import { departmentService } from '../api/services/department-service.js'
 import type { Course, CourseCreate } from '../api/types.js'
@@ -13,6 +12,7 @@ import { Alert, Button, MagicButton } from '../components/ui'
 import type { SelectOption } from '../components/ui/Select.jsx'
 import Select from '../components/ui/Select.jsx'
 import { useContentLanguage, useTranslations } from '../i18n'
+import { createResource } from '../utils/create-resource.js'
 import { createJobPolling, registerJobHandoff } from '../utils/job-management.js'
 
 type SortField =
@@ -504,7 +504,7 @@ const Courses: Component = () => {
             when={canGenerate()}
             fallback={
               <a href={`/courses/${String(courseId())}`} class="block">
-                <div class={placeholderClass()} aria-hidden />
+                <div class={placeholderClass()} aria-hidden="true" />
                 <span class="sr-only">{t().courses.courseImage}</span>
               </a>
             }
@@ -528,7 +528,7 @@ const Courses: Component = () => {
         <a href={`/courses/${String(courseId())}`} class={`block relative ${boxClass()}`}>
           {/* Placeholder sits under the image so the slot is never empty,
               even while the browser is still decoding. */}
-          <div class={`absolute inset-0 ${placeholderClass()}`} aria-hidden />
+          <div class={`absolute inset-0 ${placeholderClass()}`} aria-hidden="true" />
           <img
             src={props.course.image_url ?? ''}
             alt=""

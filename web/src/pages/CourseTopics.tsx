@@ -1,9 +1,9 @@
 import { useParams } from '@solidjs/router'
 import { type Component, Show } from 'solid-js'
-import { createResource } from '../utils/create-resource.js'
 import { courseService } from '../api/services/course-service.js'
 import { CourseTopicsList } from '../components/topics/CourseTopicsList.jsx'
 import { useTranslations } from '../i18n/index.js'
+import { createResource } from '../utils/create-resource.js'
 
 const CourseTopics: Component = () => {
   const t = useTranslations()

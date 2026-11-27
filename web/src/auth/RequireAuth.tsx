@@ -1,4 +1,4 @@
-import type { JSX } from 'solid-js'
+import type { JSX } from '@solidjs/web'
 import { createSignal, Match, Show, Switch } from 'solid-js'
 import { Button } from '../components/ui/Button'
 import { useAuth } from './AuthProvider'

@@ -1,4 +1,3 @@
-
 import { type Component, For, Show } from 'solid-js'
 import type { Course } from '../../api/types.js'
 

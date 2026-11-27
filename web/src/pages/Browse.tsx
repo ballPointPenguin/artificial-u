@@ -1,6 +1,5 @@
 import { useSearchParams } from '@solidjs/router'
 import { type Component, createSignal, For, Show } from 'solid-js'
-import { createResource } from '../utils/create-resource.js'
 import { courseService } from '../api/services/course-service.js'
 import { tagService } from '../api/services/tag-service.js'
 import type { Course, TagWithCount } from '../api/types.js'
@@ -10,6 +9,7 @@ import SurpriseMe from '../components/browse/SurpriseMe.jsx'
 import TagChipsBar from '../components/browse/TagChipsBar.jsx'
 import { Alert, Button, LoadingSpinner } from '../components/ui'
 import { useContentLanguage, useTranslations } from '../i18n'
+import { createResource } from '../utils/create-resource.js'
 
 const PAGE_SIZE = 24
 const TAG_CHIP_LIMIT = 30

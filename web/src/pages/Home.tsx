@@ -1,6 +1,5 @@
 import { useNavigate } from '@solidjs/router'
 import { createSignal, For, Show } from 'solid-js'
-import { createResource } from '../utils/create-resource.js'
 import { courseService } from '../api/services/course-service.js'
 import { departmentService } from '../api/services/department-service.js'
 import { featuredService } from '../api/services/featured-service.js'
@@ -16,6 +15,7 @@ import type {
 import { FeaturedLectureCarousel } from '../components/FeaturedLectureCarousel.jsx'
 import { Button } from '../components/ui'
 import { useContentLanguage, useTranslations } from '../i18n'
+import { createResource } from '../utils/create-resource.js'
 
 const Home = () => {
   const t = useTranslations()

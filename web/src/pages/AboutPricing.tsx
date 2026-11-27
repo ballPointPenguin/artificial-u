@@ -1,4 +1,3 @@
-
 import type { Component } from 'solid-js'
 import { useTranslations } from '../i18n'
 

@@ -1,7 +1,7 @@
 /* @refresh reload */
 
 import { init } from '@plausible-analytics/tracker'
-import type { JSX } from 'solid-js'
+import type { JSX } from '@solidjs/web'
 import { render } from '@solidjs/web'
 import { AuthProvider } from './auth/AuthProvider.tsx'
 import { I18nProvider } from './i18n'

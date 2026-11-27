@@ -1,6 +1,4 @@
-
 import { createSignal, For, Show } from 'solid-js'
-import { createResource } from '../utils/create-resource.js'
 import { departmentService } from '../api/services/department-service.js'
 import { facultyService } from '../api/services/faculty-service.js'
 import type { Department, DepartmentCreate } from '../api/types.js'
@@ -8,6 +6,7 @@ import { RequireRole } from '../auth/RequireRole'
 import DepartmentForm from '../components/departments/DepartmentForm.js'
 import { Button, Input, Select, type SelectOption } from '../components/ui'
 import { useContentLanguage, useTranslations } from '../i18n'
+import { createResource } from '../utils/create-resource.js'
 
 const DepartmentCard = (props: { department: Department }) => {
   return (

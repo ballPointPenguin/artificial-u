@@ -1,6 +1,5 @@
 import type { Component } from 'solid-js'
 import { createEffect, createMemo, createSignal, For, Show } from 'solid-js'
-import { createResource } from '../../utils/create-resource.js'
 import { courseService } from '../../api/services/course-service.js'
 import { departmentService } from '../../api/services/department-service.js'
 import { preferenceService } from '../../api/services/preference-service.js'
@@ -8,6 +7,7 @@ import { professorService } from '../../api/services/professor-service.js'
 import type { Course, CourseGenerateRequest, Department, Professor } from '../../api/types.js'
 import { useAuth } from '../../auth/AuthProvider.js'
 import { useContentLanguage, useTranslations } from '../../i18n'
+import { createResource } from '../../utils/create-resource.js'
 import { TopicContentRenderer } from '../topics/TopicContentRenderer.jsx'
 import {
   Alert,
@@ -94,7 +94,7 @@ const CourseForm: Component<CourseFormProps> = (props) => {
 
   // Handle resource errors in tracked scopes
   createEffect(
-    () => departmentsResource.error as unknown,
+    () => departmentsResource.error,
     (depError) => {
       if (depError) {
         props.setError?.(t().courses.form.failedToLoadDepartments)
@@ -103,7 +103,7 @@ const CourseForm: Component<CourseFormProps> = (props) => {
   )
 
   createEffect(
-    () => professorsResource.error as unknown,
+    () => professorsResource.error,
     (profError) => {
       if (profError) {
         props.setError?.(t().courses.form.failedToLoadProfessors)

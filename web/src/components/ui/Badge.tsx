@@ -1,4 +1,5 @@
-import { type JSX, omit } from 'solid-js'
+import { type JSX } from '@solidjs/web'
+import { omit } from 'solid-js'
 
 type BadgeVariant = 'default' | 'outline' | 'secondary' | 'success' | 'danger' | 'warning' | 'info'
 
@@ -9,7 +10,6 @@ interface BadgeProps {
 }
 
 export function Badge(props: BadgeProps) {
-  const local = props
   const others = omit(props, 'variant', 'class', 'children')
 
   const variantClasses = {
@@ -26,12 +26,12 @@ export function Badge(props: BadgeProps) {
     <span
       class={[
         'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium',
-        variantClasses[local.variant || 'default'],
-        local.class || '',
+        variantClasses[props.variant || 'default'],
+        props.class || '',
       ].join(' ')}
       {...others}
     >
-      {local.children}
+      {props.children}
     </span>
   )
 }

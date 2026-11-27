@@ -1,12 +1,12 @@
 import { useNavigate, useParams } from '@solidjs/router'
 import { createSignal, Show } from 'solid-js'
-import { createResource } from '../utils/create-resource.js'
 import { courseService } from '../api/services/course-service.js'
 import { lectureService } from '../api/services/lecture-service.js'
 import { topicService } from '../api/services/topic-service.js'
 import type { LectureCreate, LectureUpdate } from '../api/types.js'
 import { LectureForm } from '../components/lectures/LectureForm.jsx'
 import { Alert } from '../components/ui'
+import { createResource } from '../utils/create-resource.js'
 
 const LectureCreatePage = () => {
   const params = useParams()

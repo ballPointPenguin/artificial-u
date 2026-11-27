@@ -1,4 +1,3 @@
-
 import { createSignal, Show } from 'solid-js'
 import { useAuth } from '../auth/AuthProvider'
 import { useTranslations } from '../i18n'

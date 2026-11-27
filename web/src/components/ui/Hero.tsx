@@ -1,4 +1,3 @@
-
 import { Button } from './Button'
 
 interface HeroProps {

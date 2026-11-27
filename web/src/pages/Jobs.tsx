@@ -1,5 +1,4 @@
 import { createEffect, createMemo, createSignal, For, onSettled, Show, untrack } from 'solid-js'
-import { createResource } from '../utils/create-resource.js'
 import {
   cancelJob,
   getJob,
@@ -15,6 +14,7 @@ import JobFilters from '../components/jobs/JobFilters'
 import JobStatStrip from '../components/jobs/JobStatStrip'
 import { appendPage, applyJobEvent, applySnapshot } from '../components/jobs/job-feed'
 import { Alert, Button, ConfirmationModal } from '../components/ui'
+import { createResource } from '../utils/create-resource.js'
 import { getJobEventHub } from '../utils/job-events-hub'
 
 const PAGE_SIZE = 25
@@ -51,11 +51,10 @@ export default function JobsPage() {
     try {
       const page = await listJobs({ ...filters(), limit: PAGE_SIZE })
       if (runId !== loadRunId) return
-      
-        setJobs(page.jobs)
-        setHasMore(page.has_more)
-        setNextBeforeId(page.next_before_id)
-      
+
+      setJobs(page.jobs)
+      setHasMore(page.has_more)
+      setNextBeforeId(page.next_before_id)
     } catch (error) {
       if (runId !== loadRunId) return
       setLoadError(error instanceof Error ? error.message : 'Failed to load jobs')
@@ -70,11 +69,10 @@ export default function JobsPage() {
     setLoadingMore(true)
     try {
       const page = await listJobs({ ...filters(), limit: PAGE_SIZE, before_id: beforeId })
-      
-        setJobs((current) => appendPage(current, page.jobs))
-        setHasMore(page.has_more)
-        setNextBeforeId(page.next_before_id)
-      
+
+      setJobs((current) => appendPage(current, page.jobs))
+      setHasMore(page.has_more)
+      setNextBeforeId(page.next_before_id)
     } catch (error) {
       setActionError(error instanceof Error ? error.message : 'Failed to load more jobs')
     } finally {

@@ -1,6 +1,6 @@
 import { type Component, createEffect, createMemo, For, Show } from 'solid-js'
-import { createResource } from '../../utils/create-resource.js'
 import { useAudioPlayer } from '../../utils/audio-player-context.jsx'
+import { createResource } from '../../utils/create-resource.js'
 
 interface TimelineEvent {
   type: string
@@ -140,12 +140,14 @@ export const AnimatedCaptions: Component<AnimatedCaptionsProps> = (props) => {
                       onClick={() => {
                         handleWordClick(word.start)
                       }}
-                      class="inline-block mx-1 cursor-pointer transition-colors duration-150 [scroll-margin-top:4rem] [scroll-margin-bottom:6rem]"
-                      class={{
-                        'text-mystic-300': isActive(),
-                        'text-parchment-200': isPast() && !isActive(),
-                        'hover:text-mystic-400': !isActive(),
-                      }}
+                      class={[
+                        'inline-block mx-1 cursor-pointer transition-colors duration-150 [scroll-margin-top:4rem] [scroll-margin-bottom:6rem]',
+                        {
+                          'text-mystic-300': isActive(),
+                          'text-parchment-200': isPast() && !isActive(),
+                          'hover:text-mystic-400': !isActive(),
+                        },
+                      ]}
                     >
                       {word.content}
                     </span>

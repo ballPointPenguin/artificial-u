@@ -1,6 +1,6 @@
 import { type Component, createEffect, createMemo, For, onSettled, Show } from 'solid-js'
-import { createResource } from '../../utils/create-resource.js'
 import { useAudioPlayer } from '../../utils/audio-player-context.jsx'
+import { createResource } from '../../utils/create-resource.js'
 
 interface TimelineEvent {
   type: string
@@ -306,14 +306,16 @@ export const CaptionWindow: Component<CaptionWindowProps> = (props) => {
                 ref={(el) => {
                   pRef = el
                 }}
-                class="leading-relaxed font-serif text-center max-w-prose break-words"
-                class={{
-                  // Stage directions read as descriptive meta-text, not speech.
-                  // Italicizing them (and dimming slightly) matches screenplay
-                  // convention and helps the viewer parse "this is a cue, not
-                  // a line" at a glance.
-                  'italic text-foreground/70': phrase().isBracket,
-                }}
+                class={[
+                  'leading-relaxed font-serif text-center max-w-prose break-words',
+                  {
+                    // Stage directions read as descriptive meta-text, not speech.
+                    // Italicizing them (and dimming slightly) matches screenplay
+                    // convention and helps the viewer parse "this is a cue, not
+                    // a line" at a glance.
+                    'italic text-foreground/70': phrase().isBracket,
+                  },
+                ]}
               >
                 <For each={phrase().words}>
                   {(word, index) => {
@@ -325,13 +327,15 @@ export const CaptionWindow: Component<CaptionWindowProps> = (props) => {
                           onClick={() => {
                             handleWordClick(word.start)
                           }}
-                          class="cursor-pointer transition-colors duration-150"
-                          class={{
-                            'text-mystic-300': isActive(),
-                            'text-foreground': isPast(),
-                            'text-foreground/40': !isActive() && !isPast(),
-                            'hover:text-mystic-400': !isActive(),
-                          }}
+                          class={[
+                            'cursor-pointer transition-colors duration-150',
+                            {
+                              'text-mystic-300': isActive(),
+                              'text-foreground': isPast(),
+                              'text-foreground/40': !isActive() && !isPast(),
+                              'hover:text-mystic-400': !isActive(),
+                            },
+                          ]}
                         >
                           {word.content}
                         </span>

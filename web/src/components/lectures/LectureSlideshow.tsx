@@ -1,6 +1,6 @@
 import { type Component, createEffect, createMemo, createSignal, Show } from 'solid-js'
-import { createResource } from '../../utils/create-resource.js'
 import { useAudioPlayer } from '../../utils/audio-player-context.jsx'
+import { createResource } from '../../utils/create-resource.js'
 
 interface ImageSlot {
   index: number

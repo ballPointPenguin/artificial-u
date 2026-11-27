@@ -1,7 +1,6 @@
 import { useNavigate, useParams } from '@solidjs/router'
 import { Download, FileText, Film, Headphones, Play, Upload } from 'lucide-solid'
 import { type Component, createMemo, createSignal, Show } from 'solid-js'
-import { createResource } from '../utils/create-resource.js'
 import { courseService } from '../api/services/course-service.js'
 import { lectureService } from '../api/services/lecture-service.js'
 import { topicService } from '../api/services/topic-service.js'
@@ -19,6 +18,7 @@ import {
 } from '../components/ui'
 import { useTranslations } from '../i18n/index.js'
 import { useAudioPlayer } from '../utils/audio-player-context.jsx'
+import { createResource } from '../utils/create-resource.js'
 import { createJobTracker } from '../utils/job-management.js'
 
 // Lecture Detail View Component
@@ -291,10 +291,10 @@ const LectureDetailView: Component<{
                 </Show>
                 <label
                   for="audio-file-upload"
-                  class="inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium rounded-md border border-mystic-600 bg-mystic-900/20 text-mystic-300 hover:bg-mystic-900/40 hover:border-mystic-500 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px] sm:min-h-[32px] w-full sm:w-auto"
-                  class={{
-                    'opacity-50 cursor-not-allowed': uploadAudioDisabled(),
-                  }}
+                  class={[
+                    'inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium rounded-md border border-mystic-600 bg-mystic-900/20 text-mystic-300 hover:bg-mystic-900/40 hover:border-mystic-500 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px] sm:min-h-[32px] w-full sm:w-auto',
+                    { 'opacity-50 cursor-not-allowed': uploadAudioDisabled() },
+                  ]}
                   title={
                     props.lecture.audio_url ? t().lectureDetail.uploadDisabledTooltip : undefined
                   }

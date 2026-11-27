@@ -1,7 +1,6 @@
-
+import { Portal } from '@solidjs/web'
 import { ChevronDown, FastForward, ImageIcon, Pause, Play, Rewind, X } from 'lucide-solid'
 import { type Component, createEffect, createSignal, onSettled, Show } from 'solid-js'
-import { Portal } from '@solidjs/web'
 import { useAudioPlayer } from '../utils/audio-player-context.jsx'
 import { CaptionWindow } from './lectures/CaptionWindow.jsx'
 import { LectureSlideshow } from './lectures/LectureSlideshow.jsx'

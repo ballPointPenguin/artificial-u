@@ -5,7 +5,7 @@
  * This helper keeps the familiar () / .loading / .error / refetch / mutate shape on
  * Solid 2's staged-write + split-effect model.
  */
-import { createEffect, createSignal, type Accessor, type Setter } from 'solid-js'
+import { type Accessor, createEffect, createSignal, type Setter } from 'solid-js'
 
 export type ResourceSource<S> = S | false | null | undefined
 
@@ -81,7 +81,7 @@ export function createResource<T, S>(
       let cancelled = false
       Promise.resolve()
         .then(() =>
-          fetcher(src as S, {
+          fetcher(src, {
             value: previous,
             refetching: refetching(),
           })
@@ -94,7 +94,7 @@ export function createResource<T, S>(
             setLoading(false)
             setRefetching(false)
           },
-          (err) => {
+          (err: unknown) => {
             if (cancelled || requestId !== currentRequest) return
             setError(() => err)
             setLoading(false)
@@ -108,6 +108,8 @@ export function createResource<T, S>(
     }
   )
 
+  // Accessor intentionally closes over reactive data(); Solid ESLint can't see that.
+  // eslint-disable-next-line solid/reactivity -- resource() is the public reactive reader
   const resource = (() => data()) as Resource<T>
   Object.defineProperties(resource, {
     loading: {

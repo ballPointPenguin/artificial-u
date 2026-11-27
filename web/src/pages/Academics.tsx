@@ -1,10 +1,9 @@
-
 import { createEffect, createSignal, For, Show } from 'solid-js'
-import { createResource } from '../utils/create-resource.js'
 import { departmentService } from '../api/services/department-service.js'
 import { facultyService } from '../api/services/faculty-service.js'
 import type { Department, Faculty } from '../api/types.js'
 import { useContentLanguage, useTranslations } from '../i18n'
+import { createResource } from '../utils/create-resource.js'
 
 const DepartmentCard = (props: { department: Department }) => {
   return (

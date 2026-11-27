@@ -1,6 +1,7 @@
 import type { User } from '@auth0/auth0-spa-js'
 import { useNavigate } from '@solidjs/router'
-import { createContext, createSignal, type JSX, onSettled, untrack, useContext } from 'solid-js'
+import { type JSX } from '@solidjs/web'
+import { createContext, createSignal, onSettled, untrack, useContext } from 'solid-js'
 import { setAuthErrorHandler, setTokenProvider } from '../api/client'
 import { studentService } from '../api/services'
 import type { Student, StudentUpdate } from '../api/types'
@@ -217,8 +218,4 @@ export function AuthProvider(props: { children: JSX.Element }) {
   return <AuthContext value={value}>{props.children}</AuthContext>
 }
 
-export const useAuth = () => {
-  const ctx = useContext(AuthContext)
-  if (!ctx) throw new Error('useAuth must be used within <AuthProvider>')
-  return ctx
-}
+export const useAuth = () => useContext(AuthContext)

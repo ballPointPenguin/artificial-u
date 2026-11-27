@@ -1,6 +1,7 @@
-import { TextField as KTextField } from '@kobalte/core'
-import type { Component, ComponentProps, JSX } from 'solid-js'
-import { Show, omit } from 'solid-js'
+import { TextField as KTextField } from '@kobalte/core/text-field'
+import type { ComponentProps, JSX } from '@solidjs/web'
+import type { Component } from 'solid-js'
+import { omit, Show } from 'solid-js'
 
 // Define specific props for our Input component
 interface InputProps extends Omit<ComponentProps<typeof KTextField.Input>, 'id'> {
@@ -22,7 +23,6 @@ interface InputProps extends Omit<ComponentProps<typeof KTextField.Input>, 'id'>
 
 const Input: Component<InputProps> = (props) => {
   // Split props to separate our custom ones from those meant for KTextField.Input
-  const local = props
   const others = omit(
     props,
     'name',
@@ -39,53 +39,53 @@ const Input: Component<InputProps> = (props) => {
     'label'
   )
 
-  const fieldId = () => `field-${local.name}`
-  const hasError = () => !!local.error
+  const fieldId = () => `field-${props.name}`
+  const hasError = () => !!props.error
 
   const handleValueChange = (newValue: string) => {
-    if (local.onChange) {
-      local.onChange(newValue)
+    if (props.onChange) {
+      props.onChange(newValue)
     }
   }
 
   const handleInput: JSX.EventHandler<HTMLInputElement, InputEvent> = (event) => {
-    local.onInput?.(event)
-    if (local.onChange) {
-      local.onChange(event.currentTarget.value)
+    props.onInput?.(event)
+    if (props.onChange) {
+      props.onChange(event.currentTarget.value)
     }
   }
 
   return (
-    <KTextField.Root
-      name={local.name}
-      value={local.value !== undefined ? String(local.value) : undefined}
-      // Use KTextField.Root's onChange for controlled components
+    <KTextField
+      name={props.name}
+      value={props.value !== undefined ? String(props.value) : undefined}
+      // Use KTextField's onChange for controlled components
       onChange={handleValueChange}
       validationState={hasError() ? 'invalid' : 'valid'}
-      disabled={local.disabled}
-      required={local.required}
-      class={local.class} // Class for the KTextField.Root
+      disabled={props.disabled}
+      required={props.required}
+      class={props.class} // Class for the KTextField root
     >
       {/* For screen readers, if FormField isn't providing a visible label.
           Or if we decide Input can be used standalone.
           Kobalte's Label can be visually hidden. */}
-      <Show when={local.label && KTextField.Label}>
+      <Show when={props.label && KTextField.Label}>
         <KTextField.Label class="sr-only" as="label" for={fieldId()}>
-          {local.label}
+          {props.label}
         </KTextField.Label>
       </Show>
       <KTextField.Input
         {...others} // Pass through remaining props
         id={fieldId()}
-        type={local.type || 'text'}
-        class={`arcane-input ${local.inputClass || ''}`} // Apply arcane-input and any custom inputClass
-        aria-invalid={hasError()}
+        type={props.type || 'text'}
+        class={`arcane-input ${props.inputClass || ''}`} // Apply arcane-input and any custom inputClass
+        aria-invalid={hasError() ? 'true' : 'false'}
         aria-describedby={hasError() ? `${fieldId()}-error` : undefined}
         onInput={handleInput}
       />
       {/* Kobalte also has KTextField.ErrorMessage and KTextField.Description
           but FormField is handling this for now. If Input can be standalone, we might add them here. */}
-    </KTextField.Root>
+    </KTextField>
   )
 }
 

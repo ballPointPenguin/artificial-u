@@ -1,6 +1,6 @@
 import { useSearchParams } from '@solidjs/router'
-import { type Component, createSignal, For, type JSX, Show } from 'solid-js'
-import { createResource } from '../utils/create-resource.js'
+import { type JSX } from '@solidjs/web'
+import { type Component, createSignal, For, Show } from 'solid-js'
 import { searchService } from '../api/services/index.js'
 import type {
   CourseSearchResult,
@@ -11,6 +11,7 @@ import type {
   TopicSearchResult,
 } from '../api/types.js'
 import { useI18n } from '../i18n/index.js'
+import { createResource } from '../utils/create-resource.js'
 
 function formatDuration(seconds: number | null | undefined): string {
   if (!seconds) return ''

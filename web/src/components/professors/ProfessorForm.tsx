@@ -1,6 +1,5 @@
 import type { Component } from 'solid-js'
 import { createEffect, createSignal, Show } from 'solid-js'
-import { createResource } from '../../utils/create-resource.js'
 import { departmentService } from '../../api/services/department-service.js'
 import { professorService } from '../../api/services/professor-service.js'
 import type {
@@ -10,6 +9,7 @@ import type {
   ProfessorGenerateRequest,
 } from '../../api/types.js'
 import { useContentLanguage, useTranslations } from '../../i18n'
+import { createResource } from '../../utils/create-resource.js'
 import { waitForJobResult } from '../../utils/job-management.js'
 import type { SelectOption } from '../ui'
 import {
@@ -111,7 +111,7 @@ const ProfessorForm: Component<ProfessorFormProps> = (props) => {
   )
 
   createEffect(
-    () => departmentsResource.error as unknown,
+    () => departmentsResource.error,
     (err) => {
       if (err && props.setError) {
         const errorMessage = err instanceof Error ? err.message : t().common.unknownError

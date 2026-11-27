@@ -1,5 +1,5 @@
-import { createRouter } from '@solidjs/router'
-import { type Component, lazy, type ParentComponent } from 'solid-js'
+import { createRouter, type RouteSectionProps } from '@solidjs/router'
+import { type Component, lazy } from 'solid-js'
 import { LoginPrompt, RequireAuth } from './auth/RequireAuth'
 import { RequireRole } from './auth/RequireRole'
 import Layout from './components/Layout'
@@ -49,16 +49,17 @@ const Stylebook = lazy(() => import('./pages/Stylebook'))
 const Login = lazy(() => import('./pages/Login'))
 const Quickstart = lazy(() => import('./pages/Quickstart'))
 
-const withAuth = (Page: Component, fallback?: Component): ParentComponent => {
-  const Fallback = fallback ?? LoginPrompt
+type AnyRouteComponent = Component<RouteSectionProps>
+
+const withAuth = (Page: AnyRouteComponent): AnyRouteComponent => {
   return (props) => (
-    <RequireAuth fallback={<Fallback />}>
+    <RequireAuth fallback={<LoginPrompt />}>
       <Page {...props} />
     </RequireAuth>
   )
 }
 
-const withCreator = (Page: Component): ParentComponent => {
+const withCreator = (Page: AnyRouteComponent): AnyRouteComponent => {
   return (props) => (
     <RequireAuth fallback={<LoginPrompt />}>
       <RequireRole minRole="creator" fallback={<QuickstartAccessDenied />}>
@@ -72,7 +73,7 @@ const AdminAccessDenied: Component = () => (
   <div class="container mx-auto p-4 text-center">Access denied. Admin role required.</div>
 )
 
-const withAdmin = (Page: Component): ParentComponent => {
+const withAdmin = (Page: AnyRouteComponent): AnyRouteComponent => {
   return (props) => (
     <RequireAuth fallback={<LoginPrompt />}>
       <RequireRole minRole="admin" fallback={<AdminAccessDenied />}>
@@ -86,7 +87,7 @@ const CreatorAccessDenied: Component = () => (
   <div class="container mx-auto p-4 text-center">Access denied. Creator role required.</div>
 )
 
-const withCreatorRole = (Page: Component): ParentComponent => {
+const withCreatorRole = (Page: AnyRouteComponent): AnyRouteComponent => {
   return (props) => (
     <RequireAuth fallback={<LoginPrompt />}>
       <RequireRole minRole="creator" fallback={<CreatorAccessDenied />}>

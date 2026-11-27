@@ -1,7 +1,6 @@
 import { useNavigate, useParams } from '@solidjs/router'
 import { Download, FileText, Film, Headphones, LoaderCircle, Play } from 'lucide-solid'
 import { type Component, createSignal, For, Show } from 'solid-js'
-import { createResource } from '../utils/create-resource.js'
 import { courseService } from '../api/services/course-service.js'
 import { topicService } from '../api/services/topic-service.js'
 import type {
@@ -22,6 +21,7 @@ import type { CourseFormData } from '../components/courses/types.jsx'
 import { Alert, Button, MagicButton, MetadataInfo, ShareButton } from '../components/ui'
 import { useTranslations } from '../i18n'
 import { useAudioPlayer } from '../utils/audio-player-context.jsx'
+import { createResource } from '../utils/create-resource.js'
 import { adoptJobHandoff } from '../utils/job-management.js'
 
 const COURSE_CREATION_HANDOFF_KINDS = [

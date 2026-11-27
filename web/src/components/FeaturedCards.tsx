@@ -1,5 +1,5 @@
-
-import { type Component, For, type JSX } from 'solid-js'
+import { type JSX } from '@solidjs/web'
+import { type Component, For } from 'solid-js'
 
 interface FeatureCard {
   id: string

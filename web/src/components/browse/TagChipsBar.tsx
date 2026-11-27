@@ -43,7 +43,7 @@ const TagChipsBar: Component<TagChipsBarProps> = (props) => {
                 ? 'border-primary bg-primary text-on-primary'
                 : 'border-border text-muted hover:border-primary hover:text-primary'
             }`}
-            aria-pressed={isSelected(tag.slug)}
+            aria-pressed={isSelected(tag.slug) ? 'true' : 'false'}
             onClick={() => {
               props.onToggle(tag.slug)
             }}

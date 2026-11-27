@@ -1,4 +1,3 @@
-
 import { createEffect, createSignal, For, Show } from 'solid-js'
 import { topicService } from '../../api/services/topic-service.js'
 import type { APIError, Topic, TopicCreate, TopicUpdate } from '../../api/types.js'

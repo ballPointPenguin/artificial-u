@@ -1,11 +1,11 @@
 import { createEffect, createSignal, For, Show } from 'solid-js'
-import { createResource } from '../utils/create-resource.js'
 import { departmentService } from '../api/services/department-service'
 import { featuredService } from '../api/services/featured-service'
 import { lectureService } from '../api/services/lecture-service'
 import { professorService } from '../api/services/professor-service'
 import type { Department, FeaturedItem, Lecture, LectureList, Professor } from '../api/types'
 import { Button, Card } from '../components/ui'
+import { createResource } from '../utils/create-resource.js'
 
 type ItemType = 'lecture' | 'professor' | 'department'
 

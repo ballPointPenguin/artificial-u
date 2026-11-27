@@ -8,7 +8,6 @@ interface FormActionsProps extends ParentProps {
 }
 
 const FormActions: Component<FormActionsProps> = (props) => {
-  const local = props
   const others = omit(props, 'class', 'children')
 
   // Default classes from ProfessorForm example: flex justify-end space-x-3
@@ -17,10 +16,10 @@ const FormActions: Component<FormActionsProps> = (props) => {
 
   return (
     <div
-      class={`${baseClasses} ${local.class || ''}`}
+      class={`${baseClasses} ${props.class || ''}`}
       {...others} // Pass through other native div attributes
     >
-      {local.children}
+      {props.children}
     </div>
   )
 }

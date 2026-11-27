@@ -134,11 +134,8 @@ export const I18nProvider: ParentComponent = (props) => {
  * return <h1>{t().home.hero.title}</h1>
  */
 export function useTranslations() {
-  const context = useContext(I18nContext)
-  if (!context) {
-    throw new Error('useTranslations must be used within I18nProvider')
-  }
-  return context.t
+  // Solid 2 useContext throws if the provider is missing (no default).
+  return useContext(I18nContext).t
 }
 
 /**
@@ -150,9 +147,6 @@ export function useTranslations() {
  */
 export function useLocale() {
   const context = useContext(I18nContext)
-  if (!context) {
-    throw new Error('useLocale must be used within I18nProvider')
-  }
   return { currentLocale: context.currentLocale, setLocale: context.setLocale }
 }
 
@@ -164,11 +158,7 @@ export function useLocale() {
  * return <h1>{t().home.hero.title}</h1>
  */
 export function useI18n() {
-  const context = useContext(I18nContext)
-  if (!context) {
-    throw new Error('useI18n must be used within I18nProvider')
-  }
-  return context
+  return useContext(I18nContext)
 }
 
 /**
@@ -187,9 +177,6 @@ export function useI18n() {
  */
 export function useContentLanguage() {
   const context = useContext(I18nContext)
-  if (!context) {
-    throw new Error('useContentLanguage must be used within I18nProvider')
-  }
   return {
     contentLanguage: context.contentLanguage,
     contentLanguageOverride: context.contentLanguageOverride,
