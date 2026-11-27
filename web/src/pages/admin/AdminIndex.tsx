@@ -1,10 +1,10 @@
 import { useNavigate } from '@solidjs/router'
-import { createEffect } from 'solid-js'
+import { onSettled } from 'solid-js'
 
 export default function AdminIndex() {
   const navigate = useNavigate()
 
-  createEffect(() => {
+  onSettled(() => {
     navigate('/admin/jobs', { replace: true })
   })
 

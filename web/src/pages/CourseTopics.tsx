@@ -1,8 +1,9 @@
-import { A, useParams } from '@solidjs/router'
-import { type Component, createResource, Show } from 'solid-js'
+import { useParams } from '@solidjs/router'
+import { type Component, Show } from 'solid-js'
 import { courseService } from '../api/services/course-service.js'
 import { CourseTopicsList } from '../components/topics/CourseTopicsList.jsx'
 import { useTranslations } from '../i18n/index.js'
+import { createResource } from '../utils/create-resource.js'
 
 const CourseTopics: Component = () => {
   const t = useTranslations()
@@ -39,12 +40,12 @@ const CourseTopics: Component = () => {
             {(course) => (
               <div>
                 <div class="flex items-center justify-between gap-2 mb-6">
-                  <A
+                  <a
                     href={`/courses/${String(courseId)}`}
                     class="text-mystic-400 hover:text-mystic-300 transition-colors"
                   >
                     ← {t().courseDetail.backToCourse}
-                  </A>
+                  </a>
                 </div>
 
                 <div class="mb-6">

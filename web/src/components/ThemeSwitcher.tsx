@@ -122,7 +122,7 @@ export function ThemeSwitcher() {
                       }}
                       tabindex="0"
                       role="radio"
-                      aria-checked={theme() === option.value}
+                      aria-checked={theme() === option.value ? 'true' : 'false'}
                       aria-label={option.label}
                     >
                       <div

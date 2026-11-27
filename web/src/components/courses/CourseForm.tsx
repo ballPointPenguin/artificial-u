@@ -1,5 +1,5 @@
 import type { Component } from 'solid-js'
-import { createEffect, createMemo, createResource, createSignal, For, Show } from 'solid-js'
+import { createEffect, createMemo, createSignal, For, Show } from 'solid-js'
 import { courseService } from '../../api/services/course-service.js'
 import { departmentService } from '../../api/services/department-service.js'
 import { preferenceService } from '../../api/services/preference-service.js'
@@ -7,6 +7,7 @@ import { professorService } from '../../api/services/professor-service.js'
 import type { Course, CourseGenerateRequest, Department, Professor } from '../../api/types.js'
 import { useAuth } from '../../auth/AuthProvider.js'
 import { useContentLanguage, useTranslations } from '../../i18n'
+import { createResource } from '../../utils/create-resource.js'
 import { TopicContentRenderer } from '../topics/TopicContentRenderer.jsx'
 import {
   Alert,
@@ -69,40 +70,27 @@ const CourseForm: Component<CourseFormProps> = (props) => {
   const showFullForm = () => isEditMode() || hasGeneratedDraft() || isManualMode()
 
   // Populate form for editing
-  createEffect(() => {
-    const c = props.course
-    if (c) {
-      setFormData({
-        code: c.code || '',
-        title: c.title || '',
-        department_id: c.department_id,
-        connected_course_ids: c.connected_course_ids,
-        level: c.level || '',
-        professor_id: c.professor_id,
-        description: c.description || '',
-        notes: c.notes || null,
-        lecture_generation_model: c.settings?.lecture_generation_model ?? null,
-        lectures_per_week: c.lectures_per_week,
-        total_weeks: c.total_weeks,
-        freeform_prompt: '', // Reset generate prompt on edit
-      })
+  createEffect(
+    () => props.course,
+    (c) => {
+      if (c) {
+        setFormData({
+          code: c.code || '',
+          title: c.title || '',
+          department_id: c.department_id,
+          connected_course_ids: c.connected_course_ids,
+          level: c.level || '',
+          professor_id: c.professor_id,
+          description: c.description || '',
+          notes: c.notes || null,
+          lecture_generation_model: c.settings?.lecture_generation_model ?? null,
+          lectures_per_week: c.lectures_per_week,
+          total_weeks: c.total_weeks,
+          freeform_prompt: '', // Reset generate prompt on edit
+        })
+      }
     }
-  })
-
-  // Handle resource errors in tracked scopes
-  createEffect(() => {
-    const depError: unknown = departmentsResource.error
-    if (depError) {
-      props.setError?.(t().courses.form.failedToLoadDepartments)
-    }
-  })
-
-  createEffect(() => {
-    const profError: unknown = professorsResource.error
-    if (profError) {
-      props.setError?.(t().courses.form.failedToLoadProfessors)
-    }
-  })
+  )
 
   // Sentinel value for null option (IDs are positive integers, so -1 is safe)
   const NULL_OPTION_VALUE = -1
@@ -172,15 +160,38 @@ const CourseForm: Component<CourseFormProps> = (props) => {
     }
   )
 
+  // Handle resource errors after the resources exist (Solid 2 effects run eagerly).
+  createEffect(
+    () => departmentsResource.error,
+    (depError) => {
+      if (depError) {
+        props.setError?.(t().courses.form.failedToLoadDepartments)
+      }
+    }
+  )
+
+  createEffect(
+    () => professorsResource.error,
+    (profError) => {
+      if (profError) {
+        props.setError?.(t().courses.form.failedToLoadProfessors)
+      }
+    }
+  )
+
+  // Stable primitive key — Solid 2 effects re-run apply whenever compute re-runs,
+  // even for equal values; object sources + whole-form signal reads caused a
+  // professors/courses refetch storm after syllabus generation filled the form.
   const [departmentCoursesResource] = createResource(
-    () => ({
-      departmentId: formData().department_id,
-      // Refetch once auth is ready so include_hidden uses the JWT student context
-      authReady: !auth.isLoading(),
-      excludeCourseId: props.course?.id,
-    }),
-    async ({ departmentId, excludeCourseId }) => {
-      if (!departmentId) return [] as Course[]
+    () => {
+      const departmentId = formData().department_id
+      if (!departmentId || auth.isLoading()) return null
+      return `${String(departmentId)}_${String(props.course?.id ?? '')}`
+    },
+    async (key) => {
+      const departmentId = Number(key.split('_')[0])
+      const excludeRaw = key.slice(key.indexOf('_') + 1)
+      const excludeCourseId = excludeRaw ? Number(excludeRaw) : undefined
       const response = await courseService.listCourses({
         page: 1,
         size: 100,
@@ -459,6 +470,7 @@ const CourseForm: Component<CourseFormProps> = (props) => {
                         onChange={(v) => {
                           const professorId =
                             v === NULL_OPTION_VALUE || v === null || v === '' ? null : Number(v)
+                          if (professorId === formData().professor_id) return
                           handleInputChange('professor_id', professorId)
                         }}
                         placeholder={t().courses.form.professorPlaceholder}
@@ -758,6 +770,8 @@ const CourseForm: Component<CourseFormProps> = (props) => {
                 // Convert sentinel value to null, otherwise use the selected value
                 const professorId =
                   v === NULL_OPTION_VALUE || v === null || v === '' ? null : Number(v)
+                // Guard: Kobalte may re-emit onChange when options reload after a fetch
+                if (professorId === formData().professor_id) return
                 handleInputChange('professor_id', professorId)
               }}
               placeholder={t().courses.form.professorPlaceholder}

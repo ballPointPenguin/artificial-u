@@ -1,5 +1,5 @@
 import { useNavigate } from '@solidjs/router'
-import { createResource, createSignal, For, Show } from 'solid-js'
+import { createSignal, For, Show } from 'solid-js'
 import { departmentService } from '../api/services/department-service.js'
 import { facultyService } from '../api/services/faculty-service.js'
 import { professorService } from '../api/services/professor-service.js'
@@ -9,6 +9,7 @@ import ProfessorForm, { type ProfessorFormData } from '../components/professors/
 import ProfessorListItem from '../components/professors/ProfessorListItem.js'
 import { Button, Input, Select, type SelectOption } from '../components/ui'
 import { useContentLanguage, useTranslations } from '../i18n'
+import { createResource } from '../utils/create-resource.js'
 
 export default function ProfessorsPage() {
   const t = useTranslations()

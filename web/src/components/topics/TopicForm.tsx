@@ -58,13 +58,16 @@ export function TopicForm(props: TopicFormProps) {
     setGenerateError(null)
   }
 
-  createEffect(() => {
-    if (props.existingTopic) {
-      resetForm('existing')
-    } else {
-      resetForm('blank')
+  createEffect(
+    () => props.existingTopic,
+    (existing) => {
+      if (existing) {
+        resetForm('existing')
+      } else {
+        resetForm('blank')
+      }
     }
-  })
+  )
 
   const validateContent = (contentStr: string): boolean => {
     if (!contentStr.trim()) {

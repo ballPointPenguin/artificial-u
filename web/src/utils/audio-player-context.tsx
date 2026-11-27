@@ -1,5 +1,5 @@
 import type { Accessor, ParentComponent } from 'solid-js'
-import { createContext, createEffect, createSignal, onCleanup, useContext } from 'solid-js'
+import { createContext, createEffect, createSignal, useContext } from 'solid-js'
 
 export interface AudioTrack {
   url: string
@@ -108,16 +108,23 @@ export const AudioPlayerProvider: ParentComponent = (props) => {
   let seekToken = 0
 
   // Persist track, duration, and volume changes to localStorage (infrequent updates)
-  createEffect(() => {
-    const state: Partial<AudioPlayerState> = {
+  createEffect(
+    () => ({
       currentTrack: currentTrack(),
       duration: duration(),
       volume: volume(),
-      // Don't save currentTime here - it's saved periodically during playback
-      currentTime: 0,
+    }),
+    (snapshot) => {
+      const state: Partial<AudioPlayerState> = {
+        currentTrack: snapshot.currentTrack,
+        duration: snapshot.duration,
+        volume: snapshot.volume,
+        // Don't save currentTime here - it's saved periodically during playback
+        currentTime: 0,
+      }
+      saveState(state)
     }
-    saveState(state)
-  })
+  )
 
   // Save currentTime to localStorage (called on pause/stop and periodically during playback)
   const saveCurrentTime = () => {
@@ -131,17 +138,19 @@ export const AudioPlayerProvider: ParentComponent = (props) => {
   }
 
   // Periodically save progress during playback (every 3 seconds)
-  createEffect(() => {
-    if (isPlaying()) {
+  createEffect(
+    () => isPlaying(),
+    (playing) => {
+      if (!playing) return
       const intervalId = setInterval(() => {
         saveCurrentTime()
       }, 3000) // Save every 3 seconds
 
-      onCleanup(() => {
+      return () => {
         clearInterval(intervalId)
-      })
+      }
     }
-  })
+  )
 
   const playTrack = (track: AudioTrack, options: { autoExpand?: boolean } = {}) => {
     setCurrentTrack(track)
@@ -231,13 +240,7 @@ export const AudioPlayerProvider: ParentComponent = (props) => {
     toggleExpanded,
   }
 
-  return <AudioPlayerContext.Provider value={value}>{props.children}</AudioPlayerContext.Provider>
+  return <AudioPlayerContext value={value}>{props.children}</AudioPlayerContext>
 }
 
-export const useAudioPlayer = () => {
-  const context = useContext(AudioPlayerContext)
-  if (!context) {
-    throw new Error('useAudioPlayer must be used within an AudioPlayerProvider')
-  }
-  return context
-}
+export const useAudioPlayer = () => useContext(AudioPlayerContext)

@@ -1,5 +1,4 @@
-import { createEffect, createRoot, createSignal } from 'solid-js'
-import { createStore } from 'solid-js/store'
+import { createEffect, createRoot, createSignal, createStore } from 'solid-js'
 
 // Theme types
 export type ThemeMode = 'dark-academia' | 'vaporwave' | 'wabi-sabi' | 'biophilia'
@@ -140,20 +139,23 @@ function createThemeStoreInternal() {
     })
 
     // Update theme properties when theme changes
-    createEffect(() => {
-      setStore({
-        current: theme(),
-        properties: themeProperties[theme()],
-      })
+    createEffect(
+      () => theme(),
+      (mode) => {
+        setStore((s) => {
+          s.current = mode
+          s.properties = themeProperties[mode]
+        })
 
-      // Update DOM
-      applyThemeToDOM(theme())
+        // Update DOM
+        applyThemeToDOM(mode)
 
-      // Save to localStorage
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('arcanum-theme', theme())
+        // Save to localStorage
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('arcanum-theme', mode)
+        }
       }
-    })
+    )
 
     return {
       theme,

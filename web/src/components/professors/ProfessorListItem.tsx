@@ -1,4 +1,3 @@
-import { A } from '@solidjs/router'
 import { Show } from 'solid-js'
 import type { Professor } from '../../api/types'
 
@@ -8,7 +7,7 @@ interface ProfessorListItemProps {
 
 export default function ProfessorListItem(props: ProfessorListItemProps) {
   return (
-    <A
+    <a
       href={`/professors/${String(props.professor.id)}`}
       class="arcane-card group flex h-full flex-col p-4 transition-all duration-300 hover:border-primary/30 hover:shadow-glow"
     >
@@ -36,6 +35,6 @@ export default function ProfessorListItem(props: ProfessorListItemProps) {
           </div>
         </div>
       </div>
-    </A>
+    </a>
   )
 }

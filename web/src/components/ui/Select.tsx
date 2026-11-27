@@ -1,7 +1,8 @@
-import { Select as KSelect } from '@kobalte/core'
+import { Select as KSelect } from '@kobalte/core/select'
+import type { ComponentProps, JSX } from '@solidjs/web'
 import ChevronDown from 'lucide-solid/icons/chevron-down'
-import type { Component, ComponentProps, JSX } from 'solid-js'
-import { Show, splitProps } from 'solid-js'
+import type { Component } from 'solid-js'
+import { omit, Show } from 'solid-js'
 
 export interface SelectOption {
   value: string | number
@@ -12,7 +13,7 @@ export interface SelectOption {
 // Omit props that are handled internally or have different signatures
 interface SelectProps
   extends Omit<
-    ComponentProps<typeof KSelect.Root<SelectOption>>,
+    ComponentProps<typeof KSelect<SelectOption>>,
     | 'value'
     | 'defaultValue'
     | 'onChange'
@@ -42,7 +43,8 @@ interface SelectProps
 }
 
 const Select: Component<SelectProps> = (props) => {
-  const [local, others] = splitProps(props, [
+  const others = omit(
+    props,
     'name',
     'value',
     'onChange',
@@ -55,69 +57,69 @@ const Select: Component<SelectProps> = (props) => {
     'contentClass',
     'itemClass',
     'error',
-    'label',
-  ])
+    'label'
+  )
 
-  const fieldId = () => `field-${local.name}`
-  const hasError = () => !!local.error
+  const fieldId = () => `field-${props.name}`
+  const hasError = () => !!props.error
 
   // Helper to find the full option object based on the primitive value
   const findOptionByValue = (val: SelectOption['value'] | null | undefined) => {
     if (val === null || val === undefined) return undefined
-    return local.options.find((opt) => opt.value === val)
+    return props.options.find((opt) => opt.value === val)
   }
 
   return (
-    <KSelect.Root<SelectOption>
+    <KSelect<SelectOption>
       {...others}
       multiple={false} // Explicitly set to false for single selection
-      options={local.options}
+      options={props.options}
       optionValue="value"
       optionTextValue="label"
       optionDisabled="disabled"
-      value={findOptionByValue(local.value)}
+      value={findOptionByValue(props.value)}
       onChange={(selectedOptionObject: SelectOption | null) => {
         // For single (multiple=false), onChange gives SelectOption | null
-        if (local.onChange) {
-          local.onChange(selectedOptionObject ? selectedOptionObject.value : null)
+        if (props.onChange) {
+          props.onChange(selectedOptionObject ? selectedOptionObject.value : null)
         }
       }}
-      placeholder={local.placeholder || 'Select...'}
+      placeholder={props.placeholder || 'Select...'}
       validationState={hasError() ? 'invalid' : 'valid'}
-      disabled={local.disabled}
-      required={local.required}
-      class={local.class}
-      name={local.name}
+      disabled={props.disabled}
+      required={props.required}
+      class={props.class}
+      name={props.name}
       id={fieldId()}
+      // Kobalte alpha itemComponent typing is incomplete relative to CollectionNode.
       itemComponent={(itemProps) => {
-        // itemProps is KSelect.SelectItemState<SelectOption>
-        // itemProps.item is the CollectionNode<SelectOption>
-        // itemProps.item.rawValue is the SelectOption object
+        const item = itemProps.item as {
+          rawValue: SelectOption
+        } & (typeof itemProps)['item']
         return (
           <KSelect.Item
-            item={itemProps.item} // Pass the CollectionNode itself
+            item={item}
             class={`flex justify-between items-center p-2 text-sm rounded-sm cursor-pointer
                     hover:bg-primary/10 data-[highlighted]:bg-primary/20 data-[selected]:bg-primary/30
                     data-[disabled]:opacity-50 data-[disabled]:cursor-not-allowed
-                    ${local.itemClass || ''}`}
+                    ${props.itemClass || ''}`}
           >
-            {/* Access rawValue for display purposes */}
-            <KSelect.ItemLabel>{itemProps.item.rawValue.label}</KSelect.ItemLabel>
+            <KSelect.ItemLabel>{item.rawValue.label}</KSelect.ItemLabel>
             <KSelect.ItemIndicator class="ml-2 text-primary">✓</KSelect.ItemIndicator>
           </KSelect.Item>
         )
       }}
     >
       {/* Visually hidden label for accessibility if not using FormField */}
-      <Show when={local.label && KSelect.Label}>
+      <Show when={props.label && KSelect.Label}>
         <KSelect.Label class="sr-only" as="label" for={fieldId()}>
-          {local.label}
+          {props.label}
         </KSelect.Label>
       </Show>
 
       <KSelect.Trigger
-        class={`arcane-input flex items-center justify-between w-full appearance-none ${local.triggerClass || ''}`}
-        aria-invalid={hasError()}
+        class={`arcane-input flex items-center justify-between w-full appearance-none ${props.triggerClass || ''}`}
+        aria-invalid={hasError() ? 'true' : 'false'}
         aria-describedby={
           hasError() ? `${fieldId()}-error ${fieldId()}-helper` : `${fieldId()}-helper`
         }
@@ -125,7 +127,7 @@ const Select: Component<SelectProps> = (props) => {
         <KSelect.Value<SelectOption>>
           {(state) => {
             const selected = state.selectedOption() as SelectOption | undefined
-            const label = selected?.label || local.placeholder || 'Select...'
+            const label = selected?.label || props.placeholder || 'Select...'
             return <span class="truncate">{label}</span>
           }}
         </KSelect.Value>
@@ -136,13 +138,13 @@ const Select: Component<SelectProps> = (props) => {
 
       <KSelect.Portal>
         <KSelect.Content
-          class={`bg-surface text-foreground border border-border rounded-sm shadow-lg p-1 z-50 ${local.contentClass || ''}`}
+          class={`bg-surface text-foreground border border-border rounded-sm shadow-lg p-1 z-50 ${props.contentClass || ''}`}
         >
           {/* Listbox does not take itemComponent, it's rendered by Root based on options */}
           <KSelect.Listbox<SelectOption> class="max-h-60 overflow-y-auto text-foreground" />
         </KSelect.Content>
       </KSelect.Portal>
-    </KSelect.Root>
+    </KSelect>
   )
 }
 

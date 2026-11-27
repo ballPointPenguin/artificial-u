@@ -1,5 +1,5 @@
-import { A, useNavigate, useParams } from '@solidjs/router'
-import { type Component, createResource, createSignal, For, type Resource, Show } from 'solid-js'
+import { useNavigate, useParams } from '@solidjs/router'
+import { type Component, createSignal, For, Show } from 'solid-js'
 import { departmentService } from '../../api/services/department-service.js'
 import { professorService } from '../../api/services/professor-service.js'
 import { getVoice } from '../../api/services/voice-service.js'
@@ -12,6 +12,7 @@ import type {
 import { useAuth } from '../../auth/AuthProvider'
 import { RequireRole } from '../../auth/RequireRole'
 import { useTranslations } from '../../i18n'
+import { createResource, type Resource } from '../../utils/create-resource.js'
 import { Alert, Button, ConfirmationModal, LoadingSpinner, MagicButton, MetadataInfo } from '../ui'
 import ProfessorForm, { type ProfessorFormData } from './ProfessorForm.js'
 
@@ -49,10 +50,10 @@ const ProfessorCourses: Component<{
               <For each={courses() ?? []}>
                 {(course: ProfessorCourseBrief) => (
                   <li class="arcane-card-sm p-3">
-                    <A href={`/courses/${String(course.id)}`} class="hover:text-primary">
+                    <a href={`/courses/${String(course.id)}`} class="hover:text-primary">
                       <strong class="font-semibold text-foreground">{course.code}:</strong>{' '}
                       {course.title}
-                    </A>
+                    </a>
                     <div class="text-xs text-muted mt-1">
                       <span>
                         {t().courseDetail.level}: {course.level}
@@ -187,7 +188,7 @@ const VoiceProfileSection: Component<{
             <p class="text-sm text-muted italic">{t().professorDetail.loadingVoice}</p>
           </Show>
 
-          <Show when={props.voiceResource.error as unknown}>
+          <Show when={props.voiceResource.error}>
             <p class="text-sm text-danger">
               {t().professorDetail.errorLoadingVoice}{' '}
               {props.voiceResource.error instanceof Error
@@ -201,12 +202,12 @@ const VoiceProfileSection: Component<{
         <Show when={props.professorResource()?.id}>
           <RequireRole minRole="creator">
             <div class="mt-3">
-              <A
+              <a
                 href={`/professors/${String(props.professorResource()?.id ?? '')}/voice`}
                 class="text-sm text-accent hover:text-accent/80 underline"
               >
                 {t().professorDetail.voiceSelectionAndPreview} &rarr;
-              </A>
+              </a>
             </div>
           </RequireRole>
         </Show>
@@ -638,7 +639,7 @@ export default function ProfessorDetail() {
               <ProfessorCourses
                 coursesResource={coursesResource}
                 loading={coursesResource.loading}
-                error={coursesResource.error as unknown}
+                error={coursesResource.error}
               />
             </div>
           </Show>

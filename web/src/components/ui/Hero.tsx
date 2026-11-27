@@ -1,4 +1,3 @@
-import { A } from '@solidjs/router'
 import { Button } from './Button'
 
 interface HeroProps {
@@ -18,11 +17,11 @@ export function Hero(props: HeroProps) {
         </h1>
         <p class="text-xl sm:text-2xl md:text-3xl font-serif text-muted mb-12">{props.subtitle}</p>
         {props.buttonLink && (
-          <A href={props.buttonLink}>
+          <a href={props.buttonLink}>
             <Button variant="primary" size="lg" class="text-shadow-golden">
               {props.buttonText}
             </Button>
-          </A>
+          </a>
         )}
 
         {/* Decorative elements */}

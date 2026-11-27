@@ -1,13 +1,5 @@
 import { useParams } from '@solidjs/router'
-import {
-  type Component,
-  createEffect,
-  createMemo,
-  createResource,
-  createSignal,
-  For,
-  Show,
-} from 'solid-js'
+import { type Component, createEffect, createMemo, createSignal, For, Show } from 'solid-js'
 import { professorService } from '../../api/services/professor-service.js'
 import {
   cloneVoiceToMistral,
@@ -29,6 +21,7 @@ import type {
 } from '../../api/types.js'
 import { RequireRole } from '../../auth/RequireRole'
 import { useLocale, useTranslations } from '../../i18n'
+import { createResource } from '../../utils/create-resource.js'
 import { Alert, Badge, Button, LoadingSpinner } from '../ui'
 
 type TtsBackendKey = 'elevenlabs' | 'mistral' | 'xai' | 'qwen'
@@ -91,7 +84,7 @@ const VoiceCard: Component<{
   return (
     <div
       role="button"
-      tabIndex={0}
+      tabindex={0}
       onClick={() => {
         props.onSelect()
       }}
@@ -160,7 +153,7 @@ const XaiVoiceCard: Component<{
   return (
     <div
       role="button"
-      tabIndex={0}
+      tabindex={0}
       onClick={() => {
         props.onSelect()
       }}
@@ -238,7 +231,7 @@ const QwenVoiceCard: Component<{
   return (
     <div
       role="button"
-      tabIndex={0}
+      tabindex={0}
       onClick={() => {
         props.onSelect()
       }}
@@ -319,18 +312,20 @@ const ProfessorVoice: Component = () => {
   // Default to the current voice's backend once it loads; fall back to 'elevenlabs'
   const [selectedBackend, setSelectedBackend] = createSignal<TtsBackendKey>('elevenlabs')
   let backendInitialized = false
-  createEffect(() => {
-    const voice = currentVoice()
-    if (!backendInitialized && voice) {
-      backendInitialized = true
-      const backend = voice.tts_backend
-      if (backend === 'mistral' || backend === 'xai' || backend === 'qwen') {
-        setSelectedBackend(backend)
-      } else {
-        setSelectedBackend('elevenlabs')
+  createEffect(
+    () => currentVoice(),
+    (voice) => {
+      if (!backendInitialized && voice) {
+        backendInitialized = true
+        const backend = voice.tts_backend
+        if (backend === 'mistral' || backend === 'xai' || backend === 'qwen') {
+          setSelectedBackend(backend)
+        } else {
+          setSelectedBackend('elevenlabs')
+        }
       }
     }
-  })
+  )
 
   // ---- ElevenLabs manual ID ----
   const [elVoiceId, setElVoiceId] = createSignal('')
@@ -339,7 +334,7 @@ const ProfessorVoice: Component = () => {
   const [showAllMistralEmotions, setShowAllMistralEmotions] = createSignal(false)
   const [mistralCatalog] = createResource(
     () => (selectedBackend() === 'mistral' ? true : null),
-    async (enabled) => (enabled ? listMistralCatalog() : undefined)
+    async () => listMistralCatalog()
   )
   const filteredMistralVoices = createMemo(() => {
     const items = mistralCatalog()?.items ?? []
@@ -361,7 +356,7 @@ const ProfessorVoice: Component = () => {
   // ---- xAI voices (on-demand from the xAI API; read fresh each time) ----
   const [xaiCatalog] = createResource(
     () => (selectedBackend() === 'xai' ? true : null),
-    async (enabled) => (enabled ? listXaiCatalog() : undefined)
+    async () => listXaiCatalog()
   )
   const [selectedXaiId, setSelectedXaiId] = createSignal<string | null>(null)
   const selectedXaiVoice = createMemo(() => {
@@ -373,7 +368,7 @@ const ProfessorVoice: Component = () => {
   // ---- Qwen voices (on-demand static preset catalog) ----
   const [qwenCatalog] = createResource(
     () => (selectedBackend() === 'qwen' ? true : null),
-    async (enabled) => (enabled ? listQwenCatalog() : undefined)
+    async () => listQwenCatalog()
   )
   const [selectedQwenId, setSelectedQwenId] = createSignal<string | null>(null)
   const selectedQwenVoice = createMemo(() => {

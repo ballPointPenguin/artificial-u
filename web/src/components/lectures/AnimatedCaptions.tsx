@@ -1,5 +1,6 @@
-import { type Component, createEffect, createMemo, createResource, For, Show } from 'solid-js'
+import { type Component, createEffect, createMemo, For, Show } from 'solid-js'
 import { useAudioPlayer } from '../../utils/audio-player-context.jsx'
+import { createResource } from '../../utils/create-resource.js'
 
 interface TimelineEvent {
   type: string
@@ -75,14 +76,16 @@ export const AnimatedCaptions: Component<AnimatedCaptionsProps> = (props) => {
   // Auto-scroll only when the active word is out of view. `block: 'nearest'`
   // (vs. 'center') keeps the browser from re-centering on every word tick,
   // which was causing the visible jitter between words.
-  createEffect(() => {
-    const idx = activeIndex()
-    if (idx < 0 || !containerRef) return
-    const el = containerRef.querySelector<HTMLElement>(`[data-index="${String(idx)}"]`)
-    if (el) {
-      el.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+  createEffect(
+    () => activeIndex(),
+    (idx) => {
+      if (idx < 0 || !containerRef) return
+      const el = containerRef.querySelector<HTMLElement>(`[data-index="${String(idx)}"]`)
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+      }
     }
-  })
+  )
 
   const handleWordClick = (start: number) => {
     player.seek(start)
@@ -137,12 +140,14 @@ export const AnimatedCaptions: Component<AnimatedCaptionsProps> = (props) => {
                       onClick={() => {
                         handleWordClick(word.start)
                       }}
-                      class="inline-block mx-1 cursor-pointer transition-colors duration-150 [scroll-margin-top:4rem] [scroll-margin-bottom:6rem]"
-                      classList={{
-                        'text-mystic-300': isActive(),
-                        'text-parchment-200': isPast() && !isActive(),
-                        'hover:text-mystic-400': !isActive(),
-                      }}
+                      class={[
+                        'inline-block mx-1 cursor-pointer transition-colors duration-150 [scroll-margin-top:4rem] [scroll-margin-bottom:6rem]',
+                        {
+                          'text-mystic-300': isActive(),
+                          'text-parchment-200': isPast() && !isActive(),
+                          'hover:text-mystic-400': !isActive(),
+                        },
+                      ]}
                     >
                       {word.content}
                     </span>

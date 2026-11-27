@@ -42,7 +42,7 @@ export function LocaleSwitcher() {
                 }`}
                 title={locale.name}
                 aria-label={`Switch to ${locale.name}`}
-                aria-pressed={isActive()}
+                aria-pressed={isActive() ? 'true' : 'false'}
               >
                 <span aria-hidden="true">{locale.flag}</span>
               </button>

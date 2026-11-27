@@ -1,6 +1,6 @@
 import * as Dialog from '@kobalte/core/dialog'
-import { A } from '@solidjs/router'
-import { createSignal, onCleanup, Show } from 'solid-js'
+
+import { createSignal, onSettled, Show } from 'solid-js'
 import type { JobRow } from '../../api/services/jobs-service'
 import { formatLocalDateTimeISO } from '../../utils/formatDate'
 import { getJobKindLabel } from '../../utils/job-management'
@@ -16,8 +16,10 @@ interface JobErrorModalProps {
 export default function JobErrorModal(props: JobErrorModalProps) {
   const [copied, setCopied] = createSignal(false)
   let copiedTimer: ReturnType<typeof setTimeout> | null = null
-  onCleanup(() => {
-    if (copiedTimer) clearTimeout(copiedTimer)
+  onSettled(() => {
+    return () => {
+      if (copiedTimer) clearTimeout(copiedTimer)
+    }
   })
 
   const copyError = (text: string) => {
@@ -86,9 +88,9 @@ export default function JobErrorModal(props: JobErrorModalProps) {
                           when={job().link_path}
                           fallback={<span class="text-muted">{params()}</span>}
                         >
-                          <A href={job().link_path as string} class="text-accent hover:underline">
+                          <a href={job().link_path as string} class="text-accent hover:underline">
                             {params()} →
-                          </A>
+                          </a>
                         </Show>
                       </div>
                     </Show>

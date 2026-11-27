@@ -1,6 +1,6 @@
-import { A, useNavigate, useParams } from '@solidjs/router'
+import { useNavigate, useParams } from '@solidjs/router'
 import { Download, FileText, Film, Headphones, LoaderCircle, Play } from 'lucide-solid'
-import { type Component, createResource, createSignal, For, Show } from 'solid-js'
+import { type Component, createSignal, For, Show } from 'solid-js'
 import { courseService } from '../api/services/course-service.js'
 import { topicService } from '../api/services/topic-service.js'
 import type {
@@ -21,6 +21,7 @@ import type { CourseFormData } from '../components/courses/types.jsx'
 import { Alert, Button, MagicButton, MetadataInfo, ShareButton } from '../components/ui'
 import { useTranslations } from '../i18n'
 import { useAudioPlayer } from '../utils/audio-player-context.jsx'
+import { createResource } from '../utils/create-resource.js'
 import { adoptJobHandoff } from '../utils/job-management.js'
 
 const COURSE_CREATION_HANDOFF_KINDS = [
@@ -69,12 +70,12 @@ const DepartmentInfo: Component<{
             const department = dept()
             return (
               <div class="font-serif">
-                <A
+                <a
                   href={`/departments/${String(department.id)}`}
                   class="text-mystic-400 hover:text-mystic-300 transition-colors font-medium"
                 >
                   {department.name} ({department.code})
-                </A>
+                </a>
                 <p class="text-parchment-300 mt-1">
                   {t().courseDetail.faculty}: {department.faculty_name || t().common.nA}
                 </p>
@@ -116,12 +117,12 @@ const ProfessorInfo: Component<{
             const professor = prof()
             return (
               <div class="font-serif">
-                <A
+                <a
                   href={`/professors/${String(professor.id)}`}
                   class="text-mystic-400 hover:text-mystic-300 transition-colors font-medium"
                 >
                   {professor.name}, {professor.title}
-                </A>
+                </a>
                 <p class="text-parchment-300 pt-3">{professor.specialization}</p>
               </div>
             )
@@ -192,7 +193,7 @@ const TopicsList: Component<{
                   return (
                     <li class="arcane-card p-4 hover:bg-parchment-800/20 transition-colors duration-200">
                       <div class="flex items-start justify-between gap-4">
-                        <A
+                        <a
                           href={`/courses/${String(props.courseId)}/topics/${String(topic.id)}`}
                           class="flex-1 block"
                         >
@@ -210,7 +211,7 @@ const TopicsList: Component<{
                             </p>
                             <p class="text-parchment-400 text-sm mt-1">{lecture?.title}</p>
                           </Show>
-                        </A>
+                        </a>
                         <Show when={lecture && (lecture.audio_url || lecture.transcript_url)}>
                           <div class="flex items-center gap-2 shrink-0">
                             <Show when={lecture?.audio_url}>
@@ -274,7 +275,7 @@ const TopicsList: Component<{
                             </Show>
                             <Show when={lecture}>
                               {(lectureData) => (
-                                <A
+                                <a
                                   href={`/courses/${String(props.courseId)}/lectures/${String(lectureData().id)}`}
                                   class="inline-flex h-9 w-9 items-center justify-center rounded-full border border-parchment-800/40 text-mystic-300 hover:text-mystic-200 hover:border-mystic-400 hover:bg-mystic-500/10 transition-colors"
                                   aria-label={t().courseDetail.openDetail}
@@ -284,7 +285,7 @@ const TopicsList: Component<{
                                   }}
                                 >
                                   <FileText class="h-4 w-4" />
-                                </A>
+                                </a>
                               )}
                             </Show>
                           </div>
@@ -555,12 +556,12 @@ const CourseDetail: Component = () => {
             {(course) => (
               <div>
                 <div class="flex flex-wrap items-center justify-between gap-y-3 gap-x-4 mb-4">
-                  <A
+                  <a
                     href="/browse"
                     class="text-mystic-400 hover:text-mystic-300 transition-colors whitespace-nowrap"
                   >
                     ← {t().courseDetail.backToCourses}
-                  </A>
+                  </a>
                   <Show when={!isEditing()}>
                     <div class="flex flex-wrap items-center gap-2 sm:justify-end">
                       <ShareButton
@@ -653,9 +654,9 @@ const CourseDetail: Component = () => {
                     <div class="flex flex-col gap-2">
                       <p>{exportMessage()}</p>
                       <Show when={exportJobId()}>
-                        <A href={`/jobs`} class="text-mystic-400 hover:text-mystic-300 underline">
+                        <a href={`/jobs`} class="text-mystic-400 hover:text-mystic-300 underline">
                           {t().courseDetail.viewJobStatus} →
-                        </A>
+                        </a>
                       </Show>
                     </div>
                   </Alert>
@@ -819,9 +820,9 @@ const CourseDetail: Component = () => {
                         </h2>
                       </div>
                       <Button variant="primary" class="shrink-0">
-                        <A href={`/courses/${String(courseId)}/topics`}>
+                        <a href={`/courses/${String(courseId)}/topics`}>
                           {t().courseDetail.editTopics}
-                        </A>
+                        </a>
                       </Button>
                     </div>
 

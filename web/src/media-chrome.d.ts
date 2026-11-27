@@ -1,7 +1,7 @@
-// TypeScript declarations for Media Chrome custom elements
-import 'solid-js'
+// TypeScript declarations for Media Chrome custom elements (Solid 2 / @solidjs/web JSX)
+import '@solidjs/web'
 
-declare module 'solid-js' {
+declare module '@solidjs/web' {
   namespace JSX {
     interface IntrinsicElements {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any

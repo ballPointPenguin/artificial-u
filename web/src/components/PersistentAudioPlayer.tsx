@@ -1,6 +1,6 @@
 import { ChevronUp, X } from 'lucide-solid'
 import 'media-chrome'
-import { type Component, createEffect, createSignal, onCleanup, Show, untrack } from 'solid-js'
+import { type Component, createEffect, createSignal, Show, untrack } from 'solid-js'
 import { useAudioPlayer } from '../utils/audio-player-context.jsx'
 
 export const PersistentAudioPlayer: Component = () => {
@@ -44,137 +44,145 @@ export const PersistentAudioPlayer: Component = () => {
   }
 
   // Attach listeners whenever the <audio> element mounts. Detach on unmount.
-  createEffect(() => {
-    const initialAudio = audioEl()
-    if (!initialAudio) return
+  createEffect(
+    () => audioEl(),
+    (initialAudio) => {
+      if (!initialAudio) return
 
-    initialAudio.volume = untrack(() => player.volume())
+      initialAudio.volume = untrack(() => player.volume())
 
-    const handlePlay = () => {
-      player.setIsPlaying(true)
-    }
-    const handlePause = () => {
-      player.setIsPlaying(false)
-      player.setCurrentTime(initialAudio.currentTime || 0)
-      player.saveCurrentTime()
-    }
-    const handleTimeUpdate = () => {
-      player.setCurrentTime(initialAudio.currentTime || 0)
-    }
-    const handleDurationChange = () => {
-      player.setDuration(initialAudio.duration || 0)
-    }
-    const handleVolumeChange = () => {
-      player.setVolume(initialAudio.volume || 0.7)
-    }
-    const handleLoadedMetadata = () => {
-      restoreFromPending(initialAudio)
-    }
-    const handleError = () => {
-      if (import.meta.env.DEV) {
-        console.error('Audio playback error')
+      const handlePlay = () => {
+        player.setIsPlaying(true)
+      }
+      const handlePause = () => {
+        player.setIsPlaying(false)
+        player.setCurrentTime(initialAudio.currentTime || 0)
+        player.saveCurrentTime()
+      }
+      const handleTimeUpdate = () => {
+        player.setCurrentTime(initialAudio.currentTime || 0)
+      }
+      const handleDurationChange = () => {
+        player.setDuration(initialAudio.duration || 0)
+      }
+      const handleVolumeChange = () => {
+        player.setVolume(initialAudio.volume || 0.7)
+      }
+      const handleLoadedMetadata = () => {
+        restoreFromPending(initialAudio)
+      }
+      const handleError = () => {
+        if (import.meta.env.DEV) {
+          console.error('Audio playback error')
+        }
+      }
+
+      initialAudio.addEventListener('play', handlePlay)
+      initialAudio.addEventListener('pause', handlePause)
+      initialAudio.addEventListener('timeupdate', handleTimeUpdate)
+      initialAudio.addEventListener('durationchange', handleDurationChange)
+      initialAudio.addEventListener('volumechange', handleVolumeChange)
+      initialAudio.addEventListener('loadedmetadata', handleLoadedMetadata)
+      initialAudio.addEventListener('error', handleError)
+
+      return () => {
+        initialAudio.removeEventListener('play', handlePlay)
+        initialAudio.removeEventListener('pause', handlePause)
+        initialAudio.removeEventListener('timeupdate', handleTimeUpdate)
+        initialAudio.removeEventListener('durationchange', handleDurationChange)
+        initialAudio.removeEventListener('volumechange', handleVolumeChange)
+        initialAudio.removeEventListener('loadedmetadata', handleLoadedMetadata)
+        initialAudio.removeEventListener('error', handleError)
       }
     }
-
-    initialAudio.addEventListener('play', handlePlay)
-    initialAudio.addEventListener('pause', handlePause)
-    initialAudio.addEventListener('timeupdate', handleTimeUpdate)
-    initialAudio.addEventListener('durationchange', handleDurationChange)
-    initialAudio.addEventListener('volumechange', handleVolumeChange)
-    initialAudio.addEventListener('loadedmetadata', handleLoadedMetadata)
-    initialAudio.addEventListener('error', handleError)
-
-    onCleanup(() => {
-      initialAudio.removeEventListener('play', handlePlay)
-      initialAudio.removeEventListener('pause', handlePause)
-      initialAudio.removeEventListener('timeupdate', handleTimeUpdate)
-      initialAudio.removeEventListener('durationchange', handleDurationChange)
-      initialAudio.removeEventListener('volumechange', handleVolumeChange)
-      initialAudio.removeEventListener('loadedmetadata', handleLoadedMetadata)
-      initialAudio.removeEventListener('error', handleError)
-    })
-  })
+  )
 
   // Handle play/pause from context
-  createEffect(() => {
-    const audio = audioEl()
-    if (!audio) return
-    if (player.isPlaying()) {
-      audio.play().catch((error: unknown) => {
-        if (import.meta.env.DEV) {
-          console.error('Failed to play audio:', error)
-        }
-        player.setIsPlaying(false)
-      })
-    } else {
-      audio.pause()
+  createEffect(
+    () => ({ audio: audioEl(), playing: player.isPlaying() }),
+    ({ audio, playing }) => {
+      if (!audio) return
+      if (playing) {
+        audio.play().catch((error: unknown) => {
+          if (import.meta.env.DEV) {
+            console.error('Failed to play audio:', error)
+          }
+          player.setIsPlaying(false)
+        })
+      } else {
+        audio.pause()
+      }
     }
-  })
+  )
 
   // Handle track changes
-  createEffect(() => {
-    const audio = audioEl()
-    const track = player.currentTrack()
-    if (!audio || !track) {
-      previousTrackKey = null
-      return
+  createEffect(
+    () => ({ audio: audioEl(), track: player.currentTrack() }),
+    ({ audio, track }) => {
+      if (!audio || !track) {
+        previousTrackKey = null
+        return
+      }
+
+      const nextKey = trackKey(track)
+      const isNewTrack = previousTrackKey !== nextKey
+      previousTrackKey = nextKey
+
+      audio.src = track.url
+
+      if (isNewTrack) {
+        pendingRestoreTime = null
+        player.setCurrentTime(0)
+        audio.currentTime = 0
+      } else {
+        const savedTime = untrack(() => player.currentTime())
+        pendingRestoreTime = savedTime > 0.25 ? savedTime : null
+      }
+
+      audio.load()
+      if (audio.readyState >= 1) {
+        queueMicrotask(() => {
+          restoreFromPending(audio)
+          if (isNewTrack) {
+            audio.currentTime = 0
+          }
+        })
+      }
+
+      const shouldAutoPlay = untrack(() => player.isPlaying())
+      if (shouldAutoPlay) {
+        audio.play().catch((error: unknown) => {
+          if (import.meta.env.DEV) {
+            console.error('Failed to play audio:', error)
+          }
+        })
+      }
     }
-
-    const nextKey = trackKey(track)
-    const isNewTrack = previousTrackKey !== nextKey
-    previousTrackKey = nextKey
-
-    audio.src = track.url
-
-    if (isNewTrack) {
-      pendingRestoreTime = null
-      player.setCurrentTime(0)
-      audio.currentTime = 0
-    } else {
-      const savedTime = untrack(() => player.currentTime())
-      pendingRestoreTime = savedTime > 0.25 ? savedTime : null
-    }
-
-    audio.load()
-    if (audio.readyState >= 1) {
-      queueMicrotask(() => {
-        restoreFromPending(audio)
-        if (isNewTrack) {
-          audio.currentTime = 0
-        }
-      })
-    }
-
-    const shouldAutoPlay = untrack(() => player.isPlaying())
-    if (shouldAutoPlay) {
-      audio.play().catch((error: unknown) => {
-        if (import.meta.env.DEV) {
-          console.error('Failed to play audio:', error)
-        }
-      })
-    }
-  })
+  )
 
   // Handle explicit seek requests from the UI. We subscribe to `seekRequest`
   // (not `currentTime`) so ongoing `timeupdate` events can't race a seek into
   // oblivion: if the user clicks a caption word, we want exactly that seek to
   // land, regardless of whether a queued `timeupdate` then writes the old
   // position back into `currentTime`.
-  createEffect(() => {
-    const req = player.seekRequest()
-    const audio = audioEl()
-    if (!req || !audio) return
-    if (Math.abs(audio.currentTime - req.time) > 0.05) {
-      audio.currentTime = req.time
+  createEffect(
+    () => ({ req: player.seekRequest(), audio: audioEl() }),
+    ({ req, audio }) => {
+      if (!req || !audio) return
+      if (Math.abs(audio.currentTime - req.time) > 0.05) {
+        audio.currentTime = req.time
+      }
     }
-  })
+  )
 
   // Handle volume from context
-  createEffect(() => {
-    const audio = audioEl()
-    if (!audio) return
-    audio.volume = player.volume()
-  })
+  createEffect(
+    () => ({ audio: audioEl(), volume: player.volume() }),
+    ({ audio, volume }) => {
+      if (!audio) return
+      audio.volume = volume
+    }
+  )
 
   const handleClose = () => {
     player.clearTrack()
@@ -184,12 +192,14 @@ export const PersistentAudioPlayer: Component = () => {
     <Show when={player.currentTrack()}>
       {(track) => (
         <div
-          class="w-full border-t border-parchment-800/50 bg-parchment-950/95 backdrop-blur-sm shadow-2xl"
-          classList={{
-            // Hide the mini-bar entirely while the Now Playing sheet is open.
-            // The <audio> element is still present in the DOM, so playback continues.
-            hidden: player.isExpanded(),
-          }}
+          class={[
+            'w-full border-t border-parchment-800/50 bg-parchment-950/95 backdrop-blur-sm shadow-2xl',
+            {
+              // Hide the mini-bar entirely while the Now Playing sheet is open.
+              // The <audio> element is still present in the DOM, so playback continues.
+              hidden: player.isExpanded(),
+            },
+          ]}
           aria-hidden={player.isExpanded() ? 'true' : 'false'}
         >
           {/* Action cluster (expand + close) */}

@@ -36,13 +36,15 @@ export default function JobStatStrip(props: JobStatStripProps) {
               onClick={() => {
                 props.onToggleStatus(entry.status)
               }}
-              class="arcane-card p-3 text-center cursor-pointer transition-all"
-              classList={{
-                'ring-2 ring-primary': props.activeStatus === entry.status,
-                'opacity-60':
-                  props.activeStatus !== undefined && props.activeStatus !== entry.status,
-              }}
-              aria-pressed={props.activeStatus === entry.status}
+              class={[
+                'arcane-card p-3 text-center cursor-pointer transition-all',
+                {
+                  'ring-2 ring-primary': props.activeStatus === entry.status,
+                  'opacity-60':
+                    props.activeStatus !== undefined && props.activeStatus !== entry.status,
+                },
+              ]}
+              aria-pressed={props.activeStatus === entry.status ? 'true' : 'false'}
             >
               <div class={`stat-number-sm ${entry.accent}`}>
                 {props.summary?.counts[entry.status] ?? 0}
@@ -56,7 +58,7 @@ export default function JobStatStrip(props: JobStatStripProps) {
         {(summary) => (
           <div class="mt-2 text-xs text-muted flex gap-4">
             <span
-              classList={{ 'text-danger': summary().failed_last_hour > 0 }}
+              class={{ 'text-danger': summary().failed_last_hour > 0 }}
               title="Jobs that failed in the last hour"
             >
               Failed 1h: {summary().failed_last_hour}

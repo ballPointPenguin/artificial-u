@@ -1,5 +1,5 @@
 import type { Component } from 'solid-js'
-import { createEffect, createResource, createSignal, Show } from 'solid-js'
+import { createEffect, createSignal, Show } from 'solid-js'
 import { departmentService } from '../../api/services/department-service.js'
 import { professorService } from '../../api/services/professor-service.js'
 import type {
@@ -9,6 +9,7 @@ import type {
   ProfessorGenerateRequest,
 } from '../../api/types.js'
 import { useContentLanguage, useTranslations } from '../../i18n'
+import { createResource } from '../../utils/create-resource.js'
 import { waitForJobResult } from '../../utils/job-management.js'
 import type { SelectOption } from '../ui'
 import {
@@ -71,24 +72,26 @@ const ProfessorForm: Component<ProfessorFormProps> = (props) => {
   const [isGenerating, setIsGenerating] = createSignal(false)
   const [generateError, setGenerateError] = createSignal<string | null>(null)
 
-  createEffect(() => {
-    const p = props.professor
-    setFormData({
-      name: p?.name || '',
-      title: p?.title || '',
-      description: p?.description || '',
-      teaching_style: p?.teaching_style || '',
-      gender: p?.gender || '',
-      accent: p?.accent || '',
-      age: p?.age ?? null, // Ensure null if undefined
-      department_id: p?.department_id ?? null, // Ensure null if undefined
-      specialization: p?.specialization || '',
-      background: p?.background || '',
-      personality: p?.personality || '',
-      image_url: p?.image_url || '', // Populate for reference, but not editable field
-      freeform_prompt: '',
-    })
-  })
+  createEffect(
+    () => props.professor,
+    (p) => {
+      setFormData({
+        name: p?.name || '',
+        title: p?.title || '',
+        description: p?.description || '',
+        teaching_style: p?.teaching_style || '',
+        gender: p?.gender || '',
+        accent: p?.accent || '',
+        age: p?.age ?? null, // Ensure null if undefined
+        department_id: p?.department_id ?? null, // Ensure null if undefined
+        specialization: p?.specialization || '',
+        background: p?.background || '',
+        personality: p?.personality || '',
+        image_url: p?.image_url || '', // Populate for reference, but not editable field
+        freeform_prompt: '',
+      })
+    }
+  )
 
   const [departmentsResource] = createResource(
     () => contentLanguage(),
@@ -107,13 +110,15 @@ const ProfessorForm: Component<ProfessorFormProps> = (props) => {
     }
   )
 
-  createEffect(() => {
-    const err = departmentsResource.error as unknown
-    if (err && props.setError) {
-      const errorMessage = err instanceof Error ? err.message : t().common.unknownError
-      props.setError(`Failed to load departments: ${errorMessage}`)
+  createEffect(
+    () => departmentsResource.error,
+    (err) => {
+      if (err && props.setError) {
+        const errorMessage = err instanceof Error ? err.message : t().common.unknownError
+        props.setError(`Failed to load departments: ${errorMessage}`)
+      }
     }
-  })
+  )
 
   const validateField = (
     fieldName: keyof ProfessorFormData,

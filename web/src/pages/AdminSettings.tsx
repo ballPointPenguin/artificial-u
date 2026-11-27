@@ -1,10 +1,11 @@
-import { createResource, createSignal, For, Show } from 'solid-js'
+import { createSignal, For, Show } from 'solid-js'
 import {
   type ElevenLabsAccountStatus,
   elevenLabsAdminService,
 } from '../api/services/elevenlabs-admin-service'
 import { type ModelSettingResponse, preferenceService } from '../api/services/preference-service'
 import { Button, Card, FormField, Input } from '../components/ui'
+import { createResource } from '../utils/create-resource.js'
 import { SUGGESTED_MODELS } from '../utils/models'
 
 /** Image generation models shown as quick picks (Gemini image models and GPT Image). */

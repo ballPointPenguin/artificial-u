@@ -1,5 +1,6 @@
-import type { Component, JSX } from 'solid-js'
-import { splitProps } from 'solid-js'
+import type { JSX } from '@solidjs/web'
+import type { Component } from 'solid-js'
+import { omit } from 'solid-js'
 
 interface NumberInputProps extends JSX.InputHTMLAttributes<HTMLInputElement> {
   error?: string | null | false
@@ -7,14 +8,16 @@ interface NumberInputProps extends JSX.InputHTMLAttributes<HTMLInputElement> {
 }
 
 const NumberInput: Component<NumberInputProps> = (props) => {
-  const [local, others] = splitProps(props, ['class', 'error'])
+  const others = omit(props, 'class', 'error')
 
   return (
     <input
-      type="number"
-      inputMode="numeric"
-      class={`arcane-input ${local.class ?? ''} ${local.error ? 'border-red-500 focus-visible:outline-red-500' : ''}`}
       {...others}
+      type="number"
+      inputmode="numeric"
+      class={`arcane-input ${props.class ?? ''} ${
+        props.error ? 'border-red-500 focus-visible:outline-red-500' : ''
+      }`}
     />
   )
 }

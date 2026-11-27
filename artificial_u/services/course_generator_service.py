@@ -240,7 +240,7 @@ class CourseGeneratorService:
             if not course_id:
                 continue
             try:
-                topics = self.repository_factory.topic.list(course_id=course_id)
+                topics = self.repository_factory.topic.list_by_course(course_id)
                 if not isinstance(topics, list) or not topics:
                     continue
                 sorted_topics = sorted(

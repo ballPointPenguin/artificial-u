@@ -1,4 +1,5 @@
-import type { Component, JSX, ParentProps } from 'solid-js'
+import type { JSX } from '@solidjs/web'
+import type { Component, ParentProps } from 'solid-js'
 import { Show } from 'solid-js'
 
 interface FormFieldProps extends ParentProps {

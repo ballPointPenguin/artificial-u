@@ -1,4 +1,3 @@
-import { A } from '@solidjs/router'
 import type { Component } from 'solid-js'
 import { useTranslations } from '../i18n'
 
@@ -46,12 +45,12 @@ const AboutPricing: Component = () => {
       {/* Footer note */}
       <div class="text-center">
         <p class="text-xs text-muted font-sans mb-6">{t().pricing.stayTuned}</p>
-        <A
+        <a
           href="/about"
           class="text-primary hover:underline text-sm font-sans uppercase tracking-wider"
         >
           &larr; About
-        </A>
+        </a>
       </div>
     </div>
   )

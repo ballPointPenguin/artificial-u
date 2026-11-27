@@ -1,5 +1,5 @@
-import { A, useSearchParams } from '@solidjs/router'
-import { type Component, createResource, createSignal, For, Index, Show } from 'solid-js'
+import { useSearchParams } from '@solidjs/router'
+import { type Component, createSignal, For, Show } from 'solid-js'
 import { courseService } from '../api/services/course-service.js'
 import { tagService } from '../api/services/tag-service.js'
 import type { Course, TagWithCount } from '../api/types.js'
@@ -9,6 +9,7 @@ import SurpriseMe from '../components/browse/SurpriseMe.jsx'
 import TagChipsBar from '../components/browse/TagChipsBar.jsx'
 import { Alert, Button, LoadingSpinner } from '../components/ui'
 import { useContentLanguage, useTranslations } from '../i18n'
+import { createResource } from '../utils/create-resource.js'
 
 const PAGE_SIZE = 24
 const TAG_CHIP_LIMIT = 30
@@ -143,12 +144,12 @@ const Browse: Component = () => {
         <div>
           <h1 class="text-3xl font-display text-parchment-100">{t().browse.title}</h1>
           <p class="mt-1 font-serif italic text-muted">{t().browse.subtitle}</p>
-          <A
+          <a
             href="/courses"
             class="mt-2 inline-block font-sans text-xs text-muted underline-offset-2 hover:text-primary hover:underline"
           >
             {t().browse.catalogueLink}
-          </A>
+          </a>
         </div>
         <SurpriseMe
           language={contentLanguage()}
@@ -185,9 +186,9 @@ const Browse: Component = () => {
               courses={recentData()?.items ?? []}
               loading={recentData.loading}
             />
-            <Index each={crateRowTags()}>
+            <For keyed={false} each={crateRowTags()}>
               {(tag) => <TagCrateRow tag={tag()} language={contentLanguage()} />}
-            </Index>
+            </For>
           </>
         }
       >

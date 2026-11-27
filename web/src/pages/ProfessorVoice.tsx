@@ -1,4 +1,4 @@
-import { A, useParams } from '@solidjs/router'
+import { useParams } from '@solidjs/router'
 import ProfessorVoice from '../components/professors/ProfessorVoice'
 import { useTranslations } from '../i18n'
 
@@ -8,12 +8,12 @@ export default function ProfessorVoicePage() {
 
   return (
     <main class="container mx-auto p-4">
-      <A
+      <a
         href={`/professors/${params.id}`}
         class="text-accent hover:text-accent/80 mb-4 inline-block"
       >
         {t().professorDetail.backToProfessor}
-      </A>
+      </a>
       <ProfessorVoice />
     </main>
   )

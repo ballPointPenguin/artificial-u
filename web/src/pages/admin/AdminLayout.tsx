@@ -1,5 +1,5 @@
 import type { RouteSectionProps } from '@solidjs/router'
-import { A, useLocation } from '@solidjs/router'
+import { useLocation } from '@solidjs/router'
 import { createMemo, createSignal, For, Show } from 'solid-js'
 
 type AdminNavItem = {
@@ -58,9 +58,9 @@ export default function AdminLayout(props: RouteSectionProps) {
             <nav class="hidden md:flex items-center gap-1">
               <For each={NAV_ITEMS}>
                 {(item) => (
-                  <A href={item.href} class={tabClass(item.href)}>
+                  <a href={item.href} class={tabClass(item.href)}>
                     {item.label}
-                  </A>
+                  </a>
                 )}
               </For>
             </nav>
@@ -71,7 +71,7 @@ export default function AdminLayout(props: RouteSectionProps) {
                 type="button"
                 class="rounded-md border border-border bg-muted/20 px-3 py-2 text-sm font-medium hover:bg-muted/30"
                 onClick={() => setMobileOpen((v) => !v)}
-                aria-expanded={mobileOpen()}
+                aria-expanded={mobileOpen() ? 'true' : 'false'}
               >
                 {activeLabel()}
               </button>
@@ -83,13 +83,13 @@ export default function AdminLayout(props: RouteSectionProps) {
               <div class="grid grid-cols-2 gap-2">
                 <For each={NAV_ITEMS}>
                   {(item) => (
-                    <A
+                    <a
                       href={item.href}
                       class={tabClass(item.href)}
                       onClick={() => setMobileOpen(false)}
                     >
                       {item.label}
-                    </A>
+                    </a>
                   )}
                 </For>
               </div>

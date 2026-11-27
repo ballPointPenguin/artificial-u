@@ -1,5 +1,5 @@
 import * as KobalteTooltip from '@kobalte/core/tooltip'
-import type { JSX } from 'solid-js'
+import type { JSX } from '@solidjs/web'
 
 interface TooltipProps {
   content: JSX.Element

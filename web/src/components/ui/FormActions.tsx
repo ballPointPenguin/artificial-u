@@ -1,5 +1,5 @@
 import type { Component, ParentProps } from 'solid-js'
-import { splitProps } from 'solid-js'
+import { omit } from 'solid-js'
 
 interface FormActionsProps extends ParentProps {
   class?: string
@@ -8,7 +8,7 @@ interface FormActionsProps extends ParentProps {
 }
 
 const FormActions: Component<FormActionsProps> = (props) => {
-  const [local, others] = splitProps(props, ['class', 'children'])
+  const others = omit(props, 'class', 'children')
 
   // Default classes from ProfessorForm example: flex justify-end space-x-3
   // We can make this configurable if needed via props later.
@@ -16,10 +16,10 @@ const FormActions: Component<FormActionsProps> = (props) => {
 
   return (
     <div
-      class={`${baseClasses} ${local.class || ''}`}
+      class={`${baseClasses} ${props.class || ''}`}
       {...others} // Pass through other native div attributes
     >
-      {local.children}
+      {props.children}
     </div>
   )
 }

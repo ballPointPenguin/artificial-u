@@ -1,5 +1,6 @@
 import { Button as KobalteButton } from '@kobalte/core/button'
-import { type JSX, splitProps } from 'solid-js'
+import { type JSX } from '@solidjs/web'
+import { omit } from 'solid-js'
 
 type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'link' | 'danger'
 type ButtonSize = 'sm' | 'md' | 'lg'
@@ -11,7 +12,7 @@ interface ButtonProps extends JSX.ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 export function Button(props: ButtonProps) {
-  const [local, others] = splitProps(props, ['variant', 'size', 'class', 'children', 'disabled'])
+  const others = omit(props, 'variant', 'size', 'class', 'children', 'disabled')
 
   // Base classes for all buttons - removed cursor-pointer to avoid conflict
   const baseClasses =
@@ -19,7 +20,7 @@ export function Button(props: ButtonProps) {
 
   // Make stateClasses a getter function for reactive updates
   const stateClasses = () =>
-    local.disabled ? 'opacity-50 cursor-not-allowed pointer-events-none' : 'cursor-pointer'
+    props.disabled ? 'opacity-50 cursor-not-allowed pointer-events-none' : 'cursor-pointer'
 
   const variantClasses = {
     primary:
@@ -39,19 +40,20 @@ export function Button(props: ButtonProps) {
     lg: 'px-6 py-3 text-lg',
   }
 
+  const className = () =>
+    [
+      baseClasses,
+      stateClasses(),
+      variantClasses[props.variant || 'primary'],
+      sizeClasses[props.size || 'md'],
+      typeof props.class === 'string' ? props.class : '',
+    ]
+      .filter((part) => part.length > 0)
+      .join(' ')
+
   return (
-    <KobalteButton
-      class={[
-        baseClasses,
-        stateClasses(),
-        variantClasses[local.variant || 'primary'],
-        sizeClasses[local.size || 'md'],
-        local.class || '',
-      ].join(' ')}
-      disabled={local.disabled}
-      {...others}
-    >
-      {local.children}
+    <KobalteButton class={className()} disabled={Boolean(props.disabled)} {...(others as object)}>
+      {props.children}
     </KobalteButton>
   )
 }

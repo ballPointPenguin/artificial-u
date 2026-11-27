@@ -1,4 +1,3 @@
-import { A } from '@solidjs/router'
 import { createSignal, Show } from 'solid-js'
 import { useAuth } from '../auth/AuthProvider'
 import { useTranslations } from '../i18n'
@@ -35,38 +34,38 @@ export function NavBar() {
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between items-center py-3">
           {/* Brand */}
-          <A href="/" class="flex items-center gap-3 no-underline">
+          <a href="/" class="flex items-center gap-3 no-underline">
             <div class="w-9 h-9 rounded-full border-2 border-secondary flex items-center justify-center">
               <span class="font-display text-sm text-secondary font-bold">A</span>
             </div>
             <span class="font-display text-sm tracking-[0.12em] uppercase text-foreground">
               {t().site.name}
             </span>
-          </A>
+          </a>
 
           {/* Desktop Navigation */}
           <div class="hidden md:flex items-center gap-7">
-            <A href="/browse" class={linkClass}>
+            <a href="/browse" class={linkClass}>
               {t().nav.browse}
-            </A>
-            <A href="/search" class={linkClass}>
+            </a>
+            <a href="/search" class={linkClass}>
               {t().nav.search}
-            </A>
-            <A href="/courses" class={linkClass}>
+            </a>
+            <a href="/courses" class={linkClass}>
               {t().nav.courses}
-            </A>
-            <A href="/academics" class={linkClass}>
+            </a>
+            <a href="/academics" class={linkClass}>
               {t().nav.departments}
-            </A>
+            </a>
             <Show when={auth.isAuthenticated()}>
-              <A href="/profile" class={linkClass}>
+              <a href="/profile" class={linkClass}>
                 {t().nav.profile}
-              </A>
+              </a>
             </Show>
             <Show when={auth.isAdmin()}>
-              <A href="/admin" class={linkClass}>
+              <a href="/admin" class={linkClass}>
                 {t().nav.admin}
-              </A>
+              </a>
             </Show>
 
             {/* Auth CTA */}
@@ -78,12 +77,12 @@ export function NavBar() {
                 </button>
               }
             >
-              <A
+              <a
                 href="/login"
                 class="ml-1 px-4 py-1.5 border border-primary rounded text-primary font-sans text-xs font-medium uppercase tracking-widest hover:bg-primary hover:text-on-primary transition-all duration-200"
               >
                 {t().nav.login}
-              </A>
+              </a>
             </Show>
 
             <div class="ml-2 pl-3 border-l border-border/30">
@@ -139,32 +138,32 @@ export function NavBar() {
       <Show when={isMobileMenuOpen()}>
         <div class="md:hidden bg-background/95 backdrop-blur-sm border-t border-border/30">
           <div class="px-4 pt-2 pb-6 space-y-1">
-            <A href="/browse" class={mobileLinkClass} onClick={toggleMobileMenu}>
+            <a href="/browse" class={mobileLinkClass} onClick={toggleMobileMenu}>
               {t().nav.browse}
-            </A>
-            <A href="/search" class={mobileLinkClass} onClick={toggleMobileMenu}>
+            </a>
+            <a href="/search" class={mobileLinkClass} onClick={toggleMobileMenu}>
               {t().nav.search}
-            </A>
-            <A href="/courses" class={mobileLinkClass} onClick={toggleMobileMenu}>
+            </a>
+            <a href="/courses" class={mobileLinkClass} onClick={toggleMobileMenu}>
               {t().nav.courses}
-            </A>
-            <A href="/academics" class={mobileLinkClass} onClick={toggleMobileMenu}>
+            </a>
+            <a href="/academics" class={mobileLinkClass} onClick={toggleMobileMenu}>
               {t().nav.departments}
-            </A>
+            </a>
             <Show when={auth.isAuthenticated()}>
-              <A href="/profile" class={mobileLinkClass} onClick={toggleMobileMenu}>
+              <a href="/profile" class={mobileLinkClass} onClick={toggleMobileMenu}>
                 {t().nav.profile}
-              </A>
+              </a>
             </Show>
             <Show when={auth.isAdmin()}>
-              <A href="/admin" class={mobileLinkClass} onClick={toggleMobileMenu}>
+              <a href="/admin" class={mobileLinkClass} onClick={toggleMobileMenu}>
                 {t().nav.admin}
-              </A>
+              </a>
             </Show>
             <Show when={!auth.isAuthenticated()}>
-              <A href="/login" class={mobileLinkClass} onClick={toggleMobileMenu}>
+              <a href="/login" class={mobileLinkClass} onClick={toggleMobileMenu}>
                 {t().nav.login}
-              </A>
+              </a>
             </Show>
             <Show when={auth.isAuthenticated()}>
               <button

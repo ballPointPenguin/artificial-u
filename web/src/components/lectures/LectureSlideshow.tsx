@@ -1,12 +1,6 @@
-import {
-  type Component,
-  createEffect,
-  createMemo,
-  createResource,
-  createSignal,
-  Show,
-} from 'solid-js'
+import { type Component, createEffect, createMemo, createSignal, Show } from 'solid-js'
 import { useAudioPlayer } from '../../utils/audio-player-context.jsx'
+import { createResource } from '../../utils/create-resource.js'
 
 interface ImageSlot {
   index: number
@@ -73,22 +67,28 @@ export const LectureSlideshow: Component<LectureSlideshowProps> = (props) => {
 
   // Crossfade by tracking the last url we rendered.
   const [shownUrl, setShownUrl] = createSignal<string | null>(null)
-  createEffect(() => {
-    const url = activeSlot()?.url ?? null
-    if (url && url !== shownUrl()) {
-      setShownUrl(url)
+  createEffect(
+    () => ({ url: activeSlot()?.url ?? null, shown: shownUrl() }),
+    ({ url, shown }) => {
+      if (url && url !== shown) {
+        setShownUrl(url)
+      }
     }
-  })
+  )
 
   // Preload next image (best-effort).
-  createEffect(() => {
-    const ss = slots()
-    const idx = activeIdx()
-    const next = idx >= 0 && idx + 1 < ss.length ? ss[idx + 1] : null
-    if (!next?.url) return
-    const img = new Image()
-    img.src = next.url
-  })
+  createEffect(
+    () => {
+      const ss = slots()
+      const idx = activeIdx()
+      return idx >= 0 && idx + 1 < ss.length ? ss[idx + 1] : null
+    },
+    (next) => {
+      if (!next?.url) return
+      const img = new Image()
+      img.src = next.url
+    }
+  )
 
   // Stage is 1:1. Cap max edge with min(100%, 50vh) so a fixed max-height (e.g. max-h-[40vh])
   // does not collapse the box to a wide strip; letterbox in <img> via object-contain.

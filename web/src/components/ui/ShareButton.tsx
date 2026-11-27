@@ -1,5 +1,6 @@
+import { type ComponentProps } from '@solidjs/web'
 import { Share2 } from 'lucide-solid'
-import { type ComponentProps, createSignal, Show } from 'solid-js'
+import { createSignal, Show } from 'solid-js'
 import { Button } from './Button.jsx'
 
 type ShareStatus = 'idle' | 'copied' | 'failed'

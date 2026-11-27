@@ -24,13 +24,16 @@ const TagEditModal = (props: TagEditModalProps) => {
   const [isQueueing, setIsQueueing] = createSignal(false)
 
   // Reset draft state each time the modal opens
-  createEffect(() => {
-    if (props.isOpen) {
-      setNames(props.initialTags.map((tag) => tag.name))
-      setInput('')
-      setError('')
+  createEffect(
+    () => ({ isOpen: props.isOpen, initialTags: props.initialTags }),
+    ({ isOpen, initialTags }) => {
+      if (isOpen) {
+        setNames(initialTags.map((tag) => tag.name))
+        setInput('')
+        setError('')
+      }
     }
-  })
+  )
 
   const handleOpenChange = (isOpen: boolean) => {
     if (!isOpen) props.onCancel()

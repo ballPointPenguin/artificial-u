@@ -1,4 +1,3 @@
-import { A } from '@solidjs/router'
 import { Download, FileText, Film, Headphones, Pencil, Play, Trash, Upload } from 'lucide-solid'
 import { type Component, createSignal, Show } from 'solid-js'
 import { lectureService } from '../../api/services/lecture-service.js'
@@ -374,7 +373,7 @@ export const LectureSection: Component<LectureSectionProps> = (props) => {
                     </Button>
                   </a>
                 </Show>
-                <A
+                <a
                   href={`/courses/${String(props.courseId)}/lectures/${String(lectureData().id)}`}
                   class="inline-block w-full sm:w-auto"
                 >
@@ -386,7 +385,7 @@ export const LectureSection: Component<LectureSectionProps> = (props) => {
                     <FileText class="h-4 w-4" aria-hidden="true" />
                     {t().lectureDetail.view}
                   </Button>
-                </A>
+                </a>
               </div>
 
               {/* Admin/Creator Actions Group */}
@@ -473,10 +472,12 @@ export const LectureSection: Component<LectureSectionProps> = (props) => {
                     </Show>
                     <label
                       for={`audio-file-upload-${String(lectureData().id)}`}
-                      class="inline-flex items-center justify-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md border border-mystic-600 bg-mystic-900/20 text-mystic-300 hover:bg-mystic-900/40 hover:border-mystic-500 transition-colors cursor-pointer min-h-[44px] sm:min-h-[32px] w-full sm:w-auto"
-                      classList={{
-                        'opacity-50 cursor-not-allowed': uploadAudioDisabled(),
-                      }}
+                      class={[
+                        'inline-flex items-center justify-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md border border-mystic-600 bg-mystic-900/20 text-mystic-300 hover:bg-mystic-900/40 hover:border-mystic-500 transition-colors cursor-pointer min-h-[44px] sm:min-h-[32px] w-full sm:w-auto',
+                        {
+                          'opacity-50 cursor-not-allowed': uploadAudioDisabled(),
+                        },
+                      ]}
                       title={
                         lectureData().audio_url
                           ? t().lectureDetail.uploadDisabledTooltip

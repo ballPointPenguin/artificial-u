@@ -1,4 +1,3 @@
-import { A } from '@solidjs/router'
 import { X } from 'lucide-solid'
 import { type Component, Show } from 'solid-js'
 import type { Tag } from '../../api/types.js'
@@ -35,12 +34,12 @@ const TagChip: Component<TagChipProps> = (props) => {
         </span>
       }
     >
-      <A
+      <a
         href={`/browse?tags=${encodeURIComponent(props.tag.slug)}`}
         class={`${PILL_CLASS} hover:opacity-80 transition-opacity ${props.class ?? ''}`}
       >
         {props.tag.name}
-      </A>
+      </a>
     </Show>
   )
 }

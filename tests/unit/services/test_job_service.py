@@ -343,6 +343,22 @@ async def test_create_course_saves_pre_generated_topics():
 
 
 @pytest.mark.asyncio
+async def test_create_course_passes_lecture_generation_model_settings():
+    save_topics = MagicMock(return_value=[SimpleNamespace(id=1)])
+    service = _course_job_service(save_topics)
+    course_service = service._course_service_instance()
+
+    payload = {
+        **COURSE_PAYLOAD,
+        "settings": {"lecture_generation_model": "gpt-6.2-sol"},
+    }
+    await service.dispatch("create_course", payload)
+
+    kwargs = course_service.create_course.await_args.kwargs
+    assert kwargs["settings"].lecture_generation_model == "gpt-6.2-sol"
+
+
+@pytest.mark.asyncio
 async def test_create_course_fails_without_retry_when_topics_cannot_be_saved():
     from artificial_u.utils import NonRetryableJobError
 

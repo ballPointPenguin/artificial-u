@@ -1,5 +1,5 @@
 import { useRegisterSW } from 'virtual:pwa-register/solid'
-import { createSignal, onCleanup, onMount, Show } from 'solid-js'
+import { createSignal, onSettled, Show } from 'solid-js'
 import { Alert } from '../components/ui/Alert'
 import { Button } from '../components/ui/Button'
 import { useI18n } from '../i18n/index.js'
@@ -68,7 +68,7 @@ export function InstallPWAPrompt() {
   const [deferredPrompt, setDeferredPrompt] = createSignal<BeforeInstallPromptEvent | null>(null)
   const [isVisible, setIsVisible] = createSignal(false)
 
-  onMount(() => {
+  onSettled(() => {
     const onBeforeInstallPrompt = (e: Event) => {
       e.preventDefault()
       setDeferredPrompt(e as BeforeInstallPromptEvent)
@@ -87,10 +87,10 @@ export function InstallPWAPrompt() {
     window.addEventListener('beforeinstallprompt', onBeforeInstallPrompt)
     window.addEventListener('appinstalled', onAppInstalled)
 
-    onCleanup(() => {
+    return () => {
       window.removeEventListener('beforeinstallprompt', onBeforeInstallPrompt)
       window.removeEventListener('appinstalled', onAppInstalled)
-    })
+    }
   })
 
   const handleInstall = () => {
