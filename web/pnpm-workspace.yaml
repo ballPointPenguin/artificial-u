@@ -6,5 +6,10 @@ allowBuilds:
 
 minimumReleaseAgeExclude:
   - lucide-solid@1.82.0
+peerDependencyRules:
+  allowedVersions:
+    # lucide-solid 1.x and testing-library RC still declare Solid 1 peers
+    'solid-js>lucide-solid': '>=1 || >=2'
+    'solid-js>@solidjs/testing-library': '*'
 pmOnFail: ignore
 trustLockfile: true

@@ -61,13 +61,5 @@
     "vitest": "^5.1.0",
     "workbox-window": "^7.4.1"
   },
-  "pnpm": {
-    "peerDependencyRules": {
-      "allowedVersions": {
-        "solid-js>lucide-solid": ">=1 || >=2",
-        "solid-js>@solidjs/testing-library": "*"
-      }
-    }
-  },
   "packageManager": "pnpm@12.4.2"
 }
