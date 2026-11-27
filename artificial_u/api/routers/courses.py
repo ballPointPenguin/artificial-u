@@ -497,6 +497,9 @@ async def enqueue_create_course(
         "created_by": student.id,
         "created_with": course_data.created_with,
         "language": course_data.language,
+        "settings": (
+            course_data.settings.model_dump() if course_data.settings is not None else None
+        ),
     }
     row = repository_factory.job.create(
         kind="create_course",

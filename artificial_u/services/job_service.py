@@ -5,6 +5,7 @@ from typing import Any, Dict, Optional
 
 from artificial_u.config import get_settings
 from artificial_u.integrations import elevenlabs
+from artificial_u.models.core import CourseSettings
 from artificial_u.models.repositories.factory import RepositoryFactory
 from artificial_u.services.content_service import ContentService
 from artificial_u.services.course_export_service import CourseExportService
@@ -207,9 +208,18 @@ class JobService:
         language = payload.get("language")
         notes = payload.get("notes")
         topics_data = payload.get("topics")
+        raw_settings = payload.get("settings")
 
         if not title or not code or not level:
             raise ValueError("title, code, and level are required to create a course")
+
+        settings = None
+        if raw_settings is not None:
+            settings = (
+                raw_settings
+                if isinstance(raw_settings, CourseSettings)
+                else CourseSettings.model_validate(raw_settings)
+            )
 
         course, professor = await service.create_course(
             title=title,
@@ -226,6 +236,7 @@ class JobService:
             connected_course_ids=connected_course_ids,
             parent_job_id=parent_job_id,
             language=language,
+            settings=settings,
         )
 
         # If pre-generated topics were provided with the course draft, save them directly;
