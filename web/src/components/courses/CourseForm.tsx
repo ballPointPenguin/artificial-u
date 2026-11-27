@@ -92,25 +92,6 @@ const CourseForm: Component<CourseFormProps> = (props) => {
     }
   )
 
-  // Handle resource errors in tracked scopes
-  createEffect(
-    () => departmentsResource.error,
-    (depError) => {
-      if (depError) {
-        props.setError?.(t().courses.form.failedToLoadDepartments)
-      }
-    }
-  )
-
-  createEffect(
-    () => professorsResource.error,
-    (profError) => {
-      if (profError) {
-        props.setError?.(t().courses.form.failedToLoadProfessors)
-      }
-    }
-  )
-
   // Sentinel value for null option (IDs are positive integers, so -1 is safe)
   const NULL_OPTION_VALUE = -1
 
@@ -175,6 +156,25 @@ const CourseForm: Component<CourseFormProps> = (props) => {
         // Don't access reactive props inside async functions
         // Let the component handle the error state through resource.error
         throw new Error('Failed to load professors')
+      }
+    }
+  )
+
+  // Handle resource errors after the resources exist (Solid 2 effects run eagerly).
+  createEffect(
+    () => departmentsResource.error,
+    (depError) => {
+      if (depError) {
+        props.setError?.(t().courses.form.failedToLoadDepartments)
+      }
+    }
+  )
+
+  createEffect(
+    () => professorsResource.error,
+    (profError) => {
+      if (profError) {
+        props.setError?.(t().courses.form.failedToLoadProfessors)
       }
     }
   )
