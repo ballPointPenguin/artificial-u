@@ -1,13 +1,12 @@
 /* @refresh reload */
 
 import { init } from '@plausible-analytics/tracker'
-import { Router } from '@solidjs/router'
 import type { JSX } from 'solid-js'
-import { render } from 'solid-js/web'
-import App from './App.tsx'
+import { render } from '@solidjs/web'
 import { AuthProvider } from './auth/AuthProvider.tsx'
 import { I18nProvider } from './i18n'
 import './index.css'
+import { Router } from './router.tsx'
 import { AudioPlayerProvider } from './utils/audio-player-context.jsx'
 
 // Initialize Plausible Analytics
@@ -32,9 +31,7 @@ if (root) {
   render(
     () => (
       <I18nProvider>
-        <Router root={Root}>
-          <App />
-        </Router>
+        <Router>{(props) => <Root>{props.children}</Root>}</Router>
       </I18nProvider>
     ),
     root

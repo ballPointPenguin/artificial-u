@@ -1,5 +1,6 @@
-import { A, useNavigate } from '@solidjs/router'
-import { createResource, createSignal, For, Show } from 'solid-js'
+import { useNavigate } from '@solidjs/router'
+import { createSignal, For, Show } from 'solid-js'
+import { createResource } from '../utils/create-resource.js'
 import { courseService } from '../api/services/course-service.js'
 import { departmentService } from '../api/services/department-service.js'
 import { featuredService } from '../api/services/featured-service.js'
@@ -139,17 +140,17 @@ const Home = () => {
             </h1>
             <p class="text-lg text-muted max-w-lg mb-8 leading-relaxed">{t().home.hero.subtitle}</p>
             <div class="flex flex-wrap gap-4">
-              <A href="/browse">
+              <a href="/browse">
                 <Button variant="primary" size="lg">
                   <span class="mr-2">&#9654;</span>
                   {t().home.hero.browseCta}
                 </Button>
-              </A>
-              <A href="/quickstart">
+              </a>
+              <a href="/quickstart">
                 <Button variant="outline" size="lg">
                   {t().home.hero.createCta}
                 </Button>
-              </A>
+              </a>
             </div>
           </div>
 
@@ -243,17 +244,17 @@ const Home = () => {
                 <span class="section-label">New arrivals</span>
                 <h2 class="text-2xl font-display text-foreground">Recently Added Courses</h2>
               </div>
-              <A
+              <a
                 href="/browse"
                 class="text-sm font-sans text-accent hover:text-primary transition-colors"
               >
                 View all courses &rarr;
-              </A>
+              </a>
             </div>
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <For each={recentCourses()}>
                 {(course) => (
-                  <A
+                  <a
                     href={`/courses/${String(course.id)}`}
                     class="card-hover-lift rounded-lg border border-border bg-surface p-4 flex flex-col no-underline text-inherit"
                   >
@@ -295,7 +296,7 @@ const Home = () => {
                         <span class="text-xs text-muted truncate">{course.professor!.name}</span>
                       </div>
                     </Show>
-                  </A>
+                  </a>
                 )}
               </For>
             </div>
@@ -312,17 +313,17 @@ const Home = () => {
                 <span class="section-label">Explore</span>
                 <h2 class="text-2xl font-display text-foreground">Browse Departments</h2>
               </div>
-              <A
+              <a
                 href="/academics"
                 class="text-sm font-sans text-accent hover:text-primary transition-colors"
               >
                 All departments &rarr;
-              </A>
+              </a>
             </div>
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               <For each={featuredDepartments()}>
                 {(dept) => (
-                  <A
+                  <a
                     href={`/departments/${String(dept.id)}`}
                     class="card-hover-lift rounded-lg border border-border bg-surface p-5 block no-underline text-inherit"
                   >
@@ -330,7 +331,7 @@ const Home = () => {
                     <p class="text-sm text-muted line-clamp-2">
                       {dept.description ? dept.description.slice(0, 120) : ''}
                     </p>
-                  </A>
+                  </a>
                 )}
               </For>
             </div>
@@ -347,17 +348,17 @@ const Home = () => {
                 <span class="section-label">Meet the faculty</span>
                 <h2 class="text-2xl font-display text-foreground">Professor Spotlight</h2>
               </div>
-              <A
+              <a
                 href="/professors"
                 class="text-sm font-sans text-accent hover:text-primary transition-colors"
               >
                 All professors &rarr;
-              </A>
+              </a>
             </div>
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               <For each={featuredProfessors()}>
                 {(prof) => (
-                  <A
+                  <a
                     href={`/professors/${String(prof.id)}`}
                     class="card-hover-lift rounded-lg border border-border bg-surface p-5 flex gap-4 items-start no-underline text-inherit"
                   >
@@ -394,7 +395,7 @@ const Home = () => {
                         <p class="text-xs text-muted mt-1">{prof.title}</p>
                       </Show>
                     </div>
-                  </A>
+                  </a>
                 )}
               </For>
             </div>
@@ -461,11 +462,11 @@ const Home = () => {
             </div>
           </div>
           <div class="flex flex-col items-start lg:items-center gap-3">
-            <A href="/quickstart">
+            <a href="/quickstart">
               <Button variant="primary" size="lg">
                 {t().home.ctaBanner.cta}
               </Button>
-            </A>
+            </a>
             <span class="text-xs font-sans text-muted">{t().home.ctaBanner.priceHint}</span>
           </div>
         </div>
@@ -536,9 +537,9 @@ const Home = () => {
               </div>
               <h3 class="font-display text-lg text-foreground mb-2">{t().home.trust.aiTitle}</h3>
               <p class="text-sm text-muted leading-relaxed mb-4 flex-1">{t().home.trust.aiDesc}</p>
-              <A href="/about/ai-ethics" class="text-sm text-primary hover:underline">
+              <a href="/about/ai-ethics" class="text-sm text-primary hover:underline">
                 {t().home.trust.aiLink}
-              </A>
+              </a>
             </div>
 
             {/* Privacy First */}
@@ -552,9 +553,9 @@ const Home = () => {
               <p class="text-sm text-muted leading-relaxed mb-4 flex-1">
                 {t().home.trust.privacyDesc}
               </p>
-              <A href="/about/privacy" class="text-sm text-primary hover:underline">
+              <a href="/about/privacy" class="text-sm text-primary hover:underline">
                 {t().home.trust.privacyLink}
-              </A>
+              </a>
             </div>
 
             {/* Not a Replacement */}
@@ -568,9 +569,9 @@ const Home = () => {
               <p class="text-sm text-muted leading-relaxed mb-4 flex-1">
                 {t().home.trust.notReplacementDesc}
               </p>
-              <A href="/about/terms" class="text-sm text-primary hover:underline">
+              <a href="/about/terms" class="text-sm text-primary hover:underline">
                 {t().home.trust.notReplacementLink}
-              </A>
+              </a>
             </div>
           </div>
         </div>

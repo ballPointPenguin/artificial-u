@@ -1,5 +1,6 @@
-import { A, useSearchParams } from '@solidjs/router'
-import { type Component, createResource, For, Show } from 'solid-js'
+import { useSearchParams } from '@solidjs/router'
+import { type Component, For, Show } from 'solid-js'
+import { createResource } from '../../utils/create-resource.js'
 import { lectureService } from '../../api/services/lecture-service'
 import type { AdminLectureListItem } from '../../api/types'
 import { Button } from '../../components/ui'
@@ -327,13 +328,13 @@ export default function AdminLectures() {
                     {(lecture) => (
                       <tr class="border-b border-parchment-800/40 transition-colors hover:bg-muted/30">
                         <td class="px-3 py-4 font-serif text-sm">
-                          <A
+                          <a
                             href={`/courses/${String(lecture.course_id)}/lectures/${String(lecture.id)}`}
                             class="text-primary transition-colors hover:text-primary/80"
                             title={lecture.title}
                           >
                             {truncateTitle(lecture.title)}
-                          </A>
+                          </a>
                         </td>
                         <td class="px-3 py-4 whitespace-nowrap text-sm">
                           {lecture.revision ?? '-'}

@@ -1,5 +1,5 @@
-import { A } from '@solidjs/router'
-import { createSignal, For, onCleanup, Show } from 'solid-js'
+
+import { createSignal, For, onSettled, Show } from 'solid-js'
 import {
   type CourseCodeAction,
   courseImportService,
@@ -44,8 +44,10 @@ export default function AdminImport() {
   const [hidden, setHidden] = createSignal(false)
 
   let pollTimer: number | undefined
-  onCleanup(() => {
-    window.clearTimeout(pollTimer)
+  onSettled(() => {
+    return () => {
+      window.clearTimeout(pollTimer)
+    }
   })
 
   const plan = () => analysis()?.plan
@@ -201,9 +203,9 @@ export default function AdminImport() {
                     Course code {c().existing.code} already exists
                   </h4>
                   <p class="text-sm text-parchment-200">
-                    <A href={`/courses/${String(c().existing.id)}`} class="underline">
+                    <a href={`/courses/${String(c().existing.id)}`} class="underline">
                       {c().existing.title}
-                    </A>{' '}
+                    </a>{' '}
                     · {c().existing.lecture_count} lectures · {c().existing.status}
                     <Show when={c().existing.professor_name}> · {c().existing.professor_name}</Show>
                     <Show when={c().same_title}>
@@ -355,9 +357,9 @@ export default function AdminImport() {
           <p class="text-parchment-200">
             Importing… (job #{job()?.id}, {job()?.status})
           </p>
-          <A href="/admin/jobs" class="text-sm underline text-muted">
+          <a href="/admin/jobs" class="text-sm underline text-muted">
             View in jobs
-          </A>
+          </a>
         </div>
       </Show>
 
@@ -372,9 +374,9 @@ export default function AdminImport() {
           <Show when={job()?.status === 'done' && result()?.course_id}>
             <Alert variant="success">
               Imported{' '}
-              <A href={`/courses/${String(result()?.course_id)}`} class="underline">
+              <a href={`/courses/${String(result()?.course_id)}`} class="underline">
                 {result()?.course_code} — {result()?.course_title}
-              </A>
+              </a>
               : {result()?.lectures_created} lectures, {result()?.topics_created} topics,{' '}
               {result()?.assets_uploaded} files.
             </Alert>

@@ -1,5 +1,6 @@
-import { A, useSearchParams } from '@solidjs/router'
-import { type Component, createResource, createSignal, For, type JSX, Show } from 'solid-js'
+import { useSearchParams } from '@solidjs/router'
+import { type Component, createSignal, For, type JSX, Show } from 'solid-js'
+import { createResource } from '../utils/create-resource.js'
 import { searchService } from '../api/services/index.js'
 import type {
   CourseSearchResult,
@@ -135,7 +136,7 @@ const Search: Component = () => {
               <ResultSection title={t().search.lectures}>
                 <For each={r().lectures}>
                   {(lec: LectureSearchResult) => (
-                    <A
+                    <a
                       href={`/courses/${String(lec.course_id)}/lectures/${String(lec.id)}`}
                       class="block bg-surface border border-border rounded-lg p-5 card-hover-lift"
                     >
@@ -157,7 +158,7 @@ const Search: Component = () => {
                       <Show when={lec.summary}>
                         <p class="text-sm text-muted mt-2 line-clamp-2">{lec.summary}</p>
                       </Show>
-                    </A>
+                    </a>
                   )}
                 </For>
               </ResultSection>
@@ -168,7 +169,7 @@ const Search: Component = () => {
               <ResultSection title={t().search.courses}>
                 <For each={r().courses}>
                   {(course: CourseSearchResult) => (
-                    <A
+                    <a
                       href={`/courses/${String(course.id)}`}
                       class="block bg-surface border border-border rounded-lg p-5 card-hover-lift"
                     >
@@ -192,7 +193,7 @@ const Search: Component = () => {
                       <Show when={course.description}>
                         <p class="text-sm text-muted mt-2 line-clamp-2">{course.description}</p>
                       </Show>
-                    </A>
+                    </a>
                   )}
                 </For>
               </ResultSection>
@@ -203,7 +204,7 @@ const Search: Component = () => {
               <ResultSection title={t().search.professors}>
                 <For each={r().professors}>
                   {(prof: ProfessorSearchResult) => (
-                    <A
+                    <a
                       href={`/professors/${String(prof.id)}`}
                       class="block bg-surface border border-border rounded-lg p-5 card-hover-lift"
                     >
@@ -246,7 +247,7 @@ const Search: Component = () => {
                           </Show>
                         </div>
                       </div>
-                    </A>
+                    </a>
                   )}
                 </For>
               </ResultSection>
@@ -257,7 +258,7 @@ const Search: Component = () => {
               <ResultSection title={t().search.departments}>
                 <For each={r().departments}>
                   {(dept: DepartmentSearchResult) => (
-                    <A
+                    <a
                       href={`/departments/${String(dept.id)}`}
                       class="block bg-surface border border-border rounded-lg p-5 card-hover-lift"
                     >
@@ -268,7 +269,7 @@ const Search: Component = () => {
                       <Show when={dept.description}>
                         <p class="text-sm text-muted mt-1 line-clamp-2">{dept.description}</p>
                       </Show>
-                    </A>
+                    </a>
                   )}
                 </For>
               </ResultSection>
@@ -279,7 +280,7 @@ const Search: Component = () => {
               <ResultSection title={t().search.topics}>
                 <For each={r().topics}>
                   {(topic: TopicSearchResult) => (
-                    <A
+                    <a
                       href={`/courses/${String(topic.course_id)}/topics/${String(topic.id)}`}
                       class="block bg-surface border border-border rounded-lg p-5 card-hover-lift"
                     >
@@ -294,7 +295,7 @@ const Search: Component = () => {
                           <span>{topic.course_title}</span>
                         </Show>
                       </div>
-                    </A>
+                    </a>
                   )}
                 </For>
               </ResultSection>

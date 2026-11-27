@@ -1,5 +1,6 @@
 import type { Component } from 'solid-js'
-import { createEffect, createMemo, createResource, createSignal, For, Show } from 'solid-js'
+import { createEffect, createMemo, createSignal, For, Show } from 'solid-js'
+import { createResource } from '../../utils/create-resource.js'
 import { courseService } from '../../api/services/course-service.js'
 import { departmentService } from '../../api/services/department-service.js'
 import { preferenceService } from '../../api/services/preference-service.js'
@@ -69,40 +70,46 @@ const CourseForm: Component<CourseFormProps> = (props) => {
   const showFullForm = () => isEditMode() || hasGeneratedDraft() || isManualMode()
 
   // Populate form for editing
-  createEffect(() => {
-    const c = props.course
-    if (c) {
-      setFormData({
-        code: c.code || '',
-        title: c.title || '',
-        department_id: c.department_id,
-        connected_course_ids: c.connected_course_ids,
-        level: c.level || '',
-        professor_id: c.professor_id,
-        description: c.description || '',
-        notes: c.notes || null,
-        lecture_generation_model: c.settings?.lecture_generation_model ?? null,
-        lectures_per_week: c.lectures_per_week,
-        total_weeks: c.total_weeks,
-        freeform_prompt: '', // Reset generate prompt on edit
-      })
+  createEffect(
+    () => props.course,
+    (c) => {
+      if (c) {
+        setFormData({
+          code: c.code || '',
+          title: c.title || '',
+          department_id: c.department_id,
+          connected_course_ids: c.connected_course_ids,
+          level: c.level || '',
+          professor_id: c.professor_id,
+          description: c.description || '',
+          notes: c.notes || null,
+          lecture_generation_model: c.settings?.lecture_generation_model ?? null,
+          lectures_per_week: c.lectures_per_week,
+          total_weeks: c.total_weeks,
+          freeform_prompt: '', // Reset generate prompt on edit
+        })
+      }
     }
-  })
+  )
 
   // Handle resource errors in tracked scopes
-  createEffect(() => {
-    const depError: unknown = departmentsResource.error
-    if (depError) {
-      props.setError?.(t().courses.form.failedToLoadDepartments)
+  createEffect(
+    () => departmentsResource.error as unknown,
+    (depError) => {
+      if (depError) {
+        props.setError?.(t().courses.form.failedToLoadDepartments)
+      }
     }
-  })
+  )
 
-  createEffect(() => {
-    const profError: unknown = professorsResource.error
-    if (profError) {
-      props.setError?.(t().courses.form.failedToLoadProfessors)
+  createEffect(
+    () => professorsResource.error as unknown,
+    (profError) => {
+      if (profError) {
+        props.setError?.(t().courses.form.failedToLoadProfessors)
+      }
     }
-  })
+  )
 
   // Sentinel value for null option (IDs are positive integers, so -1 is safe)
   const NULL_OPTION_VALUE = -1

@@ -1,5 +1,6 @@
-import { A } from '@solidjs/router'
-import { createResource, createSignal, For, Show } from 'solid-js'
+
+import { createSignal, For, Show } from 'solid-js'
+import { createResource } from '../utils/create-resource.js'
 import { departmentService } from '../api/services/department-service.js'
 import { facultyService } from '../api/services/faculty-service.js'
 import type { Department, DepartmentCreate } from '../api/types.js'
@@ -10,7 +11,7 @@ import { useContentLanguage, useTranslations } from '../i18n'
 
 const DepartmentCard = (props: { department: Department }) => {
   return (
-    <A
+    <a
       href={`/departments/${String(props.department.id)}`}
       class="arcane-card h-full flex flex-col overflow-hidden hover:shadow-arcane hover:scale-105 hover:border-primary/50 transition-all duration-300 cursor-pointer group"
     >
@@ -20,7 +21,7 @@ const DepartmentCard = (props: { department: Department }) => {
       <p class="text-sm text-parchment-300 line-clamp-2 min-h-0 group-hover:text-parchment-200 transition-colors duration-300">
         {props.department.description}
       </p>
-    </A>
+    </a>
   )
 }
 

@@ -1,4 +1,5 @@
-import { createResource, createSignal, For, Show } from 'solid-js'
+import { createSignal, For, Show } from 'solid-js'
+import { createResource } from '../utils/create-resource.js'
 import {
   type ElevenLabsAccountStatus,
   elevenLabsAdminService,

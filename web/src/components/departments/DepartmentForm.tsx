@@ -1,4 +1,5 @@
-import { createEffect, createResource, createSignal, type JSX, Show } from 'solid-js'
+import { createEffect, createSignal, type JSX, Show } from 'solid-js'
+import { createResource } from '../../utils/create-resource.js'
 import { departmentService } from '../../api/services/department-service.js'
 import { facultyService } from '../../api/services/faculty-service.js'
 import type { Department, DepartmentGenerateRequest } from '../../api/types.js'
@@ -51,14 +52,17 @@ const DepartmentForm = (props: DepartmentFormProps) => {
   )
 
   // Keep formData in sync with props.department (for edit mode)
-  createEffect(() => {
-    setFormData({
-      name: props.department?.name || '',
-      code: props.department?.code || '',
-      faculty_id: props.department?.faculty_id || null,
-      description: props.department?.description || '',
-    })
-  })
+  createEffect(
+    () => props.department,
+    (department) => {
+      setFormData({
+        name: department?.name || '',
+        code: department?.code || '',
+        faculty_id: department?.faculty_id || null,
+        description: department?.description || '',
+      })
+    }
+  )
 
   const validateForm = (currentData: DepartmentFormData): boolean => {
     const newErrors: Record<string, string> = {}

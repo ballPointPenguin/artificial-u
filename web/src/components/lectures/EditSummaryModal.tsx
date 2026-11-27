@@ -26,11 +26,14 @@ const EditSummaryModal = (props: EditSummaryModalProps) => {
   }
 
   // Reset the edited summary when the modal opens
-  createEffect(() => {
-    if (props.isOpen) {
-      setEditedSummary(props.initialSummary)
+  createEffect(
+    () => ({ isOpen: props.isOpen, initialSummary: props.initialSummary }),
+    ({ isOpen, initialSummary }) => {
+      if (isOpen) {
+        setEditedSummary(initialSummary)
+      }
     }
-  })
+  )
 
   return (
     <Dialog.Root open={props.isOpen} onOpenChange={handleOpenChange}>

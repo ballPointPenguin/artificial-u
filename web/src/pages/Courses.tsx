@@ -1,5 +1,6 @@
-import { A, useNavigate, useSearchParams } from '@solidjs/router'
-import { type Component, createResource, createSignal, For, Show } from 'solid-js'
+import { useNavigate, useSearchParams } from '@solidjs/router'
+import { type Component, createSignal, For, Show } from 'solid-js'
+import { createResource } from '../utils/create-resource.js'
 import { courseService } from '../api/services/course-service.js'
 import { departmentService } from '../api/services/department-service.js'
 import type { Course, CourseCreate } from '../api/types.js'
@@ -502,10 +503,10 @@ const Courses: Component = () => {
           <Show
             when={canGenerate()}
             fallback={
-              <A href={`/courses/${String(courseId())}`} class="block">
+              <a href={`/courses/${String(courseId())}`} class="block">
                 <div class={placeholderClass()} aria-hidden />
                 <span class="sr-only">{t().courses.courseImage}</span>
-              </A>
+              </a>
             }
           >
             <MagicButton
@@ -524,7 +525,7 @@ const Courses: Component = () => {
           </Show>
         }
       >
-        <A href={`/courses/${String(courseId())}`} class={`block relative ${boxClass()}`}>
+        <a href={`/courses/${String(courseId())}`} class={`block relative ${boxClass()}`}>
           {/* Placeholder sits under the image so the slot is never empty,
               even while the browser is still decoding. */}
           <div class={`absolute inset-0 ${placeholderClass()}`} aria-hidden />
@@ -539,7 +540,7 @@ const Courses: Component = () => {
             onError={() => setImgLoaded(false)}
             class={`${imgClass()} relative transition-opacity duration-500 ${imgLoaded() ? 'opacity-100' : 'opacity-0'}`}
           />
-        </A>
+        </a>
       </Show>
     )
   }
@@ -690,12 +691,12 @@ const Courses: Component = () => {
                         {course.code}
                       </td>
                       <td class="py-3 px-3 align-middle text-parchment-100">
-                        <A
+                        <a
                           href={`/courses/${String(course.id)}`}
                           class="text-parchment-100 hover:text-mystic-300 transition-colors"
                         >
                           {course.title}
-                        </A>
+                        </a>
                       </td>
                       <td class="py-3 px-3 align-middle">
                         <CourseStatusBadge status={course.status} />
@@ -744,12 +745,12 @@ const Courses: Component = () => {
 
                     <div class="flex flex-col gap-4 min-[420px]:flex-row min-[420px]:items-start">
                       <CourseThumb course={course} size="md" />
-                      <A
+                      <a
                         href={`/courses/${String(course.id)}`}
                         class="block min-w-0 flex-1 text-lg font-display text-parchment-100 leading-tight hover:text-mystic-300 transition-colors"
                       >
                         {course.title}
-                      </A>
+                      </a>
                     </div>
                     <div class="grid gap-3 text-sm font-serif text-parchment-200">
                       <div>
@@ -780,12 +781,12 @@ const Courses: Component = () => {
                       </div>
                     </div>
                     <div class="flex justify-end">
-                      <A
+                      <a
                         href={`/courses/${String(course.id)}`}
                         class="text-sm font-serif text-mystic-300 hover:text-mystic-200 transition-colors"
                       >
                         {t().courses.viewCourse}
-                      </A>
+                      </a>
                     </div>
                   </div>
                 </div>

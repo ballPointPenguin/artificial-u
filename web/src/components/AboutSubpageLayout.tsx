@@ -1,4 +1,4 @@
-import { A } from '@solidjs/router'
+
 import type { Component, JSX } from 'solid-js'
 
 export type AboutSubpageLayoutProps = {
@@ -12,12 +12,12 @@ export const AboutSubpageLayout: Component<AboutSubpageLayoutProps> = (props) =>
     <div class="w-16 h-px bg-primary mb-8" />
     {props.children}
     <p class="mt-12">
-      <A
+      <a
         href="/about"
         class="text-primary hover:underline text-sm font-sans uppercase tracking-wider"
       >
         &larr; About
-      </A>
+      </a>
     </p>
   </div>
 )

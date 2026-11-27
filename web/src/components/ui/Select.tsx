@@ -1,7 +1,7 @@
 import { Select as KSelect } from '@kobalte/core'
 import ChevronDown from 'lucide-solid/icons/chevron-down'
 import type { Component, ComponentProps, JSX } from 'solid-js'
-import { Show, splitProps } from 'solid-js'
+import { Show, omit } from 'solid-js'
 
 export interface SelectOption {
   value: string | number
@@ -42,21 +42,8 @@ interface SelectProps
 }
 
 const Select: Component<SelectProps> = (props) => {
-  const [local, others] = splitProps(props, [
-    'name',
-    'value',
-    'onChange',
-    'options',
-    'placeholder',
-    'disabled',
-    'required',
-    'class',
-    'triggerClass',
-    'contentClass',
-    'itemClass',
-    'error',
-    'label',
-  ])
+  const local = props
+  const others = omit(props, 'name', 'value', 'onChange', 'options', 'placeholder', 'disabled', 'required', 'class', 'triggerClass', 'contentClass', 'itemClass', 'error', 'label')
 
   const fieldId = () => `field-${local.name}`
   const hasError = () => !!local.error

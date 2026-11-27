@@ -1,14 +1,5 @@
-import {
-  batch,
-  createEffect,
-  createMemo,
-  createResource,
-  createSignal,
-  For,
-  onCleanup,
-  Show,
-  untrack,
-} from 'solid-js'
+import { createEffect, createMemo, createSignal, For, onSettled, Show, untrack } from 'solid-js'
+import { createResource } from '../utils/create-resource.js'
 import {
   cancelJob,
   getJob,
@@ -60,11 +51,11 @@ export default function JobsPage() {
     try {
       const page = await listJobs({ ...filters(), limit: PAGE_SIZE })
       if (runId !== loadRunId) return
-      batch(() => {
+      
         setJobs(page.jobs)
         setHasMore(page.has_more)
         setNextBeforeId(page.next_before_id)
-      })
+      
     } catch (error) {
       if (runId !== loadRunId) return
       setLoadError(error instanceof Error ? error.message : 'Failed to load jobs')
@@ -79,11 +70,11 @@ export default function JobsPage() {
     setLoadingMore(true)
     try {
       const page = await listJobs({ ...filters(), limit: PAGE_SIZE, before_id: beforeId })
-      batch(() => {
+      
         setJobs((current) => appendPage(current, page.jobs))
         setHasMore(page.has_more)
         setNextBeforeId(page.next_before_id)
-      })
+      
     } catch (error) {
       setActionError(error instanceof Error ? error.message : 'Failed to load more jobs')
     } finally {
@@ -92,10 +83,12 @@ export default function JobsPage() {
   }
 
   // Initial load + reload whenever a filter changes.
-  createEffect(() => {
-    filters()
-    void loadInitial()
-  })
+  createEffect(
+    () => filters(),
+    () => {
+      void loadInitial()
+    }
+  )
 
   // Debounced summary refresh after job churn (new jobs or terminal transitions).
   let summaryTimer: ReturnType<typeof setTimeout> | null = null
@@ -126,33 +119,38 @@ export default function JobsPage() {
       })
   }
 
-  const hub = getJobEventHub()
-  const unsubscribe = hub.subscribe(
-    {},
-    (event: JobEvent) => {
-      const result = applyJobEvent(untrack(jobs), event, untrack(filters))
-      setJobs(result.jobs)
-      if (result.needsHydration != null) hydrate(result.needsHydration)
-      if (event.status !== 'running') scheduleSummaryRefresh()
-    },
-    (snapshot) => {
-      setJobs((current) => applySnapshot(current, snapshot, untrack(filters)))
+  onSettled(() => {
+    const hub = getJobEventHub()
+    const unsubscribe = hub.subscribe(
+      {},
+      (event: JobEvent) => {
+        const result = applyJobEvent(untrack(jobs), event, untrack(filters))
+        setJobs(result.jobs)
+        if (result.needsHydration != null) hydrate(result.needsHydration)
+        if (event.status !== 'running') scheduleSummaryRefresh()
+      },
+      (snapshot) => {
+        setJobs((current) => applySnapshot(current, snapshot, untrack(filters)))
+      }
+    )
+    return () => {
+      unsubscribe()
+      if (summaryTimer) clearTimeout(summaryTimer)
     }
-  )
-  onCleanup(() => {
-    unsubscribe()
-    if (summaryTimer) clearTimeout(summaryTimer)
   })
 
   // Tick a shared clock while anything is running (live elapsed times).
   const hasRunning = createMemo(() => jobs().some((job) => job.status === 'running'))
-  createEffect(() => {
-    if (!hasRunning()) return
-    const timer = setInterval(() => setNow(Date.now()), 1000)
-    onCleanup(() => {
-      clearInterval(timer)
-    })
-  })
+  createEffect(
+    () => hasRunning(),
+    (running) => {
+      if (!running) return
+      const timer = setInterval(() => setNow(Date.now()), 1000)
+      return () => {
+        clearInterval(timer)
+      }
+    }
+  )
 
   const toggleStatus = (status: JobStatus) => {
     setStatusFilter((current) => (current === status ? undefined : status))

@@ -1,15 +1,6 @@
 import type { User } from '@auth0/auth0-spa-js'
 import { useNavigate } from '@solidjs/router'
-import {
-  batch,
-  createContext,
-  createSignal,
-  type JSX,
-  onCleanup,
-  onMount,
-  untrack,
-  useContext,
-} from 'solid-js'
+import { createContext, createSignal, type JSX, onSettled, untrack, useContext } from 'solid-js'
 import { setAuthErrorHandler, setTokenProvider } from '../api/client'
 import { studentService } from '../api/services'
 import type { Student, StudentUpdate } from '../api/types'
@@ -56,12 +47,10 @@ export function AuthProvider(props: { children: JSX.Element }) {
   const navigate = useNavigate()
 
   const clearAuth = () => {
-    batch(() => {
-      setIsAuthenticated(false)
-      setUser(null)
-      setStudent(null)
-      setProfileError(null)
-    })
+    setIsAuthenticated(false)
+    setUser(null)
+    setStudent(null)
+    setProfileError(null)
   }
 
   // Resolves with the Auth0 client once any OAuth redirect callback has been handled.
@@ -135,10 +124,9 @@ export function AuthProvider(props: { children: JSX.Element }) {
         return
       }
       const currentUser = (await c.getUser()) ?? null
-      batch(() => {
-        setUser(currentUser)
-        setIsAuthenticated(true)
-      })
+      setUser(currentUser)
+      setIsAuthenticated(true)
+
       await loadStudent()
     } catch (error) {
       console.error('Error checking auth state:', error)
@@ -165,7 +153,7 @@ export function AuthProvider(props: { children: JSX.Element }) {
     return refresh()
   })
 
-  onMount(() => {
+  onSettled(() => {
     void refresh().then(() => {
       if (postCallbackTargetUrl) navigate(postCallbackTargetUrl, { replace: true })
     })
@@ -183,11 +171,11 @@ export function AuthProvider(props: { children: JSX.Element }) {
 
     window.addEventListener('storage', onStorage)
     document.addEventListener('visibilitychange', recheckIfActive)
-    onCleanup(() => {
+    return () => {
       window.removeEventListener('storage', onStorage)
       document.removeEventListener('visibilitychange', recheckIfActive)
       clearInterval(tokenCheckInterval)
-    })
+    }
   })
 
   const role = (): Role => student()?.role ?? 'viewer'
@@ -226,7 +214,7 @@ export function AuthProvider(props: { children: JSX.Element }) {
     },
   }
 
-  return <AuthContext.Provider value={value}>{props.children}</AuthContext.Provider>
+  return <AuthContext value={value}>{props.children}</AuthContext>
 }
 
 export const useAuth = () => {

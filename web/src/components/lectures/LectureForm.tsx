@@ -1,4 +1,4 @@
-import { createSignal, onMount, Show } from 'solid-js'
+import { createSignal, onSettled, Show } from 'solid-js'
 import type { APIError, Lecture, LectureUpdate } from '../../api/types.js'
 import { useTranslations } from '../../i18n'
 import { Button } from '../ui/Button.jsx'
@@ -21,7 +21,7 @@ export function LectureForm(props: LectureFormProps) {
   const [title, setTitle] = createSignal('')
   const [content, setContent] = createSignal('')
 
-  onMount(() => {
+  onSettled(() => {
     if (props.existingLecture) {
       setTitle(props.existingLecture.title)
       setContent(props.existingLecture.content)

@@ -3,7 +3,7 @@
  * and their states across components.
  */
 
-import { type Accessor, createEffect, createMemo, createSignal, on, onCleanup } from 'solid-js'
+import { type Accessor, createEffect, createMemo, createSignal, onCleanup } from 'solid-js'
 import { TIMEOUT_CONFIG } from '../api/config.js'
 import {
   getJob,
@@ -355,26 +355,24 @@ export function createJobTracker(options: JobTrackerOptions) {
   // Do NOT stop when an ID first becomes defined — that's new data arriving (e.g. lecture created),
   // not navigation, and killing the tracker here would drop child-job polling.
   createEffect(
-    on(
-      () => [options.topicId?.(), options.lectureId?.(), options.courseId?.()] as const,
-      ([newTopicId, newLectureId, newCourseId], prev) => {
-        const [prevTopicId, prevLectureId, prevCourseId] = prev ?? [undefined, undefined, undefined]
-        const navigated = (p: number | undefined, n: number | undefined) =>
-          p != null && n != null && p !== n
-        if (
-          navigated(prevTopicId, newTopicId) ||
-          navigated(prevLectureId, newLectureId) ||
-          navigated(prevCourseId, newCourseId)
-        ) {
-          console.log(
-            `[job-chain] entity navigation detected (prev=[${String(prevTopicId)},${String(prevLectureId)},${String(prevCourseId)}] → next=[${String(newTopicId)},${String(newLectureId)},${String(newCourseId)}]), stopping tracker`
-          )
-          stop()
-          setLastError(null)
-        }
-      },
-      { defer: true }
-    )
+    () => [options.topicId?.(), options.lectureId?.(), options.courseId?.()] as const,
+    ([newTopicId, newLectureId, newCourseId], prev) => {
+      const [prevTopicId, prevLectureId, prevCourseId] = prev ?? [undefined, undefined, undefined]
+      const navigated = (p: number | undefined, n: number | undefined) =>
+        p != null && n != null && p !== n
+      if (
+        navigated(prevTopicId, newTopicId) ||
+        navigated(prevLectureId, newLectureId) ||
+        navigated(prevCourseId, newCourseId)
+      ) {
+        console.log(
+          `[job-chain] entity navigation detected (prev=[${String(prevTopicId)},${String(prevLectureId)},${String(prevCourseId)}] → next=[${String(newTopicId)},${String(newLectureId)},${String(newCourseId)}]), stopping tracker`
+        )
+        stop()
+        setLastError(null)
+      }
+    },
+    { defer: true }
   )
 
   // Cleanup on unmount
@@ -470,22 +468,19 @@ export function adoptJobHandoff(options: JobHandoffAdoptionOptions) {
   }
 
   createEffect(
-    on(
-      () => [entity(), fallbackEnabled()] as const,
-      ([currentEntity, shouldFallback]) => {
-        if (!currentEntity) return
-        const key = handoffKey(currentEntity)
+    () => [entity(), fallbackEnabled()] as const,
+    ([currentEntity, shouldFallback]) => {
+      if (!currentEntity) return
+      const key = handoffKey(currentEntity)
 
-        void (async () => {
-          const adopted = await adoptRegisteredHandoff(currentEntity)
-          if (adopted || !shouldFallback || fallbackAttemptKeys.has(key)) return
+      void (async () => {
+        const adopted = await adoptRegisteredHandoff(currentEntity)
+        if (adopted || !shouldFallback || fallbackAttemptKeys.has(key)) return
 
-          fallbackAttemptKeys.add(key)
-          await discoverActiveCourseJobs(currentEntity)
-        })()
-      },
-      { defer: false }
-    )
+        fallbackAttemptKeys.add(key)
+        await discoverActiveCourseJobs(currentEntity)
+      })()
+    }
   )
 
   return tracker
@@ -786,22 +781,19 @@ export function createJobPolling(
   }
 
   createEffect(
-    on(
-      () => [resolveMaybeAccessor(jobId), enabled()] as const,
-      ([currentJobId, isEnabled]) => {
-        stop()
+    () => [resolveMaybeAccessor(jobId), enabled()] as const,
+    ([currentJobId, isEnabled]) => {
+      stop()
 
-        if (!isEnabled || currentJobId == null) {
-          setJob(null)
-          setLastError(null)
-          setTimedOut(false)
-          return
-        }
+      if (!isEnabled || currentJobId == null) {
+        setJob(null)
+        setLastError(null)
+        setTimedOut(false)
+        return
+      }
 
-        startPolling(currentJobId)
-      },
-      { defer: false }
-    )
+      startPolling(currentJobId)
+    }
   )
 
   onCleanup(stop)

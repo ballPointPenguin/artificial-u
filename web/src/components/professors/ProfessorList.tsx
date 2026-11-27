@@ -1,4 +1,5 @@
-import { createEffect, createResource, For, Show } from 'solid-js'
+import { createEffect, For, Show } from 'solid-js'
+import { createResource } from '../../utils/create-resource.js'
 import { professorService } from '../../api/services/professor-service.js'
 import type { Professor } from '../../api/types.js'
 import ProfessorListItem from '../professors/ProfessorListItem.js'
@@ -11,11 +12,18 @@ export default function ProfessorList() {
   )
 
   // Add debug logging
-  createEffect(() => {
-    console.log('Loading:', professorsResource.loading)
-    console.log('Error:', professorsResource.error)
-    console.log('Data:', professorsResource())
-  })
+  createEffect(
+    () => ({
+      loading: professorsResource.loading,
+      error: professorsResource.error,
+      data: professorsResource(),
+    }),
+    ({ loading, error, data }) => {
+      console.log('Loading:', loading)
+      console.log('Error:', error)
+      console.log('Data:', data)
+    }
+  )
 
   // Function to handle retry that returns void
   const handleRetry = () => {

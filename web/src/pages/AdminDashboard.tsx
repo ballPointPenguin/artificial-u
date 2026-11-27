@@ -1,4 +1,5 @@
-import { createMemo, createResource, createSignal, For, Show } from 'solid-js'
+import { createMemo, createSignal, For, Show } from 'solid-js'
+import { createResource } from '../utils/create-resource.js'
 import { studentService } from '../api/services/student-service'
 import type { Student } from '../api/types'
 import { Button, Card, FormField, NumberInput, Select, type SelectOption } from '../components/ui'

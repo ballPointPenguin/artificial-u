@@ -1,13 +1,6 @@
 import { useParams } from '@solidjs/router'
-import {
-  type Component,
-  createEffect,
-  createMemo,
-  createResource,
-  createSignal,
-  For,
-  Show,
-} from 'solid-js'
+import { type Component, createEffect, createMemo, createSignal, For, Show } from 'solid-js'
+import { createResource } from '../../utils/create-resource.js'
 import { professorService } from '../../api/services/professor-service.js'
 import {
   cloneVoiceToMistral,
@@ -319,18 +312,20 @@ const ProfessorVoice: Component = () => {
   // Default to the current voice's backend once it loads; fall back to 'elevenlabs'
   const [selectedBackend, setSelectedBackend] = createSignal<TtsBackendKey>('elevenlabs')
   let backendInitialized = false
-  createEffect(() => {
-    const voice = currentVoice()
-    if (!backendInitialized && voice) {
-      backendInitialized = true
-      const backend = voice.tts_backend
-      if (backend === 'mistral' || backend === 'xai' || backend === 'qwen') {
-        setSelectedBackend(backend)
-      } else {
-        setSelectedBackend('elevenlabs')
+  createEffect(
+    () => currentVoice(),
+    (voice) => {
+      if (!backendInitialized && voice) {
+        backendInitialized = true
+        const backend = voice.tts_backend
+        if (backend === 'mistral' || backend === 'xai' || backend === 'qwen') {
+          setSelectedBackend(backend)
+        } else {
+          setSelectedBackend('elevenlabs')
+        }
       }
     }
-  })
+  )
 
   // ---- ElevenLabs manual ID ----
   const [elVoiceId, setElVoiceId] = createSignal('')

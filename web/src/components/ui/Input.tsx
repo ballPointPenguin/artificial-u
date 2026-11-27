@@ -1,6 +1,6 @@
 import { TextField as KTextField } from '@kobalte/core'
 import type { Component, ComponentProps, JSX } from 'solid-js'
-import { Show, splitProps } from 'solid-js'
+import { Show, omit } from 'solid-js'
 
 // Define specific props for our Input component
 interface InputProps extends Omit<ComponentProps<typeof KTextField.Input>, 'id'> {
@@ -22,20 +22,22 @@ interface InputProps extends Omit<ComponentProps<typeof KTextField.Input>, 'id'>
 
 const Input: Component<InputProps> = (props) => {
   // Split props to separate our custom ones from those meant for KTextField.Input
-  const [local, others] = splitProps(props, [
-    'name', // Already used by FormField, KTextField.Root will also need it.
+  const local = props
+  const others = omit(
+    props,
+    'name',
     'value',
-    'onInput', // Native input event
-    'onChange', // Kobalte's controlled change
+    'onInput',
+    'onChange',
     'placeholder',
     'type',
     'disabled',
     'required',
-    'class', // This class is for the root KTextField.Root
-    'inputClass', // This class is for the KTextField.Input element
-    'error', // Used for styling
-    'label', // Primarily for FormField, but KTextField might need it for aria
-  ])
+    'class',
+    'inputClass',
+    'error',
+    'label'
+  )
 
   const fieldId = () => `field-${local.name}`
   const hasError = () => !!local.error

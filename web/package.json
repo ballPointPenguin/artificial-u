@@ -21,20 +21,22 @@
   },
   "dependencies": {
     "@auth0/auth0-spa-js": "^2.30.0",
-    "@kobalte/core": "^0.13.14",
+    "@kobalte/core": "2.0.0-alpha.5",
     "@plausible-analytics/tracker": "^0.4.7",
-    "@solid-primitives/i18n": "^2.2.1",
-    "@solidjs/router": "^1.0.3",
-    "lucide-solid": "^1.72.0",
+    "@solid-primitives/i18n": "^3.0.1",
+    "@solidjs/router": "^2.0.1",
+    "@solidjs/web": "^2.0.4",
+    "lucide-solid": "^1.82.0",
     "media-chrome": "^4.19.4",
-    "solid-js": "^1.9.19"
+    "solid-js": "^2.0.4"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.6.6",
     "@eslint/js": "^10.0.1",
     "@kobalte/tailwindcss": "^0.9.0",
     "@playwright/test": "^1.65.1",
-    "@solidjs/testing-library": "^0.8.10",
+    "@solidjs/testing-library": "1.0.0-rc.2",
+    "@solidjs/vite-plugin": "^3.0.1",
     "@tailwindcss/vite": "^4.3.5",
     "@testing-library/jest-dom": "^7.0.1",
     "@types/node": "^26.6.6",
@@ -42,7 +44,7 @@
     "@vitest/coverage-v8": "^5.1.0",
     "baseline-browser-mapping": "^2.11.35",
     "eslint": "^10.14.0",
-    "eslint-plugin-solid": "^0.19.0",
+    "eslint-plugin-solid": "^0.20.1",
     "globals": "^17.14.0",
     "jsdom": "^31.0.0",
     "postcss": "^8.5.32",
@@ -56,9 +58,16 @@
     "typescript-eslint": "^8.72.2",
     "vite": "^8.3.8",
     "vite-plugin-pwa": "^2.0.0",
-    "vite-plugin-solid": "^2.11.16",
     "vitest": "^5.1.0",
     "workbox-window": "^7.4.1"
+  },
+  "pnpm": {
+    "peerDependencyRules": {
+      "allowedVersions": {
+        "solid-js>lucide-solid": ">=1 || >=2",
+        "solid-js>@solidjs/testing-library": "*"
+      }
+    }
   },
   "packageManager": "pnpm@12.4.2"
 }

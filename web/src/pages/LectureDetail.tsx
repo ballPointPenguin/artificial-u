@@ -1,6 +1,7 @@
-import { A, useNavigate, useParams } from '@solidjs/router'
+import { useNavigate, useParams } from '@solidjs/router'
 import { Download, FileText, Film, Headphones, Play, Upload } from 'lucide-solid'
-import { type Component, createMemo, createResource, createSignal, Show } from 'solid-js'
+import { type Component, createMemo, createSignal, Show } from 'solid-js'
+import { createResource } from '../utils/create-resource.js'
 import { courseService } from '../api/services/course-service.js'
 import { lectureService } from '../api/services/lecture-service.js'
 import { topicService } from '../api/services/topic-service.js'
@@ -291,7 +292,7 @@ const LectureDetailView: Component<{
                 <label
                   for="audio-file-upload"
                   class="inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium rounded-md border border-mystic-600 bg-mystic-900/20 text-mystic-300 hover:bg-mystic-900/40 hover:border-mystic-500 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px] sm:min-h-[32px] w-full sm:w-auto"
-                  classList={{
+                  class={{
                     'opacity-50 cursor-not-allowed': uploadAudioDisabled(),
                   }}
                   title={
@@ -609,19 +610,19 @@ const LectureDetail = () => {
                   {/* Breadcrumb navigation */}
                   <div class="mb-6 flex flex-wrap items-center justify-between gap-y-3 gap-x-4 text-sm">
                     <div class="flex flex-wrap items-center gap-4">
-                      <A
+                      <a
                         href={`/courses/${String(courseId())}`}
                         class="text-mystic-500 hover:text-mystic-300 whitespace-nowrap"
                       >
                         ← {t().courseDetail.backToCourse}
-                      </A>
+                      </a>
                       <span class="text-parchment-600 hidden sm:inline">•</span>
-                      <A
+                      <a
                         href={`/courses/${String(courseId())}/topics/${String(lectureData.topic_id)}`}
                         class="text-mystic-500 hover:text-mystic-300 whitespace-nowrap"
                       >
                         {t().lectureDetail.backToTopic}
-                      </A>
+                      </a>
                     </div>
 
                     <ShareButton
@@ -648,22 +649,22 @@ const LectureDetail = () => {
                           <div class="flex items-center gap-3 ml-auto sm:ml-0">
                             <Show when={prev}>
                               {(p) => (
-                                <A
+                                <a
                                   href={`/courses/${String(courseId())}/topics/${String(p().id)}`}
                                   class="text-mystic-500 hover:text-mystic-300"
                                 >
                                   ← {t().topicDetail.previousTopic}
-                                </A>
+                                </a>
                               )}
                             </Show>
                             <Show when={next}>
                               {(n) => (
-                                <A
+                                <a
                                   href={`/courses/${String(courseId())}/topics/${String(n().id)}`}
                                   class="text-mystic-500 hover:text-mystic-300"
                                 >
                                   {t().topicDetail.nextTopic} →
-                                </A>
+                                </a>
                               )}
                             </Show>
                           </div>

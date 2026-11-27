@@ -4,5 +4,7 @@ allowBuilds:
   browser-tabs-lock: true
   esbuild: true
 
+minimumReleaseAgeExclude:
+  - lucide-solid@1.82.0
 pmOnFail: ignore
 trustLockfile: true

@@ -23,14 +23,17 @@ const LoginPage = () => {
   // Redirect authenticated users away from login page; otherwise kick off
   // login once auth state has settled (avoids re-triggering login while
   // the initial/post-redirect auth check is still in flight).
-  createEffect(() => {
-    if (auth.isLoading()) return
-    if (auth.isAuthenticated()) {
-      navigate('/', { replace: true })
-    } else {
-      triggerLogin()
+  createEffect(
+    () => ({ loading: auth.isLoading(), authenticated: auth.isAuthenticated() }),
+    ({ loading, authenticated }) => {
+      if (loading) return
+      if (authenticated) {
+        navigate('/', { replace: true })
+      } else {
+        triggerLogin()
+      }
     }
-  })
+  )
 
   return (
     <div class="container mx-auto p-6 text-parchment-200">

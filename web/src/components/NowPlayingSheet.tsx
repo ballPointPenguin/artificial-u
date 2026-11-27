@@ -1,7 +1,7 @@
-import { A } from '@solidjs/router'
+
 import { ChevronDown, FastForward, ImageIcon, Pause, Play, Rewind, X } from 'lucide-solid'
-import { type Component, createEffect, createSignal, onCleanup, onMount, Show } from 'solid-js'
-import { Portal } from 'solid-js/web'
+import { type Component, createEffect, createSignal, onSettled, Show } from 'solid-js'
+import { Portal } from '@solidjs/web'
 import { useAudioPlayer } from '../utils/audio-player-context.jsx'
 import { CaptionWindow } from './lectures/CaptionWindow.jsx'
 import { LectureSlideshow } from './lectures/LectureSlideshow.jsx'
@@ -82,7 +82,7 @@ const NowPlayingSheetPanel: Component<{ view: 'docked' | 'overlay' }> = (props) 
 
         <Show when={courseHref()}>
           {(href) => (
-            <A
+            <a
               href={href()}
               onClick={() => {
                 player.collapse()
@@ -90,7 +90,7 @@ const NowPlayingSheetPanel: Component<{ view: 'docked' | 'overlay' }> = (props) 
               class="hidden sm:inline-flex flex-shrink-0 items-center gap-1 text-xs text-mystic-400 hover:text-mystic-300 underline underline-offset-2"
             >
               Open page
-            </A>
+            </a>
           )}
         </Show>
 
@@ -224,45 +224,51 @@ export const NowPlayingSheet: Component = () => {
     typeof window !== 'undefined' && window.matchMedia('(min-width: 1024px)').matches
   )
 
-  onMount(() => {
+  onSettled(() => {
     const mq = window.matchMedia('(min-width: 1024px)')
     const sync = () => {
       setIsLg(mq.matches)
     }
     sync()
     mq.addEventListener('change', sync)
-    onCleanup(() => {
+    return () => {
       mq.removeEventListener('change', sync)
-    })
+    }
   })
 
   // Close on Escape
-  createEffect(() => {
-    if (!player.isExpanded()) return
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        e.preventDefault()
-        player.collapse()
+  createEffect(
+    () => player.isExpanded(),
+    (expanded) => {
+      if (!expanded) return
+      const handler = (e: KeyboardEvent) => {
+        if (e.key === 'Escape') {
+          e.preventDefault()
+          player.collapse()
+        }
+      }
+      window.addEventListener('keydown', handler)
+      return () => {
+        window.removeEventListener('keydown', handler)
       }
     }
-    window.addEventListener('keydown', handler)
-    onCleanup(() => {
-      window.removeEventListener('keydown', handler)
-    })
-  })
+  )
 
   // Lock body scroll while the mobile fullscreen sheet is open
-  createEffect(() => {
-    if (!player.isExpanded()) return
-    // Only lock on narrow viewports where the sheet is full-screen
-    const mq = window.matchMedia('(max-width: 1023px)')
-    if (!mq.matches) return
-    const prev = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
-    onCleanup(() => {
-      document.body.style.overflow = prev
-    })
-  })
+  createEffect(
+    () => player.isExpanded(),
+    (expanded) => {
+      if (!expanded) return
+      // Only lock on narrow viewports where the sheet is full-screen
+      const mq = window.matchMedia('(max-width: 1023px)')
+      if (!mq.matches) return
+      const prev = document.body.style.overflow
+      document.body.style.overflow = 'hidden'
+      return () => {
+        document.body.style.overflow = prev
+      }
+    }
+  )
 
   return (
     <Show when={player.isExpanded() && player.currentTrack()}>

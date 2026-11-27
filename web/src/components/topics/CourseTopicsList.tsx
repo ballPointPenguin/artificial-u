@@ -1,5 +1,5 @@
-import { A } from '@solidjs/router'
-import { createEffect, createSignal, For, on, Show } from 'solid-js'
+
+import { createEffect, createSignal, For, Show } from 'solid-js'
 import { topicService } from '../../api/services/topic-service.js'
 import type { APIError, Topic, TopicCreate, TopicUpdate } from '../../api/types.js'
 import { useAuth } from '../../auth/AuthProvider.js'
@@ -56,34 +56,31 @@ export function CourseTopicsList(props: CourseTopicsListProps) {
   const [currentJob, setCurrentJob] = createSignal<{ id: number } | null>(null)
 
   createEffect(
-    on(
-      [() => props.courseId, listVersion],
-      ([courseId]) => {
-        if (courseId) {
-          setIsLoading(true)
-          setError(null)
-          topicService
-            .listTopicsByCourse(courseId, 1, 100)
-            .then((response) => {
-              const sortedTopics = response.items.sort((a, b) => {
-                if (a.week !== b.week) return a.week - b.week
-                return a.order - b.order
-              })
-              setTopics(sortedTopics)
+    () => ({ courseId: props.courseId, version: listVersion() }),
+    ({ courseId }) => {
+      if (courseId) {
+        setIsLoading(true)
+        setError(null)
+        topicService
+          .listTopicsByCourse(courseId, 1, 100)
+          .then((response) => {
+            const sortedTopics = response.items.sort((a, b) => {
+              if (a.week !== b.week) return a.week - b.week
+              return a.order - b.order
             })
-            .catch((err: unknown) => {
-              console.error('Failed to fetch topics:', err)
-              setError(
-                err instanceof Error
-                  ? { detail: err.message }
-                  : { detail: 'Unknown error fetching topics' }
-              )
-            })
-            .finally(() => setIsLoading(false))
-        }
-      },
-      { defer: false }
-    )
+            setTopics(sortedTopics)
+          })
+          .catch((err: unknown) => {
+            console.error('Failed to fetch topics:', err)
+            setError(
+              err instanceof Error
+                ? { detail: err.message }
+                : { detail: 'Unknown error fetching topics' }
+            )
+          })
+          .finally(() => setIsLoading(false))
+      }
+    }
   )
 
   const handleAddTopic = () => {
@@ -365,7 +362,7 @@ export function CourseTopicsList(props: CourseTopicsListProps) {
               <div class="arcane-card p-4 hover:shadow-md transition-shadow duration-200">
                 <div class="flex justify-between items-start mb-3">
                   <div class="flex-1">
-                    <A
+                    <a
                       href={`/courses/${String(props.courseId)}/topics/${String(topic.id)}`}
                       class="block hover:text-primary transition-colors duration-200"
                     >
@@ -373,7 +370,7 @@ export function CourseTopicsList(props: CourseTopicsListProps) {
                       <p class="text-sm text-parchment-300 font-serif">
                         Week: {topic.week}, Order: {topic.order}
                       </p>
-                    </A>
+                    </a>
                     <TopicContentRenderer content={topic.content} class="mt-3" />
                   </div>
                 </div>

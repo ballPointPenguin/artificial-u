@@ -1,5 +1,5 @@
 import type { RouteSectionProps } from '@solidjs/router'
-import { type Component, onCleanup, onMount } from 'solid-js'
+import { type Component, onSettled } from 'solid-js'
 import { ProfileErrorBanner } from '../auth/ProfileErrorBanner'
 import { useAudioPlayer } from '../utils/audio-player-context.jsx'
 import { InstallPWAPrompt, PWAUpdatePrompt } from '../utils/pwa'
@@ -21,7 +21,7 @@ const Layout: Component<RouteSectionProps> = (props) => {
   const player = useAudioPlayer()
 
   // Global keyboard shortcuts that apply whenever a track is loaded.
-  onMount(() => {
+  onSettled(() => {
     const handler = (e: KeyboardEvent) => {
       if (!player.currentTrack()) return
       if (e.defaultPrevented || e.ctrlKey || e.metaKey || e.altKey) return
@@ -39,9 +39,9 @@ const Layout: Component<RouteSectionProps> = (props) => {
       }
     }
     window.addEventListener('keydown', handler)
-    onCleanup(() => {
+    return () => {
       window.removeEventListener('keydown', handler)
-    })
+    }
   })
 
   return (

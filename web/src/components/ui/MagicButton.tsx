@@ -1,4 +1,4 @@
-import { type JSX, mergeProps, Show, splitProps } from 'solid-js'
+import { type JSX, merge, Show, omit } from 'solid-js'
 import { Button } from './Button'
 import './MagicButton.css'
 
@@ -20,16 +20,10 @@ export function MagicButton(props: MagicButtonProps) {
     size: 'md',
     iconOnly: false,
   }
-  const merged = mergeProps(defaults, props)
+  const merged = merge(defaults, props)
 
-  const [local, others] = splitProps(merged, [
-    'class',
-    'children',
-    'isLoading',
-    'loadingText',
-    'iconOnly',
-    'disabled',
-  ])
+  const local = merged
+  const others = omit(merged, 'class', 'children', 'isLoading', 'loadingText', 'iconOnly', 'disabled')
 
   return (
     <Button

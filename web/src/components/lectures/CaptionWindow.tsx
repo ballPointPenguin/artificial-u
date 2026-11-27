@@ -1,13 +1,5 @@
-import {
-  type Component,
-  createEffect,
-  createMemo,
-  createResource,
-  For,
-  onCleanup,
-  onMount,
-  Show,
-} from 'solid-js'
+import { type Component, createEffect, createMemo, For, onSettled, Show } from 'solid-js'
+import { createResource } from '../../utils/create-resource.js'
 import { useAudioPlayer } from '../../utils/audio-player-context.jsx'
 
 interface TimelineEvent {
@@ -269,21 +261,23 @@ export const CaptionWindow: Component<CaptionWindowProps> = (props) => {
   // Re-fit when the phrase content changes. `activePhrase()` is the dependency
   // that matters; deferring to the next frame lets Solid finish updating the
   // DOM before we measure.
-  createEffect(() => {
-    activePhrase()
-    scheduleFit()
-  })
+  createEffect(
+    () => activePhrase(),
+    () => {
+      scheduleFit()
+    }
+  )
 
   // Re-fit when the card itself resizes (desktop sidebar, mobile rotation, etc).
-  onMount(() => {
+  onSettled(() => {
     if (!cardRef) return
     const ro = new ResizeObserver(() => {
       scheduleFit()
     })
     ro.observe(cardRef)
-    onCleanup(() => {
+    return () => {
       ro.disconnect()
-    })
+    }
   })
 
   return (
@@ -313,7 +307,7 @@ export const CaptionWindow: Component<CaptionWindowProps> = (props) => {
                   pRef = el
                 }}
                 class="leading-relaxed font-serif text-center max-w-prose break-words"
-                classList={{
+                class={{
                   // Stage directions read as descriptive meta-text, not speech.
                   // Italicizing them (and dimming slightly) matches screenplay
                   // convention and helps the viewer parse "this is a cue, not
@@ -332,7 +326,7 @@ export const CaptionWindow: Component<CaptionWindowProps> = (props) => {
                             handleWordClick(word.start)
                           }}
                           class="cursor-pointer transition-colors duration-150"
-                          classList={{
+                          class={{
                             'text-mystic-300': isActive(),
                             'text-foreground': isPast(),
                             'text-foreground/40': !isActive() && !isPast(),

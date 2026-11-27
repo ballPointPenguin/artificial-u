@@ -1,6 +1,6 @@
 import { useNavigate } from '@solidjs/router'
 import type { Component } from 'solid-js'
-import { createSignal, Match, onMount, Switch } from 'solid-js'
+import { createSignal, Match, onSettled, Switch } from 'solid-js'
 import { quickstartService } from '../api/services/quickstart-service.js'
 import type { QuickstartProfessorDetail, QuickstartStartResponse } from '../api/types.js'
 import { IntentStep } from '../components/quickstart/IntentStep.jsx'
@@ -175,7 +175,7 @@ const Quickstart: Component = () => {
   }
 
   // Check for existing state on mount
-  onMount(() => {
+  onSettled(() => {
     const stored = getInitialState()
     if (stored.step !== 'intent' && stored.courseId) {
       // Resume from saved state

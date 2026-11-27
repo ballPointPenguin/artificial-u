@@ -1,5 +1,5 @@
 import { Button as KobalteButton } from '@kobalte/core/button'
-import { type JSX, splitProps } from 'solid-js'
+import { type JSX, omit } from 'solid-js'
 
 type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'link' | 'danger'
 type ButtonSize = 'sm' | 'md' | 'lg'
@@ -11,7 +11,8 @@ interface ButtonProps extends JSX.ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 export function Button(props: ButtonProps) {
-  const [local, others] = splitProps(props, ['variant', 'size', 'class', 'children', 'disabled'])
+  const local = props
+  const others = omit(props, 'variant', 'size', 'class', 'children', 'disabled')
 
   // Base classes for all buttons - removed cursor-pointer to avoid conflict
   const baseClasses =

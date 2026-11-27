@@ -1,4 +1,4 @@
-import { A } from '@solidjs/router'
+
 import { type Component, For, type JSX } from 'solid-js'
 
 interface FeatureCard {
@@ -66,7 +66,7 @@ const icons: Record<string, JSX.Element> = {
 
 const FeatureCardItem: Component<{ feature: FeatureCard }> = (props) => {
   return (
-    <A
+    <a
       href={props.feature.link}
       class="group block bg-surface border border-border/30 rounded-sm p-6 transition-all duration-300 hover:bg-surface/70 hover:shadow-arcane"
     >
@@ -81,7 +81,7 @@ const FeatureCardItem: Component<{ feature: FeatureCard }> = (props) => {
           {props.feature.description}
         </p>
       </div>
-    </A>
+    </a>
   )
 }
 

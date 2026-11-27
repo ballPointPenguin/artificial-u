@@ -1,4 +1,4 @@
-import { type JSX, splitProps } from 'solid-js'
+import { type JSX, omit } from 'solid-js'
 
 interface CardProps {
   class?: string
@@ -8,7 +8,8 @@ interface CardProps {
 }
 
 export function Card(props: CardProps) {
-  const [local, others] = splitProps(props, ['class', 'children', 'hover', 'bordered'])
+  const local = props
+  const others = omit(props, 'class', 'children', 'hover', 'bordered')
 
   return (
     <div

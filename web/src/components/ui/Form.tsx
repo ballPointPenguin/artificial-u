@@ -1,5 +1,5 @@
 import type { Component, ComponentProps, JSX, ParentProps } from 'solid-js'
-import { splitProps } from 'solid-js'
+import { omit } from 'solid-js'
 
 interface FormProps extends ParentProps<Omit<ComponentProps<'form'>, 'children'>> {
   class?: string
@@ -8,7 +8,8 @@ interface FormProps extends ParentProps<Omit<ComponentProps<'form'>, 'children'>
 }
 
 const Form: Component<FormProps> = (props) => {
-  const [local, others] = splitProps(props, ['class', 'children', 'onSubmit'])
+  const local = props
+  const others = omit(props, 'class', 'children', 'onSubmit')
 
   const handleSubmit = (
     event: SubmitEvent & { currentTarget: HTMLFormElement; target: Element }

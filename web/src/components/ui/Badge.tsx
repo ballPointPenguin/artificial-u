@@ -1,4 +1,4 @@
-import { type JSX, splitProps } from 'solid-js'
+import { type JSX, omit } from 'solid-js'
 
 type BadgeVariant = 'default' | 'outline' | 'secondary' | 'success' | 'danger' | 'warning' | 'info'
 
@@ -9,7 +9,8 @@ interface BadgeProps {
 }
 
 export function Badge(props: BadgeProps) {
-  const [local, others] = splitProps(props, ['variant', 'class', 'children'])
+  const local = props
+  const others = omit(props, 'variant', 'class', 'children')
 
   const variantClasses = {
     default: 'bg-surface text-muted',

@@ -123,7 +123,7 @@ export const I18nProvider: ParentComponent = (props) => {
     setContentLanguage,
   }
 
-  return <I18nContext.Provider value={contextValue}>{props.children}</I18nContext.Provider>
+  return <I18nContext value={contextValue}>{props.children}</I18nContext>
 }
 
 /**

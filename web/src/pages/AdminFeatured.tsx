@@ -1,4 +1,5 @@
-import { createEffect, createResource, createSignal, For, on, Show } from 'solid-js'
+import { createEffect, createSignal, For, Show } from 'solid-js'
+import { createResource } from '../utils/create-resource.js'
 import { departmentService } from '../api/services/department-service'
 import { featuredService } from '../api/services/featured-service'
 import { lectureService } from '../api/services/lecture-service'
@@ -34,16 +35,16 @@ export default function AdminFeatured() {
 
   // Resolve names whenever featured items change
   createEffect(
-    on(featured, (items) => {
+    () => ({ items: featured(), tab: activeTab() }),
+    ({ items, tab }) => {
       if (!items || items.length === 0) return
-      const tab = activeTab()
       for (const item of items) {
         const key = `${item.item_type}:${String(item.item_id)}`
         // Skip if already resolved
         if (resolvedNames()[key]) continue
         void resolveName(tab, item.item_id, key)
       }
-    })
+    }
   )
 
   const resolveName = async (itemType: ItemType, itemId: number, key: string) => {

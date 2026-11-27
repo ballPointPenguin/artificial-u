@@ -1,4 +1,4 @@
-import { type JSX, Show, splitProps } from 'solid-js'
+import { type JSX, Show, omit } from 'solid-js'
 
 type AlertVariant = 'default' | 'info' | 'success' | 'warning' | 'danger'
 
@@ -11,7 +11,8 @@ interface AlertProps {
 }
 
 export function Alert(props: AlertProps) {
-  const [local, others] = splitProps(props, ['variant', 'title', 'class', 'children', 'icon'])
+  const local = props
+  const others = omit(props, 'variant', 'title', 'class', 'children', 'icon')
 
   const variantClasses = {
     default: 'bg-surface/80 border-border text-muted',

@@ -1,4 +1,4 @@
-import { A } from '@solidjs/router'
+
 import { createMemo, Show } from 'solid-js'
 import type { JobRow } from '../../api/services/jobs-service'
 import { getJobKindLabel } from '../../utils/job-management'
@@ -83,9 +83,9 @@ export default function JobCard(props: JobCardProps) {
               when={props.job.link_path}
               fallback={<span class="text-muted truncate">{params()}</span>}
             >
-              <A href={props.job.link_path as string} class="text-accent hover:underline truncate">
+              <a href={props.job.link_path as string} class="text-accent hover:underline truncate">
                 {params()}
-              </A>
+              </a>
             </Show>
           </Show>
           <Show when={props.job.last_error}>

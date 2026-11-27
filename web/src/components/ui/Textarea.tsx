@@ -1,6 +1,6 @@
 import { TextField as KTextField } from '@kobalte/core'
 import type { Component, ComponentProps, JSX } from 'solid-js'
-import { Show, splitProps } from 'solid-js'
+import { Show, omit } from 'solid-js'
 
 interface TextareaProps extends Omit<ComponentProps<typeof KTextField.TextArea>, 'id'> {
   name: string
@@ -18,20 +18,8 @@ interface TextareaProps extends Omit<ComponentProps<typeof KTextField.TextArea>,
 }
 
 const Textarea: Component<TextareaProps> = (props) => {
-  const [local, others] = splitProps(props, [
-    'name',
-    'value',
-    'onInput',
-    'onChange',
-    'placeholder',
-    'rows',
-    'disabled',
-    'required',
-    'class',
-    'textareaClass',
-    'error',
-    'label',
-  ])
+  const local = props
+  const others = omit(props, 'name', 'value', 'onInput', 'onChange', 'placeholder', 'rows', 'disabled', 'required', 'class', 'textareaClass', 'error', 'label')
 
   const fieldId = () => `field-${local.name}`
   const hasError = () => !!local.error

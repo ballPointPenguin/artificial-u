@@ -1,5 +1,5 @@
 import type { Component, JSX } from 'solid-js'
-import { splitProps } from 'solid-js'
+import { omit } from 'solid-js'
 
 interface NumberInputProps extends JSX.InputHTMLAttributes<HTMLInputElement> {
   error?: string | null | false
@@ -7,7 +7,8 @@ interface NumberInputProps extends JSX.InputHTMLAttributes<HTMLInputElement> {
 }
 
 const NumberInput: Component<NumberInputProps> = (props) => {
-  const [local, others] = splitProps(props, ['class', 'error'])
+  const local = props
+  const others = omit(props, 'class', 'error')
 
   return (
     <input

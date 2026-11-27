@@ -1,4 +1,5 @@
-import { type Component, createResource, For } from 'solid-js'
+import { type Component, For } from 'solid-js'
+import { createResource } from '../../utils/create-resource.js'
 import type { ModelSettingResponse } from '../../api/services/preference-service'
 import { SUGGESTED_MODELS } from '../../utils/models'
 import { FormField, Input } from '../ui'

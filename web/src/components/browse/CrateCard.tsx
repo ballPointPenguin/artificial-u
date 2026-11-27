@@ -1,4 +1,4 @@
-import { A } from '@solidjs/router'
+
 import { type Component, For, Show } from 'solid-js'
 import type { Course } from '../../api/types.js'
 
@@ -16,7 +16,7 @@ const CrateCard: Component<CrateCardProps> = (props) => {
   const tags = () => (props.course.tags ?? []).slice(0, 3)
 
   return (
-    <A
+    <a
       href={`/courses/${String(props.course.id)}`}
       class={`card-hover-lift block overflow-hidden rounded-lg border border-border/30 bg-surface no-underline ${props.class ?? ''}`}
     >
@@ -60,7 +60,7 @@ const CrateCard: Component<CrateCardProps> = (props) => {
           </For>
         </div>
       </Show>
-    </A>
+    </a>
   )
 }
 

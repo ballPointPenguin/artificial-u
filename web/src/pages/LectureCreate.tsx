@@ -1,5 +1,6 @@
-import { A, useNavigate, useParams } from '@solidjs/router'
-import { createResource, createSignal, Show } from 'solid-js'
+import { useNavigate, useParams } from '@solidjs/router'
+import { createSignal, Show } from 'solid-js'
+import { createResource } from '../utils/create-resource.js'
 import { courseService } from '../api/services/course-service.js'
 import { lectureService } from '../api/services/lecture-service.js'
 import { topicService } from '../api/services/topic-service.js'
@@ -56,12 +57,12 @@ const LectureCreatePage = () => {
         <div>
           {/* Breadcrumb navigation */}
           <div class="mb-6">
-            <A
+            <a
               href={`/courses/${String(courseId)}/topics/${String(topicId)}`}
               class="text-mystic-500 hover:text-mystic-300"
             >
               ← Back to Topic
-            </A>
+            </a>
           </div>
 
           {/* Course and Topic context */}

@@ -1,5 +1,6 @@
-import { A, useParams } from '@solidjs/router'
-import { createMemo, createResource, createSignal, Show } from 'solid-js'
+import { useParams } from '@solidjs/router'
+import { createMemo, createSignal, Show } from 'solid-js'
+import { createResource } from '../utils/create-resource.js'
 import { courseService } from '../api/services/course-service.js'
 import { lectureService } from '../api/services/lecture-service.js'
 import { topicService } from '../api/services/topic-service.js'
@@ -268,12 +269,12 @@ const TopicDetail = () => {
                   {/* Breadcrumb navigation */}
                   <div class="mb-6">
                     <div class="flex flex-wrap items-center justify-between gap-3">
-                      <A
+                      <a
                         href={`/courses/${String(courseId())}`}
                         class="text-mystic-500 hover:text-mystic-300 whitespace-nowrap"
                       >
                         ← {t().courseDetail.backToCourse}
-                      </A>
+                      </a>
                       <ShareButton
                         url={`${window.location.origin}/share/courses/${String(
                           courseId()
@@ -314,12 +315,12 @@ const TopicDetail = () => {
                               {(p) => {
                                 const prevId = p().id
                                 return (
-                                  <A
+                                  <a
                                     href={`/courses/${String(courseId())}/topics/${String(prevId)}`}
                                     class="text-mystic-500 hover:text-mystic-300 whitespace-nowrap"
                                   >
                                     ← {t().topicDetail.previousTopic}
-                                  </A>
+                                  </a>
                                 )
                               }}
                             </Show>
@@ -329,12 +330,12 @@ const TopicDetail = () => {
                               {(n) => {
                                 const nextId = n().id
                                 return (
-                                  <A
+                                  <a
                                     href={`/courses/${String(courseId())}/topics/${String(nextId)}`}
                                     class="text-mystic-500 hover:text-mystic-300 whitespace-nowrap"
                                   >
                                     {t().topicDetail.nextTopic} →
-                                  </A>
+                                  </a>
                                 )
                               }}
                             </Show>
@@ -367,7 +368,7 @@ const TopicDetail = () => {
                     }
                   >
                     <div
-                      classList={{
+                      class={{
                         'lg:grid lg:grid-cols-2 lg:gap-6': !nowPlayingOpen(),
                         'flex flex-col gap-6': nowPlayingOpen(),
                       }}
@@ -424,7 +425,7 @@ const TopicDetail = () => {
                         </div>
                       </div>
 
-                      <div class="lg:col-span-1" classList={{ 'mt-6 lg:mt-0': !nowPlayingOpen() }}>
+                      <div class="lg:col-span-1" class={{ 'mt-6 lg:mt-0': !nowPlayingOpen() }}>
                         <LectureSection
                           lecture={lecture}
                           courseId={courseId()}

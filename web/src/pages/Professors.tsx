@@ -1,5 +1,6 @@
 import { useNavigate } from '@solidjs/router'
-import { createResource, createSignal, For, Show } from 'solid-js'
+import { createSignal, For, Show } from 'solid-js'
+import { createResource } from '../utils/create-resource.js'
 import { departmentService } from '../api/services/department-service.js'
 import { facultyService } from '../api/services/faculty-service.js'
 import { professorService } from '../api/services/professor-service.js'
