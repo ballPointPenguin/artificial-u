@@ -4,8 +4,21 @@
  * Prefer migrating call sites to async createMemo + <Loading>/<Errored> over time.
  * This helper keeps the familiar () / .loading / .error / refetch / mutate shape on
  * Solid 2's staged-write + split-effect model.
+ *
+ * Important Solid 2 detail: createEffect apply runs whenever compute re-runs, even
+ * when the returned value is unchanged. Source accessors often read a whole form
+ * signal (e.g. formData().department_id) — any sibling field write would re-fire
+ * the fetch. We memoize the source with shallow equality so apply only runs when
+ * the source value actually changes (or refetch bumps `tick`).
  */
-import { type Accessor, createEffect, createSignal, type Setter } from 'solid-js'
+import {
+  type Accessor,
+  createEffect,
+  createMemo,
+  createSignal,
+  type Setter,
+  untrack,
+} from 'solid-js'
 
 export type ResourceSource<S> = S | false | null | undefined
 
@@ -33,6 +46,26 @@ function isSourceInactive(source: unknown): source is false | null | undefined {
   return source === false || source === null || source === undefined
 }
 
+/** Shallow equality so object sources like `{ page, size }` do not refetch on new refs. */
+function sourceEquals(a: unknown, b: unknown): boolean {
+  if (Object.is(a, b)) return true
+  if (
+    typeof a !== 'object' ||
+    a === null ||
+    typeof b !== 'object' ||
+    b === null ||
+    Array.isArray(a) ||
+    Array.isArray(b)
+  ) {
+    return false
+  }
+  const ao = a as Record<string, unknown>
+  const bo = b as Record<string, unknown>
+  const keys = Object.keys(ao)
+  if (keys.length !== Object.keys(bo).length) return false
+  return keys.every((key) => Object.is(ao[key], bo[key]))
+}
+
 export function createResource<T>(fetcher: ResourceFetcher<true, T>): ResourceReturn<T>
 export function createResource<T, S>(
   source: Accessor<ResourceSource<S>>,
@@ -48,18 +81,22 @@ export function createResource<T, S>(
     : () => true as unknown as ResourceSource<S>
   const fetcher = (hasSource ? maybeFetcher : sourceOrFetcher) as ResourceFetcher<S, T>
 
-  const [data, setData] = createSignal<T | undefined>(undefined)
-  const [error, setError] = createSignal<unknown>(undefined)
-  const [loading, setLoading] = createSignal(true)
-  const [tick, setTick] = createSignal(0)
-  const [refetching, setRefetching] = createSignal<unknown>(false)
+  // ownedWrite: effect apply intentionally updates these resource signals
+  const [data, setData] = createSignal<T | undefined>(undefined, { ownedWrite: true })
+  const [error, setError] = createSignal<unknown>(undefined, { ownedWrite: true })
+  const [loading, setLoading] = createSignal(true, { ownedWrite: true })
+  const [tick, setTick] = createSignal(0, { ownedWrite: true })
+  const [refetching, setRefetching] = createSignal<unknown>(false, { ownedWrite: true })
 
   let currentRequest = 0
+
+  // Stabilize the source so sibling signal writes do not re-run apply.
+  const sourceValue = createMemo(() => source(), { equals: sourceEquals })
 
   createEffect(
     () => {
       tick()
-      return source()
+      return sourceValue()
     },
     (src) => {
       if (isSourceInactive(src)) {
@@ -71,8 +108,8 @@ export function createResource<T, S>(
       }
 
       const requestId = ++currentRequest
-      const previous = data()
-      const isRefresh = refetching() !== false
+      const previous = untrack(data)
+      const isRefresh = untrack(refetching) !== false
       setLoading(true)
       if (!isRefresh) {
         setError(undefined)
@@ -83,7 +120,7 @@ export function createResource<T, S>(
         .then(() =>
           fetcher(src, {
             value: previous,
-            refetching: refetching(),
+            refetching: untrack(refetching),
           })
         )
         .then(

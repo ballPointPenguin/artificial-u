@@ -179,15 +179,19 @@ const CourseForm: Component<CourseFormProps> = (props) => {
     }
   )
 
+  // Stable primitive key — Solid 2 effects re-run apply whenever compute re-runs,
+  // even for equal values; object sources + whole-form signal reads caused a
+  // professors/courses refetch storm after syllabus generation filled the form.
   const [departmentCoursesResource] = createResource(
-    () => ({
-      departmentId: formData().department_id,
-      // Refetch once auth is ready so include_hidden uses the JWT student context
-      authReady: !auth.isLoading(),
-      excludeCourseId: props.course?.id,
-    }),
-    async ({ departmentId, excludeCourseId }) => {
-      if (!departmentId) return [] as Course[]
+    () => {
+      const departmentId = formData().department_id
+      if (!departmentId || auth.isLoading()) return null
+      return `${String(departmentId)}_${String(props.course?.id ?? '')}`
+    },
+    async (key) => {
+      const departmentId = Number(key.split('_')[0])
+      const excludeRaw = key.slice(key.indexOf('_') + 1)
+      const excludeCourseId = excludeRaw ? Number(excludeRaw) : undefined
       const response = await courseService.listCourses({
         page: 1,
         size: 100,
@@ -466,6 +470,7 @@ const CourseForm: Component<CourseFormProps> = (props) => {
                         onChange={(v) => {
                           const professorId =
                             v === NULL_OPTION_VALUE || v === null || v === '' ? null : Number(v)
+                          if (professorId === formData().professor_id) return
                           handleInputChange('professor_id', professorId)
                         }}
                         placeholder={t().courses.form.professorPlaceholder}
@@ -765,6 +770,8 @@ const CourseForm: Component<CourseFormProps> = (props) => {
                 // Convert sentinel value to null, otherwise use the selected value
                 const professorId =
                   v === NULL_OPTION_VALUE || v === null || v === '' ? null : Number(v)
+                // Guard: Kobalte may re-emit onChange when options reload after a fetch
+                if (professorId === formData().professor_id) return
                 handleInputChange('professor_id', professorId)
               }}
               placeholder={t().courses.form.professorPlaceholder}
